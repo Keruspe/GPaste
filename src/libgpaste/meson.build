@@ -194,7 +194,6 @@ gpaste_daemon_gir_sources = [
   'gpaste-daemon/gpaste-password-item.c',
   'gpaste-daemon/gpaste-search-provider.c',
   'gpaste-daemon/gpaste-special-atom.c',
-  'gpaste-daemon/gpaste-sqlite-backend.c',
   'gpaste-daemon/gpaste-storage-backend.c',
   'gpaste-daemon/gpaste-storage-migration.c',
   'gpaste-daemon/gpaste-text-item.c',
@@ -224,7 +223,6 @@ gpaste_daemon_gir_headers = [
   'gpaste-daemon/gpaste-password-item.h',
   'gpaste-daemon/gpaste-search-provider.h',
   'gpaste-daemon/gpaste-special-atom.h',
-  'gpaste-daemon/gpaste-sqlite-backend.h',
   'gpaste-daemon/gpaste-storage-backend.h',
   'gpaste-daemon/gpaste-storage-migration.h',
   'gpaste-daemon/gpaste-text-item.h',
@@ -234,13 +232,20 @@ gpaste_daemon_gir_headers = [
 gpaste_daemon_sources = gpaste_daemon_gir_sources
 gpaste_daemon_headers = gpaste_daemon_gir_headers
 
-gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, sqlite3_dep ]
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ]
 
 # Optional libsodium-based encryption converter for the history storage.
 if libsodium_dep.found()
   gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-secret-stream-converter.c' ]
   gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-secret-stream-converter.h' ]
   gpaste_daemon_deps += libsodium_dep
+endif
+
+# Optional SQLite-based incremental history storage backend.
+if sqlite_dep.found()
+  gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-sqlite-backend.c' ]
+  gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-sqlite-backend.h' ]
+  gpaste_daemon_deps += sqlite_dep
 endif
 
 # Optional libsecret support to remember the passphrase in the keyring.

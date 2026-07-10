@@ -12,7 +12,7 @@ G_BEGIN_DECLS
 /* Bump whenever the storage layout changes in a way that should prompt the user
  * to (re)choose a backend. The dialog is shown on startup while the stored
  * "storage-backend-revision" differs from this. */
-#define G_PASTE_STORAGE_BACKEND_REVISION 2
+#define G_PASTE_STORAGE_BACKEND_REVISION 3
 
 typedef void (*GPasteStorageMigrationDoneFunc) (gpointer user_data);
 

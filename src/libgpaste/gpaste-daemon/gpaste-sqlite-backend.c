@@ -6,14 +6,33 @@
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
-#include <gpaste-daemon/gpaste-special-atom.h>
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <sqlite3.h>
 
-#include <string.h>
+/* The SQLite storage backend: one database per history (<name>.db in the
+ * history dir), storing the same data as the plain XML backend. It implements
+ * the incremental vfuncs, so the saver feeds it per-operation changes instead
+ * of full snapshots.
+ *
+ * Items live in an `items` table ordered by a monotonic `rank` (highest =
+ * front of the history, so adds and selects never renumber anything), with
+ * their extra MIME payloads in a `special_values` child table. The schema is
+ * versioned through PRAGMA user_version so it can evolve: older databases are
+ * migrated stepwise on open, newer ones are refused (every operation then
+ * no-ops) rather than corrupted.
+ *
+ * Like the plain XML backend, password items are never persisted (the file is
+ * user-readable); the `name` column is reserved for a future encrypted
+ * variant. Images stay external PNG files, the item value being their path. */
+
+#define G_PASTE_SQLITE_SCHEMA_VERSION 1
+
+/* Far beyond any reachable rank (one increment per add/select), but cheap to
+ * guard against: past this, ranks are compacted back to 1..N on open. */
+#define G_PASTE_SQLITE_RANK_COMPACT_THRESHOLD (G_GINT64_CONSTANT (1) << 62)
 
 struct _GPasteSqliteBackend
 {
@@ -22,400 +41,436 @@ struct _GPasteSqliteBackend
 
 typedef struct
 {
-    /* Cache of open sqlite3 connections keyed by absolute db file path. The
-     * daemon keeps the backend alive for the whole process lifetime, so holding
-     * the connections open (and the WAL hot) is the cheap path. Closed in dispose. */
-    GHashTable *dbs;
+    /* The one open connection, lazily (re)opened for the last used database.
+     * The lock serializes the vfuncs: the saver runs writes one at a time, but
+     * a background load can overlap an in-flight write. */
+    sqlite3 *db;
+    gchar   *db_path;
+    GMutex   lock;
 } GPasteSqliteBackendPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SqliteBackend, sqlite_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
-#define SCHEMA_SQL                                                                                                     \
-    "CREATE TABLE IF NOT EXISTS items ("                                                                               \
-    "    uuid              TEXT    PRIMARY KEY,"                                                                       \
-    "    kind              TEXT    NOT NULL,"                                                                          \
-    "    value             TEXT    NOT NULL,"                                                                          \
-    "    display_string    TEXT,"                                                                                      \
-    "    hash              INTEGER,"                                                                                   \
-    "    size              INTEGER NOT NULL DEFAULT 0,"                                                                \
-    "    created_date      INTEGER NOT NULL,"                                                                          \
-    "    last_paste_date   INTEGER,"                                                                                   \
-    "    pinned            INTEGER NOT NULL DEFAULT 0,"                                                                \
-    "    clip_order        REAL    NOT NULL DEFAULT 0,"                                                                \
-    "    sticky_clip_order REAL"                                                                                       \
-    ");"                                                                                                               \
-    "CREATE INDEX IF NOT EXISTS idx_items_order ON items (sticky_clip_order DESC, clip_order DESC);"                   \
-    "CREATE INDEX IF NOT EXISTS idx_items_hash  ON items (hash);"                                                      \
-    "CREATE TABLE IF NOT EXISTS special_values ("                                                                      \
-    "    item_uuid TEXT NOT NULL,"                                                                                     \
-    "    mime      TEXT NOT NULL,"                                                                                     \
-    "    data      BLOB NOT NULL,"                                                                                     \
-    "    PRIMARY KEY (item_uuid, mime),"                                                                               \
-    "    FOREIGN KEY (item_uuid) REFERENCES items(uuid) ON DELETE CASCADE"                                             \
-    ");"                                                                                                               \
-    "CREATE TABLE IF NOT EXISTS image_metadata ("                                                                      \
-    "    item_uuid TEXT    PRIMARY KEY,"                                                                               \
-    "    date      INTEGER NOT NULL,"                                                                                  \
-    "    FOREIGN KEY (item_uuid) REFERENCES items(uuid) ON DELETE CASCADE"                                             \
-    ");"
-
-/* SHA256(value), take the first 16 hex chars as an unsigned 64-bit integer. The
- * column is INTEGER so we cast to gint64 unchanged (two's complement). */
-static gint64
-_g_paste_sqlite_backend_hash_u64 (const gchar *value)
+static GPasteSqliteBackendPrivate *
+g_paste_sqlite_backend_get_priv (const GPasteStorageBackend *self)
 {
-    if (!value)
-        return 0;
-
-    g_autofree gchar *hex = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                         (const guchar *) value,
-                                                         strlen (value));
-    if (!hex || strlen (hex) < 16)
-        return 0;
-
-    gchar buf[17];
-    memcpy (buf, hex, 16);
-    buf[16] = '\0';
-
-    return (gint64) g_ascii_strtoull (buf, NULL, 16);
+    return g_paste_sqlite_backend_get_instance_private (G_PASTE_SQLITE_BACKEND ((gpointer) self));
 }
 
-static GPasteSpecialAtom
-_g_paste_sqlite_backend_atom_from_mime (const gchar *mime)
-{
-    if (!mime)
-        return G_PASTE_SPECIAL_ATOM_INVALID;
-
-    for (GPasteSpecialAtom a = G_PASTE_SPECIAL_ATOM_FIRST; a < G_PASTE_SPECIAL_ATOM_LAST; ++a)
-    {
-        const gchar *s = g_paste_special_atom_get (a);
-        if (s && g_paste_str_equal (s, mime))
-            return a;
-    }
-
-    return G_PASTE_SPECIAL_ATOM_INVALID;
-}
-
-/* REGEXP(pattern, subject) -> 0/1, called by sqlite3 during scans. */
 static void
-_g_paste_sqlite_backend_regex_udf (sqlite3_context *ctx,
-                                   int              argc G_GNUC_UNUSED,
-                                   sqlite3_value  **argv)
+g_paste_sqlite_backend_close (sqlite3 *db)
 {
-    const gchar *pattern = (const gchar *) sqlite3_value_text (argv[0]);
-    const gchar *subject = (const gchar *) sqlite3_value_text (argv[1]);
-
-    if (!pattern || !subject)
-    {
-        sqlite3_result_int (ctx, 0);
-        return;
-    }
-
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GRegex) regex = g_regex_new (pattern, G_REGEX_OPTIMIZE, 0, &error);
-    if (!regex)
-    {
-        sqlite3_result_error (ctx, error->message, -1);
-        return;
-    }
-
-    sqlite3_result_int (ctx, g_regex_match (regex, subject, 0, NULL) ? 1 : 0);
+    sqlite3_close (db);
 }
 
 static gboolean
-_g_paste_sqlite_backend_exec (sqlite3     *db,
-                              const gchar *sql)
+g_paste_sqlite_backend_exec (sqlite3     *db,
+                             const gchar *sql)
 {
-    char *err = NULL;
+    gchar *err = NULL;
+
     if (sqlite3_exec (db, sql, NULL, NULL, &err) != SQLITE_OK)
     {
-        g_warning ("SQLite exec failed (%s): %s", sql, err ? err : "(no msg)");
+        g_warning ("sqlite: failed to run “%s”: %s", sql, err);
         sqlite3_free (err);
         return FALSE;
     }
+
     return TRUE;
 }
 
-static void
-_g_paste_sqlite_backend_close_db (gpointer data)
+/* Finish an open transaction: COMMIT when @success, ROLLBACK otherwise (also
+ * rolling back when the COMMIT itself fails). Returns the effective success. */
+static gboolean
+g_paste_sqlite_backend_finish_transaction (sqlite3  *db,
+                                           gboolean  success)
 {
-    sqlite3 *db = data;
-    if (db)
-        sqlite3_close (db);
+    if (!g_paste_sqlite_backend_exec (db, (success) ? "COMMIT;" : "ROLLBACK;") && success)
+    {
+        g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        return FALSE;
+    }
+
+    return success;
 }
 
-/* Open (or return cached) sqlite3 handle for @path. The pragma block + schema
- * creation is idempotent so we run it on every fresh open; cached handles
- * skip it. */
-static sqlite3 *
-_g_paste_sqlite_backend_open (const GPasteSqliteBackend *self,
-                              const gchar               *path)
+/* Run a query expected to produce a single integer (e.g. an aggregate or a
+ * PRAGMA), returning @fallback when it produces nothing or fails. */
+static gint64
+g_paste_sqlite_backend_query_int64 (sqlite3     *db,
+                                    const gchar *sql,
+                                    gint64       fallback)
 {
-    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_instance_private ((GPasteSqliteBackend *) self);
+    sqlite3_stmt *stmt = NULL;
+    gint64 value = fallback;
 
-    sqlite3 *db = g_hash_table_lookup (priv->dbs, path);
-    if (db)
-        return db;
-
-    if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL) != SQLITE_OK)
+    if (sqlite3_prepare_v2 (db, sql, -1, &stmt, NULL) != SQLITE_OK)
     {
-        g_warning ("Failed to open SQLite db %s: %s", path, db ? sqlite3_errmsg (db) : "(no handle)");
+        g_warning ("sqlite: failed to prepare “%s”: %s", sql, sqlite3_errmsg (db));
+        return fallback;
+    }
+
+    if (sqlite3_step (stmt) == SQLITE_ROW)
+        value = sqlite3_column_int64 (stmt, 0);
+
+    sqlite3_finalize (stmt);
+
+    return value;
+}
+
+static gboolean
+g_paste_sqlite_backend_create_schema (sqlite3 *db)
+{
+    return g_paste_sqlite_backend_exec (db,
+        "CREATE TABLE IF NOT EXISTS items ("
+        "    id       INTEGER PRIMARY KEY,"
+        "    uuid     TEXT    NOT NULL UNIQUE,"
+        "    kind     TEXT    NOT NULL,"
+        "    value    TEXT    NOT NULL,"
+        "    rank     INTEGER NOT NULL," /* highest = front of the history */
+        "    date     INTEGER,"          /* Image: unix seconds */
+        "    checksum TEXT,"             /* Image: hex sha256 */
+        "    name     TEXT"              /* Password: reserved for an encrypted variant */
+        ");"
+        "CREATE UNIQUE INDEX IF NOT EXISTS items_rank ON items (rank DESC);"
+        "CREATE TABLE IF NOT EXISTS special_values ("
+        "    item_id  INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,"
+        "    position INTEGER NOT NULL,"
+        "    mime     TEXT    NOT NULL," /* GPasteSpecialAtom value nick */
+        "    data     BLOB    NOT NULL,"
+        "    PRIMARY KEY (item_id, position)"
+        ");");
+}
+
+static gboolean
+g_paste_sqlite_backend_migrate_schema (sqlite3 *db,
+                                       gint64   from)
+{
+    /* One case per historical schema version, each falling through to the next
+     * so any old database upgrades stepwise to the current version. */
+    switch (from)
+    {
+    default:
+        (void) db;
+        return TRUE;
+    }
+}
+
+/* Get the (cached) connection for @db_path, opening and preparing the database
+ * as needed. Returns NULL (and warns) when the database cannot be used, e.g.
+ * when it was created by a newer GPaste: every operation then no-ops instead
+ * of risking the data. Must be called with the backend lock held. */
+static sqlite3 *
+g_paste_sqlite_backend_open (const GPasteStorageBackend *self,
+                             const gchar                *db_path)
+{
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+
+    if (priv->db && g_paste_str_equal (priv->db_path, db_path))
+        return priv->db;
+
+    g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
+    g_clear_pointer (&priv->db_path, g_free);
+
+    if (!g_paste_util_ensure_history_dir_exists ())
+        return NULL;
+
+    sqlite3 *db = NULL;
+
+    if (sqlite3_open_v2 (db_path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to open “%s”: %s", db_path, db ? sqlite3_errmsg (db) : "out of memory");
         sqlite3_close (db);
         return NULL;
     }
 
-    if (!_g_paste_sqlite_backend_exec (db,
-                                       "PRAGMA journal_mode=WAL;"
-                                       "PRAGMA synchronous=NORMAL;"
-                                       "PRAGMA foreign_keys=ON;"
-                                       SCHEMA_SQL))
+    sqlite3_busy_timeout (db, 5000);
+
+    if (!g_paste_sqlite_backend_exec (db,
+                                      "PRAGMA journal_mode = WAL;"
+                                      "PRAGMA synchronous = NORMAL;"
+                                      "PRAGMA foreign_keys = ON;"))
     {
         sqlite3_close (db);
         return NULL;
     }
 
-    sqlite3_create_function (db, "REGEXP", 2,
-                             SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-                             NULL,
-                             _g_paste_sqlite_backend_regex_udf,
-                             NULL, NULL);
+    gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
+    gboolean ok;
 
-    g_hash_table_insert (priv->dbs, g_strdup (path), db);
+    if (version > G_PASTE_SQLITE_SCHEMA_VERSION)
+    {
+        g_warning ("sqlite: “%s” uses schema version %" G_GINT64_FORMAT " from a newer GPaste (this one supports %d); not touching it",
+                   db_path, version, G_PASTE_SQLITE_SCHEMA_VERSION);
+        sqlite3_close (db);
+        return NULL;
+    }
+
+    if (version == 0)
+        ok = g_paste_sqlite_backend_create_schema (db);
+    else
+        ok = g_paste_sqlite_backend_migrate_schema (db, version);
+
+    if (ok && version != G_PASTE_SQLITE_SCHEMA_VERSION)
+        ok = g_paste_sqlite_backend_exec (db, "PRAGMA user_version = " G_STRINGIFY (G_PASTE_SQLITE_SCHEMA_VERSION) ";");
+
+    if (!ok)
+    {
+        sqlite3_close (db);
+        return NULL;
+    }
+
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", 0) > G_PASTE_SQLITE_RANK_COMPACT_THRESHOLD)
+    {
+        g_paste_sqlite_backend_exec (db,
+                                     "UPDATE items SET rank = ranked.new_rank "
+                                     "FROM (SELECT id, ROW_NUMBER () OVER (ORDER BY rank) AS new_rank FROM items) AS ranked "
+                                     "WHERE items.id = ranked.id;");
+    }
+
+    priv->db = db;
+    priv->db_path = g_strdup (db_path);
+
     return db;
 }
 
-/* Drop a cached connection (e.g. after deleting the underlying file). */
-static void
-_g_paste_sqlite_backend_drop_cached (const GPasteSqliteBackend *self,
-                                     const gchar               *path)
-{
-    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_instance_private ((GPasteSqliteBackend *) self);
-    g_hash_table_remove (priv->dbs, path);
-}
+/*****************/
+/* Writing items */
+/*****************/
 
-static void
-_g_paste_sqlite_backend_insert_special_values (sqlite3          *db,
-                                               const gchar      *uuid,
-                                               const GPasteItem *item)
+static gboolean
+g_paste_sqlite_backend_write_special_values (sqlite3          *db,
+                                             gint64            item_id,
+                                             const GPasteItem *item)
 {
-    const GSList *specials = g_paste_item_get_special_values (item);
-    if (!specials)
-        return;
+    const GSList *special_values = g_paste_item_get_special_values (item);
+
+    if (!special_values)
+        return TRUE;
 
     sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db,
-                            "INSERT INTO special_values (item_uuid, mime, data) VALUES (?, ?, ?)",
-                            -1, &stmt, NULL) != SQLITE_OK)
+
+    if (sqlite3_prepare_v2 (db, "INSERT INTO special_values (item_id, position, mime, data) VALUES (?, ?, ?, ?);", -1, &stmt, NULL) != SQLITE_OK)
     {
-        g_warning ("prepare INSERT special_values failed: %s", sqlite3_errmsg (db));
-        return;
+        g_warning ("sqlite: failed to prepare special value insertion: %s", sqlite3_errmsg (db));
+        return FALSE;
     }
 
-    for (const GSList *l = specials; l; l = l->next)
-    {
-        const GPasteBinaryData *bd = l->data;
-        const gchar *mime = g_paste_special_atom_get (g_paste_binary_data_get_mime (bd));
-        GBytes *bytes = g_paste_binary_data_get_bytes (bd);
-        if (!mime || !bytes)
-            continue;
+    GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
+    gboolean success = TRUE;
+    gint64 position = 0;
 
-        gsize len = 0;
-        gconstpointer data = g_bytes_get_data (bytes, &len);
+    for (const GSList *val = special_values; success && val; val = val->next, ++position)
+    {
+        const GPasteBinaryData *value = val->data;
+        const gchar *mime = g_enum_get_value (atom_class, g_paste_binary_data_get_mime (value))->value_nick;
+        gsize data_length;
+        gconstpointer data = g_bytes_get_data (g_paste_binary_data_get_bytes (value), &data_length);
+
+        sqlite3_bind_int64 (stmt, 1, item_id);
+        sqlite3_bind_int64 (stmt, 2, position);
+        sqlite3_bind_text (stmt, 3, mime, -1, SQLITE_STATIC);
+        sqlite3_bind_blob64 (stmt, 4, data, data_length, SQLITE_STATIC);
+
+        if (sqlite3_step (stmt) != SQLITE_DONE)
+        {
+            g_warning ("sqlite: failed to write a special value: %s", sqlite3_errmsg (db));
+            success = FALSE;
+        }
 
         sqlite3_reset (stmt);
         sqlite3_clear_bindings (stmt);
-        sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text (stmt, 2, mime, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_blob (stmt, 3, data, (int) len, SQLITE_TRANSIENT);
-
-        if (sqlite3_step (stmt) != SQLITE_DONE)
-            g_warning ("INSERT special_values failed: %s", sqlite3_errmsg (db));
     }
 
+    g_type_class_unref (atom_class);
     sqlite3_finalize (stmt);
+
+    return success;
 }
 
-static void
-_g_paste_sqlite_backend_insert_image_metadata (sqlite3                *db,
-                                               const gchar            *uuid,
-                                               const GPasteImageItem  *image)
+/* Replace an item's stored special values with the ones it carries. */
+static gboolean
+g_paste_sqlite_backend_rewrite_special_values (sqlite3          *db,
+                                               gint64            item_id,
+                                               const GPasteItem *item)
 {
-    const GDateTime *date = g_paste_image_item_get_date (image);
-    if (!date)
-        return;
+    sqlite3_stmt *del = NULL;
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db,
-                            "INSERT INTO image_metadata (item_uuid, date) VALUES (?, ?)",
-                            -1, &stmt, NULL) != SQLITE_OK)
+    if (sqlite3_prepare_v2 (db, "DELETE FROM special_values WHERE item_id = ?;", -1, &del, NULL) != SQLITE_OK)
     {
-        g_warning ("prepare INSERT image_metadata failed: %s", sqlite3_errmsg (db));
-        return;
+        g_warning ("sqlite: failed to prepare special value cleanup: %s", sqlite3_errmsg (db));
+        return FALSE;
     }
 
-    sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64 (stmt, 2, g_date_time_to_unix ((GDateTime *) date));
+    sqlite3_bind_int64 (del, 1, item_id);
 
-    if (sqlite3_step (stmt) != SQLITE_DONE)
-        g_warning ("INSERT image_metadata failed: %s", sqlite3_errmsg (db));
+    gboolean success = (sqlite3_step (del) == SQLITE_DONE);
 
-    sqlite3_finalize (stmt);
+    sqlite3_finalize (del);
+
+    return success && g_paste_sqlite_backend_write_special_values (db, item_id, item);
 }
 
-/* Insert one item at the given @clip_order. Caller wraps in a transaction. */
-static void
-_g_paste_sqlite_backend_insert_item (sqlite3          *db,
-                                     const GPasteItem *item,
-                                     gdouble           clip_order)
+/* Insert @item with @rank, or move the already-stored item with the same uuid
+ * to @rank (its value never changes, only its position). Special values are
+ * rewritten from the item either way. */
+static gboolean
+g_paste_sqlite_backend_upsert_item (sqlite3          *db,
+                                    const GPasteItem *item,
+                                    gint64            rank)
 {
-    const gchar *kind = g_paste_item_get_kind (item);
-    /* Password items live in memory only by design. */
-    if (g_paste_str_equal (kind, "Password"))
-        return;
-
-    const gchar *uuid    = g_paste_item_get_uuid (item);
-    const gchar *value   = g_paste_item_get_value (item);
-    const gchar *display = g_paste_item_get_display_string (item);
-
     sqlite3_stmt *stmt = NULL;
+
     if (sqlite3_prepare_v2 (db,
-                            "INSERT INTO items (uuid, kind, value, display_string, hash, size,"
-                            "                   created_date, clip_order)"
-                            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name) VALUES (?, ?, ?, ?, ?, ?, ?) "
+                            "ON CONFLICT (uuid) DO UPDATE SET rank = excluded.rank "
+                            "RETURNING id;",
                             -1, &stmt, NULL) != SQLITE_OK)
     {
-        g_warning ("prepare INSERT items failed: %s", sqlite3_errmsg (db));
-        return;
+        g_warning ("sqlite: failed to prepare item insertion: %s", sqlite3_errmsg (db));
+        return FALSE;
     }
 
-    sqlite3_bind_text  (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text  (stmt, 2, kind, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text  (stmt, 3, value ? value : "", -1, SQLITE_TRANSIENT);
-    if (display)
-        sqlite3_bind_text (stmt, 4, display, -1, SQLITE_TRANSIENT);
-    else
-        sqlite3_bind_null (stmt, 4);
-    sqlite3_bind_int64 (stmt, 5, _g_paste_sqlite_backend_hash_u64 (value));
-    sqlite3_bind_int64 (stmt, 6, (gint64) g_paste_item_get_size (item));
-    sqlite3_bind_int64 (stmt, 7, g_get_real_time () / G_USEC_PER_SEC);
-    sqlite3_bind_double (stmt, 8, clip_order);
-
-    if (sqlite3_step (stmt) != SQLITE_DONE)
-        g_warning ("INSERT items failed: %s", sqlite3_errmsg (db));
-
-    sqlite3_finalize (stmt);
+    sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 2, g_paste_item_get_kind (item), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 3, g_paste_item_get_real_value (item), -1, SQLITE_STATIC);
+    sqlite3_bind_int64 (stmt, 4, rank);
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
-        _g_paste_sqlite_backend_insert_image_metadata (db, uuid, _G_PASTE_IMAGE_ITEM (item));
+    {
+        const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
+        const gchar *checksum = g_paste_image_item_get_checksum (image);
 
-    _g_paste_sqlite_backend_insert_special_values (db, uuid, item);
+        sqlite3_bind_int64 (stmt, 5, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
+        if (checksum)
+            sqlite3_bind_text (stmt, 6, checksum, -1, SQLITE_STATIC);
+    }
+
+    gboolean success = (sqlite3_step (stmt) == SQLITE_ROW);
+    gint64 item_id = success ? sqlite3_column_int64 (stmt, 0) : 0;
+
+    if (!success)
+        g_warning ("sqlite: failed to write an item: %s", sqlite3_errmsg (db));
+
+    sqlite3_finalize (stmt);
+
+    return success && g_paste_sqlite_backend_rewrite_special_values (db, item_id, item);
 }
 
 static void
-_g_paste_sqlite_backend_restore_special_values (sqlite3     *db,
-                                                const gchar *uuid,
-                                                GPasteItem  *item)
+g_paste_sqlite_backend_write_history_file (const GPasteStorageBackend *self,
+                                           const gchar                *history_file_path,
+                                           const GList                *history)
 {
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db,
-                            "SELECT mime, data FROM special_values WHERE item_uuid = ?",
-                            -1, &stmt, NULL) != SQLITE_OK)
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
+
+    if (!db)
         return;
 
-    sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
+    /* Count what we'll actually store so the front item gets the highest rank. */
+    gint64 rank = 0;
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        if (!g_paste_str_equal (g_paste_item_get_kind (h->data), "Password"))
+            ++rank;
+    }
+
+    /* One transaction, so replacing the whole content is atomic: a failure
+     * (or crash) rolls back to the previous state instead of losing data. */
+    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
+        return;
+
+    gboolean success = g_paste_sqlite_backend_exec (db, "DELETE FROM items;");
+
+    for (const GList *h = history; success && h; h = g_list_next (h))
+    {
+        const GPasteItem *item = h->data;
+
+        if (g_paste_str_equal (g_paste_item_get_kind (item), "Password"))
+            continue;
+
+        success = g_paste_sqlite_backend_upsert_item (db, item, rank--);
+    }
+
+    g_paste_sqlite_backend_finish_transaction (db, success);
+}
+
+/*****************/
+/* Reading items */
+/*****************/
+
+static void
+g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
+                                            GEnumClass   *atom_class,
+                                            gint64        item_id,
+                                            GPasteItem   *item)
+{
+    sqlite3_bind_int64 (stmt, 1, item_id);
 
     while (sqlite3_step (stmt) == SQLITE_ROW)
     {
-        const gchar      *mime = (const gchar *) sqlite3_column_text (stmt, 0);
-        GPasteSpecialAtom atom = _g_paste_sqlite_backend_atom_from_mime (mime);
-        if (atom == G_PASTE_SPECIAL_ATOM_INVALID)
+        const gchar *mime = (const gchar *) sqlite3_column_text (stmt, 0);
+        GEnumValue *gev = g_enum_get_value_by_nick (atom_class, mime);
+
+        if (!gev)
         {
-            g_warning ("Unknown mime in special_values: %s", mime ? mime : "(null)");
+            g_warning ("sqlite: unknown mime: %s", mime);
             continue;
         }
 
-        gconstpointer blob = sqlite3_column_blob (stmt, 1);
-        int           len  = sqlite3_column_bytes (stmt, 1);
-        g_autoptr (GBytes) bytes = g_bytes_new (blob, (gsize) len);
-        GPasteBinaryData *bd     = g_paste_binary_data_new (atom, bytes);
+        GBytes *bytes = g_bytes_new (sqlite3_column_blob (stmt, 1), sqlite3_column_bytes (stmt, 1));
 
-        g_paste_item_add_special_value (item, bd);
+        g_paste_item_add_special_value (item, g_paste_binary_data_new (gev->value, bytes));
     }
 
-    sqlite3_finalize (stmt);
-}
-
-static GDateTime *
-_g_paste_sqlite_backend_lookup_image_date (sqlite3     *db,
-                                           const gchar *uuid)
-{
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db,
-                            "SELECT date FROM image_metadata WHERE item_uuid = ?",
-                            -1, &stmt, NULL) != SQLITE_OK)
-        return NULL;
-
-    sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
-
-    GDateTime *date = NULL;
-    if (sqlite3_step (stmt) == SQLITE_ROW)
-        date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 0));
-
-    sqlite3_finalize (stmt);
-    return date;
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
 }
 
 static GPasteItem *
-_g_paste_sqlite_backend_build_item (sqlite3     *db,
-                                    const gchar *uuid,
-                                    const gchar *kind,
-                                    const gchar *value,
-                                    const gchar *display,
-                                    gboolean     images_support)
+g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
+                                  gboolean      images_support)
 {
-    GPasteItem *item = NULL;
+    const gchar *kind = (const gchar *) sqlite3_column_text (stmt, 2);
+    const gchar *value = (const gchar *) sqlite3_column_text (stmt, 3);
 
     if (g_paste_str_equal (kind, "Text"))
-        item = g_paste_text_item_new (value);
-    else if (g_paste_str_equal (kind, "Uris"))
-        item = g_paste_uris_item_new_from_str (value);
-    else if (g_paste_str_equal (kind, "Color"))
-        item = g_paste_color_item_new_from_str (value);
-    else if (g_paste_str_equal (kind, "Image"))
+        return g_paste_text_item_new (value);
+    if (g_paste_str_equal (kind, "Uris"))
+        return g_paste_uris_item_new_from_str (value);
+    if (g_paste_str_equal (kind, "Password"))
+        return g_paste_password_item_new ((const gchar *) sqlite3_column_text (stmt, 6), value);
+    if (g_paste_str_equal (kind, "Color"))
+        return g_paste_color_item_new_from_str (value);
+
+    if (g_paste_str_equal (kind, "Image"))
     {
-        if (!images_support)
-            return NULL;
+        if (images_support && sqlite3_column_type (stmt, 4) != SQLITE_NULL)
+        {
+            g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 4));
 
-        g_autoptr (GDateTime) date = _g_paste_sqlite_backend_lookup_image_date (db, uuid);
-        if (!date)
-            return NULL;
+            return g_paste_image_item_new_from_file (value, date, (const gchar *) sqlite3_column_text (stmt, 5));
+        }
 
-        /* Until C4 lands, items.value holds the on-disk path and we still need a
-         * checksum to rebuild a GPasteImageItem; derive it from the basename of
-         * the path, mirroring the file backend's storage layout. */
-        g_autofree gchar *basename = g_path_get_basename (value);
-        gchar *dot = strrchr (basename, '.');
-        if (dot)
-            *dot = '\0';
+        g_autoptr (GFile) img_file = g_file_new_for_path (value);
 
-        item = g_paste_image_item_new_from_file (value, date, basename);
-    }
-    else
-    {
-        g_warning ("Unknown item kind in sqlite db: %s", kind);
+        if (g_file_query_exists (img_file,
+                                 NULL)) /* cancellable */
+        {
+            g_autoptr (GError) error = NULL;
+            if (!g_file_delete (img_file, NULL, &error))
+                g_warning ("Failed to delete leftover image: %s", error->message);
+        }
+
         return NULL;
     }
 
-    if (!item)
-        return NULL;
+    g_warning ("Unknown item kind: %s", kind);
 
-    g_paste_item_set_uuid (item, uuid);
-    if (display)
-        g_paste_item_set_display_string (item, g_strdup (display));
-
-    _g_paste_sqlite_backend_restore_special_values (db, uuid, item);
-
-    return item;
+    return NULL;
 }
 
 static void
@@ -424,326 +479,186 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
                                           GList                     **history,
                                           gsize                      *size)
 {
+    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    /* Opening creates the database on first read, so a fresh history shows up
+     * in listings just like the file backend's empty placeholder. */
+    sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
+
     *history = NULL;
     *size = 0;
 
-    /* Mirror file_backend: an absent file means "empty history", not "create the
-     * db". We don't want a stray read on a never-written-to history to create a
-     * file on disk. */
-    if (!g_file_test (history_file_path, G_FILE_TEST_EXISTS))
-        return;
-
-    sqlite3 *db = _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, history_file_path);
     if (!db)
         return;
 
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
-    gboolean              images_support = g_paste_settings_get_images_support (settings);
-
     sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db,
-                            "SELECT uuid, kind, value, display_string, size"
-                            "  FROM items"
-                            " ORDER BY sticky_clip_order DESC, clip_order DESC",
-                            -1, &stmt, NULL) != SQLITE_OK)
+
+    if (sqlite3_prepare_v2 (db, "SELECT id, uuid, kind, value, date, checksum, name FROM items ORDER BY rank DESC LIMIT ?;", -1, &stmt, NULL) != SQLITE_OK)
     {
-        g_warning ("prepare SELECT items failed: %s", sqlite3_errmsg (db));
+        g_warning ("sqlite: failed to prepare history query: %s", sqlite3_errmsg (db));
         return;
     }
 
-    GList *out = NULL;
-    gsize  total = 0;
+    sqlite3_bind_int64 (stmt, 1, g_paste_settings_get_max_history_size (settings));
+
+    /* Prepared once for the whole load: reset and re-bound per item.
+     * add_special_value prepends, so walking positions backwards rebuilds each
+     * item's special values in their original order. */
+    sqlite3_stmt *sv_stmt = NULL;
+
+    if (sqlite3_prepare_v2 (db, "SELECT mime, data FROM special_values WHERE item_id = ? ORDER BY position DESC;", -1, &sv_stmt, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to prepare special value query: %s", sqlite3_errmsg (db));
+        sqlite3_finalize (stmt);
+        return;
+    }
+
+    GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
+    gboolean images_support = g_paste_settings_get_images_support (settings);
 
     while (sqlite3_step (stmt) == SQLITE_ROW)
     {
-        const gchar *uuid    = (const gchar *) sqlite3_column_text (stmt, 0);
-        const gchar *kind    = (const gchar *) sqlite3_column_text (stmt, 1);
-        const gchar *value   = (const gchar *) sqlite3_column_text (stmt, 2);
-        const gchar *display = (const gchar *) sqlite3_column_text (stmt, 3);
+        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, images_support);
 
-        GPasteItem *item = _g_paste_sqlite_backend_build_item (db, uuid, kind, value, display, images_support);
         if (!item)
             continue;
 
-        total += g_paste_item_get_size (item);
-        out = g_list_prepend (out, item);
+        const gchar *uuid = (const gchar *) sqlite3_column_text (stmt, 1);
+
+        if (uuid && g_uuid_string_is_valid (uuid))
+            g_paste_item_set_uuid (item, uuid);
+
+        g_paste_sqlite_backend_read_special_values (sv_stmt, atom_class, sqlite3_column_int64 (stmt, 0), item);
+
+        *history = g_list_prepend (*history, item);
+        *size += g_paste_item_get_size (item);
+    }
+
+    g_type_class_unref (atom_class);
+    sqlite3_finalize (sv_stmt);
+    sqlite3_finalize (stmt);
+
+    *history = g_list_reverse (*history);
+}
+
+/***********************/
+/* Incremental updates */
+/***********************/
+
+/* The history only ever hands us items and uuids it also reflects in the
+ * snapshot, so the snapshot is the authoritative fallback: after applying the
+ * granular hint, any stored row missing from it (items evicted by the size or
+ * memory limits, or a deduplicated older copy — those never get their own
+ * remove operation) is dropped. */
+static void
+g_paste_sqlite_backend_reconcile (sqlite3     *db,
+                                  const GList *history)
+{
+    gint64 expected = 0;
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        if (!g_paste_str_equal (g_paste_item_get_kind (h->data), "Password"))
+            ++expected;
+    }
+
+    /* The common case: nothing rode along, the store already matches. Only
+     * build the uuid set (and scan the table) when it actually does not. */
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", expected) == expected)
+        return;
+
+    g_autoptr (GHashTable) uuids = g_hash_table_new (g_str_hash, g_str_equal);
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        const GPasteItem *item = h->data;
+
+        if (!g_paste_str_equal (g_paste_item_get_kind (item), "Password"))
+            g_hash_table_add (uuids, (gpointer) g_paste_item_get_uuid (item));
+    }
+
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2 (db, "SELECT uuid FROM items;", -1, &stmt, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to prepare reconciliation query: %s", sqlite3_errmsg (db));
+        return;
+    }
+
+    g_autoptr (GStrvBuilder) extra = g_strv_builder_new ();
+
+    while (sqlite3_step (stmt) == SQLITE_ROW)
+    {
+        const gchar *uuid = (const gchar *) sqlite3_column_text (stmt, 0);
+
+        if (!g_hash_table_contains (uuids, uuid))
+            g_strv_builder_add (extra, uuid);
     }
 
     sqlite3_finalize (stmt);
 
-    *history = g_list_reverse (out);
-    *size    = total;
-}
+    g_auto (GStrv) to_delete = g_strv_builder_end (extra);
 
-static void
-g_paste_sqlite_backend_write_history_file (const GPasteStorageBackend *self,
-                                           const gchar                *history_file_path,
-                                           const GList                *history)
-{
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
-
-    if (!g_paste_util_ensure_history_dir_exists ())
+    if (!to_delete || !*to_delete)
         return;
 
-    /* Mirror file_backend: if change tracking is disabled, delete the db file (and
-     * its WAL/SHM sidecars) instead of writing it. */
-    if (!g_paste_settings_get_track_changes (settings))
+    sqlite3_stmt *del = NULL;
+
+    if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &del, NULL) != SQLITE_OK)
     {
-        _g_paste_sqlite_backend_drop_cached ((const GPasteSqliteBackend *) self, history_file_path);
-
-        g_autoptr (GFile) file = g_file_new_for_path (history_file_path);
-        g_autoptr (GError) error = NULL;
-        if (!g_file_delete (file, NULL, &error) && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            g_warning ("Failed to delete history db: %s", error->message);
-
-        /* Best-effort WAL/SHM cleanup. */
-        const gchar *suffixes[] = { "-wal", "-shm" };
-        for (gsize i = 0; i < G_N_ELEMENTS (suffixes); ++i)
-        {
-            g_autofree gchar *side = g_strconcat (history_file_path, suffixes[i], NULL);
-            g_autoptr (GFile) sf = g_file_new_for_path (side);
-            g_autoptr (GError) e = NULL;
-            if (!g_file_delete (sf, NULL, &e) && !g_error_matches (e, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-                g_warning ("Failed to delete %s: %s", side, e->message);
-        }
+        g_warning ("sqlite: failed to prepare reconciliation cleanup: %s", sqlite3_errmsg (db));
         return;
     }
 
-    sqlite3 *db = _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, history_file_path);
-    if (!db)
-        return;
-
-    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
-        return;
-
-    if (!_g_paste_sqlite_backend_exec (db, "DELETE FROM items"))
+    for (GStrv uuid = to_delete; *uuid; ++uuid)
     {
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
-        return;
+        sqlite3_bind_text (del, 1, *uuid, -1, SQLITE_STATIC);
+
+        if (sqlite3_step (del) != SQLITE_DONE)
+            g_warning ("sqlite: failed to reconcile an item: %s", sqlite3_errmsg (db));
+
+        sqlite3_reset (del);
+        sqlite3_clear_bindings (del);
     }
 
-    /* Walk @history head-to-tail. Head should land with the highest clip_order so
-     * the DESC scan in read_history returns the same order. If the caller hands
-     * us a longer list than max-history-size allows, drop the tail to keep the
-     * persisted table within the configured cap (same invariant the C2 add
-     * path maintains). */
-    guint64 limit  = g_paste_settings_get_max_history_size (settings);
-    guint64 length = g_list_length ((GList *) history);
-    if (limit > 0 && length > limit)
-        length = limit;
-
-    gdouble clip = (gdouble) length;
-    guint64 i    = 0;
-
-    for (const GList *l = history; l && i < length; l = l->next, ++i, clip -= 1.0)
-        _g_paste_sqlite_backend_insert_item (db, l->data, clip);
-
-    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+    sqlite3_finalize (del);
 }
 
-static void
-g_paste_sqlite_backend_delete_history (const GPasteStorageBackend *self,
-                                       const gchar                *name,
-                                       GError                   **error)
-{
-    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
-    _g_paste_sqlite_backend_drop_cached ((const GPasteSqliteBackend *) self, path);
-
-    g_autoptr (GFile) file = g_file_new_for_path (path);
-    g_file_delete (file, NULL, error);
-
-    /* Best-effort sidecar cleanup; ignore NOT_FOUND. */
-    const gchar *suffixes[] = { "-wal", "-shm" };
-    for (gsize i = 0; i < G_N_ELEMENTS (suffixes); ++i)
-    {
-        g_autofree gchar *side = g_strconcat (path, suffixes[i], NULL);
-        g_autoptr (GFile) sf = g_file_new_for_path (side);
-        g_autoptr (GError) e = NULL;
-        if (!g_file_delete (sf, NULL, &e) && !g_error_matches (e, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            g_warning ("Failed to delete %s: %s", side, e->message);
-    }
-}
-
-static GStrv
-g_paste_sqlite_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNUSED,
-                                       GError                   **error)
-{
-    g_autoptr (GStrvBuilder) names = g_strv_builder_new ();
-    g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
-    g_autoptr (GFileEnumerator) enumerator = g_file_enumerate_children (dir,
-                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                                                        G_FILE_QUERY_INFO_NONE,
-                                                                        NULL,
-                                                                        error);
-    if (error && *error)
-    {
-        if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
-        {
-            g_clear_error (error);
-            return g_strv_builder_end (names);
-        }
-        return NULL;
-    }
-
-    GFileInfo *info;
-    while ((info = g_file_enumerator_next_file (enumerator, NULL, error)))
-    {
-        g_autoptr (GFileInfo) h = info;
-        if (error && *error)
-            return NULL;
-
-        const gchar *raw = g_file_info_get_display_name (h);
-        if (!g_str_has_suffix (raw, ".db"))
-            continue;
-
-        g_autofree gchar *name = g_strndup (raw, strlen (raw) - 3);
-        g_strv_builder_take (names, g_steal_pointer (&name));
-    }
-
-    return g_strv_builder_end (names);
-}
-
-static const gchar *
-g_paste_sqlite_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
-{
-    return "db";
-}
-
-/* --- Incremental write path (C2). --- */
-
-/* SELECT COALESCE(MAX(clip_order), 0) FROM items. */
-static gdouble
-_g_paste_sqlite_backend_max_clip_order (sqlite3 *db)
-{
-    sqlite3_stmt *stmt = NULL;
-    gdouble max = 0.0;
-
-    if (sqlite3_prepare_v2 (db, "SELECT COALESCE(MAX(clip_order), 0) FROM items", -1, &stmt, NULL) == SQLITE_OK)
-    {
-        if (sqlite3_step (stmt) == SQLITE_ROW)
-            max = sqlite3_column_double (stmt, 0);
-        sqlite3_finalize (stmt);
-    }
-
-    return max;
-}
-
-/* Returns a freshly-allocated uuid for an existing row with matching (hash, kind),
- * or NULL if no duplicate is on file. */
-static gchar *
-_g_paste_sqlite_backend_lookup_dup_uuid (sqlite3     *db,
-                                         gint64       hash,
-                                         const gchar *kind)
-{
-    sqlite3_stmt *stmt = NULL;
-    gchar *uuid = NULL;
-
-    if (sqlite3_prepare_v2 (db,
-                            "SELECT uuid FROM items WHERE hash = ? AND kind = ? LIMIT 1",
-                            -1, &stmt, NULL) == SQLITE_OK)
-    {
-        sqlite3_bind_int64 (stmt, 1, hash);
-        sqlite3_bind_text  (stmt, 2, kind, -1, SQLITE_TRANSIENT);
-
-        if (sqlite3_step (stmt) == SQLITE_ROW)
-            uuid = g_strdup ((const gchar *) sqlite3_column_text (stmt, 0));
-
-        sqlite3_finalize (stmt);
-    }
-
-    return uuid;
-}
-
-/* DELETE the lowest-priority rows until the table is at most @limit items. The
- * ordering matches read_history_file's SELECT, with pinned items winning over
- * stickies winning over plain clip_order. pinned = 0 is the only level present
- * in C2 — the pinned column is plumbed through for future PRs. */
-static void
-_g_paste_sqlite_backend_truncate (sqlite3 *db,
-                                  guint64  limit)
-{
-    if (!limit)
-        return;
-
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db,
-                            "DELETE FROM items"
-                            " WHERE pinned = 0"
-                            "   AND uuid NOT IN ("
-                            "       SELECT uuid FROM items"
-                            "        ORDER BY pinned DESC, sticky_clip_order DESC, clip_order DESC"
-                            "        LIMIT ?)",
-                            -1, &stmt, NULL) == SQLITE_OK)
-    {
-        sqlite3_bind_int64 (stmt, 1, (gint64) limit);
-        if (sqlite3_step (stmt) != SQLITE_DONE)
-            g_warning ("truncate items failed: %s", sqlite3_errmsg (db));
-        sqlite3_finalize (stmt);
-    }
-}
-
-static sqlite3 *
-_g_paste_sqlite_backend_open_for_name (const GPasteStorageBackend *self,
-                                       const gchar                *name)
-{
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
-    if (!g_paste_util_ensure_history_dir_exists ())
-        return NULL;
-    if (!g_paste_settings_get_track_changes (settings))
-        return NULL;
-
-    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
-    return _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, path);
-}
-
+/* An "add" is not always a pure insert: the same operation also covers
+ * selecting an existing item (moved to the front) and re-adding a duplicate
+ * (the older copy is dropped), and eviction of trailing items can ride along.
+ * Hence upsert-and-reconcile rather than a bare INSERT. */
 static void
 g_paste_sqlite_backend_add_item (const GPasteStorageBackend *self,
                                  const gchar                *name,
                                  const GPasteItem           *item,
-                                 const GList                *history G_GNUC_UNUSED)
+                                 const GList                *history)
 {
-    const gchar *kind = g_paste_item_get_kind (item);
-    if (g_paste_str_equal (kind, "Password"))
-        return;
+    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    sqlite3 *db = _g_paste_sqlite_backend_open_for_name (self, name);
     if (!db)
         return;
 
-    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
+    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
         return;
 
-    const gchar *value      = g_paste_item_get_value (item);
-    gint64       hash       = _g_paste_sqlite_backend_hash_u64 (value);
-    gdouble      next_order = _g_paste_sqlite_backend_max_clip_order (db) + 1.0;
-    g_autofree gchar *dup   = _g_paste_sqlite_backend_lookup_dup_uuid (db, hash, kind);
+    gboolean success = TRUE;
 
-    if (dup)
+    if (!g_paste_str_equal (g_paste_item_get_kind (item), "Password"))
     {
-        /* Existing row stays in place under its uuid; only its clip_order is
-         * bumped so the latest paste appears at the head on the next read. */
-        sqlite3_stmt *stmt = NULL;
-        if (sqlite3_prepare_v2 (db,
-                                "UPDATE items SET clip_order = ? WHERE uuid = ?",
-                                -1, &stmt, NULL) == SQLITE_OK)
-        {
-            sqlite3_bind_double (stmt, 1, next_order);
-            sqlite3_bind_text   (stmt, 2, dup, -1, SQLITE_TRANSIENT);
-            sqlite3_step (stmt);
-            sqlite3_finalize (stmt);
-        }
-    }
-    else
-    {
-        _g_paste_sqlite_backend_insert_item (db, item, next_order);
+        gint64 rank = g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", 0) + 1;
+
+        success = g_paste_sqlite_backend_upsert_item (db, item, rank);
     }
 
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
-    _g_paste_sqlite_backend_truncate (db, g_paste_settings_get_max_history_size (settings));
+    if (success)
+        g_paste_sqlite_backend_reconcile (db, history);
 
-    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+    g_paste_sqlite_backend_finish_transaction (db, success);
 }
 
 static void
@@ -751,28 +666,28 @@ g_paste_sqlite_backend_remove_item (const GPasteStorageBackend *self,
                                     const gchar                *name,
                                     const gchar                *uuid)
 {
-    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
-    if (!g_file_test (path, G_FILE_TEST_EXISTS))
-        return;
+    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    sqlite3 *db = _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, path);
     if (!db)
         return;
 
-    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
-        return;
-
     sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?", -1, &stmt, NULL) == SQLITE_OK)
+
+    if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
     {
-        sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
-        if (sqlite3_step (stmt) != SQLITE_DONE)
-            g_warning ("DELETE FROM items WHERE uuid failed: %s", sqlite3_errmsg (db));
-        sqlite3_finalize (stmt);
+        g_warning ("sqlite: failed to prepare item removal: %s", sqlite3_errmsg (db));
+        return;
     }
 
-    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+    sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_STATIC);
+
+    if (sqlite3_step (stmt) != SQLITE_DONE)
+        g_warning ("sqlite: failed to remove an item: %s", sqlite3_errmsg (db));
+
+    sqlite3_finalize (stmt);
 }
 
 static void
@@ -781,84 +696,194 @@ g_paste_sqlite_backend_replace_item (const GPasteStorageBackend *self,
                                      const gchar                *old_uuid,
                                      const GPasteItem           *item)
 {
-    if (g_paste_str_equal (g_paste_item_get_kind (item), "Password"))
-        return;
+    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    sqlite3 *db = _g_paste_sqlite_backend_open_for_name (self, name);
     if (!db)
         return;
 
-    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
+    /* An item turning into a password (set_password) must vanish from storage,
+     * exactly as the plain XML backend drops passwords on rewrite. */
+    if (g_paste_str_equal (g_paste_item_get_kind (item), "Password"))
+    {
+        g_clear_pointer (&locker, g_mutex_locker_free);
+        g_paste_sqlite_backend_remove_item (self, name, old_uuid);
+        return;
+    }
+
+    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
         return;
 
-    /* Inherit the old row's clip_order so the replacement keeps the same
-     * position in the read order. If the old row is gone (race / programmer
-     * error), fall back to MAX+1 so we don't lose the new item. */
-    sqlite3_stmt *stmt    = NULL;
-    gdouble       clip    = _g_paste_sqlite_backend_max_clip_order (db) + 1.0;
-    gboolean      had_old = FALSE;
+    sqlite3_stmt *stmt = NULL;
+    gboolean success = (sqlite3_prepare_v2 (db,
+                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ? WHERE uuid = ? "
+                                            "RETURNING id;",
+                                            -1, &stmt, NULL) == SQLITE_OK);
 
-    if (sqlite3_prepare_v2 (db, "SELECT clip_order FROM items WHERE uuid = ?",
-                            -1, &stmt, NULL) == SQLITE_OK)
+    if (!success)
     {
-        sqlite3_bind_text (stmt, 1, old_uuid, -1, SQLITE_TRANSIENT);
-        if (sqlite3_step (stmt) == SQLITE_ROW)
-        {
-            clip = sqlite3_column_double (stmt, 0);
-            had_old = TRUE;
-        }
-        sqlite3_finalize (stmt);
+        g_warning ("sqlite: failed to prepare item replacement: %s", sqlite3_errmsg (db));
+        g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        return;
     }
 
-    if (had_old &&
-        sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?",
-                            -1, &stmt, NULL) == SQLITE_OK)
+    sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 2, g_paste_item_get_kind (item), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 3, g_paste_item_get_real_value (item), -1, SQLITE_STATIC);
+
+    if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
-        sqlite3_bind_text (stmt, 1, old_uuid, -1, SQLITE_TRANSIENT);
-        if (sqlite3_step (stmt) != SQLITE_DONE)
-            g_warning ("DELETE old uuid in replace failed: %s", sqlite3_errmsg (db));
-        sqlite3_finalize (stmt);
+        const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
+        const gchar *checksum = g_paste_image_item_get_checksum (image);
+
+        sqlite3_bind_int64 (stmt, 4, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
+        if (checksum)
+            sqlite3_bind_text (stmt, 5, checksum, -1, SQLITE_STATIC);
     }
 
-    _g_paste_sqlite_backend_insert_item (db, item, clip);
+    sqlite3_bind_text (stmt, 6, old_uuid, -1, SQLITE_STATIC);
 
-    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+    /* No row means the replaced item was never persisted (e.g. renaming a
+     * password): nothing to update. */
+    gint ret = sqlite3_step (stmt);
+    gboolean found = (ret == SQLITE_ROW);
+    gint64 item_id = found ? sqlite3_column_int64 (stmt, 0) : 0;
+
+    if (ret != SQLITE_ROW && ret != SQLITE_DONE)
+    {
+        g_warning ("sqlite: failed to replace an item: %s", sqlite3_errmsg (db));
+        success = FALSE;
+    }
+
+    sqlite3_finalize (stmt);
+
+    if (success && found)
+        success = g_paste_sqlite_backend_rewrite_special_values (db, item_id, item);
+
+    g_paste_sqlite_backend_finish_transaction (db, success);
 }
 
 static void
 g_paste_sqlite_backend_clear_history (const GPasteStorageBackend *self,
                                       const gchar                *name)
 {
-    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
-    if (!g_file_test (path, G_FILE_TEST_EXISTS))
-        return;
+    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    sqlite3 *db = _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, path);
-    if (!db)
-        return;
+    /* Keep the (now empty) database so the history is still listed. */
+    if (db)
+        g_paste_sqlite_backend_exec (db, "DELETE FROM items;");
+}
 
-    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
-        return;
+/**************/
+/* Management */
+/**************/
 
-    if (!_g_paste_sqlite_backend_exec (db, "DELETE FROM items"))
+static void
+g_paste_sqlite_backend_delete_history (const GPasteStorageBackend *self,
+                                       const gchar                *name,
+                                       GError                    **error)
+{
+    const gchar *extension = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self);
+    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, extension);
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+
+    /* Close our connection first so the WAL is checkpointed and its sidecar
+     * files can go away with the database. */
+    if (priv->db && g_paste_str_equal (priv->db_path, db_path))
     {
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
-        return;
+        g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
+        g_clear_pointer (&priv->db_path, g_free);
     }
 
-    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
-        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+    g_autoptr (GFile) db_file = g_file_new_for_path (db_path);
+
+    g_file_delete (db_file, NULL, error);
+
+    static const gchar *sidecars[] = { "-wal", "-shm" };
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (sidecars); ++i)
+    {
+        g_autofree gchar *sidecar_path = g_strconcat (db_path, sidecars[i], NULL);
+        g_autoptr (GFile) sidecar = g_file_new_for_path (sidecar_path);
+
+        g_file_delete (sidecar, NULL, NULL);
+    }
+}
+
+static GStrv
+g_paste_sqlite_backend_list_histories (const GPasteStorageBackend *self,
+                                       GError                    **error)
+{
+    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
+    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
+    g_autofree gchar *suffix = g_strconcat (".", _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
+    gsize suffix_len = strlen (suffix);
+    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
+                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                                                       G_FILE_QUERY_INFO_NONE,
+                                                                       NULL,
+                                                                       error);
+    /* A missing history dir (fresh profile) is not an error: return an empty
+     * list. Check the enumerator itself, since callers may pass error == NULL. */
+    if (!histories)
+    {
+        if (error && *error)
+        {
+            if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+                g_clear_error (error);
+            else
+                return NULL;
+        }
+        return g_strv_builder_end (history_names);
+    }
+
+    GFileInfo *history;
+
+    while ((history = g_file_enumerator_next_file (histories,
+                                                   NULL,
+                                                   error)))
+    {
+        g_autoptr (GFileInfo) h = history;
+
+        if (error && *error)
+            return NULL;
+
+        const gchar *raw_name = g_file_info_get_display_name (h);
+
+        if (g_str_has_suffix (raw_name, suffix))
+        {
+            g_autofree gchar *name = g_strdup (raw_name);
+
+            name[strlen (name) - suffix_len] = '\0';
+            g_strv_builder_take (history_names, g_steal_pointer (&name));
+        }
+    }
+
+    return g_strv_builder_end (history_names);
+}
+
+static const gchar *
+g_paste_sqlite_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
+{
+    return "db";
 }
 
 static void
-g_paste_sqlite_backend_dispose (GObject *object)
+g_paste_sqlite_backend_finalize (GObject *object)
 {
     GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_instance_private (G_PASTE_SQLITE_BACKEND (object));
 
-    g_clear_pointer (&priv->dbs, g_hash_table_destroy);
+    g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
+    g_clear_pointer (&priv->db_path, g_free);
+    g_mutex_clear (&priv->lock);
 
-    G_OBJECT_CLASS (g_paste_sqlite_backend_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_sqlite_backend_parent_class)->finalize (object);
 }
 
 static void
@@ -866,18 +891,18 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
 {
     GPasteStorageBackendClass *storage_class = G_PASTE_STORAGE_BACKEND_CLASS (klass);
 
-    storage_class->read_history_file  = g_paste_sqlite_backend_read_history_file;
+    storage_class->read_history_file = g_paste_sqlite_backend_read_history_file;
     storage_class->write_history_file = g_paste_sqlite_backend_write_history_file;
-    storage_class->get_extension      = g_paste_sqlite_backend_get_extension;
-    storage_class->delete_history     = g_paste_sqlite_backend_delete_history;
-    storage_class->list_histories     = g_paste_sqlite_backend_list_histories;
+    storage_class->get_extension = g_paste_sqlite_backend_get_extension;
+    storage_class->delete_history = g_paste_sqlite_backend_delete_history;
+    storage_class->list_histories = g_paste_sqlite_backend_list_histories;
 
-    storage_class->add_item       = g_paste_sqlite_backend_add_item;
-    storage_class->remove_item    = g_paste_sqlite_backend_remove_item;
-    storage_class->replace_item   = g_paste_sqlite_backend_replace_item;
-    storage_class->clear_history  = g_paste_sqlite_backend_clear_history;
+    storage_class->add_item = g_paste_sqlite_backend_add_item;
+    storage_class->remove_item = g_paste_sqlite_backend_remove_item;
+    storage_class->replace_item = g_paste_sqlite_backend_replace_item;
+    storage_class->clear_history = g_paste_sqlite_backend_clear_history;
 
-    G_OBJECT_CLASS (klass)->dispose = g_paste_sqlite_backend_dispose;
+    G_OBJECT_CLASS (klass)->finalize = g_paste_sqlite_backend_finalize;
 }
 
 static void
@@ -885,7 +910,5 @@ g_paste_sqlite_backend_init (GPasteSqliteBackend *self)
 {
     GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_instance_private (self);
 
-    priv->dbs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                       g_free,
-                                       _g_paste_sqlite_backend_close_db);
+    g_mutex_init (&priv->lock);
 }

@@ -23,7 +23,6 @@ gtk4_dep = dependency('gtk4', version: '>= ' + gtk4_req_version)
 gtk4x11_dep = dependency('gtk4-x11', version: '>= ' + gtk4_req_version)
 libadwaita_dep = dependency('libadwaita-1', version: '>= ' + adwaita_req_version)
 pango_dep = dependency('pango')
-sqlite3_dep = dependency('sqlite3')
 
 glib_major = glib_req_version.split('.')[0].to_int()
 glib_minor = glib_req_version.split('.')[1].to_int()
@@ -55,6 +54,13 @@ libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 libsodium_dep = dependency('libsodium', required: get_option('encryption'))
 if libsodium_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_ENCRYPTION', language: 'c')
+endif
+
+# Optional SQLite-based incremental history storage backend.
+# 3.35 for RETURNING and UPDATE ... FROM.
+sqlite_dep = dependency('sqlite3', version: '>= 3.35', required: get_option('sqlite'))
+if sqlite_dep.found()
+  add_project_arguments('-DG_PASTE_ENABLE_SQLITE', language: 'c')
 endif
 
 # Optional libsecret support to remember the encryption passphrase in the
