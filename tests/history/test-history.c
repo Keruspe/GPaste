@@ -690,6 +690,62 @@ test_sqlite_cascade (void)
     g_list_free_full (items, g_object_unref);
 }
 
+/* Switching histories loads with save_after=TRUE so a snapshot-rewriting
+ * backend persists its read-time normalization — for an incremental backend
+ * that full rewrite is skipped: the database must keep rows beyond
+ * max-history-size (only memory is capped) instead of being truncated by a
+ * write-back of the capped read. */
+static void
+test_sqlite_no_rewrite_on_switch (void)
+{
+    const gchar *big_name = "sqlite-switch-big";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+    g_paste_settings_set_max_history_size (settings, 100);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    /* Seed a history holding more items than the soon-to-be max size. */
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        GList *items = NULL;
+
+        for (guint i = 0; i < 7; ++i)
+        {
+            g_autofree gchar *text = g_strdup_printf ("big-%u", i);
+            items = g_list_append (items, g_paste_text_item_new (text));
+        }
+
+        g_paste_storage_backend_write_history (backend, big_name, items);
+        g_list_free_full (items, g_object_unref);
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "sqlite-switch-start");
+    g_paste_settings_set_max_history_size (settings, 5);
+
+    /* Switch through the settings key: this is the path that loads with
+     * save_after=TRUE (g_paste_history_load itself never writes back). */
+    g_paste_settings_set_history_name (settings, big_name);
+    g_assert_true (pump_until_length (history, 5, 5000));
+
+    /* Give a (wrongly) recorded post-load rewrite time to reach the disk. */
+    for (guint i = 0; i < 300; ++i)
+    {
+        while (g_main_context_iteration (NULL, FALSE))
+            ;
+        g_usleep (1000);
+    }
+
+    /* Memory is capped at 5, but all 7 rows must still be in the database. */
+    g_autofree gchar *path = g_paste_util_get_history_file_path (big_name, "db");
+
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 7);
+}
+
 /* A database created by a newer GPaste (higher user_version) must be left
  * alone: reads come back empty and writes are dropped instead of clobbering. */
 static void
@@ -791,6 +847,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_incremental", test_sqlite_incremental);
     g_test_add_func ("/history/sqlite_replace", test_sqlite_replace);
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
+    g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
 #endif
 

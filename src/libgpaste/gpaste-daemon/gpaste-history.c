@@ -181,7 +181,16 @@ g_paste_history_update (GPasteHistory      *self,
     /* Don't persist intermediate states while an async load is replacing the
      * history; the load result will trigger its own save when appropriate. */
     if (!g_paste_history_saver_is_loading (priv->saver))
-        g_paste_history_saver_record (priv->saver, op, priv->name, item, uuid, g_paste_history_snapshot (priv));
+    {
+        /* An incremental backend only ever consumes the snapshot on an add (to
+         * reconcile dedups and evictions that ride along with it); skip the
+         * per-item ref-copy for the operations that would just free it. */
+        GList *snapshot = (op == G_PASTE_HISTORY_SAVE_ADD || !g_paste_storage_backend_is_incremental (priv->backend))
+            ? g_paste_history_snapshot (priv)
+            : NULL;
+
+        g_paste_history_saver_record (priv->saver, op, priv->name, item, uuid, snapshot);
+    }
 
     g_paste_history_emit_update (self, action, target, position);
 }
