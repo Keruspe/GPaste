@@ -388,6 +388,33 @@ g_paste_daemon_methods_get_history_size (const GPasteDaemonMethods *priv,
 }
 
 G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_get_image (const GPasteDaemonMethods *priv,
+                                  GVariant                  *parameters,
+                                  GError                   **error,
+                                  GPasteDBusError          **err)
+{
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
+
+    G_PASTE_DBUS_ASSERT_FULL (item, "Provided uuid doesn't match any item.", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (_G_PASTE_IS_IMAGE_ITEM (item), "Provided uuid doesn't match an image item.", NULL);
+
+    /* The image item's value is the path of its PNG file. Hand the bytes over
+     * so clients never dereference the path themselves: how and where the
+     * image is stored stays the daemon's business. */
+    gchar *data = NULL;
+    gsize length = 0;
+
+    if (!g_file_get_contents (g_paste_item_get_value (item), &data, &length, error))
+        return NULL;
+
+    g_autoptr (GBytes) bytes = g_bytes_new_take (data, length);
+    GVariant *variant = g_variant_new_from_bytes (G_VARIANT_TYPE ("ay"), bytes, TRUE);
+
+    return g_variant_new_tuple (&variant, 1);
+}
+
+G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_get_raw_element (const GPasteDaemonMethods *priv,
                                         GVariant                  *parameters,
                                         GPasteDBusError          **err)

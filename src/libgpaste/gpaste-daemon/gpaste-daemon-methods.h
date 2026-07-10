@@ -122,6 +122,10 @@ GVariant *g_paste_daemon_methods_get_history               (const GPasteDaemonMe
 GVariant *g_paste_daemon_methods_get_history_name          (const GPasteDaemonMethods *priv);
 GVariant *g_paste_daemon_methods_get_history_size          (const GPasteDaemonMethods *priv,
                                                              GVariant                  *parameters);
+GVariant *g_paste_daemon_methods_get_image                 (const GPasteDaemonMethods *priv,
+                                                             GVariant                  *parameters,
+                                                             GError                   **error,
+                                                             GPasteDBusError          **err);
 GVariant *g_paste_daemon_methods_get_raw_element           (const GPasteDaemonMethods *priv,
                                                              GVariant                  *parameters,
                                                              GPasteDBusError          **err);

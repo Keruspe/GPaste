@@ -32,6 +32,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
 #define G_PASTE_DAEMON_GET_HISTORY_NAME           "GetHistoryName"
 #define G_PASTE_DAEMON_GET_HISTORY_SIZE           "GetHistorySize"
+#define G_PASTE_DAEMON_GET_IMAGE                  "GetImage"
 #define G_PASTE_DAEMON_GET_RAW_ELEMENT            "GetRawElement"
 #define G_PASTE_DAEMON_GET_RAW_HISTORY            "GetRawHistory"
 #define G_PASTE_DAEMON_LIST_HISTORIES             "ListHistories"
@@ -113,6 +114,10 @@ G_BEGIN_DECLS
         "  <method name='" G_PASTE_DAEMON_GET_HISTORY_SIZE "'>"           \
         "   <arg type='s' direction='in' name='name'  />"                 \
         "   <arg type='t' direction='out' name='size' />"                 \
+        "  </method>"                                                     \
+        "  <method name='" G_PASTE_DAEMON_GET_IMAGE "'>"                  \
+        "   <arg type='s' direction='in' name='uuid'   />"                \
+        "   <arg type='ay' direction='out' name='image' />"               \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_RAW_ELEMENT "'>"            \
         "   <arg type='s' direction='in' name='uuid'   />"                \

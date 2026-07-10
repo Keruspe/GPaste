@@ -62,6 +62,9 @@ gchar   *g_paste_client_get_history_name_sync           (GPasteClient  *self,
 guint64  g_paste_client_get_history_size_sync           (GPasteClient  *self,
                                                          const gchar   *name,
                                                          GError       **error);
+GBytes  *g_paste_client_get_image_sync                  (GPasteClient  *self,
+                                                         const gchar   *uuid,
+                                                         GError       **error);
 gchar   *g_paste_client_get_raw_element_sync            (GPasteClient  *self,
                                                          const gchar   *uuid,
                                                          GError       **error);
@@ -184,6 +187,10 @@ void g_paste_client_get_history_size           (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_get_image                  (GPasteClient       *self,
+                                                const gchar        *uuid,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_get_raw_element            (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 GAsyncReadyCallback callback,
@@ -291,6 +298,9 @@ gchar   *g_paste_client_get_history_name_finish           (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 guint64  g_paste_client_get_history_size_finish           (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+GBytes  *g_paste_client_get_image_finish                  (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 gchar   *g_paste_client_get_raw_element_finish            (GPasteClient *self,

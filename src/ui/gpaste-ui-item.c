@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-gtk4/gpaste-gtk-util.h>
+
 #include <gpaste-ui-item.h>
 
 struct _GPasteUiItem
@@ -67,29 +69,21 @@ g_paste_ui_item_activate (GPasteUiItem *self)
 }
 
 static void
-g_paste_ui_item_on_image_path_ready (GObject      *source_object G_GNUC_UNUSED,
-                                     GAsyncResult *res,
-                                     gpointer      user_data)
+g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
+                                GAsyncResult *res,
+                                gpointer      user_data)
 {
     g_autoptr (GPasteUiItem) self = user_data;
     const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *path = g_paste_client_get_raw_element_finish (priv->client, res, &error);
+    g_autoptr (GdkTexture) texture = g_paste_gtk_util_get_image_finish (priv->client, res, &error);
 
-    if (!path || error)
-    {
-        g_warning ("Failed to retrieve image path: %s", error ? error->message : "no path returned");
-        return;
-    }
-
-    g_autoptr (GError) load_error = NULL;
-    g_autoptr (GdkTexture) texture = gdk_texture_new_from_filename (path, &load_error);
     if (!texture)
     {
-        if (load_error)
-            g_warning ("Failed to load image: %s", load_error->message);
+        g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
         return;
     }
+
     g_paste_ui_item_skeleton_set_thumbnail (G_PASTE_UI_ITEM_SKELETON (self), texture);
 }
 
@@ -112,7 +106,7 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
     g_paste_ui_item_skeleton_set_uploadable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
-        g_paste_client_get_raw_element (priv->client, priv->uuid, g_paste_ui_item_on_image_path_ready, g_object_ref (self));
+        g_paste_client_get_image (priv->client, priv->uuid, g_paste_ui_item_on_image_ready, g_object_ref (self));
     else
         g_paste_ui_item_skeleton_set_thumbnail (sk, NULL);
 }
