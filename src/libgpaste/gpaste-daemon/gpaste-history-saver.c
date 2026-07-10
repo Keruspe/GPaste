@@ -135,8 +135,9 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
  * @name: the history name to write to
  * @item: (nullable): the item involved (for %G_PASTE_HISTORY_SAVE_ADD / _REPLACE)
  * @uuid: (nullable): the uuid involved (for %G_PASTE_HISTORY_SAVE_REMOVE / _REPLACE)
- * @history: (transfer full) (element-type GPasteItem): a snapshot of the items,
- *           used as-is by a non-incremental backend and as a fallback otherwise
+ * @history: (transfer full) (nullable) (element-type GPasteItem): a snapshot of
+ *           the items, used as-is by a non-incremental backend and to reconcile
+ *           an incremental add; %NULL for the operations that never consume it
  *
  * Persist a change to @name in the background. An incremental backend applies
  * the queued changes in order; for a non-incremental one (which rewrites the
@@ -281,7 +282,11 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
     data->backend = g_object_ref (priv->backend);
     data->name = g_strdup (name);
     data->generation = priv->load_generation;
-    data->save_after = save_after;
+    /* save_after exists so a snapshot-rewriting backend persists its read-time
+     * normalization (format upgrade, uuid dedup, truncation). An incremental
+     * backend normalizes its storage on open instead, so writing the whole
+     * history back after a load would be pure churn: drop the request. */
+    data->save_after = save_after && !g_paste_storage_backend_is_incremental (priv->backend);
 
     g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_load_done, self);
     g_task_set_static_name (task, "gpaste-history-load");
