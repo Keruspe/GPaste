@@ -167,7 +167,7 @@
       <default>'file'</default>
       <summary>Where the history is stored</summary>
       <description>
-        The storage backend used to persist the history: "file" keeps the current on-disk history, "none" stores nothing. The migration dialog lets the user pick.
+        The storage backend used to persist the history: "file" keeps the current on-disk history, "sqlite" stores it in a per-history database, "none" stores nothing. The migration dialog lets the user pick.
       </description>
     </key>
 

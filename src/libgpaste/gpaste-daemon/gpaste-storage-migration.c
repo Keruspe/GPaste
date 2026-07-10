@@ -56,10 +56,12 @@ detect_current_backend (GPasteSettings *settings)
         return G_PASTE_STORAGE_ENCRYPTED_FILE;
 #endif
 
-    g_autoptr (GFile) db = g_paste_util_get_history_file (name, "db");
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_autoptr (GFile) database = g_paste_util_get_history_file (name, "db");
 
-    if (g_file_query_exists (db, NULL))
+    if (g_file_query_exists (database, NULL))
         return G_PASTE_STORAGE_SQLITE;
+#endif
 
     g_autoptr (GFile) plain = g_paste_util_get_history_file (name, "xml");
 
@@ -68,9 +70,11 @@ detect_current_backend (GPasteSettings *settings)
 
     /* No history under the active name: fall back to the more-used flavour. */
     guint plain_count = 0;
-    guint db_count = 0;
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     guint encrypted_count = 0;
+#endif
+#ifdef G_PASTE_ENABLE_SQLITE
+    guint db_count = 0;
 #endif
     g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
     g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
@@ -90,22 +94,30 @@ detect_current_backend (GPasteSettings *settings)
 
             if (g_str_has_suffix (child_name, ".xml"))
                 ++plain_count;
-            else if (g_str_has_suffix (child_name, ".db"))
-                ++db_count;
 #ifdef G_PASTE_ENABLE_ENCRYPTION
             else if (g_str_has_suffix (child_name, ".xmls"))
                 ++encrypted_count;
+#endif
+#ifdef G_PASTE_ENABLE_SQLITE
+            else if (g_str_has_suffix (child_name, ".db"))
+                ++db_count;
 #endif
         }
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    if (encrypted_count > 0 && encrypted_count >= plain_count && encrypted_count >= db_count)
+    if (encrypted_count > 0 && encrypted_count >= plain_count
+#ifdef G_PASTE_ENABLE_SQLITE
+        && encrypted_count >= db_count
+#endif
+       )
         return G_PASTE_STORAGE_ENCRYPTED_FILE;
 #endif
 
+#ifdef G_PASTE_ENABLE_SQLITE
     if (db_count > 0 && db_count >= plain_count)
         return G_PASTE_STORAGE_SQLITE;
+#endif
 
     if (plain_count > 0)
         return G_PASTE_STORAGE_FILE;
@@ -544,8 +556,10 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     gtk_string_list_append (backends, _("Store the history in an encrypted file"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_ENCRYPTED_FILE;
 #endif
-    gtk_string_list_append (backends, _("Store the history in a SQLite database"));
+#ifdef G_PASTE_ENABLE_SQLITE
+    gtk_string_list_append (backends, _("Store the history in a database"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_SQLITE;
+#endif
     gtk_string_list_append (backends, _("Don't store anything"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_NOOP;
 
