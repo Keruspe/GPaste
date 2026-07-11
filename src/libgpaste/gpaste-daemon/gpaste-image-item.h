@@ -18,12 +18,14 @@ const GDateTime *g_paste_image_item_get_date      (const GPasteImageItem *self);
 GdkTexture      *g_paste_image_item_get_image     (const GPasteImageItem *self);
 GBytes          *g_paste_image_item_get_png_bytes (const GPasteImageItem *self);
 
-gchar           *g_paste_image_item_get_images_dir     (const gchar *history_name);
-gchar           *g_paste_image_item_get_encrypted_path (const gchar *path);
-void             g_paste_image_item_delete_files       (const gchar *path);
+gchar           *g_paste_image_item_get_images_dir       (const gchar *history_name);
+gchar           *g_paste_image_item_get_encrypted_path   (const gchar *path);
+void             g_paste_image_item_delete_files         (const gchar *path);
 
-void             g_paste_image_item_set_history   (GPasteImageItem *self,
-                                                   const gchar     *history_name);
+gchar           *g_paste_image_item_get_path_for_history (const GPasteImageItem *self,
+                                                          const gchar           *history_name);
+void             g_paste_image_item_set_history          (GPasteImageItem *self,
+                                                          const gchar     *history_name);
 
 GPasteItem      *g_paste_image_item_new                    (GdkTexture  *texture);
 GPasteItem      *g_paste_image_item_new_from_file          (const gchar *path,

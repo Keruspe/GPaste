@@ -301,6 +301,55 @@ test_file_image_per_history (void)
     g_list_free_full (items_b, g_object_unref);
 }
 
+/* Backing a history up writes the *same* items under another name: the backup
+ * must own copies of the images instead of referencing the source's files,
+ * while the items themselves stay anchored to their source history. */
+static void
+test_file_backup_owns_images (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (19, 20, 21);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes ("backup-src", png, date, NULL));
+
+    g_assert_nonnull (items->data);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+    g_paste_storage_backend_write_history (backend, "backup-src", items);
+    /* What g_paste_history_save does for BackupHistory: same items, new name. */
+    g_paste_storage_backend_write_history (backend, "backup-dst", items);
+
+    /* The backup got its own copy; the item still belongs to the source. */
+    const gchar *src_path = g_paste_item_get_value (items->data);
+    g_autofree gchar *dst_path = g_paste_image_item_get_path_for_history (_G_PASTE_IMAGE_ITEM (items->data), "backup-dst");
+
+    g_assert_true (g_strstr_len (src_path, -1, "backup-src") != NULL);
+    g_assert_true (g_file_test (src_path, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (dst_path, G_FILE_TEST_EXISTS));
+
+    /* Deleting the source history leaves the backup fully readable. */
+    g_paste_storage_backend_delete_history (backend, "backup-src", NULL);
+
+    g_assert_false (g_file_test (src_path, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (dst_path, G_FILE_TEST_EXISTS));
+
+    GList *loaded = NULL;
+    gsize size = 0;
+
+    g_paste_storage_backend_read_history (backend, "backup-dst", &loaded, &size);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_kind (loaded->data), ==, "Image");
+    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, dst_path);
+
+    g_list_free_full (loaded, g_object_unref);
+    g_list_free_full (items, g_object_unref);
+}
+
 static void
 test_add_get_length (void)
 {
@@ -1414,6 +1463,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/file_image_materialization", test_file_image_materialization);
     g_test_add_func ("/history/history_anchors_image", test_history_anchors_image);
     g_test_add_func ("/history/file_image_per_history", test_file_image_per_history);
+    g_test_add_func ("/history/file_backup_owns_images", test_file_backup_owns_images);
     g_test_add_func ("/history/add_get_length", test_add_get_length);
     g_test_add_func ("/history/dedup_moves_to_front", test_dedup_moves_to_front);
     g_test_add_func ("/history/add_equal_first_is_noop", test_add_equal_first_is_noop);
