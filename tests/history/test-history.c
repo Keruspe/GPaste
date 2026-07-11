@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-daemon/gpaste-history.h>
+#include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
+
+#include <string.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 #include <gpaste/gpaste-util.h>
@@ -102,6 +106,122 @@ pump_until_length (GPasteHistory *history,
         g_usleep (1000);
     }
     return g_paste_history_get_length (history) == expected_len;
+}
+
+/* A real (1x1 transparent) PNG for the image item tests. */
+static GBytes *
+test_png_bytes (void)
+{
+    gsize length = 0;
+    guchar *data = g_base64_decode ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                                    &length);
+
+    return g_bytes_new_take (data, length);
+}
+
+/* A distinct 1x1 PNG per color. Images are content-addressed under a shared
+ * images/ dir, so tests asserting on their cache file's (non-)existence must
+ * not share pixels with each other. */
+static GBytes *
+test_png_bytes_colored (guchar r,
+                        guchar g,
+                        guchar b)
+{
+    const guchar pixel[4] = { r, g, b, 0xff };
+    g_autoptr (GBytes) data = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, data, 4);
+
+    return gdk_texture_save_to_png_bytes (texture);
+}
+
+/* Scan a file's raw bytes for a plaintext needle. Binary-safe: g_strstr_len
+ * stops at embedded NULs, which a database file is full of. */
+static gboolean G_GNUC_UNUSED
+file_contains (const gchar *path,
+               const gchar *needle)
+{
+    g_autofree gchar *raw = NULL;
+    gsize raw_len = 0;
+
+    if (!g_file_get_contents (path, &raw, &raw_len, NULL))
+        return FALSE;
+
+    gsize needle_len = strlen (needle);
+
+    if (raw_len < needle_len)
+        return FALSE;
+
+    for (gsize i = 0; i + needle_len <= raw_len; ++i)
+    {
+        if (!memcmp (raw + i, needle, needle_len))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* Capturing an image no longer touches the disk: the item carries its encoded
+ * PNG and *materializing* it is the storage backend's job. */
+static void
+test_image_capture_does_not_write (void)
+{
+    g_autoptr (GBytes) png = test_png_bytes_colored (1, 2, 3);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GdkTexture) texture = gdk_texture_new_from_bytes (png, &error);
+
+    g_assert_nonnull (texture);
+
+    g_autoptr (GPasteItem) item = g_paste_image_item_new (texture);
+
+    g_assert_nonnull (item);
+    g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item)));
+    g_assert_false (g_file_test (g_paste_item_get_value (item), G_FILE_TEST_EXISTS));
+}
+
+/* The plain file backend materializes an image's cache file from the item
+ * bytes when writing its XML, and reads it back by path. */
+static void
+test_file_image_materialization (void)
+{
+    const gchar *name = "file-image";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (4, 5, 6);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+    g_assert_nonnull (items->data);
+
+    const gchar *cache_path = g_paste_item_get_value (items->data);
+
+    g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+    g_paste_storage_backend_write_history (backend, name, items);
+
+    /* The write materialized the referenced file, byte-identical to the item. */
+    g_autofree gchar *materialized = NULL;
+    gsize materialized_len = 0;
+
+    g_assert_true (g_file_get_contents (cache_path, &materialized, &materialized_len, NULL));
+    g_assert_cmpmem (materialized, materialized_len,
+                     g_bytes_get_data (png, NULL), g_bytes_get_size (png));
+
+    GList *loaded = NULL;
+    gsize size = 0;
+
+    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_kind (loaded->data), ==, "Image");
+    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, cache_path);
+
+    g_list_free_full (loaded, g_object_unref);
+    g_list_free_full (items, g_object_unref);
 }
 
 static void
@@ -310,10 +430,14 @@ test_encrypted_roundtrip (void)
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
 
+    g_autoptr (GBytes) png = test_png_bytes_colored (7, 8, 9);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
     GList *items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+    items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
+    g_paste_settings_set_images_support (settings, TRUE);
     g_paste_storage_backend_write_history (backend, name, items);
 
     /* On disk: ".xmls", starting with our magic, with no plaintext leaking. */
@@ -326,23 +450,44 @@ test_encrypted_roundtrip (void)
     g_assert_null (g_strstr_len (raw, raw_len, secret));
     g_assert_null (g_strstr_len (raw, raw_len, "<?xml"));
 
+    /* The image was materialized as an encrypted ".pngs" side file: the
+     * referenced plaintext path stays absent and no PNG marker is in clear. */
+    const gchar *cache_path = g_paste_item_get_value (g_list_nth_data (items, 2));
+    g_autofree gchar *encrypted_image_path = g_strconcat (cache_path, "s", NULL);
+
+    g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (encrypted_image_path, G_FILE_TEST_EXISTS));
+    g_assert_false (file_contains (encrypted_image_path, "IHDR"));
+
     /* Read back through the same backend. */
     GList *loaded = NULL;
     gsize size = 0;
     g_paste_storage_backend_read_history (backend, name, &loaded, &size);
-    g_assert_cmpuint (g_list_length (loaded), ==, 2);
+    g_assert_cmpuint (g_list_length (loaded), ==, 3);
 
     gboolean found_text = FALSE;
     gboolean found_password = FALSE;
+    gboolean found_image = FALSE;
     for (const GList *l = loaded; l; l = l->next)
     {
         GPasteItem *item = l->data;
+        const gchar *kind = g_paste_item_get_kind (item);
 
-        if (g_strcmp0 (g_paste_item_get_kind (item), "Password") == 0)
+        if (g_strcmp0 (kind, "Password") == 0)
         {
             found_password = TRUE;
             g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
             g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+        }
+        else if (g_strcmp0 (kind, "Image") == 0)
+        {
+            found_image = TRUE;
+
+            /* Decrypted from the side file, byte-identical. */
+            GBytes *read_png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
+
+            g_assert_nonnull (read_png);
+            g_assert_true (g_bytes_equal (read_png, png));
         }
         else
         {
@@ -352,6 +497,7 @@ test_encrypted_roundtrip (void)
     }
     g_assert_true (found_text);
     g_assert_true (found_password);
+    g_assert_true (found_image);
 
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
@@ -403,43 +549,6 @@ sqlite_wait_for_values (GPasteStorage        kind,
 /* The SQLite backend must round-trip every item kind with full data parity
  * with the plain XML backend: kind, uuid, value, image date+checksum, special
  * values (mime + bytes, in order) — and skip password items just like it. */
-/* A real (1x1 transparent) PNG for the image item tests. */
-static GBytes *
-test_png_bytes (void)
-{
-    gsize length = 0;
-    guchar *data = g_base64_decode ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-                                    &length);
-
-    return g_bytes_new_take (data, length);
-}
-
-/* Scan a file's raw bytes for a plaintext needle. Binary-safe: g_strstr_len
- * stops at embedded NULs, which a database file is full of. */
-static gboolean
-file_contains (const gchar *path,
-               const gchar *needle)
-{
-    g_autofree gchar *raw = NULL;
-    gsize raw_len = 0;
-
-    if (!g_file_get_contents (path, &raw, &raw_len, NULL))
-        return FALSE;
-
-    gsize needle_len = strlen (needle);
-
-    if (raw_len < needle_len)
-        return FALSE;
-
-    for (gsize i = 0; i + needle_len <= raw_len; ++i)
-    {
-        if (!memcmp (raw + i, needle, needle_len))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
 static void
 test_sqlite_roundtrip (void)
 {
@@ -753,7 +862,7 @@ test_sqlite_image_blob (void)
 
     g_paste_settings_set_images_support (settings, TRUE);
 
-    g_autoptr (GBytes) png = test_png_bytes ();
+    g_autoptr (GBytes) png = test_png_bytes_colored (10, 11, 12);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
     GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
@@ -1174,6 +1283,8 @@ main (int argc, char *argv[])
 
     g_test_init (&argc, &argv, NULL);
 
+    g_test_add_func ("/history/image_capture_does_not_write", test_image_capture_does_not_write);
+    g_test_add_func ("/history/file_image_materialization", test_file_image_materialization);
     g_test_add_func ("/history/add_get_length", test_add_get_length);
     g_test_add_func ("/history/dedup_moves_to_front", test_dedup_moves_to_front);
     g_test_add_func ("/history/add_equal_first_is_noop", test_add_equal_first_is_noop);

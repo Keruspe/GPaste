@@ -85,15 +85,7 @@ g_paste_history_item_free (gpointer data)
     g_autoptr (GPasteItem) item = data;
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
-    {
-        g_autoptr (GFile) image = g_file_new_for_path (g_paste_item_get_value (item));
-        g_autoptr (GError) error = NULL;
-        /* An item loaded from a database blob may never have had its on-disk
-         * cache file materialized: nothing to delete then. */
-        if (!g_file_delete (image, NULL, &error) &&
-            !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            g_warning ("Failed to delete image file: %s", error->message);
-    }
+        g_paste_image_item_delete_files (g_paste_item_get_value (item));
 }
 
 static void
