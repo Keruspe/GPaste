@@ -4,6 +4,7 @@
 #include <gpaste/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-file-backend.h>
+#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -110,6 +111,65 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
     _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
 }
 
+/* Whether any storage flavor still keeps a history under @name on disk. The
+ * images/<name>/ directory belongs to the *name*, not to one backend: after a
+ * migration the source's delete_history runs while the destination still
+ * references (or just materialized) images in that very directory, so it must
+ * only go away once no flavor stores the name anymore. */
+static gboolean
+_g_paste_storage_backend_history_still_stored (const gchar *name)
+{
+    /* Every extension a storing flavor uses; keep in sync with the backends
+     * (and detect_current_backend in gpaste-storage-migration.c). */
+    static const gchar *extensions[] = { "xml", "xmls", "db", "dbs" };
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (extensions); ++i)
+    {
+        g_autoptr (GFile) file = g_paste_util_get_history_file (name, extensions[i]);
+
+        if (g_file_query_exists (file,
+                                 NULL)) /* cancellable */
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* A history's images live in their own directory (so histories never share,
+ * nor cross-delete, image files): deleting the history deletes them with it,
+ * whichever backend stored the history itself. */
+static void
+_g_paste_storage_backend_delete_history_images (const gchar *name)
+{
+    g_autofree gchar *images_dir_path = g_paste_image_item_get_images_dir (name);
+    g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
+    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (images_dir,
+                                                                      G_FILE_ATTRIBUTE_STANDARD_NAME,
+                                                                      G_FILE_QUERY_INFO_NONE,
+                                                                      NULL, NULL);
+
+    if (children)
+    {
+        GFileInfo *info;
+
+        while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
+        {
+            g_autoptr (GFileInfo) child_info = info;
+            g_autoptr (GFile) child = g_file_enumerator_get_child (children, child_info);
+            g_autoptr (GError) error = NULL;
+
+            if (!g_file_delete (child, NULL, &error))
+                g_warning ("Failed to delete image file: %s", error->message);
+        }
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    if (!g_file_delete (images_dir, NULL, &error) &&
+        !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Failed to delete images directory: %s", error->message);
+}
+
 /**
  * g_paste_storage_backend_delete_history:
  * @self: a #GPasteStorageBackend instance
@@ -128,6 +188,12 @@ g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
 
     if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
         _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
+
+    /* Only sweep the images once the name is gone from every flavor: another
+     * backend may still reference them (a migration's destination, whose
+     * cleanup deletes the source history under the same name). */
+    if (!_g_paste_storage_backend_history_still_stored (name))
+        _g_paste_storage_backend_delete_history_images (name);
 }
 
 /**

@@ -18,15 +18,24 @@ const GDateTime *g_paste_image_item_get_date      (const GPasteImageItem *self);
 GdkTexture      *g_paste_image_item_get_image     (const GPasteImageItem *self);
 GBytes          *g_paste_image_item_get_png_bytes (const GPasteImageItem *self);
 
+gchar           *g_paste_image_item_get_images_dir     (const gchar *history_name);
 gchar           *g_paste_image_item_get_encrypted_path (const gchar *path);
 void             g_paste_image_item_delete_files       (const gchar *path);
 
-GPasteItem      *g_paste_image_item_new            (GdkTexture  *texture);
-GPasteItem      *g_paste_image_item_new_from_file  (const gchar *path,
-                                                    GDateTime   *date,
-                                                    const gchar *checksum);
-GPasteItem      *g_paste_image_item_new_from_bytes (GBytes      *png,
-                                                    GDateTime   *date,
-                                                    const gchar *checksum);
+void             g_paste_image_item_set_history   (GPasteImageItem *self,
+                                                   const gchar     *history_name);
+
+GPasteItem      *g_paste_image_item_new                    (GdkTexture  *texture);
+GPasteItem      *g_paste_image_item_new_from_file          (const gchar *path,
+                                                            GDateTime   *date,
+                                                            const gchar *checksum);
+GPasteItem      *g_paste_image_item_new_from_bytes         (const gchar *history_name,
+                                                            GBytes      *png,
+                                                            GDateTime   *date,
+                                                            const gchar *checksum);
+GPasteItem      *g_paste_image_item_new_from_bytes_at_path (const gchar *path,
+                                                            GBytes      *png,
+                                                            GDateTime   *date,
+                                                            const gchar *checksum);
 
 G_END_DECLS

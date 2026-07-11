@@ -893,6 +893,7 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
 
 static GPasteItem *
 g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
+                                  const gchar  *history_name,
                                   const guchar *key,
                                   gboolean      images_support)
 {
@@ -937,7 +938,7 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
                 {
                     g_autoptr (GBytes) png = g_bytes_new_take (data, length);
 
-                    return g_paste_image_item_new_from_bytes (png, date, checksum);
+                    return g_paste_image_item_new_from_bytes (history_name, png, date, checksum);
                 }
 
                 g_warning ("sqlite: failed to decrypt an image; falling back to its cache file");
@@ -1005,13 +1006,21 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
         return;
     }
 
+    /* The history name (for anchoring blob-loaded images under its own images
+     * directory) is the database's basename, extension stripped. */
+    g_autofree gchar *basename = g_path_get_basename (history_file_path);
+    gchar *dot = strrchr (basename, '.');
+
+    if (dot)
+        *dot = '\0';
+
     GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
     while (sqlite3_step (stmt) == SQLITE_ROW)
     {
-        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support);
+        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, basename, key, images_support);
 
         if (!item)
             continue;

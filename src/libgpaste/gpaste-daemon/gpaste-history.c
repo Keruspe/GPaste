@@ -381,6 +381,13 @@ _g_paste_history_add (GPasteHistory *self,
         }
     }
 
+    /* An image's canonical cache path is per history, so the same image copied
+     * in several histories never shares (and never cross-deletes) a file:
+     * anchor it under ours before it gets persisted. A select re-anchors to
+     * the same path, and loaded items keep the path they were stored with. */
+    if (_G_PASTE_IS_IMAGE_ITEM (item) && new_selection)
+        g_paste_image_item_set_history (G_PASTE_IMAGE_ITEM (item), priv->name);
+
     priv->history = g_list_prepend (priv->history, item);
     g_steal_pointer (&owned); /* ownership transferred to the history list */
 
