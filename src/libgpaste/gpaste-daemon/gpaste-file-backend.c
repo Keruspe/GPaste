@@ -523,10 +523,12 @@ add_item (Data *data)
                                                                                                 NULL, /* end */
                                                                                                 0)); /* base */
             /* The encrypted flavor stores the image in an encrypted side file
-             * rather than at the referenced (plaintext) path. */
+             * rather than at the referenced (plaintext) path. Either way the
+             * item keeps the path it was stored with: that is where its
+             * materialized data actually lives. */
             g_autoptr (GBytes) png = _g_paste_file_backend_load_image_bytes (data->backend, data->text);
 
-            item = (png) ? g_paste_image_item_new_from_bytes (png, date_time, data->checksum)
+            item = (png) ? g_paste_image_item_new_from_bytes_at_path (data->text, png, date_time, data->checksum)
                          : g_paste_image_item_new_from_file (data->text, date_time, data->checksum);
         }
         else

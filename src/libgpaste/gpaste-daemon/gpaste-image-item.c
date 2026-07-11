@@ -272,6 +272,27 @@ _g_paste_image_item_new (const gchar *path,
 }
 
 /**
+ * g_paste_image_item_get_images_dir:
+ * @history_name: the name of a history
+ *
+ * Get the directory @history_name's image files live in. This is the one owner
+ * of the images/<history_name>/ layout: per history, so the same image copied
+ * in several histories gets one file each and evicting it from one never
+ * breaks the others.
+ *
+ * Returns: the images directory path
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_image_item_get_images_dir (const gchar *history_name)
+{
+    g_return_val_if_fail (history_name, NULL);
+
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+
+    return g_build_filename (history_dir, "images", history_name, NULL);
+}
+
+/**
  * g_paste_image_item_get_encrypted_path:
  * @path: the canonical (plain) cache path of an image
  *
@@ -316,14 +337,53 @@ g_paste_image_item_delete_files (const gchar *path)
     }
 }
 
-/* The canonical on-disk cache location of an image: <history-dir>/images/<checksum>.png */
+/* The canonical on-disk cache location of an image:
+ * <history-dir>/images/<history_name>/<checksum>.png. A NULL @history_name (an
+ * item not yet added to a history) anchors directly under images/ as a
+ * transient placeholder. */
 static gchar *
-g_paste_image_item_get_image_path (const gchar *checksum)
+g_paste_image_item_get_image_path (const gchar *history_name,
+                                   const gchar *checksum)
 {
-    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
     g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
 
+    if (history_name)
+    {
+        g_autofree gchar *images_dir = g_paste_image_item_get_images_dir (history_name);
+
+        return g_build_filename (images_dir, filename, NULL);
+    }
+
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+
     return g_build_filename (history_dir, "images", filename, NULL);
+}
+
+/**
+ * g_paste_image_item_set_history:
+ * @self: a #GPasteImageItem instance
+ * @history_name: the name of the history the item now belongs to
+ *
+ * Re-anchor the item's canonical cache path under @history_name's own images
+ * directory. The history calls this when the item is added, before it is
+ * persisted; items loaded from storage keep the path they were stored with
+ * (that is where their materialized file actually lives).
+ */
+G_PASTE_VISIBLE void
+g_paste_image_item_set_history (GPasteImageItem *self,
+                                const gchar     *history_name)
+{
+    g_return_if_fail (_G_PASTE_IS_IMAGE_ITEM (self));
+    g_return_if_fail (history_name);
+
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
+
+    if (!priv->checksum)
+        return;
+
+    g_autofree gchar *path = g_paste_image_item_get_image_path (history_name, priv->checksum);
+
+    g_paste_item_set_value (G_PASTE_ITEM (self), path);
 }
 
 /**
@@ -341,7 +401,9 @@ g_paste_image_item_new (GdkTexture *texture)
     g_return_val_if_fail (GDK_IS_TEXTURE (texture), NULL);
 
     g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
-    g_autofree gchar *path = g_paste_image_item_get_image_path (checksum);
+    /* Transient anchor: the history re-anchors the item under its own images
+     * directory when it is added. */
+    g_autofree gchar *path = g_paste_image_item_get_image_path (NULL, checksum);
     GPasteItem *self = _g_paste_image_item_new (path,
                                                 g_date_time_new_now_local (),
                                                 g_object_ref (texture),
@@ -357,28 +419,13 @@ g_paste_image_item_new (GdkTexture *texture)
     return self;
 }
 
-/**
- * g_paste_image_item_new_from_bytes:
- * @png: the encoded PNG we want to be contained in the #GPasteImageItem
- * @date: (transfer none): the date at which the image was created
- * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
- *
- * Create a new instance of #GPasteImageItem from its encoded bytes (e.g. a
- * storage backend's blob), independent of any on-disk cache file. The item's
- * value is the canonical cache path the file would live at, but the file is
- * neither read nor written.
- *
- * Returns: (nullable): a newly allocated #GPasteImageItem
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteItem *
-g_paste_image_item_new_from_bytes (GBytes      *png,
-                                   GDateTime   *date,
-                                   const gchar *checksum)
+static GPasteItem *
+_g_paste_image_item_new_from_bytes (const gchar *path,
+                                    const gchar *history_name,
+                                    GBytes      *png,
+                                    GDateTime   *date,
+                                    const gchar *checksum)
 {
-    g_return_val_if_fail (png, NULL);
-    g_return_val_if_fail (date, NULL);
-
     g_autoptr (GError) error = NULL;
     GdkTexture *texture = gdk_texture_new_from_bytes (png, &error);
 
@@ -389,8 +436,8 @@ g_paste_image_item_new_from_bytes (GBytes      *png,
     }
 
     g_autofree gchar *sum = (checksum) ? g_strdup (checksum) : g_paste_gtk_util_compute_checksum (texture);
-    g_autofree gchar *path = g_paste_image_item_get_image_path (sum);
-    GPasteItem *self = _g_paste_image_item_new (path,
+    g_autofree gchar *anchor = (path) ? g_strdup (path) : g_paste_image_item_get_image_path (history_name, sum);
+    GPasteItem *self = _g_paste_image_item_new (anchor,
                                                 g_date_time_ref (date),
                                                 texture,
                                                 g_steal_pointer (&sum));
@@ -404,6 +451,62 @@ g_paste_image_item_new_from_bytes (GBytes      *png,
     g_paste_item_set_state (self, G_PASTE_ITEM_STATE_IDLE);
 
     return self;
+}
+
+/**
+ * g_paste_image_item_new_from_bytes:
+ * @history_name: the name of the history the item belongs to
+ * @png: the encoded PNG we want to be contained in the #GPasteImageItem
+ * @date: (transfer none): the date at which the image was created
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
+ *
+ * Create a new instance of #GPasteImageItem from its encoded bytes (e.g. a
+ * storage backend's blob), independent of any on-disk cache file. The item's
+ * value is the canonical cache path the file would live at for @history_name,
+ * but the file is neither read nor written.
+ *
+ * Returns: (nullable): a newly allocated #GPasteImageItem
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteItem *
+g_paste_image_item_new_from_bytes (const gchar *history_name,
+                                   GBytes      *png,
+                                   GDateTime   *date,
+                                   const gchar *checksum)
+{
+    g_return_val_if_fail (history_name, NULL);
+    g_return_val_if_fail (png, NULL);
+    g_return_val_if_fail (date, NULL);
+
+    return _g_paste_image_item_new_from_bytes (NULL, history_name, png, date, checksum);
+}
+
+/**
+ * g_paste_image_item_new_from_bytes_at_path:
+ * @path: the on-disk location the image was stored with
+ * @png: the encoded PNG we want to be contained in the #GPasteImageItem
+ * @date: (transfer none): the date at which the image was created
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
+ *
+ * Like g_paste_image_item_new_from_bytes() but anchored at an explicit @path:
+ * for storage backends whose reference *is* a path (e.g. the encrypted file
+ * backend reading an image side file), so the item keeps pointing at where its
+ * materialized data actually lives.
+ *
+ * Returns: (nullable): a newly allocated #GPasteImageItem
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteItem *
+g_paste_image_item_new_from_bytes_at_path (const gchar *path,
+                                           GBytes      *png,
+                                           GDateTime   *date,
+                                           const gchar *checksum)
+{
+    g_return_val_if_fail (path, NULL);
+    g_return_val_if_fail (png, NULL);
+    g_return_val_if_fail (date, NULL);
+
+    return _g_paste_image_item_new_from_bytes (path, NULL, png, date, checksum);
 }
 
 /**

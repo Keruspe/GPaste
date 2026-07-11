@@ -308,6 +308,42 @@ g_paste_item_set_uuid (GPasteItem  *self,
     g_set_str (&priv->uuid, uuid);
 }
 
+/**
+ * g_paste_item_set_value:
+ * @self: a #GPasteItem instance
+ * @value: the new value
+ *
+ * Replace the value of the item, keeping its size accounting right. Meant for
+ * re-anchoring an image item's canonical path, not for editing contents:
+ * consumers cache no copy of the value, but they do rely on it being stable
+ * once the item is persisted.
+ */
+G_PASTE_VISIBLE void
+g_paste_item_set_value (GPasteItem  *self,
+                        const gchar *value)
+{
+    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (value);
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+    gboolean secure = _G_PASTE_ITEM_GET_CLASS (self)->secure (self);
+
+    /* Also guards against @value aliasing our current value, which would be
+     * read after free below. */
+    if (g_paste_str_equal (value, priv->value))
+        return;
+
+    priv->size -= strlen (priv->value) + 1;
+
+    if (secure)
+        gcr_secure_memory_strfree (priv->value);
+    else
+        g_free (priv->value);
+
+    priv->value = (secure) ? gcr_secure_memory_strdup (value) : g_strdup (value);
+    priv->size += strlen (priv->value) + 1;
+}
+
 static void
 g_paste_item_dispose (GObject *object)
 {

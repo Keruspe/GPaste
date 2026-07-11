@@ -46,6 +46,8 @@ void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
 void g_paste_item_set_uuid  (GPasteItem     *self,
                              const gchar    *uuid);
+void g_paste_item_set_value (GPasteItem     *self,
+                             const gchar    *value);
 
 void g_paste_item_set_display_string (GPasteItem       *self,
                                       gchar            *display_string);

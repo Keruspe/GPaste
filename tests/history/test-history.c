@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste/gpaste-util.h>
+
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
@@ -191,7 +193,7 @@ test_file_image_materialization (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (4, 5, 6);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (name, png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -222,6 +224,81 @@ test_file_image_materialization (void)
 
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
+}
+
+/* The history re-anchors a captured image under its own images directory
+ * before it is persisted. */
+static void
+test_history_anchors_image (void)
+{
+    g_autoptr (GPasteHistory) history = make_plain_history ();
+
+    g_paste_history_load (history, "anchor-test");
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (13, 14, 15);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GdkTexture) texture = gdk_texture_new_from_bytes (png, &error);
+
+    g_assert_nonnull (texture);
+
+    g_paste_history_add (history, g_paste_image_item_new (texture));
+
+    const GPasteItem *item = g_paste_history_get (history, 0);
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *expected_dir = g_build_filename (history_dir, "images", "anchor-test", NULL);
+    g_autofree gchar *dir = g_path_get_dirname (g_paste_item_get_value (item));
+
+    g_assert_cmpstr (dir, ==, expected_dir);
+}
+
+/* The same image copied in two histories gets one file each: evicting or
+ * deleting it from one history must never break the other. */
+static void
+test_file_image_per_history (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (16, 17, 18);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    GList *items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes ("per-history-a", png, date, NULL));
+    GList *items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes ("per-history-b", png, date, NULL));
+
+    g_assert_nonnull (items_a->data);
+    g_assert_nonnull (items_b->data);
+
+    const gchar *path_a = g_paste_item_get_value (items_a->data);
+    const gchar *path_b = g_paste_item_get_value (items_b->data);
+
+    g_assert_cmpstr (path_a, !=, path_b);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+    g_paste_storage_backend_write_history (backend, "per-history-a", items_a);
+    g_paste_storage_backend_write_history (backend, "per-history-b", items_b);
+
+    g_assert_true (g_file_test (path_a, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (path_b, G_FILE_TEST_EXISTS));
+
+    /* Deleting one history takes its images directory with it and leaves the
+     * other history's copy alone. */
+    g_paste_storage_backend_delete_history (backend, "per-history-a", NULL);
+
+    g_assert_false (g_file_test (path_a, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (path_b, G_FILE_TEST_EXISTS));
+
+    GList *loaded = NULL;
+    gsize size = 0;
+
+    g_paste_storage_backend_read_history (backend, "per-history-b", &loaded, &size);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_kind (loaded->data), ==, "Image");
+
+    g_list_free_full (loaded, g_object_unref);
+    g_list_free_full (items_a, g_object_unref);
+    g_list_free_full (items_b, g_object_unref);
 }
 
 static void
@@ -435,7 +512,7 @@ test_encrypted_roundtrip (void)
     GList *items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
-    items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
+    items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
 
     g_paste_settings_set_images_support (settings, TRUE);
     g_paste_storage_backend_write_history (backend, name, items);
@@ -850,6 +927,56 @@ test_sqlite_cascade (void)
     g_list_free_full (items, g_object_unref);
 }
 
+/* The images/<name>/ directory belongs to the history *name*, shared across
+ * backend flavors: a migration imports into the destination and then deletes
+ * the source under the same name, which must not sweep the images the
+ * destination just materialized. Only the last flavor to store the name may
+ * take the directory with it. */
+static void
+test_sqlite_migration_keeps_destination_images (void)
+{
+    const gchar *name = "sqlite-migrate-images";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (22, 23, 24);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+
+    g_assert_nonnull (items->data);
+
+    g_autoptr (GPasteStorageBackend) source = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autoptr (GPasteStorageBackend) destination = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+    /* What a sqlite -> file migration does: import, then clean the source up. */
+    g_paste_storage_backend_write_history (source, name, items);
+    g_paste_storage_backend_write_history (destination, name, items);
+
+    const gchar *image_path = g_paste_item_get_value (items->data);
+
+    g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    g_paste_storage_backend_delete_history (source, name, NULL);
+
+    /* The destination still stores the name: its images must survive... */
+    g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    GList *loaded = NULL;
+    gsize size = 0;
+
+    g_paste_storage_backend_read_history (destination, name, &loaded, &size);
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_list_free_full (loaded, g_object_unref);
+
+    /* ...and go away with the last flavor storing it. */
+    g_paste_storage_backend_delete_history (destination, name, NULL);
+    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    g_list_free_full (items, g_object_unref);
+}
+
 /* The stored blob is the source of truth for images: an item must survive the
  * complete absence of its on-disk cache file — including rebuilding its
  * texture — while a plain database visibly contains the PNG. */
@@ -864,7 +991,7 @@ test_sqlite_image_blob (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (10, 11, 12);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (name, png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -1076,7 +1203,7 @@ test_encrypted_sqlite_roundtrip (void)
     items = g_list_append (items, text);
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(0,255,0)"));
-    items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
+    items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
 
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, master);
@@ -1285,6 +1412,8 @@ main (int argc, char *argv[])
 
     g_test_add_func ("/history/image_capture_does_not_write", test_image_capture_does_not_write);
     g_test_add_func ("/history/file_image_materialization", test_file_image_materialization);
+    g_test_add_func ("/history/history_anchors_image", test_history_anchors_image);
+    g_test_add_func ("/history/file_image_per_history", test_file_image_per_history);
     g_test_add_func ("/history/add_get_length", test_add_get_length);
     g_test_add_func ("/history/dedup_moves_to_front", test_dedup_moves_to_front);
     g_test_add_func ("/history/add_equal_first_is_noop", test_add_equal_first_is_noop);
@@ -1303,6 +1432,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_incremental", test_sqlite_incremental);
     g_test_add_func ("/history/sqlite_replace", test_sqlite_replace);
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
+    g_test_add_func ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
     g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
