@@ -1006,13 +1006,9 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
         return;
     }
 
-    /* The history name (for anchoring blob-loaded images under its own images
-     * directory) is the database's basename, extension stripped. */
-    g_autofree gchar *basename = g_path_get_basename (history_file_path);
-    gchar *dot = strrchr (basename, '.');
-
-    if (dot)
-        *dot = '\0';
+    /* The history name, for anchoring blob-loaded images under its own images
+     * directory. */
+    g_autofree gchar *basename = g_paste_util_get_history_name_from_file_path (history_file_path);
 
     GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
     const guchar *key = g_paste_sqlite_backend_get_key (self);

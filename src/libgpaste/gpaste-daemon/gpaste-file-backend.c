@@ -56,19 +56,22 @@ _g_paste_file_backend_write_password_name (GOutputStream           *stream,
            g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error);
 }
 
-/* The XML history references images by their canonical <checksum>.png path;
- * writing the image data itself is this backend's job (items no longer touch
- * the disk at capture). The plain flavor writes that file as-is; the encrypted
- * one writes a "<checksum>.pngs" sibling through the same stream converter as
- * the history, so no pixel ever reaches the disk in clear. Best effort: a
- * failure only costs this image, not the write. */
+/* The XML history references images by their canonical <checksum>.png path
+ * (@reference — the item's own value, or the target history's path when
+ * writing under another name, e.g. a backup); writing the image data itself is
+ * this backend's job (items no longer touch the disk at capture). The plain
+ * flavor writes that file as-is; the encrypted one writes a "<checksum>.pngs"
+ * sibling through the same stream converter as the history, so no pixel ever
+ * reaches the disk in clear. Best effort: a failure only costs this image, not
+ * the write. */
 static void
 _g_paste_file_backend_ensure_image_file (const GPasteFileBackend *self,
-                                         const GPasteImageItem   *item)
+                                         const GPasteImageItem   *item,
+                                         const gchar             *reference)
 {
     gboolean encrypted = (g_paste_file_backend_get_passphrase (G_PASTE_STORAGE_BACKEND ((gpointer) self)) != NULL);
     const gchar *path = g_paste_item_get_value (G_PASTE_ITEM ((gpointer) item));
-    g_autofree gchar *target = (encrypted) ? g_paste_image_item_get_encrypted_path (path) : g_strdup (path);
+    g_autofree gchar *target = (encrypted) ? g_paste_image_item_get_encrypted_path (reference) : g_strdup (reference);
 
     if (g_file_test (target, G_FILE_TEST_EXISTS))
         return;
@@ -210,6 +213,9 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         return;
 
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
+    /* Images are referenced (and materialized) under the history being
+     * written, which may not be the one the items belong to (a backup). */
+    g_autofree gchar *history_name = g_paste_util_get_history_name_from_file_path (history_file_path);
 
     const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
@@ -243,14 +249,28 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         if (!encrypted && g_paste_str_equal (kind, "Password"))
             continue;
 
+        g_autofree gchar *image_reference = NULL;
+
         if (_G_PASTE_IS_IMAGE_ITEM (item))
-            _g_paste_file_backend_ensure_image_file (real_self, _G_PASTE_IMAGE_ITEM (item));
+        {
+            const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
+
+            /* Reference the image under the history being written, wherever
+             * the (possibly shared, possibly live) item itself is anchored: a
+             * backup owns its images instead of pointing into its source's
+             * directory, and legacy shared-directory entries migrate to their
+             * history's own on the next save. */
+            image_reference = g_paste_image_item_get_path_for_history (image, history_name);
+            if (!image_reference)
+                image_reference = g_strdup (g_paste_item_get_real_value (item));
+            _g_paste_file_backend_ensure_image_file (real_self, image, image_reference);
+        }
 
         const GSList *special_values = g_paste_item_get_special_values (item);
         /* get_value only differs from get_real_value for passwords (it masks
          * them), and those are skipped above unless encrypted, so the real
          * value is always what we want to persist here. */
-        g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_real_value (item));
+        g_autofree gchar *text = g_paste_util_xml_encode ((image_reference) ? image_reference : g_paste_item_get_real_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, &error) ||

@@ -585,6 +585,30 @@ g_paste_util_get_history_file_path (const gchar *name,
 }
 
 /**
+ * g_paste_util_get_history_name_from_file_path:
+ * @path: the path of a history file
+ *
+ * Get the history name a history file path was built for: the inverse of
+ * g_paste_util_get_history_file_path(), for the storage backend vfuncs that
+ * receive the path but need the name.
+ *
+ * Returns: the history name
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_util_get_history_name_from_file_path (const gchar *path)
+{
+    g_return_val_if_fail (path, NULL);
+
+    gchar *name = g_path_get_basename (path);
+    gchar *dot = strrchr (name, '.');
+
+    if (dot)
+        *dot = '\0';
+
+    return name;
+}
+
+/**
  * g_paste_util_get_history_file:
  * @name: the name of the history
  * @extension: the file extension

@@ -360,6 +360,29 @@ g_paste_image_item_get_image_path (const gchar *history_name,
 }
 
 /**
+ * g_paste_image_item_get_path_for_history:
+ * @self: a #GPasteImageItem instance
+ * @history_name: the name of a history
+ *
+ * Get the canonical cache path this image would live at in @history_name's own
+ * images directory, e.g. for a storage backend writing the item under another
+ * history's name (a backup) without touching the item itself.
+ *
+ * Returns: (nullable): the canonical cache path, or %NULL without a checksum
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_image_item_get_path_for_history (const GPasteImageItem *self,
+                                         const gchar           *history_name)
+{
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (history_name, NULL);
+
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
+
+    return (priv->checksum) ? g_paste_image_item_get_image_path (history_name, priv->checksum) : NULL;
+}
+
+/**
  * g_paste_image_item_set_history:
  * @self: a #GPasteImageItem instance
  * @history_name: the name of the history the item now belongs to
