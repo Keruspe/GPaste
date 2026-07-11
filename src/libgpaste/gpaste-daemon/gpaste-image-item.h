@@ -18,6 +18,9 @@ const GDateTime *g_paste_image_item_get_date      (const GPasteImageItem *self);
 GdkTexture      *g_paste_image_item_get_image     (const GPasteImageItem *self);
 GBytes          *g_paste_image_item_get_png_bytes (const GPasteImageItem *self);
 
+gchar           *g_paste_image_item_get_encrypted_path (const gchar *path);
+void             g_paste_image_item_delete_files       (const gchar *path);
+
 GPasteItem      *g_paste_image_item_new            (GdkTexture  *texture);
 GPasteItem      *g_paste_image_item_new_from_file  (const gchar *path,
                                                     GDateTime   *date,

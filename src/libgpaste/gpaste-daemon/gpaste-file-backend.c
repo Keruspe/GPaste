@@ -38,6 +38,13 @@ g_paste_file_backend_get_passphrase (const GPasteStorageBackend *self)
     return priv->passphrase;
 }
 
+static gboolean g_paste_file_backend_load_contents (const GPasteStorageBackend *self,
+                                                    const gchar                *history_file_path,
+                                                    GFile                      *history_file,
+                                                    gchar                     **text,
+                                                    gsize                      *text_length,
+                                                    GError                    **error);
+
 static gboolean
 _g_paste_file_backend_write_password_name (GOutputStream           *stream,
                                            const GPastePasswordItem *item,
@@ -49,20 +56,40 @@ _g_paste_file_backend_write_password_name (GOutputStream           *stream,
            g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error);
 }
 
-/* The XML history references images by path, so an item that only carries its
- * PNG bytes (loaded from a blob-storing backend, e.g. a sqlite -> file
- * migration) must have its cache file materialized for the reference to
- * resolve. Best effort: a failure only costs this image, not the write. */
+/* The XML history references images by their canonical <checksum>.png path;
+ * writing the image data itself is this backend's job (items no longer touch
+ * the disk at capture). The plain flavor writes that file as-is; the encrypted
+ * one writes a "<checksum>.pngs" sibling through the same stream converter as
+ * the history, so no pixel ever reaches the disk in clear. Best effort: a
+ * failure only costs this image, not the write. */
 static void
-_g_paste_file_backend_ensure_image_file (const GPasteImageItem *item)
+_g_paste_file_backend_ensure_image_file (const GPasteFileBackend *self,
+                                         const GPasteImageItem   *item)
 {
-    GBytes *png = g_paste_image_item_get_png_bytes (item);
+    gboolean encrypted = (g_paste_file_backend_get_passphrase (G_PASTE_STORAGE_BACKEND ((gpointer) self)) != NULL);
     const gchar *path = g_paste_item_get_value (G_PASTE_ITEM ((gpointer) item));
+    g_autofree gchar *target = (encrypted) ? g_paste_image_item_get_encrypted_path (path) : g_strdup (path);
 
-    if (!png || g_file_test (path, G_FILE_TEST_EXISTS))
+    if (g_file_test (target, G_FILE_TEST_EXISTS))
         return;
 
-    g_autofree gchar *images_dir = g_path_get_dirname (path);
+    GBytes *png = g_paste_image_item_get_png_bytes (item);
+    g_autoptr (GBytes) read_back = NULL;
+
+    /* An item read by path carries no bytes (e.g. imported from the plain
+     * flavor into the encrypted one): take them from its cache file. */
+    if (!png)
+    {
+        gchar *data = NULL;
+        gsize length = 0;
+
+        if (!g_file_get_contents (path, &data, &length, NULL))
+            return;
+
+        png = read_back = g_bytes_new_take (data, length);
+    }
+
+    g_autofree gchar *images_dir = g_path_get_dirname (target);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
     g_autoptr (GError) error = NULL;
 
@@ -75,11 +102,57 @@ _g_paste_file_backend_ensure_image_file (const GPasteImageItem *item)
 
     g_clear_error (&error);
 
+    /* get_output_stream wraps the file with the encryption converter exactly
+     * when this backend has a passphrase, matching the target chosen above. */
+    g_autoptr (GFile) target_file = g_file_new_for_path (target);
+    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, target_file);
+
+    if (!stream)
+        return;
+
     gsize length;
     gconstpointer data = g_bytes_get_data (png, &length);
 
-    if (!g_file_set_contents (path, data, length, &error))
-        g_warning ("Failed to materialize image to %s: %s", path, error->message);
+    if (!g_output_stream_write_all (stream, data, length, NULL, NULL /* cancellable */, &error) ||
+        !g_output_stream_close (stream, NULL /* cancellable */, &error))
+        g_warning ("Failed to materialize image to %s: %s", target, error->message);
+}
+
+/* For the encrypted flavor, load and decrypt an image's "<checksum>.pngs"
+ * side file. NULL when this backend reads images by path (plain flavor) or
+ * there is no side file (yet) for @path. */
+static GBytes *
+_g_paste_file_backend_load_image_bytes (const GPasteStorageBackend *self,
+                                        const gchar                *path)
+{
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    if (!g_paste_file_backend_get_passphrase (self))
+        return NULL;
+
+    g_autofree gchar *encrypted_path = g_paste_image_item_get_encrypted_path (path);
+    g_autoptr (GFile) encrypted_file = g_file_new_for_path (encrypted_path);
+
+    if (!g_file_query_exists (encrypted_file,
+                              NULL)) /* cancellable */
+        return NULL;
+
+    g_autofree gchar *data = NULL;
+    gsize length = 0;
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_file_backend_load_contents (self, encrypted_path, encrypted_file, &data, &length, &error))
+    {
+        g_warning ("Failed to load image from %s: %s", encrypted_path, error->message);
+        return NULL;
+    }
+
+    return g_bytes_new_take (g_steal_pointer (&data), length);
+#else
+    (void) self;
+    (void) path;
+
+    return NULL;
+#endif
 }
 
 static gboolean
@@ -171,7 +244,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
             continue;
 
         if (_G_PASTE_IS_IMAGE_ITEM (item))
-            _g_paste_file_backend_ensure_image_file (_G_PASTE_IMAGE_ITEM (item));
+            _g_paste_file_backend_ensure_image_file (real_self, _G_PASTE_IMAGE_ITEM (item));
 
         const GSList *special_values = g_paste_item_get_special_values (item);
         /* get_value only differs from get_real_value for passwords (it masks
@@ -263,6 +336,7 @@ typedef enum
 
 typedef struct
 {
+    const GPasteStorageBackend *backend;
     const gchar      *history_file_path;
     GList            *history;
     gsize             mem_size;
@@ -448,20 +522,15 @@ add_item (Data *data)
             g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
                                                                                                 NULL, /* end */
                                                                                                 0)); /* base */
-            item = g_paste_image_item_new_from_file (data->text, date_time, data->checksum);
+            /* The encrypted flavor stores the image in an encrypted side file
+             * rather than at the referenced (plaintext) path. */
+            g_autoptr (GBytes) png = _g_paste_file_backend_load_image_bytes (data->backend, data->text);
+
+            item = (png) ? g_paste_image_item_new_from_bytes (png, date_time, data->checksum)
+                         : g_paste_image_item_new_from_file (data->text, date_time, data->checksum);
         }
         else
-        {
-            g_autoptr (GFile) img_file = g_file_new_for_path (data->text);
-
-            if (g_file_query_exists (img_file,
-                                     NULL)) /* cancellable */
-            {
-                g_autoptr (GError) error = NULL;
-                if (!g_file_delete (img_file, NULL, &error))
-                    g_warning ("Failed to delete leftover image: %s", error->message);
-            }
-        }
+            g_paste_image_item_delete_files (data->text);
         break;
     }
 
@@ -663,6 +732,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             on_error
         };
         Data data = {
+            self,
             history_file_path,
             NULL,
             0,

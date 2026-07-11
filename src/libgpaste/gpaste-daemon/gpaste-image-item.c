@@ -271,6 +271,51 @@ _g_paste_image_item_new (const gchar *path,
     return self;
 }
 
+/**
+ * g_paste_image_item_get_encrypted_path:
+ * @path: the canonical (plain) cache path of an image
+ *
+ * Get the path of the encrypted side file the encrypted file backend
+ * materializes for @path (".pngs", mirroring ".xml"/".xmls"). This is the one
+ * owner of that naming scheme.
+ *
+ * Returns: the encrypted side file path
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_image_item_get_encrypted_path (const gchar *path)
+{
+    g_return_val_if_fail (path, NULL);
+
+    return g_strconcat (path, "s", NULL);
+}
+
+/**
+ * g_paste_image_item_delete_files:
+ * @path: the canonical (plain) cache path of an image
+ *
+ * Delete an image's materialized data: the cache file at @path and its
+ * encrypted side file. The storage backend owns which of them was actually
+ * written (a database blob writes neither), so whichever is absent is fine.
+ */
+G_PASTE_VISIBLE void
+g_paste_image_item_delete_files (const gchar *path)
+{
+    g_return_if_fail (path);
+
+    g_autofree gchar *encrypted_path = g_paste_image_item_get_encrypted_path (path);
+    const gchar *paths[] = { path, encrypted_path };
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (paths); ++i)
+    {
+        g_autoptr (GFile) image = g_file_new_for_path (paths[i]);
+        g_autoptr (GError) error = NULL;
+
+        if (!g_file_delete (image, NULL, &error) &&
+            !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+            g_warning ("Failed to delete image file: %s", error->message);
+    }
+}
+
 /* The canonical on-disk cache location of an image: <history-dir>/images/<checksum>.png */
 static gchar *
 g_paste_image_item_get_image_path (const gchar *checksum)
@@ -279,18 +324,6 @@ g_paste_image_item_get_image_path (const gchar *checksum)
     g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
 
     return g_build_filename (history_dir, "images", filename, NULL);
-}
-
-static void
-g_paste_image_save_done (GObject      *source_object,
-                         GAsyncResult *result,
-                         gpointer      user_data)
-{
-    g_autofree gchar *path = user_data;
-    g_autoptr (GError) error = NULL;
-
-    if (!g_file_replace_contents_finish (G_FILE (source_object), result, NULL, &error))
-        g_warning ("Failed to save image to %s: %s", path, error ? error->message : "unknown error");
 }
 
 /**
@@ -308,18 +341,6 @@ g_paste_image_item_new (GdkTexture *texture)
     g_return_val_if_fail (GDK_IS_TEXTURE (texture), NULL);
 
     g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
-    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
-    g_autofree gchar *images_dir_path = g_build_filename (history_dir, "images", NULL);
-    g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
-
-    g_autoptr (GError) mkdir_error = NULL;
-    if (!g_file_make_directory_with_parents (images_dir, NULL, &mkdir_error) &&
-        !g_error_matches (mkdir_error, G_IO_ERROR, G_IO_ERROR_EXISTS))
-    {
-        g_warning ("Failed to create images directory: %s", mkdir_error->message);
-        return NULL;
-    }
-
     g_autofree gchar *path = g_paste_image_item_get_image_path (checksum);
     GPasteItem *self = _g_paste_image_item_new (path,
                                                 g_date_time_new_now_local (),
@@ -328,22 +349,10 @@ g_paste_image_item_new (GdkTexture *texture)
     if (!self)
         return NULL;
 
-    /* Encode once: the item carries its PNG (so storage backends and D-Bus
-     * clients get the bytes without touching the disk) and the same bytes are
-     * written asynchronously to the on-disk cache file. */
-    g_autoptr (GBytes) png = gdk_texture_save_to_png_bytes (texture);
-
-    g_paste_image_item_take_png (self, g_bytes_ref (png));
-
-    g_autoptr (GFile) image_file = g_file_new_for_path (path);
-
-    g_file_replace_contents_bytes_async (image_file, png,
-                                         NULL,  /* etag */
-                                         FALSE, /* make_backup */
-                                         G_FILE_CREATE_NONE,
-                                         NULL,  /* cancellable */
-                                         g_paste_image_save_done,
-                                         g_strdup (path));
+    /* Encode once and carry the PNG: persisting the image (as a database blob,
+     * a plain cache file, an encrypted side file...) is the storage backend's
+     * business, and D-Bus clients get the bytes without touching the disk. */
+    g_paste_image_item_take_png (self, gdk_texture_save_to_png_bytes (texture));
 
     return self;
 }
