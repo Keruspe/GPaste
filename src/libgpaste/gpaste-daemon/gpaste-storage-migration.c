@@ -280,7 +280,7 @@ imported_item_matches (const GPasteItem *source,
  * the destination legitimately dropping items it cannot store (the plain
  * flavors never persist passwords), and in-memory sizes differing across
  * backends (an image read back from a database blob carries its PNG bytes
- * while a path-based one does not), hence no size comparison. */
+ * while a path-based one does not). */
 static gboolean
 import_histories (GPasteSettings *settings,
                   GPasteStorage   current,

@@ -318,6 +318,68 @@ g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
         _g_paste_storage_backend_delete_history_images (name);
 }
 
+/* The default list_histories: enumerate the history dir for files of this
+ * backend's flavour (its get_extension suffix), so e.g. plain ".xml" and
+ * encrypted ".xmls" histories never get mixed up. */
+static GStrv
+_g_paste_storage_backend_list_histories_by_extension (const GPasteStorageBackend *self,
+                                                      GError                    **error)
+{
+    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
+    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
+    g_autofree gchar *suffix = g_strconcat (".", _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
+    gsize suffix_len = strlen (suffix);
+    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
+                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                                                       G_FILE_QUERY_INFO_NONE,
+                                                                       NULL,
+                                                                       error);
+    /* A missing history dir (fresh profile) is not an error: return an empty
+     * list. Check the enumerator itself, since callers may pass error == NULL. */
+    if (!histories)
+    {
+        if (error && *error)
+        {
+            if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+                g_clear_error (error);
+            else
+                return NULL;
+        }
+        return g_strv_builder_end (history_names);
+    }
+
+    GFileInfo *history;
+    g_autoptr (GError) local_error = NULL;
+
+    while ((history = g_file_enumerator_next_file (histories,
+                                                   NULL,
+                                                   &local_error)))
+    {
+        g_autoptr (GFileInfo) h = history;
+        const gchar *raw_name = g_file_info_get_display_name (h);
+
+        if (g_str_has_suffix (raw_name, suffix))
+        {
+            g_autofree gchar *name = g_strdup (raw_name);
+
+            name[strlen (name) - suffix_len] = '\0';
+            g_strv_builder_take (history_names, g_steal_pointer (&name));
+        }
+    }
+
+    /* next_file() returns NULL both at the end of the listing and on a failure,
+     * so the error can only be checked once the loop is over. A truncated listing
+     * must never look like a successful one: a migration would then import (and
+     * its cleanup delete) only the histories we happened to reach. */
+    if (local_error)
+    {
+        g_propagate_error (error, g_steal_pointer (&local_error));
+        return NULL;
+    }
+
+    return g_strv_builder_end (history_names);
+}
+
 /**
  * g_paste_storage_backend_list_histories:
  * @self: a #GPasteStorageBackend instance
@@ -337,7 +399,7 @@ g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
     if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories)
         return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories (self, error);
 
-    return NULL;
+    return _g_paste_storage_backend_list_histories_by_extension (self, error);
 }
 
 /**

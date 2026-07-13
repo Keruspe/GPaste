@@ -832,60 +832,6 @@ g_paste_file_backend_delete_history (const GPasteStorageBackend *self,
     g_file_delete (history_file, NULL, error);
 }
 
-static GStrv
-g_paste_file_backend_list_histories (const GPasteStorageBackend *self,
-                                      GError                   **error)
-{
-    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
-    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-    /* List only the histories of this backend's flavour (plain ".xml" or
-     * encrypted ".xmls"), so the two never get mixed up. */
-    g_autofree gchar *suffix = g_strconcat (".", _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
-    gsize suffix_len = strlen (suffix);
-    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
-                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                                                       G_FILE_QUERY_INFO_NONE,
-                                                                       NULL,
-                                                                       error);
-    /* A missing history dir (fresh profile) is not an error: return an empty
-     * list. Check the enumerator itself, since callers may pass error == NULL. */
-    if (!histories)
-    {
-        if (error && *error)
-        {
-            if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
-                g_clear_error (error);
-            else
-                return NULL;
-        }
-        return g_strv_builder_end (history_names);
-    }
-
-    GFileInfo *history;
-
-    while ((history = g_file_enumerator_next_file (histories,
-                                                   NULL,
-                                                   error)))
-    {
-        g_autoptr (GFileInfo) h = history;
-
-        if (error && *error)
-            return NULL;
-
-        const gchar *raw_name = g_file_info_get_display_name (h);
-
-        if (g_str_has_suffix (raw_name, suffix))
-        {
-            g_autofree gchar *name = g_strdup (raw_name);
-
-            name[strlen (name) - suffix_len] = '\0';
-            g_strv_builder_take (history_names, g_steal_pointer (&name));
-        }
-    }
-
-    return g_strv_builder_end (history_names);
-}
-
 static const gchar *
 g_paste_file_backend_get_extension (const GPasteStorageBackend *self)
 {
@@ -949,7 +895,6 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     storage_class->write_history_file = g_paste_file_backend_write_history_file;
     storage_class->get_extension = g_paste_file_backend_get_extension;
     storage_class->delete_history = g_paste_file_backend_delete_history;
-    storage_class->list_histories = g_paste_file_backend_list_histories;
 
     klass->get_output_stream = g_paste_file_backend_get_output_stream;
 

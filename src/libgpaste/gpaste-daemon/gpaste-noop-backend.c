@@ -31,13 +31,6 @@ g_paste_noop_backend_write_history_file (const GPasteStorageBackend *self G_GNUC
 {
 }
 
-static GStrv
-g_paste_noop_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNUSED,
-                                     GError                   **error G_GNUC_UNUSED)
-{
-    return g_new0 (gchar *, 1);
-}
-
 static const gchar *
 g_paste_noop_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
 {
@@ -52,7 +45,6 @@ g_paste_noop_backend_class_init (GPasteNoopBackendClass *klass)
     storage_class->read_history_file = g_paste_noop_backend_read_history_file;
     storage_class->write_history_file = g_paste_noop_backend_write_history_file;
     storage_class->get_extension = g_paste_noop_backend_get_extension;
-    storage_class->list_histories = g_paste_noop_backend_list_histories;
 }
 
 static void

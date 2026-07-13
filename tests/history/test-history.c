@@ -513,8 +513,8 @@ test_save_load_roundtrip (void)
 {
     const gchar *name = "roundtrip";
 
-    /* Write through the async saver: add two items, then drain the loop so the
-     * background write reaches disk. */
+    /* Write through the async saver: add two items, then flush so the
+     * background write deterministically reaches disk. */
     {
         g_autoptr (GPasteHistory) writer = make_plain_history ();
         g_paste_history_load (writer, name);
@@ -522,12 +522,7 @@ test_save_load_roundtrip (void)
         g_paste_history_add (writer, g_paste_text_item_new ("alpha"));
         g_paste_history_add (writer, g_paste_text_item_new ("beta"));
 
-        for (guint i = 0; i < 300; ++i)
-        {
-            while (g_main_context_iteration (NULL, FALSE))
-                ;
-            g_usleep (1000);
-        }
+        g_paste_history_flush (writer);
     }
 
     /* Read it back asynchronously into a fresh history. */
@@ -1196,13 +1191,9 @@ test_sqlite_no_rewrite_on_switch (void)
     g_paste_settings_set_history_name (settings, big_name);
     g_assert_true (pump_until_length (history, 5, 5000));
 
-    /* Give a (wrongly) recorded post-load rewrite time to reach the disk. */
-    for (guint i = 0; i < 300; ++i)
-    {
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
-        g_usleep (1000);
-    }
+    /* Flush the saver: a (wrongly) recorded post-load rewrite would be applied
+     * right here, so the assertion below catches it deterministically. */
+    g_paste_history_flush (history);
 
     /* Memory is capped at 5, but all 7 rows must still be in the database. */
     g_autofree gchar *path = g_paste_util_get_history_file_path (big_name, "db");

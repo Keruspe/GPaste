@@ -666,30 +666,6 @@ g_paste_sqlite_backend_write_special_values (sqlite3          *db,
     return success;
 }
 
-/* Replace an item's stored special values with the ones it carries. */
-static gboolean
-g_paste_sqlite_backend_rewrite_special_values (sqlite3          *db,
-                                               const guchar     *key,
-                                               gint64            item_id,
-                                               const GPasteItem *item)
-{
-    sqlite3_stmt *del = NULL;
-
-    if (sqlite3_prepare_v2 (db, "DELETE FROM special_values WHERE item_id = ?;", -1, &del, NULL) != SQLITE_OK)
-    {
-        g_warning ("sqlite: failed to prepare special value cleanup: %s", sqlite3_errmsg (db));
-        return FALSE;
-    }
-
-    sqlite3_bind_int64 (del, 1, item_id);
-
-    gboolean success = (sqlite3_step (del) == SQLITE_DONE);
-
-    sqlite3_finalize (del);
-
-    return success && g_paste_sqlite_backend_write_special_values (db, key, item_id, item);
-}
-
 /* Bind an image item's PNG for the `image` blob column: from the bytes the
  * item carries, falling back to reading its on-disk cache file for a path-based
  * item that carries none (e.g. imported from the file backend). No bytes
@@ -716,6 +692,30 @@ g_paste_sqlite_backend_bind_image (sqlite3_stmt          *stmt,
 
     if (g_file_get_contents (g_paste_item_get_value (G_PASTE_ITEM ((gpointer) image)), &data, &length, NULL))
         g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
+}
+
+/* Replace an item's stored special values with the ones it carries. */
+static gboolean
+g_paste_sqlite_backend_rewrite_special_values (sqlite3          *db,
+                                               const guchar     *key,
+                                               gint64            item_id,
+                                               const GPasteItem *item)
+{
+    sqlite3_stmt *del = NULL;
+
+    if (sqlite3_prepare_v2 (db, "DELETE FROM special_values WHERE item_id = ?;", -1, &del, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to prepare special value cleanup: %s", sqlite3_errmsg (db));
+        return FALSE;
+    }
+
+    sqlite3_bind_int64 (del, 1, item_id);
+
+    gboolean success = (sqlite3_step (del) == SQLITE_DONE);
+
+    sqlite3_finalize (del);
+
+    return success && g_paste_sqlite_backend_write_special_values (db, key, item_id, item);
 }
 
 /* Insert @item with @rank, or move the already-stored item with the same uuid
@@ -1324,58 +1324,6 @@ g_paste_sqlite_backend_delete_history (const GPasteStorageBackend *self,
     }
 }
 
-static GStrv
-g_paste_sqlite_backend_list_histories (const GPasteStorageBackend *self,
-                                       GError                    **error)
-{
-    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
-    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-    g_autofree gchar *suffix = g_strconcat (".", _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
-    gsize suffix_len = strlen (suffix);
-    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
-                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                                                       G_FILE_QUERY_INFO_NONE,
-                                                                       NULL,
-                                                                       error);
-    /* A missing history dir (fresh profile) is not an error: return an empty
-     * list. Check the enumerator itself, since callers may pass error == NULL. */
-    if (!histories)
-    {
-        if (error && *error)
-        {
-            if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
-                g_clear_error (error);
-            else
-                return NULL;
-        }
-        return g_strv_builder_end (history_names);
-    }
-
-    GFileInfo *history;
-
-    while ((history = g_file_enumerator_next_file (histories,
-                                                   NULL,
-                                                   error)))
-    {
-        g_autoptr (GFileInfo) h = history;
-
-        if (error && *error)
-            return NULL;
-
-        const gchar *raw_name = g_file_info_get_display_name (h);
-
-        if (g_str_has_suffix (raw_name, suffix))
-        {
-            g_autofree gchar *name = g_strdup (raw_name);
-
-            name[strlen (name) - suffix_len] = '\0';
-            g_strv_builder_take (history_names, g_steal_pointer (&name));
-        }
-    }
-
-    return g_strv_builder_end (history_names);
-}
-
 static const gchar *
 g_paste_sqlite_backend_get_extension (const GPasteStorageBackend *self)
 {
@@ -1408,7 +1356,6 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->write_history_file = g_paste_sqlite_backend_write_history_file;
     storage_class->get_extension = g_paste_sqlite_backend_get_extension;
     storage_class->delete_history = g_paste_sqlite_backend_delete_history;
-    storage_class->list_histories = g_paste_sqlite_backend_list_histories;
 
     storage_class->add_item = g_paste_sqlite_backend_add_item;
     storage_class->remove_item = g_paste_sqlite_backend_remove_item;
