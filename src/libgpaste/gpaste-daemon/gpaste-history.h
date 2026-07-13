@@ -43,6 +43,7 @@ void                      g_paste_history_rename_password (GPasteHistory *self,
 void         g_paste_history_empty       (GPasteHistory *self);
 void         g_paste_history_flush       (GPasteHistory *self);
 void         g_paste_history_resume      (GPasteHistory *self);
+void         g_paste_history_reload_backend (GPasteHistory *self);
 void         g_paste_history_save        (GPasteHistory *self,
                                           const gchar   *name);
 void         g_paste_history_load        (GPasteHistory *self,

@@ -936,6 +936,50 @@ g_paste_settings_is_default (GPasteSettings *self,
     return user_value == NULL;
 }
 
+/**
+ * g_paste_settings_sync:
+ * @self: a #GPasteSettings instance
+ *
+ * Flush every pending settings write to the backend and block until it lands.
+ * GSettings writes are delivered asynchronously, so a short-lived process (e.g.
+ * gpaste-client) must call this before it acts on the change or exits — without
+ * it a write can still be in flight, and another process reading the key (or the
+ * same process re-executing) would see the old value. Flushes the whole process'
+ * GSettings traffic, not just this instance's.
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_sync (GPasteSettings *self)
+{
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+
+    g_settings_sync ();
+}
+
+/**
+ * g_paste_settings_reload:
+ * @self: a #GPasteSettings instance
+ *
+ * Re-read every key from the backend, as if the instance had just been created.
+ *
+ * The cached values are normally refreshed from GSettings' "changed"
+ * notification, which is delivered by the dconf service on its own schedule: a
+ * process told *by a third party* that a key changed (the daemon being asked to
+ * re-execute right after `gpaste-client migrate` rewrote the backend revision, or
+ * right after the out-of-process migration helper picked a new backend) has no
+ * ordering guarantee that the notification landed first. Reloading before acting
+ * on such a key reads the value that is actually stored.
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_reload (GPasteSettings *self)
+{
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
+
+    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
+        setting_entries[i].from_dconf (priv);
+}
+
 static void
 g_paste_settings_dispose (GObject *object)
 {
@@ -1065,8 +1109,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_settings_settings_changed), self);
     g_signal_group_set_target (settings_signals, settings);
 
-    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
-        setting_entries[i].from_dconf (priv);
+    g_paste_settings_reload (self);
 
     priv->shell_settings = NULL;
     priv->extension_enabled = FALSE;

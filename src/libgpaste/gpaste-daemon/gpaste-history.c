@@ -959,6 +959,36 @@ g_paste_history_on_loaded (gpointer  user_data,
 }
 
 /**
+ * g_paste_history_reload_backend:
+ * @self: a #GPasteHistory instance
+ *
+ * Rebuild the storage backend from the (possibly changed) "storage-backend"
+ * setting and re-read the history from it, then resume recording. Meant to be
+ * called after a storage migration has rewritten the store on disk: it assumes
+ * g_paste_history_flush() already stopped recording and drained the saver, so
+ * the backend swap does not race any pending write.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_reload_backend (GPasteHistory *self)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    g_clear_object (&priv->saver);
+    g_clear_object (&priv->backend);
+    priv->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (priv->settings), priv->settings);
+    priv->saver = g_paste_history_saver_new (priv->backend, self, g_paste_history_on_loaded);
+
+    g_paste_history_load_locked (self, priv, priv->name);
+    priv->stopped = FALSE;
+
+    /* Tell every UI to reload the whole history from the new backend. */
+    g_paste_history_emit_switch (self, priv->name);
+}
+
+/**
  * g_paste_history_load_async:
  * @self: a #GPasteHistory instance
  * @name: (nullable): the name of the history to load, defaults to the configured one

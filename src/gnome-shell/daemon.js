@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GPaste from 'gi://GPaste?version=2';
 import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 
@@ -102,9 +103,13 @@ export class GPasteDaemonRunner {
         this._daemon = GPasteDaemon.Daemon.new_meta(this._settings, global.display.get_selection());
         this._searchProvider = GPasteDaemon.SearchProvider.new();
 
-        // The daemon emits "reexecute-self" for a re-exec, which is meaningless
-        // here: gnome-shell cannot reload an extension's code from disk on
-        // wayland, so we deliberately leave the signal unhandled (a no-op).
+        // The daemon emits "reexecute-self" for a re-exec. gnome-shell cannot
+        // reload an extension's code from disk on wayland, so a plain re-exec is
+        // still a no-op here; but an on-demand storage migration (the client
+        // resets the backend revision before asking for a re-exec) is handled in
+        // place by reloading the daemon's storage — see _onReexecute().
+        this._reexecId = this._daemon.connect('reexecute-self', () => this._onReexecute());
+
         this._bus.add_object(this._daemon);
         this._bus.add_object(this._searchProvider);
 
@@ -125,11 +130,59 @@ export class GPasteDaemonRunner {
         }
     }
 
+    // "reexecute-self" fires synchronously from inside the daemon's Reexecute
+    // D-Bus dispatch, which keeps using the daemon after we return; defer the
+    // work to an idle so that dispatch fully unwinds first. Coalesce re-entry.
+    _onReexecute() {
+        if (this._reexecPending)
+            return;
+
+        this._reexecPending = true;
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._reexecPending = false;
+            this._migrateInPlace().catch(e => console.error(e));
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    async _migrateInPlace() {
+        if (!this._daemon || this._stopped)
+            return;
+
+        // A plain re-exec has nothing to do here (we cannot reload our code); only
+        // an on-demand migration, flagged by a reset backend revision, is actioned.
+        // The client just wrote that revision, so read it back rather than waiting
+        // on the dconf notification to reach our cached settings.
+        this._settings.reload();
+        if (!GPasteDaemon.storage_migration_needed(this._settings))
+            return;
+
+        // Flush before the helper reads the store so it imports the complete
+        // history, then run the same helpers as startup (they show the dialog,
+        // rewrite the store, bump the revision and hand back any passphrase)...
+        const daemon = this._daemon;
+
+        daemon.flush();
+
+        if (!await this._settleStorage())
+            return;
+
+        // ...and reload the live daemon's backend from the now-migrated setting,
+        // unless it was torn down or replaced while the helpers were running.
+        if (daemon === this._daemon)
+            daemon.reload_storage();
+    }
+
     // Flush the history, release the storage lock, drop the daemon/search
     // provider and release the bus name — which, after a takeover, also
     // dequeues our pending re-request for it. Shared by an orderly shutdown
     // (extension disable) and standing down after a takeover.
     _releaseDaemon() {
+        if (this._reexecId) {
+            this._daemon.disconnect(this._reexecId);
+            this._reexecId = 0;
+        }
+
         // Flush before releasing the lock so a successor daemon loads our final
         // state; drain happens synchronously inside flush().
         this._daemon?.flush();

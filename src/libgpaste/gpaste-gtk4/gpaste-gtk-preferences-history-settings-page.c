@@ -17,12 +17,28 @@ on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
 {
     g_autoptr (GError) error = NULL;
 
-    /* The dialog needs gtk_init/Adw and a nested main loop, so run it out of
-     * process in the dedicated helper rather than inside the preferences. */
-    g_autoptr (GSubprocess) proc = g_paste_util_spawn_storage ("migrate", &error);
+    /* Force the migration gate open and re-execute the daemon: it flushes the
+     * history, re-runs the migration (in-process when standalone, via the helper
+     * when hosted in gnome-shell) and reloads the newly-chosen backend. Doing it
+     * through the daemon avoids racing it, unlike spawning the helper directly. */
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+    g_paste_settings_sync (settings);
 
-    if (!proc)
-        g_warning ("Could not start the storage migration: %s", error->message);
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+
+    if (!client)
+    {
+        g_warning ("Could not connect to the daemon to migrate: %s", error->message);
+        return;
+    }
+
+    g_paste_client_reexecute_sync (client, &error);
+
+    /* Re-execution tears the connection down before replying, so a missing reply
+     * is the expected success path, not a failure. */
+    if (error && error->code != G_DBUS_ERROR_NO_REPLY)
+        g_warning ("Could not trigger the storage migration: %s", error->message);
 }
 
 static void

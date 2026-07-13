@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste/gpaste-gsettings-keys.h>
 #include <gpaste/gpaste-util.h>
 
 #include <getopt.h>
@@ -204,6 +205,8 @@ show_help (void)
     printf ("  %s quit: %s\n", progname, _("alias for stop"));
     /* Translators: help for gpaste daemon-reexec */
     printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
+    /* Translators: help for gpaste migrate */
+    printf ("  %s migrate: %s\n", progname, _("migrate the history to a different storage backend"));
     /* Translators: help for gpaste preferences */
     printf ("  %s preferences: %s\n", progname, _("launch the configuration tool"));
     /* Translators: help for gpaste ui */
@@ -319,9 +322,12 @@ g_paste_about (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint
-g_paste_daemon_reexec (Context *ctx,
-                       GError **error)
+/* Ask the daemon to re-execute itself. The daemon doesn't reply once it's gone,
+ * so a missing reply means success; if the call failed outright, fall back to
+ * signalling the pid we find in the pid file. */
+static gboolean
+reexec_daemon (Context *ctx,
+               GError **error)
 {
     g_paste_client_reexecute_sync (ctx->client, error);
 
@@ -339,10 +345,41 @@ g_paste_daemon_reexec (Context *ctx,
     }
 #endif
 
-    if (!success)
+    return success;
+}
+
+static gint
+g_paste_daemon_reexec (Context *ctx,
+                       GError **error)
+{
+    if (!reexec_daemon (ctx, error))
         return EXIT_FAILURE;
 
     printf (_("Successfully reexecuted the daemon\n"));
+
+    return EXIT_SUCCESS;
+}
+
+static gint
+g_paste_migrate (Context *ctx,
+                 GError **error)
+{
+    /* Open the migration gate (a revision mismatch) then re-execute the daemon:
+     * on the next start it flushes, re-runs the migration and reloads the
+     * newly-chosen backend, instead of a helper racing the running daemon.
+     * Resetting the revision to its default is exactly the "never migrated"
+     * state that opens the gate. The write is synced before the re-exec (and
+     * before the SIGUSR1 fallback), and before this short-lived process exits,
+     * so whichever path lands, the daemon actually sees it. */
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+    g_paste_settings_sync (settings);
+
+    if (!reexec_daemon (ctx, error))
+        return EXIT_FAILURE;
+
+    printf (_("Successfully triggered the storage migration\n"));
 
     return EXIT_SUCCESS;
 }
@@ -679,6 +716,7 @@ g_paste_dispatch (gint         argc,
         { 1, "about",           0,        TRUE,  g_paste_about           },
         { 1, "dr",              0,        TRUE,  g_paste_daemon_reexec   },
         { 1, "daemon-reexec",   0,        TRUE,  g_paste_daemon_reexec   },
+        { 1, "migrate",         0,        TRUE,  g_paste_migrate         },
         { 1, "dv",              0,        TRUE,  g_paste_daemon_version  },
         { 1, "daemon-version",  0,        TRUE,  g_paste_daemon_version  },
         { 1, "e",               1,        TRUE,  g_paste_empty           },

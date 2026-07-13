@@ -1051,38 +1051,3 @@ g_paste_storage_decryption_show (GtkApplication                 *application,
         done (user_data);
 #endif
 }
-
-static void
-unref_settings (gpointer  data,
-                GClosure *closure G_GNUC_UNUSED)
-{
-    g_object_unref (data);
-}
-
-static void
-on_storage_migration_action (GSimpleAction *action G_GNUC_UNUSED,
-                             GVariant      *parameter G_GNUC_UNUSED,
-                             gpointer       user_data)
-{
-    GtkApplication *application = g_application_get_default () ? GTK_APPLICATION (g_application_get_default ()) : NULL;
-    GPasteSettings *settings = user_data;
-
-    if (application)
-        g_paste_storage_migration_show (application, settings, NULL, NULL);
-}
-
-G_PASTE_VISIBLE void
-g_paste_storage_migration_register_action (GtkApplication *application,
-                                           GPasteSettings *settings)
-{
-    g_return_if_fail (GTK_IS_APPLICATION (application));
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
-
-    GSimpleAction *action = g_simple_action_new ("storage-migration", NULL);
-
-    g_signal_connect_data (action, "activate",
-                           G_CALLBACK (on_storage_migration_action),
-                           g_object_ref (settings), unref_settings, 0);
-    g_action_map_add_action (G_ACTION_MAP (application), G_ACTION (action));
-    g_object_unref (action);
-}

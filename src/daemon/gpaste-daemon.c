@@ -227,9 +227,6 @@ main (gint argc, gchar *argv[])
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     DaemonContext ctx = { .gapp = gapp, .app = app, .settings = settings };
 
-    /* Also reachable later through the "storage-migration" action. */
-    g_paste_storage_migration_register_action (app, settings);
-
 #ifdef G_OS_UNIX
     g_source_set_name_by_id (g_unix_signal_add (SIGTERM, signal_handler, &ctx), "[GPaste] SIGTERM listener");
     g_source_set_name_by_id (g_unix_signal_add (SIGINT,  signal_handler, &ctx), "[GPaste] SIGINT listener");

@@ -75,6 +75,7 @@ _gpaste-client_complete_subcommands() {
         {history-size,hs}:"Display the size of the history"
         {list-histories,lh}:"List available histories"
         {merge,m}:"Merge various elements from history"
+        "migrate:Migrate the history to a different storage backend"
         {rename-password,rp}:"Rename a password"
         "replace:Replace the contents of an item"
         {select,set,s}:"Select an element of the history"

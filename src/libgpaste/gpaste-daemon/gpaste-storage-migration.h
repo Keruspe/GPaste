@@ -60,7 +60,4 @@ void g_paste_storage_decryption_show (GtkApplication                 *applicatio
                                       GPasteStorageMigrationDoneFunc  done,
                                       gpointer                        user_data);
 
-void g_paste_storage_migration_register_action (GtkApplication *application,
-                                                GPasteSettings *settings);
-
 G_END_DECLS

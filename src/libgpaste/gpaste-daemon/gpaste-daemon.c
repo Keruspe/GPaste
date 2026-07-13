@@ -127,6 +127,27 @@ g_paste_daemon_resume (GPasteDaemon *self)
     g_paste_history_resume (priv->history);
 }
 
+/**
+ * g_paste_daemon_reload_storage:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Reload the history from its storage backend, rebuilding that backend from the
+ * (possibly changed) "storage-backend" setting. Meant to be called after an
+ * on-demand storage migration has rewritten the store on disk, so the live
+ * daemon picks up the new backend without a full re-exec. Assumes the caller
+ * flushed first (see g_paste_daemon_flush()); used by the gnome-shell host,
+ * where the daemon cannot re-exec itself.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_reload_storage (GPasteDaemon *self)
+{
+    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
+
+    g_paste_history_reload_backend (priv->history);
+}
+
 static void
 g_paste_daemon_tracking (GPasteDaemon   *self,
                          gboolean        tracking_state,
