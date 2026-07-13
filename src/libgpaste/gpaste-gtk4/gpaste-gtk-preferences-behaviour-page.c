@@ -74,6 +74,14 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                                                                        settings);
         adw_action_row_set_subtitle (ADW_ACTION_ROW (track_extension_state_switch),
                                      _("When enabled, the daemon automatically starts or stops tracking clipboard changes to match the GNOME Shell extension's enabled state"));
+
+        AdwSwitchRow *experimental_meta_daemon_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
+                                                                                                          _("Use the experimental in-shell daemon"),
+                                                                                                          G_PASTE_EXPERIMENTAL_META_DAEMON_SETTING,
+                                                                                                          settings);
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (experimental_meta_daemon_switch),
+                                     _("Experimental: run the daemon inside GNOME Shell (mutter clipboard) instead of the standalone one. Takes effect after the extension restarts"));
+
         g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
     }
 

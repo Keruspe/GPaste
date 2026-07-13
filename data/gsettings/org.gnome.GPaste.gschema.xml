@@ -248,5 +248,13 @@
       </description>
     </key>
 
+    <key name="experimental-meta-daemon" type="b">
+      <default>false</default>
+      <summary>Do we run the experimental in-shell (mutter) daemon from the gnome-shell extension?</summary>
+      <description>
+        When disabled, the gnome-shell extension is a pure client and the standalone daemon is used instead
+      </description>
+    </key>
+
   </schema>
 </schemalist>

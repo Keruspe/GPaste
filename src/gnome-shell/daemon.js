@@ -21,8 +21,11 @@ Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_
 // gnome-shell is the future-proof path (GTK will drop its X11 backend), so we
 // evict any standalone daemon that happens to hold the name.
 export class GPasteDaemonRunner {
-    constructor() {
-        this._settings = GPaste.Settings.new();
+    constructor(settings) {
+        // Shared with the extension (and, through new_meta(), with the daemon,
+        // its history and both clipboard providers): one settings instance per
+        // process, as the C daemon does.
+        this._settings = settings;
         this._cancellable = new Gio.Cancellable();
         this._standDown = false;
 

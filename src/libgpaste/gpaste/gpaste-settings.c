@@ -23,6 +23,7 @@ typedef struct
     gboolean   open_centered;
     guint64    element_size;
     gboolean   empty_history_confirmation;
+    gboolean   experimental_meta_daemon;
     gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
@@ -184,6 +185,23 @@ UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
  * Change the "empty-history-confirmation" setting
  */
 BOOLEAN_SETTING (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)
+
+/**
+ * g_paste_settings_get_experimental_meta_daemon:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "experimental-meta-daemon" setting
+ *
+ * Returns: the value of the "experimental-meta-daemon" setting
+ */
+/**
+ * g_paste_settings_set_experimental_meta_daemon:
+ * @self: a #GPasteSettings instance
+ * @value: whether the gnome-shell extension runs the experimental in-shell daemon
+ *
+ * Change the "experimental-meta-daemon" setting
+ */
+BOOLEAN_SETTING (experimental_meta_daemon, EXPERIMENTAL_META_DAEMON)
 
 /**
  * g_paste_settings_get_growing_lines:
@@ -725,6 +743,7 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (OPEN_CENTERED, open_centered),
     SETTING_ENTRY (ELEMENT_SIZE, element_size),
     SETTING_ENTRY (EMPTY_HISTORY_CONFIRMATION, empty_history_confirmation),
+    SETTING_ENTRY (EXPERIMENTAL_META_DAEMON, experimental_meta_daemon),
     SETTING_ENTRY (GROWING_LINES, growing_lines),
     SETTING_ENTRY (HISTORY_NAME, history_name),
     SETTING_ENTRY (IMAGES_SUPPORT, images_support),
@@ -805,6 +824,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     BOOL (open_centered,              OPEN_CENTERED)                \
     UINT (element_size,               ELEMENT_SIZE)                 \
     BOOL (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)   \
+    BOOL (experimental_meta_daemon,   EXPERIMENTAL_META_DAEMON)     \
     BOOL (growing_lines,              GROWING_LINES)                \
     STR  (history_name,               HISTORY_NAME)                 \
     BOOL (images_support,             IMAGES_SUPPORT)               \
