@@ -29,6 +29,10 @@ typedef enum
     CLIPBOARD_CONTENT_IMAGE,
     CLIPBOARD_CONTENT_FILE_LIST,
     CLIPBOARD_CONTENT_COLOR,
+    /* The selection has an owner but only offers types we don't handle
+     * (e.g. an image while images-support is disabled): not tracked, but
+     * must not be overridden by ensure_not_empty either. */
+    CLIPBOARD_CONTENT_IGNORED,
 } GPasteClipboardContent;
 
 typedef struct
@@ -121,6 +125,7 @@ g_paste_clipboard_private_clear_content (GPasteClipboardPrivate *priv)
         g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
         break;
     case CLIPBOARD_CONTENT_COLOR:
+    case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }
@@ -687,6 +692,7 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
         if (data->texture)
             item = G_PASTE_ITEM (g_paste_image_item_new (data->texture));
         break;
+    case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }
@@ -836,12 +842,22 @@ g_paste_clipboard_update (GPasteClipboard              *self,
         content_kind = CLIPBOARD_CONTENT_IMAGE;
     else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
         content_kind = CLIPBOARD_CONTENT_TEXT;
-    else
+    else if (gdk_content_formats_is_empty (formats))
     {
-        /* No recognized content: the selection was released or the owner
-         * provides no type we handle. Clear our cache so callers see an
+        /* The selection was released: clear our cache so callers see an
          * empty clipboard and act accordingly (e.g. ensure_not_empty). */
         g_paste_clipboard_private_clear_content (priv);
+        if (callback)
+            callback (self, NULL, user_data);
+        return;
+    }
+    else
+    {
+        /* The owner only provides types we don't handle (e.g. an image
+         * while images-support is disabled). Don't track it, but flag the
+         * clipboard as non-empty so ensure_not_empty doesn't override it. */
+        g_paste_clipboard_private_clear_content (priv);
+        priv->content_kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
             callback (self, NULL, user_data);
         return;
@@ -882,6 +898,7 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     case CLIPBOARD_CONTENT_IMAGE:
         g_paste_clipboard_set_texture (self, g_paste_clipboard_update_on_texture_ready, data);
         break;
+    case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
         g_assert_not_reached ();
     }
