@@ -647,6 +647,7 @@ g_paste_clipboard_meta_update_maybe_done (GPasteClipboardMetaUpdateData *data)
             if (data->texture)
                 item = G_PASTE_ITEM (g_paste_image_item_new (data->texture));
             break;
+        case CLIPBOARD_CONTENT_IGNORED:
         case CLIPBOARD_CONTENT_NONE:
             break;
         }
@@ -914,10 +915,23 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         content_kind = CLIPBOARD_CONTENT_TEXT;
         content_mime = mimetypes_contain (mimetypes, META_MIME_TEXT) ? META_MIME_TEXT : META_MIME_TEXT_PLAIN;
     }
+    else if (!mimetypes)
+    {
+        /* The selection was released: clear our cache so callers see an
+         * empty clipboard and act accordingly (e.g. ensure_not_empty). */
+        g_paste_clipboard_content_clear (&priv->content);
+        if (callback)
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+        return;
+    }
     else
     {
+        /* The owner only provides types we don't handle (e.g. an image
+         * while images-support is disabled). Don't track it, but flag the
+         * clipboard as non-empty so ensure_not_empty doesn't override it. */
         g_list_free_full (mimetypes, g_free);
         g_paste_clipboard_content_clear (&priv->content);
+        priv->content.kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -944,6 +958,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     case CLIPBOARD_CONTENT_TEXT:
         g_paste_clipboard_meta_read_mime (self, content_mime, g_paste_clipboard_meta_update_on_text, data);
         break;
+    case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
         g_assert_not_reached ();
     }

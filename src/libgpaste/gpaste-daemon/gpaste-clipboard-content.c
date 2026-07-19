@@ -25,6 +25,7 @@ g_paste_clipboard_content_clear (GPasteClipboardContent *content)
             g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&content->file_list));
         break;
     case CLIPBOARD_CONTENT_COLOR:
+    case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }

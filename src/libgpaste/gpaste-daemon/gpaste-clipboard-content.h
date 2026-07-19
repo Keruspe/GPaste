@@ -19,6 +19,10 @@ typedef enum
     CLIPBOARD_CONTENT_IMAGE,
     CLIPBOARD_CONTENT_FILE_LIST,
     CLIPBOARD_CONTENT_COLOR,
+    /* The selection has an owner but only offers types we don't handle
+     * (e.g. an image while images-support is disabled): not tracked, but
+     * must not be overridden by ensure_not_empty either. */
+    CLIPBOARD_CONTENT_IGNORED,
 } GPasteClipboardContentKind;
 
 typedef struct
