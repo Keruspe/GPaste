@@ -1,3 +1,8 @@
+NEW in 50.6 (19/07/2026)
+=============
+
+- Fix the active history item overriding the clipboard when copying an image while images support is disabled: such content is now left untouched in the clipboard (while still not being added to the history), and the same applies to any clipboard content of an unsupported type
+
 NEW in 50.5 (21/06/2026)
 =============
 

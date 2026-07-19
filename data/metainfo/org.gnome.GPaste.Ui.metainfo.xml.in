@@ -46,6 +46,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-07-19" version="50.6">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix the active history item overriding the clipboard when copying an image while images support is disabled (such content is now left untouched in the clipboard, while still not being added to the history)</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-21" version="50.5">
       <description>
         <p>This is a maintenance release. Changes:</p>
