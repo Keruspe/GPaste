@@ -50,7 +50,7 @@
     </key>
 
     <key name="images-preview-size" type="t">
-      <range min="50" max="200"/>
+      <range min="16" max="200"/>
       <default>50</default>
       <summary>Size of image previews in pixels</summary>
       <description>
