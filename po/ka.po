@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-07-19 22:36+0200\n"
-"PO-Revision-Date: 2023-02-22 19:39+0000\n"
+"PO-Revision-Date: 2026-07-21 06:01+0000\n"
 "Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
 "Language-Team: Georgian <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "ka/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16-dev\n"
+"X-Generator: Weblate 2026.8.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -1219,9 +1219,8 @@ msgid "Pop from History"
 msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon.c:275
-#, fuzzy
 msgid "Show History"
-msgstr "გადართვა"
+msgstr "ისტორიის ჩვენება"
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon.c:277
 msgid "Sync Clipboard to Primary"
@@ -1509,9 +1508,8 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:40
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:44
-#, fuzzy
 msgid "Images settings"
-msgstr "GPaste-ის მორგება"
+msgstr "გამოსახულების მორგება"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:46
 msgid "Images support"
@@ -1671,9 +1669,8 @@ msgid "Are you sure you want to delete \"%s\"?"
 msgstr ""
 
 #: src/ui/gpaste-ui-panel.c:441
-#, fuzzy
 msgid "Switch to history"
-msgstr "გადართვა"
+msgstr "ისტორიაზე გადართვა"
 
 #: src/ui/gpaste-ui-panel.c:448
 msgid "Switch to"
