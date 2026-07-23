@@ -67,7 +67,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     if (error)
         g_warning ("GPaste search failed: %s", error->message);
 
-    GVariant *ans = g_variant_new_strv ((const char * const *) results, -1);
+    GVariant *ans = g_variant_new_strv ((const char * const *) results, results ? -1 : 0);
     g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
 }
 
