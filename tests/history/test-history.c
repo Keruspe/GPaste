@@ -632,8 +632,10 @@ test_encrypted_roundtrip (void)
     g_assert_true (g_file_get_contents (path, &raw, &raw_len, NULL));
     g_assert_cmpuint (raw_len, >=, 8);
     g_assert_cmpint (memcmp (raw, "GPSTENC1", 8), ==, 0);
-    g_assert_null (g_strstr_len (raw, raw_len, secret));
-    g_assert_null (g_strstr_len (raw, raw_len, "<?xml"));
+    /* Binary-safe scan: the ciphertext is full of NUL bytes, so g_strstr_len
+     * would stop at the first one and only check a tiny prefix. */
+    g_assert_false (file_contains (path, secret));
+    g_assert_false (file_contains (path, "<?xml"));
 
     /* The image was materialized as an encrypted ".pngs" side file: the
      * referenced plaintext path stays absent and no PNG marker is in clear. */
@@ -887,15 +889,22 @@ test_sqlite_incremental (void)
     const gchar * const after_overflow[] = { "item-5", "item-4", "item-3", "item-2", "item-1", NULL };
     g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, after_overflow, 5000));
 
-    /* Emptying clears the database but keeps the history listed. */
+    /* Emptying clears the database but keeps the history listed. Flush so the
+     * clear is persisted, then check the listing *before* reading the history
+     * back: list_histories only enumerates the .db file on disk, whereas a read
+     * would recreate it (SQLITE_OPEN_CREATE) and mask an erroneous file deletion,
+     * making this assertion pass no matter what empty() did. */
     g_paste_history_empty (history);
-
-    const gchar * const after_empty[] = { NULL };
-    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, after_empty, 5000));
+    g_paste_history_flush (history);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
     g_assert_true (g_strv_contains ((const gchar * const *) names, name));
+
+    /* And the database really is empty (this read may recreate the file, so it
+     * has to come after the listing check above). */
+    const gchar * const after_empty[] = { NULL };
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, after_empty, 5000));
 }
 
 /* replace_item must swap the row's content in place: the new item inherits the
