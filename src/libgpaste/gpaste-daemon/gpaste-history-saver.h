@@ -56,6 +56,7 @@ void     g_paste_history_saver_load       (GPasteHistorySaver *self,
                                            const gchar        *name,
                                            gboolean            save_after);
 void     g_paste_history_saver_drain      (GPasteHistorySaver *self);
+void     g_paste_history_saver_detach     (GPasteHistorySaver *self);
 gboolean g_paste_history_saver_is_loading (const GPasteHistorySaver *self);
 
 /****************/

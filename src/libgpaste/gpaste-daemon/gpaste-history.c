@@ -995,16 +995,35 @@ g_paste_history_reload_backend (GPasteHistory *self)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
+    /* The migration ran out of process (or in a re-exec'd one), so the new
+     * "storage-backend" value may not have reached our cached settings yet: read
+     * it back before rebuilding, or we would resurrect the flavour we just left. */
+    g_paste_settings_reload (priv->settings);
+
+    /* A load still in flight keeps the old saver alive through the task's own
+     * reference; detach it so its (pre-migration) result is dropped instead of
+     * being installed over the one we are about to load. */
+    if (priv->saver)
+        g_paste_history_saver_detach (priv->saver);
+
     g_clear_object (&priv->saver);
     g_clear_object (&priv->backend);
     priv->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (priv->settings), priv->settings);
     priv->saver = g_paste_history_saver_new (priv->backend, self, g_paste_history_on_loaded);
 
-    g_paste_history_load_locked (self, priv, priv->name);
+    g_clear_list (&priv->history, g_object_unref);
+    priv->size = 0;
+    g_paste_history_private_elect_new_biggest (priv);
     priv->stopped = FALSE;
 
     /* Tell every UI to reload the whole history from the new backend. */
     g_paste_history_emit_switch (self, priv->name);
+
+    /* Asynchronously, like every other load: the only caller is the gnome-shell
+     * host, where reading (and, for an encrypted flavour, deriving the key with
+     * Argon2id) inline would freeze the whole compositor. The store was just
+     * written by the migration, so there is nothing to normalize back. */
+    g_paste_history_saver_load (priv->saver, priv->name, FALSE);
 }
 
 /**

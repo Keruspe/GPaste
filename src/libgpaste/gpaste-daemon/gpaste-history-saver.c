@@ -13,8 +13,10 @@
  * All of its state is only ever touched on the main thread: g_paste_history_saver_record
  * / _load run there, and the GTask completion callbacks fire on the thread-default
  * context they were created on. The @owner GObject is used as the GTask source so
- * it stays alive (and, since it owns this saver, keeps the saver alive too) for the
- * whole duration of every in-flight operation. */
+ * it stays alive for the whole duration of every in-flight operation. Each task also
+ * holds its own ref on the saver (released in its done callback), so an owner that
+ * swaps its saver out mid-flight (g_paste_history_reload_backend) cannot free one
+ * whose completion callback has not fired yet. */
 struct _GPasteHistorySaver
 {
     GObject parent_instance;
@@ -42,6 +44,11 @@ typedef struct
 
     gboolean                     load_in_progress;
     guint64                      load_generation;
+
+    /* Set by g_paste_history_saver_detach(): the owner has replaced us, so an
+     * in-flight load (which keeps us alive through the task's own reference) must
+     * not hand its now-stale result back to it. */
+    gboolean                     detached;
 } GPasteHistorySaverPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (HistorySaver, history_saver, G_TYPE_OBJECT)
@@ -52,7 +59,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (HistorySaver, history_saver, G_TYPE_OBJECT)
 
 typedef struct
 {
-    GPasteHistorySaver   *saver; /* not ref'd: the owner keeps it alive for the task */
+    GPasteHistorySaver   *saver; /* not ref'd: the task's own ref keeps it alive */
     GPasteStorageBackend *backend;
     GPasteHistorySaveOp   op;
     gchar                *name;
@@ -136,7 +143,11 @@ g_paste_history_saver_start_write (GPasteHistorySaver *self)
 
     GPasteHistorySaverWrite *data = g_queue_pop_head (&priv->pending);
 
-    g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_write_done, self);
+    /* Hold our own ref for the duration of the task: the owner keeps us alive
+     * only as long as it still owns us, but g_paste_history_reload_backend()
+     * swaps its saver out mid-flight, so rely on this ref (released in
+     * write_done) rather than the owner to survive until the callback fires. */
+    g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_write_done, g_object_ref (self));
     g_task_set_static_name (task, "gpaste-history-write");
     g_task_set_task_data (task, data, g_paste_history_saver_write_free);
     g_task_run_in_thread (task, g_paste_history_saver_write_task);
@@ -147,7 +158,7 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
                                   GAsyncResult *result        G_GNUC_UNUSED,
                                   gpointer      user_data)
 {
-    GPasteHistorySaver *self = user_data;
+    g_autoptr (GPasteHistorySaver) self = user_data; /* the ref taken in start_write */
     GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
 
     priv->write_in_progress = FALSE;
@@ -249,6 +260,25 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
      * starts a third — two threads rewriting the same history at once. */
 }
 
+/**
+ * g_paste_history_saver_detach:
+ * @self: a #GPasteHistorySaver
+ *
+ * Stop handing results back to the owner. An in-flight load keeps the saver alive
+ * through its own reference, so a saver that has been replaced (see
+ * g_paste_history_reload_backend()) would otherwise still install its stale, old-
+ * backend history over the one the new saver just loaded.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_detach (GPasteHistorySaver *self)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+
+    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
+
+    priv->detached = TRUE;
+}
+
 /****************/
 /* Load path    */
 /****************/
@@ -310,12 +340,18 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
                                  GAsyncResult *result,
                                  gpointer      user_data)
 {
-    GPasteHistorySaver *self = user_data;
+    g_autoptr (GPasteHistorySaver) self = user_data; /* the ref taken in _load */
     GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
     const GPasteHistorySaverLoadData *data = g_task_get_task_data (G_TASK (result));
 
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteHistorySaverLoadResult) load_result = g_task_propagate_pointer (G_TASK (result), &error);
+
+    /* The owner replaced us (g_paste_history_reload_backend): this result comes
+     * from the backend it just moved away from, so installing it would clobber
+     * the freshly loaded one. */
+    if (priv->detached)
+        return;
 
     /* A newer load superseded this one: leave load_in_progress set (the newer
      * load will clear it) and drop this stale result, so is_loading() does not
@@ -367,7 +403,9 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
      * history back after a load would be pure churn: drop the request. */
     data->save_after = save_after && !g_paste_storage_backend_is_incremental (priv->backend);
 
-    g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_load_done, self);
+    /* Hold our own ref for the task (see start_write): reload_backend may drop
+     * the owner's ref to us while this load is still in flight. */
+    g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_load_done, g_object_ref (self));
     g_task_set_static_name (task, "gpaste-history-load");
     g_task_set_task_data (task, data, g_paste_history_saver_load_data_free);
     g_task_run_in_thread (task, g_paste_history_saver_load_task);
