@@ -48,45 +48,44 @@ typedef struct
 static GPasteStorage
 detect_current_backend (GPasteSettings *settings)
 {
+    /* The storing flavours in tie-break precedence order (encrypted over plain,
+     * file over database), used both for the active-name lookup and the on-disk
+     * count fallback. Each kind's extension is the shared
+     * g_paste_storage_get_extension(), so a new flavour only needs adding here. */
+    static const GPasteStorage flavours[] = {
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        G_PASTE_STORAGE_ENCRYPTED_FILE,
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+#endif
+#endif
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_SQLITE,
+#endif
+        G_PASTE_STORAGE_FILE,
+    };
+
     const gchar *name = g_paste_settings_get_history_name (settings);
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    g_autoptr (GFile) encrypted = g_paste_util_get_history_file (name, "xmls");
+    /* The active history's own file wins, in the precedence order above, so an
+     * existing encrypted setup is never demoted. */
+    for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
+    {
+        g_autoptr (GFile) file = g_paste_util_get_history_file (name, g_paste_storage_get_extension (flavours[i]));
 
-    if (g_file_query_exists (encrypted, NULL))
-        return G_PASTE_STORAGE_ENCRYPTED_FILE;
+        if (g_file_query_exists (file, NULL)) /* cancellable */
+            return flavours[i];
+    }
 
-#ifdef G_PASTE_ENABLE_SQLITE
-    g_autoptr (GFile) encrypted_database = g_paste_util_get_history_file (name, "dbs");
+    /* No history under the active name: fall back to whichever flavour has the
+     * most files on disk, ties broken by the same precedence. */
+    g_autoptr (GStrvBuilder) suffix_builder = g_strv_builder_new ();
+    guint counts[G_N_ELEMENTS (flavours)] = { 0 };
 
-    if (g_file_query_exists (encrypted_database, NULL))
-        return G_PASTE_STORAGE_ENCRYPTED_SQLITE;
-#endif
-#endif
+    for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
+        g_strv_builder_take (suffix_builder, g_strconcat (".", g_paste_storage_get_extension (flavours[i]), NULL));
 
-#ifdef G_PASTE_ENABLE_SQLITE
-    g_autoptr (GFile) database = g_paste_util_get_history_file (name, "db");
-
-    if (g_file_query_exists (database, NULL))
-        return G_PASTE_STORAGE_SQLITE;
-#endif
-
-    g_autoptr (GFile) plain = g_paste_util_get_history_file (name, "xml");
-
-    if (g_file_query_exists (plain, NULL))
-        return G_PASTE_STORAGE_FILE;
-
-    /* No history under the active name: fall back to the more-used flavour. */
-    guint plain_count = 0;
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    guint encrypted_count = 0;
-#ifdef G_PASTE_ENABLE_SQLITE
-    guint encrypted_db_count = 0;
-#endif
-#endif
-#ifdef G_PASTE_ENABLE_SQLITE
-    guint db_count = 0;
-#endif
+    g_auto (GStrv) suffixes = g_strv_builder_end (suffix_builder);
     g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
     g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
                                                                       G_FILE_ATTRIBUTE_STANDARD_NAME,
@@ -100,51 +99,32 @@ detect_current_backend (GPasteSettings *settings)
         while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
         {
             g_autoptr (GFileInfo) child = info;
-            /* ".xmls" never matches the ".xml" suffix, so order does not matter. */
             const gchar *child_name = g_file_info_get_name (child);
 
-            if (g_str_has_suffix (child_name, ".xml"))
-                ++plain_count;
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-            else if (g_str_has_suffix (child_name, ".xmls"))
-                ++encrypted_count;
-#ifdef G_PASTE_ENABLE_SQLITE
-            else if (g_str_has_suffix (child_name, ".dbs"))
-                ++encrypted_db_count;
-#endif
-#endif
-#ifdef G_PASTE_ENABLE_SQLITE
-            else if (g_str_has_suffix (child_name, ".db"))
-                ++db_count;
-#endif
+            /* The extensions are mutually non-suffixing (".xml" never matches
+             * ".xmls", ".db" never ".dbs"), so each file counts for at most one. */
+            for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
+            {
+                if (g_str_has_suffix (child_name, suffixes[i]))
+                {
+                    ++counts[i];
+                    break;
+                }
+            }
         }
     }
 
-    /* Precedence mirrors the active-name checks above: encrypted flavours win
-     * ties, so an existing encrypted setup is never demoted. */
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    if (encrypted_count > 0 && encrypted_count >= plain_count
-#ifdef G_PASTE_ENABLE_SQLITE
-        && encrypted_count >= db_count && encrypted_count >= encrypted_db_count
-#endif
-       )
-        return G_PASTE_STORAGE_ENCRYPTED_FILE;
+    /* Highest count wins; the array order breaks ties toward the higher-
+     * precedence flavour (a later one must strictly exceed it). */
+    guint best = 0;
 
-#ifdef G_PASTE_ENABLE_SQLITE
-    if (encrypted_db_count > 0 && encrypted_db_count >= plain_count && encrypted_db_count >= db_count)
-        return G_PASTE_STORAGE_ENCRYPTED_SQLITE;
-#endif
-#endif
+    for (guint i = 1; i < G_N_ELEMENTS (flavours); ++i)
+    {
+        if (counts[i] > counts[best])
+            best = i;
+    }
 
-#ifdef G_PASTE_ENABLE_SQLITE
-    if (db_count > 0 && db_count >= plain_count)
-        return G_PASTE_STORAGE_SQLITE;
-#endif
-
-    if (plain_count > 0)
-        return G_PASTE_STORAGE_FILE;
-
-    return G_PASTE_STORAGE_NOOP;
+    return counts[best] ? flavours[best] : G_PASTE_STORAGE_NOOP;
 }
 
 /* The combo lists the backends in a built-at-runtime order; map both ways. */
@@ -257,7 +237,11 @@ backend_label_bind (GtkSignalListItemFactory *factory G_GNUC_UNUSED,
 
 /* Whether @written faithfully reproduces @source: same kind, and same content
  * — an image's identity is its checksum (its value is a per-backend cache
- * path), everything else compares by real value. */
+ * path), everything else compares by real value. This deliberately differs from
+ * g_paste_item_equals(): that dedup predicate ignores the kind and treats two
+ * distinct passwords as never equal, whereas migration must confirm a password's
+ * real value round-tripped (an encrypted backend persists it) — so it is not a
+ * drop-in replacement here. */
 static gboolean
 imported_item_matches (const GPasteItem *source,
                        const GPasteItem *written)
