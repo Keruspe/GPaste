@@ -192,6 +192,28 @@ g_paste_bus_unown_name (GPasteBus *self)
     g_clear_object (&priv->connection);
 }
 
+/**
+ * g_paste_bus_is_connected:
+ * @self: the #GPasteBus
+ *
+ * Whether the bus still holds a live D-Bus connection. This lets a "name-lost"
+ * handler tell a deliberate takeover (another owner replaced us while the bus is
+ * up, so the connection is still open) from the session bus connection simply
+ * dropping (where the name is lost only because the connection went away), which
+ * warrant very different responses: standing down for good versus reconnecting.
+ *
+ * Returns: %TRUE if a non-closed connection is held
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_bus_is_connected (GPasteBus *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_BUS (self), FALSE);
+
+    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
+
+    return priv->connection && !g_dbus_connection_is_closed (priv->connection);
+}
+
 static void
 g_paste_bus_dispose (GObject *object)
 {

@@ -48,24 +48,7 @@ export class GPasteDaemonRunner {
     _start() {
         this._bus = GPasteDaemon.Bus.new();
 
-        this._nameLostId = this._bus.connect('name-lost', (_bus, wasOwned) => {
-            if (wasOwned) {
-                // Another GPaste daemon (typically a manually started
-                // `gpaste-daemon --replace`) took the name over. The user asked
-                // for that daemon, so flush, release the lock and stand down for
-                // good rather than fighting back; the next enable starts us over.
-                // Unowning also cancels our still-queued name request: without
-                // that, GDBus silently re-acquires the name when the other
-                // daemon exits, and we would then own it with nothing exported
-                // (_onNameAcquired bails on _standDown), breaking every client.
-                console.log('GPaste: the D-Bus name was taken over by another daemon, standing down');
-                this._standDown = true;
-                this._releaseDaemon();
-            } else {
-                console.error('GPaste: could not acquire the D-Bus name');
-            }
-            this._resolveReady();
-        });
+        this._nameLostId = this._bus.connect('name-lost', (_bus, wasOwned) => this._onNameLost(wasOwned));
 
         this._acquiredId = this._bus.connect('name-acquired', () => {
             this._onNameAcquired().catch(e => {
@@ -77,28 +60,87 @@ export class GPasteDaemonRunner {
         this._bus.own_name_full(true);
     }
 
-    async _onNameAcquired() {
-        if (this._daemon || this._standDown || this._cancellable.is_cancelled())
+    _onNameLost(wasOwned) {
+        if (wasOwned && this._bus?.is_connected()) {
+            // Another GPaste daemon (typically a manually started
+            // `gpaste-daemon --replace`) took the name over while the bus is
+            // still alive. The user asked for that daemon, so flush, release the
+            // lock and stand down for good rather than fighting back; the next
+            // enable starts us over. Unowning also cancels our still-queued name
+            // request: without that, GDBus silently re-acquires the name when the
+            // other daemon exits, and we would then own it with nothing exported
+            // (_onNameAcquired bails on _standDown), breaking every client.
+            console.log('GPaste: the D-Bus name was taken over by another daemon, standing down');
+            this._standDown = true;
+            this._releaseDaemon();
+        } else if (wasOwned) {
+            // We held the name but the *connection* went away (a session-bus
+            // restart), not a deliberate takeover: rebuild on a fresh connection
+            // instead of staying dead until the extension is re-enabled.
+            console.log('GPaste: lost the D-Bus connection, reconnecting');
+            this._reconnect();
+            return; // _reconnect() re-runs _start(), which resolves ready itself
+        } else {
+            console.error('GPaste: could not acquire the D-Bus name');
+        }
+
+        this._resolveReady();
+    }
+
+    // Tear down the dead bus and daemon, then re-own the name on a fresh
+    // connection. g_bus_own_name() does not survive its connection closing, so a
+    // transient session-bus outage needs an explicit re-request; a short delay
+    // lets the bus come back first. A retry that still cannot acquire the name
+    // lands in _onNameLost() with wasOwned === false, which simply gives up, so a
+    // flapping bus can never spin this into a tight loop.
+    _reconnect() {
+        this._teardownBus();
+
+        if (this._stopped)
             return;
+
+        this._reconnectId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+            this._reconnectId = 0;
+            if (!this._stopped)
+                this._start();
+            return GLib.SOURCE_REMOVE;
+        });
+        GLib.Source.set_name_by_id(this._reconnectId, '[GPaste] bus reconnect');
+    }
+
+    _teardownBus() {
+        if (this._nameLostId) {
+            this._bus.disconnect(this._nameLostId);
+            this._nameLostId = 0;
+        }
+        if (this._acquiredId) {
+            this._bus.disconnect(this._acquiredId);
+            this._acquiredId = 0;
+        }
+
+        this._releaseDaemon();
+        this._bus = null;
+    }
+
+    async _onNameAcquired() {
+        if (this._daemon || this._stopped)
+            return;
+
+        // The helpers below can block on a dialog for minutes, during which the
+        // bus may be torn down and rebuilt (_reconnect) and this handler run
+        // again. Pin the bus we were acquired on and drop out if it is no longer
+        // the current one, so two concurrent runs cannot both build a daemon.
+        const bus = this._bus;
 
         // The standalone daemon settles this in-process from its own main loop;
         // here we shell out to the dedicated helper for each concern (migration,
         // then decryption) and wait for it to settle the storage backend before
         // the daemon loads the history. Deciding what is needed stays here, in the
         // launcher (the same migration_needed/decryption_needed checks).
-        if (GPasteDaemon.storage_migration_needed(this._settings))
-            await this._runStorageCommand('migrate');
-
-        if (this._stopped)
+        if (!await this._settleStorage())
             return;
 
-        // Re-checked after migration, since it may have (re)selected the encrypted
-        // backend; also applies a usable keyring passphrase in this process, in
-        // which case no helper is spawned.
-        if (GPasteDaemon.storage_decryption_needed(this._settings))
-            await this._runStorageCommand('decrypt');
-
-        if (this._stopped)
+        if (this._daemon || bus !== this._bus)
             return;
 
         // global.display.get_selection() is mutter's per-display MetaSelection;
@@ -113,10 +155,40 @@ export class GPasteDaemonRunner {
         // place by reloading the daemon's storage — see _onReexecute().
         this._reexecId = this._daemon.connect('reexecute-self', () => this._onReexecute());
 
-        this._bus.add_object(this._daemon);
-        this._bus.add_object(this._searchProvider);
+        bus.add_object(this._daemon);
+        bus.add_object(this._searchProvider);
 
         this._resolveReady();
+    }
+
+    // Settle the storage backend (migration, then encrypted-history unlock) before
+    // the daemon loads the history. The standalone daemon does this in-process from
+    // its own main loop; here each concern is shelled out to the gpaste-storage
+    // helper, which needs gtk/Adw that gnome-shell cannot provide. Deciding what is
+    // needed stays here, in the launcher (the same needed() checks).
+    //
+    // Returns whether the caller may carry on (i.e. we were not stopped meanwhile).
+    async _settleStorage() {
+        // The gate keys are written by other processes (gpaste-client, the helper),
+        // whose dconf notification may not have reached us yet; read them back
+        // rather than trusting our cached copy.
+        this._settings.reload();
+
+        if (GPasteDaemon.storage_migration_needed(this._settings))
+            await this._runStorageCommand('migrate');
+
+        if (this._stopped)
+            return false;
+
+        // Re-checked after migration, since it may have (re)selected the encrypted
+        // backend; also applies a usable keyring passphrase in this process, in
+        // which case no helper is spawned.
+        this._settings.reload();
+
+        if (GPasteDaemon.storage_decryption_needed(this._settings))
+            await this._runStorageCommand('decrypt');
+
+        return !this._stopped;
     }
 
     async _runStorageCommand(command) {
@@ -182,7 +254,7 @@ export class GPasteDaemonRunner {
     // (extension disable) and standing down after a takeover.
     _releaseDaemon() {
         if (this._reexecId) {
-            this._daemon.disconnect(this._reexecId);
+            this._daemon?.disconnect(this._reexecId);
             this._reexecId = 0;
         }
 
@@ -208,20 +280,17 @@ export class GPasteDaemonRunner {
     shutdown() {
         this._cancellable.cancel();
 
-        if (this._nameLostId) {
-            this._bus.disconnect(this._nameLostId);
-            this._nameLostId = 0;
-        }
-        if (this._acquiredId) {
-            this._bus.disconnect(this._acquiredId);
-            this._acquiredId = 0;
+        // A reconnect may be scheduled after a bus drop; drop it so it never
+        // revives the daemon after teardown.
+        if (this._reconnectId) {
+            GLib.Source.remove(this._reconnectId);
+            this._reconnectId = 0;
         }
 
-        this._releaseDaemon();
+        this._teardownBus();
 
-        // The bus (and the objects it held) plus the shared settings go away once
-        // we drop our references too.
-        this._bus = null;
+        // The bus and the objects it held were already released by _teardownBus();
+        // drop our reference to the extension's settings too.
         this._settings = null;
 
         // Wipe the master passphrase from gcr secure memory on teardown, the way

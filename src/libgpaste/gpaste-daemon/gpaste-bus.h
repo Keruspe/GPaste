@@ -22,6 +22,8 @@ void g_paste_bus_own_name_full (GPasteBus *self,
 
 void g_paste_bus_unown_name (GPasteBus *self);
 
+gboolean g_paste_bus_is_connected (GPasteBus *self);
+
 GPasteBus *g_paste_bus_new (void);
 
 G_END_DECLS
