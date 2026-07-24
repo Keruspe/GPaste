@@ -277,8 +277,9 @@ imported_item_matches (const GPasteItem *source,
  * caller never deletes the originals on a genuinely failed write (e.g. an
  * encrypted write that ran out of memory deriving the key, or a row that
  * committed with a corrupt payload). Two things are deliberately not failures:
- * the destination legitimately dropping items it cannot store (the plain
- * flavors never persist passwords), and in-memory sizes differing across
+ * the destination legitimately dropping items it cannot store (only the plain
+ * flavors, which never persist passwords — an encrypted destination does, so a
+ * password missing there *is* a failure), and in-memory sizes differing across
  * backends (an image read back from a database blob carries its PNG bytes
  * while a path-based one does not). */
 static gboolean
@@ -289,14 +290,32 @@ import_histories (GPasteSettings *settings,
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (current, settings);
     g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new (chosen, settings);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
+    /* Only the plain flavors drop password items; an encrypted destination stores
+     * them, so a password missing from the read-back is a genuine write failure
+     * there and must not be waved through (the caller may then delete the source). */
+    const gboolean chosen_stores_passwords = g_paste_storage_is_encrypted (chosen);
     gboolean ok = TRUE;
 
-    for (GStrv name = names; name && *name; ++name)
+    if (!names)
+        return FALSE;
+
+    for (GStrv name = names; ok && *name; ++name)
     {
         GList *history = NULL;
         gsize size = 0;
 
-        g_paste_storage_backend_read_history (previous, *name, &history, &size);
+        /* Never let a source we could not actually read (a wrong passphrase, a
+         * transient I/O error) pass as an empty history: writing that "empty"
+         * into the destination and reporting success would let the caller delete
+         * the still-intact originals. Bail out instead so the migration is kept
+         * for a retry with the data untouched. */
+        if (!g_paste_storage_backend_read_history (previous, *name, &history, &size))
+        {
+            g_list_free_full (history, g_object_unref);
+            ok = FALSE;
+            break;
+        }
+
         g_paste_storage_backend_write_history (next, *name, history);
 
         GList *written = NULL;
@@ -314,7 +333,7 @@ import_histories (GPasteSettings *settings,
                 w = g_list_next (w);
             }
             else
-                ok = g_paste_str_equal (g_paste_item_get_kind (h->data), "Password");
+                ok = !chosen_stores_passwords && g_paste_str_equal (g_paste_item_get_kind (h->data), "Password");
         }
 
         /* Nothing may read back that was not written. */

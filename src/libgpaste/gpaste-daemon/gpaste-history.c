@@ -899,13 +899,22 @@ g_paste_history_load_locked (GPasteHistory        *self,
 
     g_set_str (&priv->name, (name) ? name : g_paste_settings_get_history_name (priv->settings));
 
-    g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
+    /* A history that is on disk but unreadable (wrong passphrase, corrupt or
+     * truncated file, I/O error) must not be persisted over: stop recording so
+     * the next clipboard change cannot rewrite the still-intact data from the
+     * empty model we ended up with. */
+    if (!g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size))
+    {
+        g_warning ("Could not read the history back; it will not be overwritten");
+        priv->stopped = TRUE;
+    }
 
     if (priv->history)
-    {
         g_paste_history_activate_first (self, TRUE);
-        g_paste_history_private_elect_new_biggest (priv);
-    }
+
+    /* Unconditional: biggest_uuid borrows the uuid of an item we just freed, so
+     * it has to be re-elected (to NULL) even when the new history is empty. */
+    g_paste_history_private_elect_new_biggest (priv);
 }
 
 /**
@@ -936,7 +945,8 @@ static void
 g_paste_history_on_loaded (gpointer  user_data,
                            GList    *history,
                            gsize     size,
-                           gboolean  save_after)
+                           gboolean  save_after,
+                           gboolean  readable)
 {
     GPasteHistory *self = user_data;
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
@@ -951,6 +961,15 @@ g_paste_history_on_loaded (gpointer  user_data,
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
     g_paste_history_private_elect_new_biggest (priv);
+
+    /* The history is on disk but could not be read back: never write our empty
+     * model over it (see g_paste_history_load_locked). */
+    if (!readable)
+    {
+        g_warning ("Could not read the history back; it will not be overwritten");
+        priv->stopped = TRUE;
+        save_after = FALSE;
+    }
 
     if (save_after)
         g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL);

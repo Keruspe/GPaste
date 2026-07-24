@@ -733,7 +733,7 @@ g_paste_file_backend_load_contents (const GPasteStorageBackend *self,
     return g_file_get_contents (history_file_path, text, text_length, error);
 }
 
-static void
+static gboolean
 g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
                                         const gchar                *history_file_path,
                                         GList                     **history,
@@ -781,15 +781,26 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 
         if (!g_paste_file_backend_load_contents (self, history_file_path, history_file, &text, &text_length, &error))
         {
+            /* Present but unreadable (e.g. a wrong passphrase failing the
+             * authenticated decryption, or an I/O error): report the failure so
+             * a caller never mistakes it for a genuinely empty history. */
             g_warning ("Failed to read history file: %s", error->message);
-            return;
+            return FALSE;
         }
 
-        if (!g_markup_parse_context_parse (ctx, text, text_length, &error) ||
-            !g_markup_parse_context_end_parse (ctx, &error))
-        {
+        /* A zero-length file is the placeholder the else branch below creates for
+         * a history that exists but was never written to: an authoritative empty
+         * history, not a failure. GMarkup would reject it (G_MARKUP_ERROR_EMPTY),
+         * and reporting that as unreadable would abort a whole storage migration
+         * over one unused history. */
+        if (!text_length)
+            return TRUE;
+
+        gboolean parsed = g_markup_parse_context_parse (ctx, text, text_length, &error) &&
+                          g_markup_parse_context_end_parse (ctx, &error);
+
+        if (!parsed)
             g_warning ("Failed to parse history file: %s", error->message);
-        }
 
         if (data.state != END)
             g_warning ("Unexpected state after parsing history: %" G_GINT32_FORMAT, data.state);
@@ -802,12 +813,15 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         g_clear_pointer (&data.name, g_free);
         g_clear_pointer (&data.text, g_free);
 
-        /* Rewrite only to migrate a recognised older format. A HISTORY_INVALID
-         * version means we never parsed a valid <history> header (a corrupt file,
-         * or one written by a newer GPaste): leave it untouched rather than
-         * overwriting it with a partial parse and destroying its contents. */
-        if (data.version != HISTORY_CURRENT && data.version != HISTORY_INVALID)
+        /* Rewrite only to migrate a recognised older format that parsed cleanly.
+         * A HISTORY_INVALID version means we never parsed a valid <history>
+         * header (a corrupt file, or one written by a newer GPaste), and a failed
+         * parse means we only got part of the items: either way, leave the file
+         * untouched rather than overwriting it and destroying its contents. */
+        if (parsed && data.version != HISTORY_CURRENT && data.version != HISTORY_INVALID)
             g_paste_file_backend_write_history_file (self, history_file_path, *history);
+
+        return parsed;
     }
     else
     {
@@ -820,6 +834,9 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
                 g_warning ("Failed to create history file: %s", error->message);
         }
     }
+
+    /* An absent history is a legitimately empty one, not a read failure. */
+    return TRUE;
 }
 
 static void

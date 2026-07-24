@@ -999,7 +999,7 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     return NULL;
 }
 
-static void
+static gboolean
 g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
                                           const gchar                *history_file_path,
                                           GList                     **history,
@@ -1015,15 +1015,18 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
     *history = NULL;
     *size = 0;
 
+    /* A NULL db means the (possibly encrypted) database is present but could not
+     * be opened/decrypted: report the failure so a caller never mistakes it for
+     * a genuinely empty history. */
     if (!db)
-        return;
+        return FALSE;
 
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db, "SELECT id, uuid, kind, value, date, checksum, name, image FROM items ORDER BY rank DESC LIMIT ?;", -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare history query: %s", sqlite3_errmsg (db));
-        return;
+        return FALSE;
     }
 
     sqlite3_bind_int64 (stmt, 1, g_paste_settings_get_max_history_size (settings));
@@ -1037,7 +1040,7 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
     {
         g_warning ("sqlite: failed to prepare special value query: %s", sqlite3_errmsg (db));
         sqlite3_finalize (stmt);
-        return;
+        return FALSE;
     }
 
     /* The history name, for anchoring blob-loaded images under its own images
@@ -1071,6 +1074,8 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
     sqlite3_finalize (stmt);
 
     *history = g_list_reverse (*history);
+
+    return TRUE;
 }
 
 /***********************/

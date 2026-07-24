@@ -28,10 +28,13 @@ struct _GPasteStorageBackendClass
     GObjectClass parent_class;
 
     /*< pure virtual >*/
-    void (*read_history_file)  (const GPasteStorageBackend *self,
-                                const gchar                *history_file_path,
-                                GList                     **history,
-                                gsize                      *size);
+    /* Returns %FALSE when the history file is present but could not be read back
+     * (a failed decryption, parse or I/O error), so a caller can tell a genuine
+     * empty history apart from a read that silently yielded nothing. */
+    gboolean (*read_history_file)  (const GPasteStorageBackend *self,
+                                    const gchar                *history_file_path,
+                                    GList                     **history,
+                                    gsize                      *size);
     void (*write_history_file) (const GPasteStorageBackend *self,
                                 const gchar                *history_file_path,
                                 const GList                *history);
@@ -61,10 +64,10 @@ struct _GPasteStorageBackendClass
                                       const gchar                *name);
 };
 
-void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
-                                            const gchar                *name,
-                                            GList                     **history,
-                                            gsize                      *size);
+gboolean g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
+                                               const gchar                *name,
+                                               GList                     **history,
+                                               gsize                      *size);
 void g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
                                             const gchar                *name,
                                             const GList                *history);

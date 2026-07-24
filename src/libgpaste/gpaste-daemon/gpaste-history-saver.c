@@ -271,8 +271,12 @@ g_paste_history_saver_load_data_free (gpointer data)
 
 typedef struct
 {
-    GList *history;
-    gsize  size;
+    GList   *history;
+    gsize    size;
+    /* %FALSE when the history is on disk but could not be read back (a failed
+     * decryption, parse or I/O error), so the owner can refuse to persist over
+     * data it never managed to load. */
+    gboolean readable;
 } GPasteHistorySaverLoadResult;
 
 static void
@@ -297,7 +301,7 @@ g_paste_history_saver_load_task (GTask        *task,
      * finished flushing and released the lock, so we never load a stale history. */
     g_paste_storage_backend_lock ();
 
-    g_paste_storage_backend_read_history (data->backend, data->name, &result->history, &result->size);
+    result->readable = g_paste_storage_backend_read_history (data->backend, data->name, &result->history, &result->size);
     g_task_return_pointer (task, result, (GDestroyNotify) g_paste_history_saver_load_result_free);
 }
 
@@ -328,7 +332,8 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    priv->loaded (priv->owner, g_steal_pointer (&load_result->history), load_result->size, data->save_after);
+    priv->loaded (priv->owner, g_steal_pointer (&load_result->history), load_result->size,
+                  data->save_after, load_result->readable);
 }
 
 /**

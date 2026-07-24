@@ -17,6 +17,9 @@ G_PASTE_FINAL_TYPE (HistorySaver, history_saver, HISTORY_SAVER, GObject)
  * @history: (transfer full) (element-type GPasteItem): the loaded items
  * @size: the total size of the loaded items
  * @save_after: whether the load was triggered by a switch and should be persisted back
+ * @readable: %FALSE when the history exists on disk but could not be read back,
+ *            so @history is empty only because the read failed and must never be
+ *            written back over the intact data
  *
  * Called on the main thread when an asynchronous load finishes and is still
  * current (i.e. not superseded by a newer load).
@@ -24,7 +27,8 @@ G_PASTE_FINAL_TYPE (HistorySaver, history_saver, HISTORY_SAVER, GObject)
 typedef void (*GPasteHistorySaverLoadedFunc) (gpointer  user_data,
                                               GList    *history,
                                               gsize     size,
-                                              gboolean  save_after);
+                                              gboolean  save_after,
+                                              gboolean  readable);
 
 /* The kind of change being persisted. Incremental backends (e.g. SQLite) act on
  * the supplied item/uuid; the file backend ignores them and rewrites the whole

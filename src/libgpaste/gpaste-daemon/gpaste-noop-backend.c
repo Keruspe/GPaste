@@ -14,7 +14,7 @@ G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
  * for the current session. Reads come back empty, writes are dropped, and no
  * history is ever listed on disk. */
 
-static void
+static gboolean
 g_paste_noop_backend_read_history_file (const GPasteStorageBackend *self G_GNUC_UNUSED,
                                         const gchar                *history_file_path G_GNUC_UNUSED,
                                         GList                     **history,
@@ -22,6 +22,9 @@ g_paste_noop_backend_read_history_file (const GPasteStorageBackend *self G_GNUC_
 {
     *history = NULL;
     *size = 0;
+
+    /* Nothing to read is an authoritative empty history, not a failure. */
+    return TRUE;
 }
 
 static void

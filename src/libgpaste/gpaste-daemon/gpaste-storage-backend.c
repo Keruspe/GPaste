@@ -195,21 +195,25 @@ _g_paste_storage_backend_get_history_file_path (const GPasteStorageBackend *self
  * @size: (out): the size used by the history
  *
  * Reads the history from our storage backend
+ *
+ * Returns: %FALSE when the history exists on disk but could not be read back
+ *          (a failed decryption, parse or I/O error), %TRUE otherwise (including
+ *          a genuinely empty or absent history)
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
                                       const gchar                *name,
                                       GList                     **history,
                                       gsize                      *size)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
-    g_return_if_fail (name);
-    g_return_if_fail (history && !*history);
-    g_return_if_fail (size);
+    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (name, FALSE);
+    g_return_val_if_fail (history && !*history, FALSE);
+    g_return_val_if_fail (size, FALSE);
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);
+    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);
 }
 
 /**
