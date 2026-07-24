@@ -101,6 +101,8 @@ GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
 
 gboolean g_paste_storage_is_encrypted (GPasteStorage storage_kind);
 
+const gchar *g_paste_storage_get_extension (GPasteStorage storage_kind);
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 void         g_paste_storage_backend_set_passphrase (const gchar *passphrase);
 const gchar *g_paste_storage_backend_get_passphrase (void);

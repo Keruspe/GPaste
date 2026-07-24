@@ -241,13 +241,13 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
 static gboolean
 _g_paste_storage_backend_history_still_stored (const gchar *name)
 {
-    /* Every extension a storing flavor uses; keep in sync with the backends
-     * (and detect_current_backend in gpaste-storage-migration.c). */
-    static const gchar *extensions[] = { "xml", "xmls", "db", "dbs" };
-
-    for (guint64 i = 0; i < G_N_ELEMENTS (extensions); ++i)
+    /* Check every storage flavor's on-disk file. Each kind's extension comes
+     * from the shared g_paste_storage_get_extension(), so a new flavor is
+     * covered here automatically (the non-storing NOOP's extension simply never
+     * matches a real file). */
+    for (GPasteStorage kind = 0; kind < G_PASTE_N_STORAGE; ++kind)
     {
-        g_autoptr (GFile) file = g_paste_util_get_history_file (name, extensions[i]);
+        g_autoptr (GFile) file = g_paste_util_get_history_file (name, g_paste_storage_get_extension (kind));
 
         if (g_file_query_exists (file,
                                  NULL)) /* cancellable */
@@ -605,6 +605,38 @@ g_paste_storage_is_encrypted (GPasteStorage storage_kind)
 {
     return storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE ||
            storage_kind == G_PASTE_STORAGE_ENCRYPTED_SQLITE;
+}
+
+/**
+ * g_paste_storage_get_extension:
+ * @storage_kind: a #GPasteStorage kind
+ *
+ * The on-disk file extension a given storage kind uses. This is the single
+ * source of truth every backend's get_extension vtable, the migration
+ * detection and the shared images cleanup derive from, so a new flavour only
+ * needs its extension declared here.
+ *
+ * Returns: the extension (without the leading dot)
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_storage_get_extension (GPasteStorage storage_kind)
+{
+    switch (storage_kind)
+    {
+    case G_PASTE_STORAGE_FILE:
+        return "xml";
+    case G_PASTE_STORAGE_ENCRYPTED_FILE:
+        return "xmls";
+    case G_PASTE_STORAGE_SQLITE:
+        return "db";
+    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
+        return "dbs";
+    case G_PASTE_STORAGE_NOOP:
+    default:
+        /* The no-storage backend keeps nothing on disk; its extension only ever
+         * feeds a listing that never matches anything. */
+        return "noop";
+    }
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

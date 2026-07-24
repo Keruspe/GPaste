@@ -641,7 +641,17 @@ g_paste_sqlite_backend_write_special_values (sqlite3          *db,
     for (const GSList *val = special_values; success && val; val = val->next, ++position)
     {
         const GPasteBinaryData *value = val->data;
-        const gchar *mime = g_enum_get_value (atom_class, g_paste_binary_data_get_mime (value))->value_nick;
+        GEnumValue *gev = g_enum_get_value (atom_class, g_paste_binary_data_get_mime (value));
+
+        /* Skip a value carrying an unknown atom rather than dereferencing NULL,
+         * mirroring the guarded read path in read_special_values. */
+        if (!gev)
+        {
+            g_warning ("sqlite: unknown mime: %d", g_paste_binary_data_get_mime (value));
+            continue;
+        }
+
+        const gchar *mime = gev->value_nick;
         gsize data_length;
         gconstpointer data = g_bytes_get_data (g_paste_binary_data_get_bytes (value), &data_length);
 
@@ -718,6 +728,36 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3          *db,
     return success && g_paste_sqlite_backend_write_special_values (db, key, item_id, item);
 }
 
+/* Bind an item's content columns: uuid, kind and value at the fixed positions
+ * 1-3, then the image (date, checksum, image blob) or password (name) columns
+ * starting at @meta_base. The INSERT and UPDATE statements share this layout and
+ * differ only by @meta_base — the INSERT carries an extra rank column between the
+ * value and the meta group, so it binds at base 5 while the UPDATE binds at 4.
+ * Keeping the two in one place stops their column indices drifting apart. */
+static void
+g_paste_sqlite_backend_bind_item (sqlite3_stmt     *stmt,
+                                  const guchar     *key,
+                                  const GPasteItem *item,
+                                  gint              meta_base)
+{
+    sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 2, g_paste_item_get_kind (item), -1, SQLITE_STATIC);
+    g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
+
+    if (_G_PASTE_IS_IMAGE_ITEM (item))
+    {
+        const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
+        const gchar *checksum = g_paste_image_item_get_checksum (image);
+
+        sqlite3_bind_int64 (stmt, meta_base, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
+        if (checksum)
+            sqlite3_bind_text (stmt, meta_base + 1, checksum, -1, SQLITE_STATIC);
+        g_paste_sqlite_backend_bind_image (stmt, meta_base + 3, key, image);
+    }
+    else if (_G_PASTE_IS_PASSWORD_ITEM (item))
+        g_paste_sqlite_backend_bind_text (stmt, meta_base + 2, key, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item)));
+}
+
 /* Insert @item with @rank, or move the already-stored item with the same uuid
  * to @rank (its value never changes, only its position). Special values are
  * rewritten from the item either way. */
@@ -739,23 +779,9 @@ g_paste_sqlite_backend_upsert_item (sqlite3          *db,
         return FALSE;
     }
 
-    sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
-    sqlite3_bind_text (stmt, 2, g_paste_item_get_kind (item), -1, SQLITE_STATIC);
-    g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
+    /* uuid, kind, value at 1-3, then rank at 4, then the meta group at base 5. */
+    g_paste_sqlite_backend_bind_item (stmt, key, item, 5);
     sqlite3_bind_int64 (stmt, 4, rank);
-
-    if (_G_PASTE_IS_IMAGE_ITEM (item))
-    {
-        const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
-        const gchar *checksum = g_paste_image_item_get_checksum (image);
-
-        sqlite3_bind_int64 (stmt, 5, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
-        if (checksum)
-            sqlite3_bind_text (stmt, 6, checksum, -1, SQLITE_STATIC);
-        g_paste_sqlite_backend_bind_image (stmt, 8, key, image);
-    }
-    else if (_G_PASTE_IS_PASSWORD_ITEM (item))
-        g_paste_sqlite_backend_bind_text (stmt, 7, key, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item)));
 
     gboolean success = (sqlite3_step (stmt) == SQLITE_ROW);
     gint64 item_id = success ? sqlite3_column_int64 (stmt, 0) : 0;
@@ -778,6 +804,25 @@ g_paste_sqlite_backend_stores_item (const guchar     *key,
     return key || !g_paste_str_equal (g_paste_item_get_kind (item), "Password");
 }
 
+/* How many of @history's items this backend actually persists. Used to rank a
+ * full rewrite (front item gets the highest rank) and to tell whether the store
+ * has drifted from the snapshot during reconcile — one definition so the two can
+ * never disagree on which items count. */
+static gint64
+g_paste_sqlite_backend_count_stored (const guchar *key,
+                                     const GList  *history)
+{
+    gint64 count = 0;
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        if (g_paste_sqlite_backend_stores_item (key, h->data))
+            ++count;
+    }
+
+    return count;
+}
+
 static void
 g_paste_sqlite_backend_write_history_file (const GPasteStorageBackend *self,
                                            const gchar                *history_file_path,
@@ -793,13 +838,7 @@ g_paste_sqlite_backend_write_history_file (const GPasteStorageBackend *self,
     const guchar *key = g_paste_sqlite_backend_get_key (self);
 
     /* Count what we'll actually store so the front item gets the highest rank. */
-    gint64 rank = 0;
-
-    for (const GList *h = history; h; h = g_list_next (h))
-    {
-        if (g_paste_sqlite_backend_stores_item (key, h->data))
-            ++rank;
-    }
+    gint64 rank = g_paste_sqlite_backend_count_stored (key, history);
 
     /* One transaction, so replacing the whole content is atomic: a failure
      * (or crash) rolls back to the previous state instead of losing data. */
@@ -947,15 +986,10 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
             return g_paste_image_item_new_from_file (value, date, checksum);
         }
 
-        g_autoptr (GFile) img_file = g_file_new_for_path (value);
-
-        if (g_file_query_exists (img_file,
-                                 NULL)) /* cancellable */
-        {
-            g_autoptr (GError) error = NULL;
-            if (!g_file_delete (img_file, NULL, &error))
-                g_warning ("Failed to delete leftover image: %s", error->message);
-        }
+        /* Images are disabled (or the row carries no date): drop any leftover
+         * materialized image — both the plain cache file and its encrypted side
+         * file — via the shared helper, as the file backend does. */
+        g_paste_image_item_delete_files (value);
 
         return NULL;
     }
@@ -1053,13 +1087,7 @@ g_paste_sqlite_backend_reconcile (sqlite3      *db,
                                   const guchar *key,
                                   const GList  *history)
 {
-    gint64 expected = 0;
-
-    for (const GList *h = history; h; h = g_list_next (h))
-    {
-        if (g_paste_sqlite_backend_stores_item (key, h->data))
-            ++expected;
-    }
+    gint64 expected = g_paste_sqlite_backend_count_stored (key, history);
 
     /* The common case: nothing rode along, the store already matches. Only
      * build the uuid set (and scan the table) when it actually does not. */
@@ -1231,23 +1259,8 @@ g_paste_sqlite_backend_replace_item (const GPasteStorageBackend *self,
         return;
     }
 
-    sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
-    sqlite3_bind_text (stmt, 2, g_paste_item_get_kind (item), -1, SQLITE_STATIC);
-    g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
-
-    if (_G_PASTE_IS_IMAGE_ITEM (item))
-    {
-        const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
-        const gchar *checksum = g_paste_image_item_get_checksum (image);
-
-        sqlite3_bind_int64 (stmt, 4, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
-        if (checksum)
-            sqlite3_bind_text (stmt, 5, checksum, -1, SQLITE_STATIC);
-        g_paste_sqlite_backend_bind_image (stmt, 7, key, image);
-    }
-    else if (_G_PASTE_IS_PASSWORD_ITEM (item))
-        g_paste_sqlite_backend_bind_text (stmt, 6, key, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item)));
-
+    /* uuid, kind, value at 1-3, the meta group at base 4, then old uuid at 8. */
+    g_paste_sqlite_backend_bind_item (stmt, key, item, 4);
     sqlite3_bind_text (stmt, 8, old_uuid, -1, SQLITE_STATIC);
 
     /* No row means the replaced item was never persisted (e.g. renaming a
@@ -1328,7 +1341,9 @@ static const gchar *
 g_paste_sqlite_backend_get_extension (const GPasteStorageBackend *self)
 {
     /* ".dbs" (s for "secret", like ".xmls") for an encrypted history. */
-    return g_paste_sqlite_backend_get_passphrase (self) ? "dbs" : "db";
+    return g_paste_storage_get_extension (g_paste_sqlite_backend_get_passphrase (self)
+                                          ? G_PASTE_STORAGE_ENCRYPTED_SQLITE
+                                          : G_PASTE_STORAGE_SQLITE);
 }
 
 static void
@@ -1439,7 +1454,7 @@ g_paste_sqlite_backend_passphrase_can_decrypt (GPasteSettings *settings,
 
     for (GStrv name = names; name && *name; ++name)
     {
-        g_autofree gchar *path = g_paste_util_get_history_file_path (*name, "dbs");
+        g_autofree gchar *path = g_paste_util_get_history_file_path (*name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
         sqlite3 *db = NULL;
 
         /* Read-only: verification must never create or touch anything. */

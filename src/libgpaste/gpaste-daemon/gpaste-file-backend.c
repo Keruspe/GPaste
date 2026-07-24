@@ -836,7 +836,9 @@ static const gchar *
 g_paste_file_backend_get_extension (const GPasteStorageBackend *self)
 {
     /* ".xmls" (s for "secret", like https vs http) for an encrypted history. */
-    return g_paste_file_backend_get_passphrase (self) ? "xmls" : "xml";
+    return g_paste_storage_get_extension (g_paste_file_backend_get_passphrase (self)
+                                          ? G_PASTE_STORAGE_ENCRYPTED_FILE
+                                          : G_PASTE_STORAGE_FILE);
 }
 
 static GOutputStream *

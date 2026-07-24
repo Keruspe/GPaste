@@ -34,7 +34,7 @@ g_paste_noop_backend_write_history_file (const GPasteStorageBackend *self G_GNUC
 static const gchar *
 g_paste_noop_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
 {
-    return "noop";
+    return g_paste_storage_get_extension (G_PASTE_STORAGE_NOOP);
 }
 
 static void
