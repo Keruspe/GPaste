@@ -16,15 +16,6 @@ on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
                                 gpointer      user_data G_GNUC_UNUSED)
 {
     g_autoptr (GError) error = NULL;
-
-    /* Force the migration gate open and re-execute the daemon: it flushes the
-     * history, re-runs the migration (in-process when standalone, via the helper
-     * when hosted in gnome-shell) and reloads the newly-chosen backend. Doing it
-     * through the daemon avoids racing it, unlike spawning the helper directly. */
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
-    g_paste_settings_sync (settings);
-
     g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
 
     if (!client)
@@ -33,11 +24,11 @@ on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
         return;
     }
 
-    g_paste_client_reexecute_sync (client, &error);
-
-    /* Re-execution tears the connection down before replying, so a missing reply
-     * is the expected success path, not a failure. */
-    if (error && error->code != G_DBUS_ERROR_NO_REPLY)
+    /* Force the migration gate open and re-execute the daemon (through the shared
+     * helper): it flushes the history, re-runs the migration (in-process when
+     * standalone, via the helper when hosted in gnome-shell) and reloads the
+     * newly-chosen backend, rather than racing it by spawning the helper here. */
+    if (!g_paste_util_trigger_storage_migration (client, &error))
         g_warning ("Could not trigger the storage migration: %s", error->message);
 }
 

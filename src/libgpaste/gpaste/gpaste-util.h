@@ -42,6 +42,11 @@ GList            *g_paste_util_get_dbus_items_result (GVariant *variant);
 void g_paste_util_write_pid_file (const gchar *component);
 GPid g_paste_util_read_pid_file  (const gchar *component);
 
+gboolean g_paste_util_reexecute_daemon          (GPasteClient *client,
+                                                 GError      **error);
+gboolean g_paste_util_trigger_storage_migration (GPasteClient *client,
+                                                 GError      **error);
+
 gchar *g_paste_util_xml_decode (const gchar *text);
 gchar *g_paste_util_xml_encode (const gchar *text);
 

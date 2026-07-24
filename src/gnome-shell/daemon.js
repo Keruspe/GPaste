@@ -213,11 +213,15 @@ export class GPasteDaemonRunner {
             return;
 
         this._reexecPending = true;
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            this._reexecPending = false;
-            this._migrateInPlace().catch(e => console.error(e));
+        GLib.Source.set_name_by_id(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            // Keep coalescing until the whole (async) migration has settled, so a
+            // second re-exec arriving mid-migration cannot start a concurrent
+            // _migrateInPlace() that reloads the store out from under the first.
+            this._migrateInPlace()
+                .catch(e => console.error(e))
+                .finally(() => (this._reexecPending = false));
             return GLib.SOURCE_REMOVE;
-        });
+        }), '[GPaste] reexecute-self');
     }
 
     async _migrateInPlace() {

@@ -491,6 +491,66 @@ g_paste_util_read_pid_file (const gchar *component)
 }
 
 /**
+ * g_paste_util_reexecute_daemon:
+ * @client: a connected #GPasteClient
+ * @error: a #GError or %NULL
+ *
+ * Ask the daemon to re-execute itself through @client. It tears its D-Bus
+ * connection down before replying, so a missing reply (%G_DBUS_ERROR_NO_REPLY)
+ * is the expected success, not a failure, and @error is left unset for it.
+ *
+ * Returns: %TRUE if the daemon honoured the re-exec
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_reexecute_daemon (GPasteClient *client,
+                               GError      **error)
+{
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), FALSE);
+    g_return_val_if_fail (!error || !*error, FALSE);
+
+    g_autoptr (GError) err = NULL;
+
+    g_paste_client_reexecute_sync (client, &err);
+
+    /* Match the domain too: G_DBUS_ERROR_NO_REPLY is 4, and so is
+     * G_IO_ERROR_NOT_DIRECTORY — a bare code comparison would report an
+     * unrelated local failure as a successful re-exec. */
+    if (!err || g_error_matches (err, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY))
+        return TRUE;
+
+    g_propagate_error (error, g_steal_pointer (&err));
+
+    return FALSE;
+}
+
+/**
+ * g_paste_util_trigger_storage_migration:
+ * @client: a connected #GPasteClient
+ * @error: a #GError or %NULL
+ *
+ * Open the storage-migration gate and re-execute the daemon through @client
+ * (g_paste_util_reexecute_daemon()), so on its next start it flushes, re-runs
+ * the migration and reloads the chosen backend instead of a helper racing the
+ * running daemon. Resetting the backend revision to its default is exactly the
+ * "never migrated" state that opens the gate.
+ *
+ * Returns: %TRUE if the migration was triggered
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_trigger_storage_migration (GPasteClient *client,
+                                        GError      **error)
+{
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), FALSE);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+    g_paste_settings_sync (settings);
+
+    return g_paste_util_reexecute_daemon (client, error);
+}
+
+/**
  * g_paste_util_xml_decode:
  * @text: The text to decode
  *
