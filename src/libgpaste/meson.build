@@ -266,7 +266,7 @@ endif
 if get_option('gnome-shell')
   gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-clipboard-meta.c' ]
   gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-clipboard-meta.h' ]
-  gpaste_daemon_deps += dependency('libmutter-18')
+  gpaste_daemon_deps += dependency('libmutter-51')
 endif
 
 gpaste_daemon_headers_dep = declare_dependency(
