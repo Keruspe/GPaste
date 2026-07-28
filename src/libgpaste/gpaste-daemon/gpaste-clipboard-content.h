@@ -11,7 +11,10 @@ G_BEGIN_DECLS
 
 /* The single piece of content a clipboard provider currently holds, shared by
  * the GDK and mutter backends so the kind enum and its tagged value live in one
- * place. Only the field matching @kind is live at any time. */
+ * place. Only the field matching @kind is live at any time: prefer the get_*
+ * accessors below, which check @kind, and check it by hand for the fields that
+ * have none — reading the wrong member reinterprets unrelated bytes (a string
+ * pointer as a GdkFileList *, an RGBA's floats as a pointer, …). */
 typedef enum
 {
     CLIPBOARD_CONTENT_NONE,
@@ -39,6 +42,7 @@ void         g_paste_clipboard_content_clear              (GPasteClipboardConten
 gboolean     g_paste_clipboard_content_is_empty           (const GPasteClipboardContent *content);
 const gchar *g_paste_clipboard_content_get_text           (const GPasteClipboardContent *content);
 const gchar *g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *content);
+GdkFileList *g_paste_clipboard_content_get_file_list      (const GPasteClipboardContent *content);
 
 void         g_paste_clipboard_content_set_text           (GPasteClipboardContent       *content,
                                                           const gchar                  *text);

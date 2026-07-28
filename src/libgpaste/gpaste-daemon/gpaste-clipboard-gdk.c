@@ -559,19 +559,15 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
     }
 
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-    /* content.file_list is only live when kind is FILE_LIST: the field is a union
-     * member, so reading it while a TEXT/IMAGE/COLOR content is held reinterprets
-     * unrelated bytes (a string pointer or an RGBA struct) as a GdkFileList*. */
-    GdkFileList *current_file_list = (priv->content.kind == CLIPBOARD_CONTENT_FILE_LIST) ? priv->content.file_list : NULL;
 
-    if (g_paste_clipboard_file_list_equal (current_file_list, file_list))
+    if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&priv->content), file_list))
     {
         g_paste_clipboard_gdk_update_maybe_done (data);
         return;
     }
 
     g_paste_clipboard_gdk_private_set_file_list (priv, file_list);
-    data->file_list = priv->content.file_list;
+    data->file_list = g_paste_clipboard_content_get_file_list (&priv->content);
 
     g_paste_clipboard_gdk_update_maybe_done (data);
 }

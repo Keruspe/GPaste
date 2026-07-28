@@ -137,6 +137,18 @@ g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *cont
 }
 
 /**
+ * g_paste_clipboard_content_get_file_list:
+ * @content: a #GPasteClipboardContent
+ *
+ * Returns: (nullable) (transfer none): the held file list, or %NULL unless @content holds one
+ */
+GdkFileList *
+g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
+{
+    return (content->kind == CLIPBOARD_CONTENT_FILE_LIST) ? content->file_list : NULL;
+}
+
+/**
  * g_paste_clipboard_content_classify_text:
  * @content: the currently held content (for dedup against the new text)
  * @settings: a #GPasteSettings instance (trim and min/max size policy)

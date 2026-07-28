@@ -819,8 +819,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         /* Re-asserting the same file selection must not re-add it, mirroring the
          * GDK backend's read-path g_paste_clipboard_file_list_equal guard. */
-        if (priv->content.kind == CLIPBOARD_CONTENT_FILE_LIST &&
-            g_paste_clipboard_file_list_equal (priv->content.file_list, file_list))
+        if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&priv->content), file_list))
             break;
 
         g_paste_clipboard_content_set_file_list (&priv->content, file_list);
