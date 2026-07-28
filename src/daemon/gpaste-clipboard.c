@@ -8,6 +8,7 @@
 #include <gpaste-clipboard.h>
 #include <gpaste-color-item.h>
 #include <gpaste-image-item.h>
+#include <gpaste-text-content-provider.h>
 #include <gpaste-uris-item.h>
 
 struct _GPasteClipboard
@@ -240,9 +241,12 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 
     g_debug ("%s: select text", _g_paste_clipboard_private_target_name (priv));
 
-    /* Avoid cycling twice as gdk_clipboard_set_text will make the clipboards manager react */
+    /* Avoid cycling twice as setting the content will make the clipboards manager react */
     g_paste_clipboard_private_set_text (priv, text);
-    gdk_clipboard_set_text (priv->real, text);
+
+    g_autoptr (GdkContentProvider) provider = g_paste_text_content_provider_new (text);
+
+    gdk_clipboard_set_content (priv->real, provider);
 }
 
 static void
@@ -967,7 +971,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     {
         const gchar *real_value = g_paste_item_get_real_value (item);
         g_paste_clipboard_private_set_text (priv, real_value);
-        g_ptr_array_add (providers, gdk_content_provider_new_typed (G_TYPE_STRING, real_value));
+        g_ptr_array_add (providers, g_paste_text_content_provider_new (real_value));
     }
 
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
