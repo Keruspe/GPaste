@@ -244,7 +244,10 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
 
 /* Enlarge the small inline thumbnail to a detail preview on hover: the inline
  * picture is deliberately tiny (images-preview-size), so show the full image,
- * capped and aspect-preserved, in a custom tooltip. */
+ * capped and aspect-preserved, in a custom tooltip.
+ * gtk_widget_set_size_request () only sets a minimum, so it cannot bound the
+ * tooltip's natural size: the paintable must be re-rendered with a capped
+ * intrinsic size instead. */
 static gboolean
 g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
                                                      gint        x        G_GNUC_UNUSED,
@@ -263,19 +266,28 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
      * once per thumbnail and reuse it (cleared in set_thumbnail/dispose). */
     if (!priv->tooltip_preview)
     {
-        GtkWidget *preview = gtk_picture_new_for_paintable (paintable);
-        gtk_picture_set_content_fit (GTK_PICTURE (preview), GTK_CONTENT_FIT_CONTAIN);
-
         gint width = gdk_paintable_get_intrinsic_width (paintable);
         gint height = gdk_paintable_get_intrinsic_height (paintable);
+        g_autoptr (GdkPaintable) scaled = NULL;
 
+        /* Re-render the paintable at the capped size: the result's intrinsic
+         * size is the one the tooltip lays out with, which set_size_request
+         * alone does not achieve here. */
         if (width > 0 && height > 0)
         {
             gdouble scale = MIN (1.0, MIN ((gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / width,
                                            (gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / height));
-            gtk_widget_set_size_request (preview, width * scale, height * scale);
+            g_autoptr (GtkSnapshot) snapshot = gtk_snapshot_new ();
+
+            gdk_paintable_snapshot (paintable, GDK_SNAPSHOT (snapshot), width * scale, height * scale);
+            scaled = gtk_snapshot_to_paintable (snapshot, NULL);
         }
-        else
+
+        GtkWidget *preview = gtk_picture_new_for_paintable ((scaled) ? scaled : paintable);
+
+        gtk_picture_set_content_fit (GTK_PICTURE (preview), GTK_CONTENT_FIT_CONTAIN);
+
+        if (!scaled)
             gtk_widget_set_size_request (preview, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE);
 
         priv->tooltip_preview = g_object_ref_sink (preview);
