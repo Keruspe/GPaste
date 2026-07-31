@@ -22,6 +22,8 @@ typedef struct
     GtkInscription *label;
     GtkPicture     *thumbnail;
     GtkWidget      *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
+    gint            tooltip_preview_width;  /* cap the cached preview was built for */
+    gint            tooltip_preview_height;
     gboolean        editable;
     gboolean        uploadable;
 } GPasteUiItemSkeletonPrivate;
@@ -239,8 +241,34 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
     g_paste_ui_item_skeleton_on_images_preview_changed (priv->settings, NULL, priv);
 }
 
-/* Largest dimension, in pixels, of the hover preview. */
+/* Largest dimension, in pixels, of the hover preview, used until the window
+ * has a size to scale against. */
 #define G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE 400
+
+/* Fraction of the window the hover preview is allowed to cover. */
+#define G_PASTE_UI_ITEM_SKELETON_PREVIEW_RATIO 0.9
+
+/* The preview is bounded by the window rather than by a fixed size: a 400px
+ * cap is cramped on a big screen and overflows a small one. */
+static void
+g_paste_ui_item_skeleton_get_preview_bounds (GtkWidget *widget,
+                                             gint      *max_width,
+                                             gint      *max_height)
+{
+    GtkRoot *root = gtk_widget_get_root (widget);
+
+    *max_width = *max_height = 0;
+
+    if (root)
+    {
+        *max_width = gtk_widget_get_width (GTK_WIDGET (root)) * G_PASTE_UI_ITEM_SKELETON_PREVIEW_RATIO;
+        *max_height = gtk_widget_get_height (GTK_WIDGET (root)) * G_PASTE_UI_ITEM_SKELETON_PREVIEW_RATIO;
+    }
+
+    /* Not realized or not allocated yet: nothing to scale against. */
+    if (*max_width <= 0 || *max_height <= 0)
+        *max_width = *max_height = G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE;
+}
 
 /* Enlarge the small inline thumbnail to a detail preview on hover: the inline
  * picture is deliberately tiny (images-preview-size), so show the full image,
@@ -262,6 +290,19 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
     if (!paintable)
         return FALSE;
 
+    gint max_width, max_height;
+
+    g_paste_ui_item_skeleton_get_preview_bounds (widget, &max_width, &max_height);
+
+    /* The cache is built for a given bound, so drop it when the window is
+     * resized: nothing else notices that the preview should now differ. */
+    if (max_width != priv->tooltip_preview_width || max_height != priv->tooltip_preview_height)
+    {
+        g_clear_object (&priv->tooltip_preview);
+        priv->tooltip_preview_width = max_width;
+        priv->tooltip_preview_height = max_height;
+    }
+
     /* query-tooltip fires repeatedly while hovering; build the scaled preview
      * once per thumbnail and reuse it (cleared in set_thumbnail/dispose). */
     if (!priv->tooltip_preview)
@@ -275,8 +316,8 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
          * alone does not achieve here. */
         if (width > 0 && height > 0)
         {
-            gdouble scale = MIN (1.0, MIN ((gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / width,
-                                           (gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / height));
+            gdouble scale = MIN (1.0, MIN ((gdouble) max_width / width,
+                                           (gdouble) max_height / height));
             gint target_width  = MAX (1, (gint) (width * scale));
             gint target_height = MAX (1, (gint) (height * scale));
             g_autoptr (GtkSnapshot) snapshot = gtk_snapshot_new ();
@@ -291,7 +332,7 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
         gtk_picture_set_content_fit (GTK_PICTURE (preview), GTK_CONTENT_FIT_CONTAIN);
 
         if (!scaled)
-            gtk_widget_set_size_request (preview, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE);
+            gtk_widget_set_size_request (preview, MIN (max_width, max_height), MIN (max_width, max_height));
 
         priv->tooltip_preview = g_object_ref_sink (preview);
     }
