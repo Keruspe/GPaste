@@ -59,6 +59,11 @@ class GPasteItem extends PopupMenuItem {
     }
 
     showIndex(state) {
+        // Only the first ten rows get a ctrl-index label (there is no ctrl+10),
+        // so the rest have nothing to show either way.
+        if (!this._indexLabel)
+            return;
+
         if (state) {
             if (!this._indexLabelVisible)
                 this.insert_child_at_index(this._indexLabel, 1);

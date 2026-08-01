@@ -23,6 +23,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Bus, bus, G_TYPE_OBJECT)
 
 enum
 {
+    EXPORT_FAILED,
     NAME_ACQUIRED,
     NAME_LOST,
 
@@ -39,14 +40,17 @@ g_paste_bus_register_object (GPasteBus       *self,
     g_autoptr (GError) error = NULL;
 
     /* Failing to export an object is a startup failure, never a takeover — even
-     * though it is now detected *after* the name was acquired (both daemons own
-     * the name first and only add their objects from "name-acquired"), so
-     * priv->acquired must not be forwarded here: a listener would then flush,
-     * exit successfully and report a replacement that never happened. */
+     * though it is detected *after* the name was acquired (both daemons own the
+     * name first and only add their objects from "name-acquired"). It gets its
+     * own signal rather than riding on "name-lost": that one's @was_owned is
+     * about a replacement, and a listener told the name was lost would report a
+     * conflict with another daemon that never happened. */
     if (!g_paste_bus_object_register_on_connection (object, priv->connection, &error))
     {
+        /* The cause is ours to report (we are the ones holding the GError); what
+         * to do about it is the listener's. */
         g_warning ("Failed to export an object on the bus: %s", (error) ? error->message : "unknown error");
-        g_signal_emit (self, signals[NAME_LOST], 0, FALSE);
+        g_signal_emit (self, signals[EXPORT_FAILED], 0);
     }
 }
 
@@ -230,6 +234,27 @@ static void
 g_paste_bus_class_init (GPasteBusClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_bus_dispose;
+
+    /**
+     * GPasteBus::export-failed:
+     * @gpaste_bus: the object on which the signal was emitted
+     *
+     * The "export-failed" signal is emitted when an object handed to
+     * g_paste_bus_add_object() could not be registered on the connection (the
+     * reason is warned about by the bus itself). The name may well be ours, but
+     * that object's methods are unreachable, so a daemon is expected to treat
+     * this as a startup failure — a distinct one from "name-lost", which is
+     * about another daemon owning the name.
+     */
+    signals[EXPORT_FAILED] = g_signal_new ("export-failed",
+                                           G_PASTE_TYPE_BUS,
+                                           G_SIGNAL_RUN_LAST,
+                                           0, /* class offset */
+                                           NULL, /* accumulator */
+                                           NULL, /* accumulator data */
+                                           g_cclosure_marshal_VOID__VOID,
+                                           G_TYPE_NONE,
+                                           0);
 
     /**
      * GPasteBus::name-acquired:

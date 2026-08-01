@@ -19,6 +19,7 @@
 
 enum
 {
+    C_EXPORT_FAILED,
     C_NAME_ACQUIRED,
     C_NAME_LOST,
     C_REEXECUTE_SELF,
@@ -165,6 +166,22 @@ on_name_acquired (GPasteBus *bus G_GNUC_UNUSED,
         on_migration_done (ctx);
 }
 
+/* We may well own the name, but an object we cannot export is a daemon no client
+ * can talk to: fail the startup rather than blaming a name conflict that never
+ * happened (the bus already warned about the actual cause). */
+static void
+on_export_failed (GPasteBus *bus G_GNUC_UNUSED,
+                  gpointer   user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    fprintf (stderr, "%s\n", _("Could not export our objects on the session bus, exiting"));
+
+    flush_and_unlock (ctx);
+    g_application_quit (ctx->gapp);
+    exit (EXIT_FAILURE);
+}
+
 static void
 on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
               gboolean   was_owned,
@@ -239,6 +256,8 @@ main (gint argc, gchar *argv[])
      * already holds the name, before doing any storage work, and lets a manual
      * `--replace` (or the gnome-shell extension) evict the current owner. */
     ctx.bus = g_paste_bus_new ();
+    ctx.c_signals[C_EXPORT_FAILED] = g_signal_connect (ctx.bus, "export-failed",
+                                                       G_CALLBACK (on_export_failed), &ctx);
     ctx.c_signals[C_NAME_ACQUIRED] = g_signal_connect (ctx.bus, "name-acquired",
                                                        G_CALLBACK (on_name_acquired), &ctx);
     ctx.c_signals[C_NAME_LOST] = g_signal_connect (ctx.bus, "name-lost",
@@ -253,6 +272,7 @@ main (gint argc, gchar *argv[])
 
     if (ctx.bus)
     {
+        g_signal_handler_disconnect (ctx.bus, ctx.c_signals[C_EXPORT_FAILED]);
         g_signal_handler_disconnect (ctx.bus, ctx.c_signals[C_NAME_ACQUIRED]);
         g_signal_handler_disconnect (ctx.bus, ctx.c_signals[C_NAME_LOST]);
     }

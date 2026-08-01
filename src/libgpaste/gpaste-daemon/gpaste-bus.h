@@ -13,7 +13,7 @@ G_PASTE_FINAL_TYPE (Bus, bus, BUS, GObject)
 
 /* Hand the bus an object to expose. It is registered immediately if the name is
  * already owned, otherwise when it is acquired; the bus keeps it alive and emits
- * "name-lost" if registration fails. */
+ * "export-failed" if registration fails. */
 void g_paste_bus_add_object (GPasteBus       *self,
                              GPasteBusObject *object);
 

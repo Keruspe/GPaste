@@ -48,6 +48,8 @@ export class GPasteDaemonRunner {
     _start() {
         this._bus = GPasteDaemon.Bus.new();
 
+        this._exportFailedId = this._bus.connect('export-failed', () => this._onExportFailed());
+
         this._nameLostId = this._bus.connect('name-lost', (_bus, wasOwned) => this._onNameLost(wasOwned));
 
         this._acquiredId = this._bus.connect('name-acquired', () => {
@@ -58,6 +60,18 @@ export class GPasteDaemonRunner {
         });
 
         this._bus.own_name_full(true);
+    }
+
+    // Owning the name is not enough: an object that failed to export leaves every
+    // client call landing on a path that does not exist, and our holding the name
+    // is precisely what stops D-Bus from activating the standalone daemon that
+    // would work. Stand down so it can, mirroring the standalone daemon treating
+    // this as a startup failure and exiting. (The bus warned about the cause.)
+    _onExportFailed() {
+        console.error('GPaste: could not export our objects on the session bus, standing down');
+        this._standDown = true;
+        this._releaseDaemon();
+        this._resolveReady();
     }
 
     _onNameLost(wasOwned) {
@@ -109,6 +123,10 @@ export class GPasteDaemonRunner {
     }
 
     _teardownBus() {
+        if (this._exportFailedId) {
+            this._bus.disconnect(this._exportFailedId);
+            this._exportFailedId = 0;
+        }
         if (this._nameLostId) {
             this._bus.disconnect(this._nameLostId);
             this._nameLostId = 0;
@@ -156,6 +174,13 @@ export class GPasteDaemonRunner {
         this._reexecId = this._daemon.connect('reexecute-self', () => this._onReexecute());
 
         bus.add_object(this._daemon);
+
+        // Exporting can fail, which stands us down and drops the daemon (see
+        // _onExportFailed, which runs from inside add_object and resolves ready
+        // itself): there is nothing left to export then.
+        if (this._stopped)
+            return;
+
         bus.add_object(this._searchProvider);
 
         this._resolveReady();
@@ -198,6 +223,18 @@ export class GPasteDaemonRunner {
             // with (it runs in its own process and cannot share the process-wide
             // global), so set it here before the daemon loads the history.
             const [, passphrase] = await proc.communicate_utf8_async(null, this._cancellable);
+
+            // Say so when the helper did not get to do its job: the history is
+            // about to be loaded with whatever backend is still configured, and
+            // an encrypted one that stayed locked comes back empty — which must
+            // not look like data loss with nothing in the log to explain it.
+            if (!proc.get_successful()) {
+                const status = proc.get_if_exited()
+                    ? `exit status ${proc.get_exit_status()}`
+                    : `signal ${proc.get_term_sig()}`;
+                console.error(`GPaste: the storage ${command} helper failed (${status})`);
+            }
+
             if (passphrase)
                 GPasteDaemon.StorageBackend.set_passphrase(passphrase);
         } catch (e) {
