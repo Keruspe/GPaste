@@ -387,7 +387,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE))
         g_paste_daemon_methods_delete (&methods, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
-        g_paste_daemon_methods_delete_history (&methods, parameters, &err);
+        g_paste_daemon_methods_delete_history (&methods, parameters, &error, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
         g_paste_daemon_methods_delete_password (&methods, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_EMPTY_HISTORY))

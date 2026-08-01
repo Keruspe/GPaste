@@ -36,8 +36,19 @@ typedef struct
     gchar                *name;
 
     /* Set once the history has been flushed for shutdown/handover: no further
-     * change is persisted, so a successor daemon owns the on-disk state. */
+     * change is persisted, so a successor daemon owns the on-disk state. Only
+     * the deliberate counterpart of that handover lifts it (g_paste_history_resume,
+     * or reload_backend once a migration has rewritten the store) — never the
+     * mere start of a load, which can happen throughout a handover window that
+     * keeps running (the in-shell daemon stays on the bus across its migration
+     * dialog, so a history switch can land right in the middle of it). */
     gboolean              stopped;
+
+    /* Set when *this* history is on disk but could not be read back, so the
+     * empty model we ended up with is never written over the intact data.
+     * Unlike @stopped it belongs to the loaded history alone: starting another
+     * load clears it, and that load's own result sets it again. */
+    gboolean              unreadable;
 
     /* Note: we never track the first (active) item here */
     const gchar          *biggest_uuid;
@@ -180,7 +191,7 @@ g_paste_history_update (GPasteHistory      *self,
     /* Don't persist intermediate states while an async load is replacing the
      * history (the load result triggers its own save when appropriate), nor once
      * we have been flushed for handover (a successor daemon owns the file now). */
-    if (!priv->stopped && !g_paste_history_saver_is_loading (priv->saver))
+    if (!priv->stopped && !priv->unreadable && !g_paste_history_saver_is_loading (priv->saver))
     {
         /* An incremental backend only ever consumes the snapshot on an add (to
          * reconcile dedups and evictions that ride along with it); skip the
@@ -910,9 +921,9 @@ g_paste_history_load_locked (GPasteHistory        *self,
      * clears the flag: it is this history's own readability that decides,
      * otherwise one unreadable history would silently stop persisting every
      * other one loaded afterwards. */
-    priv->stopped = !g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
+    priv->unreadable = !g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
 
-    if (priv->stopped)
+    if (priv->unreadable)
         g_warning ("Could not read the history back; it will not be overwritten");
 
     if (priv->history)
@@ -970,10 +981,11 @@ g_paste_history_on_loaded (gpointer  user_data,
 
     /* The history is on disk but could not be read back: never write our empty
      * model over it (see g_paste_history_load_locked). */
-    if (!readable)
+    priv->unreadable = !readable;
+
+    if (priv->unreadable)
     {
         g_warning ("Could not read the history back; it will not be overwritten");
-        priv->stopped = TRUE;
         save_after = FALSE;
     }
 
@@ -1020,7 +1032,11 @@ g_paste_history_reload_backend (GPasteHistory *self)
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
     g_paste_history_private_elect_new_biggest (priv);
+    /* The deliberate end of the handover g_paste_history_flush() opened: the
+     * store has been rewritten and we are the one that owns it again. Whatever
+     * the backend we just dropped could not read is moot too. */
     priv->stopped = FALSE;
+    priv->unreadable = FALSE;
 
     /* Tell every UI to reload the whole history from the new backend. */
     g_paste_history_emit_switch (self, priv->name);
@@ -1060,8 +1076,9 @@ g_paste_history_load_async (GPasteHistory *self,
     priv->size = 0;
     /* A previously unreadable history must not keep the *next* one from being
      * persisted: the load's own result decides (see g_paste_history_on_loaded).
-     * Nothing is recorded in the meantime, since a load is now in progress. */
-    priv->stopped = FALSE;
+     * Nothing is recorded in the meantime, since a load is now in progress.
+     * @stopped is deliberately left alone — a handover is not ours to undo. */
+    priv->unreadable = FALSE;
 
     g_paste_history_saver_load (priv->saver, priv->name, FALSE);
 }
@@ -1090,31 +1107,70 @@ g_paste_history_switch (GPasteHistory *self,
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
  * @name: (nullable): the history to delete (defaults to the configured one)
- * @error: a #GError
+ * @error: a #GError, set to %G_IO_ERROR_BUSY when the store has been handed over
+ *         (see g_paste_history_flush()) and nothing was deleted
  *
  * Delete the current #GPasteHistory
+ *
+ * Returns: whether the history was deleted
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_delete (GPasteHistory *self,
                         const gchar   *name,
                         GError       **error)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     const gchar *history_name = (name) ? name : priv->name;
 
+    /* We have handed the store over: either to a successor daemon, or — for the
+     * in-shell one, which keeps answering the bus right through its migration —
+     * to the gpaste-storage helper, which is reading and rewriting it as we
+     * speak. Deleting an entry from underneath it would race that rewrite (and
+     * lose to it), so refuse rather than half-do it. */
+    if (priv->stopped)
+    {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,
+                     "The history storage is being handed over, cannot delete “%s” right now",
+                     history_name);
+        return FALSE;
+    }
+
     if (g_paste_str_equal (history_name, priv->name))
     {
+        /* A load still in flight is reading the very history we are about to
+         * unlink: its result would be installed right after, and the next
+         * clipboard change would then write the whole pre-delete history back.
+         * Also lets the empty() below actually record its write (a save is
+         * skipped while a load is in progress). */
+        g_paste_history_saver_abandon_load (priv->saver);
+
         g_paste_history_empty (self);
         /* Emptying records a write for this very history, which the saver would
          * otherwise apply *after* the file is gone — re-creating it (both
          * backends create the store on open/write), so the deleted history would
          * come back, empty, in the next listing. Land it first. */
         g_paste_history_saver_drain (priv->saver);
+
+        /* Whatever we could not read back is about to be unlinked, so there is
+         * nothing left to protect: recording must resume, or the gate would stay
+         * shut for the rest of the process and nothing would ever be persisted
+         * again. */
+        priv->unreadable = FALSE;
     }
 
-    g_paste_storage_backend_delete_history (priv->backend, history_name, error);
+    g_autoptr (GError) local_error = NULL;
+
+    g_paste_storage_backend_delete_history (priv->backend, history_name, &local_error);
+
+    if (local_error)
+    {
+        g_propagate_error (error, g_steal_pointer (&local_error));
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 static void
@@ -1129,8 +1185,11 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
     /* Switching away from an unreadable history resumes recording: the new one
-     * stands on its own (see g_paste_history_load_async). */
-    priv->stopped = FALSE;
+     * stands on its own (see g_paste_history_load_async). A flushed history
+     * stays flushed, though — the in-shell daemon keeps answering the bus right
+     * through its migration, so a switch can land inside that window and must
+     * not put the pre-migration backend back to work. */
+    priv->unreadable = FALSE;
 
     g_paste_history_emit_switch (self, priv->name);
     g_paste_history_saver_load (priv->saver, priv->name, TRUE);

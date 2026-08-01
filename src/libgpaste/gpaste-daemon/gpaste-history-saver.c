@@ -412,6 +412,30 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
 }
 
 /**
+ * g_paste_history_saver_abandon_load:
+ * @self: a #GPasteHistorySaver
+ *
+ * Drop the result of the load currently in flight, if any. The read itself is
+ * already running on a worker thread and cannot be interrupted, but its result
+ * is discarded instead of being installed, and is_loading() reports %FALSE right
+ * away. Meant for a caller that just invalidated what is being read (see
+ * g_paste_history_delete()), so the load cannot resurrect it afterwards.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+
+    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
+
+    /* The same mechanism a superseding load relies on: bumping the generation
+     * makes load_done() drop the stale result. Unlike that case there is no
+     * newer load to clear @load_in_progress, so clear it here. */
+    priv->load_generation++;
+    priv->load_in_progress = FALSE;
+}
+
+/**
  * g_paste_history_saver_is_loading:
  * @self: a #GPasteHistorySaver
  *

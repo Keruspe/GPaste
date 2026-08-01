@@ -52,7 +52,7 @@ void         g_paste_history_load_async  (GPasteHistory *self,
                                           const gchar   *name);
 void         g_paste_history_switch      (GPasteHistory *self,
                                           const gchar   *name);
-void         g_paste_history_delete      (GPasteHistory *self,
+gboolean     g_paste_history_delete      (GPasteHistory *self,
                                           const gchar   *name,
                                           GError       **error);
 const GList *g_paste_history_get_history (const GPasteHistory *self);

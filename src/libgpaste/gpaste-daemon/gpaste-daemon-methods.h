@@ -100,6 +100,7 @@ void      g_paste_daemon_methods_delete                     (const GPasteDaemonM
                                                              GPasteDBusError          **err);
 void      g_paste_daemon_methods_delete_history             (const GPasteDaemonMethods *priv,
                                                              GVariant                  *parameters,
+                                                             GError                   **error,
                                                              GPasteDBusError          **err);
 void      g_paste_daemon_methods_delete_password            (const GPasteDaemonMethods *priv,
                                                              GVariant                  *parameters,

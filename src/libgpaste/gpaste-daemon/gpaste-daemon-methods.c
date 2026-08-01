@@ -226,6 +226,7 @@ g_paste_daemon_methods_delete (const GPasteDaemonMethods *priv,
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *priv,
                                        GVariant                  *parameters,
+                                       GError                   **error,
                                        GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
@@ -234,7 +235,12 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *priv,
 
     GPasteHistory *history = priv->history;
 
-    g_paste_history_delete (history, name, NULL);
+    /* Nothing was deleted if this fails (the store is being handed over), so
+     * neither announce the deletion nor switch away from a history that is
+     * still there; the caller turns @error into the method's reply. */
+    if (!g_paste_history_delete (history, name, error))
+        return;
+
     g_paste_daemon_private_delete_history_signal (priv, name);
 
     if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
