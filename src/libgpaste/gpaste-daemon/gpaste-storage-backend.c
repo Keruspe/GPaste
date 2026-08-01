@@ -211,6 +211,12 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
     g_return_val_if_fail (history && !*history, FALSE);
     g_return_val_if_fail (size, FALSE);
 
+    /* @history is required to come in empty (asserted above), but @size is not:
+     * settle it here so every backend's failure path — which reports the failure
+     * rather than filling these in — leaves both (out) parameters consistent
+     * with each other and with the empty history the caller is holding. */
+    *size = 0;
+
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
     return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);

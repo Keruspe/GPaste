@@ -193,7 +193,24 @@ export class GPasteDaemonRunner {
     // needed stays here, in the launcher (the same needed() checks).
     //
     // Returns whether the caller may carry on (i.e. we were not stopped meanwhile).
-    async _settleStorage() {
+    //
+    // Only ever one settle in flight: the helper can block on a dialog for
+    // minutes, and a bus reconnect during that window runs _onNameAcquired()
+    // again — which would spawn a second gpaste-storage on the very store the
+    // first one is rewriting. A later caller joins the running settle instead;
+    // its answer ("may I carry on") is the same for both, since it only reports
+    // whether we were stopped meanwhile.
+    _settleStorage() {
+        if (!this._settling) {
+            this._settling = this._doSettleStorage().finally(() => {
+                this._settling = null;
+            });
+        }
+
+        return this._settling;
+    }
+
+    async _doSettleStorage() {
         // The gate keys are written by other processes (gpaste-client, the helper),
         // whose dconf notification may not have reached us yet; read them back
         // rather than trusting our cached copy.
