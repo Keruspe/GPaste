@@ -11,10 +11,14 @@ import {GPasteActionButton} from './actionButton.js';
 export const GPasteEmptyHistoryItem = GObject.registerClass(
 class GPasteEmptyHistoryItem extends GPasteActionButton {
     constructor(client, settings, menu) {
-        super('edit-clear-all-symbolic', _('Empty history'), async () => {
+        // The button invokes the action synchronously and drops what it returns,
+        // so this promise is nobody's to await: catch here or a daemon that goes
+        // away mid-call surfaces as an unhandled rejection.
+        super('edit-clear-all-symbolic', _('Empty history'), () => {
             menu.itemActivated();
-            const name = await client.get_history_name();
-            GPaste.util_empty_with_confirmation(client, settings, name);
+            client.get_history_name()
+                .then(name => GPaste.util_empty_with_confirmation(client, settings, name))
+                .catch(console.error);
         });
     }
 });

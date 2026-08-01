@@ -39,7 +39,16 @@ export default class GPasteExtension extends Extension {
             this._sessionUpdatedId = 0;
         }
 
-        this._destroyIndicator();
+        // The indicator is what reports our state to the daemon, but it cannot
+        // always: outside the "user" session mode there is none (a disable
+        // reached from a locked session — an extension update, or
+        // gnome-extensions disable), and one that never reached a daemon has no
+        // client to report through. It tells us which happened, and we do here
+        // what it would have done for us — "track-extension-state" means exactly
+        // "stop tracking when the extension does", and the daemon reads that key
+        // live. Exactly one of the two reports, whichever way it went.
+        if (!this._destroyIndicator(true) && this._settings?.get_track_extension_state())
+            this._settings.set_track_changes(false);
 
         this._runner?.shutdown();
         this._runner = null;
@@ -50,7 +59,7 @@ export default class GPasteExtension extends Extension {
         if (Main.sessionMode.currentMode === 'user')
             this._createIndicator();
         else
-            this._destroyIndicator();
+            this._destroyIndicator(false);
     }
 
     _createIndicator() {
@@ -78,10 +87,17 @@ export default class GPasteExtension extends Extension {
         Main.panel.addToStatusArea('gpaste', new GPasteIndicator());
     }
 
-    _destroyIndicator() {
+    // @extensionDisabled distinguishes the extension going away from the
+    // indicator being dropped because we left the "user" session mode (the lock
+    // screen): only the former is a state change the daemon should hear about.
+    //
+    // Returns whether that state change was reported to the daemon — %false both
+    // when there was nothing to report and when there was no indicator (or no
+    // client) to report it.
+    _destroyIndicator(extensionDisabled) {
         this._indicatorWanted = false;
         // shutdown() destroys the actor, which removes it from the panel's
         // statusArea; nothing to do when there is no indicator.
-        Main.panel.statusArea.gpaste?.shutdown();
+        return !!Main.panel.statusArea.gpaste?.shutdown(extensionDisabled);
     }
 }

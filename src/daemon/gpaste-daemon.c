@@ -98,7 +98,8 @@ usr1_handler (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
-    /* reexec ignores its first argument, so the context is all it needs. */
+    /* reexec() takes the daemon to flush (NULL before it is built, which simply
+     * skips the flush) and ignores its second, signal-closure argument. */
     reexec (ctx->daemon, ctx);
 
     /* Only reached when the exec failed and the daemon resumed: keep the

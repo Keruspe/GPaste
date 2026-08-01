@@ -160,12 +160,32 @@ class GPasteIndicator extends Button {
         this.connect('destroy', this._onDestroy.bind(this));
     }
 
-    shutdown() {
+    // @extensionDisabled: whether the extension itself is going away, as opposed
+    // to the indicator merely being torn down for a non-user session mode (the
+    // lock screen), where the extension — and the in-shell daemon it may host —
+    // deliberately stays enabled.
+    //
+    // Returns whether the extension's state was reported to the daemon, so the
+    // caller knows when it still has to report it some other way: we can only do
+    // it through a client we may never have got (the daemon was unreachable, or
+    // is still being connected to).
+    shutdown(extensionDisabled) {
         this._destroyed = true;
-        this._onStateChanged(false);
+        // Only report the extension's own state: "track-extension-state" users
+        // ask the daemon to stop tracking when the extension goes away, and the
+        // lock screen is not that. Reporting it there would stop recording the
+        // clipboard for the whole locked session, which is exactly what the
+        // "unlock-dialog" session mode exists to prevent.
+        const reported = extensionDisabled && !!this._client;
+
+        if (reported)
+            this._onStateChanged(false);
+
         // destroy() fires the 'destroy' signal connected in _setup, which runs
         // _onDestroy(); don't call it a second time here.
         this.destroy();
+
+        return reported;
     }
 
     _onKeyPressEvent(actor, event) {
