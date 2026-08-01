@@ -187,8 +187,10 @@ on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     /* Ctrl+0-9 activates the item displayed at that index, mirroring the GNOME
-     * Shell extension (the index is shown to the left of each item). */
-    if (state & GDK_CONTROL_MASK)
+     * Shell extension (the index is shown to the left of each item). Only once
+     * there is a list: a window presented for the connection-failure banner
+     * alone has no history (nor merge bar) behind it. */
+    if (priv->history && (state & GDK_CONTROL_MASK))
     {
         if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9)
             return g_paste_ui_history_activate_index (priv->history, keyval - GDK_KEY_0) ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
@@ -202,7 +204,7 @@ on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
     if (gtk_search_bar_get_search_mode (priv->search_bar))
         return GDK_EVENT_PROPAGATE;
 
-    if (gtk_action_bar_get_revealed (priv->merge_bar))
+    if (priv->merge_bar && gtk_action_bar_get_revealed (priv->merge_bar))
     {
         exit_selection_mode (self);
         return GDK_EVENT_STOP;
@@ -219,7 +221,9 @@ on_search_activate (GtkSearchEntry *entry,
     GPasteUiWindowPrivate *priv = user_data;
     const gchar *search = gtk_editable_get_text (GTK_EDITABLE (entry));
 
-    if (search && *search)
+    /* These two are wired up from init(), before there is anything to search:
+     * the window can be on screen with only the connection-failure banner. */
+    if (priv->history && search && *search)
         g_paste_ui_history_select_first (priv->history);
 }
 
@@ -228,6 +232,9 @@ on_search (GtkSearchEntry *entry,
            gpointer        user_data)
 {
     GPasteUiWindowPrivate *priv = user_data;
+
+    if (!priv->history)
+        return;
 
     g_paste_ui_history_search (priv->history, gtk_editable_get_text (GTK_EDITABLE (entry)));
 }
@@ -508,6 +515,9 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         g_critical ("%s: %s", _("Couldn't connect to GPaste daemon"), error->message);
         adw_banner_set_title (priv->banner, _("Couldn't connect to GPaste daemon"));
         adw_banner_set_revealed (priv->banner, TRUE);
+        /* Nothing was built to search through, so stop a keystroke from pulling
+         * up a search bar that could only ignore it. */
+        gtk_search_bar_set_key_capture_widget (priv->search_bar, NULL);
         /* Present anyway: the banner explaining what went wrong is the whole
          * point, and a window that is never shown leaves the application
          * running with nothing on screen at all. */
