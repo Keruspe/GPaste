@@ -16,9 +16,24 @@ G_BEGIN_DECLS
 
 typedef void (*GPasteStorageMigrationDoneFunc) (gpointer user_data);
 
-/* Receives the entered passphrase, or %NULL if the prompt was dismissed. */
-typedef void (*GPasteStoragePassphraseFunc) (const gchar *passphrase,
-                                             gpointer     user_data);
+/* What the prompt's "Remember this passphrase" switch says to do with the
+ * keyring. UNCHANGED is not "no": it is the switch having been left as it was
+ * found, which must not delete an entry — the switch starts off both when there
+ * is nothing remembered and when the keyring could not be reached to ask. */
+typedef enum {
+    G_PASTE_STORAGE_REMEMBER_UNCHANGED,
+    G_PASTE_STORAGE_REMEMBER_YES,
+    G_PASTE_STORAGE_REMEMBER_NO
+} GPasteStorageRemember;
+
+/* Receives the entered passphrase, or %NULL if the prompt was dismissed, along
+ * with what to do about remembering it. Acting on @remember is deliberately the
+ * callback's job: only it can tell whether the passphrase turned out to be the
+ * right one, and remembering a wrong one costs a prompt on every startup until
+ * it is discarded. */
+typedef void (*GPasteStoragePassphraseFunc) (const gchar          *passphrase,
+                                             GPasteStorageRemember remember,
+                                             gpointer              user_data);
 
 /* Whether the migration dialog should be shown: the stored backend revision
  * differs from G_PASTE_STORAGE_BACKEND_REVISION. */
@@ -33,11 +48,15 @@ gboolean g_paste_storage_decryption_needed (GPasteSettings *settings);
 /* Ask the user for the encrypted history passphrase. @confirm asks for it twice
  * (with a data-loss warning) when setting up a new encrypted history; otherwise
  * it is a single unlock field. @error_message, when set, is shown above the
- * entry (e.g. to re-prompt after a wrong passphrase). Lives in the daemon, not
- * the UI. */
+ * entry (e.g. to re-prompt after a wrong passphrase). @remember is where the
+ * "Remember this passphrase" switch starts: UNCHANGED asks the keyring, and
+ * anything else carries a choice the user already made forward — which is what a
+ * re-prompt after a wrong passphrase has to do, or it would silently undo it.
+ * Lives in the daemon, not the UI. */
 void g_paste_storage_migration_prompt_passphrase (GtkApplication              *application,
                                                   gboolean                     confirm,
                                                   const gchar                 *error_message,
+                                                  GPasteStorageRemember        remember,
                                                   GPasteStoragePassphraseFunc  done,
                                                   gpointer                     user_data);
 

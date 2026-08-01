@@ -22,10 +22,10 @@ g_paste_storage_keyring_schema (void)
     return &schema;
 }
 
-/* Internal on purpose: applying a remembered passphrase without checking that it
- * still decrypts the history is the footgun apply_verified() exists to close. */
-static gboolean
-g_paste_storage_keyring_apply (void)
+/* The remembered passphrase, or NULL when there is none. Free it with
+ * secret_password_free(). */
+static gchar *
+g_paste_storage_keyring_lookup (void)
 {
     g_autoptr (GError) error = NULL;
     gchar *passphrase = secret_password_lookup_sync (g_paste_storage_keyring_schema (), NULL, &error, NULL);
@@ -33,11 +33,48 @@ g_paste_storage_keyring_apply (void)
     if (error)
         g_warning ("Could not look up the history passphrase in the keyring: %s", error->message);
 
+    return passphrase;
+}
+
+/* Internal on purpose: applying a remembered passphrase without checking that it
+ * still decrypts the history is the footgun apply_verified() exists to close. */
+static gboolean
+g_paste_storage_keyring_apply (void)
+{
+    gchar *passphrase = g_paste_storage_keyring_lookup ();
+
     if (!passphrase)
         return FALSE;
 
     g_paste_storage_backend_set_passphrase (passphrase);
     secret_password_free (passphrase);
+
+    return TRUE;
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_storage_keyring_has_passphrase (void)
+{
+    g_autoptr (GError) error = NULL;
+    /* Search rather than look up: without SECRET_SEARCH_LOAD_SECRETS this asks
+     * whether the entry exists without fetching what is in it, so answering a
+     * yes/no question never materializes the passphrase — and never makes the
+     * user unlock their keyring just so a switch can pick its initial state. */
+    g_autoptr (GHashTable) attributes = g_hash_table_new (g_str_hash, g_str_equal);
+    GList *items = secret_service_search_sync (NULL, /* default service */
+                                               g_paste_storage_keyring_schema (),
+                                               attributes,
+                                               SECRET_SEARCH_NONE,
+                                               NULL, /* cancellable */
+                                               &error);
+
+    if (error)
+        g_warning ("Could not look up the history passphrase in the keyring: %s", error->message);
+
+    if (!items)
+        return FALSE;
+
+    g_list_free_full (items, g_object_unref);
 
     return TRUE;
 }
@@ -72,4 +109,15 @@ g_paste_storage_keyring_store (const gchar *passphrase)
                                      "GPaste history passphrase", passphrase,
                                      NULL, &error, NULL) && error)
         g_warning ("Could not store the history passphrase in the keyring: %s", error->message);
+}
+
+G_PASTE_VISIBLE void
+g_paste_storage_keyring_clear (void)
+{
+    g_autoptr (GError) error = NULL;
+
+    /* Nothing to remove is not a failure (it returns %FALSE without setting the
+     * error), so only a real one is worth reporting. */
+    if (!secret_password_clear_sync (g_paste_storage_keyring_schema (), NULL, &error, NULL) && error)
+        g_warning ("Could not remove the history passphrase from the keyring: %s", error->message);
 }

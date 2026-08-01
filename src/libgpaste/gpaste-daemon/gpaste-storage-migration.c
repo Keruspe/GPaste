@@ -42,6 +42,13 @@ typedef struct
      * Doubles as the "source already unlocked" flag, so a second Apply does not
      * ask again. In gcr secure memory; freed in migration_data_free(). */
     gchar                         *source_passphrase;
+
+    /* Whether a new passphrase was asked for (only then is there a choice to
+     * honour), and whether the user asked to remember it. Acted on once the
+     * migration has actually applied, so a failed one never leaves the keyring
+     * pointing at a history that was never written. */
+    gboolean                       passphrase_prompted;
+    GPasteStorageRemember          remember_passphrase;
 #endif
 
     /* The backends offered by the combo, in display order. */
@@ -416,6 +423,28 @@ apply_migration (MigrationData *self,
             cleanup_histories (self->settings, self->current, current_passphrase);
 
         g_paste_settings_set_storage_backend_revision (self->settings, G_PASTE_STORAGE_BACKEND_REVISION);
+
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_LIBSECRET)
+        /* The new passphrase now opens what is actually on disk, so this is when
+         * the user's choice about remembering it can be honoured. Only when one
+         * was asked for *and* the destination is still the encrypted backend it
+         * was asked for: anything else never offered the choice, and must not
+         * silently discard an entry that still unlocks a history. */
+        if (self->passphrase_prompted && g_paste_storage_is_encrypted (chosen))
+        {
+            if (self->remember_passphrase == G_PASTE_STORAGE_REMEMBER_YES)
+                g_paste_storage_keyring_store (chosen_passphrase);
+            else if (self->remember_passphrase == G_PASTE_STORAGE_REMEMBER_NO)
+                g_paste_storage_keyring_clear ();
+        }
+        /* Leaving encryption behind for good: once the encrypted history it
+         * opened is gone, a remembered passphrase is a secret kept for nothing.
+         * Only once it is actually gone, though — data we kept is still locked
+         * with it, and migrating back would want it. */
+        else if (g_paste_storage_is_encrypted (self->current) && !g_paste_storage_is_encrypted (chosen) &&
+                 cleanup && imported)
+            g_paste_storage_keyring_clear ();
+#endif
     }
 
     /* Destroying the window frees self (its data); grab the callback first. */
@@ -441,8 +470,9 @@ typedef struct
 } UnlockPrompt;
 
 static void
-on_unlock_reply (const gchar *passphrase,
-                 gpointer     user_data)
+on_unlock_reply (const gchar          *passphrase,
+                 GPasteStorageRemember remember,
+                 gpointer               user_data)
 {
     UnlockPrompt *prompt = user_data;
 
@@ -451,15 +481,31 @@ on_unlock_reply (const gchar *passphrase,
      * again instead. */
     if (passphrase && !g_paste_storage_passphrase_can_decrypt (prompt->storage_kind, prompt->settings, passphrase))
     {
+        /* Carry the switch's state into the retry: it is the same question, and
+         * re-deriving it from the keyring would quietly undo the answer. */
         g_paste_storage_migration_prompt_passphrase (prompt->application, FALSE,
                                                      _("Wrong passphrase, please try again"),
-                                                     on_unlock_reply, prompt);
+                                                     remember, on_unlock_reply, prompt);
         return;
     }
 
     /* NULL on dismissal: leave no passphrase set. */
     if (passphrase)
+    {
         g_paste_storage_backend_set_passphrase (passphrase);
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        /* This is the point where the passphrase is proven, so it is the only
+         * safe place to remember it: a wrong one is never written, and turning
+         * the switch off drops whatever was remembered before. */
+        if (remember == G_PASTE_STORAGE_REMEMBER_YES)
+            g_paste_storage_keyring_store (passphrase);
+        else if (remember == G_PASTE_STORAGE_REMEMBER_NO)
+            g_paste_storage_keyring_clear ();
+#else
+        (void) remember;
+#endif
+    }
 
     UnlockDoneFunc done = prompt->done;
     gpointer done_data = prompt->user_data;
@@ -489,7 +535,8 @@ unlock_prompt (GtkApplication *application,
     prompt->done = done;
     prompt->user_data = user_data;
 
-    g_paste_storage_migration_prompt_passphrase (application, FALSE, NULL, on_unlock_reply, prompt);
+    g_paste_storage_migration_prompt_passphrase (application, FALSE, NULL,
+                                                 G_PASTE_STORAGE_REMEMBER_UNCHANGED, on_unlock_reply, prompt);
 }
 
 static void continue_apply (MigrationData *self);
@@ -504,14 +551,20 @@ set_source_passphrase (MigrationData *self,
 }
 
 static void
-on_passphrase_set (const gchar *passphrase,
-                   gpointer     user_data)
+on_passphrase_set (const gchar          *passphrase,
+                   GPasteStorageRemember remember,
+                   gpointer               user_data)
 {
     MigrationData *self = user_data;
 
     /* Cancelled: stay on the migration dialog so another backend can be picked. */
     if (!passphrase)
         return;
+
+    /* Remembering it waits until the migration has applied — see
+     * apply_migration(). */
+    self->passphrase_prompted = TRUE;
+    self->remember_passphrase = remember;
 
     /* The destination's key, and from now on the daemon's: the callers all read
      * it back from here once the migration is done (the gnome-shell helper hands
@@ -582,7 +635,8 @@ continue_apply (MigrationData *self)
      * flow. */
     if (g_paste_storage_is_encrypted (chosen) && chosen != self->current)
     {
-        g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_passphrase_set, self);
+        g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL,
+                                                     G_PASTE_STORAGE_REMEMBER_UNCHANGED, on_passphrase_set, self);
         return;
     }
 #endif
@@ -773,6 +827,9 @@ typedef struct
     GtkEditable                *entry;
     GtkEditable                *confirm_entry;
     GtkWidget                  *remember;
+    /* Where the switch started, so "left alone" can be told from "turned off"
+     * — only the latter may delete what is in the keyring. */
+    gboolean                    remembered;
     GtkWidget                  *ok;
 
     /* Only built when setting a new passphrase (confirm) and libpwquality is
@@ -905,8 +962,9 @@ on_passphrase_changed (GtkEditable *editable G_GNUC_UNUSED,
 }
 
 static void
-passphrase_deliver (PassphraseData *self,
-                    const gchar    *passphrase)
+passphrase_deliver (PassphraseData        *self,
+                    const gchar           *passphrase,
+                    GPasteStorageRemember  remember)
 {
     if (self->delivered)
         return;
@@ -920,7 +978,7 @@ passphrase_deliver (PassphraseData *self,
         passphrase = NULL;
 
     if (self->done)
-        self->done (passphrase, self->user_data);
+        self->done (passphrase, remember, self->user_data);
 }
 
 static void
@@ -928,15 +986,23 @@ on_passphrase_ok (GtkButton *button G_GNUC_UNUSED,
                   gpointer   user_data)
 {
     PassphraseData *self = user_data;
+    GPasteStorageRemember remember = G_PASTE_STORAGE_REMEMBER_UNCHANGED;
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
+    /* Only report the choice: the keyring is written by whoever established that
+     * this passphrase is the right one, which cannot be known from here. Turning
+     * the switch off is a request to forget; finding it off and leaving it there
+     * is not, so a keyring we could not read is never taken as permission to
+     * delete what it holds. */
     if (self->remember && adw_switch_row_get_active (ADW_SWITCH_ROW (self->remember)))
-        g_paste_storage_keyring_store (passphrase_text (self->entry));
+        remember = G_PASTE_STORAGE_REMEMBER_YES;
+    else if (self->remembered)
+        remember = G_PASTE_STORAGE_REMEMBER_NO;
 #endif
 
     /* Deliver while the entry text is still alive; the callback copies it into
      * secure memory. gtk_window_destroy() does not emit "close-request". */
-    passphrase_deliver (self, passphrase_text (self->entry));
+    passphrase_deliver (self, passphrase_text (self->entry), remember);
     gtk_window_destroy (self->window);
 }
 
@@ -944,7 +1010,7 @@ static gboolean
 on_passphrase_close (GtkWindow *window G_GNUC_UNUSED,
                      gpointer   user_data)
 {
-    passphrase_deliver (user_data, NULL);
+    passphrase_deliver (user_data, NULL, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 
     return GDK_EVENT_PROPAGATE;
 }
@@ -982,6 +1048,7 @@ G_PASTE_VISIBLE void
 g_paste_storage_migration_prompt_passphrase (GtkApplication              *application,
                                              gboolean                     confirm,
                                              const gchar                 *error_message,
+                                             GPasteStorageRemember        remember_initially,
                                              GPasteStoragePassphraseFunc  done,
                                              gpointer                     user_data)
 {
@@ -1053,6 +1120,17 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
         gtk_widget_set_size_request (strength, 120, -1);
         adw_action_row_add_suffix (ADW_ACTION_ROW (strength_row), strength);
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), strength_row);
+#else
+        /* Built without libpwquality, so there is no rating to give. Say so
+         * rather than leave the row out: someone choosing a passphrase should
+         * know it is not being judged, instead of reading a silent absence as
+         * approval. */
+        GtkWidget *strength_row = adw_action_row_new ();
+
+        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (strength_row), _("Passphrase strength"));
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (strength_row), _("Not available in this build"));
+        gtk_widget_set_sensitive (strength_row, FALSE);
+        adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), strength_row);
 #endif
 
         adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
@@ -1064,7 +1142,20 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
     self->remember = remember;
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (remember), _("Remember this passphrase"));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (remember), _("Store it in the keyring so you are not asked again"));
+    /* Start from what the user already chose: someone who had their passphrase
+     * remembered stays opted in, so changing it replaces the stored one instead
+     * of leaving a stale entry behind. It also repairs one — this prompt only
+     * comes up when the keyring did not unlock the history, so an entry that
+     * exists here is a bad one, and keeping the switch on overwrites it. A
+     * re-prompt carries the choice made on the previous attempt instead. */
+    self->remembered = (remember_initially == G_PASTE_STORAGE_REMEMBER_UNCHANGED)
+                     ? g_paste_storage_keyring_has_passphrase ()
+                     : (remember_initially == G_PASTE_STORAGE_REMEMBER_YES);
+    adw_switch_row_set_active (ADW_SWITCH_ROW (remember), self->remembered);
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), remember);
+#else
+    /* No keyring to remember anything in, so there is no switch to place. */
+    (void) remember_initially;
 #endif
 
     GtkWidget *page = adw_preferences_page_new ();
@@ -1238,8 +1329,9 @@ rekey_histories (RekeyData   *self,
 }
 
 static void
-on_rekey_passphrase_set (const gchar *passphrase,
-                         gpointer     user_data)
+on_rekey_passphrase_set (const gchar          *passphrase,
+                         GPasteStorageRemember remember,
+                         gpointer               user_data)
 {
     RekeyData *self = user_data;
 
@@ -1251,12 +1343,23 @@ on_rekey_passphrase_set (const gchar *passphrase,
     }
 
     /* Only adopt the new passphrase once the data on disk actually speaks it,
-     * or the daemon would reload an unreadable history. The prompt may already
-     * have remembered it in the keyring; a failure here leaves that entry
-     * pointing at a passphrase the history does not take, which
-     * g_paste_storage_keyring_apply_verified() then discards on its own. */
+     * or the daemon would reload an unreadable history — and only remember it
+     * then, for the same reason. A re-key that gave up part way leaves the
+     * keyring alone: it still holds the passphrase the untouched histories
+     * take. */
     if (rekey_histories (self, passphrase))
+    {
         g_paste_storage_backend_set_passphrase (passphrase);
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        if (remember == G_PASTE_STORAGE_REMEMBER_YES)
+            g_paste_storage_keyring_store (passphrase);
+        else if (remember == G_PASTE_STORAGE_REMEMBER_NO)
+            g_paste_storage_keyring_clear ();
+#else
+        (void) remember;
+#endif
+    }
 
     rekey_finish (self);
 }
@@ -1268,7 +1371,8 @@ on_rekey_passphrase_set (const gchar *passphrase,
 static void
 rekey_prompt_new_passphrase (RekeyData *self)
 {
-    g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_rekey_passphrase_set, self);
+    g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL,
+                                                 G_PASTE_STORAGE_REMEMBER_UNCHANGED, on_rekey_passphrase_set, self);
 }
 
 static void

@@ -16,7 +16,19 @@ G_BEGIN_DECLS
 gboolean g_paste_storage_keyring_apply_verified (GPasteStorage   storage_kind,
                                                  GPasteSettings *settings);
 
-/* Remember @passphrase in the keyring for future startups. */
+/* Whether a passphrase is currently remembered, without installing it. Says
+ * nothing about whether it still decrypts anything — that is what makes it the
+ * right question for "is this user opted in to remembering?", a stale entry
+ * being precisely one that wants replacing. */
+gboolean g_paste_storage_keyring_has_passphrase (void);
+
+/* Remember @passphrase in the keyring for future startups. Only ever called with
+ * one already known to unlock the history: a passphrase that does not is worse
+ * than none, since it costs a prompt every startup until it is discarded. */
 void g_paste_storage_keyring_store (const gchar *passphrase);
+
+/* Stop remembering the passphrase. Removing one that is not there is not an
+ * error, so callers never have to look first. */
+void g_paste_storage_keyring_clear (void);
 
 G_END_DECLS
