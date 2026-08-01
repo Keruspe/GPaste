@@ -551,8 +551,10 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
     }
 
     GdkFileList *file_list = g_value_get_boxed (value);
+    /* (transfer container): the container is ours, the GFiles are not. */
+    g_autoptr (GSList) files = (file_list) ? gdk_file_list_get_files (file_list) : NULL;
 
-    if (!gdk_file_list_get_files (file_list))
+    if (!files)
     {
         g_paste_clipboard_gdk_update_maybe_done (data);
         return;

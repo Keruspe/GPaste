@@ -813,8 +813,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     case CLIPBOARD_CONTENT_FILE_LIST:
     {
         GdkFileList *file_list = g_value_get_boxed (&value);
+        /* (transfer container): the container is ours, the GFiles are not. */
+        g_autoptr (GSList) files = (file_list) ? gdk_file_list_get_files (file_list) : NULL;
 
-        if (!file_list || !gdk_file_list_get_files (file_list))
+        if (!files)
             break;
 
         /* Re-asserting the same file selection must not re-add it, mirroring the

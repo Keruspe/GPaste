@@ -211,8 +211,12 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
     if (!a || !b)
         return FALSE;
 
-    GSList *fa = gdk_file_list_get_files (a);
-    GSList *fb = gdk_file_list_get_files (b);
+    /* gdk_file_list_get_files is (transfer container): it hands back a fresh
+     * GSList whose GFiles stay owned by the list, hence g_autoptr (GSList). */
+    g_autoptr (GSList) files_a = gdk_file_list_get_files (a);
+    g_autoptr (GSList) files_b = gdk_file_list_get_files (b);
+    const GSList *fa = files_a;
+    const GSList *fb = files_b;
 
     for (; fa && fb; fa = fa->next, fb = fb->next)
     {

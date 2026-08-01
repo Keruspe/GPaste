@@ -87,7 +87,9 @@ _g_paste_uris_item_new (const gchar *uris_joined,
     g_autofree gchar *display = g_strconcat (_("[Files] "), display_flat, NULL);
     g_paste_item_set_display_string (self, g_steal_pointer (&display));
 
-    guint64 n_uris = g_slist_length (gdk_file_list_get_files (file_list));
+    /* (transfer container): the container is ours, the GFiles are not. */
+    g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
+    guint64 n_uris = g_slist_length (files);
     g_paste_item_add_size (self, strlen (uris_joined) + 1 + n_uris);
 
     priv->file_list = file_list;
@@ -140,14 +142,15 @@ g_paste_uris_item_new (GdkFileList *file_list)
 {
     g_return_val_if_fail (file_list != NULL, NULL);
 
-    GSList *files = gdk_file_list_get_files (file_list);
+    /* (transfer container): the container is ours, the GFiles are not. */
+    g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
 
     if (!files)
         return NULL;
 
     g_autoptr (GString) uris_joined = g_string_new (NULL);
 
-    for (GSList *l = files; l; l = l->next)
+    for (const GSList *l = files; l; l = l->next)
     {
         g_autofree gchar *uri = g_file_get_uri (G_FILE (l->data));
         if (uris_joined->len > 0)

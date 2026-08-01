@@ -579,7 +579,8 @@ g_paste_history_get_by_uuid (GPasteHistory *self,
  * Get a #GPasteItem from the #GPasteHistory
  * free it with g_object_unref
  *
- * Returns: (transfer full): a #GPasteItem
+ * Returns: (transfer full) (nullable): a #GPasteItem, or %NULL when @index is
+ *          out of range (an empty history has no item 0)
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_history_dup (GPasteHistory *self,
@@ -590,7 +591,10 @@ g_paste_history_dup (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    return g_object_ref (g_paste_history_private_get (priv, index));
+    GPasteItem *item = g_paste_history_private_get (priv, index);
+
+    /* Callers null-check the result; ref'ing NULL would only add a critical. */
+    return (item) ? g_object_ref (item) : NULL;
 }
 
 /**
@@ -902,12 +906,14 @@ g_paste_history_load_locked (GPasteHistory        *self,
     /* A history that is on disk but unreadable (wrong passphrase, corrupt or
      * truncated file, I/O error) must not be persisted over: stop recording so
      * the next clipboard change cannot rewrite the still-intact data from the
-     * empty model we ended up with. */
-    if (!g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size))
-    {
+     * empty model we ended up with. Conversely a history that *did* read back
+     * clears the flag: it is this history's own readability that decides,
+     * otherwise one unreadable history would silently stop persisting every
+     * other one loaded afterwards. */
+    priv->stopped = !g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
+
+    if (priv->stopped)
         g_warning ("Could not read the history back; it will not be overwritten");
-        priv->stopped = TRUE;
-    }
 
     if (priv->history)
         g_paste_history_activate_first (self, TRUE);
@@ -1052,6 +1058,10 @@ g_paste_history_load_async (GPasteHistory *self,
     g_set_str (&priv->name, resolved);
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
+    /* A previously unreadable history must not keep the *next* one from being
+     * persisted: the load's own result decides (see g_paste_history_on_loaded).
+     * Nothing is recorded in the meantime, since a load is now in progress. */
+    priv->stopped = FALSE;
 
     g_paste_history_saver_load (priv->saver, priv->name, FALSE);
 }
@@ -1091,11 +1101,18 @@ g_paste_history_delete (GPasteHistory *self,
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     const gchar *history_name = (name) ? name : priv->name;
 
     if (g_paste_str_equal (history_name, priv->name))
+    {
         g_paste_history_empty (self);
+        /* Emptying records a write for this very history, which the saver would
+         * otherwise apply *after* the file is gone — re-creating it (both
+         * backends create the store on open/write), so the deleted history would
+         * come back, empty, in the next listing. Land it first. */
+        g_paste_history_saver_drain (priv->saver);
+    }
 
     g_paste_storage_backend_delete_history (priv->backend, history_name, error);
 }
@@ -1111,6 +1128,9 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
+    /* Switching away from an unreadable history resumes recording: the new one
+     * stands on its own (see g_paste_history_load_async). */
+    priv->stopped = FALSE;
 
     g_paste_history_emit_switch (self, priv->name);
     g_paste_history_saver_load (priv->saver, priv->name, TRUE);

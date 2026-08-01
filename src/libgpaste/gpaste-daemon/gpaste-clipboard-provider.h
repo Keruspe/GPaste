@@ -14,6 +14,17 @@ G_DECLARE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_PAST
 
 G_PASTE_CONST_FUNCS (ClipboardProvider, CLIPBOARD_PROVIDER)
 
+/**
+ * GPasteClipboardProviderUpdateCallback:
+ * @self: the #GPasteClipboardProvider whose content was read
+ * @item: (transfer full) (nullable): the newly created #GPasteItem, or %NULL
+ *        when the content is unchanged, unrecognised or the selection is empty
+ * @user_data: the data passed to g_paste_clipboard_provider_update()
+ *
+ * Receives the outcome of a g_paste_clipboard_provider_update(). The callback
+ * **owns** @item: it must hand it to something that takes it (e.g.
+ * g_paste_history_add()) or release it.
+ */
 typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *self,
                                                        GPasteItem              *item,
                                                        gpointer                 user_data);
