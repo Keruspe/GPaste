@@ -905,6 +905,170 @@ g_paste_file_backend_delete_history (const GPasteStorageBackend *self,
     g_file_delete (history_file, NULL, error);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Re-encrypt one file's bytes from the key @self holds to the one @rekeyed does,
+ * into a sibling temporary file whose path is returned through @tmp_path. The
+ * bytes are copied verbatim — this is a key change, not a rewrite — and read
+ * back through the new key before the caller is told it worked, so a bad write
+ * is caught while the original is still the only thing in place. */
+static gboolean
+_g_paste_file_backend_reencrypt_file (const GPasteStorageBackend *self,
+                                      const GPasteStorageBackend *rekeyed,
+                                      const gchar                *path,
+                                      gchar                     **tmp_path)
+{
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autofree gchar *text = NULL;
+    gsize length = 0;
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_file_backend_load_contents (self, path, file, &text, &length, &error))
+    {
+        g_warning ("Failed to read %s with the current passphrase: %s", path, error->message);
+        return FALSE;
+    }
+
+    g_autofree gchar *tmp = g_strconcat (path, ".rekey", NULL);
+    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (rekeyed)->get_output_stream (_G_PASTE_FILE_BACKEND ((gpointer) rekeyed),
+                                                                                                     tmp_file);
+
+    if (!stream)
+        return FALSE;
+
+    gboolean ok = g_output_stream_write_all (stream, text, length, NULL, NULL /* cancellable */, &error) &&
+                  g_output_stream_close (stream, NULL /* cancellable */, &error);
+
+    if (ok)
+    {
+        g_autofree gchar *check = NULL;
+        gsize check_length = 0;
+
+        ok = g_paste_file_backend_load_contents (rekeyed, tmp, tmp_file, &check, &check_length, &error) &&
+             check_length == length && !memcmp (check, text, length);
+    }
+
+    if (!ok)
+    {
+        g_warning ("Failed to re-encrypt %s: %s", path, (error) ? error->message : "it did not read back identical");
+        g_file_delete (tmp_file, NULL, NULL);
+
+        return FALSE;
+    }
+
+    *tmp_path = g_steal_pointer (&tmp);
+
+    return TRUE;
+}
+
+/* Every file of @name that is encrypted: the history itself and the image side
+ * files it references, which live in the history's own images directory. */
+static GStrv
+_g_paste_file_backend_encrypted_files (const GPasteStorageBackend *self,
+                                       const gchar                *name)
+{
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+
+    if (g_file_test (history_path, G_FILE_TEST_EXISTS))
+        g_strv_builder_add (builder, history_path);
+
+    g_autofree gchar *images_dir = g_paste_image_item_get_images_dir (name);
+    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
+    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
+                                                                      G_FILE_ATTRIBUTE_STANDARD_NAME,
+                                                                      G_FILE_QUERY_INFO_NONE,
+                                                                      NULL, NULL);
+
+    if (children)
+    {
+        GFileInfo *info;
+
+        while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
+        {
+            g_autoptr (GFileInfo) child = info;
+            const gchar *child_name = g_file_info_get_name (child);
+
+            /* The encrypted side files only; a leftover plain ".png" holds
+             * nothing secret and has no key to change. */
+            if (g_str_has_suffix (child_name, ".pngs"))
+                g_strv_builder_take (builder, g_build_filename (images_dir, child_name, NULL));
+        }
+    }
+
+    return g_strv_builder_end (builder);
+}
+
+/* Re-encrypt @name under @new_passphrase. Everything encrypted under the old key
+ * — the history and its images — is rewritten beside itself and only then moved
+ * into place, so a failure anywhere leaves the whole history exactly as it was.
+ *
+ * Deliberately byte-for-byte: reading the history into items and writing them
+ * back would put it through the history-size limit and the images-support
+ * filter, so changing a passphrase would quietly drop items the user still has.
+ * A key change must change nothing but the key. */
+static gboolean
+g_paste_file_backend_rekey (const GPasteStorageBackend *self,
+                            const gchar                *name,
+                            const gchar                *new_passphrase)
+{
+    if (!g_paste_file_backend_get_passphrase (self))
+    {
+        g_warning ("This history is not encrypted: it has no passphrase to change");
+        return FALSE;
+    }
+
+    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
+                                                                                  new_passphrase);
+    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (self, name);
+    g_autoptr (GStrvBuilder) written = g_strv_builder_new ();
+    gboolean ok = TRUE;
+
+    for (GStrv path = paths; ok && *path; ++path)
+    {
+        gchar *tmp = NULL;
+
+        if ((ok = _g_paste_file_backend_reencrypt_file (self, rekeyed, *path, &tmp)))
+            g_strv_builder_take (written, tmp);
+    }
+
+    g_auto (GStrv) tmps = g_strv_builder_end (written);
+
+    if (!ok)
+    {
+        /* Nothing has moved yet, so dropping the copies puts us back exactly
+         * where we started. */
+        for (GStrv tmp = tmps; *tmp; ++tmp)
+        {
+            g_autoptr (GFile) file = g_file_new_for_path (*tmp);
+
+            g_file_delete (file, NULL, NULL);
+        }
+
+        return FALSE;
+    }
+
+    for (guint i = 0; tmps[i]; ++i)
+    {
+        g_autoptr (GFile) tmp_file = g_file_new_for_path (tmps[i]);
+        g_autoptr (GFile) file = g_file_new_for_path (paths[i]);
+        g_autoptr (GError) error = NULL;
+
+        /* Each of these is a rename over a file whose replacement is already
+         * written and verified, so the only way to fail here is the filesystem
+         * itself giving out. */
+        if (!g_file_move (tmp_file, file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+        {
+            g_warning ("Failed to install the re-encrypted %s: %s", paths[i], error->message);
+            ok = FALSE;
+        }
+    }
+
+    return ok;
+}
+#endif
+
 static const gchar *
 g_paste_file_backend_get_extension (const GPasteStorageBackend *self)
 {
@@ -974,6 +1138,8 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     klass->get_output_stream = g_paste_file_backend_get_output_stream;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+    storage_class->rekey = g_paste_file_backend_rekey;
+
     G_OBJECT_CLASS (klass)->finalize = g_paste_file_backend_finalize;
 #endif
 }

@@ -4,20 +4,11 @@
 #pragma once
 
 #include <gpaste/gpaste-settings.h>
+#include <gpaste/gpaste-storage.h>
 
 #include <gpaste-daemon/gpaste-item.h>
 
 G_BEGIN_DECLS
-
-typedef enum {
-    G_PASTE_STORAGE_NOOP,
-    G_PASTE_STORAGE_FILE,
-    G_PASTE_STORAGE_ENCRYPTED_FILE,
-    G_PASTE_STORAGE_SQLITE,
-    G_PASTE_STORAGE_ENCRYPTED_SQLITE,
-    G_PASTE_N_STORAGE, /* must stay last, before the aliases */
-    G_PASTE_STORAGE_DEFAULT = G_PASTE_STORAGE_FILE
-} GPasteStorage;
 
 #define G_PASTE_TYPE_STORAGE_BACKEND (g_paste_storage_backend_get_type ())
 
@@ -48,6 +39,15 @@ struct _GPasteStorageBackendClass
     GStrv                 (*list_histories) (const GPasteStorageBackend *self,
                                              GError                   **error);
 
+    /*< protected, optional: re-encrypt an existing history under a new key >*/
+    /* @self holds the passphrase the history is currently encrypted with; only
+     * the encrypted flavors implement this. Returns %FALSE when @name was left
+     * as it was, so a caller re-keying several histories can stop instead of
+     * ending up with a set split across two passphrases. */
+    gboolean (*rekey)                (const GPasteStorageBackend *self,
+                                      const gchar                *name,
+                                      const gchar                *new_passphrase);
+
     /*< protected, optional: incremental updates >*/
     void     (*add_item)             (const GPasteStorageBackend *self,
                                       const gchar                *name,
@@ -76,6 +76,9 @@ void g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
                                              GError                   **error);
 GStrv g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
                                               GError                   **error);
+gboolean g_paste_storage_backend_rekey (const GPasteStorageBackend *self,
+                                        const gchar                *name,
+                                        const gchar                *new_passphrase);
 
 void     g_paste_storage_backend_add_item             (const GPasteStorageBackend *self,
                                                        const gchar                *name,
@@ -104,8 +107,6 @@ GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
 GPasteStorageBackend *g_paste_storage_backend_new_with_passphrase (GPasteStorage   storage_kind,
                                                                    GPasteSettings *settings,
                                                                    const gchar    *passphrase);
-
-gboolean g_paste_storage_is_encrypted (GPasteStorage storage_kind);
 
 const gchar *g_paste_storage_get_extension (GPasteStorage storage_kind);
 

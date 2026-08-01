@@ -60,4 +60,15 @@ void g_paste_storage_decryption_show (GtkApplication                 *applicatio
                                       GPasteStorageMigrationDoneFunc  done,
                                       gpointer                        user_data);
 
+/* Change the passphrase of the encrypted history (the "re-key" concern):
+ * unlock it, ask for the passphrase to replace it with (confirmed, and
+ * optionally remembered in the keyring), then re-encrypt every history with it.
+ * The history never moves — only its key changes. @done is invoked immediately
+ * when the current backend is not encrypted. Like _show above, the caller owns
+ * the main loop. */
+void g_paste_storage_rekey_show (GtkApplication                 *application,
+                                 GPasteSettings                 *settings,
+                                 GPasteStorageMigrationDoneFunc  done,
+                                 gpointer                        user_data);
+
 G_END_DECLS

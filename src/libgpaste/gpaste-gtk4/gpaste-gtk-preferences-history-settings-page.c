@@ -33,6 +33,37 @@ on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
 }
 
 static void
+on_change_passphrase_activated (AdwButtonRow *row G_GNUC_UNUSED,
+                                gpointer      user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+
+    if (!client)
+    {
+        g_warning ("Could not connect to the daemon to change the passphrase: %s", error->message);
+        return;
+    }
+
+    /* The daemon owns the prompts (it holds the current passphrase, and knows
+     * how to raise them in its host), so ask it rather than doing any of it
+     * here; the passphrases never travel over the bus. */
+    g_paste_client_change_passphrase_sync (client, &error);
+
+    if (error)
+        g_warning ("Could not change the passphrase: %s", error->message);
+}
+
+static void
+update_passphrase_sensitivity (GPasteSettings *settings,
+                               const gchar    *key G_GNUC_UNUSED,
+                               gpointer        user_data)
+{
+    gtk_widget_set_sensitive (GTK_WIDGET (user_data),
+                              g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (settings)));
+}
+
+static void
 g_paste_gtk_preferences_history_settings_page_class_init (GPasteGtkPreferencesHistorySettingsPageClass *klass G_GNUC_UNUSED)
 {
 }
@@ -103,6 +134,20 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                               _("Change storage backend…"),
                                               G_CALLBACK (on_storage_migration_activated),
                                               NULL);
+
+    /* Only an encrypted history has a passphrase to change, so the row stays
+     * visible (it is how the feature is discovered) but insensitive otherwise.
+     * Bound to the setting rather than read once: the button above can change
+     * the backend from this very window. */
+    AdwButtonRow *passphrase = g_paste_gtk_preferences_group_add_button (group,
+                                                                          _("Change passphrase…"),
+                                                                          G_CALLBACK (on_change_passphrase_activated),
+                                                                          NULL);
+
+    update_passphrase_sensitivity (settings, NULL, passphrase);
+    g_signal_connect_object (settings, "changed::" G_PASTE_STORAGE_BACKEND_SETTING,
+                             G_CALLBACK (update_passphrase_sensitivity), passphrase, 0);
+
     g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
 
     return GTK_WIDGET (self);

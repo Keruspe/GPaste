@@ -209,6 +209,8 @@ show_help (void)
     printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
     /* Translators: help for gpaste migrate */
     printf ("  %s migrate: %s\n", progname, _("migrate the history to a different storage backend"));
+    /* Translators: help for gpaste change-passphrase */
+    printf ("  %s change-passphrase: %s\n", progname, _("change the passphrase of the encrypted history"));
     /* Translators: help for gpaste preferences */
     printf ("  %s preferences: %s\n", progname, _("launch the configuration tool"));
     /* Translators: help for gpaste ui */
@@ -370,6 +372,23 @@ g_paste_migrate (Context *ctx,
         return EXIT_FAILURE;
 
     printf (_("Successfully triggered the storage migration\n"));
+
+    return EXIT_SUCCESS;
+}
+
+static gint
+g_paste_change_passphrase (Context *ctx,
+                           GError **error)
+{
+    /* The daemon owns the prompts (it is the one that can show them, in process
+     * or through the storage helper), so this only asks it to. The passphrases
+     * are never sent over the bus. */
+    g_paste_client_change_passphrase_sync (ctx->client, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    printf (_("Successfully triggered the passphrase change\n"));
 
     return EXIT_SUCCESS;
 }
@@ -699,73 +718,74 @@ g_paste_dispatch (gint         argc,
         gint       (*handler) (Context *ctx,
                                GError **error);
     } dispatch[] = {
-        { 0, NULL,              G_MAXINT, FALSE, g_paste_flag_action     },
-        { 0, NULL,              0,        TRUE,  g_paste_add             },
-        { 0, NULL,              0,        TRUE,  g_paste_history         },
-        { 1, "help",            0,        FALSE, g_paste_help            },
-        { 1, "v",               0,        FALSE, g_paste_version         },
-        { 1, "version",         0,        FALSE, g_paste_version         },
-        { 1, "about",           0,        TRUE,  g_paste_about           },
-        { 1, "dr",              0,        TRUE,  g_paste_daemon_reexec   },
-        { 1, "daemon-reexec",   0,        TRUE,  g_paste_daemon_reexec   },
-        { 1, "migrate",         0,        TRUE,  g_paste_migrate         },
-        { 1, "dv",              0,        TRUE,  g_paste_daemon_version  },
-        { 1, "daemon-version",  0,        TRUE,  g_paste_daemon_version  },
-        { 1, "e",               1,        TRUE,  g_paste_empty           },
-        { 1, "empty",           1,        TRUE,  g_paste_empty           },
-        { 1, "gh",              0,        TRUE,  g_paste_get_history     },
-        { 1, "get-history",     0,        TRUE,  g_paste_get_history     },
-        { 1, "h",               0,        TRUE,  g_paste_history         },
-        { 1, "history",         0,        TRUE,  g_paste_history         },
-        { 1, "hs",              1,        TRUE,  g_paste_history_size    },
-        { 1, "history-size",    1,        TRUE,  g_paste_history_size    },
-        { 1, "lh",              0,        TRUE,  g_paste_list_histories  },
-        { 1, "list-histories",  0,        TRUE,  g_paste_list_histories  },
-        { 1, "dh",              1,        TRUE,  g_paste_delete_history  },
-        { 1, "delete-history",  1,        TRUE,  g_paste_delete_history  },
-        { 1, "settings",        0,        FALSE, g_paste_preferences     },
-        { 1, "p",               0,        FALSE, g_paste_preferences     },
-        { 1, "preferences",     0,        FALSE, g_paste_preferences     },
-        { 1, "show-history",    0,        TRUE,  g_paste_show_history    },
-        { 1, "start",           0,        TRUE,  g_paste_start           },
-        { 1, "d",               0,        TRUE,  g_paste_start           },
-        { 1, "daemon",          0,        TRUE,  g_paste_start           },
-        { 1, "stop",            0,        TRUE,  g_paste_stop            },
-        { 1, "q",               0,        TRUE,  g_paste_stop            },
-        { 1, "quit",            0,        TRUE,  g_paste_stop            },
-        { 1, "ui",              0,        FALSE, g_paste_ui              },
-        { 1, "a",               1,        TRUE,  g_paste_add             },
-        { 1, "add",             1,        TRUE,  g_paste_add             },
-        { 2, "ap",              1,        TRUE,  g_paste_add_password    },
-        { 2, "add-password",    1,        TRUE,  g_paste_add_password    },
-        { 2, "bh",              1,        TRUE,  g_paste_backup_history  },
-        { 2, "backup-history",  1,        TRUE,  g_paste_backup_history  },
-        { 2, "d",               0,        TRUE,  g_paste_delete          },
-        { 2, "del",             0,        TRUE,  g_paste_delete          },
-        { 2, "delete",          0,        TRUE,  g_paste_delete          },
-        { 2, "rm",              0,        TRUE,  g_paste_delete          },
-        { 2, "remove",          0,        TRUE,  g_paste_delete          },
-        { 2, "dp",              0,        TRUE,  g_paste_delete_password },
-        { 2, "delete-password", 0,        TRUE,  g_paste_delete_password },
-        { 2, "f",               0,        TRUE,  g_paste_file            },
-        { 2, "file",            0,        TRUE,  g_paste_file            },
-        { 2, "g",               0,        TRUE,  g_paste_get             },
-        { 2, "get",             0,        TRUE,  g_paste_get             },
-        { 2, "replace",         1,        TRUE,  g_paste_replace         },
-        { 2, "search",          0,        TRUE,  g_paste_search          },
-        { 2, "s",               0,        TRUE,  g_paste_select          },
-        { 2, "set",             0,        TRUE,  g_paste_select          },
-        { 2, "select",          0,        TRUE,  g_paste_select          },
-        { 2, "sh",              0,        TRUE,  g_paste_switch_history  },
-        { 2, "switch-history",  0,        TRUE,  g_paste_switch_history  },
-        { 2, "u",               0,        TRUE,  g_paste_upload          },
-        { 2, "upload",          0,        TRUE,  g_paste_upload          },
-        { 3, "rp",              0,        TRUE,  g_paste_rename_password },
-        { 3, "rename-password", 0,        TRUE,  g_paste_rename_password },
-        { 3, "sp",              0,        TRUE,  g_paste_set_password    },
-        { 3, "set-password",    0,        TRUE,  g_paste_set_password    },
-        { 4, "m",               G_MAXINT, TRUE,  g_paste_merge           },
-        { 4, "merge",           G_MAXINT, TRUE,  g_paste_merge           },
+        { 0, NULL,                G_MAXINT, FALSE, g_paste_flag_action       },
+        { 0, NULL,                0,        TRUE,  g_paste_add               },
+        { 0, NULL,                0,        TRUE,  g_paste_history           },
+        { 1, "help",              0,        FALSE, g_paste_help              },
+        { 1, "v",                 0,        FALSE, g_paste_version           },
+        { 1, "version",           0,        FALSE, g_paste_version           },
+        { 1, "about",             0,        TRUE,  g_paste_about             },
+        { 1, "dr",                0,        TRUE,  g_paste_daemon_reexec     },
+        { 1, "daemon-reexec",     0,        TRUE,  g_paste_daemon_reexec     },
+        { 1, "migrate",           0,        TRUE,  g_paste_migrate           },
+        { 1, "change-passphrase", 0,        TRUE,  g_paste_change_passphrase },
+        { 1, "dv",                0,        TRUE,  g_paste_daemon_version    },
+        { 1, "daemon-version",    0,        TRUE,  g_paste_daemon_version    },
+        { 1, "e",                 1,        TRUE,  g_paste_empty             },
+        { 1, "empty",             1,        TRUE,  g_paste_empty             },
+        { 1, "gh",                0,        TRUE,  g_paste_get_history       },
+        { 1, "get-history",       0,        TRUE,  g_paste_get_history       },
+        { 1, "h",                 0,        TRUE,  g_paste_history           },
+        { 1, "history",           0,        TRUE,  g_paste_history           },
+        { 1, "hs",                1,        TRUE,  g_paste_history_size      },
+        { 1, "history-size",      1,        TRUE,  g_paste_history_size      },
+        { 1, "lh",                0,        TRUE,  g_paste_list_histories    },
+        { 1, "list-histories",    0,        TRUE,  g_paste_list_histories    },
+        { 1, "dh",                1,        TRUE,  g_paste_delete_history    },
+        { 1, "delete-history",    1,        TRUE,  g_paste_delete_history    },
+        { 1, "settings",          0,        FALSE, g_paste_preferences       },
+        { 1, "p",                 0,        FALSE, g_paste_preferences       },
+        { 1, "preferences",       0,        FALSE, g_paste_preferences       },
+        { 1, "show-history",      0,        TRUE,  g_paste_show_history      },
+        { 1, "start",             0,        TRUE,  g_paste_start             },
+        { 1, "d",                 0,        TRUE,  g_paste_start             },
+        { 1, "daemon",            0,        TRUE,  g_paste_start             },
+        { 1, "stop",              0,        TRUE,  g_paste_stop              },
+        { 1, "q",                 0,        TRUE,  g_paste_stop              },
+        { 1, "quit",              0,        TRUE,  g_paste_stop              },
+        { 1, "ui",                0,        FALSE, g_paste_ui                },
+        { 1, "a",                 1,        TRUE,  g_paste_add               },
+        { 1, "add",               1,        TRUE,  g_paste_add               },
+        { 2, "ap",                1,        TRUE,  g_paste_add_password      },
+        { 2, "add-password",      1,        TRUE,  g_paste_add_password      },
+        { 2, "bh",                1,        TRUE,  g_paste_backup_history    },
+        { 2, "backup-history",    1,        TRUE,  g_paste_backup_history    },
+        { 2, "d",                 0,        TRUE,  g_paste_delete            },
+        { 2, "del",               0,        TRUE,  g_paste_delete            },
+        { 2, "delete",            0,        TRUE,  g_paste_delete            },
+        { 2, "rm",                0,        TRUE,  g_paste_delete            },
+        { 2, "remove",            0,        TRUE,  g_paste_delete            },
+        { 2, "dp",                0,        TRUE,  g_paste_delete_password   },
+        { 2, "delete-password",   0,        TRUE,  g_paste_delete_password   },
+        { 2, "f",                 0,        TRUE,  g_paste_file              },
+        { 2, "file",              0,        TRUE,  g_paste_file              },
+        { 2, "g",                 0,        TRUE,  g_paste_get               },
+        { 2, "get",               0,        TRUE,  g_paste_get               },
+        { 2, "replace",           1,        TRUE,  g_paste_replace           },
+        { 2, "search",            0,        TRUE,  g_paste_search            },
+        { 2, "s",                 0,        TRUE,  g_paste_select            },
+        { 2, "set",               0,        TRUE,  g_paste_select            },
+        { 2, "select",            0,        TRUE,  g_paste_select            },
+        { 2, "sh",                0,        TRUE,  g_paste_switch_history    },
+        { 2, "switch-history",    0,        TRUE,  g_paste_switch_history    },
+        { 2, "u",                 0,        TRUE,  g_paste_upload            },
+        { 2, "upload",            0,        TRUE,  g_paste_upload            },
+        { 3, "rp",                0,        TRUE,  g_paste_rename_password   },
+        { 3, "rename-password",   0,        TRUE,  g_paste_rename_password   },
+        { 3, "sp",                0,        TRUE,  g_paste_set_password      },
+        { 3, "set-password",      0,        TRUE,  g_paste_set_password      },
+        { 4, "m",                 G_MAXINT, TRUE,  g_paste_merge             },
+        { 4, "merge",             G_MAXINT, TRUE,  g_paste_merge             },
     };
 
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)

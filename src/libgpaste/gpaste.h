@@ -17,6 +17,7 @@
 /* GPasteSettings */
 #include <gpaste/gpaste-gsettings-keys.h>
 #include <gpaste/gpaste-settings.h>
+#include <gpaste/gpaste-storage.h>
 
 /* GPasteClient */
 #include <gpaste/gpaste-client.h>

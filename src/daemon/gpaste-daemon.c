@@ -23,6 +23,7 @@ enum
     C_NAME_ACQUIRED,
     C_NAME_LOST,
     C_REEXECUTE_SELF,
+    C_CHANGE_PASSPHRASE,
 
     C_LAST_SIGNAL
 };
@@ -36,6 +37,13 @@ typedef struct
     GPasteBusObject *search_provider;
     GPasteBus       *bus;
     guint64          c_signals[C_LAST_SIGNAL];
+
+    /* A passphrase change is showing its prompts. ChangePassphrase can be called
+     * again at any time (the client and the preferences both expose it), and a
+     * second run would capture the passphrase the first one is about to replace:
+     * it would then fail against the histories that first one re-keyed, on top of
+     * stacking a second prompt over the first. */
+    gboolean         changing_passphrase;
 } DaemonContext;
 
 /* Persist the history synchronously and release the storage lock so a successor
@@ -110,6 +118,55 @@ usr1_handler (gpointer user_data)
 }
 #endif
 
+/* The store on disk now speaks the new passphrase: rebuild the backend around it
+ * (which also resumes the recording the flush below stopped) so the daemon keeps
+ * persisting with the right key. */
+static void
+on_passphrase_changed (gpointer user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    ctx->changing_passphrase = FALSE;
+
+    if (ctx->daemon)
+        g_paste_daemon_reload_storage (ctx->daemon);
+}
+
+/* Changing the passphrase rewrites every history on disk, so stop persisting
+ * first and make sure what is in memory is already down there — then re-encrypt
+ * it. We are the GTK application that shows the migration dialog, so the prompts
+ * run right here rather than through the gpaste-storage helper. */
+static gboolean
+do_change_passphrase (gpointer user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    g_paste_daemon_flush (ctx->daemon);
+    g_paste_storage_rekey_show (ctx->app, ctx->settings, on_passphrase_changed, ctx);
+
+    return G_SOURCE_REMOVE;
+}
+
+static void
+change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
+                   gpointer      user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    /* Coalesce, as the gnome-shell host does: one change at a time. */
+    if (ctx->changing_passphrase)
+        return;
+
+    ctx->changing_passphrase = TRUE;
+
+    /* This fires from inside the ChangePassphrase D-Bus dispatch, and the work
+     * below blocks: a flush writes the whole history, and unlocking derives an
+     * Argon2 key or waits on the keyring. Doing it here would stall the main
+     * loop — the caller's synchronous call included, until it times out on a
+     * change that is merely slow. Defer, as the gnome-shell host does. */
+    g_idle_add (do_change_passphrase, ctx);
+}
+
 /* Final step, once the name is owned, the backend choice is settled and any
  * encrypted history is unlocked: build the daemon and expose it on the bus. */
 static void
@@ -122,6 +179,8 @@ on_storage_ready (gpointer user_data)
 
     ctx->c_signals[C_REEXECUTE_SELF] = g_signal_connect (ctx->daemon, "reexecute-self",
                                                          G_CALLBACK (reexec), ctx);
+    ctx->c_signals[C_CHANGE_PASSPHRASE] = g_signal_connect (ctx->daemon, "change-passphrase",
+                                                            G_CALLBACK (change_passphrase), ctx);
 
     /* The name is already owned, so the bus registers these immediately. */
     g_paste_bus_add_object (ctx->bus, G_PASTE_BUS_OBJECT (ctx->daemon));
@@ -277,7 +336,10 @@ main (gint argc, gchar *argv[])
         g_signal_handler_disconnect (ctx.bus, ctx.c_signals[C_NAME_LOST]);
     }
     if (ctx.daemon)
+    {
         g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_REEXECUTE_SELF]);
+        g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_CHANGE_PASSPHRASE]);
+    }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* Wipe the master passphrase from secure memory before exiting. */

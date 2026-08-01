@@ -725,7 +725,7 @@ g_paste_util_ensure_history_dir_exists (void)
 
 /**
  * g_paste_util_spawn_storage:
- * @command: the subcommand to run ("migrate" or "decrypt")
+ * @command: the subcommand to run ("migrate", "decrypt" or "rekey")
  * @error: (nullable): a #GError, or %NULL
  *
  * Spawn the gpaste-storage helper executable with @command. Its stdout is piped

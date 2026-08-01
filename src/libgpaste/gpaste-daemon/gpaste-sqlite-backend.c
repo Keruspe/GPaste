@@ -36,7 +36,7 @@
  * path.
  *
  * The encrypted flavor (g_paste_sqlite_backend_new_encrypted, ".dbs" extension)
- * encrypts every content column — items.value, items.name and
+ * encrypts every content column — items.value, items.name, items.image and
  * special_values.data — with crypto_secretbox, each stored blob being
  * nonce ‖ ciphertext. The key is derived from the passphrase with crypto_pwhash
  * (Argon2id, same parameters as the encrypted file backend's stream converter);
@@ -290,16 +290,18 @@ g_paste_sqlite_backend_key_checks_out (const guchar *key,
     return magic && g_paste_str_equal ((const gchar *) magic, G_PASTE_SQLITE_KEY_CHECK_MAGIC);
 }
 
-/* Generate a fresh salt and key check for @key and store them (with the Argon2
- * parameters) in the meta table, replacing any previous ones. */
+/* Store a key check for @key, the salt it was derived from and the Argon2
+ * parameters in the meta table, replacing any previous ones. Assumes a
+ * transaction is already open, so a caller doing more than this (a re-key, which
+ * must swap the parameters and re-encrypt the content as one unit) can share it. */
 static gboolean
-g_paste_sqlite_backend_store_crypto_params (sqlite3      *db,
+g_paste_sqlite_backend_write_crypto_params (sqlite3      *db,
                                             const guchar *salt,
                                             guint64       opslimit,
                                             guint64       memlimit,
                                             const guchar *key)
 {
-    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE; DELETE FROM meta;"))
+    if (!g_paste_sqlite_backend_exec (db, "DELETE FROM meta;"))
         return FALSE;
 
     sqlite3_stmt *stmt = NULL;
@@ -348,8 +350,162 @@ g_paste_sqlite_backend_store_crypto_params (sqlite3      *db,
     if (!success)
         g_warning ("sqlite: failed to store the encryption parameters: %s", sqlite3_errmsg (db));
 
-    return g_paste_sqlite_backend_finish_transaction (db, success);
+    return success;
 }
+
+/* Generate a fresh salt and key check for @key and store them in their own
+ * transaction: what preparing a database for a passphrase needs. */
+static gboolean
+g_paste_sqlite_backend_store_crypto_params (sqlite3      *db,
+                                            const guchar *salt,
+                                            guint64       opslimit,
+                                            guint64       memlimit,
+                                            const guchar *key)
+{
+    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
+        return FALSE;
+
+    return g_paste_sqlite_backend_finish_transaction (db,
+                                                      g_paste_sqlite_backend_write_crypto_params (db, salt, opslimit,
+                                                                                                  memlimit, key));
+}
+
+/* One collected content blob, waiting to be written back under the new key. */
+/* Re-encrypt one content column, row by row: @ids_sql lists the rowids holding
+ * a value, then each is fetched through @select_sql, decrypted with @old_key and
+ * written back through @update_sql (binding the new blob, then the rowid)
+ * encrypted with @new_key. The rowids are taken first so no UPDATE ever runs
+ * against the cursor that produced them, and only the rowids are held — one
+ * value is in the clear at a time rather than the whole column, and it is wiped
+ * as soon as it has been re-encrypted.
+ *
+ * Assumes the caller's transaction is open. Gives up on anything short of a
+ * complete pass: a value that does not decrypt means real corruption (the key
+ * check passed), and a scan cut short — a busy database, an I/O error — must not
+ * be mistaken for the end of the column, or the key check would be swapped while
+ * part of it is still under the old key, which no passphrase would then open. */
+static gboolean
+g_paste_sqlite_backend_rekey_column (sqlite3      *db,
+                                     const guchar *old_key,
+                                     const guchar *new_key,
+                                     const gchar  *ids_sql,
+                                     const gchar  *select_sql,
+                                     const gchar  *update_sql)
+{
+    g_autoptr (GArray) rowids = g_array_new (FALSE, FALSE, sizeof (gint64));
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2 (db, ids_sql, -1, &stmt, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to prepare \u201c%s\u201d: %s", ids_sql, sqlite3_errmsg (db));
+        return FALSE;
+    }
+
+    gint rc;
+
+    while ((rc = sqlite3_step (stmt)) == SQLITE_ROW)
+    {
+        gint64 rowid = sqlite3_column_int64 (stmt, 0);
+
+        g_array_append_val (rowids, rowid);
+    }
+
+    sqlite3_finalize (stmt);
+
+    if (rc != SQLITE_DONE)
+    {
+        g_warning ("sqlite: could not read every row of \u201c%s\u201d: %s", ids_sql, sqlite3_errmsg (db));
+        return FALSE;
+    }
+
+    sqlite3_stmt *select = NULL;
+    sqlite3_stmt *update = NULL;
+    gboolean success = (sqlite3_prepare_v2 (db, select_sql, -1, &select, NULL) == SQLITE_OK &&
+                        sqlite3_prepare_v2 (db, update_sql, -1, &update, NULL) == SQLITE_OK);
+
+    if (!success)
+        g_warning ("sqlite: failed to prepare the re-encryption of \u201c%s\u201d: %s", select_sql, sqlite3_errmsg (db));
+
+    for (guint i = 0; success && i < rowids->len; ++i)
+    {
+        gint64 rowid = g_array_index (rowids, gint64, i);
+
+        sqlite3_bind_int64 (select, 1, rowid);
+
+        if (sqlite3_step (select) != SQLITE_ROW)
+        {
+            g_warning ("sqlite: a value went missing while re-encrypting it: %s", sqlite3_errmsg (db));
+            success = FALSE;
+        }
+        else
+        {
+            gsize length = 0;
+            g_autofree guchar *plain = g_paste_sqlite_backend_decrypt (old_key,
+                                                                       sqlite3_column_blob (select, 0),
+                                                                       sqlite3_column_bytes (select, 0),
+                                                                       &length);
+
+            if (!plain)
+            {
+                g_warning ("sqlite: a stored value did not decrypt; leaving the passphrase alone");
+                success = FALSE;
+            }
+            else
+            {
+                gsize blob_length;
+                g_autofree guchar *blob = g_paste_sqlite_backend_encrypt (new_key, plain, length, &blob_length);
+
+                /* Item contents, passwords included: do not leave them behind in
+                 * freed heap now that they are stored again. */
+                sodium_memzero (plain, length);
+
+                sqlite3_bind_blob64 (update, 1, blob, blob_length, SQLITE_STATIC);
+                sqlite3_bind_int64 (update, 2, rowid);
+
+                if (sqlite3_step (update) != SQLITE_DONE)
+                {
+                    g_warning ("sqlite: failed to re-encrypt a stored value: %s", sqlite3_errmsg (db));
+                    success = FALSE;
+                }
+
+                sqlite3_reset (update);
+                sqlite3_clear_bindings (update);
+            }
+        }
+
+        sqlite3_reset (select);
+        sqlite3_clear_bindings (select);
+    }
+
+    sqlite3_finalize (select);
+    sqlite3_finalize (update);
+
+    return success;
+}
+
+/* Every content column, as the (select, update) pair
+ * g_paste_sqlite_backend_rekey_column() drives. A column added to the schema
+ * that holds user content has to be listed here too, or a passphrase change
+ * would leave it behind, unreadable. */
+static const struct
+{
+    const gchar *ids_sql;
+    const gchar *select_sql;
+    const gchar *update_sql;
+} g_paste_sqlite_backend_content_columns[] = {
+    { "SELECT rowid FROM items;",
+      "SELECT value FROM items WHERE rowid = ?;",
+      "UPDATE items SET value = ? WHERE rowid = ?;" },
+    { "SELECT rowid FROM items WHERE name IS NOT NULL;",
+      "SELECT name FROM items WHERE rowid = ?;",
+      "UPDATE items SET name = ? WHERE rowid = ?;" },
+    { "SELECT rowid FROM items WHERE image IS NOT NULL;",
+      "SELECT image FROM items WHERE rowid = ?;",
+      "UPDATE items SET image = ? WHERE rowid = ?;" },
+    { "SELECT rowid FROM special_values;",
+      "SELECT data FROM special_values WHERE rowid = ?;",
+      "UPDATE special_values SET data = ? WHERE rowid = ?;" },
+};
 
 /* Prepare the encrypted flavor on an open database: derive the key from the
  * per-database salt and verify it against the stored key check. A fresh
@@ -1306,6 +1462,91 @@ g_paste_sqlite_backend_clear_history (const GPasteStorageBackend *self,
 /* Management */
 /**************/
 
+/* Re-encrypt @name under @new_passphrase. Everything — every content column and
+ * the meta parameters the key is checked against — moves in a single
+ * transaction, so the database is only ever readable with the old passphrase or
+ * with the new one, never stuck between them. */
+static gboolean
+g_paste_sqlite_backend_rekey (const GPasteStorageBackend *self,
+                              const gchar                *name,
+                              const gchar                *new_passphrase)
+{
+    if (!g_paste_sqlite_backend_get_passphrase (self))
+    {
+        g_warning ("This history is not encrypted: it has no passphrase to change");
+        return FALSE;
+    }
+
+    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    GPasteSqliteBackendPrivate *priv = g_paste_sqlite_backend_get_priv (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    /* Opening verifies the current passphrase against the stored key check, so
+     * by here priv->key is the one everything is encrypted with. */
+    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
+
+    if (!db)
+        return FALSE;
+
+    guchar salt[crypto_pwhash_SALTBYTES];
+    guint64 opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+    guint64 memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+    guchar *new_key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
+
+    randombytes_buf (salt, sizeof (salt));
+
+    if (!g_paste_sqlite_backend_derive_key (new_passphrase, salt, opslimit, memlimit, new_key))
+    {
+        g_warning ("sqlite: could not derive the new encryption key (out of memory?)");
+        gcr_secure_memory_free (new_key);
+
+        return FALSE;
+    }
+
+    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
+    {
+        gcr_secure_memory_free (new_key);
+
+        return FALSE;
+    }
+
+    gboolean success = TRUE;
+
+    for (guint64 i = 0; success && i < G_N_ELEMENTS (g_paste_sqlite_backend_content_columns); ++i)
+    {
+        success = g_paste_sqlite_backend_rekey_column (db, priv->key, new_key,
+                                                       g_paste_sqlite_backend_content_columns[i].ids_sql,
+                                                       g_paste_sqlite_backend_content_columns[i].select_sql,
+                                                       g_paste_sqlite_backend_content_columns[i].update_sql);
+    }
+
+    /* The new salt and key check land in the same transaction as the content
+     * they describe: rolling back takes them with it. */
+    success = success && g_paste_sqlite_backend_write_crypto_params (db, salt, opslimit, memlimit, new_key);
+    success = g_paste_sqlite_backend_finish_transaction (db, success);
+
+    if (!success)
+    {
+        gcr_secure_memory_free (new_key);
+        g_warning ("Failed to re-encrypt the history \"%s\"; it keeps its current passphrase", name);
+
+        return FALSE;
+    }
+
+    /* Committed. This instance deliberately stays keyed to the passphrase it was
+     * built with: a passphrase change re-keys every history through one backend,
+     * so adopting the new one here would make the next history — still encrypted
+     * with the old one — fail to open. Only the cached connection has to go, its
+     * key no longer matching what is now on disk; re-opening this database
+     * through this instance then refuses it at the key check rather than reading
+     * it with a stale key. */
+    g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
+    g_clear_pointer (&priv->db_path, g_free);
+    g_clear_pointer (&priv->key, gcr_secure_memory_free);
+    gcr_secure_memory_free (new_key);
+
+    return TRUE;
+}
+
 static void
 g_paste_sqlite_backend_delete_history (const GPasteStorageBackend *self,
                                        const gchar                *name,
@@ -1381,6 +1622,10 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->remove_item = g_paste_sqlite_backend_remove_item;
     storage_class->replace_item = g_paste_sqlite_backend_replace_item;
     storage_class->clear_history = g_paste_sqlite_backend_clear_history;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    storage_class->rekey = g_paste_sqlite_backend_rekey;
+#endif
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_sqlite_backend_finalize;
 }

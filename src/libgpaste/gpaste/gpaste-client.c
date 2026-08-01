@@ -286,6 +286,22 @@ g_paste_client_backup_history_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_change_passphrase_sync:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Change the passphrase of the encrypted history, re-encrypting it with the new
+ * one. The daemon prompts for the passphrases itself: they never travel over the
+ * bus.
+ */
+G_PASTE_VISIBLE void
+g_paste_client_change_passphrase_sync (GPasteClient *self,
+                                       GError      **error)
+{
+    DBUS_CALL_NO_PARAM_NO_RETURN (CHANGE_PASSPHRASE);
+}
+
+/**
  * g_paste_client_delete_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to delete
@@ -896,6 +912,25 @@ g_paste_client_backup_history (GPasteClient       *self,
     };
 
     DBUS_CALL_TWO_PARAMS_ASYNC (BACKUP_HISTORY, params);
+}
+
+/**
+ * g_paste_client_change_passphrase:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Change the passphrase of the encrypted history, re-encrypting it with the new
+ * one. The daemon prompts for the passphrases itself: they never travel over the
+ * bus.
+ */
+G_PASTE_VISIBLE void
+g_paste_client_change_passphrase (GPasteClient       *self,
+                                  GAsyncReadyCallback callback,
+                                  gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (CHANGE_PASSPHRASE);
 }
 
 /**
@@ -1518,6 +1553,22 @@ G_PASTE_VISIBLE void
 g_paste_client_backup_history_finish (GPasteClient *self,
                                       GAsyncResult *result,
                                       GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_change_passphrase_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Change the passphrase of the encrypted history
+ */
+G_PASTE_VISIBLE void
+g_paste_client_change_passphrase_finish (GPasteClient *self,
+                                         GAsyncResult *result,
+                                         GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

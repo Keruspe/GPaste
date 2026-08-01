@@ -443,6 +443,45 @@ g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
 }
 
 /**
+ * g_paste_storage_backend_rekey:
+ * @self: a #GPasteStorageBackend instance, holding the passphrase @name is
+ *        currently encrypted with
+ * @name: the name of the history to re-encrypt
+ * @new_passphrase: the passphrase to encrypt @name with from now on
+ *
+ * Re-encrypt an existing history under @new_passphrase, in place: the data stays
+ * where it is, only the key changes. Meant for a passphrase change, which —
+ * unlike a migration — has no second backend to copy into.
+ *
+ * Only the encrypted flavors can do this, and each does it its own way (a
+ * database re-encrypts its columns in one transaction, a file rewrites itself
+ * and its image side files), so this dispatches to the backend rather than
+ * trying to be generic. A backend that cannot re-key says so instead of
+ * reporting a success that never happened.
+ *
+ * Returns: %FALSE when @name was left exactly as it was, so a caller re-keying
+ *          several histories can stop rather than split them across two
+ *          passphrases
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_rekey (const GPasteStorageBackend *self,
+                               const gchar                *name,
+                               const gchar                *new_passphrase)
+{
+    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (name, FALSE);
+    g_return_val_if_fail (new_passphrase && *new_passphrase, FALSE);
+
+    if (!_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey)
+    {
+        g_warning ("This storage backend has no passphrase to change");
+        return FALSE;
+    }
+
+    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey (self, name, new_passphrase);
+}
+
+/**
  * g_paste_storage_backend_add_item:
  * @self: a #GPasteStorageBackend instance
  * @name: the name of the history to update
@@ -589,6 +628,7 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->get_settings = g_paste_storage_backend_get_settings;
     klass->delete_history = NULL;
     klass->list_histories = NULL;
+    klass->rekey = NULL;
 
     klass->add_item = NULL;
     klass->remove_item = NULL;
@@ -628,23 +668,6 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
          * file backend; return it directly rather than recursing. */
         return G_PASTE_TYPE_FILE_BACKEND;
     }
-}
-
-/**
- * g_paste_storage_is_encrypted:
- * @storage_kind: a #GPasteStorage kind
- *
- * Whether @storage_kind encrypts the history on disk. This classifies the kind
- * itself, independently of the features built in: a build unable to construct
- * an encrypted backend must degrade it to "no storage", never to plaintext.
- *
- * Returns: %TRUE for the encrypted storage kinds
- */
-G_PASTE_VISIBLE gboolean
-g_paste_storage_is_encrypted (GPasteStorage storage_kind)
-{
-    return storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE ||
-           storage_kind == G_PASTE_STORAGE_ENCRYPTED_SQLITE;
 }
 
 /**

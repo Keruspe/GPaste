@@ -21,6 +21,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_ADD_FILE                   "AddFile"
 #define G_PASTE_DAEMON_ADD_PASSWORD               "AddPassword"
 #define G_PASTE_DAEMON_BACKUP_HISTORY             "BackupHistory"
+#define G_PASTE_DAEMON_CHANGE_PASSPHRASE          "ChangePassphrase"
 #define G_PASTE_DAEMON_DELETE                     "Delete"
 #define G_PASTE_DAEMON_DELETE_HISTORY             "DeleteHistory"
 #define G_PASTE_DAEMON_DELETE_PASSWORD            "DeletePassword"
@@ -76,6 +77,7 @@ G_BEGIN_DECLS
         "   <arg type='s' direction='in' name='history' />"               \
         "   <arg type='s' direction='in' name='backup'  />"               \
         "  </method>"                                                     \
+        "  <method name='" G_PASTE_DAEMON_CHANGE_PASSPHRASE "' />"        \
         "  <method name='" G_PASTE_DAEMON_DELETE "'>"                     \
         "   <arg type='s' direction='in' name='uuid' />"                  \
         "  </method>"                                                     \

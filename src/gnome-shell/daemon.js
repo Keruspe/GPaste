@@ -173,6 +173,10 @@ export class GPasteDaemonRunner {
         // place by reloading the daemon's storage — see _onReexecute().
         this._reexecId = this._daemon.connect('reexecute-self', () => this._onReexecute());
 
+        // Same deal for a passphrase change: the prompts need gtk, so the helper
+        // runs them and hands the new passphrase back — see _onChangePassphrase().
+        this._changePassphraseId = this._daemon.connect('change-passphrase', () => this._onChangePassphrase());
+
         bus.add_object(this._daemon);
 
         // Exporting can fail, which stands us down and drops the daemon (see
@@ -306,6 +310,44 @@ export class GPasteDaemonRunner {
             daemon.reload_storage();
     }
 
+    // "change-passphrase" reaches us from inside the daemon's ChangePassphrase
+    // D-Bus dispatch, so defer to an idle and coalesce exactly like
+    // _onReexecute(): a second request must not run a concurrent re-key.
+    _onChangePassphrase() {
+        if (this._changePassphrasePending)
+            return;
+
+        this._changePassphrasePending = true;
+        GLib.Source.set_name_by_id(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._changePassphraseInPlace()
+                .catch(e => console.error(e))
+                .finally(() => (this._changePassphrasePending = false));
+            return GLib.SOURCE_REMOVE;
+        }), '[GPaste] change-passphrase');
+    }
+
+    async _changePassphraseInPlace() {
+        if (!this._daemon || this._stopped)
+            return;
+
+        // Flush before the helper rewrites every history on disk, so it
+        // re-encrypts our complete state rather than a stale snapshot...
+        const daemon = this._daemon;
+
+        daemon.flush();
+
+        await this._runStorageCommand('rekey');
+
+        if (this._stopped)
+            return;
+
+        // ...then rebuild the live daemon's backend around the passphrase the
+        // helper handed back (_runStorageCommand already set it), unless the
+        // daemon was torn down or replaced while it was running.
+        if (daemon === this._daemon)
+            daemon.reload_storage();
+    }
+
     // Flush the history, release the storage lock, drop the daemon/search
     // provider and release the bus name — which, after a takeover, also
     // dequeues our pending re-request for it. Shared by an orderly shutdown
@@ -314,6 +356,11 @@ export class GPasteDaemonRunner {
         if (this._reexecId) {
             this._daemon?.disconnect(this._reexecId);
             this._reexecId = 0;
+        }
+
+        if (this._changePassphraseId) {
+            this._daemon?.disconnect(this._changePassphraseId);
+            this._changePassphraseId = 0;
         }
 
         // Flush before releasing the lock so a successor daemon loads our final

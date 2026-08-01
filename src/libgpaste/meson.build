@@ -9,6 +9,7 @@ libgpaste_sources = [
   'gpaste/gpaste-item-enums.c',
   'gpaste/gpaste-screensaver-client.c',
   'gpaste/gpaste-settings.c',
+  'gpaste/gpaste-storage.c',
   'gpaste/gpaste-update-enums.c',
   'gpaste/gpaste-util.c',
 ]
@@ -23,6 +24,7 @@ libgpaste_headers = [
   'gpaste/gpaste-macros.h',
   'gpaste/gpaste-screensaver-client.h',
   'gpaste/gpaste-settings.h',
+  'gpaste/gpaste-storage.h',
   'gpaste/gpaste-update-enums.h',
   'gpaste/gpaste-util.h',
 ]

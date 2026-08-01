@@ -61,6 +61,7 @@ _gpaste-client_complete_subcommands() {
         {add-password,ap}:"Add a name - password couple to the clipboard"
         "about:Display the about dialog"
         {backup-history,bh}:"Backup current history"
+        "change-passphrase:Change the passphrase of the encrypted history"
         {daemon-reexec,dr}:"Reexecute the daemon"
         {daemon-version,dv}:"Display the daemon version"
         {delete,del,d,remove,rm}:"Delete an element of the history"

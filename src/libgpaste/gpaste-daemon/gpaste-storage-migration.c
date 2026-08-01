@@ -1135,3 +1135,224 @@ g_paste_storage_decryption_show (GtkApplication                 *application,
         done (user_data);
 #endif
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+typedef struct
+{
+    GtkApplication                *application;
+    GPasteSettings                *settings;
+    GPasteStorageMigrationDoneFunc done;
+    gpointer                       user_data;
+
+    /* The encrypted flavor being re-keyed, and the passphrase it is currently
+     * encrypted with once we have one that actually decrypts it (in gcr secure
+     * memory). */
+    GPasteStorage                  storage_kind;
+    gchar                         *current_passphrase;
+} RekeyData;
+
+static void
+rekey_finish (RekeyData *self)
+{
+    GPasteStorageMigrationDoneFunc done = self->done;
+    gpointer done_data = self->user_data;
+
+    g_paste_storage_passphrase_free (self->current_passphrase);
+    g_object_unref (self->settings);
+    g_free (self);
+
+    if (done)
+        done (done_data);
+}
+
+/* Re-encrypt every history of the current flavor with @passphrase. Each one is
+ * re-keyed atomically, but they go one at a time: stop at the first failure
+ * rather than carrying on, so what is left is "these are on the new passphrase,
+ * those are still on the old" — recoverable by running again — instead of a set
+ * silently split further apart. */
+/* Re-key @name on its own backend: a backend caches whatever it last opened, so
+ * giving each history a fresh one keeps a re-keyed database from being reopened
+ * through an instance that still holds the old key. */
+static gboolean
+rekey_history (RekeyData   *self,
+               const gchar *name,
+               const gchar *from,
+               const gchar *to)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
+                                                                                            self->settings,
+                                                                                            from);
+
+    return g_paste_storage_backend_rekey (backend, name, to);
+}
+
+static gboolean
+rekey_histories (RekeyData   *self,
+                 const gchar *passphrase)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
+                                                                                            self->settings,
+                                                                                            self->current_passphrase);
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
+
+    /* Not "no histories" (that is an empty list): the listing itself failed, so
+     * we have no idea what would be left behind. */
+    if (!names)
+    {
+        g_warning ("Could not list the histories to change their passphrase");
+        return FALSE;
+    }
+
+    for (GStrv name = names; *name; ++name)
+    {
+        if (rekey_history (self, *name, self->current_passphrase, passphrase))
+            continue;
+
+        g_warning ("Failed to change the passphrase of the history \"%s\"", *name);
+
+        /* Put the ones that did move back on the passphrase they all still
+         * shared a moment ago, rather than leave the set split between two — a
+         * split one cannot be repaired by running this again, since it starts
+         * from a single passphrase. Each history's re-key either happened whole
+         * or not at all, so the failing one needs nothing undone. */
+        for (GStrv done = names; done != name; ++done)
+        {
+            if (!rekey_history (self, *done, passphrase, self->current_passphrase))
+                g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", *done);
+        }
+
+        return FALSE;
+    }
+
+    /* An encrypted backend with nothing stored under it is not something we can
+     * meaningfully re-key, and it is also what a flavor this build cannot
+     * construct degrades to — adopting a passphrase then, and remembering it,
+     * would hand out a key that opens nothing. */
+    if (!*names)
+    {
+        g_warning ("There is no stored history to change the passphrase of");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void
+on_rekey_passphrase_set (const gchar *passphrase,
+                         gpointer     user_data)
+{
+    RekeyData *self = user_data;
+
+    /* Dismissed: nothing has been touched yet, so there is nothing to undo. */
+    if (!passphrase)
+    {
+        rekey_finish (self);
+        return;
+    }
+
+    /* Only adopt the new passphrase once the data on disk actually speaks it,
+     * or the daemon would reload an unreadable history. The prompt may already
+     * have remembered it in the keyring; a failure here leaves that entry
+     * pointing at a passphrase the history does not take, which
+     * g_paste_storage_keyring_apply_verified() then discards on its own. */
+    if (rekey_histories (self, passphrase))
+        g_paste_storage_backend_set_passphrase (passphrase);
+
+    rekey_finish (self);
+}
+
+/* The current history is unlocked: ask for the passphrase to replace it with.
+ * Same prompt the migration uses to set up a new encrypted history — two
+ * entries, the strength meter, the data-loss warning, and the switch that
+ * remembers it in the keyring (which is what updates the stored one). */
+static void
+rekey_prompt_new_passphrase (RekeyData *self)
+{
+    g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_rekey_passphrase_set, self);
+}
+
+static void
+on_rekey_source_unlocked (gpointer user_data)
+{
+    RekeyData *self = user_data;
+    const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
+
+    /* Dismissed without unlocking: there is no passphrase to change. */
+    if (!passphrase)
+    {
+        rekey_finish (self);
+        return;
+    }
+
+    self->current_passphrase = g_paste_storage_passphrase_dup (passphrase);
+
+    rekey_prompt_new_passphrase (self);
+}
+#endif
+
+/**
+ * g_paste_storage_rekey_show:
+ * @application: the #GtkApplication to anchor the dialogs to
+ * @settings: a #GPasteSettings instance
+ * @done: (scope async) (nullable): called once the passphrase was changed, or the prompt dismissed
+ * @user_data: data passed to @done
+ *
+ * Change the passphrase of the encrypted history, re-encrypting everything with
+ * the new one. Unlike the migration dialog this never moves the history: the
+ * data stays in the backend it is in, only its key changes.
+ *
+ * Unlocks the history first (from this process, the keyring, or a prompt), then
+ * asks for the new passphrase with a confirmation. @done is invoked immediately
+ * when the history is not encrypted, so there is no passphrase to change.
+ * Like the other dialogs here, the caller owns the main loop.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_rekey_show (GtkApplication                 *application,
+                            GPasteSettings                 *settings,
+                            GPasteStorageMigrationDoneFunc  done,
+                            gpointer                        user_data)
+{
+    g_return_if_fail (GTK_IS_APPLICATION (application));
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
+
+    if (g_paste_storage_is_encrypted (storage_kind))
+    {
+        RekeyData *self = g_new0 (RekeyData, 1);
+
+        self->application = application;
+        self->settings = g_object_ref (settings);
+        self->done = done;
+        self->user_data = user_data;
+        self->storage_kind = storage_kind;
+
+        /* The passphrase this process already holds is the common case (the
+         * daemon has been serving the history with it), then the keyring, then
+         * ask — the same order the migration unlocks a source with. */
+        const gchar *known = g_paste_storage_backend_get_passphrase ();
+
+        if (known && g_paste_storage_passphrase_can_decrypt (storage_kind, settings, known))
+            self->current_passphrase = g_paste_storage_passphrase_dup (known);
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        else if (g_paste_storage_keyring_apply_verified (storage_kind, settings))
+            self->current_passphrase = g_paste_storage_passphrase_dup (g_paste_storage_backend_get_passphrase ());
+#endif
+        else
+        {
+            unlock_prompt (application, settings, storage_kind, on_rekey_source_unlocked, self);
+            return;
+        }
+
+        rekey_prompt_new_passphrase (self);
+
+        return;
+    }
+
+    g_warning ("The history is not encrypted: there is no passphrase to change");
+#endif
+
+    if (done)
+        done (user_data);
+}

@@ -19,6 +19,7 @@
  *
  *   gpaste-storage migrate   show the migration dialog (always, when asked)
  *   gpaste-storage decrypt   unlock an encrypted history (keyring or prompt)
+ *   gpaste-storage rekey     change the encrypted history's passphrase
  *
  * Because the helper runs in its own process, the passphrase it ends up with
  * cannot be shared with gnome-shell through the process-wide global; it is
@@ -73,9 +74,10 @@ main (gint argc, gchar *argv[])
 
     const gchar *command = (argc > 1) ? argv[1] : "migrate";
 
-    if (!g_paste_str_equal (command, "migrate") && !g_paste_str_equal (command, "decrypt"))
+    if (!g_paste_str_equal (command, "migrate") && !g_paste_str_equal (command, "decrypt") &&
+        !g_paste_str_equal (command, "rekey"))
     {
-        fprintf (stderr, "Usage: %s [migrate|decrypt]\n", argv[0]);
+        fprintf (stderr, "Usage: %s [migrate|decrypt|rekey]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -88,11 +90,14 @@ main (gint argc, gchar *argv[])
      * across the async dialog since the helper has no lasting window. */
     g_application_hold (gapp);
 
-    /* "migrate" always shows the dialog; "decrypt" only prompts when the keyring
-     * did not already unlock the history (decryption_needed() applies it as a
-     * side effect), otherwise there is nothing to do. */
+    /* "migrate" always shows the dialog and "rekey" always asks for the new
+     * passphrase (it unlocks the history itself first); "decrypt" only prompts
+     * when the keyring did not already unlock the history (decryption_needed()
+     * applies it as a side effect), otherwise there is nothing to do. */
     if (g_paste_str_equal (command, "migrate"))
         g_paste_storage_migration_show (app, settings, on_storage_done, &ctx);
+    else if (g_paste_str_equal (command, "rekey"))
+        g_paste_storage_rekey_show (app, settings, on_storage_done, &ctx);
     else if (g_paste_storage_decryption_needed (settings))
         g_paste_storage_decryption_show (app, settings, on_storage_done, &ctx);
     else

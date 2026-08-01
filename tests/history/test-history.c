@@ -110,7 +110,10 @@ pump_until_length (GPasteHistory *history,
     return g_paste_history_get_length (history) == expected_len;
 }
 
-/* A real (1x1 transparent) PNG for the image item tests. */
+/* A real (1x1 transparent) PNG for the image item tests. Only the SQLite ones
+ * take it as-is; the others build a distinguishable one with the colored
+ * variant below. */
+#ifdef G_PASTE_ENABLE_SQLITE
 static GBytes *
 test_png_bytes (void)
 {
@@ -120,6 +123,7 @@ test_png_bytes (void)
 
     return g_bytes_new_take (data, length);
 }
+#endif
 
 /* A distinct 1x1 PNG per color. Images are content-addressed under a shared
  * images/ dir, so tests asserting on their cache file's (non-)existence must
@@ -917,6 +921,192 @@ test_encrypted_explicit_passphrase (void)
     g_test_trap_assert_passed ();
     g_test_trap_assert_stderr ("*No passphrase for the encrypted storage backend*");
 }
+
+/* Changing the passphrase must re-encrypt everything the history holds, in
+ * place: afterwards the new passphrase reads it all back — the image included,
+ * which is what proves the ".pngs" side files were rewritten rather than left
+ * behind under the old key — and the old one no longer opens it. */
+static void
+test_encrypted_rekey (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* Reading with the old passphrase afterwards warns; g_test_expect_message
+         * cannot swallow that under structured logging, so drop warning fatality
+         * here and let the parent match it on stderr. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        const gchar *name = "encrypted-rekey";
+        const gchar *other_name = "encrypted-rekey-backup";
+        const gchar *other_value = "the second history";
+        const gchar *old_passphrase = "the old passphrase";
+        const gchar *new_passphrase = "the new passphrase";
+        const gchar *secret = "s3cr3t-passw0rd";
+        const gchar *pw_name = "my login";
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GBytes) png = test_png_bytes_colored (3, 5, 7);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
+            GList *items = NULL;
+
+            items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
+            items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+            items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+
+            /* A second history, re-keyed through the same backend as the daemon
+             * does it: re-keying one must not cost this instance the ability to
+             * open the others, which are still on the old passphrase. */
+            GList *other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
+
+            g_paste_storage_backend_write_history (backend, other_name, other_items);
+            g_list_free_full (other_items, g_object_unref);
+
+            g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase));
+            g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase));
+        }
+
+        /* Both histories moved, not just the first. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_true (g_paste_storage_backend_read_history (backend, other_name, &loaded, &size));
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+            g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, other_value);
+
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        /* The new passphrase reads back everything, contents included. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_true (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_cmpuint (g_list_length (loaded), ==, 3);
+
+            gboolean found_password = FALSE;
+            gboolean found_image = FALSE;
+
+            for (const GList *l = loaded; l; l = l->next)
+            {
+                GPasteItem *item = l->data;
+                const gchar *kind = g_paste_item_get_kind (item);
+
+                if (g_paste_str_equal (kind, "Password"))
+                {
+                    found_password = TRUE;
+                    g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
+                    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+                }
+                else if (g_paste_str_equal (kind, "Image"))
+                {
+                    found_image = TRUE;
+
+                    /* Decrypted from the side file with the *new* key. */
+                    GBytes *read_png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
+
+                    g_assert_nonnull (read_png);
+                    g_assert_true (g_bytes_equal (read_png, png));
+                }
+            }
+
+            g_assert_true (found_password);
+            g_assert_true (found_image);
+
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        /* ...and the old one is refused rather than read as empty. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_null (loaded);
+        }
+
+        /* A plain history has no passphrase to change, and says so — through the
+         * backend's own guard, since the file class implements rekey either way. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+            g_assert_false (g_paste_storage_backend_rekey (backend, name, new_passphrase));
+        }
+
+        /* A key change must change nothing but the key: a history holding more
+         * than the current size limit keeps every item, where reading it into
+         * items and writing them back would have dropped the overflow. */
+        {
+            const gchar *big_name = "encrypted-rekey-big";
+
+            g_paste_settings_set_max_history_size (settings, 10);
+
+            {
+                g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
+                GList *items = NULL;
+
+                for (guint i = 0; i < 10; ++i)
+                {
+                    g_autofree gchar *value = g_strdup_printf ("item %u", i);
+
+                    items = g_list_append (items, g_paste_text_item_new (value));
+                }
+
+                g_paste_storage_backend_write_history (backend, big_name, items);
+                g_list_free_full (items, g_object_unref);
+            }
+
+            /* The limit drops well below what is stored, as it would after the
+             * user lowered it in the preferences. */
+            g_paste_settings_set_max_history_size (settings, 2);
+
+            {
+                g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
+
+                g_assert_true (g_paste_storage_backend_rekey (backend, big_name, new_passphrase));
+            }
+
+            g_paste_settings_set_max_history_size (settings, 10);
+
+            {
+                g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
+                GList *loaded = NULL;
+                gsize size = 0;
+
+                g_assert_true (g_paste_storage_backend_read_history (backend, big_name, &loaded, &size));
+                g_assert_cmpuint (g_list_length (loaded), ==, 10);
+
+                g_list_free_full (loaded, g_object_unref);
+            }
+        }
+
+        /* A backend that does not implement it at all is refused by the wrapper
+         * rather than quietly reporting a success that never happened. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_NOOP, settings);
+
+            g_assert_false (g_paste_storage_backend_rekey (backend, name, new_passphrase));
+        }
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_passed ();
+    g_test_trap_assert_stderr ("*not encrypted*");
+}
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -1698,6 +1888,144 @@ test_encrypted_sqlite_wrong_passphrase (void)
     g_test_trap_assert_stderr ("*does not unlock*");
 }
 
+/* The database flavor re-keys every content column it holds — the value, the
+ * password name, the image blob and the special values — in one go, so the new
+ * passphrase reads all of it back and the old one no longer opens the file. */
+static void
+test_encrypted_sqlite_rekey (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* The refused read with the old passphrase warns; see the file flavor's
+         * re-key test for why fatality is dropped here. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        const gchar *name = "sqlite-rekey";
+        const gchar *other_name = "sqlite-rekey-backup";
+        const gchar *other_value = "the second history";
+        const gchar *old_passphrase = "the old passphrase";
+        const gchar *new_passphrase = "the new passphrase";
+        const gchar *secret = "s3cr3t-passw0rd";
+        const gchar *pw_name = "my login";
+        const gchar *html_value = "<b>hidden markup</b>";
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GBytes) png = test_png_bytes_colored (11, 13, 17);
+        g_autoptr (GBytes) html = g_bytes_new_static (html_value, strlen (html_value));
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, old_passphrase);
+            GPasteItem *text = g_paste_text_item_new ("plain text entry");
+            GList *items = NULL;
+
+            /* A special value exercises the special_values.data column. */
+            g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+                                                                           g_bytes_ref (html)));
+
+            items = g_list_append (items, text);
+            items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+            items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+
+            /* A second history (a backup, say): the daemon re-keys every one of
+             * them through this same backend, so re-keying must leave it able to
+             * open the ones it has not reached yet — still with the old
+             * passphrase. */
+            GList *other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
+
+            g_paste_storage_backend_write_history (backend, other_name, other_items);
+            g_list_free_full (other_items, g_object_unref);
+
+            g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase));
+            g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase));
+        }
+
+        /* Both histories moved, not just the first. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, new_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_true (g_paste_storage_backend_read_history (backend, other_name, &loaded, &size));
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+            g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, other_value);
+
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, new_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_true (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_cmpuint (g_list_length (loaded), ==, 3);
+
+            gboolean found_text = FALSE;
+            gboolean found_password = FALSE;
+            gboolean found_image = FALSE;
+
+            for (const GList *l = loaded; l; l = l->next)
+            {
+                GPasteItem *item = l->data;
+                const gchar *kind = g_paste_item_get_kind (item);
+
+                if (g_paste_str_equal (kind, "Password"))
+                {
+                    found_password = TRUE;
+                    g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
+                    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+                }
+                else if (g_paste_str_equal (kind, "Image"))
+                {
+                    found_image = TRUE;
+
+                    GBytes *read_png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
+
+                    g_assert_nonnull (read_png);
+                    g_assert_true (g_bytes_equal (read_png, png));
+                }
+                else
+                {
+                    const GSList *svs = g_paste_item_get_special_values (item);
+
+                    found_text = TRUE;
+
+                    g_assert_cmpuint (g_slist_length ((GSList *) svs), ==, 1);
+                    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_TEXT_HTML);
+                    g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (svs->data), html));
+                }
+            }
+
+            g_assert_true (found_text);
+            g_assert_true (found_password);
+            g_assert_true (found_image);
+
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, old_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_null (loaded);
+        }
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_passed ();
+    g_test_trap_assert_stderr ("*does not unlock*");
+}
+
 /* The incremental save path works identically through the encrypted flavor,
  * driven by the factory + process-wide passphrase like the daemon does it. */
 static void
@@ -1773,6 +2101,7 @@ main (int argc, char *argv[])
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
+    g_test_add_func ("/history/encrypted_rekey", test_encrypted_rekey);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history/sqlite_roundtrip", test_sqlite_roundtrip);
@@ -1786,6 +2115,7 @@ main (int argc, char *argv[])
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);
     g_test_add_func ("/history/encrypted_sqlite_wrong_passphrase", test_encrypted_sqlite_wrong_passphrase);
+    g_test_add_func ("/history/encrypted_sqlite_rekey", test_encrypted_sqlite_rekey);
     g_test_add_func ("/history/encrypted_sqlite_incremental", test_encrypted_sqlite_incremental);
 #endif
 #endif
