@@ -51,7 +51,10 @@ g_paste_ui_item_action_clicked (GtkButton *button)
     const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (self);
     GPasteUiItemActionClass *klass = G_PASTE_UI_ITEM_ACTION_GET_CLASS (self);
 
-    if (klass->activate)
+    /* A row is on screen before the item it stands for has been fetched, so it
+     * may still have no uuid: there is nothing to act on then, and every action
+     * would hand that NULL to a D-Bus call that cannot take one. */
+    if (klass->activate && priv->uuid)
         klass->activate (self, priv->client, priv->uuid);
 }
 

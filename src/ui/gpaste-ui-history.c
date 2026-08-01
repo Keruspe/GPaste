@@ -335,9 +335,11 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
-    GPasteUiHistory *self = user_data;
+    g_autoptr (GPasteUiHistory) self = user_data; /* ref taken in _search */
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
+    /* Only meaningful because the ref above kept us allocated: dispose clears
+     * the client, so a NULL one means we were disposed mid-flight. */
     if (!priv->client)
         return;
 
@@ -391,7 +393,8 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     else
     {
         g_set_str (&priv->search, search);
-        g_paste_client_search (priv->client, search, on_search_ready, self);
+        /* The callback owns this ref (see on_search_ready). */
+        g_paste_client_search (priv->client, search, on_search_ready, g_object_ref (self));
     }
 }
 
@@ -463,8 +466,16 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
         switch (action)
         {
         case G_PASTE_UPDATE_ACTION_REPLACE:
-            g_paste_ui_item_refresh (g_slist_nth_data (priv->items, position));
+        {
+            /* Lazy loading means the changed position may be past the rows we
+             * have materialised (a password renamed deep in the history, say);
+             * there is simply nothing on screen to refresh then. */
+            GPasteUiItem *item = g_slist_nth_data (priv->items, position);
+
+            if (item)
+                g_paste_ui_item_refresh (item);
             break;
+        }
         case G_PASTE_UPDATE_ACTION_REMOVE:
             refresh = TRUE;
             break;

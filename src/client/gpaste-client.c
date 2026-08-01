@@ -86,9 +86,12 @@ parse_cmdline (int     *argc,
     *argc -= optind;
     *argv += optind;
 
-    ctx->argc = *argc - 1;
-    ctx->args = (const gchar **) *argv;
-    ++ctx->args;
+    /* argv[0] is the verb and ctx->args the arguments after it. With no verb at
+     * all (a plain "gpaste-client", or one only fed through a pipe) there is
+     * nothing past it: stay on argv's own NULL terminator rather than stepping
+     * over it, which ctx->args[0] would then read out of bounds. */
+    ctx->argc = (*argc > 0) ? *argc - 1 : 0;
+    ctx->args = (const gchar **) *argv + ((*argc > 0) ? 1 : 0);
 
     return TRUE;
 }
@@ -609,7 +612,9 @@ g_paste_search (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    g_autolist (GPasteClientItem) items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, -1, error);
+    /* n_uuids is a count, so pass the real one: -1 only ever worked by wrapping
+     * around to the sentinel g_variant_new_strv() happens to take for it. */
+    g_autolist (GPasteClientItem) items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, g_strv_length (results), error);
     guint index = 0;
 
     for (const GList *i = items; i; i = i->next)
@@ -775,12 +780,7 @@ g_paste_dispatch (gint         argc,
 
             gint ret = dispatch[i].handler(ctx, error);
             if (ret >= 0)
-            {
-                if (!dispatch[i].needs_client && !ctx->client)
-                    g_clear_error (error);
-
                 return ret;
-            }
         }
     }
 
@@ -803,7 +803,17 @@ main (gint argc, gchar *argv[])
         g_autofree gchar *pipe_data = ctx.pipe_data = extract_pipe_data ();
         g_autofree gchar *uuid = NULL;
 
-        if (ctx.use_index && ctx.argc > 0)
+        /* Failing to reach the daemon is not fatal for every verb: "help",
+         * "version" and the launchers are marked as needing no client. Move that
+         * failure out of @error rather than carrying it into what follows: every
+         * client call opens with g_return_val_if_fail (!error || !(*error)), so a
+         * live one would trip the assert of whatever runs next. */
+        g_autoptr (GError) connect_error = (ctx.client) ? NULL : g_steal_pointer (&error);
+
+        /* Only worth resolving the index while there is a daemon to resolve it
+         * in: without one this would hand a %NULL client to a call that refuses
+         * it, and every verb that could use the uuid needs a client anyway. */
+        if (ctx.client && ctx.use_index && ctx.argc > 0)
         {
             g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
 
@@ -813,12 +823,20 @@ main (gint argc, gchar *argv[])
         else
             ctx.uuid = ctx.args[0];
 
+        /* Only a failure of our own lookup above (which did need a client) skips
+         * the dispatch; a missing daemon does not, since the client-less verbs
+         * still have work to do. */
         if (!error)
             status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
 
+        /* Nothing ran, or what ran needed the daemon we never reached: now the
+         * connection failure is the one worth reporting. */
+        if (!error && status != EXIT_SUCCESS && connect_error)
+            error = g_steal_pointer (&connect_error);
+
         if (error)
         {
-            g_critical ("%s\n", (error) ? error->message : _("Couldn't connect to GPaste daemon"));
+            g_critical ("%s\n", error->message);
             status = EXIT_FAILURE;
         }
     }

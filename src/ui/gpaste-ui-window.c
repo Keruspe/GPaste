@@ -419,6 +419,10 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_object (&priv->settings);
     g_clear_object (&priv->shortcuts);
 
+    /* Chaining up unparents (and frees) every widget below, so drop the one
+     * anything still in flight tests to know the window is gone. */
+    priv->banner = NULL;
+
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
 
@@ -485,17 +489,29 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (user_data);
+    /* The window is only presented at the end of this function, so nothing else
+     * would keep it alive if the application quit while we were connecting. */
+    g_autoptr (GPasteUiWindow) self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     GtkWindow *win = GTK_WINDOW (user_data);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
 
+    /* The window was destroyed (the application quit) while we were connecting:
+     * our ref keeps it allocated, but its widgets are gone. Nothing to set up. */
+    if (!priv->banner)
+        return;
+
     if (error)
     {
         priv->initialized = TRUE;
-        g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
+        g_critical ("%s: %s", _("Couldn't connect to GPaste daemon"), error->message);
         adw_banner_set_title (priv->banner, _("Couldn't connect to GPaste daemon"));
         adw_banner_set_revealed (priv->banner, TRUE);
+        /* Present anyway: the banner explaining what went wrong is the whole
+         * point, and a window that is never shown leaves the application
+         * running with nothing on screen at all. */
+        gtk_window_present (win);
         return;
     }
 
@@ -579,7 +595,8 @@ g_paste_ui_window_new (GtkApplication *app)
     gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
     gtk_widget_set_size_request (self, 400, 300);
 
-    g_paste_client_new (on_client_ready, self);
+    /* The callback owns this ref (see on_client_ready). */
+    g_paste_client_new (on_client_ready, g_object_ref (self));
 
     return self;
 }

@@ -30,6 +30,10 @@ typedef struct
     GSignalGroup      *client_signals;
 
     AdwSidebar        *sidebar;
+    /* adw_sidebar_get_items() is (transfer full), so keep the one model we
+     * connected to: asking again would leak a reference, and give us no
+     * guarantee of getting the very object our handler is connected to back. */
+    GtkSelectionModel *items;
     AdwSidebarSection *section;
     AdwSidebarItem    *menu_item;
     AdwEntryRow       *switch_entry;
@@ -381,14 +385,14 @@ g_paste_ui_panel_dispose (GObject *object)
 
     if (priv->c_signals[C_SELECTION_CHANGED])
     {
-        g_autoptr (GtkSelectionModel) selection = adw_sidebar_get_items (priv->sidebar);
-
-        g_signal_handler_disconnect (selection, priv->c_signals[C_SELECTION_CHANGED]);
+        g_signal_handler_disconnect (priv->items, priv->c_signals[C_SELECTION_CHANGED]);
         g_signal_handler_disconnect (priv->switch_entry, priv->c_signals[C_SWITCH_ACTIVATED]);
         g_signal_handler_disconnect (priv->jump_button, priv->c_signals[C_SWITCH_CLICKED]);
         g_signal_handler_disconnect (priv->sidebar, priv->c_signals[C_SETUP_MENU]);
         priv->c_signals[C_SELECTION_CHANGED] = 0;
     }
+
+    g_clear_object (&priv->items);
 
     g_clear_object (&priv->client_signals);
     g_clear_object (&priv->client);
@@ -424,8 +428,8 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 
     gtk_widget_set_vexpand (sidebar, TRUE);
 
-    GtkSelectionModel *selection = adw_sidebar_get_items (priv->sidebar);
-    priv->c_signals[C_SELECTION_CHANGED] = g_signal_connect (selection,
+    priv->items = adw_sidebar_get_items (priv->sidebar);
+    priv->c_signals[C_SELECTION_CHANGED] = g_signal_connect (priv->items,
                                                              "selection-changed",
                                                              G_CALLBACK (on_selection_changed),
                                                              priv);
