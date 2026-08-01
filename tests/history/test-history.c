@@ -821,6 +821,102 @@ test_encrypted_roundtrip (void)
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
+
+/* g_paste_storage_backend_new_with_passphrase() must key the backend with
+ * exactly the passphrase it is given, never with the process-wide one: a
+ * migration between two encrypted flavors holds the source and the destination
+ * open at the same time under two different keys, and reading the source with
+ * the destination's key would yield an empty history that passes for an emptied
+ * one. */
+static void
+test_encrypted_explicit_passphrase (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* The refusals below warn; g_test_expect_message cannot swallow them
+         * under structured logging, so drop warning fatality in this subprocess
+         * and let the parent match them on stderr. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        const gchar *name = "encrypted-explicit";
+        const gchar *source_passphrase = "the source passphrase";
+        const gchar *value = "only the source key reads this";
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        /* The process-wide passphrase is deliberately a different one throughout,
+         * standing in for the destination's key during a migration. */
+        g_paste_storage_backend_set_passphrase ("the destination passphrase");
+
+        {
+            g_autoptr (GPasteStorageBackend) backend =
+                g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, source_passphrase);
+            GList *items = g_list_append (NULL, g_paste_text_item_new (value));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        /* The explicit key reads it back... */
+        {
+            g_autoptr (GPasteStorageBackend) backend =
+                g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, source_passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_true (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+            g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, value);
+
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        /* ...while the process-wide one does not, and is refused rather than
+         * silently yielding an empty history. */
+        {
+            g_autoptr (GPasteStorageBackend) backend =
+                g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings,
+                                                             g_paste_storage_backend_get_passphrase ());
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_null (loaded);
+        }
+
+        /* No passphrase at all degrades to "no storage" instead of falling back
+         * to the process-wide one (the destination's key here). */
+        {
+            g_autoptr (GPasteStorageBackend) backend =
+                g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, NULL);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_assert_null (loaded);
+        }
+
+        /* The plain constructor, by contrast, does fall back to the process-wide
+         * passphrase — which is the destination's, hence unable to read this. */
+        {
+            g_autoptr (GPasteStorageBackend) backend =
+                g_paste_storage_backend_new (G_PASTE_STORAGE_ENCRYPTED_FILE, settings);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_null (loaded);
+        }
+
+        g_paste_storage_backend_set_passphrase (NULL);
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_passed ();
+    g_test_trap_assert_stderr ("*No passphrase for the encrypted storage backend*");
+}
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -1676,6 +1772,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/file_version_guard", test_file_version_guard);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
+    g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history/sqlite_roundtrip", test_sqlite_roundtrip);

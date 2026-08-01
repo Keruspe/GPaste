@@ -33,6 +33,36 @@
 static gchar *g_paste_storage_passphrase = NULL;
 
 /**
+ * g_paste_storage_passphrase_dup:
+ * @passphrase: (nullable): the passphrase to copy
+ *
+ * Copy a passphrase into gcr secure (non-pageable) memory, so callers keeping
+ * one of their own — the migration dialog holding the source history's key
+ * while a new one is being chosen for the destination — get the same treatment
+ * as the process-wide passphrase without pulling gcr in themselves.
+ *
+ * Returns: (nullable): a newly allocated copy, %NULL for a %NULL or empty
+ *          @passphrase; free it with g_paste_storage_passphrase_free()
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_storage_passphrase_dup (const gchar *passphrase)
+{
+    return (passphrase && *passphrase) ? gcr_secure_memory_strdup (passphrase) : NULL;
+}
+
+/**
+ * g_paste_storage_passphrase_free:
+ * @passphrase: (nullable): a passphrase from g_paste_storage_passphrase_dup()
+ *
+ * Wipe and release a passphrase copy.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_passphrase_free (gchar *passphrase)
+{
+    gcr_secure_memory_strfree (passphrase);
+}
+
+/**
  * g_paste_storage_backend_set_passphrase:
  * @passphrase: (nullable): the master passphrase, or %NULL to clear it
  *
@@ -41,8 +71,8 @@ static gchar *g_paste_storage_passphrase = NULL;
 G_PASTE_VISIBLE void
 g_paste_storage_backend_set_passphrase (const gchar *passphrase)
 {
-    gcr_secure_memory_strfree (g_paste_storage_passphrase);
-    g_paste_storage_passphrase = (passphrase && *passphrase) ? gcr_secure_memory_strdup (passphrase) : NULL;
+    g_paste_storage_passphrase_free (g_paste_storage_passphrase);
+    g_paste_storage_passphrase = g_paste_storage_passphrase_dup (passphrase);
 }
 
 /**
@@ -699,37 +729,18 @@ _g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
 }
 #endif
 
-/**
- * g_paste_storage_backend_new:
- * @storage_kind: the kind of storage we want to use to save and load history
- * @settings: a #GPasteSettings instance
- *
- * Create a new instance of #GPasteStorageBackend
- *
- * Returns: a newly allocated #GPasteStorageBackend
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteStorageBackend *
-g_paste_storage_backend_new (GPasteStorage   storage_kind,
-                             GPasteSettings *settings)
+/* The shared constructor: @passphrase is the key an encrypted @storage_kind is
+ * built with, already resolved by the caller (%NULL when there is none). An
+ * encrypted kind we cannot key — or cannot build in this configuration — always
+ * degrades to "no storage", never to plaintext on disk. */
+static GPasteStorageBackend *
+_g_paste_storage_backend_new (GPasteStorage   storage_kind,
+                              GPasteSettings *settings,
+                              const gchar    *passphrase G_GNUC_UNUSED)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-
     if (g_paste_storage_is_encrypted (storage_kind))
     {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-        const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
-
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        /* No passphrase set in this process yet (e.g. the in-process daemon in
-         * gnome-shell never ran the prompt): fall back to the one remembered in
-         * the keyring before giving up. apply_verified only keeps it when it
-         * actually decrypts the history, so a stale entry can never be used (which
-         * would overwrite the real data with an empty, wrongly-encrypted one). */
-        if (!passphrase && g_paste_storage_keyring_apply_verified (storage_kind, settings))
-            passphrase = g_paste_storage_backend_get_passphrase ();
-#endif
-
         if (passphrase)
         {
             GPasteStorageBackend *backend = _g_paste_storage_backend_new_encrypted (storage_kind, settings, passphrase);
@@ -753,4 +764,69 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
     priv->settings = g_object_ref (settings);
 
     return self;
+}
+
+/**
+ * g_paste_storage_backend_new:
+ * @storage_kind: the kind of storage we want to use to save and load history
+ * @settings: a #GPasteSettings instance
+ *
+ * Create a new instance of #GPasteStorageBackend, keyed (when @storage_kind is
+ * encrypted) with the process-wide passphrase, falling back to the one
+ * remembered in the keyring.
+ *
+ * Returns: a newly allocated #GPasteStorageBackend
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteStorageBackend *
+g_paste_storage_backend_new (GPasteStorage   storage_kind,
+                             GPasteSettings *settings)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+    const gchar *passphrase = NULL;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    passphrase = g_paste_storage_backend_get_passphrase ();
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+    /* No passphrase set in this process yet (e.g. the in-process daemon in
+     * gnome-shell never ran the prompt): fall back to the one remembered in
+     * the keyring before giving up. apply_verified only keeps it when it
+     * actually decrypts the history, so a stale entry can never be used (which
+     * would overwrite the real data with an empty, wrongly-encrypted one). */
+    if (!passphrase && g_paste_storage_is_encrypted (storage_kind) &&
+        g_paste_storage_keyring_apply_verified (storage_kind, settings))
+        passphrase = g_paste_storage_backend_get_passphrase ();
+#endif
+#endif
+
+    return _g_paste_storage_backend_new (storage_kind, settings, passphrase);
+}
+
+/**
+ * g_paste_storage_backend_new_with_passphrase:
+ * @storage_kind: the kind of storage we want to use to save and load history
+ * @settings: a #GPasteSettings instance
+ * @passphrase: (nullable): the passphrase to key an encrypted @storage_kind with
+ *
+ * Create a new instance of #GPasteStorageBackend keyed with exactly
+ * @passphrase, deliberately without the process-wide / keyring fallback
+ * g_paste_storage_backend_new() applies: a migration between two encrypted
+ * flavors has to hold the source and the destination open under two different
+ * keys at once, and the source must never end up opened with the destination's
+ * one (which reads back empty and would pass for an emptied history). Ignored
+ * for the plain kinds, which have nothing to key.
+ *
+ * Returns: a newly allocated #GPasteStorageBackend
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteStorageBackend *
+g_paste_storage_backend_new_with_passphrase (GPasteStorage   storage_kind,
+                                             GPasteSettings *settings,
+                                             const gchar    *passphrase)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+    return _g_paste_storage_backend_new (storage_kind, settings, passphrase);
 }

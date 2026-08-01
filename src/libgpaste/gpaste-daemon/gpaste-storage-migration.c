@@ -34,6 +34,16 @@ typedef struct
      * disk): what we import from and clean up. */
     GPasteStorage                  current;
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* The passphrase unlocking @current, once the keyring or the unlock prompt
+     * has produced one that actually decrypts it. Kept here rather than in the
+     * process-wide global because migrating between two encrypted flavors needs
+     * the source key while the destination is being (re)keyed with another one.
+     * Doubles as the "source already unlocked" flag, so a second Apply does not
+     * ask again. In gcr secure memory; freed in migration_data_free(). */
+    gchar                         *source_passphrase;
+#endif
+
     /* The backends offered by the combo, in display order. */
     GPasteStorage                  backends[G_PASTE_N_STORAGE];
     guint                          n_backends;
@@ -153,6 +163,10 @@ migration_data_free (gpointer data)
 {
     g_autofree MigrationData *self = data;
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_paste_storage_passphrase_free (self->source_passphrase);
+#endif
+
     g_object_unref (self->settings);
 }
 
@@ -269,10 +283,15 @@ imported_item_matches (const GPasteItem *source,
 static gboolean
 import_histories (GPasteSettings *settings,
                   GPasteStorage   current,
-                  GPasteStorage   chosen)
+                  const gchar    *current_passphrase,
+                  GPasteStorage   chosen,
+                  const gchar    *chosen_passphrase)
 {
-    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (current, settings);
-    g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new (chosen, settings);
+    /* Both keys are passed explicitly: source and destination may both be
+     * encrypted under two different passphrases, which the single process-wide
+     * one cannot express. */
+    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
+    g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new_with_passphrase (chosen, settings, chosen_passphrase);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
     /* Only the plain flavors drop password items; an encrypted destination stores
      * them, so a password missing from the read-back is a genuine write failure
@@ -333,9 +352,10 @@ import_histories (GPasteSettings *settings,
 
 static void
 cleanup_histories (GPasteSettings *settings,
-                   GPasteStorage   current)
+                   GPasteStorage   current,
+                   const gchar    *current_passphrase)
 {
-    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (current, settings);
+    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
 
     for (GStrv name = names; name && *name; ++name)
@@ -348,6 +368,17 @@ apply_migration (MigrationData *self,
 {
     gboolean import = adw_switch_row_get_active (self->import_row);
     gboolean cleanup = adw_switch_row_get_active (self->cleanup_row);
+    /* The source keeps the key it was unlocked with, the destination gets the
+     * one just set (the process-wide passphrase), so an encrypted -> encrypted
+     * migration re-keys the history instead of reading the old data with the
+     * new key. Both %NULL for the plain flavors, which need none. */
+    const gchar *current_passphrase = NULL;
+    const gchar *chosen_passphrase = NULL;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    current_passphrase = self->source_passphrase;
+    chosen_passphrase = g_paste_storage_backend_get_passphrase ();
+#endif
 
     self->applied = TRUE;
 
@@ -356,7 +387,7 @@ apply_migration (MigrationData *self,
     gboolean imported = TRUE;
 
     if (import && can_import (self, chosen))
-        imported = import_histories (self->settings, self->current, chosen);
+        imported = import_histories (self->settings, self->current, current_passphrase, chosen, chosen_passphrase);
 
     if (import && !imported)
     {
@@ -364,6 +395,16 @@ apply_migration (MigrationData *self,
          * untouched so nothing is lost or hidden and the migration is offered
          * again next time rather than silently leaving an empty new backend. */
         g_warning ("History import failed; keeping the current storage backend and old data");
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        /* We are staying on the source backend, so the process has to go back to
+         * the passphrase that opens it — which is the one we unlocked it with, or
+         * none when it is a plain flavor. Leaving the destination's in place
+         * would look to everything downstream like the history is already
+         * unlocked: no prompt, and a backend built with a key its data does not
+         * take. */
+        g_paste_storage_backend_set_passphrase (self->source_passphrase);
+#endif
     }
     else
     {
@@ -372,7 +413,7 @@ apply_migration (MigrationData *self,
         /* Only delete the old data once the import is confirmed, so a failed
          * import can never wipe the history it was meant to migrate. */
         if (cleanup && imported)
-            cleanup_histories (self->settings, self->current);
+            cleanup_histories (self->settings, self->current, current_passphrase);
 
         g_paste_settings_set_storage_backend_revision (self->settings, G_PASTE_STORAGE_BACKEND_REVISION);
     }
@@ -451,6 +492,17 @@ unlock_prompt (GtkApplication *application,
     g_paste_storage_migration_prompt_passphrase (application, FALSE, NULL, on_unlock_reply, prompt);
 }
 
+static void continue_apply (MigrationData *self);
+
+/* Take a copy of the (already verified) passphrase unlocking the source. */
+static void
+set_source_passphrase (MigrationData *self,
+                       const gchar   *passphrase)
+{
+    g_paste_storage_passphrase_free (self->source_passphrase);
+    self->source_passphrase = g_paste_storage_passphrase_dup (passphrase);
+}
+
 static void
 on_passphrase_set (const gchar *passphrase,
                    gpointer     user_data)
@@ -461,59 +513,88 @@ on_passphrase_set (const gchar *passphrase,
     if (!passphrase)
         return;
 
+    /* The destination's key, and from now on the daemon's: the callers all read
+     * it back from here once the migration is done (the gnome-shell helper hands
+     * it to the shell, the standalone daemon skips its unlock prompt). */
     g_paste_storage_backend_set_passphrase (passphrase);
     apply_migration (self, backend_for_index (self, adw_combo_row_get_selected (self->backend_row)));
 }
 
-/* Once the source encrypted history is unlocked, apply the migration with the
- * chosen target; on dismissal (no passphrase) stay on the dialog instead. */
+/* Once the source encrypted history is unlocked, keep its passphrase aside (the
+ * process-wide one is about to be replaced by the destination's) and carry on
+ * with the next step; on dismissal (no passphrase) stay on the dialog instead. */
 static void
 on_source_unlocked (gpointer user_data)
 {
     MigrationData *self = user_data;
+    const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
 
-    if (!g_paste_storage_backend_get_passphrase ())
+    if (!passphrase)
         return;
 
-    apply_migration (self, backend_for_index (self, adw_combo_row_get_selected (self->backend_row)));
+    set_source_passphrase (self, passphrase);
+
+    continue_apply (self);
 }
 #endif
 
+/* Apply the chosen backend, gathering whatever passphrases are still missing
+ * first: the source's (to read the encrypted history we import from or delete)
+ * then the destination's (a new one, so a re-keying migration never silently
+ * reuses the source's). Each prompt re-enters here once answered, and the state
+ * gathered so far is kept, so a second Apply only asks what is still missing. */
 static void
-on_apply (GtkButton *button G_GNUC_UNUSED,
-          gpointer   user_data)
+continue_apply (MigrationData *self)
 {
-    MigrationData *self = user_data;
     GPasteStorage chosen = backend_for_index (self, adw_combo_row_get_selected (self->backend_row));
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* Switching to encrypted storage needs a (new) passphrase to store with.
-     * Keeping the existing encrypted backend does not: its passphrase is obtained
-     * later through the daemon's normal unlock flow. */
-    if (g_paste_storage_is_encrypted (chosen) && chosen != self->current &&
-        !g_paste_storage_backend_get_passphrase ())
-    {
-        g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_passphrase_set, self);
-        return;
-    }
-
     /* Importing from (or deleting) an existing encrypted history needs its
-     * passphrase to read or list it. Prefer one remembered in the keyring, and
-     * only prompt when there is none or it has gone stale. */
-    if (g_paste_storage_is_encrypted (self->current) && !g_paste_storage_backend_get_passphrase () &&
+     * passphrase to read or list it. Prefer one this process already holds, then
+     * one remembered in the keyring, and only prompt when there is none or it has
+     * gone stale. Done before asking for the destination's passphrase so a
+     * wrong-passphrase retry happens before the user has picked a new one, not
+     * after. */
+    if (g_paste_storage_is_encrypted (self->current) && !self->source_passphrase &&
         (adw_switch_row_get_active (self->import_row) || adw_switch_row_get_active (self->cleanup_row)))
     {
+        const gchar *known = g_paste_storage_backend_get_passphrase ();
+
+        if (known && g_paste_storage_passphrase_can_decrypt (self->current, self->settings, known))
+            set_source_passphrase (self, known);
 #ifdef G_PASTE_ENABLE_LIBSECRET
-        if (!g_paste_storage_keyring_apply_verified (self->current, self->settings))
+        else if (g_paste_storage_keyring_apply_verified (self->current, self->settings))
+            set_source_passphrase (self, g_paste_storage_backend_get_passphrase ());
 #endif
+        else
         {
             unlock_prompt (self->application, self->settings, self->current, on_source_unlocked, self);
             return;
         }
     }
+
+    /* Switching to encrypted storage always needs a new passphrase to store with,
+     * confirmed (and optionally remembered in the keyring) by the prompt. That
+     * holds just as much when the source was encrypted too: the history is
+     * re-keyed, never handed the source's passphrase behind the user's back.
+     * Keeping the existing encrypted backend is the one case that needs nothing
+     * here: its passphrase is obtained later through the daemon's normal unlock
+     * flow. */
+    if (g_paste_storage_is_encrypted (chosen) && chosen != self->current)
+    {
+        g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_passphrase_set, self);
+        return;
+    }
 #endif
 
     apply_migration (self, chosen);
+}
+
+static void
+on_apply (GtkButton *button G_GNUC_UNUSED,
+          gpointer   user_data)
+{
+    continue_apply (user_data);
 }
 
 /* Dismissing the dialog leaves the revision untouched so it is shown again on
