@@ -10,10 +10,10 @@ i18n = import('i18n')
 
 apiversion = '2'
 
-adwaita_req_version = '1.9'
+adwaita_req_version = '1.10.alpha'
 gcr_req_version = '4.0.0'
-glib_req_version = '2.84.0'
-gtk4_req_version = '4.18.0'
+glib_req_version = '2.89.0'
+gtk4_req_version = '4.23.2'
 
 gcr_dep = dependency('gcr-4', version: '>= ' + gcr_req_version)
 gio_dep = dependency('gio-2.0', version: '>= ' + glib_req_version)
@@ -29,12 +29,20 @@ glib_minor = glib_req_version.split('.')[1].to_int()
 gtk4_major = gtk4_req_version.split('.')[0].to_int()
 gtk4_minor = gtk4_req_version.split('.')[1].to_int()
 
+# GLib and GTK only define version macros for their stable (even) minors, so a
+# development requirement has to name the stable release it leads to.
 if glib_minor % 2 == 1
   glib_minor = glib_minor + 1
 endif
 if gtk4_minor % 2 == 1
   gtk4_minor = gtk4_minor + 1
 endif
+
+# libadwaita, on the other hand, releases every minor as stable and defines a
+# macro for each, so this one must NOT be rounded: doing so would silently
+# require the next release.
+adwaita_major = adwaita_req_version.split('.')[0].to_int()
+adwaita_minor = adwaita_req_version.split('.')[1].to_int()
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.
 # They're still required at runtime though.
@@ -103,6 +111,8 @@ add_project_arguments(
   '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_@0@_@1@'.format(glib_major, glib_minor),
   '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_@0@_@1@'.format(gtk4_major, gtk4_minor),
   '-DGDK_VERSION_MAX_ALLOWED=GDK_VERSION_@0@_@1@'.format(gtk4_major, gtk4_minor),
+  '-DADW_VERSION_MIN_REQUIRED=ADW_VERSION_@0@_@1@'.format(adwaita_major, adwaita_minor),
+  '-DADW_VERSION_MAX_ALLOWED=ADW_VERSION_@0@_@1@'.format(adwaita_major, adwaita_minor),
   '-DG_PASTE_COMPILATION',
   '-DG_PASTE_DEFAULT_HISTORY="history"',
   '-DG_PASTE_EXTENSION_NAME="GPaste@gnome-shell-extensions.gnome.org"',

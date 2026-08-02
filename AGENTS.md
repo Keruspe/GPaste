@@ -172,7 +172,7 @@ The main graphical history browser. Launched via `gpaste-client ui`. Contains wi
 - `AdwNavigationSplitView` (responsive split: history selector panel + history list)
 - `AdwStatusPage` (shown when history is empty or search has no results)
 - `AdwEntryRow` (in panel's "Switch to history" entry, inside a `boxed-list` GtkListBox)
-- `AdwSidebar` / `AdwSidebarSection` / `AdwSidebarItem` (history selector list in the panel sidebar, libadwaita 1.9)
+- `AdwSidebar` / `AdwSidebarSection` / `AdwSidebarItem` (history selector list in the panel sidebar)
 - `AdwAboutDialog` (about dialog)
 
 **Subclassing notes:** GTK4 made many widget classes final (`G_DECLARE_FINAL_TYPE`), preventing subclassing. Libadwaita re-enables subclassing for its own derivable types. Within the ui, internal widgets subclass derivable types: `GtkBox` (for `GPasteUiPanel`, `GPasteUiHistory`), `AdwApplicationWindow` (for `GPasteUiWindow`), `AdwSidebarItem` (for `GPasteUiPanelHistory` — a GObject, not a widget), etc. `GtkStack` is final in GTK4 and cannot be subclassed — use `GtkBox` with manual visibility toggling instead.
@@ -181,7 +181,7 @@ The main graphical history browser. Launched via `gpaste-client ui`. Contains wi
 
 **Label widgets in list rows** use `GtkInscription` (not `GtkLabel`) for the main text display. `GtkInscription` is optimised for list-item cells and avoids overhead from markup/accessibility features not needed there. Set overflow explicitly with `gtk_inscription_set_text_overflow(GTK_INSCRIPTION_OVERFLOW_ELLIPSIZE_END)` — the default is `CLIP`. To display bold text, use `pango_parse_markup` to convert a markup string into `PangoAttrList` and pass it to `gtk_inscription_set_attributes`; call `gtk_inscription_set_attributes(NULL)` before `set_text` when switching back to plain text.
 
-**AdwSidebar** (libadwaita 1.9) is used in `GPasteUiPanel` to list available histories. `GPasteUiPanelHistory` subclasses `AdwSidebarItem` (a `GObject`, not a widget) to represent each history entry. The right-click context menu (backup/empty/delete) is driven by a `GMenuModel` set on the sidebar, with `GSimpleAction`s installed on the panel widget under the `panel.` prefix.
+**AdwSidebar** is used in `GPasteUiPanel` to list available histories. `GPasteUiPanelHistory` subclasses `AdwSidebarItem` (a `GObject`, not a widget) to represent each history entry. The right-click context menu (backup/empty/delete) is driven by a `GMenuModel` set on the sidebar, with `GSimpleAction`s installed on the panel widget under the `panel.` prefix.
 
 **Lazy history loading** (`GPasteUiHistory`): the display count is computed at runtime to fill the window — there is no `max-displayed-history-size` setting. `priv->limit` is the count of items currently allowed on screen; `priv->size` (= number of allocated row widgets) is `MIN (available, limit)`. The batch size (`g_paste_ui_history_batch()`) is one viewport's worth of items — `page_size / measured-row-height + 1` — falling back to `G_PASTE_UI_HISTORY_DEFAULT_BATCH` until a row has been measured and the viewport allocated. The view grows `limit` by one batch on demand, driven by the scrolled window: the vertical adjustment's `changed` signal keeps loading batches while the content does not yet overflow the viewport (so the window always fills), and `GtkScrolledWindow::edge-reached` (`GTK_POS_BOTTOM`) loads the next batch each time the user scrolls to the bottom — lazily pulling in the whole history. A `priv->loading` flag guards against re-entrant growth while a refresh is in flight. When the history shrinks the now-unused row widgets are dropped and unref'd, and `limit` is clamped back down (`MIN (limit, MAX (batch, available))`) so lazy growth restarts from a single batch rather than eagerly reloading the old depth. There is no libadwaita lazy-scroll helper; `edge-reached` is the idiomatic GTK primitive for the bottom trigger (preferred over hand-computing the adjustment's value/page/upper).
 
@@ -214,15 +214,17 @@ Translations managed via Weblate. Add new strings to the relevant `.c` source wi
 
 ## Key dependencies
 
-- GLib/GObject/Gio ≥ 2.84
-- GTK4 ≥ 4.18 + libadwaita ≥ 1.9 (UI and preferences; 1.9 required for `AdwSidebar`)
-- GCR (`gcr-4`) ≥ 3.90 (password item storage; also the secure-memory allocator for encryption secrets)
+- GLib/GObject/Gio ≥ 2.90 (declared as `2.89.0` in `meson.build` so it configures against the development releases)
+- GTK4 ≥ 4.24 + libadwaita ≥ 1.10 (UI and preferences; GTK4 declared as `4.23.2` for the same reason)
+- GCR (`gcr-4`) ≥ 4.0 (password item storage; also the secure-memory allocator for encryption secrets)
 - gjs ≥ 1.78 (GNOME Shell extension runtime)
 - gtk4-x11 (the daemon forces the GDK x11 backend at startup)
 - libsodium (optional; gated by the `encryption` meson feature, `auto` by default — history-encryption converter)
 - libsecret (optional; gated by the `libsecret` meson feature, `auto` by default, and only used together with encryption — remembers the history passphrase in the keyring)
 - libpwquality (optional; gated by the `pwquality` meson feature, `auto` by default, and only used together with encryption — rates the passphrase strength in the new-encrypted-history prompt)
 - sqlite3 ≥ 3.35 (optional; gated by the `sqlite` meson feature, `auto` by default — the SQLite history storage backend; 3.35 for `RETURNING` and `UPDATE … FROM`)
+
+`meson.build` derives `GLIB_VERSION_MIN_REQUIRED`/`MAX_ALLOWED`, `GDK_VERSION_*` and `ADW_VERSION_*` from those requirements, pinning min and max to the same value so both newer-than-required and newly-deprecated API warn. GLib and GTK only define macros for their stable (even) minors, so an odd minor is rounded up; libadwaita releases every minor as stable and defines a macro for each, so its derivation must **not** be rounded.
 
 Image items use `GdkTexture` from GTK4 directly — there is no longer a GdkPixbuf dependency.
 

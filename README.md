@@ -50,16 +50,14 @@ sudo dnf install gpaste-ui gpaste
 
 ```bash
 # Install build dependencies
-# Fedora 42
-$ sudo dnf install meson ninja-build glib2-devel cmake libgdk* gcr libadwaita-devel gjs-devel
+# Fedora
+$ sudo dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel gjs-devel
 
 # General build instructions
 $ git clone git@github.com:Keruspe/GPaste.git
 $ cd GPaste
-$ mkdir builddir
-$ cd builddir
-$ meson ..
-$ ninja
-$ sudo ninja install
+$ meson setup build
+$ ninja -C build
+$ sudo ninja -C build install
 $ sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
