@@ -199,7 +199,14 @@ Native shell integration. Provides the panel indicator and quick-access popover,
 
 ### `data/`
 
-Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings schemas (`gsettings/`), systemd user units, AppStream metadata.
+Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings schemas (`gsettings/`), systemd user units, AppStream metadata, shell completions (`completions/`).
+
+**Shell completions** (`data/completions/gpaste-client` for bash, `_gpaste-client` for zsh) mirror `gpaste-client`'s dispatch table, so a new verb, alias or option has to be added there too (and to `show_help()` and `man/1/gpaste-client.1`). Two rules both scripts follow:
+
+- **Never activate the daemon from a completion.** Anything that needs the daemon first checks `org.freedesktop.DBus.NameHasOwner org.gnome.GPaste` with `gdbus` and gives up when nothing owns it — otherwise hitting tab would start a daemon behind the user's back and block the shell while it loads the history.
+- **History names come off disk**, not from `list-histories`: one file per history, `<name>.{xml,xmls,db,dbs}` under `$XDG_DATA_HOME/GPaste` (falling back to `.../gpaste`, the same `PACKAGE_NAME`/`PACKAGE` rule as `g_paste_util_get_history_dir_path`), so they complete instantly with no daemon at all.
+
+`gpaste-client` reads stdin whenever it is not a tty, so every invocation from a completion redirects `</dev/null` — completion does not always run with a terminal on stdin, and it would otherwise block waiting for EOF. Item arguments complete to uuids, or to indexes when `--use-index` is in effect.
 
 ### `po/`
 

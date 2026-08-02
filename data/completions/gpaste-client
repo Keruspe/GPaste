@@ -1,35 +1,167 @@
+# gpaste-client(1) completion                              -*- shell-script -*-
+#
+# SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# SPDX-License-Identifier: BSD-2-Clause
+
+# Is a daemon already there to answer us? Completion must never be what
+# activates one: D-Bus would start it behind the user's back and block the shell
+# until it finished loading the history.
+_gpaste_client_daemon_running()
+{
+    gdbus call --session --dest org.freedesktop.DBus \
+                         --object-path /org/freedesktop/DBus \
+                         --method org.freedesktop.DBus.NameHasOwner org.gnome.GPaste 2>/dev/null \
+        | grep -q true
+}
+
+# One file per history, named <history>.<extension>. Listing them off disk keeps
+# history completion working (and instant) with no daemon running at all.
+_gpaste_client_histories()
+{
+    local dir=${XDG_DATA_HOME:-${HOME}/.local/share}
+    local f name
+
+    # The daemon stores under PACKAGE_NAME ("GPaste") when that directory
+    # already exists, and under PACKAGE ("gpaste") otherwise.
+    if [[ -d ${dir}/GPaste ]]; then
+        dir=${dir}/GPaste
+    else
+        dir=${dir}/gpaste
+    fi
+
+    for f in "${dir}"/*.xml "${dir}"/*.xmls "${dir}"/*.db "${dir}"/*.dbs; do
+        [[ -f ${f} ]] || continue
+        name=${f##*/}
+        printf '%s\n' "${name%.*}"
+    done | sort -u
+}
+
+# Both of these ask the daemon for the history and keep only its first column.
+# gpaste-client reads stdin whenever it is not a tty (that is how "foo |
+# gpaste-client" works), so feed it /dev/null: completion is not always run with
+# a terminal on stdin, and it would otherwise block waiting for EOF.
+_gpaste_client_uuids()
+{
+    _gpaste_client_daemon_running || return
+
+    gpaste-client history --oneline </dev/null 2>/dev/null | cut -d: -f1
+}
+
+# With --use-index the item arguments are indexes into the history, not uuids.
+_gpaste_client_indexes()
+{
+    _gpaste_client_daemon_running || return
+
+    gpaste-client history --oneline --use-index </dev/null 2>/dev/null | cut -d: -f1
+}
+
+_gpaste_client_options()
+{
+    local common="--help -h"
+
+    case ${1} in
+        # No verb at all: the history is printed, and --version is still to come.
+        '')
+            printf '%s' "${common} --version -v --oneline -o --raw -r --reverse -e --zero -z --use-index -i"
+            ;;
+        history|h|search)
+            printf '%s' "${common} --oneline -o --raw -r --reverse -e --zero -z --use-index -i"
+            ;;
+        get|g)
+            printf '%s' "${common} --raw -r --use-index -i"
+            ;;
+        select|set|s|delete|del|d|remove|rm|replace|upload|u|set-password|sp)
+            printf '%s' "${common} --use-index -i"
+            ;;
+        merge|m)
+            printf '%s' "${common} --decoration -d --separator -s"
+            ;;
+        *)
+            printf '%s' "${common}"
+            ;;
+    esac
+}
+
 _gpaste-client()
 {
-    local cur
+    local cur prev verb items
+    local -i i argpos=0 use_index=0
 
-    cur="${COMP_WORDS[${COMP_CWORD}]}"
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
     COMPREPLY=()
 
-    if [[ ${COMP_CWORD} == 1 ]]; then
+    # Both take a free-form value we have no way to guess.
+    case ${prev} in
+        -d|--decoration|-s|--separator)
+            return
+            ;;
+    esac
 
-        local opts
-
-        opts="about add add-password backup-history change-passphrase daemon daemon-reexec daemon-version delete delete-history --decoration -d delete-password empty file get get-history help --help -h history history-size list-histories merge migrate --oneline -o preferences quit remove --raw -r rename-password replace --reverse -e select --separator -s set set-password settings show-history start stop switch-history upload ui version --version -v --zero -z"
-        COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )
-
-    elif [[ ${COMP_CWORD} == 2 ]]; then
-
-        local action
-
-        action="${COMP_WORDS[1]}"
-        case "${action}" in
-            file|f)
-                COMPREPLY=( $(compgen -f ) )
+    # Options may appear anywhere (getopt_long permutes), so walk the whole line:
+    # the first bare word is the verb, the ones after it are its arguments, and
+    # @argpos ends up being the index of the argument now being completed.
+    for ((i = 1; i < COMP_CWORD; ++i)); do
+        case ${COMP_WORDS[i]} in
+            -d|--decoration|-s|--separator)
+                ((++i))
                 ;;
-            get|g)
-                COMPREPLY=( compgen -W "--raw -r" -- ${cur} )
+            -i|--use-index)
+                use_index=1
                 ;;
-            history|h)
-                COMPREPLY=( compgen -W "--oneline -o --raw -r --reverse -e --zero -z" -- ${cur} )
+            -*)
+                ;;
+            *)
+                if [[ -z ${verb} ]]; then
+                    verb=${COMP_WORDS[i]}
+                else
+                    ((++argpos))
+                fi
                 ;;
         esac
+    done
 
+    if [[ ${cur} == -* ]]; then
+        COMPREPLY=($(compgen -W "$(_gpaste_client_options "${verb}")" -- "${cur}"))
+        return
     fi
+
+    if [[ -z ${verb} ]]; then
+        local verbs="about add add-password backup-history change-passphrase daemon
+                     daemon-reexec daemon-version delete delete-history delete-password
+                     empty file get get-history help history history-size list-histories
+                     merge migrate preferences quit remove rename-password replace search
+                     select set set-password settings show-history start stop
+                     switch-history ui upload version"
+
+        COMPREPLY=($(compgen -W "${verbs}" -- "${cur}"))
+        return
+    fi
+
+    # Which of the two an item argument is spelled as depends on --use-index.
+    if ((use_index)); then
+        items=_gpaste_client_indexes
+    else
+        items=_gpaste_client_uuids
+    fi
+
+    case ${verb} in
+        empty|e|history-size|hs|delete-history|dh|switch-history|sh|backup-history|bh)
+            # backup-history takes <history> <backup name>, the history being
+            # optional; either way only its first argument names a history.
+            ((argpos == 0)) && COMPREPLY=($(compgen -W "$(_gpaste_client_histories)" -- "${cur}"))
+            ;;
+        file|f)
+            COMPREPLY=($(compgen -f -- "${cur}"))
+            compopt -o filenames 2>/dev/null
+            ;;
+        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|set-password|sp)
+            ((argpos == 0)) && COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))
+            ;;
+        merge|m)
+            COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))
+            ;;
+    esac
 }
 
 complete -F _gpaste-client gpaste-client

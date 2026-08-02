@@ -1,115 +1,200 @@
 #compdef gpaste-client
+#
+# SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# SPDX-License-Identifier: BSD-2-Clause
 
-(( $+functions[_gpaste-client_complete_arguments] )) ||
-_gpaste-client_complete_arguments() {
-    local -a base_arguments file_arguments get_arguments history_arguments
+# Is a daemon already there to answer us? Completion must never be what
+# activates one: D-Bus would start it behind the user's back and block the shell
+# until it finished loading the history.
+(( $+functions[_gpaste-client_daemon_running] )) ||
+_gpaste-client_daemon_running() {
+    local answer
 
-    base_arguments=(
-        '(-h --help)'{-h,--help}'[Display the help.]'
-        '(-v --version)'{-v,--version}'[Display the version.]'
-    )
+    answer=$(gdbus call --session --dest org.freedesktop.DBus \
+                                  --object-path /org/freedesktop/DBus \
+                                  --method org.freedesktop.DBus.NameHasOwner org.gnome.GPaste 2>/dev/null)
 
-    file_arguments=(
-       '*:file:_files'
-    )
-
-    get_arguments=(
-        '(-r --raw)'{-r,--raw}'[Display the raw item, not the display string.]'
-    )
-
-    history_arguments=(
-        '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]'
-        '(-e --reverse)'{-e,--reverse}'[Display the items in reverse order.]'
-        '(-r --raw)'{-r,--raw}'[Display each item raw (without index).]'
-        '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
-    )
-
-    merge_arguments=(
-        '(-d --decoration)'{-d,--decoration}'[Add the decoration at the beginning and end of each item before merging.]'
-        '(-s --separator)'{-s,--separator}'[Add a separator between each item when merging.]'
-    )
-
-    case "${1}" in
-        base)
-            _arguments -s : \
-                ${base_arguments} ${history_arguments}
-            ;;
-        file|f)
-            _arguments -s : \
-                ${file_arguments}
-            ;;
-        get|g)
-            _arguments -s : \
-                ${get_arguments}
-            ;;
-        history|h)
-            _arguments -s : \
-                ${history_arguments}
-            ;;
-        merge|m)
-            _arguments -s : \
-                ${merge_arguments}
-            ;;
-    esac
+    [[ ${answer} == *true* ]]
 }
 
-(( $+functions[_gpaste-client_complete_subcommands] )) ||
-_gpaste-client_complete_subcommands() {
+# One file per history, named <history>.<extension>. Listing them off disk keeps
+# history completion working (and instant) with no daemon running at all.
+(( $+functions[_gpaste-client_histories] )) ||
+_gpaste-client_histories() {
+    local dir=${XDG_DATA_HOME:-${HOME}/.local/share}
+    local -a names
+
+    # The daemon stores under PACKAGE_NAME ("GPaste") when that directory
+    # already exists, and under PACKAGE ("gpaste") otherwise.
+    if [[ -d ${dir}/GPaste ]]; then
+        dir=${dir}/GPaste
+    else
+        dir=${dir}/gpaste
+    fi
+
+    names=(${dir}/*.(xml|xmls|db|dbs)(N:t:r))
+    names=(${(u)names})
+
+    _describe -t histories 'history' names
+}
+
+# "<uuid>: <item>" lines, which is exactly the value:description form _describe
+# wants, so the item's text shows up next to its uuid. gpaste-client reads stdin
+# whenever it is not a tty (that is how "foo | gpaste-client" works), so feed it
+# /dev/null: completion is not always run with a terminal on stdin, and it would
+# otherwise block waiting for EOF.
+(( $+functions[_gpaste-client_uuids] )) ||
+_gpaste-client_uuids() {
+    local -a items
+
+    _gpaste-client_daemon_running || return 1
+
+    items=(${(f)"$(gpaste-client history --oneline </dev/null 2>/dev/null)"})
+
+    _describe -t items 'item' items
+}
+
+# With --use-index the item arguments are indexes into the history, not uuids.
+(( $+functions[_gpaste-client_indexes] )) ||
+_gpaste-client_indexes() {
+    local -a items
+
+    _gpaste-client_daemon_running || return 1
+
+    items=(${(f)"$(gpaste-client history --oneline --use-index </dev/null 2>/dev/null)"})
+
+    _describe -t indexes 'index' items
+}
+
+(( $+functions[_gpaste-client_subcommands] )) ||
+_gpaste-client_subcommands() {
     local -a subcommands
+
     subcommands=(
+        about:"Display the about dialog"
         {add,a}:"Set text to clipboard"
         {add-password,ap}:"Add a name - password couple to the clipboard"
-        "about:Display the about dialog"
         {backup-history,bh}:"Backup current history"
-        "change-passphrase:Change the passphrase of the encrypted history"
+        change-passphrase:"Change the passphrase of the encrypted history"
         {daemon-reexec,dr}:"Reexecute the daemon"
         {daemon-version,dv}:"Display the daemon version"
         {delete,del,d,remove,rm}:"Delete an element of the history"
         {delete-history,dh}:"Delete a history"
         {delete-password,dp}:"Delete a password"
         {empty,e}:"Empty the history"
-        {file,f}:"Put content of file into clipboard"
+        {file,f}:"Put the content of a file into the clipboard"
         {get,g}:"Display an element of the history"
         {get-history,gh}:"Get the name of the current history"
-        "help:Display the help"
-        {history,h}:"Display the history with indexes"
+        help:"Display the help"
+        {history,h}:"Display the history"
         {history-size,hs}:"Display the size of the history"
         {list-histories,lh}:"List available histories"
-        {merge,m}:"Merge various elements from history"
-        "migrate:Migrate the history to a different storage backend"
+        {merge,m}:"Merge various elements from the history"
+        migrate:"Migrate the history to a different storage backend"
         {rename-password,rp}:"Rename a password"
-        "replace:Replace the contents of an item"
+        replace:"Replace the contents of an item"
+        search:"Search the history"
         {select,set,s}:"Select an element of the history"
         {set-password,sp}:"Mark an item as being a password"
         {settings,preferences,p}:"Launch the configuration tool"
-        {start,daemon,d}:"Start the daemon"
-        {stop,quit,q}:"Shutdown the daemon"
-        "show-history:Make the applet or extension display the history"
+        show-history:"Make the applet or extension display the history"
+        {start,daemon,d}:"Start tracking clipboard changes"
+        {stop,quit,q}:"Stop tracking clipboard changes"
         {switch-history,sh}:"Switch to another history"
-        "ui:Launch the graphical tool"
-        {upload,u}:"Upload item to a pastebin service"
+        ui:"Launch the graphical tool"
+        {upload,u}:"Upload an item to a pastebin service"
         {version,v}:"Display the version"
-        {zero-history,zh}:"Display the history with NUL as separator"
     )
 
     _describe -t commands 'gpaste-client subcommand' subcommands
-    _gpaste-client_complete_arguments "base"
+}
+
+(( $+functions[_gpaste-client_arguments] )) ||
+_gpaste-client_arguments() {
+    # Which of the two an item argument is spelled as depends on --use-index.
+    local item=_gpaste-client_uuids
+
+    (( ${+opt_args[-i]} || ${+opt_args[--use-index]} )) && item=_gpaste-client_indexes
+
+    case ${words[1]} in
+        (empty|e|history-size|hs|delete-history|dh|switch-history|sh)
+            _arguments -s : \
+                '1:history:_gpaste-client_histories'
+            ;;
+        (backup-history|bh)
+            # <history> <backup name>, the history being optional.
+            _arguments -s : \
+                '1:history:_gpaste-client_histories' \
+                '2:backup name:'
+            ;;
+        (file|f)
+            _arguments -s : \
+                '*:file:_files'
+            ;;
+        (get|g|select|set|s|delete|del|d|remove|rm|upload|u)
+            _arguments -s : \
+                "1:item:${item}"
+            ;;
+        (replace)
+            _arguments -s : \
+                "1:item:${item}" \
+                '2:contents:'
+            ;;
+        (set-password|sp)
+            _arguments -s : \
+                "1:item:${item}" \
+                '2:name:'
+            ;;
+        (merge|m)
+            _arguments -s : \
+                "*:item:${item}"
+            ;;
+        (add|a)
+            _arguments -s : \
+                '1:text:'
+            ;;
+        (add-password|ap)
+            _arguments -s : \
+                '1:name:' \
+                '2:password:'
+            ;;
+        (rename-password|rp)
+            _arguments -s : \
+                '1:old name:' \
+                '2:new name:'
+            ;;
+        (search)
+            _arguments -s : \
+                '1:pattern:'
+            ;;
+    esac
 }
 
 _gpaste-client() {
-    if (( CURRENT > 2 )); then
-        local cmd="${words[2]}"
-        local ctx="gpaste-client"
-        while (( CURRENT > 2 )); do
-            ctx="${ctx}-${words[2]}"
-            (( CURRENT-- ))
-            shift words
-        done
-        curcontext="${curcontext%:*:*}:${ctx}"
-        _gpaste-client_complete_arguments "${cmd}"
-    else
-        _gpaste-client_complete_subcommands
-    fi
+    local context state state_descr line curcontext="${curcontext}"
+    typeset -A opt_args
+
+    # getopt_long permutes, so every option is accepted anywhere on the line;
+    # they are declared once here rather than per subcommand.
+    _arguments -s -C : \
+        '(-h --help)'{-h,--help}'[Display the help.]' \
+        '(-v --version)'{-v,--version}'[Display the version.]' \
+        '(-i --use-index)'{-i,--use-index}'[Use the index of the item instead of its UUID.]' \
+        '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]' \
+        '(-r --raw)'{-r,--raw}'[Display the raw item, without its UUID.]' \
+        '(-e --reverse)'{-e,--reverse}'[Display the items in reverse order.]' \
+        '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]' \
+        '(-d --decoration)'{-d,--decoration}'[Add the decoration at the beginning and end of each item before merging.]:decoration:' \
+        '(-s --separator)'{-s,--separator}'[Add a separator between each item when merging.]:separator:' \
+        '1: :_gpaste-client_subcommands' \
+        '*:: :->arguments' && return
+
+    case ${state} in
+        (arguments)
+            curcontext="${curcontext%:*:*}:gpaste-client-${words[1]}"
+            _gpaste-client_arguments
+            ;;
+    esac
 }
 
 _gpaste-client "${@}"
