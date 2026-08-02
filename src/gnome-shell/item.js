@@ -48,6 +48,12 @@ class GPasteItem extends PopupMenuItem {
     }
 
     showIndex(state) {
+        // Only the first ten rows get a ctrl-index label (there is no ctrl+10),
+        // so the rest have nothing to show either way.
+        if (!this._indexLabel) {
+            return;
+        }
+
         if (state) {
             if (!this._indexLabelVisible) {
                 this.insert_child_at_index(this._indexLabel, 1);
@@ -123,7 +129,12 @@ class GPasteItem extends PopupMenuItem {
     }
 
     _onActivate(actor, event) {
-        this._client.select(this._uuid, null);
+        // A row is materialised before its content is fetched, so until that
+        // async round-trip lands it has no uuid to select — and GJS would throw
+        // out of this handler on the null rather than let the call through.
+        if (this._uuid) {
+            this._client.select(this._uuid, null);
+        }
     }
 
     _onKeyPressed(actor, event) {
@@ -133,7 +144,10 @@ class GPasteItem extends PopupMenuItem {
             return Clutter.EVENT_STOP;
         }
         if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
-            this._client.delete(this._uuid, null);
+            // Nothing to delete until the row's fetch has landed (see _onActivate).
+            if (this._uuid) {
+                this._client.delete(this._uuid, null);
+            }
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
