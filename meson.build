@@ -11,7 +11,7 @@ i18n = import('i18n')
 apiversion = '2'
 
 adwaita_req_version = '1.9'
-gcr_req_version = '3.90.0'
+gcr_req_version = '4.0.0'
 glib_req_version = '2.84.0'
 gtk4_req_version = '4.18.0'
 
