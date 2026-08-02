@@ -434,12 +434,6 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                              G_CALLBACK (on_selection_changed),
                                                              priv);
 
-    GtkWidget *entry_box = gtk_list_box_new ();
-    gtk_widget_add_css_class (entry_box, "boxed-list");
-    gtk_list_box_set_selection_mode (GTK_LIST_BOX (entry_box), GTK_SELECTION_NONE);
-    gtk_widget_set_margin_top (entry_box, 6);
-    gtk_widget_set_margin_bottom (entry_box, 6);
-
     GtkWidget *switch_entry = adw_entry_row_new ();
     priv->switch_entry = ADW_ENTRY_ROW (switch_entry);
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch to history"));
@@ -461,10 +455,11 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                           G_CALLBACK (g_paste_ui_panel_switch_clicked),
                                                           priv);
 
-    gtk_list_box_append (GTK_LIST_BOX (entry_box), switch_entry);
+    /* The sidebar's own suffix slot, rather than a boxed-list GtkListBox
+     * alongside it: libadwaita styles and spaces the slot for us. */
+    adw_sidebar_set_suffix (priv->sidebar, switch_entry);
 
     gtk_box_append (box, sidebar);
-    gtk_box_append (box, entry_box);
 }
 
 /**

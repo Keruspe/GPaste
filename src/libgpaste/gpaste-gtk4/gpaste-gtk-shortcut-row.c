@@ -12,6 +12,7 @@ enum
 {
     PROP_0,
     PROP_ACCELERATOR,
+    PROP_CAPTURING,
 
     N_PROPERTIES
 };
@@ -47,6 +48,20 @@ g_paste_gtk_shortcut_row_get_accelerator (GPasteGtkShortcutRow *self)
 }
 
 static void g_paste_gtk_shortcut_row_stop_capture (GPasteGtkShortcutRow *self);
+
+static void
+g_paste_gtk_shortcut_row_set_capturing (GPasteGtkShortcutRow *self,
+                                        gboolean              capturing)
+{
+    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
+
+    if (priv->capturing == capturing)
+        return;
+
+    priv->capturing = capturing;
+
+    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_CAPTURING]);
+}
 
 /**
  * g_paste_gtk_shortcut_row_set_accelerator:
@@ -92,6 +107,13 @@ g_paste_gtk_shortcut_row_get_property (GObject    *object,
     case PROP_ACCELERATOR:
         g_value_set_string (value, g_paste_gtk_shortcut_row_get_accelerator (self));
         break;
+    case PROP_CAPTURING:
+    {
+        const GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
+
+        g_value_set_boolean (value, priv->capturing);
+        break;
+    }
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
@@ -118,11 +140,8 @@ g_paste_gtk_shortcut_row_set_property (GObject      *object,
 static void
 g_paste_gtk_shortcut_row_stop_capture (GPasteGtkShortcutRow *self)
 {
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
-
-    priv->capturing = FALSE;
+    g_paste_gtk_shortcut_row_set_capturing (self, FALSE);
     adw_action_row_set_subtitle (ADW_ACTION_ROW (self), "");
-    gtk_widget_remove_css_class (GTK_WIDGET (self), "accent");
 }
 
 static gboolean
@@ -195,10 +214,9 @@ g_paste_gtk_shortcut_row_on_activated (AdwActionRow *row)
     if (priv->capturing)
         return;
 
-    priv->capturing = TRUE;
+    g_paste_gtk_shortcut_row_set_capturing (self, TRUE);
     /* translators: shown while the row waits for the user to press a shortcut */
     adw_action_row_set_subtitle (row, _("Press the new shortcut, Backspace to clear, Escape to cancel"));
-    gtk_widget_add_css_class (GTK_WIDGET (self), "accent");
     gtk_widget_grab_focus (GTK_WIDGET (self));
 }
 
@@ -230,6 +248,16 @@ g_paste_gtk_shortcut_row_class_init (GPasteGtkShortcutRowClass *klass)
     properties[PROP_ACCELERATOR] = g_param_spec_string ("accelerator", NULL, NULL, "",
                                                         G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 
+    /**
+     * GPasteGtkShortcutRow:capturing:
+     *
+     * Whether the row is armed and waiting for a shortcut to be pressed. Read
+     * only: arming happens by activating the row. Exists as a property so the
+     * "accent" look can be bound to it rather than toggled by hand.
+     */
+    properties[PROP_CAPTURING] = g_param_spec_boolean ("capturing", NULL, NULL, FALSE,
+                                                       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+
     g_object_class_install_properties (object_class, N_PROPERTIES, properties);
 }
 
@@ -239,6 +267,8 @@ g_paste_gtk_shortcut_row_init (GPasteGtkShortcutRow *self)
     GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
 
     priv->accelerator = g_strdup ("");
+
+    adw_bind_property_to_css_class (self, "capturing", GTK_WIDGET (self), "accent", G_BINDING_SYNC_CREATE);
 
     priv->label = gtk_shortcut_label_new ("");
     /* translators: shown in a shortcut row when no shortcut is bound */
