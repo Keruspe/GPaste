@@ -128,7 +128,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
                                  gpointer      user_data)
 {
     g_autofree GPasteClipboardTextCallbackData *data = user_data;
-    GPasteClipboard *self = data->self;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken for the request */
 
     if (!text)
     {
@@ -179,7 +179,10 @@ g_paste_clipboard_set_text (GPasteClipboard            *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardTextCallbackData *data = g_new (GPasteClipboardTextCallbackData, 1);
 
-    data->self = self;
+    /* Nothing else keeps us alive between the request and its callback: the
+     * clipboard can be disposed while the selection owner takes its time (or
+     * never answers at all). The callback drops this ref. */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
 
@@ -426,7 +429,7 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
                                   gpointer      user_data)
 {
     g_autofree GPasteClipboardImageCallbackData *data = user_data;
-    GPasteClipboard *self = data->self;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken for the request */
 
     if (!image)
     {
@@ -457,7 +460,8 @@ g_paste_clipboard_set_image (GPasteClipboard             *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardImageCallbackData *data = g_new (GPasteClipboardImageCallbackData, 1);
 
-    data->self = self;
+    /* Ref for the duration of the request (see g_paste_clipboard_set_text). */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
 
@@ -485,11 +489,12 @@ g_paste_clipboard_on_special_atom_ready (GtkClipboard     *clipboard G_GNUC_UNUS
                                          gpointer          user_data)
 {
     g_autofree GPasteClipboardSpecialAtomData *data = user_data;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken for the request */
     gint length;
     const guchar *raw = gtk_selection_data_get_data_with_length (selection_data, &length);
 
     if (data->callback)
-        data->callback (data->self, data->atom, raw, (gsize) (length > 0 ? length : 0), data->user_data);
+        data->callback (self, data->atom, raw, (gsize) (length > 0 ? length : 0), data->user_data);
 }
 
 static void
@@ -503,7 +508,8 @@ g_paste_clipboard_fetch_special_atom (GPasteClipboard                   *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardSpecialAtomData *data = g_new (GPasteClipboardSpecialAtomData, 1);
 
-    data->self = self;
+    /* Ref for the duration of the request (see g_paste_clipboard_set_text). */
+    data->self = g_object_ref (self);
     data->atom = atom;
     data->callback = callback;
     data->user_data = user_data;
@@ -533,6 +539,9 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
     if (--data->pending > 0)
         return;
 
+    /* The ref taken in g_paste_clipboard_update, held for the whole barrier and
+     * dropped here, once the callback it outlives has run. */
+    g_autoptr (GPasteClipboard) self = data->self;
     GPasteItem *item = NULL;
 
     if (data->text)
@@ -560,7 +569,7 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
     }
 
     if (data->callback)
-        data->callback (data->self, item, data->fallback, data->user_data);
+        data->callback (self, item, data->fallback, data->user_data);
 
     for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         g_free (data->special_atom_data[atom]);
@@ -688,7 +697,9 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardUpdateData *data = g_new0 (GPasteClipboardUpdateData, 1);
 
-    data->self = self;
+    /* Held for the whole barrier -- the targets request, everything it fans out
+     * to, and the callback at the end -- and dropped in _update_maybe_done. */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
     data->pending = 1;

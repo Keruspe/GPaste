@@ -37,12 +37,18 @@ G_BEGIN_DECLS
         fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);     \
         return EXIT_FAILURE;                                                                           \
     }                                                                                                  \
+    /* Another instance already owns the name: hand it the activation and stop.                        \
+     * Pass run() no command line -- the activation above is the whole point of                        \
+     * this path, and GApplication would otherwise take whatever arguments we                          \
+     * were given for files to open ("This application can not open files", a                          \
+     * critical plus a failing exit status). None of our executables passes files                      \
+     * on the command line; they take flags and subcommands. */                                        \
     if (g_application_get_is_remote (gapp))                                                            \
     {                                                                                                  \
         if (G_APPLICATION_GET_CLASS (gapp)->activate)                                                  \
         {                                                                                              \
             g_application_activate (gapp);                                                             \
-            return g_application_run (gapp, argc, argv);                                               \
+            return g_application_run (gapp, 0, NULL);                                                  \
         }                                                                                              \
         else                                                                                           \
         {                                                                                              \
