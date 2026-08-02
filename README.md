@@ -33,9 +33,9 @@ You can then run `gpaste-client daemon-version` to check the correct daemon is n
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 45 to 50 is: [GPaste 45.10](https://www.imagination-land.org/posts/2026-06-21-gpaste-45.10-released.html).
+Latest release for GNOME 45 to 50 is: [GPaste 45.11](https://www.imagination-land.org/posts/2026-08-02-gpaste-45.11-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-45.10.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-45.11.tar.xz>
 
 ## Installation
 

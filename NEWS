@@ -1,3 +1,19 @@
+NEW in 45.11 (02/08/2026)
+=============
+
+- Fix the daemon crashing when searching from the GNOME Shell overview with a term containing an unbalanced bracket or parenthesis (#496)
+- Fix the history file being destroyed when it had been written by a newer version of GPaste
+- Fix items being lost or garbled when loading a history containing an item with an empty value
+- Fix every client crashing, GNOME Shell included, on the first update sent by a newer daemon after "gpaste-client daemon-reexec"
+- Fix the daemon aborting, instead of disabling search, when it cannot connect to its own D-Bus proxy
+- Fix "gpaste-client help", "version", "ui" and "preferences" failing when no daemon is reachable
+- Fix "gpaste-client file" crashing on a file that is neither text nor a loadable image
+- Fix a critical on every keystroke when the GTK UI search term is not a valid regular expression
+- Fix acting on history rows before their content has been loaded, in both the GTK UI and the GNOME Shell extension
+- Fix a second "gpaste-ui" or "gpaste-preferences" invocation failing instead of presenting the running window
+- Fix several memory leaks and a use-after-free in the GTK UI history panel
+- Fix the "empty history" helpers reporting success when the operation had failed
+
 NEW in 45.10 (21/06/2026)
 =============
 
