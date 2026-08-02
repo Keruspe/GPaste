@@ -40,7 +40,18 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
     for (const GSList *val = special_values; val; val = val->next)
     {
         const GPasteBinaryData *value = val->data;
-        const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), g_paste_binary_data_get_mime (value))->value_nick;
+        GEnumValue *gev = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), g_paste_binary_data_get_mime (value));
+
+        /* A representation we cannot name is one we could not read back either:
+         * skip it rather than dereference NULL, the way the reader does when an
+         * unknown mime comes the other way round. */
+        if (!gev)
+        {
+            g_warning ("Unknown mime: %d", g_paste_binary_data_get_mime (value));
+            continue;
+        }
+
+        const gchar *mime = gev->value_nick;
         g_autofree gchar *b64 = g_paste_binary_data_to_base64 (value);
         g_autofree gchar *text = g_paste_util_xml_encode (b64);
 
@@ -182,7 +193,11 @@ typedef enum
     IMAGE,
     URIS,
     PASSWORD,
-    COLOR
+    COLOR,
+    /* No usable "kind" attribute (missing, or naming a kind this version does
+     * not know). Reset per item, so one such item never makes the next one —
+     * which may have no kind of its own — inherit its type. */
+    UNKNOWN_TYPE
 } Type;
 
 typedef enum
@@ -213,8 +228,8 @@ typedef struct
     GPasteSpecialAtom mime;
 } Data;
 
-#define ASSERT_STATE(x)                                                                               \
-    if (data->state != x)                                                                             \
+#define ASSERT_STATE_FULL(cond, x)                                                                    \
+    if (!(cond))                                                                                      \
     {                                                                                                 \
         gint line_number, char_number;                                                                \
         g_markup_parse_context_get_position (context, &line_number, &char_number);                    \
@@ -223,10 +238,20 @@ typedef struct
                    x, data->state, data->history_file_path, line_number, char_number);                \
         return;                                                                                       \
     }
+#define ASSERT_STATE(x) ASSERT_STATE_FULL (data->state == (x), x)
 #define SWITCH_STATE(x, y) \
     do {                   \
         ASSERT_STATE (x);  \
         data->state = y;   \
+    } while (0)
+/* Only a non-empty text run moves an element to its ..._WITH_TEXT state, so an
+ * element that holds nothing (or only whitespace) is still in @empty when its
+ * end tag arrives. Accept both: refusing the empty one would leave the state
+ * machine stuck inside that element and silently drop every remaining item. */
+#define SWITCH_STATE_OR_EMPTY(x, empty, y)                                        \
+    do {                                                                          \
+        ASSERT_STATE_FULL (data->state == (x) || data->state == (empty), x);      \
+        data->state = y;                                                          \
     } while (0)
 
 static gboolean
@@ -276,6 +301,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (g_paste_str_equal (element_name, "item"))
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
+        data->type = UNKNOWN_TYPE;
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->checksum, g_free);
@@ -304,12 +330,15 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 if (g_uuid_string_is_valid (*v) && !history_contains_uuid (data->history, *v))
                     data->uuid = g_strdup (*v);
             }
+            /* An attribute that does not belong to this kind is skipped, not a
+             * reason to abandon the item: returning here would also drop the
+             * attributes that follow it (the uuid among them). */
             else if (g_paste_str_equal (*a, "date"))
             {
                 if (data->type != IMAGE)
                 {
                     g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
-                    return;
+                    continue;
                 }
                 data->date = g_strdup (*v);
             }
@@ -327,7 +356,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 if (data->type != PASSWORD)
                 {
                     g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, PASSWORD, data->type);
-                    return;
+                    continue;
                 }
                 data->name = g_strdup (*v);
             }
@@ -360,7 +389,16 @@ add_item (Data *data)
 {
     GPasteItem *item = NULL;
 
-    switch (data->type)
+    /* Every kind is built from the item's value, and every constructor rejects a
+     * %NULL one with a critical: an <item> with no usable kind, or with no
+     * <value> at all (absent, empty or whitespace-only), carries nothing we can
+     * restore and is skipped — along with its special values, released below. */
+    Type type = (data->text) ? data->type : UNKNOWN_TYPE;
+
+    if (type == UNKNOWN_TYPE)
+        g_warning ("Ignoring an item with no usable kind or value in file “%s”", data->history_file_path);
+
+    switch (type)
     {
     case TEXT:
         item = g_paste_text_item_new (data->text);
@@ -394,6 +432,8 @@ add_item (Data *data)
                     g_warning ("Failed to delete leftover image: %s", error->message);
             }
         }
+        break;
+    case UNKNOWN_TYPE:
         break;
     }
 
@@ -435,23 +475,30 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         SWITCH_STATE (IN_HISTORY, END);
     else if (g_paste_str_equal (element_name, "item"))
     {
-        if (data->current_size < data->max_size)
+        /* An unknown (or missing) version collects neither the item's value nor
+         * its special values (see on_text), so there is nothing to restore. */
+        if (data->version != HISTORY_INVALID && data->current_size < data->max_size)
             add_item (data);
         switch (data->version)
         {
         case HISTORY_1_0:
-            SWITCH_STATE (IN_ITEM_WITH_TEXT, IN_HISTORY);
+            SWITCH_STATE_OR_EMPTY (IN_ITEM_WITH_TEXT, IN_ITEM, IN_HISTORY);
             break;
         case HISTORY_2_0:
             SWITCH_STATE (IN_ITEM, IN_HISTORY);
             break;
         case HISTORY_INVALID:
-            g_warning ("Invalid history version, ignoring end of item");
+            /* Leave the item all the same: staying inside it would make every
+             * element that follows fail its assert — including the next <item>,
+             * whose scratch reset would then be skipped, so the items of an
+             * unknown-version history would bleed into each other. Which state
+             * we are in depends on the (unknown) version, so accept both. */
+            SWITCH_STATE_OR_EMPTY (IN_ITEM_WITH_TEXT, IN_ITEM, IN_HISTORY);
             break;
         }
     }
     else if (g_paste_str_equal (element_name, "value"))
-        SWITCH_STATE (IN_VALUE_WITH_TEXT, IN_ITEM);
+        SWITCH_STATE_OR_EMPTY (IN_VALUE_WITH_TEXT, IN_VALUE, IN_ITEM);
     else
         g_warning ("Unknown element: %s", element_name);
 }
@@ -557,7 +604,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             NULL,
             0,
             BEGIN,
-            TEXT,
+            UNKNOWN_TYPE, /* set per item from its "kind" attribute */
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),
@@ -583,11 +630,11 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             return;
         }
 
-        if (!g_markup_parse_context_parse (ctx, text, text_length, &error) ||
-            !g_markup_parse_context_end_parse (ctx, &error))
-        {
+        gboolean parsed = (g_markup_parse_context_parse (ctx, text, text_length, &error) &&
+                           g_markup_parse_context_end_parse (ctx, &error));
+
+        if (!parsed)
             g_warning ("Failed to parse history file: %s", error->message);
-        }
 
         if (data.state != END)
             g_warning ("Unexpected state after parsing history: %" G_GINT32_FORMAT, data.state);
@@ -599,8 +646,16 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         g_clear_pointer (&data.checksum, g_free);
         g_clear_pointer (&data.name, g_free);
         g_clear_pointer (&data.text, g_free);
+        /* add_item() consumes these at every </item>; a document that ends inside
+         * one (truncated file, failed parse) leaves the last item's behind. */
+        g_clear_slist (&data.special_values, g_object_unref);
 
-        if (data.version != HISTORY_CURRENT)
+        /* Rewrite only to migrate a recognised older format that parsed cleanly.
+         * A HISTORY_INVALID version means we never parsed a valid <history>
+         * header (a corrupt file, or one written by a newer GPaste): leave it
+         * untouched rather than overwrite it with a partial parse -- every item
+         * of such a history is skipped, so what we would write back is empty. */
+        if (parsed && data.version != HISTORY_CURRENT && data.version != HISTORY_INVALID)
             g_paste_file_backend_write_history_file (self, history_file_path, *history);
     }
     else

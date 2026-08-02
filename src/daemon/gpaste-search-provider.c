@@ -143,9 +143,12 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autofree GetResultMetasData *data = user_data;
     GPasteClient *client = data->client;
     g_auto (GStrv) uuids = data->uuids;
-    g_auto (GVariantBuilder) builder;
-
-    g_variant_builder_init (&builder, (GVariantType *) "aa{sv}");
+    /* Initialized in its declaration, as GLib documents for a g_auto() builder:
+     * declaring it and initializing it a statement later is one inserted return
+     * away from g_variant_builder_clear() running on stack garbage. The macro
+     * also restores the type-string validation the (GVariantType *) cast threw
+     * away. */
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
 
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) results = g_paste_client_get_elements_finish (client, res, &error);
@@ -157,10 +160,8 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     {
         const GPasteClientItem *item = i->data;
         const gchar *value = g_paste_client_item_get_value (item);
-        g_auto (GVariantBuilder) dict;
+        g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
         g_autofree gchar *result = g_strdelimit (g_strdup (value), "\n\t", ' ');
-
-        g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);
 
         append_dict_entry (&dict, "id", uuids[n]);
         append_dict_entry (&dict, "name", result);
@@ -189,8 +190,18 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
      * in the async on_elements_ready callback. */
     g_auto (GStrv) uuids = g_variant_dup_strv (results, &len);
 
-    if (!len)
-        return FALSE;
+    /* Nothing to describe, or no daemon connection to describe it with: answer
+     * an empty (but correctly typed) result set rather than the NULL the
+     * caller's generic "not async" path would return for an "aa{sv}" method. */
+    if (!len || !priv->client)
+    {
+        g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
+        GVariant *ans = g_variant_builder_end (&builder);
+
+        g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
+
+        return TRUE;
+    }
 
     GetResultMetasData *data = g_new (GetResultMetasData, 1);
 
@@ -204,7 +215,7 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
 }
 
 static gboolean
-g_paste_search_provider_private_activate_result (const GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
+g_paste_search_provider_private_activate_result (const GPasteSearchProviderPrivate *priv,
                                                  GVariant                          *parameters)
 {
     GVariantIter parameters_iter;
@@ -215,7 +226,11 @@ g_paste_search_provider_private_activate_result (const GPasteSearchProviderPriva
     G_GNUC_UNUSED g_autoptr (GVariant) terms = g_variant_iter_next_value (&parameters_iter);
     G_GNUC_UNUSED g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
 
-    g_paste_client_select (priv->client, g_variant_get_string (indexv, NULL), NULL, NULL);
+    /* Failing to reach the daemon is no longer fatal to this process, so the
+     * client can legitimately be missing for good — as the other two entry
+     * points already assume. */
+    if (priv->client)
+        g_paste_client_select (priv->client, g_variant_get_string (indexv, NULL), NULL, NULL);
 
     return FALSE;
 }
@@ -328,8 +343,13 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
 
     priv->client = g_paste_client_new_finish (res, &error);
+
+    /* Never abort here: taking the whole daemon down over a transient D-Bus
+     * failure loses the clipboard history along with it. Without a client every
+     * search simply answers empty (_do_search), and the two entry points that
+     * used to assume one is always there now check. */
     if (error)
-        g_error ("Failed to connect to GPaste daemon: %s", error->message);
+        g_warning ("Failed to connect to GPaste daemon, searching is disabled: %s", error->message);
 }
 
 static void

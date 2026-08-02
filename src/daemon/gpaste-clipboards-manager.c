@@ -28,10 +28,15 @@ static void g_paste_clipboards_manager_notify (GPasteClipboard *clipboard, gpoin
 
 static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboard *clipboard,
-                                            GPasteItem      *item G_GNUC_UNUSED,
+                                            GPasteItem      *item,
                                             gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
+    /* The update callback owns the item it is handed (transfer full); at
+     * bootstrap we only care about the selection not being empty, so whatever
+     * was already in it is read and dropped rather than pushed to the history. */
+    g_autoptr (GPasteItem) bootstrapped = item;
+
     g_paste_clipboard_ensure_not_empty (clipboard, priv->history);
 }
 

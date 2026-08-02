@@ -23,6 +23,10 @@ class GPasteDeleteButton extends St.Button {
     }
 
     vfunc_clicked(_clickedButton) {
-        this._client.delete(this._uuid, null);
+        // The button is built before its row's content has been fetched, so it
+        // starts with no uuid; ignore a click landing in that window rather than
+        // letting GJS throw on the null argument.
+        if (this._uuid)
+            this._client.delete(this._uuid, null);
     }
 });

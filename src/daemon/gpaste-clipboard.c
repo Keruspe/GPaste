@@ -157,7 +157,7 @@ g_paste_clipboard_on_text_ready (GObject      *source_object,
                                  gpointer      user_data)
 {
     g_autofree GPasteClipboardTextCallbackData *data = user_data;
-    GPasteClipboard *self = data->self;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken in set_text */
     g_autoptr (GError) error = NULL;
     g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
@@ -212,7 +212,10 @@ g_paste_clipboard_set_text (GPasteClipboard            *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardTextCallbackData *data = g_new (GPasteClipboardTextCallbackData, 1);
 
-    data->self = self;
+    /* Nothing else keeps us alive between the request and its callback: the
+     * clipboard can be disposed while the selection owner takes its time (or
+     * never answers at all). The callback drops this ref. */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
 
@@ -440,7 +443,7 @@ g_paste_clipboard_on_texture_ready (GObject      *source_object,
                                     gpointer      user_data)
 {
     g_autofree GPasteClipboardTextureCallbackData *data = user_data;
-    GPasteClipboard *self = data->self;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken in set_texture */
     g_autoptr (GError) error = NULL;
     /* Transfer full — we own this ref */
     g_autoptr (GdkTexture) texture = gdk_clipboard_read_texture_finish (GDK_CLIPBOARD (source_object), res, &error);
@@ -482,7 +485,8 @@ g_paste_clipboard_set_texture (GPasteClipboard                *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardTextureCallbackData *data = g_new (GPasteClipboardTextureCallbackData, 1);
 
-    data->self = self;
+    /* Ref for the duration of the read (see set_text). */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
 
@@ -508,7 +512,7 @@ g_paste_clipboard_on_rgba_ready (GObject      *source_object,
                                  gpointer      user_data)
 {
     g_autofree GPasteClipboardRGBACallbackData *data = user_data;
-    GPasteClipboard *self = data->self;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken in set_rgba */
     g_autoptr (GError) error = NULL;
     const GValue *value = gdk_clipboard_read_value_finish (GDK_CLIPBOARD (source_object), res, &error);
 
@@ -555,7 +559,8 @@ g_paste_clipboard_set_color (GPasteClipboard             *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardRGBACallbackData *data = g_new (GPasteClipboardRGBACallbackData, 1);
 
-    data->self = self;
+    /* Ref for the duration of the read (see set_text). */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
 
@@ -585,6 +590,7 @@ g_paste_clipboard_on_special_atom_bytes_ready (GObject      *source_object,
                                                gpointer      user_data)
 {
     g_autofree GPasteClipboardSpecialAtomData *data = user_data;
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken in fetch_special_atom */
     g_autoptr (GError) error = NULL;
     g_autoptr (GBytes) bytes = g_input_stream_read_bytes_finish (G_INPUT_STREAM (source_object), res, &error);
 
@@ -593,12 +599,12 @@ g_paste_clipboard_on_special_atom_bytes_ready (GObject      *source_object,
         if (error)
             g_debug ("Failed to read special atom bytes: %s", error->message);
         if (data->callback)
-            data->callback (data->self, data->atom, NULL, data->user_data);
+            data->callback (self, data->atom, NULL, data->user_data);
         return;
     }
 
     if (data->callback)
-        data->callback (data->self, data->atom, bytes, data->user_data);
+        data->callback (self, data->atom, bytes, data->user_data);
 }
 
 static void
@@ -607,6 +613,8 @@ g_paste_clipboard_on_special_atom_stream_ready (GObject      *source_object,
                                                 gpointer      user_data)
 {
     g_autofree GPasteClipboardSpecialAtomData *data = user_data;
+    /* Released here unless the read below takes both it and @data over. */
+    g_autoptr (GPasteClipboard) self = data->self; /* ref taken in fetch_special_atom */
     g_autoptr (GError) error = NULL;
     const gchar *actual_mime = NULL;
     g_autoptr (GInputStream) stream = gdk_clipboard_read_finish (GDK_CLIPBOARD (source_object), res, &actual_mime, &error);
@@ -616,9 +624,12 @@ g_paste_clipboard_on_special_atom_stream_ready (GObject      *source_object,
         if (error)
             g_debug ("Failed to read special atom stream: %s", error->message);
         if (data->callback)
-            data->callback (data->self, data->atom, NULL, data->user_data);
+            data->callback (self, data->atom, NULL, data->user_data);
         return;
     }
+
+    /* data->self keeps the ref for the second half of the read. */
+    g_steal_pointer (&self);
 
     g_input_stream_read_bytes_async (stream,
                                      G_MAXUINT,
@@ -639,7 +650,8 @@ g_paste_clipboard_fetch_special_atom (GPasteClipboard                   *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GPasteClipboardSpecialAtomData *data = g_new (GPasteClipboardSpecialAtomData, 1);
 
-    data->self = self;
+    /* Ref for the whole read (see set_text), across both of its halves. */
+    data->self = g_object_ref (self);
     data->atom = atom;
     data->callback = callback;
     data->user_data = user_data;
@@ -676,6 +688,9 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
     if (--data->pending > 0)
         return;
 
+    /* The ref taken in g_paste_clipboard_update, held for the whole barrier and
+     * dropped here, once the callback it outlives has run. */
+    g_autoptr (GPasteClipboard) self = data->self;
     GPasteItem *item = NULL;
 
     switch (data->content_kind)
@@ -712,7 +727,7 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
     }
 
     if (data->callback)
-        data->callback (data->self, item, data->user_data);
+        data->callback (self, item, data->user_data);
 
     for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         g_clear_object (&data->special_atom[atom]);
@@ -869,7 +884,9 @@ g_paste_clipboard_update (GPasteClipboard              *self,
 
     GPasteClipboardUpdateData *data = g_new0 (GPasteClipboardUpdateData, 1);
 
-    data->self = self;
+    /* Held for the whole barrier -- the reads it fans out to and the callback
+     * at the end -- and dropped in _update_maybe_done. */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
     data->pending = 1;

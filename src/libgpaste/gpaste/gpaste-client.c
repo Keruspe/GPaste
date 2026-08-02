@@ -1978,11 +1978,26 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
         g_autoptr (GVariant) v1 = g_variant_iter_next_value (&params_iter);
         g_autoptr (GVariant) v2 = g_variant_iter_next_value (&params_iter);
         g_autoptr (GVariant) v3 = g_variant_iter_next_value (&params_iter);
+        const GEnumValue *action = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION),
+                                                             g_variant_get_string (v1, NULL));
+        const GEnumValue *target = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET),
+                                                             g_variant_get_string (v2, NULL));
+
+        /* A daemon newer than us can name an action or a target we do not know —
+         * which is exactly what a re-exec after an upgrade leaves us talking to,
+         * with this very signal arriving in a gnome-shell that still runs the old
+         * library. Skip such an update rather than dereference NULL. */
+        if (!action || !target)
+        {
+            g_warning ("Ignoring an update from a daemon speaking of an unknown action or target");
+            return;
+        }
+
         g_signal_emit (self,
                        signals[UPDATE],
                        0, /* detail */
-                       g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), g_variant_get_string (v1, NULL))->value,
-                       g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), g_variant_get_string (v2, NULL))->value,
+                       action->value,
+                       target->value,
                        g_variant_get_uint64 (v3),
                        NULL);
     }
