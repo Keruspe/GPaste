@@ -347,7 +347,9 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_clear_pointer (&priv->search_results, g_strfreev);
     priv->search_results = g_paste_client_search_finish (priv->client, res, NULL /* error */);
-    guint64 search_results_size = g_strv_length (priv->search_results);
+    /* A failed search leaves this NULL, and g_strv_length() has no more patience
+     * with that than the daemon side had (c0022cf2). */
+    guint64 search_results_size = (priv->search_results) ? g_strv_length (priv->search_results) : 0;
 
     if (search_results_size)
     {

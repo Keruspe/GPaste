@@ -632,8 +632,10 @@ g_paste_search (Context *ctx,
         return EXIT_FAILURE;
 
     /* n_uuids is a count, so pass the real one: -1 only ever worked by wrapping
-     * around to the sentinel g_variant_new_strv() happens to take for it. */
-    g_autolist (GPasteClientItem) items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, g_strv_length (results), error);
+     * around to the sentinel g_variant_new_strv() happens to take for it. And a
+     * NULL array is fine, a NULL array with a non-zero length is not (see
+     * c0022cf2), so derive the two from each other. */
+    g_autolist (GPasteClientItem) items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, (results) ? g_strv_length (results) : 0, error);
     guint index = 0;
 
     for (const GList *i = items; i; i = i->next)

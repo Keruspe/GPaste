@@ -16,6 +16,26 @@ NEW in 51.0 (UNRELEASED)
 - Drop the internal X11 keybinder and the GNOME Shell keybinding client (global shortcuts go through the XDG portal)
 - Install the daemon objects as a libgpaste-daemon library and move the global-shortcut client out of the public GTK 4 library
 
+NEW in 50.7 (02/08/2026)
+=============
+
+- Fix the daemon deadlocking against itself when copying, most often on larger items: GTK's serialization of our text selections left an unowned stream chain that, on X11, waited on the very main loop that would have signalled it. Text selections are now served by a dedicated content provider that encodes the value itself
+- text/plain is now served as UTF-8, where GTK's serializer encoded it as ASCII and replaced anything else with '?'
+- Fix a deadlock when selecting an item that turns out to be invalid: the history now emits its "selected" signal once its lock is released, rather than driving the whole clipboard stack with it held
+- Fix the daemon crashing when searching from the GNOME Shell overview with a term containing an unbalanced bracket or parenthesis (#496)
+- Fix the history file being destroyed when it had been written by a newer version of GPaste
+- Fix items being lost or garbled when loading a history containing an item with an empty value
+- Fix every client crashing, GNOME Shell included, on the first update sent by a newer daemon after "gpaste-client daemon-reexec"
+- Fix the daemon aborting, instead of disabling search, when it cannot connect to its own D-Bus proxy
+- Fix "gpaste-client help", "version", "ui" and "preferences" failing when no daemon is reachable
+- Fix "gpaste-client file" crashing on a file that is neither text nor a loadable image
+- Fix a critical on every keystroke when the GTK UI search term is not a valid regular expression
+- Fix acting on history rows before their content has been loaded, in both the GTK UI and the GNOME Shell extension
+- Fix a second "gpaste-ui" or "gpaste-preferences" invocation failing instead of presenting the running window
+- Fix several memory leaks and a use-after-free in the GTK UI history panel
+- Fix the "empty history" helpers reporting success when the operation had failed
+- The library soversions were last bumped in 50.1; 50.2 to 50.6 left them alone, so the next bump must be weighed against 50.1 rather than 50.6 (no exported symbol has changed since)
+
 NEW in 50.6 (19/07/2026)
 =============
 
@@ -76,6 +96,22 @@ NEW in 50.0 (08/06/2026)
 - Write the history file atomically to reduce corruption risk
 - GNOME Shell extension: retry the daemon connection before giving up, and modernise the JavaScript to current GNOME Shell conventions
 - Numerous internal modernisations (async I/O via GTask, GSignalGroup, static GSettings schema)
+
+NEW in 45.11 (02/08/2026)
+=============
+
+- Fix the daemon crashing when searching from the GNOME Shell overview with a term containing an unbalanced bracket or parenthesis (#496)
+- Fix the history file being destroyed when it had been written by a newer version of GPaste
+- Fix items being lost or garbled when loading a history containing an item with an empty value
+- Fix every client crashing, GNOME Shell included, on the first update sent by a newer daemon after "gpaste-client daemon-reexec"
+- Fix the daemon aborting, instead of disabling search, when it cannot connect to its own D-Bus proxy
+- Fix "gpaste-client help", "version", "ui" and "preferences" failing when no daemon is reachable
+- Fix "gpaste-client file" crashing on a file that is neither text nor a loadable image
+- Fix a critical on every keystroke when the GTK UI search term is not a valid regular expression
+- Fix acting on history rows before their content has been loaded, in both the GTK UI and the GNOME Shell extension
+- Fix a second "gpaste-ui" or "gpaste-preferences" invocation failing instead of presenting the running window
+- Fix several memory leaks and a use-after-free in the GTK UI history panel
+- Fix the "empty history" helpers reporting success when the operation had failed
 
 NEW in 45.10 (21/06/2026)
 =============
