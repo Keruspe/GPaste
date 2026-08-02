@@ -11,3 +11,10 @@ if get_option('zsh-completion')
     install_dir: get_option('datadir') / 'zsh' / 'site-functions',
   )
 endif
+
+if get_option('fish-completion')
+  install_data(
+    'gpaste-client.fish',
+    install_dir: get_option('datadir') / 'fish' / 'vendor_completions.d',
+  )
+endif
