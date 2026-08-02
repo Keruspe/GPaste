@@ -92,15 +92,18 @@ static gboolean
 _spawn_sync (GDBusProxy *proxy,
              GError    **error)
 {
-    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                                     "Activate",
-                                                                     g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                                                                     G_DBUS_CALL_FLAGS_NONE,
-                                                                     -1,
-                                                                     NULL,
-                                                                     error);
+    /* The call's own result, not the error out-param: a caller that passes
+     * error == NULL (as empty_with_confirmation_sync does when its own caller
+     * does) would otherwise be told every failure succeeded. */
+    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
+                                                       "Activate",
+                                                       g_variant_new ("(@a{sv})", app_get_platform_data ()),
+                                                       G_DBUS_CALL_FLAGS_NONE,
+                                                       -1,
+                                                       NULL,
+                                                       error);
 
-    return !error || !(*error);
+    return !!res;
 }
 
 /**
@@ -221,26 +224,28 @@ g_paste_util_activate_ui_sync (const gchar *action,
     if (!proxy)
         return FALSE;
 
-    g_auto (GVariantBuilder) params;
-
-    g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+    /* Initialized in its declaration, as GLib documents for a g_auto() builder:
+     * the early return below already sits between a separate init() and this
+     * scope's end. */
+    g_auto (GVariantBuilder) params = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("av"));
 
     if (arg)
         g_variant_builder_add (&params, "v", arg);
 
-    /* We only consume it */
-    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                                     "ActivateAction",
-                                                                     g_variant_new ("(sav@a{sv})",
-                                                                                    action,
-                                                                                    &params,
-                                                                                    app_get_platform_data ()),
-                                                                     G_DBUS_CALL_FLAGS_NONE,
-                                                                     -1,
-                                                                     NULL, /* cancellable */
-                                                                     error);
+    /* Report the call's own result: returning TRUE unconditionally told every
+     * caller the action had been activated, whatever happened on the bus. */
+    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
+                                                       "ActivateAction",
+                                                       g_variant_new ("(sav@a{sv})",
+                                                                      action,
+                                                                      &params,
+                                                                      app_get_platform_data ()),
+                                                       G_DBUS_CALL_FLAGS_NONE,
+                                                       -1,
+                                                       NULL, /* cancellable */
+                                                       error);
 
-    return TRUE;
+    return !!res;
 }
 
 /**
