@@ -4,6 +4,8 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GPaste from 'gi://GPaste?version=2';
 
 import {GPasteDaemonRunner} from './daemon.js';
@@ -39,20 +41,60 @@ export default class GPasteExtension extends Extension {
             this._sessionUpdatedId = 0;
         }
 
-        // The indicator is what reports our state to the daemon, but it cannot
-        // always: outside the "user" session mode there is none (a disable
-        // reached from a locked session — an extension update, or
+        // Hosting the daemon ourselves comes first: both routes below are D-Bus
+        // calls dispatched a main loop turn later, by which time _runner's
+        // shutdown() has released the name and dropped the daemon they were
+        // meant for. Report to it directly instead, while it is still there.
+        const reportedInProcess = !!this._runner?.reportExtensionGone();
+
+        // Otherwise the indicator is what reports our state to the daemon, but
+        // it cannot always: outside the "user" session mode there is none (a
+        // disable reached from a locked session — an extension update, or
         // gnome-extensions disable), and one that never reached a daemon has no
-        // client to report through. It tells us which happened, and we do here
-        // what it would have done for us — "track-extension-state" means exactly
-        // "stop tracking when the extension does", and the daemon reads that key
-        // live. Exactly one of the two reports, whichever way it went.
-        if (!this._destroyIndicator(true) && this._settings?.get_track_extension_state())
-            this._settings.set_track_changes(false);
+        // client to report through. It tells us which happened, and we report it
+        // ourselves when it could not. Exactly one of the two reports, whichever
+        // way it went.
+        if (!this._destroyIndicator(true) && !reportedInProcess)
+            this._reportExtensionGone();
 
         this._runner?.shutdown();
         this._runner = null;
         this._settings = null;
+    }
+
+    // Tell the daemon the extension went away, without a GPasteClient and
+    // without touching its settings.
+    //
+    // Whether that should stop the clipboard from being tracked is the daemon's
+    // call, not ours: "track-extension-state" means "stop tracking when the
+    // extension does", and OnExtensionStateChanged is where it is applied.
+    // Writing "track-changes" from here would be us second-guessing a key the
+    // daemon owns, on a policy it already implements.
+    //
+    // The call goes straight to the bus rather than through a GPasteClient,
+    // whose proxy is built with G_DBUS_PROXY_FLAGS_NONE: DO_NOT_AUTO_START is
+    // the whole point here, since being disabled must never be what *starts* a
+    // daemon. With none running there is nothing tracking the clipboard and so
+    // nothing to report to, which is exactly what the failed call means.
+    _reportExtensionGone() {
+        Gio.DBus.session.call(
+            'org.gnome.GPaste',
+            '/org/gnome/GPaste',
+            'org.gnome.GPaste2',
+            'OnExtensionStateChanged',
+            new GLib.Variant('(b)', [false]),
+            null,
+            Gio.DBusCallFlags.DO_NOT_AUTO_START,
+            -1,
+            null,
+            (bus, res) => {
+                try {
+                    bus.call_finish(res);
+                } catch (e) {
+                    if (!e.matches(Gio.DBusError, Gio.DBusError.SERVICE_UNKNOWN))
+                        console.error(`GPaste: ${e.message}`);
+                }
+            });
     }
 
     _sync() {

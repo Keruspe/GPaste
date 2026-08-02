@@ -17,6 +17,8 @@ void g_paste_daemon_show_history (GPasteDaemon *self,
 void g_paste_daemon_flush        (GPasteDaemon *self);
 void g_paste_daemon_resume       (GPasteDaemon *self);
 void g_paste_daemon_reload_storage (GPasteDaemon *self);
+void g_paste_daemon_extension_state_changed (GPasteDaemon *self,
+                                             gboolean      state);
 gboolean g_paste_daemon_upload   (GPasteDaemon *self,
                                   const gchar  *uuid);
 

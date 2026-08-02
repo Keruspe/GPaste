@@ -546,12 +546,29 @@ g_paste_daemon_methods_track (const GPasteDaemonMethods *priv,
     g_paste_settings_set_track_changes (priv->settings, tracking_state);
 }
 
+/* The policy itself, in one place: whether the extension coming or going should
+ * drive the tracking is the "track-extension-state" key's business. Reached both
+ * from the D-Bus method below and, without a bus round trip, from a host running
+ * the daemon in its own process (see g_paste_daemon_extension_state_changed()). */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *priv,
+                                                gboolean                   state)
+{
+    if (g_paste_settings_get_track_extension_state (priv->settings))
+        g_paste_settings_set_track_changes (priv->settings, state);
+}
+
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_on_extension_state_changed (const GPasteDaemonMethods *priv,
                                                    GVariant                  *parameters)
 {
-    if (g_paste_settings_get_track_extension_state (priv->settings))
-        g_paste_daemon_methods_track (priv, parameters);
+    GVariantIter parameters_iter;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
+
+    g_paste_daemon_methods_extension_state_changed (priv, g_variant_get_boolean (variant));
 }
 
 G_PASTE_VISIBLE void

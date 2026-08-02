@@ -148,6 +148,35 @@ g_paste_daemon_reload_storage (GPasteDaemon *self)
     g_paste_history_reload_backend (priv->history);
 }
 
+/**
+ * g_paste_daemon_extension_state_changed:
+ * @self: (transfer none): the #GPasteDaemon
+ * @state: whether the gnome-shell extension is there
+ *
+ * Same as the OnExtensionStateChanged D-Bus method, for a host that runs the
+ * daemon in its own process: the gnome-shell extension being disabled is also
+ * what tears its daemon down, so the D-Bus call it would otherwise make is
+ * dispatched — if at all — against a name it has already released. Applied
+ * straight away here instead, so the "track-extension-state" policy is not lost
+ * on the one path that has no daemon left to reach afterwards.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_extension_state_changed (GPasteDaemon *self,
+                                        gboolean      state)
+{
+    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonMethods methods = {
+        priv->connection,
+        priv->history,
+        priv->settings,
+        priv->clipboards_manager
+    };
+
+    g_paste_daemon_methods_extension_state_changed (&methods, state);
+}
+
 static void
 g_paste_daemon_tracking (GPasteDaemon   *self,
                          gboolean        tracking_state,

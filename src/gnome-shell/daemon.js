@@ -382,6 +382,21 @@ export class GPasteDaemonRunner {
         this._searchProvider = null;
     }
 
+    // Tell our own daemon the extension went away, in process. The D-Bus call the
+    // extension makes otherwise cannot work here: it is dispatched a main loop
+    // turn later, and shutdown() releases the name (and drops the daemon) right
+    // after — so the "track-extension-state" policy would silently never be
+    // applied on the one setup where we are the daemon.
+    //
+    // Returns whether there was a daemon of ours to tell.
+    reportExtensionGone() {
+        if (!this._daemon)
+            return false;
+
+        this._daemon.extension_state_changed(false);
+        return true;
+    }
+
     shutdown() {
         this._cancellable.cancel();
 

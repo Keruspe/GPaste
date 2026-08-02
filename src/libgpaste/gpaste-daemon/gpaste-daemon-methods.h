@@ -158,5 +158,7 @@ void      g_paste_daemon_methods_track                      (const GPasteDaemonM
                                                              GVariant                  *parameters);
 void      g_paste_daemon_methods_on_extension_state_changed (const GPasteDaemonMethods *priv,
                                                              GVariant                  *parameters);
+void      g_paste_daemon_methods_extension_state_changed    (const GPasteDaemonMethods *priv,
+                                                             gboolean                   state);
 
 G_END_DECLS
