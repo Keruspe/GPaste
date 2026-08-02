@@ -26,6 +26,7 @@
 #include <gpaste-daemon/gpaste-clipboard-provider.h>
 #include <gpaste-daemon/gpaste-clipboard-gdk.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
+#include <gpaste-daemon/gpaste-text-content-provider.h>
 
 /* History and storage */
 #include <gpaste-daemon/gpaste-history.h>

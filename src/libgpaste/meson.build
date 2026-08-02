@@ -198,6 +198,7 @@ gpaste_daemon_gir_sources = [
   'gpaste-daemon/gpaste-special-atom.c',
   'gpaste-daemon/gpaste-storage-backend.c',
   'gpaste-daemon/gpaste-storage-migration.c',
+  'gpaste-daemon/gpaste-text-content-provider.c',
   'gpaste-daemon/gpaste-text-item.c',
   'gpaste-daemon/gpaste-uris-item.c',
 ]
@@ -227,6 +228,7 @@ gpaste_daemon_gir_headers = [
   'gpaste-daemon/gpaste-special-atom.h',
   'gpaste-daemon/gpaste-storage-backend.h',
   'gpaste-daemon/gpaste-storage-migration.h',
+  'gpaste-daemon/gpaste-text-content-provider.h',
   'gpaste-daemon/gpaste-text-item.h',
   'gpaste-daemon/gpaste-uris-item.h',
 ]

@@ -13,9 +13,18 @@
 
 #include <gio/gio.h>
 
-#define G_PASTE_LOCK_HISTORY                    \
+/* Takes the history lock for the rest of the scope */
+#define G_PASTE_DO_LOCK_HISTORY                 \
     g_debug ("%s: Locking history", G_STRFUNC); \
     g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->lock)
+
+/* Same, and emits the pending SELECTED signal, if any, once the lock has been
+ * released again: the guard is declared before the locker so that its cleanup
+ * runs after the unlock.
+ */
+#define G_PASTE_LOCK_HISTORY                                                              \
+    g_auto(GPasteHistorySelectionScope) selection_scope = { .self = self, .priv = priv }; \
+    G_PASTE_DO_LOCK_HISTORY
 
 struct _GPasteHistory
 {
@@ -53,6 +62,10 @@ typedef struct
     /* Note: we never track the first (active) item here */
     const gchar          *biggest_uuid;
     guint64               biggest_size;
+
+    /* Recorded by g_paste_history_selected and emitted by G_PASTE_LOCK_HISTORY
+     * once the lock is released again */
+    GPasteItem           *pending_selection;
 } GPasteHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (History, history, G_TYPE_OBJECT)
@@ -67,6 +80,38 @@ enum
 };
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
+
+typedef struct
+{
+    GPasteHistory        *self;
+    GPasteHistoryPrivate *priv;
+} GPasteHistorySelectionScope;
+
+static void
+g_paste_history_emit_pending_selection (GPasteHistorySelectionScope *scope)
+{
+    GPasteHistoryPrivate *priv = scope->priv;
+    g_autoptr (GPasteItem) item = NULL;
+
+    {
+        G_PASTE_DO_LOCK_HISTORY;
+
+        item = g_steal_pointer (&priv->pending_selection);
+    }
+
+    if (!item)
+        return;
+
+    g_debug ("history: selected");
+
+    g_signal_emit (scope->self,
+                   signals[SELECTED],
+                   0, /* detail */
+                   item,
+                   NULL);
+}
+
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (GPasteHistorySelectionScope, g_paste_history_emit_pending_selection)
 
 static void
 g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
@@ -124,13 +169,15 @@ static void
 g_paste_history_selected (GPasteHistory *self,
                           GPasteItem    *item)
 {
-    g_debug ("history: selected");
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    g_signal_emit (self,
-                   signals[SELECTED],
-                   0, /* detail */
-                   item,
-                   NULL);
+    /* Emitting now would drive the clipboards manager, hence GTK's clipboard
+     * and the X11 selection machinery, with our lock held; handlers may also
+     * call back into us (g_paste_history_remove when an item turns out to be
+     * invalid), which would deadlock on our non-recursive lock. Just record
+     * the item: G_PASTE_LOCK_HISTORY emits it once the lock is released.
+     */
+    g_set_object (&priv->pending_selection, item);
 }
 
 static void
@@ -1221,6 +1268,7 @@ g_paste_history_dispose (GObject *object)
 
     g_clear_object (&priv->saver);
     g_clear_object (&priv->backend);
+    g_clear_object (&priv->pending_selection);
     g_clear_list (&priv->history, g_object_unref);
     g_clear_object (&priv->settings_signals);
     g_clear_object (&priv->settings);

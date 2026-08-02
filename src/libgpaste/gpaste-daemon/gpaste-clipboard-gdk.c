@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-special-atom.h>
+#include <gpaste-daemon/gpaste-text-content-provider.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 struct _GPasteClipboardGdk
@@ -148,9 +149,12 @@ g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
 
     g_debug ("%s: select text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
-    /* Avoid cycling twice as gdk_clipboard_set_text will make the clipboards manager react */
+    /* Avoid cycling twice as setting the content will make the clipboards manager react */
     g_paste_clipboard_gdk_private_set_text (priv, text);
-    gdk_clipboard_set_text (priv->real, text);
+
+    g_autoptr (GdkContentProvider) provider = g_paste_text_content_provider_new (text);
+
+    gdk_clipboard_set_content (priv->real, provider);
 }
 
 static void
@@ -769,7 +773,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
          * into colour-aware apps (application/x-color) and into plain text fields. */
         GdkContentProvider *providers[] = {
             gdk_content_provider_new_typed (GDK_TYPE_RGBA, rgba),
-            gdk_content_provider_new_typed (G_TYPE_STRING, g_paste_item_get_real_value (item)),
+            g_paste_text_content_provider_new (g_paste_item_get_real_value (item)),
         };
         g_autoptr (GdkContentProvider) provider = gdk_content_provider_new_union (providers, G_N_ELEMENTS (providers));
 
@@ -789,7 +793,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     {
         const gchar *real_value = g_paste_item_get_real_value (item);
         g_paste_clipboard_gdk_private_set_text (priv, real_value);
-        g_ptr_array_add (providers, gdk_content_provider_new_typed (G_TYPE_STRING, real_value));
+        g_ptr_array_add (providers, g_paste_text_content_provider_new (real_value));
     }
 
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
