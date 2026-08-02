@@ -176,42 +176,70 @@ on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
 
 static void exit_selection_mode (GPasteUiWindow *self);
 
+/* Ctrl+0-9 activates the item displayed at that index, mirroring the GNOME
+ * Shell extension (the index is shown to the left of each item). Only once
+ * there is a list: a window presented for the connection-failure banner alone
+ * has no history (nor merge bar) behind it. */
 static gboolean
-on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                guint                  keyval,
-                guint                  keycode     G_GNUC_UNUSED,
-                GdkModifierType        state,
-                gpointer               user_data)
+activate_index (GtkWidget *widget,
+                GVariant  *args,
+                gpointer   user_data G_GNUC_UNUSED)
 {
-    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
+
+    if (!priv->history)
+        return FALSE;
+
+    return g_paste_ui_history_activate_index (priv->history, g_variant_get_uint32 (args));
+}
+
+static gboolean
+on_escape (GtkWidget *widget,
+           GVariant  *args      G_GNUC_UNUSED,
+           gpointer   user_data G_GNUC_UNUSED)
+{
+    GPasteUiWindow *self = G_PASTE_UI_WINDOW (widget);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    /* Ctrl+0-9 activates the item displayed at that index, mirroring the GNOME
-     * Shell extension (the index is shown to the left of each item). Only once
-     * there is a list: a window presented for the connection-failure banner
-     * alone has no history (nor merge bar) behind it. */
-    if (priv->history && (state & GDK_CONTROL_MASK))
-    {
-        if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9)
-            return g_paste_ui_history_activate_index (priv->history, keyval - GDK_KEY_0) ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
-        if (keyval >= GDK_KEY_KP_0 && keyval <= GDK_KEY_KP_9)
-            return g_paste_ui_history_activate_index (priv->history, keyval - GDK_KEY_KP_0) ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
-    }
-
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
+    /* The search bar closes itself on Escape; let it. */
     if (gtk_search_bar_get_search_mode (priv->search_bar))
-        return GDK_EVENT_PROPAGATE;
+        return FALSE;
 
     if (priv->merge_bar && gtk_action_bar_get_revealed (priv->merge_bar))
     {
         exit_selection_mode (self);
-        return GDK_EVENT_STOP;
+        return TRUE;
     }
 
     gtk_window_close (GTK_WINDOW (self));
-    return GDK_EVENT_STOP;
+    return TRUE;
+}
+
+static void
+add_shortcuts (GPasteUiWindow *self)
+{
+    GtkEventController *shortcuts = gtk_shortcut_controller_new ();
+
+    gtk_event_controller_set_propagation_phase (shortcuts, GTK_PHASE_BUBBLE);
+
+    for (guint index = 0; index < 10; ++index)
+    {
+        /* One trigger per digit covers the keypad twin too: GTK knows KP_0-9
+         * are aliases of 0-9, so there is no second range to spell out. */
+        GtkShortcutTrigger *trigger = gtk_shortcut_trigger_create_with_aliases (GDK_KEY_0 + index,
+                                                                                GDK_CONTROL_MASK);
+        GtkShortcutAction *action = gtk_callback_action_new (activate_index, NULL, NULL);
+        GtkShortcut *shortcut = gtk_shortcut_new (trigger, action);
+
+        gtk_shortcut_set_arguments (shortcut, g_variant_new_uint32 (index));
+        gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (shortcuts), shortcut);
+    }
+
+    gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (shortcuts),
+                                          gtk_shortcut_new (gtk_keyval_trigger_new (GDK_KEY_Escape, 0),
+                                                            gtk_callback_action_new (on_escape, NULL, NULL)));
+
+    gtk_widget_add_controller (GTK_WIDGET (self), shortcuts);
 }
 
 static void
@@ -485,10 +513,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     priv->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (priv->client_signals, "switch-history", G_CALLBACK (on_switch_history), priv);
 
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
-    gtk_event_controller_set_propagation_phase (key_controller, GTK_PHASE_BUBBLE);
-    g_signal_connect_object (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self, 0);
-    gtk_widget_add_controller (GTK_WIDGET (self), key_controller);
+    add_shortcuts (self);
 }
 
 static void

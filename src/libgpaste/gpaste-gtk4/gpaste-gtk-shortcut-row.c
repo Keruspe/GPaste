@@ -159,6 +159,16 @@ g_paste_gtk_shortcut_row_on_key_pressed (GtkEventControllerKey *controller,
     if (gdk_key_event_is_modifier (gtk_event_controller_get_current_event (GTK_EVENT_CONTROLLER (controller))))
         return GDK_EVENT_STOP;
 
+    /* Keypad keys and their main-row twins are synonymous to GTK, but only one
+     * spelling ends up in the accelerator string we store and hand to the
+     * portal — so pressing keypad 1 would grab KP_1 alone. Canonicalise to the
+     * primary alias, which gdk_keyval_get_aliases() lists first. */
+    guint n_aliases = 0;
+    const guint *aliases = gdk_keyval_get_aliases (keyval, &n_aliases);
+
+    if (n_aliases)
+        keyval = aliases[0];
+
     /* A modifier-less key would be grabbed globally and break ordinary typing,
      * so only accept a bare key for things that are meaningful alone (the
      * function keys); everything else needs a real modifier. */
