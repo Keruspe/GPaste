@@ -224,6 +224,13 @@ static void
 g_paste_daemon_private_do_add_item (const GPasteDaemonPrivate *priv,
                                     GPasteItem                *item)
 {
+    /* Every item constructor can refuse its input and hand back %NULL. Each
+     * caller validates what it passes (that is where a bad input becomes a D-Bus
+     * error rather than a dropped add), and a constructor that refuses anyway has
+     * already logged the reason itself: just don't dereference it here. */
+    if (!item)
+        return;
+
     /* g_paste_history_add takes ownership; keep our own ref for the select call below */
     g_paste_history_add (priv->history, g_object_ref (item));
     if (!g_paste_clipboards_manager_select (priv->clipboards_manager, item))
@@ -288,8 +295,15 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
         {
             g_autoptr (GError) img_error = NULL;
             g_autoptr (GdkPixbuf) img = gdk_pixbuf_new_from_file (file, &img_error);
-            if (img_error)
-                g_warning ("Failed to load image from %s: %s", file, img_error->message);
+
+            /* Neither text nor a loadable image: there is nothing to add, and
+             * building an item out of a NULL pixbuf would only yield a NULL
+             * item the add path then dereferences. */
+            if (!img)
+            {
+                g_warning ("Failed to load image from %s: %s", file, (img_error) ? img_error->message : "unknown error");
+                G_PASTE_DBUS_ASSERT (FALSE, "the file is neither text nor an image");
+            }
 
             g_paste_daemon_private_do_add_item (priv, g_paste_image_item_new (img));
         }
@@ -620,7 +634,8 @@ g_paste_daemon_private_merge (const GPasteDaemonPrivate *priv,
 
     g_autoptr (GVariant) v_uuids = g_variant_iter_next_value (&parameters_iter);
     gsize length;
-    const GStrv uuids = (const GStrv) g_variant_get_strv (v_uuids, &length);
+    /* (transfer container): the array is ours, its strings belong to v_uuids. */
+    g_autofree const gchar **uuids = g_variant_get_strv (v_uuids, &length);
 
     G_PASTE_DBUS_ASSERT (length, "nothing to merge");
 

@@ -577,7 +577,8 @@ g_paste_history_get_by_uuid (GPasteHistory *self,
  * Get a #GPasteItem from the #GPasteHistory
  * free it with g_object_unref
  *
- * Returns: (transfer full): a #GPasteItem
+ * Returns: (transfer full) (nullable): a #GPasteItem, or %NULL when @index is
+ *          out of range (an empty history has no item 0)
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_history_dup (GPasteHistory *self,
@@ -588,7 +589,10 @@ g_paste_history_dup (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    return g_object_ref (g_paste_history_private_get (priv, index));
+    GPasteItem *item = g_paste_history_private_get (priv, index);
+
+    /* Callers null-check the result; ref'ing NULL would only add a critical. */
+    return (item) ? g_object_ref (item) : NULL;
 }
 
 /**

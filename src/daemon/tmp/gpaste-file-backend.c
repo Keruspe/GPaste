@@ -32,7 +32,18 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
     for (const GSList *val = special_values; val; val = val->next)
     {
         const GPasteSpecialValue *value = val->data;
-        const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime)->value_nick;
+        const GEnumValue *gev = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime);
+
+        /* A representation we cannot name is one we could not read back either:
+         * skip it rather than dereference NULL, the way the reader does when an
+         * unknown mime comes the other way round. */
+        if (!gev)
+        {
+            g_warning ("Skipping a special value with an unknown mime: %" G_GINT32_FORMAT, value->mime);
+            continue;
+        }
+
+        const gchar *mime = gev->value_nick;
         g_autofree gchar *text = g_paste_util_xml_encode (value->data);
 
         if (!g_output_stream_write_all (stream, "    <value mime=\"", 17, NULL, NULL /* cancellable */, error) ||

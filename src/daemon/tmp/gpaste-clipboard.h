@@ -14,6 +14,17 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 
+/**
+ * GPasteClipboardUpdateCallback:
+ * @self: the #GPasteClipboard that was updated
+ * @item: (transfer full) (nullable): what the clipboard held, owned by the callback
+ * @fallback: whether no target was ready and the text fallback failed too
+ * @user_data: the data passed to g_paste_clipboard_update()
+ *
+ * Called once a clipboard update has been read back. The callback owns @item:
+ * pass it on to something that takes ownership (g_paste_history_add()) or
+ * release it.
+ */
 typedef void (*GPasteClipboardUpdateCallback) (GPasteClipboard *self,
                                                GPasteItem      *item,
                                                gboolean         fallback,

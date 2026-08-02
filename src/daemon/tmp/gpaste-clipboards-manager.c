@@ -44,11 +44,16 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ClipboardsManager, clipboards_manager, G_TYPE_
 
 static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboard *clipboard,
-                                            GPasteItem      *item G_GNUC_UNUSED,
+                                            GPasteItem      *item,
                                             gboolean         fallback G_GNUC_UNUSED,
                                             gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
+    /* The update callback owns the item it is handed (transfer full); at
+     * bootstrap we only care about the selection not being empty, so whatever
+     * was already in it is read and dropped rather than pushed to the history. */
+    g_autoptr (GPasteItem) bootstrapped = item;
+
     g_paste_clipboard_ensure_not_empty (clipboard, priv->history);
 }
 
