@@ -459,6 +459,16 @@ g_paste_clipboard_meta_private_set_text (GPasteClipboardMetaPrivate *priv,
     g_paste_clipboard_content_set_text (&priv->content, text);
 }
 
+/* Same, for the callers that already own the string they hand over. */
+static void
+g_paste_clipboard_meta_private_set_text_take (GPasteClipboardMetaPrivate *priv,
+                                              gchar                      *text)
+{
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+
+    g_paste_clipboard_content_set_text_take (&priv->content, text);
+}
+
 static void
 g_paste_clipboard_meta_select_text (GPasteClipboardMeta *self,
                                     const gchar         *text)
@@ -731,7 +741,8 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
         g_paste_clipboard_meta_select_text (self, value);
         break;
     case G_PASTE_CLIPBOARD_TEXT_SET:
-        g_paste_clipboard_meta_private_set_text (priv, value);
+        /* RESELECT above still needs @value, but this branch is done with it. */
+        g_paste_clipboard_meta_private_set_text_take (priv, g_steal_pointer (&value));
         break;
     }
 
@@ -791,7 +802,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))
             break;
 
-        g_paste_clipboard_content_set_image_checksum (&priv->content, checksum);
+        g_paste_clipboard_content_set_image_checksum_take (&priv->content, g_steal_pointer (&checksum));
 
         data->produced = TRUE;
         data->texture = g_steal_pointer (&texture);

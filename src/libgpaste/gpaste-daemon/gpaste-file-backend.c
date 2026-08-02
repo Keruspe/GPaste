@@ -687,7 +687,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
     {
         if (data->version == HISTORY_1_0)
         {
-            data->text = g_paste_util_xml_decode (txt);
+            g_set_str_take (&data->text, g_paste_util_xml_decode (txt));
             if (*g_strstrip (txt))
                 SWITCH_STATE (IN_ITEM, IN_ITEM_WITH_TEXT);
             else
@@ -705,10 +705,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
                 if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)
-                {
-                    g_clear_pointer (&data->text, g_free);
-                    data->text = g_steal_pointer (&value);
-                }
+                    g_set_str_take (&data->text, g_steal_pointer (&value));
                 else
                 {
                     gsize raw_length;

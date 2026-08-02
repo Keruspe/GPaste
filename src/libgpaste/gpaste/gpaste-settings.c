@@ -65,7 +65,14 @@ enum
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
-#define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func)                     \
+/* How a setting's cached value is replaced. GSettings hands out a fresh string,
+ * so the dconf path consumes it, while the public setter only borrows its
+ * argument -- which it also has to hand to GSettings afterwards. */
+#define ASSIGN(dest, src)      (dest) = (src)
+#define ASSIGN_TAKE(dest, src) g_set_str_take (&(dest), (src))
+#define ASSIGN_DUP(dest, src)  g_set_str (&(dest), (src))
+
+#define SETTING(name, key, type, setting_type, fail, guards, assign_owned, assign_borrowed)            \
     G_PASTE_VISIBLE type                                                                               \
     g_paste_settings_get_##name (const GPasteSettings *self)                                           \
     {                                                                                                  \
@@ -76,8 +83,8 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     static void                                                                                        \
     g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
     {                                                                                                  \
-        clear_func                                                                                     \
-        priv->name = g_settings_get_##setting_type (priv->settings, G_PASTE_##key##_SETTING);          \
+        assign_owned (priv->name, g_settings_get_##setting_type (priv->settings,                       \
+                                                                 G_PASTE_##key##_SETTING));           \
     }                                                                                                  \
     G_PASTE_VISIBLE void                                                                               \
     g_paste_settings_set_##name (GPasteSettings *self,                                                 \
@@ -86,13 +93,12 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
         g_return_if_fail (_G_PASTE_IS_SETTINGS (self));                                                \
         guards                                                                                         \
         GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);                    \
-        clear_func                                                                                     \
-        priv->name = dup_func (value);                                                                 \
+        assign_borrowed (priv->name, value);                                                           \
         g_settings_set_##setting_type (priv->settings, G_PASTE_##key##_SETTING, value);                \
     }
 
 #define TRIVIAL_SETTING(name, key, type, setting_type, fail) \
-    SETTING (name, key, type, setting_type, fail, {}, {},)
+    SETTING (name, key, type, setting_type, fail, {}, ASSIGN, ASSIGN)
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
 #define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, uint64, 0)
@@ -101,7 +107,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
                                            g_return_if_fail (value);                              \
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
-                                           g_free (priv->name);, g_strdup)
+                                           ASSIGN_TAKE, ASSIGN_DUP)
 
 #define NEW_SIGNAL_FULL(name, type, MTYPE, arg_type) \
     g_signal_new (name,                              \

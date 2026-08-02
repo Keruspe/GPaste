@@ -55,9 +55,26 @@ G_PASTE_VISIBLE void
 g_paste_clipboard_content_set_text (GPasteClipboardContent *content,
                                     const gchar            *text)
 {
+    g_paste_clipboard_content_set_text_take (content, g_strdup (text));
+}
+
+/**
+ * g_paste_clipboard_content_set_text_take:
+ * @content: a #GPasteClipboardContent
+ * @text: (transfer full): the text to hold
+ *
+ * Replace @content with @text, consuming it.
+ *
+ * Every clipboard update goes through here with a string the caller just built
+ * and immediately drops, so this avoids a copy on the hot path.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_content_set_text_take (GPasteClipboardContent *content,
+                                         gchar                  *text)
+{
     g_paste_clipboard_content_clear (content);
     content->kind = CLIPBOARD_CONTENT_TEXT;
-    content->str = g_strdup (text);
+    g_set_str_take (&content->str, text);
 }
 
 /**
@@ -71,9 +88,23 @@ G_PASTE_VISIBLE void
 g_paste_clipboard_content_set_image_checksum (GPasteClipboardContent *content,
                                               const gchar            *checksum)
 {
+    g_paste_clipboard_content_set_image_checksum_take (content, g_strdup (checksum));
+}
+
+/**
+ * g_paste_clipboard_content_set_image_checksum_take:
+ * @content: a #GPasteClipboardContent
+ * @checksum: (transfer full): the image checksum to hold
+ *
+ * Replace @content with an image identified by @checksum, consuming it.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_content_set_image_checksum_take (GPasteClipboardContent *content,
+                                                   gchar                  *checksum)
+{
     g_paste_clipboard_content_clear (content);
     content->kind = CLIPBOARD_CONTENT_IMAGE;
-    content->str = g_strdup (checksum);
+    g_set_str_take (&content->str, checksum);
 }
 
 /**

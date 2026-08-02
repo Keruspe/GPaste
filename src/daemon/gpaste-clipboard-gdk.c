@@ -73,6 +73,16 @@ g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdkPrivate *priv,
     g_paste_clipboard_content_set_text (&priv->content, text);
 }
 
+/* Same, for the callers that already own the string they hand over. */
+static void
+g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdkPrivate *priv,
+                                             gchar                     *text)
+{
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+
+    g_paste_clipboard_content_set_text_take (&priv->content, text);
+}
+
 static void g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
                                                const gchar        *text);
 
@@ -114,7 +124,8 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
         g_paste_clipboard_gdk_select_text (self, value);
         break;
     case G_PASTE_CLIPBOARD_TEXT_SET:
-        g_paste_clipboard_gdk_private_set_text (priv, value);
+        /* RESELECT above still needs @value, but this branch is done with it. */
+        g_paste_clipboard_gdk_private_set_text_take (priv, g_steal_pointer (&value));
         break;
     }
 

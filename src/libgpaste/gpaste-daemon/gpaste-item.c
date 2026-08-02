@@ -244,8 +244,7 @@ g_paste_item_set_display_string (GPasteItem *self,
     if (priv->display_string)
         priv->size -= (strlen (priv->display_string) + 1);
 
-    g_free (priv->display_string);
-    priv->display_string = display_string;
+    g_set_str_take (&priv->display_string, display_string);
 
     if (display_string)
         priv->size += strlen (display_string) + 1;
