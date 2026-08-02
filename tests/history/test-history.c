@@ -733,7 +733,11 @@ test_file_version_guard (void)
 
     g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
     g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*Unknown history version: 9.0*");
+    /* Also pins the parse location the warning carries: an encrypted history is
+     * parsed from a decrypted in-memory buffer, so the enclosing element and the
+     * byte offsets are what actually identify the offending spot. */
+    g_test_trap_assert_stderr ("*Unknown history version: 9.0 in file *file-newer.xml*"
+                               " at line *, column * (byte *), inside <history> opened at line *");
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

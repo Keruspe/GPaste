@@ -390,15 +390,53 @@ typedef struct
     GPasteSpecialAtom mime;
 } Data;
 
-#define ASSERT_STATE_FULL(cond, x)                                                                    \
-    if (!(cond))                                                                                      \
-    {                                                                                                 \
-        gint line_number, char_number;                                                                \
-        g_markup_parse_context_get_position (context, &line_number, &char_number);                    \
-        g_warning ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT                   \
-                   " in file “%s” at line %" G_GINT32_FORMAT ", column %" G_GINT32_FORMAT ".",        \
-                   x, data->state, data->history_file_path, line_number, char_number);                \
-        return;                                                                                       \
+/* Where the parser currently is, for a diagnostic. An encrypted history is
+ * decrypted into memory before being parsed, so the file on disk has neither
+ * these lines nor these offsets; the element we are inside and where it opened
+ * are what identify the offending item whichever buffer we ended up parsing. */
+static gchar *
+parse_location (GMarkupParseContext *context,
+                const Data          *data)
+{
+    gint line_number, char_number;
+    const gchar *element = g_markup_parse_context_get_element (context);
+
+    g_markup_parse_context_get_position (context, &line_number, &char_number);
+
+    if (!element)
+    {
+        return g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT ", column %" G_GINT32_FORMAT
+                                " (byte %" G_GSIZE_FORMAT ")",
+                                data->history_file_path, line_number, char_number,
+                                g_markup_parse_context_get_offset (context));
+    }
+
+    gsize tag_line, tag_char, tag_offset;
+
+    g_markup_parse_context_get_tag_start (context, &tag_line, &tag_char, &tag_offset);
+
+    return g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT ", column %" G_GINT32_FORMAT
+                            " (byte %" G_GSIZE_FORMAT "), inside <%s> opened at line %" G_GSIZE_FORMAT
+                            " (byte %" G_GSIZE_FORMAT ")",
+                            data->history_file_path, line_number, char_number,
+                            g_markup_parse_context_get_offset (context),
+                            element, tag_line, tag_offset);
+}
+
+/* g_warning() with the parse location appended. Needs @context and @data in
+ * scope, which every parser callback has. */
+#define WARN_AT(fmt, ...)                                            \
+    do {                                                             \
+        g_autofree gchar *location = parse_location (context, data); \
+        g_warning (fmt " %s.", ##__VA_ARGS__, location);             \
+    } while (0)
+
+#define ASSERT_STATE_FULL(cond, x)                                                       \
+    if (!(cond))                                                                         \
+    {                                                                                    \
+        WARN_AT ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT,       \
+                 x, data->state);                                                        \
+        return;                                                                          \
     }
 #define ASSERT_STATE(x) ASSERT_STATE_FULL (data->state == (x), x)
 #define SWITCH_STATE(x, y) \
@@ -432,7 +470,7 @@ history_contains_uuid (const GList *history,
 }
 
 static void
-start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
+start_tag (GMarkupParseContext *context,
            const gchar         *element_name,
            const gchar        **attribute_names,
            const gchar        **attribute_values,
@@ -454,7 +492,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                     data->version = HISTORY_2_0;
                 else
                 {
-                    g_warning ("Unknown history version: %s", *v);
+                    WARN_AT ("Unknown history version: %s", *v);
                     data->version = HISTORY_INVALID;
                 }
             }
@@ -485,7 +523,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 else if (g_paste_str_equal (*v, "Color"))
                     data->type = COLOR;
                 else
-                    g_warning ("Unknown item kind: %s", *v);
+                    WARN_AT ("Unknown item kind: %s", *v);
             }
             else if (g_paste_str_equal (*a, "uuid"))
             {
@@ -499,7 +537,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             {
                 if (data->type != IMAGE)
                 {
-                    g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
+                    WARN_AT ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
                     continue;
                 }
                 data->date = g_strdup (*v);
@@ -508,7 +546,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             {
                 if (data->type != IMAGE)
                 {
-                    g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
+                    WARN_AT ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
                     continue;
                 }
                 data->checksum = g_strdup (*v);
@@ -517,13 +555,13 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             {
                 if (data->type != PASSWORD)
                 {
-                    g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, PASSWORD, data->type);
+                    WARN_AT ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, PASSWORD, data->type);
                     continue;
                 }
                 data->name = g_strdup (*v);
             }
             else
-                g_warning ("Unknown item attribute: %s", *a);
+                WARN_AT ("Unknown item attribute: %s", *a);
         }
     }
     else if (g_paste_str_equal (element_name, "value"))
@@ -538,12 +576,12 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 if (gev)
                     data->mime = gev->value;
                 else
-                    g_warning ("Unknown mime: %s", *v);
+                    WARN_AT ("Unknown mime: %s", *v);
             }
         }
     }
     else
-        g_warning ("Unknown element: %s", element_name);
+        WARN_AT ("Unknown element: %s", element_name);
 }
 
 static void
@@ -623,7 +661,7 @@ add_item (Data *data)
 }
 
 static void
-end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
+end_tag (GMarkupParseContext *context,
          const gchar         *element_name,
          gpointer             user_data,
          GError             **error G_GNUC_UNUSED)
@@ -659,11 +697,11 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (g_paste_str_equal (element_name, "value"))
         SWITCH_STATE_OR_EMPTY (IN_VALUE_WITH_TEXT, IN_VALUE, IN_ITEM);
     else
-        g_warning ("Unknown element: %s", element_name);
+        WARN_AT ("Unknown element: %s", element_name);
 }
 
 static void
-on_text (GMarkupParseContext *context G_GNUC_UNUSED,
+on_text (GMarkupParseContext *context,
          const gchar         *text,
          gsize                text_len,
          gpointer             user_data,
@@ -679,7 +717,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
     case IN_VALUE_WITH_TEXT:
         if (*g_strstrip (txt))
         {
-            g_warning ("Unexpected text: %s", txt);
+            WARN_AT ("Unexpected text: %s", txt);
             return;
         }
         break;
@@ -694,7 +732,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                 g_clear_pointer (&data->text, g_free);
         }
         else if (*g_strstrip (txt))
-            g_warning ("Unexpected text in item for history version != 1.0 %s", txt);
+            WARN_AT ("Unexpected text in item for history version != 1.0: %s", txt);
         break;
     }
     case IN_VALUE:
@@ -716,19 +754,21 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
             }
         }
         else
-            g_warning ("Unexpected value for history version != 2.0");
+            WARN_AT ("Unexpected value for history version != 2.0");
         break;
     default:
-        g_warning ("Unexpected state: %" G_GINT32_FORMAT, data->state);
+        WARN_AT ("Unexpected state: %" G_GINT32_FORMAT, data->state);
         break;
     }
 }
 
-static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
+static void on_error (GMarkupParseContext *context,
                       GError              *error,
-                      gpointer             user_data G_GNUC_UNUSED)
+                      gpointer             user_data)
 {
-    g_warning ("error: %s", error->message);
+    const Data *data = user_data;
+
+    WARN_AT ("error: %s", error->message);
 }
 
 /******************/
@@ -843,11 +883,18 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         gboolean parsed = g_markup_parse_context_parse (ctx, text, text_length, &error) &&
                           g_markup_parse_context_end_parse (ctx, &error);
 
-        if (!parsed)
-            g_warning ("Failed to parse history file: %s", error->message);
+        /* The context is still alive here (it is freed at scope exit), so a
+         * truncated file can say where it stopped rather than just how. */
+        if (!parsed || data.state != END)
+        {
+            g_autofree gchar *location = parse_location (ctx, &data);
 
-        if (data.state != END)
-            g_warning ("Unexpected state after parsing history: %" G_GINT32_FORMAT, data.state);
+            if (!parsed)
+                g_warning ("Failed to parse history file %s: %s", location, error->message);
+
+            if (data.state != END)
+                g_warning ("Unexpected state after parsing history %s: %" G_GINT32_FORMAT, location, data.state);
+        }
 
         *history = data.history;
         *size = data.mem_size;
