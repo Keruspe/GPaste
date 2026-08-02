@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-util.h>
-
 #include <gpaste/gpaste-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 
@@ -178,7 +176,7 @@ g_paste_image_item_set_state (GPasteItem     *self,
             if (error)
                 g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (self), error->message);
             if (!priv->checksum)
-                priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
+                priv->checksum = g_paste_image_item_compute_checksum (priv->image);
         }
         break;
     }
@@ -243,7 +241,7 @@ _g_paste_image_item_new (const gchar *path,
     if (image)
     {
         if (!priv->checksum)
-            priv->checksum = g_paste_gtk_util_compute_checksum (image);
+            priv->checksum = g_paste_image_item_compute_checksum (image);
     }
     else
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
@@ -410,6 +408,29 @@ g_paste_image_item_set_history (GPasteImageItem *self,
 }
 
 /**
+ * g_paste_image_item_compute_checksum:
+ * @image: the #GdkTexture to checksum
+ *
+ * Compute the checksum of an image
+ *
+ * Returns: the newly allocated checksum
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_image_item_compute_checksum (GdkTexture *image)
+{
+    if (!image || !GDK_IS_TEXTURE (image))
+        return NULL;
+
+    gsize stride = (gsize) gdk_texture_get_width (image) * 4;
+    gsize length = stride * gdk_texture_get_height (image);
+    g_autofree guchar *data = g_malloc (length);
+
+    gdk_texture_download (image, data, stride);
+
+    return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
+}
+
+/**
  * g_paste_image_item_new:
  * @texture: (transfer none): the GdkTexture we want to be contained in the #GPasteImageItem
  *
@@ -423,7 +444,7 @@ g_paste_image_item_new (GdkTexture *texture)
 {
     g_return_val_if_fail (GDK_IS_TEXTURE (texture), NULL);
 
-    g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
+    g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
     /* Transient anchor: the history re-anchors the item under its own images
      * directory when it is added. */
     g_autofree gchar *path = g_paste_image_item_get_image_path (NULL, checksum);
@@ -458,7 +479,7 @@ _g_paste_image_item_new_from_bytes (const gchar *path,
         return NULL;
     }
 
-    g_autofree gchar *sum = (checksum) ? g_strdup (checksum) : g_paste_gtk_util_compute_checksum (texture);
+    g_autofree gchar *sum = (checksum) ? g_strdup (checksum) : g_paste_image_item_compute_checksum (texture);
     g_autofree gchar *anchor = (path) ? g_strdup (path) : g_paste_image_item_get_image_path (history_name, sum);
     GPasteItem *self = _g_paste_image_item_new (anchor,
                                                 g_date_time_ref (date),

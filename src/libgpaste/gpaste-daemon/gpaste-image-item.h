@@ -40,4 +40,11 @@ GPasteItem      *g_paste_image_item_new_from_bytes_at_path (const gchar *path,
                                                             GDateTime   *date,
                                                             const gchar *checksum);
 
+/* The checksum an image is identified by, everywhere: dedup, the cache file
+ * name, and the clipboard backends deciding whether what they just read is what
+ * they already hold. Pure GDK — no widget, no libadwaita — which is why it
+ * lives here and not in libgpaste-gtk4: this library must not pull the widget
+ * stack into gnome-shell, which cannot initialise it. */
+gchar           *g_paste_image_item_compute_checksum       (GdkTexture  *image);
+
 G_END_DECLS

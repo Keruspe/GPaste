@@ -293,7 +293,7 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     }
 
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-    g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
+    g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
     GdkTexture *result = NULL;
 
     if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))

@@ -56,29 +56,6 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
 }
 
 /**
- * g_paste_gtk_util_compute_checksum:
- * @image: the #GdkTexture to checksum
- *
- * Compute the checksum of an image
- *
- * Returns: the newly allocated checksum
- */
-G_PASTE_VISIBLE gchar *
-g_paste_gtk_util_compute_checksum (GdkTexture *image)
-{
-    if (!image || !GDK_IS_TEXTURE (image))
-        return NULL;
-
-    gsize stride = (gsize) gdk_texture_get_width (image) * 4;
-    gsize length = stride * gdk_texture_get_height (image);
-    g_autofree guchar *data = g_malloc (length);
-
-    gdk_texture_download (image, data, stride);
-
-    return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
-}
-
-/**
  * g_paste_gtk_util_get_image_finish:
  * @client: the #GPasteClient the g_paste_client_get_image() call was made on
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to g_paste_client_get_image()

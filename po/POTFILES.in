@@ -5,6 +5,7 @@ data/gsettings/org.gnome.GPaste.gschema.xml
 data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in
 src/client/gpaste-client.c
 src/daemon/gpaste-daemon.c
+src/daemon/gpaste-prompt-adw.c
 src/libgpaste/gpaste-daemon/gpaste-binary-data.c
 src/libgpaste/gpaste-daemon/gpaste-bus.c
 src/libgpaste/gpaste-daemon/gpaste-bus-object.c
@@ -24,6 +25,7 @@ src/libgpaste/gpaste-daemon/gpaste-keybinder.c
 src/libgpaste/gpaste-daemon/gpaste-keybinding.c
 src/libgpaste/gpaste-daemon/gpaste-noop-backend.c
 src/libgpaste/gpaste-daemon/gpaste-password-item.c
+src/libgpaste/gpaste-daemon/gpaste-prompt.c
 src/libgpaste/gpaste-daemon/gpaste-search-provider.c
 src/libgpaste/gpaste-daemon/gpaste-secret-stream-converter.c
 src/libgpaste/gpaste-daemon/gpaste-special-atom.c

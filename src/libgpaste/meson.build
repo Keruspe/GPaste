@@ -192,7 +192,9 @@ gpaste_daemon_gir_sources = [
   'gpaste-daemon/gpaste-keybinder.c',
   'gpaste-daemon/gpaste-keybinding.c',
   'gpaste-daemon/gpaste-noop-backend.c',
+  'gpaste-daemon/gpaste-passphrase.c',
   'gpaste-daemon/gpaste-password-item.c',
+  'gpaste-daemon/gpaste-prompt.c',
   'gpaste-daemon/gpaste-search-provider.c',
   'gpaste-daemon/gpaste-special-atom.c',
   'gpaste-daemon/gpaste-storage-backend.c',
@@ -220,7 +222,9 @@ gpaste_daemon_gir_headers = [
   'gpaste-daemon/gpaste-keybinder.h',
   'gpaste-daemon/gpaste-keybinding.h',
   'gpaste-daemon/gpaste-noop-backend.h',
+  'gpaste-daemon/gpaste-passphrase.h',
   'gpaste-daemon/gpaste-password-item.h',
+  'gpaste-daemon/gpaste-prompt.h',
   'gpaste-daemon/gpaste-search-provider.h',
   'gpaste-daemon/gpaste-special-atom.h',
   'gpaste-daemon/gpaste-storage-backend.h',
@@ -232,7 +236,13 @@ gpaste_daemon_gir_headers = [
 gpaste_daemon_sources = gpaste_daemon_gir_sources
 gpaste_daemon_headers = gpaste_daemon_gir_headers
 
-gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ]
+# Neither libadwaita nor libgpaste-gtk4. The storage prompts were the only thing
+# that ever built a dialog and they live behind GPastePrompt now; the one
+# function this library still wanted from libgpaste-gtk4 — an image checksum,
+# pure GDK — moved to GPasteImageItem. gtk4 itself stays, for GdkTexture, GdkRGBA
+# and gtk_accelerator_parse, but the widget stack does not: gnome-shell hosts
+# this library and can initialise neither it nor Adw.
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, libgpaste_internal_dep ]
 
 # Optional libsodium-based encryption converter for the history storage.
 if libsodium_dep.found()
@@ -309,7 +319,7 @@ if get_option('introspection')
   libgpaste_daemon_gir = gnome.generate_gir(
     libgpaste_daemon,
     sources: [ gpaste_daemon_gir_sources, gpaste_daemon_gir_headers ],
-    includes: [ libgpaste_gir[0], libgpaste_gtk4_gir[0], 'Adw-1', 'Gtk-4.0', 'Gdk-4.0', 'Gio-2.0', 'GLib-2.0', 'GObject-2.0' ],
+    includes: [ libgpaste_gir[0], 'Gtk-4.0', 'Gdk-4.0', 'Gio-2.0', 'GLib-2.0', 'GObject-2.0' ],
     dependencies: [ gpaste_daemon_deps, gpaste_daemon_internal_dep ],
     header: 'gpaste-daemon.h',
     namespace: 'GPasteDaemon',

@@ -32,6 +32,8 @@
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
+#include <gpaste-daemon/gpaste-passphrase.h>
+#include <gpaste-daemon/gpaste-prompt.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 
 /* Keybindings */

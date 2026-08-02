@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include "gpaste-clipboard-gdk.h"
+#include "gpaste-prompt-adw.h"
 
 #include <gpaste-gtk4/gpaste-gtk-macros.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
@@ -34,6 +35,7 @@ typedef struct
 {
     GApplication    *gapp;
     GtkApplication  *app;
+    GPastePrompt    *prompt;
     GPasteSettings  *settings;
     GPasteDaemon    *daemon;
     GPasteBusObject *search_provider;
@@ -136,15 +138,15 @@ on_passphrase_changed (gpointer user_data)
 
 /* Changing the passphrase rewrites every history on disk, so stop persisting
  * first and make sure what is in memory is already down there — then re-encrypt
- * it. We are the GTK application that shows the migration dialog, so the prompts
- * run right here rather than through the gpaste-storage helper. */
+ * it. We can put the prompts to the user ourselves (libadwaita), so the re-key
+ * runs right here. */
 static gboolean
 do_change_passphrase (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
     g_paste_daemon_flush (ctx->daemon);
-    g_paste_storage_rekey_show (ctx->app, ctx->settings, on_passphrase_changed, ctx);
+    g_paste_storage_rekey_show (ctx->prompt, ctx->settings, on_passphrase_changed, ctx);
 
     return G_SOURCE_REMOVE;
 }
@@ -204,7 +206,7 @@ on_migration_done (gpointer user_data)
 
     /* Unlock an already-encrypted history (or a no-op) before it is loaded. */
     if (g_paste_storage_decryption_needed (ctx->settings))
-        g_paste_storage_decryption_show (ctx->app, ctx->settings, on_storage_ready, ctx);
+        g_paste_storage_decryption_show (ctx->prompt, ctx->settings, on_storage_ready, ctx);
     else
         on_storage_ready (ctx);
 }
@@ -228,7 +230,7 @@ on_name_acquired (GPasteBus *bus G_GNUC_UNUSED,
      * the application registration, so any dialog shows right away and is
      * processed by the running main loop — no nested loop of our own. */
     if (g_paste_storage_migration_needed (ctx->settings))
-        g_paste_storage_migration_show (ctx->app, ctx->settings, on_migration_done, ctx);
+        g_paste_storage_migration_show (ctx->prompt, ctx->settings, on_migration_done, ctx);
     else
         on_migration_done (ctx);
 }
@@ -310,7 +312,10 @@ main (gint argc, gchar *argv[])
     g_application_hold (gapp);
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    DaemonContext ctx = { .gapp = gapp, .app = app, .settings = settings };
+    /* The libadwaita prompt backend: how the storage layer reaches the user from
+     * here. The gnome-shell-hosted daemon supplies its own instead. */
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
+    DaemonContext ctx = { .gapp = gapp, .app = app, .prompt = prompt, .settings = settings };
 
 #ifdef G_OS_UNIX
     g_source_set_name_by_id (g_unix_signal_add (SIGTERM, signal_handler, &ctx), "[GPaste] SIGTERM listener");

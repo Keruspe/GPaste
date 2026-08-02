@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-util.h>
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -797,7 +795,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         if (!texture)
             break;
 
-        g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
+        g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
 
         if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))
             break;

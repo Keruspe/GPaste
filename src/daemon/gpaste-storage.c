@@ -12,6 +12,8 @@
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 
+#include "gpaste-prompt-adw.h"
+
 /* The storage-backend choice / migration dialog and the encrypted-history unlock
  * need gtk_init / adw_init, which the GNOME Shell extension cannot run in process
  * (gnome-shell never calls them). daemon.js spawns this helper instead, once per
@@ -82,6 +84,7 @@ main (gint argc, gchar *argv[])
     }
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
     StorageContext ctx = { .gapp = gapp, .settings = settings };
 
     /* Registering the application above already initialised libadwaita (through
@@ -95,11 +98,11 @@ main (gint argc, gchar *argv[])
      * when the keyring did not already unlock the history (decryption_needed()
      * applies it as a side effect), otherwise there is nothing to do. */
     if (g_paste_str_equal (command, "migrate"))
-        g_paste_storage_migration_show (app, settings, on_storage_done, &ctx);
+        g_paste_storage_migration_show (prompt, settings, on_storage_done, &ctx);
     else if (g_paste_str_equal (command, "rekey"))
-        g_paste_storage_rekey_show (app, settings, on_storage_done, &ctx);
+        g_paste_storage_rekey_show (prompt, settings, on_storage_done, &ctx);
     else if (g_paste_storage_decryption_needed (settings))
-        g_paste_storage_decryption_show (app, settings, on_storage_done, &ctx);
+        g_paste_storage_decryption_show (prompt, settings, on_storage_done, &ctx);
     else
         on_storage_done (&ctx);
 

@@ -22,8 +22,6 @@ void     g_paste_gtk_util_confirm_dialog   (GtkWindow                     *paren
                                             GPasteGtkConfirmDialogCallback on_confirmation,
                                             gpointer                       user_data);
 
-gchar   *g_paste_gtk_util_compute_checksum (GdkTexture *image);
-
 GdkTexture *g_paste_gtk_util_get_image_finish (GPasteClient *client,
                                                GAsyncResult *result,
                                                GError      **error);

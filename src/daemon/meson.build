@@ -7,20 +7,10 @@ executable(
   sources: [
     'gpaste-clipboard-gdk.c',
     'gpaste-daemon.c',
+    'gpaste-prompt-adw.c',
     'gpaste-text-content-provider.c',
   ],
   install: true,
-  dependencies: [ gpaste_daemon_internal_dep, gtk4x11_dep ],
-  install_dir: get_option('libexecdir') / 'gpaste',
-)
-
-# A standalone runner for the storage-backend migration / encrypted-history
-# unlock (the "migrate" and "decrypt" subcommands), spawned by the GNOME Shell
-# extension (which cannot run gtk/adw itself).
-executable(
-  'gpaste-storage',
-  sources: [ 'gpaste-storage.c' ],
-  install: true,
-  dependencies: [ gpaste_daemon_internal_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gtk4x11_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
   install_dir: get_option('libexecdir') / 'gpaste',
 )
