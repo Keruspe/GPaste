@@ -15,6 +15,7 @@ NEW in 51.0 (UNRELEASED)
 - Raise the default retention, element and memory limits; cap the image preview size and raise the minimum text item default
 - Drop the internal X11 keybinder and the GNOME Shell keybinding client (global shortcuts go through the XDG portal)
 - Install the daemon objects as a libgpaste-daemon library and move the global-shortcut client out of the public GTK 4 library
+- Remember the graphical tool's window geometry across sessions
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
 NEW in 50.7 (02/08/2026)

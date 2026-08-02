@@ -38,6 +38,7 @@ typedef struct
     GSignalGroup    *client_signals;
 
     gboolean         initialized;
+    guint            save_state_id;
 } GPasteUiWindowPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -213,6 +214,41 @@ on_escape (GtkWidget *widget,
 
     gtk_window_close (GTK_WINDOW (self));
     return TRUE;
+}
+
+/* Hand the window's geometry to the session manager, so a restored session
+ * gets the size it was left at instead of the 800x600 default. A no-op unless
+ * the compositor speaks the session-management protocol, which is why nothing
+ * here needs a capability check or has anything to report when it does
+ * nothing. */
+static gboolean
+save_session_state (gpointer user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
+
+    priv->save_state_id = 0;
+
+    if (app)
+        gtk_application_save (app);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* A drag-resize notifies on every frame, so coalesce rather than asking the
+ * session manager to write the same window down a hundred times. */
+static void
+on_geometry_changed (GObject    *object,
+                     GParamSpec *pspec     G_GNUC_UNUSED,
+                     gpointer    user_data G_GNUC_UNUSED)
+{
+    GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    g_clear_handle_id (&priv->save_state_id, g_source_remove);
+    priv->save_state_id = g_timeout_add_seconds (1, save_session_state, self);
+    g_source_set_name_by_id (priv->save_state_id, "[GPaste] save_session_state");
 }
 
 static void
@@ -453,6 +489,7 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);
     g_clear_object (&priv->shortcuts);
+    g_clear_handle_id (&priv->save_state_id, g_source_remove);
 
     /* Chaining up unparents (and frees) every widget below, so drop the one
      * anything still in flight tests to know the window is gone. */
@@ -514,6 +551,19 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     g_signal_group_connect (priv->client_signals, "switch-history", G_CALLBACK (on_switch_history), priv);
 
     add_shortcuts (self);
+
+    /* Our own starting geometry, set before the notifications below are hooked
+     * up: arming the timeout for it would have us hand the session manager the
+     * hardcoded default a second after every launch — over the very geometry a
+     * restored session was about to give the window. Only what happens to the
+     * window afterwards is worth saving. */
+    gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
+    gtk_widget_set_size_request (GTK_WIDGET (self), 400, 300);
+
+    g_signal_connect (self, "notify::default-width", G_CALLBACK (on_geometry_changed), NULL);
+    g_signal_connect (self, "notify::default-height", G_CALLBACK (on_geometry_changed), NULL);
+    g_signal_connect (self, "notify::maximized", G_CALLBACK (on_geometry_changed), NULL);
+    g_signal_connect (self, "notify::fullscreened", G_CALLBACK (on_geometry_changed), NULL);
 }
 
 static void
@@ -626,9 +676,6 @@ g_paste_ui_window_new (GtkApplication *app)
                                       "title",       PACKAGE_STRING,
                                       "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
-
-    gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
-    gtk_widget_set_size_request (self, 400, 300);
 
     /* The callback owns this ref (see on_client_ready). */
     g_paste_client_new (on_client_ready, g_object_ref (self));

@@ -62,6 +62,7 @@
           <li>Capture keyboard shortcuts in the preferences instead of typing them</li>
           <li>Raise the default retention, element and memory limits</li>
           <li>Drop the internal X11 keybinder and the GNOME Shell keybinding client</li>
+          <li>Remember the window geometry across sessions</li>
           <li>Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10</li>
         </ul>
       </description>
