@@ -81,7 +81,9 @@ on_size_ready (GObject      *source_object,
                GAsyncResult *res,
                gpointer      user_data)
 {
-    GPasteUiPanelHistory *self = user_data;
+    /* Held across the call (see _new): the panel drops us as soon as our
+     * history is deleted, which can well happen before the size comes back. */
+    g_autoptr (GPasteUiPanelHistory) self = user_data;
 
     g_paste_ui_panel_history_set_length (self, g_paste_client_get_history_size_finish (G_PASTE_CLIENT (source_object), res, NULL));
 }
@@ -157,7 +159,8 @@ g_paste_ui_panel_history_new (GPasteClient *client,
 
     gtk_label_set_text (priv->label, history);
 
-    g_paste_client_get_history_size (client, history, on_size_ready, self);
+    /* The callback owns this ref (see on_size_ready). */
+    g_paste_client_get_history_size (client, history, on_size_ready, g_object_ref (self));
 
     return self;
 }
