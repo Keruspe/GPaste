@@ -382,9 +382,9 @@ static gint
 g_paste_change_passphrase (Context *ctx,
                            GError **error)
 {
-    /* The daemon owns the prompts (it is the one that can show them, in process
-     * or through the storage helper), so this only asks it to. The passphrases
-     * are never sent over the bus. */
+    /* The daemon owns the prompts (it is the one that can show them, through its
+     * own GPastePrompt backend), so this only asks it to. The passphrases are
+     * never sent over the bus. */
     g_paste_client_change_passphrase_sync (ctx->client, error);
 
     if (*error)

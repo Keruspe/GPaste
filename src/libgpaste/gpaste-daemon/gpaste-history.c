@@ -1173,9 +1173,9 @@ g_paste_history_delete (GPasteHistory *self,
 
     /* We have handed the store over: either to a successor daemon, or — for the
      * in-shell one, which keeps answering the bus right through its migration —
-     * to the gpaste-storage helper, which is reading and rewriting it as we
-     * speak. Deleting an entry from underneath it would race that rewrite (and
-     * lose to it), so refuse rather than half-do it. */
+     * to a migration that is reading and rewriting it as we speak. Deleting an
+     * entry from underneath it would race that rewrite (and lose to it), so
+     * refuse rather than half-do it. */
     if (priv->stopped)
     {
         g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,

@@ -13,6 +13,7 @@ shell_extension_files = [
   'indicator.js',
   'item.js',
   'prefs.js',
+  'prompt.js',
   'searchItem.js',
   'stateSwitch.js',
   'statusIcon.js',

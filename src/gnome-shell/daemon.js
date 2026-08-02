@@ -1,20 +1,19 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GPaste from 'gi://GPaste?version=2';
 import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 
-Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_utf8_finish');
+import {GPasteShellPrompt} from './prompt.js';
 
 // Runs the GPaste daemon inside gnome-shell, mirroring src/daemon/gpaste-daemon.c
 // but driving the mutter (MetaSelection) clipboard backend so the clipboard can
 // be watched from within the compositor itself. Compared to the standalone
 // daemon there is no GApplication, no POSIX signal handling and no re-exec, and
 // the storage-backend choice / migration dialog and the encrypted-history unlock
-// are not run in-process (they need gtk_init/Adw, which gnome-shell does not
-// provide): instead the gpaste-storage helper is spawned for each concern.
+// put their questions to the user through a GPasteShellPrompt (St dialogs), the
+// gnome-shell counterpart of the standalone daemon's libadwaita prompt backend:
+// the storage code itself is the same, and runs in this process.
 //
 // Like the standalone daemon it owns the name first and only builds the daemon
 // once it is acquired, but it always requests replacement: hosting the daemon in
@@ -26,8 +25,9 @@ export class GPasteDaemonRunner {
         // its history and both clipboard providers): one settings instance per
         // process, as the C daemon does.
         this._settings = settings;
-        this._cancellable = new Gio.Cancellable();
+        this._prompt = new GPasteShellPrompt();
         this._standDown = false;
+        this._shutDown = false;
 
         // Resolves once the daemon has been built and registered on the bus, or
         // the runner has given up; the indicator awaits it before connecting so
@@ -42,7 +42,7 @@ export class GPasteDaemonRunner {
     // Everything the runner does asynchronously has to bail once it has been shut
     // down (the extension is being disabled) or has stood down after a takeover.
     get _stopped() {
-        return this._standDown || this._cancellable.is_cancelled();
+        return this._standDown || this._shutDown;
     }
 
     _start() {
@@ -144,17 +144,16 @@ export class GPasteDaemonRunner {
         if (this._daemon || this._stopped)
             return;
 
-        // The helpers below can block on a dialog for minutes, during which the
-        // bus may be torn down and rebuilt (_reconnect) and this handler run
-        // again. Pin the bus we were acquired on and drop out if it is no longer
-        // the current one, so two concurrent runs cannot both build a daemon.
+        // Settling the storage below can block on a dialog for minutes, during
+        // which the bus may be torn down and rebuilt (_reconnect) and this
+        // handler run again. Pin the bus we were acquired on and drop out if it
+        // is no longer the current one, so two concurrent runs cannot both build
+        // a daemon.
         const bus = this._bus;
 
-        // The standalone daemon settles this in-process from its own main loop;
-        // here we shell out to the dedicated helper for each concern (migration,
-        // then decryption) and wait for it to settle the storage backend before
-        // the daemon loads the history. Deciding what is needed stays here, in the
-        // launcher (the same migration_needed/decryption_needed checks).
+        // Settle the storage backend before the daemon loads the history, exactly
+        // as the standalone daemon does from its own main loop. Deciding what is
+        // needed stays here, in the launcher.
         if (!await this._settleStorage())
             return;
 
@@ -173,8 +172,7 @@ export class GPasteDaemonRunner {
         // place by reloading the daemon's storage — see _onReexecute().
         this._reexecId = this._daemon.connect('reexecute-self', () => this._onReexecute());
 
-        // Same deal for a passphrase change: the prompts need gtk, so the helper
-        // runs them and hands the new passphrase back — see _onChangePassphrase().
+        // Same deal for a passphrase change — see _onChangePassphrase().
         this._changePassphraseId = this._daemon.connect('change-passphrase', () => this._onChangePassphrase());
 
         bus.add_object(this._daemon);
@@ -191,76 +189,91 @@ export class GPasteDaemonRunner {
     }
 
     // Settle the storage backend (migration, then encrypted-history unlock) before
-    // the daemon loads the history. The standalone daemon does this in-process from
-    // its own main loop; here each concern is shelled out to the gpaste-storage
-    // helper, which needs gtk/Adw that gnome-shell cannot provide. Deciding what is
-    // needed stays here, in the launcher (the same needed() checks).
+    // the daemon loads the history, the same way the standalone daemon does from
+    // its own main loop. Deciding what is needed stays here, in the launcher (the
+    // same needed() checks).
     //
     // Returns whether the caller may carry on (i.e. we were not stopped meanwhile).
     //
-    // Only ever one settle in flight: the helper can block on a dialog for
-    // minutes, and a bus reconnect during that window runs _onNameAcquired()
-    // again — which would spawn a second gpaste-storage on the very store the
-    // first one is rewriting. A later caller joins the running settle instead;
-    // its answer ("may I carry on") is the same for both, since it only reports
-    // whether we were stopped meanwhile.
+    // Only ever one settle in flight: a prompt can sit there for minutes, and a
+    // bus reconnect during that window runs _onNameAcquired() again — which would
+    // raise a second set of dialogs over the very store the first is rewriting. A
+    // later caller joins the running settle instead; its answer ("may I carry
+    // on") is the same for both, since it only reports whether we were stopped
+    // meanwhile.
     _settleStorage() {
+        // Joining is specific to the settle: two settles ask the same question
+        // and one answer serves both. Every other concern gets its own turn
+        // through _serializeStorage() instead — see there.
         if (!this._settling) {
-            this._settling = this._doSettleStorage().finally(() => {
-                this._settling = null;
-            });
+            this._settling = this._serializeStorage(() => this._doSettleStorage())
+                .finally(() => {
+                    this._settling = null;
+                });
         }
 
         return this._settling;
     }
 
+    // Only one storage concern may touch the store at a time, whoever asked for
+    // it: without this a `gpaste-client change-passphrase` arriving while a bus
+    // reconnect is re-settling would have the re-key re-encrypt every history
+    // while the settle is still unlocking and loading it, with two modal
+    // dialogs stacked over each other.
+    //
+    // They therefore run one after another — chained, not dropped. Handing a
+    // later caller the promise of the concern already running would answer it
+    // with something it never asked for: a re-key would silently never happen
+    // (no dialog, no error, and reload_storage() would then reload the very
+    // passphrase it was told to replace), and a settle joined onto a re-key
+    // would read that concern's `undefined` as "we were stopped" and stand the
+    // runner down with the bus name owned and no daemon behind it.
+    //
+    // A concern that comes up for its turn after teardown is dropped rather
+    // than run: the prompt would refuse it anyway, but the storage layer reads
+    // (and, encrypted, derives a key from) the store before it ever asks.
+    _serializeStorage(concern) {
+        const mine = (this._storageChain ?? Promise.resolve())
+            .catch(() => {}) // one concern failing must not skip the next
+            .then(() => this._stopped ? undefined : concern());
+
+        // The tail is only there to order what comes next, so it must never
+        // reject; each caller still sees its own outcome through @mine.
+        this._storageChain = mine.catch(() => {});
+
+        return mine;
+    }
+
     async _doSettleStorage() {
-        // The gate keys are written by other processes (gpaste-client, the helper),
-        // whose dconf notification may not have reached us yet; read them back
-        // rather than trusting our cached copy.
+        // The gate keys are written by another process (gpaste-client, opening
+        // the migration gate before asking us to re-execute), whose dconf
+        // notification may not have reached us yet; read them back rather than
+        // trusting our cached copy.
         this._settings.reload();
 
         if (GPasteDaemon.storage_migration_needed(this._settings))
-            await this._runStorageCommand('migrate');
+            await this._runStorageConcern(GPasteDaemon.storage_migration_show);
 
         if (this._stopped)
             return false;
 
         // Re-checked after migration, since it may have (re)selected the encrypted
         // backend; also applies a usable keyring passphrase in this process, in
-        // which case no helper is spawned.
+        // which case there is nothing left to ask.
         this._settings.reload();
 
         if (GPasteDaemon.storage_decryption_needed(this._settings))
-            await this._runStorageCommand('decrypt');
+            await this._runStorageConcern(GPasteDaemon.storage_decryption_show);
 
         return !this._stopped;
     }
 
-    async _runStorageCommand(command) {
-        try {
-            const proc = GPaste.util_spawn_storage(command);
-            // The helper writes back the encrypted-history passphrase it ended up
-            // with (it runs in its own process and cannot share the process-wide
-            // global), so set it here before the daemon loads the history.
-            const [, passphrase] = await proc.communicate_utf8_async(null, this._cancellable);
-
-            // Say so when the helper did not get to do its job: the history is
-            // about to be loaded with whatever backend is still configured, and
-            // an encrypted one that stayed locked comes back empty — which must
-            // not look like data loss with nothing in the log to explain it.
-            if (!proc.get_successful()) {
-                const status = proc.get_if_exited()
-                    ? `exit status ${proc.get_exit_status()}`
-                    : `signal ${proc.get_term_sig()}`;
-                console.error(`GPaste: the storage ${command} helper failed (${status})`);
-            }
-
-            if (passphrase)
-                GPasteDaemon.StorageBackend.set_passphrase(passphrase);
-        } catch (e) {
-            console.error(`GPaste: storage ${command} helper failed: ${e.message}`);
-        }
+    // The _show functions are callback-based rather than GAsyncResult-based, so
+    // they cannot go through Gio._promisify; wrap them by hand. Whatever
+    // passphrase they settle on is set process-wide by the storage code itself —
+    // we are the process now, so nothing has to be handed back.
+    _runStorageConcern(show) {
+        return new Promise(resolve => show(this._prompt, this._settings, resolve));
     }
 
     // "reexecute-self" fires synchronously from inside the daemon's Reexecute
@@ -294,14 +307,25 @@ export class GPasteDaemonRunner {
         if (!GPasteDaemon.storage_migration_needed(this._settings))
             return;
 
-        // Flush before the helper reads the store so it imports the complete
-        // history, then run the same helpers as startup (they show the dialog,
-        // rewrite the store, bump the revision and hand back any passphrase)...
+        // Flush before the store is read so the import covers the complete
+        // history, then run the same concern as startup (it shows the dialog,
+        // rewrites the store and bumps the revision)...
+        //
+        // Both from inside our own turn on the chain: flushing stops the history
+        // from recording (and makes every Delete over the bus fail with BUSY),
+        // so doing it before queueing would leave it that way for however long an
+        // unrelated concern's dialog stays up — and a flush that ran before a
+        // settle we merely joined would be a flush that settle had already read
+        // past. Our own turn is also why this cannot go through _settleStorage():
+        // joining a running settle is exactly what must not happen here.
         const daemon = this._daemon;
 
-        daemon.flush();
+        const carryOn = await this._serializeStorage(() => {
+            daemon.flush();
+            return this._doSettleStorage();
+        });
 
-        if (!await this._settleStorage())
+        if (!carryOn)
             return;
 
         // ...and reload the live daemon's backend from the now-migrated setting,
@@ -330,20 +354,23 @@ export class GPasteDaemonRunner {
         if (!this._daemon || this._stopped)
             return;
 
-        // Flush before the helper rewrites every history on disk, so it
-        // re-encrypts our complete state rather than a stale snapshot...
+        // Flush before every history on disk is rewritten, so the re-key covers
+        // our complete state rather than a stale snapshot — but from inside our
+        // own turn on the chain, so the history is not left flushed (nothing
+        // recorded, every Delete refused with BUSY) for as long as whatever is
+        // ahead of us keeps its dialog up...
         const daemon = this._daemon;
 
-        daemon.flush();
-
-        await this._runStorageCommand('rekey');
+        await this._serializeStorage(() => {
+            daemon.flush();
+            return this._runStorageConcern(GPasteDaemon.storage_rekey_show);
+        });
 
         if (this._stopped)
             return;
 
-        // ...then rebuild the live daemon's backend around the passphrase the
-        // helper handed back (_runStorageCommand already set it), unless the
-        // daemon was torn down or replaced while it was running.
+        // ...then rebuild the live daemon's backend around the new passphrase,
+        // unless the daemon was torn down or replaced while we were asking.
         if (daemon === this._daemon)
             daemon.reload_storage();
     }
@@ -398,7 +425,12 @@ export class GPasteDaemonRunner {
     }
 
     shutdown() {
-        this._cancellable.cancel();
+        this._shutDown = true;
+
+        // Abandon any storage prompt still on screen: with the extension going
+        // away there is nobody left to act on the answer, and a request nobody
+        // answers leaves _settleStorage() pending for good.
+        this._prompt.shutdown();
 
         // A reconnect may be scheduled after a bus drop; drop it so it never
         // revives the daemon after teardown.

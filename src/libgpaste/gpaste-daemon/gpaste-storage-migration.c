@@ -740,8 +740,8 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
     /* A keyring passphrase that unlocks the history is applied here, so no prompt
-     * (and, in gnome-shell, no helper) is needed: the caller can load straight
-     * away with the passphrase now set in this process. */
+     * is needed at all: the caller can load straight away with the passphrase now
+     * set in this process. */
     if (g_paste_storage_keyring_apply_verified (g_paste_settings_get_storage_backend (settings), settings))
         return FALSE;
 #endif

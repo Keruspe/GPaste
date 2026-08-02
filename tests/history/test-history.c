@@ -605,7 +605,7 @@ test_flush_stops_recording (void)
 }
 
 /* A delete must not race whoever owns the store now: once the history has been
- * flushed for a handover (to a successor daemon, or to the gpaste-storage helper
+ * flushed for a handover (to a successor daemon, or to a storage migration
  * rewriting it), deleting is refused outright rather than half-done. */
 static void
 test_delete_refused_after_flush (void)

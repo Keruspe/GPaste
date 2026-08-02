@@ -990,9 +990,8 @@ g_paste_settings_sync (GPasteSettings *self)
  * The cached values are normally refreshed from GSettings' "changed"
  * notification, which is delivered by the dconf service on its own schedule: a
  * process told *by a third party* that a key changed (the daemon being asked to
- * re-execute right after `gpaste-client migrate` rewrote the backend revision, or
- * right after the out-of-process migration helper picked a new backend) has no
- * ordering guarantee that the notification landed first. Reloading before acting
+ * re-execute right after `gpaste-client migrate` rewrote the backend revision)
+ * has no ordering guarantee that the notification landed first. Reloading before acting
  * on such a key reads the value that is actually stored.
  */
 G_PASTE_VISIBLE void

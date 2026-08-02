@@ -534,8 +534,8 @@ g_paste_util_reexecute_daemon (GPasteClient *client,
  *
  * Open the storage-migration gate and re-execute the daemon through @client
  * (g_paste_util_reexecute_daemon()), so on its next start it flushes, re-runs
- * the migration and reloads the chosen backend instead of a helper racing the
- * running daemon. Resetting the backend revision to its default is exactly the
+ * the migration and reloads the chosen backend instead of another process racing
+ * the running daemon. Resetting the backend revision to its default is exactly the
  * "never migrated" state that opens the gate.
  *
  * Returns: %TRUE if the migration was triggered
@@ -721,23 +721,4 @@ g_paste_util_ensure_history_dir_exists (void)
     }
 
     return TRUE;
-}
-
-/**
- * g_paste_util_spawn_storage:
- * @command: the subcommand to run ("migrate", "decrypt" or "rekey")
- * @error: (nullable): a #GError, or %NULL
- *
- * Spawn the gpaste-storage helper executable with @command. Its stdout is piped
- * so the caller can read back the encrypted-history passphrase the helper ended
- * up with (the helper runs in its own process and cannot share it otherwise).
- *
- * Returns: (transfer full) (nullable): the new #GSubprocess, or %NULL on error
- */
-G_PASTE_VISIBLE GSubprocess *
-g_paste_util_spawn_storage (const gchar *command,
-                            GError     **error)
-{
-    return g_subprocess_new (G_SUBPROCESS_FLAGS_STDOUT_PIPE, error,
-                             PKGLIBEXECDIR "/gpaste-storage", command, NULL);
 }

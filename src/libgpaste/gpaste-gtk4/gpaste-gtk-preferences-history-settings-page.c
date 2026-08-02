@@ -25,9 +25,9 @@ on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
     }
 
     /* Force the migration gate open and re-execute the daemon (through the shared
-     * helper): it flushes the history, re-runs the migration (in-process when
-     * standalone, via the helper when hosted in gnome-shell) and reloads the
-     * newly-chosen backend, rather than racing it by spawning the helper here. */
+     * helper): it flushes the history, re-runs the migration (on its next start
+     * when standalone, in place when hosted in gnome-shell) and reloads the
+     * newly-chosen backend, rather than racing it by migrating from here. */
     if (!g_paste_util_trigger_storage_migration (client, &error))
         g_warning ("Could not trigger the storage migration: %s", error->message);
 }

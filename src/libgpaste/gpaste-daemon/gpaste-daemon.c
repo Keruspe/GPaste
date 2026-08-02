@@ -205,12 +205,12 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
                    NULL);
 }
 
-/* The prompts a passphrase change needs are the host's job (they need gtk, and
- * the gnome-shell host has to shell out for them), so this only asks. The new
- * passphrase never travels over the bus: it is typed into the host's prompt.
+/* The prompts a passphrase change needs are the host's job (each has its own
+ * GPastePrompt backend), so this only asks. The new passphrase never travels
+ * over the bus: it is typed into the host's prompt.
  *
  * Refused outright when there is no passphrase to change, so a host never stops
- * recording and spawns a helper only to be told there was nothing to do. */
+ * recording and raises a dialog only to be told there was nothing to do. */
 static void
 g_paste_daemon_change_passphrase (GPasteDaemon     *self,
                                   GPasteDBusError **err)
@@ -697,9 +697,8 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
      *
      * The "change-passphrase" signal is emitted when the passphrase of the
      * encrypted history should be changed. Like "reexecute-self", the work
-     * belongs to whoever hosts the daemon: the prompts need gtk, which the
-     * gnome-shell host cannot run in process (it shells out to the
-     * gpaste-storage helper) while the standalone daemon does it itself.
+     * belongs to whoever hosts the daemon, which is also who supplies the
+     * #GPastePrompt the prompts are put to the user through.
      */
     signals[CHANGE_PASSPHRASE] = g_signal_new ("change-passphrase",
                                                G_PASTE_TYPE_DAEMON,
