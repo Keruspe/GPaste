@@ -163,6 +163,8 @@ show_help (void)
     printf ("  %s [history]: %s\n", progname, _("print the history with UUIDs"));
     /* Translators: help for gpaste history-size */
     printf ("  %s history-size: %s\n", progname, _("print the size of the history"));
+    /* Translators: help for gpaste search <pattern> */
+    printf ("  %s search <%s>: %s\n", progname, _("pattern"), _("print the items of the history matching <pattern>"));
     /* Translators: help for gpaste get-history */
     printf ("  %s get-history: %s\n", progname, _("get the name of the current history"));
     /* Translators: help for gpaste backup-history <name> */

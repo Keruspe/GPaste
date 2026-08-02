@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-02 08:43+0200\n"
+"POT-Creation-Date: 2026-08-02 09:49+0200\n"
 "PO-Revision-Date: 2026-03-16 04:09+0000\n"
 "Last-Translator: தமிழ்நேரம் <tamilneram247@gmail.com>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/"
@@ -1160,8 +1160,18 @@ msgstr "வரலாற்றை UUIDS உடன் அச்சிடுங்�
 msgid "print the size of the history"
 msgstr "வரலாற்றின் அளவை அச்சிடுங்கள்"
 
-#. Translators: help for gpaste get-history
+#. Translators: help for gpaste search <pattern>
 #: src/client/gpaste-client.c:167
+msgid "pattern"
+msgstr ""
+
+#: src/client/gpaste-client.c:167
+#, fuzzy
+msgid "print the items of the history matching <pattern>"
+msgstr "வரலாற்றின் அளவை அச்சிடுங்கள்"
+
+#. Translators: help for gpaste get-history
+#: src/client/gpaste-client.c:169
 msgid "get the name of the current history"
 msgstr "தற்போதைய வரலாற்றின் பெயரைப் பெறுங்கள்"
 
@@ -1171,82 +1181,82 @@ msgstr "தற்போதைய வரலாற்றின் பெயரை�
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste set-password <uuid> <name>
 #. Translators: help for gpaste delete-passworf <name>
-#: src/client/gpaste-client.c:169 src/client/gpaste-client.c:171
-#: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
-#: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
+#: src/client/gpaste-client.c:171 src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:175 src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:193 src/client/gpaste-client.c:197
 msgid "name"
 msgstr "பெயர்"
 
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:171
 msgid "backup current history"
 msgstr "தற்போதைய வரலாறு காப்புப்பிரதி"
 
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:173
 msgid "switch to another history"
 msgstr "மற்றொரு வரலாற்றுக்கு மாறவும்"
 
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:175
 msgid "delete a history"
 msgstr "ஒரு வரலாற்றை நீக்கு"
 
 #. Translators: help for gpaste list-histories
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:177
 msgid "list available histories"
 msgstr "கிடைக்கக்கூடிய வரலாறுகள் பட்டியல்"
 
 #. Translators: help for gpaste add <text>
-#: src/client/gpaste-client.c:177
+#: src/client/gpaste-client.c:179
 msgid "text"
 msgstr "உரை"
 
-#: src/client/gpaste-client.c:177
+#: src/client/gpaste-client.c:179
 msgid "set text to clipboard"
 msgstr "இடைநிலைப்பலகைக்கு உரையை அமைக்கவும்"
 
-#: src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:181
 msgid "password"
 msgstr "கடவுச்சொல்"
 
-#: src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:181
 msgid "add the name - password couple to the clipboard"
 msgstr "கிளிப்போர்டில் பெயர் - கடவுச்சொல் இணை சேர்க்கவும்"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:183
 msgid "old name"
 msgstr "பழைய பெயர்"
 
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:183
 msgid "new name"
 msgstr "புதிய பெயர்"
 
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:183
 msgid "rename the password"
 msgstr "கடவுச்சொல்லை மறுபெயரிடுங்கள்"
 
 #. Translators: help for gpaste get <uuid>
-#: src/client/gpaste-client.c:183
+#: src/client/gpaste-client.c:185
 msgid "get the item <uuid> from the history"
 msgstr "வரலாற்றிலிருந்து <uuid> உருப்படியைப் பெறுங்கள்"
 
 #. Translators: help for gpaste select <uuid>
-#: src/client/gpaste-client.c:185
+#: src/client/gpaste-client.c:187
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "உருப்படியை <uuid> வரலாற்றிலிருந்து இடைநிலைப்பலகைக்கு அமைக்கவும்"
 
 #. Translators: help for gpaste replace <uuid> <contents>
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:189
 msgid "contents"
 msgstr "உள்ளடக்கங்கள்"
 
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:189
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "வழங்கப்பட்ட ஒன்றோடு வரலாற்றிலிருந்து <uuid> உருப்படியின் உள்ளடக்கங்களை மாற்றவும்"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
-#: src/client/gpaste-client.c:189
+#: src/client/gpaste-client.c:191
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
@@ -1254,149 +1264,160 @@ msgstr ""
 "வரலாற்றிலிருந்து UUID களுடன் பொருந்தக்கூடிய உருப்படிகளை ஒன்றிணைத்து, முடிவை "
 "கிளிப்போர்டில் வைக்கவும்"
 
-#: src/client/gpaste-client.c:191
+#: src/client/gpaste-client.c:193
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr "வரலாற்றிலிருந்து <auuid> உருப்படியை <பெயர்> என்ற கடவுச்சொல்லாக அமைக்கவும்"
 
 #. Translators: help for gpaste delete <uuid>
-#: src/client/gpaste-client.c:193
+#: src/client/gpaste-client.c:195
 msgid "delete item <uuid> from the history"
 msgstr "வரலாற்றிலிருந்து <uuid> உருப்படியை நீக்கு"
 
-#: src/client/gpaste-client.c:195
+#: src/client/gpaste-client.c:197
 msgid "delete the password <name> from the history"
 msgstr "வரலாற்றிலிருந்து கடவுச்சொல்லை <பெயர்> நீக்கவும்"
 
 #. Translators: help for gpaste file <path>
-#: src/client/gpaste-client.c:197
+#: src/client/gpaste-client.c:199
 msgid "path"
 msgstr "பாதை"
 
-#: src/client/gpaste-client.c:197
+#: src/client/gpaste-client.c:199
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "கோப்பின் உள்ளடக்கத்தை <athe> இல் கிளிப்போர்டில் வைக்கவும்"
 
 #. Translators: help for whatever | gpaste
-#: src/client/gpaste-client.c:199
+#: src/client/gpaste-client.c:201
 msgid "whatever"
 msgstr "எதுவாக இருந்தாலும்"
 
-#: src/client/gpaste-client.c:199
+#: src/client/gpaste-client.c:201
 msgid "set the output of whatever to clipboard"
 msgstr "இடைநிலைப்பலகைக்கு எதுவுமே வெளியீட்டை அமைக்கவும்"
 
 #. Translators: help for gpaste empty
-#: src/client/gpaste-client.c:201
+#: src/client/gpaste-client.c:203
 msgid "empty the history"
 msgstr "வரலாற்றை வெறுமை செய்யுங்கள்"
 
 #. Translators: help for gpaste start
-#: src/client/gpaste-client.c:203
+#: src/client/gpaste-client.c:205
 msgid "start tracking clipboard changes"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிக்கத் தொடங்குங்கள்"
 
 #. Translators: help for gpaste stop
-#: src/client/gpaste-client.c:205
+#: src/client/gpaste-client.c:207
 msgid "stop tracking clipboard changes"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிப்பதை நிறுத்துங்கள்"
 
 #. Translators: help for gpaste quit
-#: src/client/gpaste-client.c:207
+#: src/client/gpaste-client.c:209
 msgid "alias for stop"
 msgstr "நிறுத்தத்திற்கான மாற்றுப்பெயர்"
 
 #. Translators: help for gpaste daemon-reexec
-#: src/client/gpaste-client.c:209
+#: src/client/gpaste-client.c:211
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "டீமனை மீண்டும் ஆராயுங்கள் (மேம்படுத்தப்பட்ட பிறகு ...)"
 
+#. Translators: help for gpaste migrate
+#: src/client/gpaste-client.c:213
+msgid "migrate the history to a different storage backend"
+msgstr ""
+
+#. Translators: help for gpaste change-passphrase
+#: src/client/gpaste-client.c:215
+#, fuzzy
+msgid "change the passphrase of the encrypted history"
+msgstr "தற்போதைய வரலாற்றின் பெயரைப் பெறுங்கள்"
+
 #. Translators: help for gpaste preferences
-#: src/client/gpaste-client.c:211
+#: src/client/gpaste-client.c:217
 msgid "launch the configuration tool"
 msgstr "உள்ளமைவு கருவியைத் தொடங்கவும்"
 
 #. Translators: help for gpaste ui
-#: src/client/gpaste-client.c:213
+#: src/client/gpaste-client.c:219
 msgid "launch the graphical tool"
 msgstr "வரைகலை கருவியைத் தொடங்கவும்"
 
 #. Translators: help for gpaste show-history
-#: src/client/gpaste-client.c:215
+#: src/client/gpaste-client.c:221
 msgid "make the applet or extension display the history"
 msgstr "ஆப்லெட் அல்லது நீட்டிப்பு வரலாற்றைக் காண்பி"
 
 #. Translators: help for gpaste upload
-#: src/client/gpaste-client.c:217
+#: src/client/gpaste-client.c:223
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "உருப்படியை <uuid> ஒரு பேச்டெபின் சேவையில் பதிவேற்றவும்"
 
 #. Translators: help for gpaste version
-#: src/client/gpaste-client.c:219
+#: src/client/gpaste-client.c:225
 msgid "display the version"
 msgstr "பதிப்பைக் காண்பி"
 
 #. Translators: help for gpaste daemon-version
-#: src/client/gpaste-client.c:221
+#: src/client/gpaste-client.c:227
 msgid "display the daemon version"
 msgstr "டீமான் பதிப்பைக் காண்பி"
 
 #. Translators: help for gpaste help
-#: src/client/gpaste-client.c:223
+#: src/client/gpaste-client.c:229
 msgid "display this help"
 msgstr "இந்த உதவியைக் காண்பி"
 
 #. Translators: help for gpaste about
-#: src/client/gpaste-client.c:225
+#: src/client/gpaste-client.c:231
 msgid "display the about dialog"
 msgstr "பற்றி உரையாடலைக் காண்பி"
 
-#: src/client/gpaste-client.c:228
+#: src/client/gpaste-client.c:234
 #, c-format
 msgid "Convenience options:"
 msgstr "வசதியான விருப்பங்கள்:"
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:231
+#: src/client/gpaste-client.c:237
 msgid "use the index of the item instead of its UUID"
 msgstr "உருப்படியின் குறியீட்டை அதன் UUID க்கு பதிலாக பயன்படுத்தவும்"
 
-#: src/client/gpaste-client.c:234
+#: src/client/gpaste-client.c:240
 #, c-format
 msgid "Display options:"
 msgstr "காட்சி விருப்பங்கள்:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:237
+#: src/client/gpaste-client.c:243
 msgid "display each item on only one line"
 msgstr "ஒவ்வொரு உருப்படியையும் ஒரே வரியில் மட்டுமே காண்பி"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:239
+#: src/client/gpaste-client.c:245
 msgid "display each item raw (without line numbers)"
 msgstr "ஒவ்வொரு உருப்படியையும் ராவைக் காண்பி (வரி எண்கள் இல்லாமல்)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:241
+#: src/client/gpaste-client.c:247
 msgid "display the items in reverse order"
 msgstr "உருப்படிகளை தலைகீழ் வரிசையில் காண்பி"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:243
+#: src/client/gpaste-client.c:249
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr "ஒவ்வொரு பொருளுக்கும் ஒரு புதிய வரிக்கு பதிலாக ஒரு NUL எழுத்தை பயன்படுத்தவும்"
 
-#: src/client/gpaste-client.c:246
+#: src/client/gpaste-client.c:252
 #, c-format
 msgid "Merge options:"
 msgstr "விருப்பங்களை ஒன்றிணைத்தல்:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
+#: src/client/gpaste-client.c:255 src/client/gpaste-client.c:257
 msgid "string"
 msgstr "சரம்"
 
-#: src/client/gpaste-client.c:249
+#: src/client/gpaste-client.c:255
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -1404,16 +1425,26 @@ msgstr ""
 "ஒன்றிணைவதற்கு முன் ஒவ்வொரு பொருளின் தொடக்கத்திலும் முடிவிலும் கொடுக்கப்பட்ட அலங்காரத்தை "
 "சேர்க்கவும்"
 
-#: src/client/gpaste-client.c:251
+#: src/client/gpaste-client.c:257
 msgid "add the given separator between each item when merging"
 msgstr "ஒன்றிணைக்கும் போது ஒவ்வொரு பொருளுக்கும் இடையில் கொடுக்கப்பட்ட பிரிப்பான் சேர்க்கவும்"
 
-#: src/client/gpaste-client.c:348
+#: src/client/gpaste-client.c:362
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்\n"
 
-#: src/client/gpaste-client.c:489
+#: src/client/gpaste-client.c:376
+#, fuzzy, c-format
+msgid "Successfully triggered the storage migration\n"
+msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்\n"
+
+#: src/client/gpaste-client.c:393
+#, fuzzy, c-format
+msgid "Successfully triggered the passphrase change\n"
+msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்\n"
+
+#: src/client/gpaste-client.c:534
 msgid "Cannot add non utf8 data as text."
 msgstr "utf8 அல்லாத தரவை உரையாகச் சேர்க்க முடியாது."
 
@@ -2023,10 +2054,6 @@ msgstr "வரலாற்று அணுகல்"
 #, fuzzy
 msgid "History"
 msgstr "வரலாற்று அணுகல்"
-
-#, fuzzy, c-format
-#~ msgid "Successfully triggered the storage migration\n"
-#~ msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்\n"
 
 #~ msgid "Do we save the history from one session to another?"
 #~ msgstr "வரலாற்றை ஒரு அமர்விலிருந்து மற்றொரு அமர்வுக்கு சேமிக்கிறோமா?"
