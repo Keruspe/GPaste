@@ -11,7 +11,7 @@
  *
  * Release whatever @content currently holds and reset it to %CLIPBOARD_CONTENT_NONE.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_content_clear (GPasteClipboardContent *content)
 {
     switch (content->kind)
@@ -38,7 +38,7 @@ g_paste_clipboard_content_clear (GPasteClipboardContent *content)
  *
  * Returns: whether @content holds nothing
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_clipboard_content_is_empty (const GPasteClipboardContent *content)
 {
     return content->kind == CLIPBOARD_CONTENT_NONE;
@@ -51,7 +51,7 @@ g_paste_clipboard_content_is_empty (const GPasteClipboardContent *content)
  *
  * Replace @content with @text.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_content_set_text (GPasteClipboardContent *content,
                                     const gchar            *text)
 {
@@ -67,7 +67,7 @@ g_paste_clipboard_content_set_text (GPasteClipboardContent *content,
  *
  * Replace @content with an image identified by @checksum.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_content_set_image_checksum (GPasteClipboardContent *content,
                                               const gchar            *checksum)
 {
@@ -83,7 +83,7 @@ g_paste_clipboard_content_set_image_checksum (GPasteClipboardContent *content,
  *
  * Replace @content with the colour @rgba.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_content_set_color (GPasteClipboardContent *content,
                                      const GdkRGBA          *rgba)
 {
@@ -99,7 +99,7 @@ g_paste_clipboard_content_set_color (GPasteClipboardContent *content,
  *
  * Replace @content with @file_list. A %NULL @file_list leaves @content empty.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_content_set_file_list (GPasteClipboardContent *content,
                                          GdkFileList            *file_list)
 {
@@ -118,7 +118,7 @@ g_paste_clipboard_content_set_file_list (GPasteClipboardContent *content,
  *
  * Returns: (nullable): the held text, or %NULL unless @content holds text
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_clipboard_content_get_text (const GPasteClipboardContent *content)
 {
     return (content->kind == CLIPBOARD_CONTENT_TEXT) ? content->str : NULL;
@@ -130,7 +130,7 @@ g_paste_clipboard_content_get_text (const GPasteClipboardContent *content)
  *
  * Returns: (nullable): the held image checksum, or %NULL unless @content holds an image
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *content)
 {
     return (content->kind == CLIPBOARD_CONTENT_IMAGE) ? content->str : NULL;
@@ -142,7 +142,7 @@ g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *cont
  *
  * Returns: (nullable) (transfer none): the held file list, or %NULL unless @content holds one
  */
-GdkFileList *
+G_PASTE_VISIBLE GdkFileList *
 g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
 {
     return (content->kind == CLIPBOARD_CONTENT_FILE_LIST) ? content->file_list : NULL;
@@ -161,7 +161,7 @@ g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
  *
  * Returns: the action the backend should take for @text
  */
-GPasteClipboardTextAction
+G_PASTE_VISIBLE GPasteClipboardTextAction
 g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
                                          const GPasteSettings         *settings,
                                          gboolean                      is_clipboard,
@@ -202,7 +202,7 @@ g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
  *
  * Returns: whether @a and @b list the same files in the same order
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_clipboard_file_list_equal (GdkFileList *a,
                                    GdkFileList *b)
 {

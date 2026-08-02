@@ -20,10 +20,9 @@ void g_paste_daemon_reload_storage (GPasteDaemon *self);
 gboolean g_paste_daemon_upload   (GPasteDaemon *self,
                                   const gchar  *uuid);
 
-GPasteDaemon *g_paste_daemon_new     (GPasteSettings          *settings,
-                                      GPasteClipboardProvider *clipboard,
-                                      GPasteClipboardProvider *primary);
-GPasteDaemon *g_paste_daemon_new_gdk (GPasteSettings          *settings);
+GPasteDaemon *g_paste_daemon_new (GPasteSettings          *settings,
+                                  GPasteClipboardProvider *clipboard,
+                                  GPasteClipboardProvider *primary);
 
 #ifdef G_PASTE_ENABLE_GNOME_SHELL
 /* @selection is the mutter MetaSelection (global.display.get_selection ()),

@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "gpaste-clipboard-gdk.h"
+
 #include <gpaste-gtk4/gpaste-gtk-macros.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
@@ -174,7 +176,13 @@ on_storage_ready (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
-    ctx->daemon = g_paste_daemon_new_gdk (ctx->settings);
+    /* The GDK backend is ours alone — the gnome-shell-hosted daemon drives the
+     * mutter one instead — so the providers are built right here rather than
+     * behind a convenience constructor in the daemon library. */
+    g_autoptr (GPasteClipboardProvider) clipboard = g_paste_clipboard_gdk_new_clipboard (ctx->settings);
+    g_autoptr (GPasteClipboardProvider) primary = g_paste_clipboard_gdk_new_primary (ctx->settings);
+
+    ctx->daemon = g_paste_daemon_new (ctx->settings, clipboard, primary);
     ctx->search_provider = g_paste_search_provider_new ();
 
     ctx->c_signals[C_REEXECUTE_SELF] = g_signal_connect (ctx->daemon, "reexecute-self",

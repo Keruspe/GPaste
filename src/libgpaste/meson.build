@@ -178,7 +178,6 @@ gpaste_daemon_gir_sources = [
   'gpaste-daemon/gpaste-bus-object.c',
   'gpaste-daemon/gpaste-bus.c',
   'gpaste-daemon/gpaste-clipboard-content.c',
-  'gpaste-daemon/gpaste-clipboard-gdk.c',
   'gpaste-daemon/gpaste-clipboard-provider.c',
   'gpaste-daemon/gpaste-clipboards-manager.c',
   'gpaste-daemon/gpaste-color-item.c',
@@ -198,7 +197,6 @@ gpaste_daemon_gir_sources = [
   'gpaste-daemon/gpaste-special-atom.c',
   'gpaste-daemon/gpaste-storage-backend.c',
   'gpaste-daemon/gpaste-storage-migration.c',
-  'gpaste-daemon/gpaste-text-content-provider.c',
   'gpaste-daemon/gpaste-text-item.c',
   'gpaste-daemon/gpaste-uris-item.c',
 ]
@@ -208,7 +206,6 @@ gpaste_daemon_gir_headers = [
   'gpaste-daemon/gpaste-bus-object.h',
   'gpaste-daemon/gpaste-bus.h',
   'gpaste-daemon/gpaste-clipboard-content.h',
-  'gpaste-daemon/gpaste-clipboard-gdk.h',
   'gpaste-daemon/gpaste-clipboard-provider.h',
   'gpaste-daemon/gpaste-clipboards-manager.h',
   'gpaste-daemon/gpaste-color-item.h',
@@ -228,7 +225,6 @@ gpaste_daemon_gir_headers = [
   'gpaste-daemon/gpaste-special-atom.h',
   'gpaste-daemon/gpaste-storage-backend.h',
   'gpaste-daemon/gpaste-storage-migration.h',
-  'gpaste-daemon/gpaste-text-content-provider.h',
   'gpaste-daemon/gpaste-text-item.h',
   'gpaste-daemon/gpaste-uris-item.h',
 ]
@@ -236,7 +232,7 @@ gpaste_daemon_gir_headers = [
 gpaste_daemon_sources = gpaste_daemon_gir_sources
 gpaste_daemon_headers = gpaste_daemon_gir_headers
 
-gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ]
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ]
 
 # Optional libsodium-based encryption converter for the history storage.
 if libsodium_dep.found()

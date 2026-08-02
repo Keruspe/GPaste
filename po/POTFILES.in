@@ -8,7 +8,6 @@ src/daemon/gpaste-daemon.c
 src/libgpaste/gpaste-daemon/gpaste-binary-data.c
 src/libgpaste/gpaste-daemon/gpaste-bus.c
 src/libgpaste/gpaste-daemon/gpaste-bus-object.c
-src/libgpaste/gpaste-daemon/gpaste-clipboard-gdk.c
 src/libgpaste/gpaste-daemon/gpaste-clipboard-meta.c
 src/libgpaste/gpaste-daemon/gpaste-clipboard-provider.c
 src/libgpaste/gpaste-daemon/gpaste-clipboards-manager.c

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-daemon/gpaste-text-content-provider.h>
+#include "gpaste-text-content-provider.h"
 
 #include <string.h>
 
@@ -224,7 +224,7 @@ g_paste_text_content_provider_init (GPasteTextContentProvider *self G_GNUC_UNUSE
  * Returns: (transfer full): a newly allocated #GdkContentProvider
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GdkContentProvider *
+GdkContentProvider *
 g_paste_text_content_provider_new (const gchar *text)
 {
     g_return_val_if_fail (text, NULL);

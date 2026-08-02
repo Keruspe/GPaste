@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "gpaste-clipboard-gdk.h"
+#include "gpaste-text-content-provider.h"
+
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
-#include <gpaste-daemon/gpaste-clipboard-gdk.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-special-atom.h>
-#include <gpaste-daemon/gpaste-text-content-provider.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 struct _GPasteClipboardGdk
@@ -914,7 +915,7 @@ _g_paste_clipboard_gdk_new (GPasteSettings *settings,
  * Returns: (transfer full): a newly allocated #GPasteClipboardProvider
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteClipboardProvider *
+GPasteClipboardProvider *
 g_paste_clipboard_gdk_new_clipboard (GPasteSettings *settings)
 {
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
@@ -931,7 +932,7 @@ g_paste_clipboard_gdk_new_clipboard (GPasteSettings *settings)
  * Returns: (transfer full): a newly allocated #GPasteClipboardProvider
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteClipboardProvider *
+GPasteClipboardProvider *
 g_paste_clipboard_gdk_new_primary (GPasteSettings *settings)
 {
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);

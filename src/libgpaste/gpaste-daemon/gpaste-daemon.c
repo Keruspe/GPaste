@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-daemon/gpaste-clipboard-gdk.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-daemon.h>
@@ -808,26 +807,6 @@ g_paste_daemon_new (GPasteSettings          *settings,
     g_paste_history_load_async (history, NULL);
 
     return self;
-}
-
-/**
- * g_paste_daemon_new_gdk:
- * @settings: a #GPasteSettings instance
- *
- * Create a new instance of #GPasteDaemon driving the GDK clipboard backend.
- *
- * Returns: a newly allocated #GPasteDaemon
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteDaemon *
-g_paste_daemon_new_gdk (GPasteSettings *settings)
-{
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
-
-    g_autoptr (GPasteClipboardProvider) clipboard = g_paste_clipboard_gdk_new_clipboard (settings);
-    g_autoptr (GPasteClipboardProvider) primary = g_paste_clipboard_gdk_new_primary (settings);
-
-    return g_paste_daemon_new (settings, clipboard, primary);
 }
 
 #ifdef G_PASTE_ENABLE_GNOME_SHELL
