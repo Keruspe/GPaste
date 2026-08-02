@@ -1462,6 +1462,7 @@ g_paste_sqlite_backend_clear_history (const GPasteStorageBackend *self,
 /* Management */
 /**************/
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Re-encrypt @name under @new_passphrase. Everything — every content column and
  * the meta parameters the key is checked against — moves in a single
  * transaction, so the database is only ever readable with the old passphrase or
@@ -1546,6 +1547,7 @@ g_paste_sqlite_backend_rekey (const GPasteStorageBackend *self,
 
     return TRUE;
 }
+#endif /* G_PASTE_ENABLE_ENCRYPTION */
 
 static void
 g_paste_sqlite_backend_delete_history (const GPasteStorageBackend *self,
