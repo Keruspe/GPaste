@@ -30,6 +30,12 @@ g_paste_clipboard_content_clear (GPasteClipboardContent *content)
         break;
     }
     content->kind = CLIPBOARD_CONTENT_NONE;
+    /* Leave the union readable, not merely dead. The set_*_take() helpers assign
+     * through g_set_str_take(), which *reads* @str to compare and free it before
+     * storing — and after a colour that is four floats reinterpreted as a
+     * pointer, which it would then strcmp() and g_free(). Clearing the kind is
+     * not enough; the bytes have to go too. */
+    content->str = NULL;
 }
 
 /**

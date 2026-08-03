@@ -3,8 +3,10 @@
 
 #include <gpaste/gpaste-util.h>
 
+#include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
@@ -352,6 +354,71 @@ test_file_backup_owns_images (void)
 
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
+}
+
+/* GPasteClipboardContent is a tagged union, so clearing it has to leave the
+ * union readable and not just mark it dead: the set_*_take() helpers assign
+ * through g_set_str_take(), which reads @str to compare and free it before
+ * storing. After a colour those bytes are four floats, which it would strcmp()
+ * and g_free(). Every kind must therefore be able to precede every other. */
+static void
+test_content_kind_transitions (void)
+{
+    GPasteClipboardContent content = { .kind = CLIPBOARD_CONTENT_NONE };
+    GdkRGBA red = { 1.0f, 0.0f, 0.0f, 1.0f };
+
+    g_paste_clipboard_content_set_color (&content, &red);
+    g_paste_clipboard_content_set_text (&content, "after a colour");
+    g_assert_cmpstr (g_paste_clipboard_content_get_text (&content), ==, "after a colour");
+
+    g_paste_clipboard_content_set_color (&content, &red);
+    g_paste_clipboard_content_set_image_checksum (&content, "0badc0de");
+    g_assert_cmpstr (g_paste_clipboard_content_get_image_checksum (&content), ==, "0badc0de");
+
+    /* And the plain text -> text path, where the old string is a real one that
+     * has to be freed rather than leaked. */
+    g_paste_clipboard_content_set_text (&content, "one");
+    g_paste_clipboard_content_set_text (&content, "two");
+    g_assert_cmpstr (g_paste_clipboard_content_get_text (&content), ==, "two");
+
+    /* Setting the same text again must survive g_set_str_take()'s equal-string
+     * shortcut, which frees what it was handed and keeps what it had. */
+    g_paste_clipboard_content_set_text (&content, "two");
+    g_assert_cmpstr (g_paste_clipboard_content_get_text (&content), ==, "two");
+
+    g_paste_clipboard_content_clear (&content);
+    g_assert_true (g_paste_clipboard_content_is_empty (&content));
+}
+
+/* Setting an item's display string to what it already says must leave its size
+ * alone. g_set_str_take() frees the string handed to it and keeps the old
+ * pointer when the two compare equal, so measuring the argument rather than
+ * what we ended up holding both reads freed memory and underflows the size —
+ * after which the history believes it is permanently over max-memory-usage and
+ * starts evicting. Reachable from D-Bus as `gpaste-client rename-password foo
+ * foo`. */
+static void
+test_same_display_string_keeps_size (void)
+{
+    g_autoptr (GPasteItem) item = g_paste_password_item_new ("foo", "s3kr1t");
+    guint64 size = g_paste_item_get_size (item);
+
+    g_assert_cmpuint (size, >, 0);
+
+    for (guint i = 0; i < 3; ++i)
+    {
+        g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), "foo");
+        g_assert_cmpuint (g_paste_item_get_size (item), ==, size);
+    }
+
+    /* A real rename still has to move the size with it, and renaming back has
+     * to land exactly where we started: the accounting is only right if it is
+     * symmetric. */
+    g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), "foobar");
+    g_assert_cmpuint (g_paste_item_get_size (item), >, size);
+
+    g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), "foo");
+    g_assert_cmpuint (g_paste_item_get_size (item), ==, size);
 }
 
 static void
@@ -2088,6 +2155,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/history_anchors_image", test_history_anchors_image);
     g_test_add_func ("/history/file_image_per_history", test_file_image_per_history);
     g_test_add_func ("/history/file_backup_owns_images", test_file_backup_owns_images);
+    g_test_add_func ("/history/content_kind_transitions", test_content_kind_transitions);
+    g_test_add_func ("/history/same_display_string_keeps_size", test_same_display_string_keeps_size);
     g_test_add_func ("/history/add_get_length", test_add_get_length);
     g_test_add_func ("/history/dedup_moves_to_front", test_dedup_moves_to_front);
     g_test_add_func ("/history/add_equal_first_is_noop", test_add_equal_first_is_noop);

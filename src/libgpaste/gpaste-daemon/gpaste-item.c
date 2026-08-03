@@ -246,8 +246,13 @@ g_paste_item_set_display_string (GPasteItem *self,
 
     g_set_str_take (&priv->display_string, display_string);
 
-    if (display_string)
-        priv->size += strlen (display_string) + 1;
+    /* Measure what we ended up holding, not what we were handed: g_set_str_take
+     * frees @display_string and keeps the old pointer when the two compare
+     * equal, so reading @display_string here would be a use-after-free — and
+     * the resulting bogus length underflows @size, which then reads as
+     * permanently over max-memory-usage and starts evicting the history. */
+    if (priv->display_string)
+        priv->size += strlen (priv->display_string) + 1;
 }
 
 /**
