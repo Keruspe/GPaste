@@ -489,6 +489,13 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);
     g_clear_object (&priv->shortcuts);
+
+    /* Disconnect before clearing the timeout, and both before chaining up:
+     * unrooting the window down there notifies "maximized"/"fullscreened" on
+     * the way past, and on_geometry_changed() would re-arm the timeout with a
+     * bare @self it holds no reference on — landing a second later in a window
+     * that has since been finalized. */
+    g_signal_handlers_disconnect_by_func (self, on_geometry_changed, NULL);
     g_clear_handle_id (&priv->save_state_id, g_source_remove);
 
     /* Chaining up unparents (and frees) every widget below, so drop the one
