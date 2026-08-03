@@ -26,10 +26,18 @@ function __gpaste_histories
         set dir $dir/gpaste
     end
 
+    # De-duplicated in-shell rather than through a fork of sort(1): the same
+    # history can have a file per flavour, but this is the one completion that
+    # promises to be instant because it asks no daemon.
+    set -l names
+
     for file in $dir/*.xml $dir/*.xmls $dir/*.db $dir/*.dbs
         test -f $file; or continue
-        string replace -r '\.[^.]*$' '' (basename $file)
-    end | sort -u
+        set -l name (string replace -r '\.[^.]*$' '' (basename $file))
+        contains -- $name $names; or set -a names $name
+    end
+
+    printf '%s\n' $names
 end
 
 # "<uuid>\t<item>" so the item's text shows up as the completion's description.

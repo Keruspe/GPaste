@@ -29,11 +29,19 @@ _gpaste_client_histories()
         dir=${dir}/gpaste
     fi
 
+    # De-duplicate in the shell rather than forking sort(1): the same history
+    # can have a file per flavour, but this is the one completion that promises
+    # to be instant because it asks no daemon, and a fork per tab is not that.
+    local -A seen=()
+
     for f in "${dir}"/*.xml "${dir}"/*.xmls "${dir}"/*.db "${dir}"/*.dbs; do
         [[ -f ${f} ]] || continue
         name=${f##*/}
-        printf '%s\n' "${name%.*}"
-    done | sort -u
+        name=${name%.*}
+        [[ -v seen[${name}] ]] && continue
+        seen[${name}]=1
+        printf '%s\n' "${name}"
+    done
 }
 
 # Both of these ask the daemon for the history and keep only its first column.
