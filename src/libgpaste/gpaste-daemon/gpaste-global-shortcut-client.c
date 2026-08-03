@@ -3,6 +3,7 @@
 
 #include <gpaste/gpaste-gdbus-macros.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
+#include <gpaste-keyval.h>
 
 #include <gtk/gtk.h>
 
@@ -105,12 +106,9 @@ gtk_accel_to_portal_trigger (const gchar *accel)
 
     /* Settings written by an older GPaste (or by hand) can name the keypad
      * variant of a key; the portal takes one name, so give it the primary
-     * spelling of the alias group rather than whichever one was stored. */
-    guint n_aliases = 0;
-    const guint *aliases = gdk_keyval_get_aliases (keyval, &n_aliases);
-
-    if (n_aliases)
-        keyval = aliases[0];
+     * spelling of the alias group rather than whichever one was stored. The
+     * capture side has to agree, which is why the rule is shared. */
+    keyval = g_paste_keyval_canonicalize (keyval);
 
     const gchar *key_name = gdk_keyval_name (keyval);
     if (!key_name)

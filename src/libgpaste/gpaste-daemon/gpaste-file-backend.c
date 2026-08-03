@@ -403,24 +403,21 @@ parse_location (GMarkupParseContext *context,
 
     g_markup_parse_context_get_position (context, &line_number, &char_number);
 
+    /* Where we are, said once; being inside an element only adds to it. */
+    g_autofree gchar *where = g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT
+                                               ", column %" G_GINT32_FORMAT " (byte %" G_GSIZE_FORMAT ")",
+                                               data->history_file_path, line_number, char_number,
+                                               g_markup_parse_context_get_offset (context));
+
     if (!element)
-    {
-        return g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT ", column %" G_GINT32_FORMAT
-                                " (byte %" G_GSIZE_FORMAT ")",
-                                data->history_file_path, line_number, char_number,
-                                g_markup_parse_context_get_offset (context));
-    }
+        return g_steal_pointer (&where);
 
     gsize tag_line, tag_char, tag_offset;
 
     g_markup_parse_context_get_tag_start (context, &tag_line, &tag_char, &tag_offset);
 
-    return g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT ", column %" G_GINT32_FORMAT
-                            " (byte %" G_GSIZE_FORMAT "), inside <%s> opened at line %" G_GSIZE_FORMAT
-                            " (byte %" G_GSIZE_FORMAT ")",
-                            data->history_file_path, line_number, char_number,
-                            g_markup_parse_context_get_offset (context),
-                            element, tag_line, tag_offset);
+    return g_strdup_printf ("%s, inside <%s> opened at line %" G_GSIZE_FORMAT " (byte %" G_GSIZE_FORMAT ")",
+                            where, element, tag_line, tag_offset);
 }
 
 /* g_warning() with the parse location appended. Needs @context and @data in

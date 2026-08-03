@@ -39,6 +39,7 @@ typedef struct
 
     gboolean         initialized;
     guint            save_state_id;
+    gboolean         geometry_moved_again;
 } GPasteUiWindowPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -228,6 +229,14 @@ save_session_state (gpointer user_data)
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
 
+    /* Still moving: wait another tick rather than saving mid-drag. Re-arming
+     * the source is what the notifications no longer have to do. */
+    if (priv->geometry_moved_again)
+    {
+        priv->geometry_moved_again = FALSE;
+        return G_SOURCE_CONTINUE;
+    }
+
     priv->save_state_id = 0;
 
     if (app)
@@ -236,8 +245,12 @@ save_session_state (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
-/* A drag-resize notifies on every frame, so coalesce rather than asking the
- * session manager to write the same window down a hundred times. */
+/* A drag-resize notifies on every frame — twice, since width and height both
+ * move — so coalesce rather than asking the session manager to write the same
+ * window down a hundred times. One source for the whole drag: while it is
+ * running, a notification only says "not yet", and the callback re-arms itself
+ * instead of every frame destroying and rebuilding a GTimeoutSource (two
+ * allocations and four locked walks of the main context's source list each). */
 static void
 on_geometry_changed (GObject    *object,
                      GParamSpec *pspec     G_GNUC_UNUSED,
@@ -246,7 +259,13 @@ on_geometry_changed (GObject    *object,
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    g_clear_handle_id (&priv->save_state_id, g_source_remove);
+    if (priv->save_state_id)
+    {
+        priv->geometry_moved_again = TRUE;
+        return;
+    }
+
+    priv->geometry_moved_again = FALSE;
     priv->save_state_id = g_timeout_add_seconds (1, save_session_state, self);
     g_source_set_name_by_id (priv->save_state_id, "[GPaste] save_session_state");
 }
