@@ -438,7 +438,12 @@ apply_migration (MigrationData *self)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-typedef void (*UnlockDoneFunc) (gpointer user_data);
+/* @unlocked says whether a passphrase that actually decrypts is now installed.
+ * Asking the process-wide global instead would be wrong: continue_apply() only
+ * prompts when the global is absent *or* does not decrypt this flavour, so on a
+ * dismissal a stale one is still sitting there and would read as success. */
+typedef void (*UnlockDoneFunc) (gboolean unlocked,
+                                gpointer user_data);
 
 typedef struct
 {
@@ -494,12 +499,14 @@ on_unlock_reply (GObject      *source,
 
     UnlockDoneFunc done = prompt->done;
     gpointer done_data = prompt->user_data;
+    gboolean unlocked = (passphrase != NULL);
+
     g_object_unref (prompt->prompt);
     g_object_unref (prompt->settings);
     g_free (prompt);
 
     if (done)
-        done (done_data);
+        done (unlocked, done_data);
 }
 
 /* Shared "unlock an existing encrypted history" prompt: ask for the passphrase,
@@ -576,18 +583,18 @@ on_passphrase_set (GObject      *source,
  * process-wide one is about to be replaced by the destination's) and carry on
  * with the next step; on dismissal (no passphrase) ask again instead. */
 static void
-on_source_unlocked (gpointer user_data)
+on_source_unlocked (gboolean unlocked,
+                    gpointer user_data)
 {
     MigrationData *self = user_data;
-    const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
 
-    if (!passphrase)
+    if (!unlocked)
     {
         ask_migration (self);
         return;
     }
 
-    set_source_passphrase (self, passphrase);
+    set_source_passphrase (self, g_paste_storage_backend_get_passphrase ());
 
     continue_apply (self);
 }
@@ -752,6 +759,26 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 #endif
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+typedef struct
+{
+    GPasteStorageMigrationDoneFunc done;
+    gpointer                       user_data;
+} DecryptionDone;
+
+/* The caller carries on either way: an encrypted history that stayed locked
+ * loads as unreadable, which the history already refuses to overwrite. */
+static void
+on_decryption_settled (gboolean unlocked G_GNUC_UNUSED,
+                       gpointer user_data)
+{
+    g_autofree DecryptionDone *self = user_data;
+
+    if (self->done)
+        self->done (self->user_data);
+}
+#endif
+
 /**
  * g_paste_storage_decryption_show:
  * @prompt: the #GPastePrompt to ask through
@@ -771,7 +798,13 @@ g_paste_storage_decryption_show (GPastePrompt                   *prompt,
     g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    unlock_prompt (prompt, settings, g_paste_settings_get_storage_backend (settings), done, user_data);
+    DecryptionDone *decryption = g_new0 (DecryptionDone, 1);
+
+    decryption->done = done;
+    decryption->user_data = user_data;
+
+    unlock_prompt (prompt, settings, g_paste_settings_get_storage_backend (settings),
+                   on_decryption_settled, decryption);
 #else
     if (done)
         done (user_data);
@@ -971,19 +1004,19 @@ rekey_prompt_new_passphrase (RekeyData *self)
 }
 
 static void
-on_rekey_source_unlocked (gpointer user_data)
+on_rekey_source_unlocked (gboolean unlocked,
+                          gpointer user_data)
 {
     RekeyData *self = user_data;
-    const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
 
     /* Dismissed without unlocking: there is no passphrase to change. */
-    if (!passphrase)
+    if (!unlocked)
     {
         rekey_finish (self);
         return;
     }
 
-    self->current_passphrase = g_paste_passphrase_new (passphrase);
+    self->current_passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
 
     rekey_prompt_new_passphrase (self);
 }
