@@ -127,12 +127,16 @@ _gpaste-client()
     fi
 
     if [[ -z ${verb} ]]; then
-        local verbs="about add add-password backup-history change-passphrase daemon
-                     daemon-reexec daemon-version delete delete-history delete-password
-                     empty file get get-history help history history-size list-histories
-                     merge migrate preferences quit remove rename-password replace search
-                     select set set-password settings show-history start stop
-                     switch-history ui upload version"
+        # Every verb the dispatch table accepts, aliases included: the three
+        # completions have to agree on what the CLI takes, and zsh and fish
+        # offer the short forms too.
+        local verbs="a about add add-password ap backup-history bh change-passphrase d
+                     daemon daemon-reexec daemon-version del delete delete-history
+                     delete-password dh dp dr dv e empty f file g get get-history gh h
+                     help history history-size hs lh list-histories m merge migrate p
+                     preferences q quit remove rename-password replace rm rp s search
+                     select set set-password settings sh show-history sp start stop
+                     switch-history u ui upload v version"
 
         COMPREPLY=($(compgen -W "${verbs}" -- "${cur}"))
         return
