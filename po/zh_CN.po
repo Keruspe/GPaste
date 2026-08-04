@@ -8,8 +8,9 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-02 08:43+0200\n"
-"PO-Revision-Date: 2026-02-27 19:09+0000\n"
-"Last-Translator: ayasa520 <ayasa0520@gmail.com>\n"
+"PO-Revision-Date: 2026-08-05 15:01+0000\n"
+"Last-Translator: reducedradius "
+"<137701630+flytothehighest@users.noreply.github.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
 "projects/gpaste/gpaste/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -17,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.16.1-dev\n"
+"X-Generator: Weblate 2026.8.1.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -49,9 +50,8 @@ msgid "Manage your clipboard history"
 msgstr "管理你的剪切板记录"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:16
-#, fuzzy
 msgid "Preferences"
-msgstr "GPaste 首选项"
+msgstr "首选项"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
 #: src/gnome-shell/aboutItem.js:13 src/ui/gpaste-ui-header.c:259
@@ -101,7 +101,7 @@ msgstr "默认时，GPaste只会保存文本到记录里"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:48
 msgid "Show image previews in the history?"
-msgstr ""
+msgstr "要显示历史图像预览吗？"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "By default, we show previews of images in the history"
@@ -109,7 +109,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Size of image previews in pixels"
-msgstr ""
+msgstr "图像预览的像素大小"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:58
 msgid ""
