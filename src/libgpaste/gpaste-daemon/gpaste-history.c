@@ -1242,22 +1242,44 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     g_paste_history_saver_load (priv->saver, priv->name, TRUE);
 }
 
+/* One detailed "notify::<key>" handler per setting the history reacts to, rather
+ * than one undetailed handler dispatching on the key: the history no longer wakes
+ * up for the twenty-odd settings that mean nothing to it. */
+
 static void
-g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
-                                  const gchar    *key,
-                                  gpointer        user_data)
+g_paste_history_on_max_history_size_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                                             GParamSpec     *pspec G_GNUC_UNUSED,
+                                             gpointer        user_data)
 {
     GPasteHistory *self = user_data;
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    /* FIXME: track text item size settings */
-    if (g_paste_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
-        g_paste_history_private_check_size (priv);
-    else if (g_paste_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
-        g_paste_history_private_check_memory_usage (priv);
-    else if (g_paste_str_equal (key, G_PASTE_HISTORY_NAME_SETTING))
-        g_paste_history_history_name_changed (self);
+    g_paste_history_private_check_size (priv);
+}
+
+static void
+g_paste_history_on_max_memory_usage_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                                             GParamSpec     *pspec G_GNUC_UNUSED,
+                                             gpointer        user_data)
+{
+    GPasteHistory *self = user_data;
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    g_paste_history_private_check_memory_usage (priv);
+}
+
+static void
+g_paste_history_on_history_name_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                                         GParamSpec     *pspec G_GNUC_UNUSED,
+                                         gpointer        user_data)
+{
+    GPasteHistory *self = user_data;
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    g_paste_history_history_name_changed (self);
 }
 
 static void
@@ -1506,8 +1528,14 @@ g_paste_history_new (GPasteSettings *settings)
     priv->saver = g_paste_history_saver_new (priv->backend, self, g_paste_history_on_loaded);
     priv->settings = g_object_ref (settings);
 
+    /* FIXME: track text item size settings */
     GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
-    g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_history_settings_changed), self);
+    g_signal_group_connect (settings_signals, "notify::" G_PASTE_MAX_HISTORY_SIZE_SETTING,
+                            G_CALLBACK (g_paste_history_on_max_history_size_changed), self);
+    g_signal_group_connect (settings_signals, "notify::" G_PASTE_MAX_MEMORY_USAGE_SETTING,
+                            G_CALLBACK (g_paste_history_on_max_memory_usage_changed), self);
+    g_signal_group_connect (settings_signals, "notify::" G_PASTE_HISTORY_NAME_SETTING,
+                            G_CALLBACK (g_paste_history_on_history_name_changed), self);
     g_signal_group_set_target (settings_signals, settings);
 
     return self;

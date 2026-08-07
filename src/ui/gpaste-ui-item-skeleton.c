@@ -30,7 +30,7 @@ G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemSkeleton, ui_item_skeleton, GTK
 
 static void
 g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
-                                        const gchar    *key G_GNUC_UNUSED,
+                                        GParamSpec     *pspec G_GNUC_UNUSED,
                                         gpointer        user_data)
 {
     GPasteUiItemSkeletonPrivate *priv = user_data;
@@ -42,7 +42,7 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
 
 static void
 g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
-                                                    const gchar    *key G_GNUC_UNUSED,
+                                                    GParamSpec     *pspec G_GNUC_UNUSED,
                                                     gpointer        user_data)
 {
     GPasteUiItemSkeletonPrivate *priv = user_data;
@@ -459,15 +459,15 @@ g_paste_ui_item_skeleton_new (GType           type,
 
     GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals,
-                            "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
+                            "notify::" G_PASTE_ELEMENT_SIZE_SETTING,
                             G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
                             priv);
     g_signal_group_connect (settings_signals,
-                            "changed::" G_PASTE_IMAGES_PREVIEW_SETTING,
+                            "notify::" G_PASTE_IMAGES_PREVIEW_SETTING,
                             G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
                             priv);
     g_signal_group_connect (settings_signals,
-                            "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
+                            "notify::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
                             G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
                             priv);
     g_signal_group_set_target (settings_signals, settings);

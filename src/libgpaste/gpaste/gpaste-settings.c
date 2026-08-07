@@ -56,9 +56,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Settings, settings, G_TYPE_OBJECT)
 
 enum
 {
-    CHANGED,
     REBIND,
-    TRACK,
 
     LAST_SIGNAL
 };
@@ -109,20 +107,19 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
                                            ASSIGN_TAKE, ASSIGN_DUP)
 
-#define NEW_SIGNAL_FULL(name, type, MTYPE, arg_type) \
-    g_signal_new (name,                              \
-                  G_PASTE_TYPE_SETTINGS,             \
-                  type,                              \
-                  0, /* class offset */              \
-                  NULL, /* accumulator */            \
-                  NULL, /* accumulator data */       \
-                  g_cclosure_marshal_VOID__##MTYPE,  \
-                  G_TYPE_NONE,                       \
-                  1, /* number of params */          \
+/* "rebind" is the only signal left; every other change notification is the
+ * property one. */
+#define NEW_SIGNAL_DETAILED(name, arg_type)              \
+    g_signal_new (name,                                  \
+                  G_PASTE_TYPE_SETTINGS,                 \
+                  G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, \
+                  0, /* class offset */                  \
+                  NULL, /* accumulator */                \
+                  NULL, /* accumulator data */           \
+                  g_cclosure_marshal_VOID__##arg_type,   \
+                  G_TYPE_NONE,                           \
+                  1, /* number of params */              \
                   G_TYPE_##arg_type)
-#define NEW_SIGNAL(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg_type, arg_type)
-#define NEW_SIGNAL_DETAILED(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type)
-#define NEW_SIGNAL_DETAILED_STATIC(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type | G_SIGNAL_TYPE_STATIC_SCOPE)
 
 /**
  * g_paste_settings_get_close_on_select:
@@ -710,13 +707,6 @@ g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 
     g_paste_settings_private_set_extension_enabled_from_dconf (priv);
     g_object_notify (G_OBJECT (self), G_PASTE_EXTENSION_ENABLED_SETTING);
-
-    /* Forward the signal */
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   g_quark_from_string (G_PASTE_EXTENSION_ENABLED_SETTING),
-                   G_PASTE_EXTENSION_ENABLED_SETTING,
-                   NULL);
 }
 
 static void
@@ -795,27 +785,14 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
             continue;
 
         entry->from_dconf (priv);
-        /* Property name == GSettings key, so bound widgets refresh from here. */
+        /* Property name == GSettings key, so "notify::<key>" is the one change
+         * notification: bound widgets refresh from here, and so does anything
+         * that used to listen for a separate "changed::<key>". */
         g_object_notify (G_OBJECT (self), entry->key);
         if (entry->rebind)
             g_paste_settings_rebind (self, key);
         break;
     }
-
-    /* track-changes additionally notifies trackers of the new state */
-    if (g_paste_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
-        g_signal_emit (self,
-                       signals[TRACK],
-                       0, /* detail */
-                       priv->track_changes,
-                       NULL);
-
-    /* Forward the signal */
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   g_quark_from_string (key),
-                   key,
-                   NULL);
 }
 
 /* --- Bindable GObject properties -------------------------------------------
@@ -1059,44 +1036,24 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     g_object_class_install_properties (object_class, N_PROPERTIES, properties);
 
     /**
-     * GPasteSettings::changed:
-     * @settings: the object on which the signal was emitted
-     * @key: the name of the key that changed
-     *
-     * The "changed" signal is emitted when a key has potentially changed.
-     * You should call one of the g_paste_settings_get() calls to check the new
-     * value.
-     *
-     * This signal supports detailed connections.  You can connect to the
-     * detailed signal "changed::x" in order to only receive callbacks
-     * when key "x" changes.
-     */
-    signals[CHANGED] = NEW_SIGNAL_DETAILED_STATIC ("changed", STRING);
-
-    /**
      * GPasteSettings::rebind:
      * @settings: the object on which the signal was emitted
      * @key: the name of the key that changed
      *
-     * The "rebind" signal is emitted when a key has potentially changed.
-     * You should call one of the g_paste_settings_get() calls to check the new
-     * value.
+     * The "rebind" signal is emitted when a keybinding key has potentially
+     * changed and its binding has to be registered again. This is *not* a
+     * duplicate of "notify::x": a rebind is an action to take, not a value that
+     * changed, and only the keybinding settings carry it.
+     *
+     * Every other change notification is the property one. Each setting is a
+     * GObject property named exactly like its GSettings key, so "notify::x" is
+     * how you observe key "x".
      *
      * This signal supports detailed connections.  You can connect to the
      * detailed signal "rebind::x" in order to only receive callbacks
      * when key "x" changes.
      */
     signals[REBIND]  = NEW_SIGNAL_DETAILED        ("rebind" , STRING);
-
-    /**
-     * GPasteSettings::track:
-     * @settings: the object on which the signal was emitted
-     * @tracking_state: whether we're now tracking or not
-     *
-     * The "track" signal is emitted when the daemon starts or stops tracking
-     * clipboard changes
-     */
-    signals[TRACK]   = NEW_SIGNAL                 ("track"  , BOOLEAN);
 }
 
 static GSettings *

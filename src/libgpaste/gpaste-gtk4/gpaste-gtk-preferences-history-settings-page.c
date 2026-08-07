@@ -56,7 +56,7 @@ on_change_passphrase_activated (AdwButtonRow *row G_GNUC_UNUSED,
 
 static void
 update_passphrase_sensitivity (GPasteSettings *settings,
-                               const gchar    *key G_GNUC_UNUSED,
+                               GParamSpec     *pspec G_GNUC_UNUSED,
                                gpointer        user_data)
 {
     gtk_widget_set_sensitive (GTK_WIDGET (user_data),
@@ -145,7 +145,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                                           NULL);
 
     update_passphrase_sensitivity (settings, NULL, passphrase);
-    g_signal_connect_object (settings, "changed::" G_PASTE_STORAGE_BACKEND_SETTING,
+    g_signal_connect_object (settings, "notify::" G_PASTE_STORAGE_BACKEND_SETTING,
                              G_CALLBACK (update_passphrase_sensitivity), passphrase, 0);
 
     g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);

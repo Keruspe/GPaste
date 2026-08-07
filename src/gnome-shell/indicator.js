@@ -55,7 +55,7 @@ class GPasteIndicator extends Button {
         this._searchItem = new GPasteSearchItem();
         this._searchItem.connect('text-changed', this._onNewSearch.bind(this));
 
-        this._settings.connectObject('changed::element-size', this._resetElementSize.bind(this), this);
+        this._settings.connectObject('notify::element-size', this._resetElementSize.bind(this), this);
         this._resetElementSize();
 
         this._setup().catch(console.error);

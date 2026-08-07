@@ -177,13 +177,15 @@ g_paste_daemon_extension_state_changed (GPasteDaemon *self,
     g_paste_daemon_methods_extension_state_changed (&methods, state);
 }
 
+/* Connected swapped to notify::track-changes, so @settings is the emitter: the
+ * new state is read back from it rather than carried by the signal. */
 static void
 g_paste_daemon_tracking (GPasteDaemon   *self,
-                         gboolean        tracking_state,
-                         GPasteSettings *settings G_GNUC_UNUSED)
+                         GParamSpec     *pspec G_GNUC_UNUSED,
+                         GPasteSettings *settings)
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-    GVariant *variant = g_variant_new_boolean (tracking_state);
+    GVariant *variant = g_variant_new_boolean (g_paste_settings_get_track_changes (settings));
 
     G_PASTE_SEND_DBUS_PROPERTIES_CHANGED (G_PASTE_DAEMON_PROP_ACTIVE, variant);
 }
@@ -781,7 +783,7 @@ g_paste_daemon_init (GPasteDaemon *self)
 
     priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
     g_signal_group_connect_swapped (priv->settings_signals,
-                                    "track",
+                                    "notify::" G_PASTE_TRACK_CHANGES_SETTING,
                                     G_CALLBACK (g_paste_daemon_tracking),
                                     self);
 

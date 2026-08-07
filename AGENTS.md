@@ -120,6 +120,8 @@ The core libraries used by all other components. Two sub-modules:
 - `gpaste/` → **libgpaste** — daemon-agnostic types: `GPasteClient` (D-Bus client), `GPasteClientItem` (the lightweight item representation transferred over D-Bus), `GPasteSettings` (GSettings wrapper), enums, utilities.
 - `gpaste-gtk4/` → **libgpaste-gtk4** — GTK4 + Adwaita helpers (the preferences widgets).
 
+**Observing a setting: use `notify::<key>`.** Every setting is a GObject property named exactly like its GSettings key, so `notify::track-changes` *is* the change notification — there is no separate `changed` signal, and `g_object_bind_property()` works directly. `GPasteSettings` emits exactly one signal of its own, **`rebind::<key>`**, and it is not a duplicate: a rebind is an action to take (re-register a keybinding), not a value that changed, and only the keybinding settings carry it. Prefer the detailed form; `notify` undetailed fires for all twenty-nine keys. Note the callback takes a `GParamSpec *`, not the key string.
+
 A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/` and holds the rich clipboard item hierarchy along with the rest of the daemon objects. Each library exports the symbols marked `G_PASTE_VISIBLE` (built with hidden default visibility), and GIR + Vala bindings are generated from it.
 
 **libgpaste-daemon has a public/internal header split.** `meson.build` keeps two lists, and the distinction is real rather than cosmetic:
