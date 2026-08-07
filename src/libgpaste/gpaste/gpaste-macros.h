@@ -8,7 +8,15 @@
 #pragma once
 
 #include <gio/gio.h>
+
+/* Only our own sources: gi18n-lib.h refuses to be included without
+ * GETTEXT_PACKAGE, which meson defines for this build but which a consumer of
+ * the installed headers has no reason to define. It is here for the _() in our
+ * .c files and for G_PASTE_INIT_GETTEXT below, neither of which is a caller's
+ * concern. */
+#ifdef G_PASTE_COMPILATION
 #include <glib/gi18n-lib.h>
+#endif
 
 #include <stdlib.h>
 

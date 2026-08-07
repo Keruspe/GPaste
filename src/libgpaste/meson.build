@@ -170,28 +170,22 @@ endif
 
 libgpaste_daemon_soversion = '0.0.0'
 
-# The introspectable, always-built core of the daemon library. Optional bits
-# (mutter clipboard, libsodium converter, libsecret keyring) are appended below
-# but kept out of the GIR/umbrella so introspection stays toolkit-clean.
-gpaste_daemon_gir_sources = [
+# What this library promises to the outside world. The gnome-shell extension is
+# its only external consumer and reaches it through the GPasteDaemon-1 typelib:
+# it drives GPasteBus, GPasteDaemon, GPasteSearchProvider, GPastePrompt (which
+# prompt.js implements) and GPasteStorageBackend's static passphrase helpers.
+#
+# The rest of this list is what those headers drag in, not a separate promise:
+# gpaste-daemon.h declares g_paste_daemon_new(), hence the clipboard provider,
+# hence the history, hence the item hierarchy those hand around.
+gpaste_daemon_public_sources = [
   'gpaste-daemon/gpaste-binary-data.c',
   'gpaste-daemon/gpaste-bus-object.c',
   'gpaste-daemon/gpaste-bus.c',
-  'gpaste-daemon/gpaste-clipboard-content.c',
   'gpaste-daemon/gpaste-clipboard-provider.c',
-  'gpaste-daemon/gpaste-clipboards-manager.c',
-  'gpaste-daemon/gpaste-color-item.c',
-  'gpaste-daemon/gpaste-daemon-methods.c',
   'gpaste-daemon/gpaste-daemon.c',
-  'gpaste-daemon/gpaste-file-backend.c',
-  'gpaste-daemon/gpaste-global-shortcut-client.c',
-  'gpaste-daemon/gpaste-history-saver.c',
   'gpaste-daemon/gpaste-history.c',
-  'gpaste-daemon/gpaste-image-item.c',
   'gpaste-daemon/gpaste-item.c',
-  'gpaste-daemon/gpaste-keybinder.c',
-  'gpaste-daemon/gpaste-keybinding.c',
-  'gpaste-daemon/gpaste-noop-backend.c',
   'gpaste-daemon/gpaste-passphrase.c',
   'gpaste-daemon/gpaste-password-item.c',
   'gpaste-daemon/gpaste-prompt.c',
@@ -200,28 +194,16 @@ gpaste_daemon_gir_sources = [
   'gpaste-daemon/gpaste-storage-backend.c',
   'gpaste-daemon/gpaste-storage-migration.c',
   'gpaste-daemon/gpaste-text-item.c',
-  'gpaste-daemon/gpaste-uris-item.c',
 ]
 
-gpaste_daemon_gir_headers = [
+gpaste_daemon_public_headers = [
   'gpaste-daemon/gpaste-binary-data.h',
   'gpaste-daemon/gpaste-bus-object.h',
   'gpaste-daemon/gpaste-bus.h',
-  'gpaste-daemon/gpaste-clipboard-content.h',
   'gpaste-daemon/gpaste-clipboard-provider.h',
-  'gpaste-daemon/gpaste-clipboards-manager.h',
-  'gpaste-daemon/gpaste-color-item.h',
-  'gpaste-daemon/gpaste-daemon-methods.h',
   'gpaste-daemon/gpaste-daemon.h',
-  'gpaste-daemon/gpaste-file-backend.h',
-  'gpaste-daemon/gpaste-global-shortcut-client.h',
-  'gpaste-daemon/gpaste-history-saver.h',
   'gpaste-daemon/gpaste-history.h',
-  'gpaste-daemon/gpaste-image-item.h',
   'gpaste-daemon/gpaste-item.h',
-  'gpaste-daemon/gpaste-keybinder.h',
-  'gpaste-daemon/gpaste-keybinding.h',
-  'gpaste-daemon/gpaste-noop-backend.h',
   'gpaste-daemon/gpaste-passphrase.h',
   'gpaste-daemon/gpaste-password-item.h',
   'gpaste-daemon/gpaste-prompt.h',
@@ -230,11 +212,50 @@ gpaste_daemon_gir_headers = [
   'gpaste-daemon/gpaste-storage-backend.h',
   'gpaste-daemon/gpaste-storage-migration.h',
   'gpaste-daemon/gpaste-text-item.h',
+]
+
+# Internal machinery: compiled into the library, never installed, kept out of the
+# GIR and the umbrella. In-tree consumers (src/daemon, src/ui, tests) reach these
+# through gpaste_daemon_headers_dep's include_directories, never the install
+# prefix, so nothing in the build depends on them being shipped.
+#
+# New headers belong here unless the extension needs them.
+gpaste_daemon_internal_sources = [
+  'gpaste-daemon/gpaste-clipboard-content.c',
+  'gpaste-daemon/gpaste-clipboards-manager.c',
+  'gpaste-daemon/gpaste-color-item.c',
+  'gpaste-daemon/gpaste-daemon-methods.c',
+  'gpaste-daemon/gpaste-file-backend.c',
+  'gpaste-daemon/gpaste-global-shortcut-client.c',
+  'gpaste-daemon/gpaste-history-saver.c',
+  'gpaste-daemon/gpaste-image-item.c',
+  'gpaste-daemon/gpaste-keybinder.c',
+  'gpaste-daemon/gpaste-keybinding.c',
+  'gpaste-daemon/gpaste-noop-backend.c',
+  'gpaste-daemon/gpaste-uris-item.c',
+]
+
+gpaste_daemon_internal_headers = [
+  'gpaste-daemon/gpaste-clipboard-content.h',
+  'gpaste-daemon/gpaste-clipboards-manager.h',
+  'gpaste-daemon/gpaste-color-item.h',
+  'gpaste-daemon/gpaste-daemon-methods.h',
+  'gpaste-daemon/gpaste-file-backend.h',
+  'gpaste-daemon/gpaste-global-shortcut-client.h',
+  'gpaste-daemon/gpaste-history-saver.h',
+  'gpaste-daemon/gpaste-image-item.h',
+  'gpaste-daemon/gpaste-keybinder.h',
+  'gpaste-daemon/gpaste-keybinding.h',
+  'gpaste-daemon/gpaste-noop-backend.h',
   'gpaste-daemon/gpaste-uris-item.h',
 ]
 
-gpaste_daemon_sources = gpaste_daemon_gir_sources
-gpaste_daemon_headers = gpaste_daemon_gir_headers
+# The GIR describes exactly the installed surface, nothing more.
+gpaste_daemon_gir_sources = gpaste_daemon_public_sources
+gpaste_daemon_gir_headers = gpaste_daemon_public_headers
+
+gpaste_daemon_sources = gpaste_daemon_public_sources + gpaste_daemon_internal_sources
+gpaste_daemon_headers = gpaste_daemon_public_headers + gpaste_daemon_internal_headers
 
 # Neither libadwaita nor libgpaste-gtk4. The storage prompts were the only thing
 # that ever built a dialog and they live behind GPastePrompt now; the one
@@ -243,6 +264,10 @@ gpaste_daemon_headers = gpaste_daemon_gir_headers
 # and gtk_accelerator_parse, but the widget stack does not: gnome-shell hosts
 # this library and can initialise neither it nor Adw.
 gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, libgpaste_internal_dep ]
+
+# The optional features below append to the union lists, so their headers are
+# internal by construction: compiled and visible in-tree, but never installed and
+# never introspected. That keeps the GIR from changing shape with the feature set.
 
 # Optional libsodium-based encryption converter for the history storage.
 if libsodium_dep.found()
@@ -311,7 +336,7 @@ install_headers(
   subdir: 'gpaste-' + apiversion,
 )
 install_headers(
-  gpaste_daemon_headers,
+  gpaste_daemon_public_headers,
   subdir: 'gpaste-' + apiversion + '/gpaste-daemon',
 )
 

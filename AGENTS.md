@@ -122,6 +122,13 @@ The core libraries used by all other components. Two sub-modules:
 
 A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/` and holds the rich clipboard item hierarchy along with the rest of the daemon objects. Each library exports the symbols marked `G_PASTE_VISIBLE` (built with hidden default visibility), and GIR + Vala bindings are generated from it.
 
+**libgpaste-daemon has a public/internal header split.** `meson.build` keeps two lists, and the distinction is real rather than cosmetic:
+
+- `gpaste_daemon_public_headers` — installed, introspected, and included by the `gpaste-daemon.h` umbrella. Seven of them exist because the gnome-shell extension drives them (`GPasteBus`, `GPasteDaemon`, `GPasteSearchProvider`, `GPastePrompt` — which `prompt.js` *implements* — `GPastePassphrase`, `GPasteStorageMigration`, and `GPasteStorageBackend` for its static passphrase helpers). The other eight are there only because those headers pull them in: `gpaste-daemon.h` declares `g_paste_daemon_new()`, hence the clipboard provider, hence the history, hence the item hierarchy they hand around.
+- `gpaste_daemon_internal_headers` — compiled into the library but **never installed and never introspected**. In-tree consumers (`src/daemon/`, `src/ui/`, `tests/`) reach them through `gpaste_daemon_headers_dep`'s `include_directories`, never the install prefix. The optional features (libsodium, SQLite, libsecret, mutter) append to the union lists, so their headers are internal by construction and the GIR does not change shape with the feature set.
+
+**A new header goes in the internal list unless the extension needs it.** Two rules follow from the split: the umbrella must only include installed headers (an installed umbrella pulling an uninstalled header is a broken install), and adding a header to the public list means committing to it in the GIR.
+
 **GObject type macros** — use these in `.c` files:
 
 | Macro | Use when |
