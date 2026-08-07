@@ -1,4 +1,2 @@
 general:
     properties all the way (when GProperty stuff lands)
-libgpaste*:
-    specify errors types when possible in g-i

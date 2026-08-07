@@ -9,6 +9,7 @@
 #include <gpaste/gpaste-macros.h>
 
 /* GDBus utils */
+#include <gpaste/gpaste-error.h>
 #include <gpaste/gpaste-gdbus-defines.h>
 #include <gpaste/gpaste-gdbus-macros.h>
 #include <gpaste/gpaste-item-enums.h>

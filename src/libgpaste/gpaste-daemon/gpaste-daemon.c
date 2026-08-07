@@ -214,12 +214,13 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
  * Refused outright when there is no passphrase to change, so a host never stops
  * recording and raises a dialog only to be told there was nothing to do. */
 static void
-g_paste_daemon_change_passphrase (GPasteDaemon     *self,
-                                  GPasteDBusError **err)
+g_paste_daemon_change_passphrase (GPasteDaemon  *self,
+                                  GError       **error)
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
 
     G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (priv->settings)),
+                         G_PASTE_ERROR_NOT_ENCRYPTED,
                          "The history is not encrypted; there is no passphrase to change.");
 
     g_signal_emit (self,
@@ -235,7 +236,6 @@ g_paste_daemon_upload_finish (GObject      *source_object,
 {
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     g_autofree gchar *url = NULL;
-    g_autofree GPasteDBusError *err = NULL;
     GPasteDaemonPrivate *priv = user_data;
     GPasteDaemonMethods methods = {
         priv->connection,
@@ -249,7 +249,13 @@ g_paste_daemon_upload_finish (GObject      *source_object,
         g_warning ("Upload failed: %s", error->message);
 
     if (url)
-        g_paste_daemon_methods_do_add (&methods, url, strlen (url), &err);
+    {
+        g_autoptr (GError) add_error = NULL;
+
+        g_paste_daemon_methods_do_add (&methods, url, strlen (url), &add_error);
+        if (add_error)
+            g_warning ("Failed to add the uploaded url: %s", add_error->message);
+    }
 }
 
 /**
@@ -293,9 +299,9 @@ g_paste_daemon_upload (GPasteDaemon *self,
 }
 
 static void
-_g_paste_daemon_upload (GPasteDaemon     *self,
-                        GVariant         *parameters,
-                        GPasteDBusError **err)
+_g_paste_daemon_upload (GPasteDaemon  *self,
+                        GVariant      *parameters,
+                        GError       **error)
 {
     GVariantIter parameters_iter;
 
@@ -304,7 +310,7 @@ _g_paste_daemon_upload (GPasteDaemon     *self,
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *uuid = g_variant_dup_string (variant, NULL);
 
-    G_PASTE_DBUS_ASSERT (g_paste_daemon_upload (self, uuid), "Provided uuid doesn't match any item.");
+    G_PASTE_DBUS_ASSERT (g_paste_daemon_upload (self, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
 }
 
 /****************/
@@ -424,36 +430,35 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     };
     GVariant *answer = NULL;
     GError *error = NULL;
-    g_autofree GPasteDBusError *err = NULL;
 
     if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ABOUT))
         g_paste_util_activate_ui ("about", NULL);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ADD))
-        g_paste_daemon_methods_add (&methods, parameters, &err);
+        g_paste_daemon_methods_add (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ADD_FILE))
-        g_paste_daemon_methods_add_file (&methods, parameters, &error, &err);
+        g_paste_daemon_methods_add_file (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ADD_PASSWORD))
-        g_paste_daemon_methods_add_password (&methods, parameters, &err);
+        g_paste_daemon_methods_add_password (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
-        g_paste_daemon_methods_backup_history (&methods, parameters, &err);
+        g_paste_daemon_methods_backup_history (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_CHANGE_PASSPHRASE))
-        g_paste_daemon_change_passphrase (self, &err);
+        g_paste_daemon_change_passphrase (self, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE))
-        g_paste_daemon_methods_delete (&methods, parameters, &err);
+        g_paste_daemon_methods_delete (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
-        g_paste_daemon_methods_delete_history (&methods, parameters, &error, &err);
+        g_paste_daemon_methods_delete_history (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
-        g_paste_daemon_methods_delete_password (&methods, parameters, &err);
+        g_paste_daemon_methods_delete_password (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_EMPTY_HISTORY))
         g_paste_daemon_methods_empty_history (&methods, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT))
-        answer = g_paste_daemon_methods_get_element (&methods, parameters, &err);
+        answer = g_paste_daemon_methods_get_element (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX))
-        answer = g_paste_daemon_methods_get_element_at_index (&methods, parameters, &err);
+        answer = g_paste_daemon_methods_get_element_at_index (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_KIND))
-        answer = g_paste_daemon_methods_get_element_kind (&methods, parameters, &err);
+        answer = g_paste_daemon_methods_get_element_kind (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENTS))
-        answer = g_paste_daemon_methods_get_elements (&methods, parameters, &err);
+        answer = g_paste_daemon_methods_get_elements (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY))
         answer = g_paste_daemon_methods_get_history (&methods);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_NAME))
@@ -461,42 +466,42 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
         answer = g_paste_daemon_methods_get_history_size (&methods, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_IMAGE))
-        answer = g_paste_daemon_methods_get_image (&methods, parameters, &error, &err);
+        answer = g_paste_daemon_methods_get_image (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
-        answer = g_paste_daemon_methods_get_raw_element (&methods, parameters, &err);
+        answer = g_paste_daemon_methods_get_raw_element (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
         answer = g_paste_daemon_methods_get_raw_history (&methods);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
         answer = g_paste_daemon_methods_list_histories (&methods, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_MERGE))
-        g_paste_daemon_methods_merge (&methods, parameters, &err);
+        g_paste_daemon_methods_merge (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_methods_on_extension_state_changed (&methods, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_REEXECUTE))
         g_paste_daemon_reexecute (self);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_RENAME_PASSWORD))
-        g_paste_daemon_methods_rename_password (&methods, parameters, &err);
+        g_paste_daemon_methods_rename_password (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_REPLACE))
-        g_paste_daemon_methods_replace (&methods, parameters, &err);
+        g_paste_daemon_methods_replace (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SEARCH))
-        answer = g_paste_daemon_methods_search (&methods, parameters, &err);
+        answer = g_paste_daemon_methods_search (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SELECT))
-        g_paste_daemon_methods_select (&methods, parameters, &err);
+        g_paste_daemon_methods_select (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SET_PASSWORD))
-        g_paste_daemon_methods_set_password (&methods, parameters, &err);
+        g_paste_daemon_methods_set_password (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
         g_paste_daemon_show_history (self, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
-        g_paste_daemon_methods_switch_history (&methods, parameters, &err);
+        g_paste_daemon_methods_switch_history (&methods, parameters, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_TRACK))
         g_paste_daemon_methods_track (&methods, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_UPLOAD))
-        _g_paste_daemon_upload (self, parameters, &err);
+        _g_paste_daemon_upload (self, parameters, &error);
 
+    /* One out-param, so one check: the GPasteError domain is registered with
+     * GDBus, which turns @error into the right error name on the wire. */
     if (error)
         g_dbus_method_invocation_take_error (invocation, error);
-    else if (err)
-        g_dbus_method_invocation_return_dbus_error (invocation, err->name, err->msg);
     else
         g_dbus_method_invocation_return_value (invocation, answer);
 }
