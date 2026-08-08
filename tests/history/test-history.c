@@ -818,6 +818,70 @@ test_delete_refused_after_flush (void)
     g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
 }
 
+/* Version 1.0 held an item's value as text directly inside <item>; it is no
+ * longer read. What matters is that dropping it did not turn an old history into
+ * a *destroyable* one: it has to be refused exactly like a version from the
+ * future, leaving the file byte-for-byte intact so it can still be converted
+ * with an older GPaste. Silently reading it as empty would be the worst outcome,
+ * since the next clipboard change would then overwrite it. */
+static void
+test_file_v1_refused_and_preserved (void)
+{
+    if (g_test_subprocess ())
+    {
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        const gchar *name = "file-v1";
+        const gchar *contents =
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            "<history version=\"1.0\">\n"
+            "  <item kind=\"Text\">ancient</item>\n"
+            "  <item kind=\"Text\">also ancient</item>\n"
+            "</history>\n";
+
+        g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+        g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+
+        g_assert_true (g_file_set_contents (path, contents, -1, NULL));
+
+        {
+            g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            /* Refused, not empty-but-fine. */
+            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_assert_null (loaded);
+        }
+
+        g_autoptr (GPasteHistory) history = make_plain_history ();
+
+        g_paste_history_load (history, name);
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+        /* Recording is off for it, so a subsequent add must not reach the file. */
+        g_paste_history_add (history, g_paste_text_item_new ("usurper"));
+
+        for (guint i = 0; i < 100; ++i)
+        {
+            while (g_main_context_iteration (NULL, FALSE))
+                ;
+            g_usleep (1000);
+        }
+
+        g_autofree gchar *raw = NULL;
+
+        g_assert_true (g_file_get_contents (path, &raw, NULL, NULL));
+        g_assert_cmpstr (raw, ==, contents);
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_passed ();
+}
+
 /* A history written by a newer GPaste (an unknown <history version=>) is a read
  * *failure*, not an empty one: every item is skipped, so passing it off as empty
  * would have the very next clipboard change overwrite it. Once loaded it must
@@ -2285,6 +2349,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/flush_persists_synchronously", test_flush_persists_synchronously);
     g_test_add_func ("/history/flush_stops_recording", test_flush_stops_recording);
     g_test_add_func ("/history/delete_refused_after_flush", test_delete_refused_after_flush);
+    g_test_add_func ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     g_test_add_func ("/history/file_version_guard", test_file_version_guard);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);

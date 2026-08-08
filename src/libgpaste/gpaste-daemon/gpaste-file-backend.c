@@ -342,7 +342,6 @@ typedef enum
     BEGIN,
     IN_HISTORY,
     IN_ITEM,
-    IN_ITEM_WITH_TEXT,
     IN_VALUE,
     IN_VALUE_WITH_TEXT,
     END
@@ -361,11 +360,14 @@ typedef enum
     UNKNOWN_TYPE
 } Type;
 
+/* 2.0 is the only format read. 1.0 -- which held an item's value as text
+ * directly inside <item> rather than in a <value> child -- was dropped: it is
+ * refused like any other unreadable history, which leaves the file untouched
+ * rather than overwriting it, so an ancient history can still be recovered with
+ * an older GPaste. */
 typedef enum
 {
-    HISTORY_1_0,
     HISTORY_2_0,
-    HISTORY_CURRENT = HISTORY_2_0,
     HISTORY_INVALID = -1
 } HistoryVersion;
 
@@ -483,13 +485,17 @@ start_tag (GMarkupParseContext *context,
         {
             if (g_paste_str_equal (*a, "version"))
             {
-                if (g_paste_str_equal (*v, "1.0"))
-                    data->version = HISTORY_1_0;
-                else if (g_paste_str_equal (*v, "2.0"))
+                if (g_paste_str_equal (*v, "2.0"))
                     data->version = HISTORY_2_0;
                 else
                 {
-                    WARN_AT ("Unknown history version: %s", *v);
+                    /* Name 1.0 rather than calling it unknown: it is a history
+                     * we once wrote, and the file is left intact, so say what
+                     * would get it back. */
+                    if (g_paste_str_equal (*v, "1.0"))
+                        WARN_AT ("History version 1.0 is no longer supported; the file is left untouched, load it with GPaste 2 to convert it");
+                    else
+                        WARN_AT ("Unknown history version: %s", *v);
                     data->version = HISTORY_INVALID;
                 }
             }
@@ -673,23 +679,12 @@ end_tag (GMarkupParseContext *context,
          * its special values (see on_text), so there is nothing to restore. */
         if (data->version != HISTORY_INVALID && data->current_size < data->max_size)
             add_item (data);
-        switch (data->version)
-        {
-        case HISTORY_1_0:
-            SWITCH_STATE_OR_EMPTY (IN_ITEM_WITH_TEXT, IN_ITEM, IN_HISTORY);
-            break;
-        case HISTORY_2_0:
-            SWITCH_STATE (IN_ITEM, IN_HISTORY);
-            break;
-        case HISTORY_INVALID:
-            /* Leave the item all the same: staying inside it would make every
-             * element that follows fail its assert — including the next <item>,
-             * whose scratch reset would then be skipped, so the items of an
-             * unknown-version history would bleed into each other. Which state
-             * we are in depends on the (unknown) version, so accept both. */
-            SWITCH_STATE_OR_EMPTY (IN_ITEM_WITH_TEXT, IN_ITEM, IN_HISTORY);
-            break;
-        }
+        /* Leave the item even when the version is unknown: staying inside it
+         * would make every element that follows fail its assert — including the
+         * next <item>, whose scratch reset would then be skipped, so the items
+         * of an unreadable history would bleed into each other. Nothing puts us
+         * anywhere but IN_ITEM now that no format carries text there. */
+        SWITCH_STATE (IN_ITEM, IN_HISTORY);
     }
     else if (g_paste_str_equal (element_name, "value"))
         SWITCH_STATE_OR_EMPTY (IN_VALUE_WITH_TEXT, IN_VALUE, IN_ITEM);
@@ -710,7 +705,6 @@ on_text (GMarkupParseContext *context,
     switch (data->state)
     {
     case IN_HISTORY:
-    case IN_ITEM_WITH_TEXT:
     case IN_VALUE_WITH_TEXT:
         if (*g_strstrip (txt))
         {
@@ -719,19 +713,11 @@ on_text (GMarkupParseContext *context,
         }
         break;
     case IN_ITEM:
-    {
-        if (data->version == HISTORY_1_0)
-        {
-            g_set_str_take (&data->text, g_paste_util_xml_decode (txt));
-            if (*g_strstrip (txt))
-                SWITCH_STATE (IN_ITEM, IN_ITEM_WITH_TEXT);
-            else
-                g_clear_pointer (&data->text, g_free);
-        }
-        else if (*g_strstrip (txt))
-            WARN_AT ("Unexpected text in item for history version != 1.0: %s", txt);
+        /* An item's value lives in a <value> child; text directly inside <item>
+         * was the 1.0 layout, which is no longer read. */
+        if (*g_strstrip (txt))
+            WARN_AT ("Unexpected text in item: %s", txt);
         break;
-    }
     case IN_VALUE:
         if (data->version == HISTORY_2_0)
         {
@@ -903,14 +889,6 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         /* add_item() consumes these at every </item>; a document that ends inside
          * one (truncated file, failed parse) leaves the last item's behind. */
         g_clear_slist (&data.special_values, g_object_unref);
-
-        /* Rewrite only to migrate a recognised older format that parsed cleanly.
-         * A HISTORY_INVALID version means we never parsed a valid <history>
-         * header (a corrupt file, or one written by a newer GPaste), and a failed
-         * parse means we only got part of the items: either way, leave the file
-         * untouched rather than overwriting it and destroying its contents. */
-        if (parsed && data.version != HISTORY_CURRENT && data.version != HISTORY_INVALID)
-            g_paste_file_backend_write_history_file (self, history_file_path, *history);
 
         /* An unknown version is reported as a read failure, not as an empty
          * history: its items were all skipped (we know neither where their value
