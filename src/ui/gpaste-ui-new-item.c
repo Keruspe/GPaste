@@ -8,16 +8,13 @@
 struct _GPasteUiNewItem
 {
     GtkButton parent_instance;
-};
 
-typedef struct
-{
     GPasteClient *client;
 
     GtkWindow    *rootwin;
-} GPasteUiNewItemPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiNewItem, ui_new_item, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_TYPE (UiNewItem, ui_new_item, GTK_TYPE_BUTTON)
 
 typedef struct
 {
@@ -49,7 +46,7 @@ on_new_item_response (GObject      *dialog   G_GNUC_UNUSED,
 static void
 g_paste_ui_new_item_clicked (GtkButton *button)
 {
-    const GPasteUiNewItemPrivate *priv = _g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (button));
+    const GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (button);
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, NULL));
     GtkWidget *text = gtk_text_view_new ();
     GtkTextView *tv = GTK_TEXT_VIEW (text);
@@ -69,18 +66,18 @@ g_paste_ui_new_item_clicked (GtkButton *button)
     adw_alert_dialog_set_extra_child (dialog, scroll);
 
     NewItemDialogData *data = g_new (NewItemDialogData, 1);
-    data->client = g_object_ref (priv->client);
+    data->client = g_object_ref (self->client);
     data->buffer = g_object_ref (gtk_text_view_get_buffer (tv));
 
-    adw_alert_dialog_choose (dialog, GTK_WIDGET (priv->rootwin), NULL, on_new_item_response, data);
+    adw_alert_dialog_choose (dialog, GTK_WIDGET (self->rootwin), NULL, on_new_item_response, data);
 }
 
 static void
 g_paste_ui_new_item_dispose (GObject *object)
 {
-    GPasteUiNewItemPrivate *priv = g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (object));
+    GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (object);
 
-    g_clear_object (&priv->client);
+    g_clear_object (&self->client);
 
     G_OBJECT_CLASS (g_paste_ui_new_item_parent_class)->dispose (object);
 }
@@ -120,7 +117,7 @@ g_paste_ui_new_item_new (GtkWindow    *rootwin,
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_NEW_ITEM, NULL);
-    GPasteUiNewItemPrivate *priv = g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (self));
+    GPasteUiNewItem *priv = G_PASTE_UI_NEW_ITEM (self);
 
     priv->client = g_object_ref (client);
     priv->rootwin = rootwin;

@@ -8,14 +8,11 @@
 struct _GPasteUrisItem
 {
     GPasteTextItem parent_instance;
+
+    GdkFileList *file_list;
 };
 
-typedef struct
-{
-    GdkFileList *file_list;
-} GPasteUrisItemPrivate;
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UrisItem, uris_item, G_PASTE_TYPE_TEXT_ITEM)
+G_PASTE_DEFINE_TYPE (UrisItem, uris_item, G_PASTE_TYPE_TEXT_ITEM)
 
 /**
  * g_paste_uris_item_get_file_list:
@@ -30,9 +27,7 @@ g_paste_uris_item_get_file_list (const GPasteUrisItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_URIS_ITEM (self), NULL);
 
-    const GPasteUrisItemPrivate *priv = _g_paste_uris_item_get_instance_private (self);
-
-    return priv->file_list;
+    return self->file_list;
 }
 
 static gboolean
@@ -52,9 +47,9 @@ g_paste_uris_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
 static void
 g_paste_uris_item_finalize (GObject *object)
 {
-    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (object));
+    GPasteUrisItem *self = G_PASTE_URIS_ITEM (object);
 
-    g_boxed_free (GDK_TYPE_FILE_LIST, priv->file_list);
+    g_boxed_free (GDK_TYPE_FILE_LIST, self->file_list);
 
     G_OBJECT_CLASS (g_paste_uris_item_parent_class)->finalize (object);
 }
@@ -80,7 +75,7 @@ _g_paste_uris_item_new (const gchar *uris_joined,
                         GdkFileList *file_list)
 {
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris_joined);
-    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
+    GPasteUrisItem *priv = G_PASTE_URIS_ITEM (self);
 
     g_autofree gchar *display_no_home = g_paste_util_replace (uris_joined, g_get_home_dir (), "~");
     g_autofree gchar *display_flat = g_paste_util_replace (display_no_home, "\n", " ");

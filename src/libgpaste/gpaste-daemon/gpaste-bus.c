@@ -8,18 +8,15 @@
 struct _GPasteBus
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     GDBusConnection *connection;
     guint64          id_on_bus;
     gboolean         acquired; /* whether the name was ever actually acquired */
 
     GPtrArray       *objects; /* GPasteBusObject*, owned, registered on the connection */
-} GPasteBusPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Bus, bus, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE (Bus, bus, G_TYPE_OBJECT)
 
 enum
 {
@@ -36,7 +33,6 @@ static void
 g_paste_bus_register_object (GPasteBus       *self,
                              GPasteBusObject *object)
 {
-    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
     g_autoptr (GError) error = NULL;
 
     /* Failing to export an object is a startup failure, never a takeover — even
@@ -45,7 +41,7 @@ g_paste_bus_register_object (GPasteBus       *self,
      * own signal rather than riding on "name-lost": that one's @was_owned is
      * about a replacement, and a listener told the name was lost would report a
      * conflict with another daemon that never happened. */
-    if (!g_paste_bus_object_register_on_connection (object, priv->connection, &error))
+    if (!g_paste_bus_object_register_on_connection (object, self->connection, &error))
     {
         /* The cause is ours to report (we are the ones holding the GError); what
          * to do about it is the listener's. */
@@ -60,12 +56,11 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
                              gpointer         user_data)
 {
     GPasteBus *self = user_data;
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
 
-    priv->connection = g_object_ref (connection);
+    self->connection = g_object_ref (connection);
 
-    for (guint i = 0; i < priv->objects->len; ++i)
-        g_paste_bus_register_object (self, g_ptr_array_index (priv->objects, i));
+    for (guint i = 0; i < self->objects->len; ++i)
+        g_paste_bus_register_object (self, g_ptr_array_index (self->objects, i));
 }
 
 static void
@@ -74,9 +69,8 @@ g_paste_bus_on_name_acquired (GDBusConnection *connection G_GNUC_UNUSED,
                               gpointer         user_data)
 {
     GPasteBus *self = user_data;
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
 
-    priv->acquired = TRUE;
+    self->acquired = TRUE;
 
     g_signal_emit (self, signals[NAME_ACQUIRED], 0);
 }
@@ -87,7 +81,6 @@ g_paste_bus_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
                           gpointer         user_data)
 {
     GPasteBus *self = user_data;
-    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
 
     /* was-owned tells a listener whether the name was lost after we had it (a
      * takeover, e.g. the gnome-shell extension replacing us) or was never
@@ -95,7 +88,7 @@ g_paste_bus_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
     g_signal_emit (self,
                    signals[NAME_LOST],
                    0, /* detail */
-                   priv->acquired);
+                   self->acquired);
 }
 
 /**
@@ -113,11 +106,9 @@ g_paste_bus_add_object (GPasteBus       *self,
     g_return_if_fail (_G_PASTE_IS_BUS (self));
     g_return_if_fail (_G_PASTE_IS_BUS_OBJECT (object));
 
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+    g_ptr_array_add (self->objects, g_object_ref (object));
 
-    g_ptr_array_add (priv->objects, g_object_ref (object));
-
-    if (priv->connection)
+    if (self->connection)
         g_paste_bus_register_object (self, object);
 }
 
@@ -139,16 +130,14 @@ g_paste_bus_own_name_full (GPasteBus *self,
 {
     g_return_if_fail (_G_PASTE_IS_BUS (self));
 
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
-
-    g_return_if_fail (!priv->id_on_bus);
+    g_return_if_fail (!self->id_on_bus);
 
     GBusNameOwnerFlags flags = G_BUS_NAME_OWNER_FLAGS_ALLOW_REPLACEMENT;
 
     if (replace)
         flags |= G_BUS_NAME_OWNER_FLAGS_REPLACE;
 
-    priv->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
+    self->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
                                       G_PASTE_BUS_NAME,
                                       flags,
                                       g_paste_bus_on_bus_acquired,
@@ -181,19 +170,17 @@ g_paste_bus_unown_name (GPasteBus *self)
 {
     g_return_if_fail (_G_PASTE_IS_BUS (self));
 
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
-
-    if (priv->id_on_bus)
+    if (self->id_on_bus)
     {
-        g_bus_unown_name (priv->id_on_bus);
-        priv->id_on_bus = 0;
+        g_bus_unown_name (self->id_on_bus);
+        self->id_on_bus = 0;
     }
 
-    for (guint i = 0; priv->objects && i < priv->objects->len; ++i)
-        g_paste_bus_object_unregister_on_connection (g_ptr_array_index (priv->objects, i));
+    for (guint i = 0; self->objects && i < self->objects->len; ++i)
+        g_paste_bus_object_unregister_on_connection (g_ptr_array_index (self->objects, i));
 
-    priv->acquired = FALSE;
-    g_clear_object (&priv->connection);
+    self->acquired = FALSE;
+    g_clear_object (&self->connection);
 }
 
 /**
@@ -213,19 +200,16 @@ g_paste_bus_is_connected (GPasteBus *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_BUS (self), FALSE);
 
-    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
-
-    return priv->connection && !g_dbus_connection_is_closed (priv->connection);
+    return self->connection && !g_dbus_connection_is_closed (self->connection);
 }
 
 static void
 g_paste_bus_dispose (GObject *object)
 {
     GPasteBus *self = G_PASTE_BUS (object);
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
 
     g_paste_bus_unown_name (self);
-    g_clear_pointer (&priv->objects, g_ptr_array_unref);
+    g_clear_pointer (&self->objects, g_ptr_array_unref);
 
     G_OBJECT_CLASS (g_paste_bus_parent_class)->dispose (object);
 }
@@ -298,9 +282,7 @@ g_paste_bus_class_init (GPasteBusClass *klass)
 static void
 g_paste_bus_init (GPasteBus *self)
 {
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
-
-    priv->objects = g_ptr_array_new_with_free_func (g_object_unref);
+    self->objects = g_ptr_array_new_with_free_func (g_object_unref);
 }
 
 /**

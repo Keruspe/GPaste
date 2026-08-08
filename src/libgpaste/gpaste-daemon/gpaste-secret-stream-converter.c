@@ -45,10 +45,7 @@
 struct _GPasteSecretStreamConverter
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     GPasteSecretStreamDirection direction;
     /* Kept (in gcr secure memory) for the converter's lifetime: the key is
      * derived lazily and salt-dependent, so reset() must be able to re-derive
@@ -64,11 +61,11 @@ typedef struct
 
     GByteArray                 *in;  /* input not processed yet */
     GByteArray                 *out; /* output not handed back yet */
-} GPasteSecretStreamConverterPrivate;
+};
 
 static void g_paste_secret_stream_converter_iface_init (GConverterIface *iface);
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE (SecretStreamConverter, secret_stream_converter, G_TYPE_OBJECT,
+G_PASTE_DEFINE_TYPE_WITH_INTERFACE (SecretStreamConverter, secret_stream_converter, G_TYPE_OBJECT,
                                                 G_TYPE_CONVERTER, g_paste_secret_stream_converter_iface_init)
 
 static void
@@ -111,7 +108,7 @@ read_u64_le (const guint8 *data)
 
 /* Encrypt the first @len buffered bytes into a length-prefixed frame. */
 static void
-push_chunk (GPasteSecretStreamConverterPrivate *priv,
+push_chunk (GPasteSecretStreamConverter *priv,
             gsize                               len,
             unsigned char                       tag)
 {
@@ -129,7 +126,7 @@ push_chunk (GPasteSecretStreamConverterPrivate *priv,
 }
 
 static gboolean
-derive_key (GPasteSecretStreamConverterPrivate *priv,
+derive_key (GPasteSecretStreamConverter *priv,
             const unsigned char                *salt,
             guint64                             opslimit,
             guint64                             memlimit,
@@ -149,7 +146,7 @@ derive_key (GPasteSecretStreamConverterPrivate *priv,
 }
 
 static gboolean
-encrypt_process (GPasteSecretStreamConverterPrivate *priv,
+encrypt_process (GPasteSecretStreamConverter *priv,
                  gboolean                            flush,
                  gboolean                            at_end,
                  GError                            **error)
@@ -198,7 +195,7 @@ encrypt_process (GPasteSecretStreamConverterPrivate *priv,
 }
 
 static gboolean
-decrypt_process (GPasteSecretStreamConverterPrivate *priv,
+decrypt_process (GPasteSecretStreamConverter *priv,
                  gboolean                            at_end G_GNUC_UNUSED,
                  GError                            **error)
 {
@@ -293,8 +290,8 @@ g_paste_secret_stream_converter_convert (GConverter      *converter,
                                          gsize           *bytes_written,
                                          GError         **error)
 {
-    GPasteSecretStreamConverterPrivate *priv =
-        g_paste_secret_stream_converter_get_instance_private (G_PASTE_SECRET_STREAM_CONVERTER (converter));
+    GPasteSecretStreamConverter *priv =
+        G_PASTE_SECRET_STREAM_CONVERTER (converter);
     gboolean at_end = (flags & G_CONVERTER_INPUT_AT_END) != 0;
 
     *bytes_read = 0;
@@ -349,8 +346,8 @@ g_paste_secret_stream_converter_convert (GConverter      *converter,
 static void
 g_paste_secret_stream_converter_reset (GConverter *converter)
 {
-    GPasteSecretStreamConverterPrivate *priv =
-        g_paste_secret_stream_converter_get_instance_private (G_PASTE_SECRET_STREAM_CONVERTER (converter));
+    GPasteSecretStreamConverter *priv =
+        G_PASTE_SECRET_STREAM_CONVERTER (converter);
 
     priv->header_done = FALSE;
     priv->finished = FALSE;
@@ -370,8 +367,8 @@ g_paste_secret_stream_converter_iface_init (GConverterIface *iface)
 static void
 g_paste_secret_stream_converter_dispose (GObject *object)
 {
-    GPasteSecretStreamConverterPrivate *priv =
-        g_paste_secret_stream_converter_get_instance_private (G_PASTE_SECRET_STREAM_CONVERTER (object));
+    GPasteSecretStreamConverter *priv =
+        G_PASTE_SECRET_STREAM_CONVERTER (object);
 
     g_clear_pointer (&priv->in, g_byte_array_unref);
     g_clear_pointer (&priv->out, g_byte_array_unref);
@@ -382,8 +379,8 @@ g_paste_secret_stream_converter_dispose (GObject *object)
 static void
 g_paste_secret_stream_converter_finalize (GObject *object)
 {
-    GPasteSecretStreamConverterPrivate *priv =
-        g_paste_secret_stream_converter_get_instance_private (G_PASTE_SECRET_STREAM_CONVERTER (object));
+    GPasteSecretStreamConverter *priv =
+        G_PASTE_SECRET_STREAM_CONVERTER (object);
 
     /* gcr secure memory is wiped on free. */
     gcr_secure_memory_strfree ((gchar *) priv->passphrase);
@@ -404,11 +401,9 @@ g_paste_secret_stream_converter_class_init (GPasteSecretStreamConverterClass *kl
 static void
 g_paste_secret_stream_converter_init (GPasteSecretStreamConverter *self)
 {
-    GPasteSecretStreamConverterPrivate *priv = g_paste_secret_stream_converter_get_instance_private (self);
-
-    priv->key = gcr_secure_memory_alloc (KEYBYTES);
-    priv->in = g_byte_array_new ();
-    priv->out = g_byte_array_new ();
+    self->key = gcr_secure_memory_alloc (KEYBYTES);
+    self->in = g_byte_array_new ();
+    self->out = g_byte_array_new ();
 }
 
 /**
@@ -436,11 +431,10 @@ g_paste_secret_stream_converter_new (GPasteSecretStreamDirection  direction,
     }
 
     GPasteSecretStreamConverter *self = g_object_new (G_PASTE_TYPE_SECRET_STREAM_CONVERTER, NULL);
-    GPasteSecretStreamConverterPrivate *priv = g_paste_secret_stream_converter_get_instance_private (self);
 
-    priv->direction = direction;
-    priv->passphrase_len = strlen (passphrase);
-    priv->passphrase = (guchar *) gcr_secure_memory_strdup (passphrase);
+    self->direction = direction;
+    self->passphrase_len = strlen (passphrase);
+    self->passphrase = (guchar *) gcr_secure_memory_strdup (passphrase);
 
     return G_CONVERTER (self);
 }

@@ -165,7 +165,7 @@ g_paste_daemon_private_delete_history_signal (const GPasteDaemonMethods *priv,
 {
     GVariant *variant = g_variant_new_string (history);
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (DELETE_HISTORY, variant);
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (priv->connection, DELETE_HISTORY, variant);
 }
 
 static void
@@ -174,7 +174,7 @@ g_paste_daemon_private_empty_history_signal (const GPasteDaemonMethods *priv,
 {
     GVariant *variant = g_variant_new_string (history);
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (EMPTY_HISTORY, variant);
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (priv->connection, EMPTY_HISTORY, variant);
 }
 
 static void
@@ -183,7 +183,7 @@ g_paste_daemon_private_switch_history_signal (const GPasteDaemonMethods *priv,
 {
     GVariant *variant = g_variant_new_string (history);
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SWITCH_HISTORY, variant);
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (priv->connection, SWITCH_HISTORY, variant);
 }
 
 G_PASTE_VISIBLE void

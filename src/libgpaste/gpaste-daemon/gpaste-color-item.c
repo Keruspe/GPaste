@@ -6,14 +6,11 @@
 struct _GPasteColorItem
 {
     GPasteItem parent_instance;
+
+    GdkRGBA rgba;
 };
 
-typedef struct
-{
-    GdkRGBA rgba;
-} GPasteColorItemPrivate;
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ColorItem, color_item, G_PASTE_TYPE_ITEM)
+G_PASTE_DEFINE_TYPE (ColorItem, color_item, G_PASTE_TYPE_ITEM)
 
 /**
  * g_paste_color_item_get_rgba:
@@ -28,9 +25,7 @@ g_paste_color_item_get_rgba (const GPasteColorItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_COLOR_ITEM (self), NULL);
 
-    const GPasteColorItemPrivate *priv = _g_paste_color_item_get_instance_private (self);
-
-    return &priv->rgba;
+    return &self->rgba;
 }
 
 static gboolean
@@ -66,7 +61,7 @@ _g_paste_color_item_new (const gchar   *str,
                          const GdkRGBA *rgba)
 {
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_COLOR_ITEM, str);
-    GPasteColorItemPrivate *priv = g_paste_color_item_get_instance_private (G_PASTE_COLOR_ITEM (self));
+    GPasteColorItem *priv = G_PASTE_COLOR_ITEM (self);
 
     priv->rgba = *rgba;
 

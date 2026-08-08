@@ -6,16 +6,13 @@
 struct _GPasteUiPanelHistory
 {
     AdwSidebarItem parent_instance;
-};
 
-typedef struct
-{
     GPasteClient *client;
 
     gchar        *history;
-} GPasteUiPanelHistoryPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanelHistory, ui_panel_history, ADW_TYPE_SIDEBAR_ITEM)
+G_PASTE_DEFINE_TYPE (UiPanelHistory, ui_panel_history, ADW_TYPE_SIDEBAR_ITEM)
 
 /**
  * g_paste_ui_panel_history_activate:
@@ -28,9 +25,7 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
 {
     g_return_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self));
 
-    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private (self);
-
-    g_paste_client_switch_history (priv->client, priv->history, NULL, NULL);
+    g_paste_client_switch_history (self->client, self->history, NULL, NULL);
 }
 
 /**
@@ -64,7 +59,7 @@ g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
 
-    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private ((GPasteUiPanelHistory *) self);
+    const GPasteUiPanelHistory *priv = (GPasteUiPanelHistory *) self;
 
     return priv->history;
 }
@@ -84,9 +79,9 @@ on_size_ready (GObject      *source_object,
 static void
 g_paste_ui_panel_history_dispose (GObject *object)
 {
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
+    GPasteUiPanelHistory *self = G_PASTE_UI_PANEL_HISTORY (object);
 
-    g_clear_object (&priv->client);
+    g_clear_object (&self->client);
 
     G_OBJECT_CLASS (g_paste_ui_panel_history_parent_class)->dispose (object);
 }
@@ -94,9 +89,9 @@ g_paste_ui_panel_history_dispose (GObject *object)
 static void
 g_paste_ui_panel_history_finalize (GObject *object)
 {
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
+    GPasteUiPanelHistory *self = G_PASTE_UI_PANEL_HISTORY (object);
 
-    g_clear_pointer (&priv->history, g_free);
+    g_clear_pointer (&self->history, g_free);
 
     G_OBJECT_CLASS (g_paste_ui_panel_history_parent_class)->finalize (object);
 }
@@ -133,10 +128,9 @@ g_paste_ui_panel_history_new (GPasteClient *client,
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);
 
     GPasteUiPanelHistory *self = g_object_new (G_PASTE_TYPE_UI_PANEL_HISTORY, NULL);
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
 
-    priv->client = g_object_ref (client);
-    priv->history = g_strdup (history);
+    self->client = g_object_ref (client);
+    self->history = g_strdup (history);
 
     adw_sidebar_item_set_title (ADW_SIDEBAR_ITEM (self), history);
 

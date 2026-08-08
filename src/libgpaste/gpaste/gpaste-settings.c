@@ -10,10 +10,7 @@
 struct _GPasteSettings
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     GSettings    *settings;
     GSettings    *shell_settings;
     GSignalGroup *settings_signals;
@@ -50,9 +47,9 @@ typedef struct
     gchar     *upload;
 
     gboolean   extension_enabled;
-} GPasteSettingsPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Settings, settings, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE (Settings, settings, G_TYPE_OBJECT)
 
 enum
 {
@@ -75,11 +72,11 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     g_paste_settings_get_##name (const GPasteSettings *self)                                           \
     {                                                                                                  \
         g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) self), fail);                           \
-        const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);             \
+        const GPasteSettings *priv = self;             \
         return priv->name;                                                                             \
     }                                                                                                  \
     static void                                                                                        \
-    g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
+    g_paste_settings_private_set_##name##_from_dconf (GPasteSettings *priv)                     \
     {                                                                                                  \
         assign_owned (priv->name, g_settings_get_##setting_type (priv->settings,                       \
                                                                  G_PASTE_##key##_SETTING));           \
@@ -90,7 +87,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     {                                                                                                  \
         g_return_if_fail (_G_PASTE_IS_SETTINGS (self));                                                \
         guards                                                                                         \
-        GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);                    \
+        GPasteSettings *priv = self;                    \
         assign_borrowed (priv->name, value);                                                           \
         g_settings_set_##setting_type (priv->settings, G_PASTE_##key##_SETTING, value);                \
     }
@@ -626,18 +623,17 @@ G_PASTE_VISIBLE gboolean
 g_paste_settings_get_extension_enabled (const GPasteSettings *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
-    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);
-    return priv->extension_enabled;
+    return self->extension_enabled;
 }
 
 static inline gchar **
-g_paste_settings_private_get_enabled_extensions (GPasteSettingsPrivate *priv)
+g_paste_settings_private_get_enabled_extensions (GPasteSettings *priv)
 {
     return (priv->shell_settings) ? g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
 }
 
 static void
-g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate *priv)
+g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettings *priv)
 {
     g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (priv);
     for (GStrv e = extensions; *e; ++e)
@@ -664,13 +660,12 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
 {
     g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
 
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
     g_auto (GStrv) extensions = NULL;
 
-    if (!priv->shell_settings || (value == priv->extension_enabled))
+    if (!self->shell_settings || (value == self->extension_enabled))
         return;
 
-    extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    extensions = g_paste_settings_private_get_enabled_extensions (self);
     guint64 nb = g_strv_length (extensions);
     if (value)
     {
@@ -693,8 +688,8 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
         } 
     }
 
-    priv->extension_enabled = value;
-    g_settings_set_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) extensions);
+    self->extension_enabled = value;
+    g_settings_set_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) extensions);
 }
 
 static void
@@ -703,9 +698,8 @@ g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                          gpointer     user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+    g_paste_settings_private_set_extension_enabled_from_dconf (self);
     g_object_notify (G_OBJECT (self), G_PASTE_EXTENSION_ENABLED_SETTING);
 }
 
@@ -727,7 +721,7 @@ g_paste_settings_rebind (GPasteSettings *self,
 typedef struct
 {
     const gchar *key;
-    void       (*from_dconf) (GPasteSettingsPrivate *priv);
+    void       (*from_dconf) (GPasteSettings *priv);
     gboolean     rebind; /* keybinding settings re-grab their shortcut on change */
 } GPasteSettingEntry;
 
@@ -775,7 +769,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    gpointer     user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
     for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
     {
@@ -784,7 +777,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         if (!g_paste_str_equal (key, entry->key))
             continue;
 
-        entry->from_dconf (priv);
+        entry->from_dconf (self);
         /* Property name == GSettings key, so "notify::<key>" is the one change
          * notification: bound widgets refresh from here, and so does anything
          * that used to listen for a separate "changed::<key>". */
@@ -911,9 +904,7 @@ g_paste_settings_reset (GPasteSettings *self,
     g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
     g_return_if_fail (key);
 
-    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);
-
-    g_settings_reset (priv->settings, key);
+    g_settings_reset (self->settings, key);
 }
 
 /**
@@ -933,8 +924,7 @@ g_paste_settings_is_default (GPasteSettings *self,
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS (self), TRUE);
     g_return_val_if_fail (key, TRUE);
 
-    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);
-    g_autoptr (GVariant) user_value = g_settings_get_user_value (priv->settings, key);
+    g_autoptr (GVariant) user_value = g_settings_get_user_value (self->settings, key);
 
     return user_value == NULL;
 }
@@ -976,21 +966,19 @@ g_paste_settings_reload (GPasteSettings *self)
 {
     g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
 
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
-
     for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
-        setting_entries[i].from_dconf (priv);
+        setting_entries[i].from_dconf (self);
 }
 
 static void
 g_paste_settings_dispose (GObject *object)
 {
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
+    GPasteSettings *self = G_PASTE_SETTINGS (object);
 
-    g_clear_object (&priv->settings_signals);
-    g_clear_object (&priv->settings);
-    g_clear_object (&priv->shell_settings_signals);
-    g_clear_object (&priv->shell_settings);
+    g_clear_object (&self->settings_signals);
+    g_clear_object (&self->settings);
+    g_clear_object (&self->shell_settings_signals);
+    g_clear_object (&self->shell_settings);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
@@ -998,16 +986,16 @@ g_paste_settings_dispose (GObject *object)
 static void
 g_paste_settings_finalize (GObject *object)
 {
-    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
+    const GPasteSettings *self = G_PASTE_SETTINGS (object);
 
-    g_free (priv->history_name);
-    g_free (priv->launch_ui);
-    g_free (priv->make_password);
-    g_free (priv->pop);
-    g_free (priv->show_history);
-    g_free (priv->sync_clipboard_to_primary);
-    g_free (priv->sync_primary_to_clipboard);
-    g_free (priv->upload);
+    g_free (self->history_name);
+    g_free (self->launch_ui);
+    g_free (self->make_password);
+    g_free (self->pop);
+    g_free (self->show_history);
+    g_free (self->sync_clipboard_to_primary);
+    g_free (self->sync_primary_to_clipboard);
+    g_free (self->upload);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -1075,28 +1063,27 @@ create_g_settings (void)
 static void
 g_paste_settings_init (GPasteSettings *self)
 {
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
-    GSettings *settings = priv->settings = create_g_settings ();
+    GSettings *settings = self->settings = create_g_settings ();
 
-    priv->history_name = NULL;
-    priv->launch_ui = NULL;
-    priv->make_password = NULL;
-    priv->pop = NULL;
-    priv->show_history = NULL;
-    priv->sync_clipboard_to_primary = NULL;
-    priv->sync_primary_to_clipboard = NULL;
-    priv->upload = NULL;
+    self->history_name = NULL;
+    self->launch_ui = NULL;
+    self->make_password = NULL;
+    self->pop = NULL;
+    self->show_history = NULL;
+    self->sync_clipboard_to_primary = NULL;
+    self->sync_primary_to_clipboard = NULL;
+    self->upload = NULL;
 
-    GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
+    GSignalGroup *settings_signals = self->settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_settings_settings_changed), self);
     g_signal_group_set_target (settings_signals, settings);
 
     g_paste_settings_reload (self);
 
-    priv->shell_settings = NULL;
-    priv->extension_enabled = FALSE;
+    self->shell_settings = NULL;
+    self->extension_enabled = FALSE;
 
-    GSignalGroup *shell_settings_signals = priv->shell_settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
+    GSignalGroup *shell_settings_signals = self->shell_settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
     g_signal_group_connect (shell_settings_signals,
                             "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
                             G_CALLBACK (g_paste_settings_shell_settings_changed),
@@ -1104,9 +1091,9 @@ g_paste_settings_init (GPasteSettings *self)
 
     if (g_paste_util_has_gnome_shell ())
     {
-        priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
-        g_signal_group_set_target (shell_settings_signals, priv->shell_settings);
-        g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+        self->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
+        g_signal_group_set_target (shell_settings_signals, self->shell_settings);
+        g_paste_settings_private_set_extension_enabled_from_dconf (self);
     }
 }
 

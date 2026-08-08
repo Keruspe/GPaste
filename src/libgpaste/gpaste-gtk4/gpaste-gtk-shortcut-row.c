@@ -4,11 +4,6 @@
 #include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
 #include <gpaste-keyval.h>
 
-struct _GPasteGtkShortcutRow
-{
-    AdwActionRow parent_instance;
-};
-
 enum
 {
     PROP_0,
@@ -18,14 +13,16 @@ enum
     N_PROPERTIES
 };
 
-typedef struct
+struct _GPasteGtkShortcutRow
 {
+    AdwActionRow parent_instance;
+
     gchar     *accelerator;       /* always non-NULL; "" means "no shortcut" */
     GtkWidget *label;             /* GtkShortcutLabel suffix */
     gboolean   capturing;
-} GPasteGtkShortcutRowPrivate;
+};
 
-G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (ShortcutRow, shortcut_row, ADW_TYPE_ACTION_ROW)
+G_PASTE_GTK_DEFINE_TYPE (ShortcutRow, shortcut_row, ADW_TYPE_ACTION_ROW)
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL };
 
@@ -43,9 +40,7 @@ g_paste_gtk_shortcut_row_get_accelerator (GPasteGtkShortcutRow *self)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_SHORTCUT_ROW (self), "");
 
-    const GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
-
-    return priv->accelerator;
+    return self->accelerator;
 }
 
 static void g_paste_gtk_shortcut_row_stop_capture (GPasteGtkShortcutRow *self);
@@ -54,12 +49,10 @@ static void
 g_paste_gtk_shortcut_row_set_capturing (GPasteGtkShortcutRow *self,
                                         gboolean              capturing)
 {
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
-
-    if (priv->capturing == capturing)
+    if (self->capturing == capturing)
         return;
 
-    priv->capturing = capturing;
+    self->capturing = capturing;
 
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_CAPTURING]);
 }
@@ -78,18 +71,17 @@ g_paste_gtk_shortcut_row_set_accelerator (GPasteGtkShortcutRow *self,
 {
     g_return_if_fail (G_PASTE_IS_GTK_SHORTCUT_ROW (self));
 
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
     const gchar *accel = accelerator ? accelerator : "";
 
-    if (g_paste_str_equal (priv->accelerator, accel))
+    if (g_paste_str_equal (self->accelerator, accel))
         return;
 
-    g_set_str (&priv->accelerator, accel);
-    gtk_shortcut_label_set_accelerator (GTK_SHORTCUT_LABEL (priv->label), accel);
+    g_set_str (&self->accelerator, accel);
+    gtk_shortcut_label_set_accelerator (GTK_SHORTCUT_LABEL (self->label), accel);
 
     /* An external change (e.g. "Reset to default") while the row is armed makes
      * the in-progress capture moot; disarm it so the next key isn't captured. */
-    if (priv->capturing)
+    if (self->capturing)
         g_paste_gtk_shortcut_row_stop_capture (self);
 
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ACCELERATOR]);
@@ -110,9 +102,7 @@ g_paste_gtk_shortcut_row_get_property (GObject    *object,
         break;
     case PROP_CAPTURING:
     {
-        const GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
-
-        g_value_set_boolean (value, priv->capturing);
+        g_value_set_boolean (value, self->capturing);
         break;
     }
     default:
@@ -153,9 +143,8 @@ g_paste_gtk_shortcut_row_on_key_pressed (GtkEventControllerKey *controller,
                                          gpointer               user_data)
 {
     GPasteGtkShortcutRow *self = user_data;
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
 
-    if (!priv->capturing)
+    if (!self->capturing)
         return GDK_EVENT_PROPAGATE;
 
     GdkModifierType mods = state & gtk_accelerator_get_default_mod_mask ();
@@ -205,9 +194,8 @@ static void
 g_paste_gtk_shortcut_row_on_activated (AdwActionRow *row)
 {
     GPasteGtkShortcutRow *self = G_PASTE_GTK_SHORTCUT_ROW (row);
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
 
-    if (priv->capturing)
+    if (self->capturing)
         return;
 
     g_paste_gtk_shortcut_row_set_capturing (self, TRUE);
@@ -219,9 +207,9 @@ g_paste_gtk_shortcut_row_on_activated (AdwActionRow *row)
 static void
 g_paste_gtk_shortcut_row_dispose (GObject *object)
 {
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (G_PASTE_GTK_SHORTCUT_ROW (object));
+    GPasteGtkShortcutRow *self = G_PASTE_GTK_SHORTCUT_ROW (object);
 
-    g_clear_pointer (&priv->accelerator, g_free);
+    g_clear_pointer (&self->accelerator, g_free);
 
     G_OBJECT_CLASS (g_paste_gtk_shortcut_row_parent_class)->dispose (object);
 }
@@ -260,17 +248,15 @@ g_paste_gtk_shortcut_row_class_init (GPasteGtkShortcutRowClass *klass)
 static void
 g_paste_gtk_shortcut_row_init (GPasteGtkShortcutRow *self)
 {
-    GPasteGtkShortcutRowPrivate *priv = g_paste_gtk_shortcut_row_get_instance_private (self);
-
-    priv->accelerator = g_strdup ("");
+    self->accelerator = g_strdup ("");
 
     adw_bind_property_to_css_class (self, "capturing", GTK_WIDGET (self), "accent", G_BINDING_SYNC_CREATE);
 
-    priv->label = gtk_shortcut_label_new ("");
+    self->label = gtk_shortcut_label_new ("");
     /* translators: shown in a shortcut row when no shortcut is bound */
-    gtk_shortcut_label_set_disabled_text (GTK_SHORTCUT_LABEL (priv->label), _("Disabled"));
-    gtk_widget_set_valign (priv->label, GTK_ALIGN_CENTER);
-    adw_action_row_add_suffix (ADW_ACTION_ROW (self), priv->label);
+    gtk_shortcut_label_set_disabled_text (GTK_SHORTCUT_LABEL (self->label), _("Disabled"));
+    gtk_widget_set_valign (self->label, GTK_ALIGN_CENTER);
+    adw_action_row_add_suffix (ADW_ACTION_ROW (self), self->label);
 
     /* The row itself is the activation target. */
     gtk_widget_set_focusable (GTK_WIDGET (self), TRUE);

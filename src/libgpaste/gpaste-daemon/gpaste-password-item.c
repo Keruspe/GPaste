@@ -8,14 +8,11 @@
 struct _GPastePasswordItem
 {
     GPasteTextItem parent_instance;
+
+    gchar *name;
 };
 
-typedef struct
-{
-    gchar *name;
-} GPastePasswordItemPrivate;
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (PasswordItem, password_item, G_PASTE_TYPE_TEXT_ITEM)
+G_PASTE_DEFINE_TYPE (PasswordItem, password_item, G_PASTE_TYPE_TEXT_ITEM)
 
 /**
  * g_paste_password_item_get_name:
@@ -30,9 +27,7 @@ g_paste_password_item_get_name (const GPastePasswordItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self), NULL);
 
-    const GPastePasswordItemPrivate *priv = _g_paste_password_item_get_instance_private (self);
-
-    return priv->name;
+    return self->name;
 }
 
 /**
@@ -49,17 +44,15 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     g_return_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
-    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
-
     if (!name)
         name = "******";
 
     GPasteItem *item = G_PASTE_ITEM (self);
 
-    if (priv->name)
-        g_paste_item_remove_size (item, strlen (priv->name));
+    if (self->name)
+        g_paste_item_remove_size (item, strlen (self->name));
     g_paste_item_add_size (item, strlen (name));
-    g_set_str (&priv->name, name);
+    g_set_str (&self->name, name);
 
     // This is the prefix displayed in history to identify a password
     g_autofree gchar *full_display_string = g_strdup_printf ("[%s] %s", _("Password"), name);
@@ -98,9 +91,9 @@ g_paste_password_item_secure (const GPasteItem *self G_GNUC_UNUSED)
 static void
 g_paste_password_item_finalize (GObject *object)
 {
-    const GPastePasswordItemPrivate *priv = _g_paste_password_item_get_instance_private (G_PASTE_PASSWORD_ITEM (object));
+    const GPastePasswordItem *self = G_PASTE_PASSWORD_ITEM (object);
 
-    g_free (priv->name);
+    g_free (self->name);
 
     G_OBJECT_CLASS (g_paste_password_item_parent_class)->finalize (object);
 }

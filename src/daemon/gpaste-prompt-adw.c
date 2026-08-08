@@ -13,17 +13,14 @@
 struct _GPastePromptAdw
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     /* Anchors the dialogs. Owned by main(), which outlives us. */
     GtkApplication *application;
-} GPastePromptAdwPrivate;
+};
 
 static void g_paste_prompt_adw_prompt_iface_init (GPastePromptInterface *iface);
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE (PromptAdw, prompt_adw, G_TYPE_OBJECT,
+G_PASTE_DEFINE_TYPE_WITH_INTERFACE (PromptAdw, prompt_adw, G_TYPE_OBJECT,
                                                 G_PASTE_TYPE_PROMPT, g_paste_prompt_adw_prompt_iface_init)
 
 /*
@@ -189,7 +186,7 @@ static void
 g_paste_prompt_adw_migration (GPastePrompt        *prompt,
                               GPastePromptRequest *request)
 {
-    const GPastePromptAdwPrivate *priv = _g_paste_prompt_adw_get_instance_private (G_PASTE_PROMPT_ADW (prompt));
+    const GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
     MigrationDialog *self = g_new0 (MigrationDialog, 1);
 
     self->request = g_object_ref (request);
@@ -427,7 +424,7 @@ static void
 g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
                                GPastePromptRequest *request)
 {
-    const GPastePromptAdwPrivate *priv = _g_paste_prompt_adw_get_instance_private (G_PASTE_PROMPT_ADW (prompt));
+    const GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
     PassphraseDialog *self = g_new0 (PassphraseDialog, 1);
     gboolean confirm = g_paste_prompt_request_get_confirm (request);
     const gchar *error_message = g_paste_prompt_request_get_error_message (request);
@@ -599,9 +596,8 @@ g_paste_prompt_adw_new (GtkApplication *application)
     g_return_val_if_fail (GTK_IS_APPLICATION (application), NULL);
 
     GPastePromptAdw *self = g_object_new (G_PASTE_TYPE_PROMPT_ADW, NULL);
-    GPastePromptAdwPrivate *priv = g_paste_prompt_adw_get_instance_private (self);
 
-    priv->application = application;
+    self->application = application;
 
     return G_PASTE_PROMPT (self);
 }

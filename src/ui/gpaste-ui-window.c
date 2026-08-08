@@ -12,10 +12,7 @@
 struct _GPasteUiWindow
 {
     AdwApplicationWindow parent_instance;
-};
 
-typedef struct
-{
     AdwHeaderBar    *header;
     GPasteUiHistory *history;
     GPasteClient    *client;
@@ -40,26 +37,25 @@ typedef struct
     gboolean         initialized;
     guint            save_state_id;
     gboolean         geometry_moved_again;
-} GPasteUiWindowPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
+G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
 
 static gboolean
 _empty (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     /* Keep waiting until ready, unless the window was destroyed meanwhile */
-    if (priv->client && !priv->initialized)
+    if (self->client && !self->initialized)
         return G_SOURCE_CONTINUE;
 
     g_autofree gchar *history = data[1];
     g_free (data);
 
-    if (priv->client)
-        g_paste_gtk_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
+    if (self->client)
+        g_paste_gtk_util_empty_history (GTK_WINDOW (self), self->client, self->settings, history);
 
     g_object_unref (self);
 
@@ -92,19 +88,18 @@ _search (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     /* Keep waiting until ready, unless the window was destroyed meanwhile */
-    if (priv->client && !priv->initialized)
+    if (self->client && !self->initialized)
         return G_SOURCE_CONTINUE;
 
     g_autofree gchar *search = data[1];
     g_free (data);
 
-    if (priv->client)
+    if (self->client)
     {
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (priv->header)), TRUE);
-        gtk_editable_set_text (GTK_EDITABLE (priv->search_entry), search);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (self->header)), TRUE);
+        gtk_editable_set_text (GTK_EDITABLE (self->search_entry), search);
     }
 
     g_object_unref (self);
@@ -137,14 +132,13 @@ static gboolean
 _show_prefs (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     /* Keep waiting until ready, unless the window was destroyed meanwhile */
-    if (priv->client && !priv->initialized)
+    if (self->client && !self->initialized)
         return G_SOURCE_CONTINUE;
 
-    if (priv->client)
-        g_paste_ui_header_show_prefs (priv->header);
+    if (self->client)
+        g_paste_ui_header_show_prefs (self->header);
 
     g_object_unref (self);
 
@@ -171,9 +165,8 @@ on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
                       gpointer       user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    adw_dialog_present (priv->shortcuts, GTK_WIDGET (self));
+    adw_dialog_present (self->shortcuts, GTK_WIDGET (self));
 }
 
 static void exit_selection_mode (GPasteUiWindow *self);
@@ -187,12 +180,12 @@ activate_index (GtkWidget *widget,
                 GVariant  *args,
                 gpointer   user_data G_GNUC_UNUSED)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
+    GPasteUiWindow *self = G_PASTE_UI_WINDOW (widget);
 
-    if (!priv->history)
+    if (!self->history)
         return FALSE;
 
-    return g_paste_ui_history_activate_index (priv->history, g_variant_get_uint32 (args));
+    return g_paste_ui_history_activate_index (self->history, g_variant_get_uint32 (args));
 }
 
 static gboolean
@@ -201,13 +194,12 @@ on_escape (GtkWidget *widget,
            gpointer   user_data G_GNUC_UNUSED)
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (widget);
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     /* The search bar closes itself on Escape; let it. */
-    if (gtk_search_bar_get_search_mode (priv->search_bar))
+    if (gtk_search_bar_get_search_mode (self->search_bar))
         return FALSE;
 
-    if (priv->merge_bar && gtk_action_bar_get_revealed (priv->merge_bar))
+    if (self->merge_bar && gtk_action_bar_get_revealed (self->merge_bar))
     {
         exit_selection_mode (self);
         return TRUE;
@@ -226,17 +218,16 @@ static gboolean
 save_session_state (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     /* Still moving: wait another tick rather than saving mid-drag. Re-arming
      * the source is what the notifications no longer have to do. */
-    if (priv->geometry_moved_again)
+    if (self->geometry_moved_again)
     {
-        priv->geometry_moved_again = FALSE;
+        self->geometry_moved_again = FALSE;
         return G_SOURCE_CONTINUE;
     }
 
-    priv->save_state_id = 0;
+    self->save_state_id = 0;
 
     /* FIXME: gtk_application_save() is private again as of GTK commit eabaa008d5
      * ("application: Drop public save/restore API"): the async save/restore API
@@ -269,17 +260,16 @@ on_geometry_changed (GObject    *object,
                      gpointer    user_data G_GNUC_UNUSED)
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (priv->save_state_id)
+    if (self->save_state_id)
     {
-        priv->geometry_moved_again = TRUE;
+        self->geometry_moved_again = TRUE;
         return;
     }
 
-    priv->geometry_moved_again = FALSE;
-    priv->save_state_id = g_timeout_add_seconds (1, save_session_state, self);
-    g_source_set_name_by_id (priv->save_state_id, "[GPaste] save_session_state");
+    self->geometry_moved_again = FALSE;
+    self->save_state_id = g_timeout_add_seconds (1, save_session_state, self);
+    g_source_set_name_by_id (self->save_state_id, "[GPaste] save_session_state");
 }
 
 static void
@@ -313,7 +303,7 @@ static void
 on_search_activate (GtkSearchEntry *entry,
                     gpointer        user_data)
 {
-    GPasteUiWindowPrivate *priv = user_data;
+    GPasteUiWindow *priv = user_data;
     const gchar *search = gtk_editable_get_text (GTK_EDITABLE (entry));
 
     /* These two are wired up from init(), before there is anything to search:
@@ -326,7 +316,7 @@ static void
 on_search (GtkSearchEntry *entry,
            gpointer        user_data)
 {
-    GPasteUiWindowPrivate *priv = user_data;
+    GPasteUiWindow *priv = user_data;
 
     if (!priv->history)
         return;
@@ -348,7 +338,7 @@ on_switch_history (GPasteClient *client G_GNUC_UNUSED,
                    const gchar  *history,
                    gpointer      user_data)
 {
-    GPasteUiWindowPrivate *priv = user_data;
+    GPasteUiWindow *priv = user_data;
 
     g_paste_ui_header_set_subtitle (priv->header, history);
 }
@@ -358,7 +348,7 @@ on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
                          GAsyncResult *res,
                          gpointer      user_data)
 {
-    GPasteUiWindowPrivate *priv = user_data;
+    GPasteUiWindow *priv = user_data;
     g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
 
     if (name)
@@ -368,11 +358,9 @@ on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
 static void
 exit_selection_mode (GPasteUiWindow *self)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-
-    g_paste_ui_history_set_selection_mode (priv->history, FALSE);
-    g_paste_ui_header_set_selection_mode (priv->header, FALSE);
-    gtk_action_bar_set_revealed (priv->merge_bar, FALSE);
+    g_paste_ui_history_set_selection_mode (self->history, FALSE);
+    g_paste_ui_header_set_selection_mode (self->header, FALSE);
+    gtk_action_bar_set_revealed (self->merge_bar, FALSE);
 }
 
 static void
@@ -380,12 +368,11 @@ on_enter_selection_mode (GtkButton *button G_GNUC_UNUSED,
                          gpointer   user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    g_paste_ui_history_set_selection_mode (priv->history, TRUE);
-    g_paste_ui_header_set_selection_mode (priv->header, TRUE);
-    g_paste_ui_header_set_selection_count (priv->header, 0);
-    gtk_action_bar_set_revealed (priv->merge_bar, TRUE);
+    g_paste_ui_history_set_selection_mode (self->history, TRUE);
+    g_paste_ui_header_set_selection_mode (self->header, TRUE);
+    g_paste_ui_header_set_selection_count (self->header, 0);
+    gtk_action_bar_set_revealed (self->merge_bar, TRUE);
 }
 
 static void
@@ -401,11 +388,10 @@ on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
                       gpointer         user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    g_paste_ui_header_set_selection_count (priv->header, count);
+    g_paste_ui_header_set_selection_count (self->header, count);
     /* Merging is only meaningful with at least two items. */
-    gtk_widget_set_sensitive (priv->merge_button, count >= 2);
+    gtk_widget_set_sensitive (self->merge_button, count >= 2);
 }
 
 static void
@@ -413,15 +399,14 @@ do_merge (GPasteUiWindow *self,
           GtkWidget      *origin,
           const gchar    *separator)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     guint64 n = 0;
-    g_auto (GStrv) uuids = g_paste_ui_history_get_selected_uuids (priv->history, &n);
+    g_auto (GStrv) uuids = g_paste_ui_history_get_selected_uuids (self->history, &n);
 
     gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_ancestor (origin, GTK_TYPE_POPOVER)));
 
     /* uuids are in selection order, so the merge keeps it. */
     if (n >= 2)
-        g_paste_client_merge (priv->client, "", separator, (const gchar **) uuids, n, NULL, NULL);
+        g_paste_client_merge (self->client, "", separator, (const gchar **) uuids, n, NULL, NULL);
 
     exit_selection_mode (self);
 }
@@ -438,9 +423,8 @@ on_custom_separator (GtkWidget *widget,
                      gpointer   user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    do_merge (self, widget, gtk_editable_get_text (GTK_EDITABLE (priv->merge_entry)));
+    do_merge (self, widget, gtk_editable_get_text (GTK_EDITABLE (self->merge_entry)));
 }
 
 static void
@@ -460,8 +444,6 @@ add_separator_choice (GtkBox         *box,
 static GtkWidget *
 build_merge_bar (GPasteUiWindow *self)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_margin_top (box, 6);
     gtk_widget_set_margin_bottom (box, 6);
@@ -479,7 +461,7 @@ build_merge_bar (GPasteUiWindow *self)
     GtkWidget *custom = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
     gtk_widget_set_margin_top (custom, 6);
 
-    GtkWidget *entry = priv->merge_entry = gtk_entry_new ();
+    GtkWidget *entry = self->merge_entry = gtk_entry_new ();
     gtk_entry_set_placeholder_text (GTK_ENTRY (entry), _("Custom separator"));
     gtk_widget_set_hexpand (entry, TRUE);
     g_signal_connect (entry, "activate", G_CALLBACK (on_custom_separator), self);
@@ -495,16 +477,16 @@ build_merge_bar (GPasteUiWindow *self)
     GtkWidget *popover = gtk_popover_new ();
     gtk_popover_set_child (GTK_POPOVER (popover), box);
 
-    GtkWidget *merge_button = priv->merge_button = gtk_menu_button_new ();
+    GtkWidget *merge_button = self->merge_button = gtk_menu_button_new ();
     gtk_menu_button_set_label (GTK_MENU_BUTTON (merge_button), _("Merge"));
     gtk_menu_button_set_popover (GTK_MENU_BUTTON (merge_button), popover);
     gtk_widget_add_css_class (merge_button, "suggested-action");
     gtk_widget_set_sensitive (merge_button, FALSE);
 
     GtkWidget *bar = gtk_action_bar_new ();
-    priv->merge_bar = GTK_ACTION_BAR (bar);
-    gtk_action_bar_set_revealed (priv->merge_bar, FALSE);
-    gtk_action_bar_pack_end (priv->merge_bar, merge_button);
+    self->merge_bar = GTK_ACTION_BAR (bar);
+    gtk_action_bar_set_revealed (self->merge_bar, FALSE);
+    gtk_action_bar_pack_end (self->merge_bar, merge_button);
 
     return bar;
 }
@@ -513,13 +495,12 @@ static void
 g_paste_ui_window_dispose (GObject *object)
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    g_clear_object (&priv->search_signals);
-    g_clear_object (&priv->client_signals);
-    g_clear_object (&priv->client);
-    g_clear_object (&priv->settings);
-    g_clear_object (&priv->shortcuts);
+    g_clear_object (&self->search_signals);
+    g_clear_object (&self->client_signals);
+    g_clear_object (&self->client);
+    g_clear_object (&self->settings);
+    g_clear_object (&self->shortcuts);
 
     /* Disconnect before clearing the timeout, and both before chaining up:
      * unrooting the window down there notifies "maximized"/"fullscreened" on
@@ -527,11 +508,11 @@ g_paste_ui_window_dispose (GObject *object)
      * bare @self it holds no reference on — landing a second later in a window
      * that has since been finalized. */
     g_signal_handlers_disconnect_by_func (self, on_geometry_changed, NULL);
-    g_clear_handle_id (&priv->save_state_id, g_source_remove);
+    g_clear_handle_id (&self->save_state_id, g_source_remove);
 
     /* Chaining up unparents (and frees) every widget below, so drop the one
      * anything still in flight tests to know the window is gone. */
-    priv->banner = NULL;
+    self->banner = NULL;
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
@@ -545,11 +526,10 @@ g_paste_ui_window_class_init (GPasteUiWindowClass *klass)
 static void
 g_paste_ui_window_init (GPasteUiWindow *self)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
-    priv->settings = g_paste_settings_new ();
-    priv->content_box = GTK_BOX (vbox);
+    self->settings = g_paste_settings_new ();
+    self->content_box = GTK_BOX (vbox);
 
     gtk_widget_set_hexpand (vbox, TRUE);
     gtk_widget_set_vexpand (vbox, TRUE);
@@ -557,36 +537,36 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     gtk_widget_set_valign (vbox, GTK_ALIGN_FILL);
 
     GtkWidget *banner = adw_banner_new ("");
-    priv->banner = ADW_BANNER (banner);
-    adw_banner_set_button_label (priv->banner, _("Quit"));
+    self->banner = ADW_BANNER (banner);
+    adw_banner_set_button_label (self->banner, _("Quit"));
     g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_quit), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
 
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
-    priv->search_bar = GTK_SEARCH_BAR (search_bar);
+    self->search_bar = GTK_SEARCH_BAR (search_bar);
     gtk_box_append (GTK_BOX (vbox), search_bar);
 
-    gtk_search_bar_set_key_capture_widget (priv->search_bar, GTK_WIDGET (self));
+    gtk_search_bar_set_key_capture_widget (self->search_bar, GTK_WIDGET (self));
 
     GtkWidget *toolbar_view = adw_toolbar_view_new ();
-    priv->toolbar_view = ADW_TOOLBAR_VIEW (toolbar_view);
+    self->toolbar_view = ADW_TOOLBAR_VIEW (toolbar_view);
 
     GtkWidget *toast_overlay = adw_toast_overlay_new ();
-    priv->toast_overlay = ADW_TOAST_OVERLAY (toast_overlay);
+    self->toast_overlay = ADW_TOAST_OVERLAY (toast_overlay);
     adw_toast_overlay_set_child (ADW_TOAST_OVERLAY (toast_overlay), vbox);
     adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar_view), toast_overlay);
 
     adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), toolbar_view);
 
-    GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (priv->search_bar);
+    GtkSearchEntry *entry = self->search_entry = g_paste_ui_search_bar_get_entry (self->search_bar);
 
-    GSignalGroup *search_signals = priv->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
-    g_signal_group_connect (search_signals, "activate", G_CALLBACK (on_search_activate), priv);
-    g_signal_group_connect (search_signals, "search-changed", G_CALLBACK (on_search), priv);
+    GSignalGroup *search_signals = self->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
+    g_signal_group_connect (search_signals, "activate", G_CALLBACK (on_search_activate), self);
+    g_signal_group_connect (search_signals, "search-changed", G_CALLBACK (on_search), self);
     g_signal_group_set_target (search_signals, entry);
 
-    priv->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
-    g_signal_group_connect (priv->client_signals, "switch-history", G_CALLBACK (on_switch_history), priv);
+    self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
+    g_signal_group_connect (self->client_signals, "switch-history", G_CALLBACK (on_switch_history), self);
 
     add_shortcuts (self);
 
@@ -612,25 +592,24 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     /* The window is only presented at the end of this function, so nothing else
      * would keep it alive if the application quit while we were connecting. */
     g_autoptr (GPasteUiWindow) self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     GtkWindow *win = GTK_WINDOW (user_data);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
 
     /* The window was destroyed (the application quit) while we were connecting:
      * our ref keeps it allocated, but its widgets are gone. Nothing to set up. */
-    if (!priv->banner)
+    if (!self->banner)
         return;
 
     if (error)
     {
-        priv->initialized = TRUE;
+        self->initialized = TRUE;
         g_critical ("%s: %s", _("Couldn't connect to GPaste daemon"), error->message);
-        adw_banner_set_title (priv->banner, _("Couldn't connect to GPaste daemon"));
-        adw_banner_set_revealed (priv->banner, TRUE);
+        adw_banner_set_title (self->banner, _("Couldn't connect to GPaste daemon"));
+        adw_banner_set_revealed (self->banner, TRUE);
         /* Nothing was built to search through, so stop a keystroke from pulling
          * up a search bar that could only ignore it. */
-        gtk_search_bar_set_key_capture_widget (priv->search_bar, NULL);
+        gtk_search_bar_set_key_capture_widget (self->search_bar, NULL);
         /* Present anyway: the banner explaining what went wrong is the whole
          * point, and a window that is never shown leaves the application
          * running with nothing on screen at all. */
@@ -638,16 +617,16 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    GPasteSettings *settings = priv->settings;
+    GPasteSettings *settings = self->settings;
     GtkWidget *header = g_paste_ui_header_new (win, client);
-    GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, priv->search_entry);
+    GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, self->search_entry);
     GtkWidget *history = g_paste_ui_history_new (client, settings, G_PASTE_UI_PANEL (panel), win);
 
-    priv->header = ADW_HEADER_BAR (header);
-    priv->history = G_PASTE_UI_HISTORY (history);
-    priv->client = g_object_ref (client);
+    self->header = ADW_HEADER_BAR (header);
+    self->history = G_PASTE_UI_HISTORY (history);
+    self->client = g_object_ref (client);
 
-    priv->shortcuts = g_object_ref_sink (ADW_DIALOG (g_paste_ui_shortcuts_window_new (settings)));
+    self->shortcuts = g_object_ref_sink (ADW_DIALOG (g_paste_ui_shortcuts_window_new (settings)));
 
     g_autoptr (GSimpleAction) show_shortcuts = g_simple_action_new ("show-help-overlay", NULL);
     g_signal_connect_object (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), user_data, 0);
@@ -657,14 +636,14 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                                            "win.show-help-overlay",
                                            (const char *[]) { "<primary>question", NULL });
 
-    adw_toolbar_view_add_top_bar (priv->toolbar_view, header);
-    adw_toolbar_view_add_bottom_bar (priv->toolbar_view, build_merge_bar (user_data));
+    adw_toolbar_view_add_top_bar (self->toolbar_view, header);
+    adw_toolbar_view_add_bottom_bar (self->toolbar_view, build_merge_bar (user_data));
 
-    g_signal_connect_object (g_paste_ui_header_get_merge_button (priv->header), "clicked",
+    g_signal_connect_object (g_paste_ui_header_get_merge_button (self->header), "clicked",
                              G_CALLBACK (on_enter_selection_mode), user_data, 0);
-    g_signal_connect_object (g_paste_ui_header_get_cancel_button (priv->header), "clicked",
+    g_signal_connect_object (g_paste_ui_header_get_cancel_button (self->header), "clicked",
                              G_CALLBACK (on_cancel_selection_mode), user_data, 0);
-    g_signal_connect_object (priv->history, "selection-changed",
+    g_signal_connect_object (self->history, "selection-changed",
                              G_CALLBACK (on_selection_changed), user_data, 0);
 
     AdwNavigationPage *sidebar_page = adw_navigation_page_new (panel, _("Histories"));
@@ -680,17 +659,17 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_widget_set_halign (nav_split_view, GTK_ALIGN_FILL);
     gtk_widget_set_valign (nav_split_view, GTK_ALIGN_FILL);
 
-    gtk_box_append (priv->content_box, nav_split_view);
+    gtk_box_append (self->content_box, nav_split_view);
 
-    g_object_bind_property (g_paste_ui_header_get_search_button (priv->header), "active",
-                            priv->search_bar, "search-mode-enabled",
+    g_object_bind_property (g_paste_ui_header_get_search_button (self->header), "active",
+                            self->search_bar, "search-mode-enabled",
                             G_BINDING_BIDIRECTIONAL);
 
-    g_signal_group_set_target (priv->client_signals, priv->client);
+    g_signal_group_set_target (self->client_signals, self->client);
 
-    g_paste_client_get_history_name (priv->client, on_initial_history_name, priv);
+    g_paste_client_get_history_name (self->client, on_initial_history_name, self);
 
-    priv->initialized = TRUE;
+    self->initialized = TRUE;
     gtk_window_present (win);
 }
 

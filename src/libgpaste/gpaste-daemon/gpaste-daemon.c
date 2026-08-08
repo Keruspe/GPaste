@@ -18,10 +18,7 @@
 struct _GPasteDaemon
 {
     GPasteBusObject parent_instance;
-};
 
-typedef struct
-{
     GDBusConnection         *connection;
     guint64                  id_on_bus;
     gboolean                 registered;
@@ -38,9 +35,9 @@ typedef struct
     GSignalGroup            *history_signals;
     GSignalGroup            *settings_signals;
     GSignalGroup            *screensaver_signals;
-} GPasteDaemonPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
+G_PASTE_DEFINE_TYPE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
 
 enum
 {
@@ -62,14 +59,12 @@ g_paste_daemon_update (GPasteDaemon      *self,
                        GPasteUpdateTarget target,
                        guint64            position)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
     GVariant *data[] = {
         g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action)->value_nick),
         g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), target)->value_nick),
         g_variant_new_uint64 (position)
     };
-    G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
+    G_PASTE_SEND_DBUS_SIGNAL_FULL (self->connection, UPDATE, g_variant_new_tuple (data, 3), NULL);
 }
 
 /**
@@ -85,9 +80,7 @@ g_paste_daemon_show_history (GPasteDaemon *self,
 {
     g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SHOW_HISTORY);
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (self->connection, SHOW_HISTORY);
 }
 
 /**
@@ -104,9 +97,7 @@ g_paste_daemon_flush (GPasteDaemon *self)
 {
     g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    g_paste_history_flush (priv->history);
+    g_paste_history_flush (self->history);
 }
 
 /**
@@ -122,9 +113,7 @@ g_paste_daemon_resume (GPasteDaemon *self)
 {
     g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    g_paste_history_resume (priv->history);
+    g_paste_history_resume (self->history);
 }
 
 /**
@@ -143,9 +132,7 @@ g_paste_daemon_reload_storage (GPasteDaemon *self)
 {
     g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    g_paste_history_reload_backend (priv->history);
+    g_paste_history_reload_backend (self->history);
 }
 
 /**
@@ -166,12 +153,11 @@ g_paste_daemon_extension_state_changed (GPasteDaemon *self,
 {
     g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     const GPasteDaemonMethods methods = {
-        priv->connection,
-        priv->history,
-        priv->settings,
-        priv->clipboards_manager
+        self->connection,
+        self->history,
+        self->settings,
+        self->clipboards_manager
     };
 
     g_paste_daemon_methods_extension_state_changed (&methods, state);
@@ -184,10 +170,9 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
                          GParamSpec     *pspec G_GNUC_UNUSED,
                          GPasteSettings *settings)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GVariant *variant = g_variant_new_boolean (g_paste_settings_get_track_changes (settings));
 
-    G_PASTE_SEND_DBUS_PROPERTIES_CHANGED (G_PASTE_DAEMON_PROP_ACTIVE, variant);
+    G_PASTE_SEND_DBUS_PROPERTIES_CHANGED (self->connection, G_PASTE_DAEMON_PROP_ACTIVE, variant);
 }
 
 /********************/
@@ -197,9 +182,7 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
 static void
 g_paste_daemon_reexecute (GPasteDaemon *self)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    g_paste_clipboards_manager_store (priv->clipboards_manager);
+    g_paste_clipboards_manager_store (self->clipboards_manager);
 
     g_signal_emit (self,
                    signals[REEXECUTE_SELF],
@@ -217,9 +200,7 @@ static void
 g_paste_daemon_change_passphrase (GPasteDaemon  *self,
                                   GError       **error)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (priv->settings)),
+    G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (self->settings)),
                          G_PASTE_ERROR_NOT_ENCRYPTED,
                          "The history is not encrypted; there is no passphrase to change.");
 
@@ -236,12 +217,12 @@ g_paste_daemon_upload_finish (GObject      *source_object,
 {
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     g_autofree gchar *url = NULL;
-    GPasteDaemonPrivate *priv = user_data;
+    GPasteDaemon *self = user_data;
     GPasteDaemonMethods methods = {
-        priv->connection,
-        priv->history,
-        priv->settings,
-        priv->clipboards_manager
+        self->connection,
+        self->history,
+        self->settings,
+        self->clipboards_manager
     };
 
     g_autoptr (GError) error = NULL;
@@ -273,8 +254,7 @@ g_paste_daemon_upload (GPasteDaemon *self,
 {
     g_return_val_if_fail (_G_PASTE_IS_DAEMON (self), FALSE);
 
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    const GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (priv->history, uuid) : g_paste_history_get (priv->history, 0);
+    const GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (self->history, uuid) : g_paste_history_get (self->history, 0);
 
     if (!item)
         return FALSE;
@@ -294,7 +274,7 @@ g_paste_daemon_upload (GPasteDaemon *self,
                                          value,
                                          NULL, /* cancellable */
                                          g_paste_daemon_upload_finish,
-                                         priv);
+                                         self);
     return TRUE;
 }
 
@@ -379,10 +359,9 @@ keybinding_upload (GPasteKeybinding *self G_GNUC_UNUSED,
 static void
 g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-    GPasteKeybinder *keybinder = priv->keybinder;
-    GPasteHistory *history = priv->history;
-    GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager;
+    GPasteKeybinder *keybinder = self->keybinder;
+    GPasteHistory *history = self->history;
+    GPasteClipboardsManager *clipboards_manager = self->clipboards_manager;
     GPasteKeybinding *keybindings[] = {
         g_paste_keybinding_new (G_PASTE_MAKE_PASSWORD_SETTING, _("Convert to Password"),
                                 g_paste_settings_get_make_password, keybinding_make_password, history),
@@ -421,12 +400,11 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
                                  gpointer               user_data)
 {
     GPasteDaemon *self = user_data;
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GPasteDaemonMethods methods = {
-        priv->connection,
-        priv->history,
-        priv->settings,
-        priv->clipboards_manager
+        self->connection,
+        self->history,
+        self->settings,
+        self->clipboards_manager
     };
     GVariant *answer = NULL;
     GError *error = NULL;
@@ -515,10 +493,10 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
                                   GError         **error G_GNUC_UNUSED,
                                   gpointer         user_data)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (G_PASTE_DAEMON (user_data));
+    const GPasteDaemon *self = G_PASTE_DAEMON (user_data);
 
     if (g_paste_str_equal (property_name, G_PASTE_DAEMON_PROP_ACTIVE))
-        return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
+        return g_variant_new_boolean (g_paste_settings_get_track_changes (self->settings));
     else if (g_paste_str_equal (property_name, G_PASTE_DAEMON_PROP_VERSION))
         return g_variant_new_string (VERSION);
 
@@ -529,13 +507,12 @@ static void
 g_paste_daemon_unregister_object (gpointer user_data)
 {
     g_autoptr (GPasteDaemon) self = G_PASTE_DAEMON (user_data);
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
-    g_signal_group_set_target (priv->settings_signals, NULL);
-    g_signal_group_set_target (priv->history_signals, NULL);
-    g_signal_group_set_target (priv->screensaver_signals, NULL);
+    g_signal_group_set_target (self->settings_signals, NULL);
+    g_signal_group_set_target (self->history_signals, NULL);
+    g_signal_group_set_target (self->screensaver_signals, NULL);
 
-    priv->registered = FALSE;
+    self->registered = FALSE;
 }
 
 /* Drop the D-Bus registration (and with it the reference it holds on us), so the
@@ -544,14 +521,14 @@ g_paste_daemon_unregister_object (gpointer user_data)
 static void
 g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (self));
+    GPasteDaemon *daemon = G_PASTE_DAEMON (self);
 
-    if (!priv->connection)
+    if (!daemon->connection)
         return;
 
-    g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
-    priv->id_on_bus = 0;
-    g_clear_object (&priv->connection);
+    g_dbus_connection_unregister_object (daemon->connection, daemon->id_on_bus);
+    daemon->id_on_bus = 0;
+    g_clear_object (&daemon->connection);
 }
 
 static void
@@ -565,21 +542,21 @@ g_paste_daemon_on_history_update (GPasteDaemon      *self,
 }
 
 static void
-g_paste_daemon_on_history_switch (GPasteDaemonPrivate *priv,
+g_paste_daemon_on_history_switch (GPasteDaemon *self,
                                   const gchar         *name,
                                   gpointer             user_data G_GNUC_UNUSED)
 {
     GVariant *variant = g_variant_new_string (name);
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SWITCH_HISTORY, variant);
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (self->connection, SWITCH_HISTORY, variant);
 }
 
 static void
-g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
+g_paste_daemon_on_screensaver_active_changed (GPasteDaemon *self,
                                               gboolean             active,
                                               gpointer             user_data G_GNUC_UNUSED)
 {
-    if (!priv->registered)
+    if (!self->registered)
         return;
 
     /* The deactivate signal is always sent, but not the activate one */
@@ -587,17 +564,17 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
         /* will always return TRUE */
-        g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+        g_paste_clipboards_manager_select (self->clipboards_manager, item);
     }
 
     if (!active)
     {
-        g_autoptr (GPasteItem) item = g_paste_history_dup (priv->history, 0);
+        g_autoptr (GPasteItem) item = g_paste_history_dup (self->history, 0);
 
         if (item)
         {
-            if (!g_paste_clipboards_manager_select (priv->clipboards_manager, item))
-                g_paste_history_remove (priv->history, 0);
+            if (!g_paste_clipboards_manager_select (self->clipboards_manager, item))
+                g_paste_history_remove (self->history, 0);
         }
     }
 }
@@ -623,23 +600,23 @@ _g_paste_daemon_changed_once (gpointer data)
 static void
 g_paste_daemon_dispose (GObject *object)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
+    GPasteDaemon *self = G_PASTE_DAEMON (object);
 
-    if (priv->connection)
+    if (self->connection)
     {
-        g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
-        g_clear_object (&priv->connection);
+        g_dbus_connection_unregister_object (self->connection, self->id_on_bus);
+        g_clear_object (&self->connection);
     }
 
-    g_clear_object (&priv->history_signals);
-    g_clear_object (&priv->settings_signals);
-    g_clear_object (&priv->screensaver_signals);
-    g_clear_object (&priv->history);
-    g_clear_object (&priv->settings);
-    g_clear_object (&priv->clipboards_manager);
-    g_clear_object (&priv->keybinder);
-    g_clear_object (&priv->screensaver);
-    g_clear_pointer (&priv->g_paste_daemon_dbus_info, g_dbus_node_info_unref);
+    g_clear_object (&self->history_signals);
+    g_clear_object (&self->settings_signals);
+    g_clear_object (&self->screensaver_signals);
+    g_clear_object (&self->history);
+    g_clear_object (&self->settings);
+    g_clear_object (&self->clipboards_manager);
+    g_clear_object (&self->keybinder);
+    g_clear_object (&self->screensaver);
+    g_clear_pointer (&self->g_paste_daemon_dbus_info, g_dbus_node_info_unref);
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->dispose (object);
 }
@@ -649,25 +626,25 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
                                        GDBusConnection *connection,
                                        GError         **error)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (self));
+    GPasteDaemon *daemon = G_PASTE_DAEMON (self);
 
-    g_clear_object (&priv->connection);
-    priv->connection = g_object_ref (connection);
+    g_clear_object (&daemon->connection);
+    daemon->connection = g_object_ref (connection);
 
-    priv->id_on_bus = g_dbus_connection_register_object (connection,
+    daemon->id_on_bus = g_dbus_connection_register_object (connection,
                                                          G_PASTE_DAEMON_OBJECT_PATH,
-                                                         priv->g_paste_daemon_dbus_info->interfaces[0],
-                                                         &priv->g_paste_daemon_dbus_vtable,
+                                                         daemon->g_paste_daemon_dbus_info->interfaces[0],
+                                                         &daemon->g_paste_daemon_dbus_vtable,
                                                          g_object_ref (self),
                                                          g_paste_daemon_unregister_object,
                                                          error);
 
-    if (!priv->id_on_bus)
+    if (!daemon->id_on_bus)
         return FALSE;
 
-    g_signal_group_set_target (priv->settings_signals, priv->settings);
-    g_signal_group_set_target (priv->history_signals, priv->history);
-    priv->registered = TRUE;
+    g_signal_group_set_target (daemon->settings_signals, daemon->settings);
+    g_signal_group_set_target (daemon->history_signals, daemon->history);
+    daemon->registered = TRUE;
 
     g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed_once, g_object_ref (self)), "[GPaste] Startup - changed");
 
@@ -724,17 +701,16 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
                              gpointer      user_data)
 {
     g_autoptr (GPasteDaemon) self = user_data; /* ref taken at the call site */
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, &error);
+    GPasteScreensaverClient *screensaver = self->screensaver = g_paste_screensaver_client_new_finish (res, &error);
 
     if (error)
     {
         g_warning ("Couldn't watch screensaver state: %s", error->message);
-        g_clear_object (&priv->screensaver);
+        g_clear_object (&self->screensaver);
     }
     else if (screensaver)
-        g_signal_group_set_target (priv->screensaver_signals, screensaver);
+        g_signal_group_set_target (self->screensaver_signals, screensaver);
 }
 
 static void
@@ -743,7 +719,6 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
                         gpointer      user_data)
 {
     g_autoptr (GPasteDaemon) self = user_data; /* ref taken at the call site */
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGlobalShortcutClient) portal_client = g_paste_global_shortcut_client_new_finish (res, &error);
 
@@ -753,19 +728,18 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    priv->keybinder = g_paste_keybinder_new (priv->settings, portal_client);
+    self->keybinder = g_paste_keybinder_new (self->settings, portal_client);
     g_paste_daemon_activate_default_keybindings (self);
 }
 
 static void
 g_paste_daemon_init (GPasteDaemon *self)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
+    GDBusInterfaceVTable *vtable = &self->g_paste_daemon_dbus_vtable;
 
-    priv->id_on_bus = 0;
+    self->id_on_bus = 0;
     g_autoptr (GError) error = NULL;
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
+    self->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
                                                                    &error);
     g_assert_no_error (error);
 
@@ -776,27 +750,27 @@ g_paste_daemon_init (GPasteDaemon *self)
     /* The settings, history, clipboards manager and providers are wired up in
      * g_paste_daemon_new () from the caller-provided GPasteSettings. */
 
-    priv->history_signals = g_signal_group_new (G_PASTE_TYPE_HISTORY);
-    g_signal_group_connect_swapped (priv->history_signals,
+    self->history_signals = g_signal_group_new (G_PASTE_TYPE_HISTORY);
+    g_signal_group_connect_swapped (self->history_signals,
                                     "update",
                                     G_CALLBACK (g_paste_daemon_on_history_update),
                                     self);
-    g_signal_group_connect_swapped (priv->history_signals,
+    g_signal_group_connect_swapped (self->history_signals,
                                     "switch",
                                     G_CALLBACK (g_paste_daemon_on_history_switch),
-                                    priv);
+                                    self);
 
-    priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
-    g_signal_group_connect_swapped (priv->settings_signals,
+    self->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect_swapped (self->settings_signals,
                                     "notify::" G_PASTE_TRACK_CHANGES_SETTING,
                                     G_CALLBACK (g_paste_daemon_tracking),
                                     self);
 
-    priv->screensaver_signals = g_signal_group_new (G_PASTE_TYPE_SCREENSAVER_CLIENT);
-    g_signal_group_connect_swapped (priv->screensaver_signals,
+    self->screensaver_signals = g_signal_group_new (G_PASTE_TYPE_SCREENSAVER_CLIENT);
+    g_signal_group_connect_swapped (self->screensaver_signals,
                                     "active-changed",
                                     G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
-                                    priv);
+                                    self);
 
     /* Hold a ref across each async call: the callback owns it (g_autoptr), so the
      * daemon cannot be finalized out from under the in-flight client creation. */
@@ -829,11 +803,10 @@ g_paste_daemon_new (GPasteSettings          *settings,
     g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (primary), NULL);
 
     GPasteDaemon *self = G_PASTE_DAEMON (g_object_new (G_PASTE_TYPE_DAEMON, NULL));
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
-    priv->settings = g_object_ref (settings);
-    GPasteHistory *history = priv->history = g_paste_history_new (settings);
-    GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager = g_paste_clipboards_manager_new (history, settings);
+    self->settings = g_object_ref (settings);
+    GPasteHistory *history = self->history = g_paste_history_new (settings);
+    GPasteClipboardsManager *clipboards_manager = self->clipboards_manager = g_paste_clipboards_manager_new (history, settings);
 
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);

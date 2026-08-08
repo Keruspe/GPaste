@@ -13,11 +13,6 @@
 #include <pwquality.h>
 #endif
 
-struct _GPastePromptRequest
-{
-    GObject parent_instance;
-};
-
 /* Which question a request is, so that answering it with the other one's reply
  * is caught rather than read back as a struct of the wrong shape. */
 
@@ -27,8 +22,10 @@ typedef enum
     REQUEST_MIGRATION,
 } RequestKind;
 
-typedef struct
+struct _GPastePromptRequest
 {
+    GObject parent_instance;
+
     /* Holds the caller's completion, until whoever answers first takes it. */
     GTask                *task;
     RequestKind           kind;
@@ -40,9 +37,9 @@ typedef struct
     GPasteStorage        *offered;
     guint                 n_offered;
     GPasteStorage         current;
-} GPastePromptRequestPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (PromptRequest, prompt_request, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE (PromptRequest, prompt_request, G_TYPE_OBJECT)
 
 /* What a passphrase prompt came back with, carried through the GTask. */
 typedef struct
@@ -71,14 +68,14 @@ typedef struct
 static void
 g_paste_prompt_request_dispose (GObject *object)
 {
-    GPastePromptRequestPrivate *priv = g_paste_prompt_request_get_instance_private (G_PASTE_PROMPT_REQUEST (object));
+    GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (object);
 
     /* Nobody answered it and nobody kept it. Dismiss rather than drop the task:
      * a backend that loses a request is a bug, but one that leaves the caller
      * waiting forever on a prompt nothing will ever answer is a worse one. */
-    if (priv->task)
+    if (self->task)
     {
-        g_autoptr (GTask) task = g_steal_pointer (&priv->task);
+        g_autoptr (GTask) task = g_steal_pointer (&self->task);
 
         g_task_return_pointer (task, NULL, NULL);
     }
@@ -89,10 +86,10 @@ g_paste_prompt_request_dispose (GObject *object)
 static void
 g_paste_prompt_request_finalize (GObject *object)
 {
-    GPastePromptRequestPrivate *priv = g_paste_prompt_request_get_instance_private (G_PASTE_PROMPT_REQUEST (object));
+    GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (object);
 
-    g_free (priv->error_message);
-    g_free (priv->offered);
+    g_free (self->error_message);
+    g_free (self->offered);
 
     G_OBJECT_CLASS (g_paste_prompt_request_parent_class)->finalize (object);
 }
@@ -119,11 +116,10 @@ g_paste_prompt_request_new (GPastePrompt        *prompt,
                             gpointer             user_data)
 {
     GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (g_object_new (G_PASTE_TYPE_PROMPT_REQUEST, NULL));
-    GPastePromptRequestPrivate *priv = g_paste_prompt_request_get_instance_private (self);
 
-    priv->kind = kind;
-    priv->task = g_task_new (prompt, NULL, callback, user_data);
-    g_task_set_source_tag (priv->task, source_tag);
+    self->kind = kind;
+    self->task = g_task_new (prompt, NULL, callback, user_data);
+    g_task_set_source_tag (self->task, source_tag);
 
     return self;
 }
@@ -141,9 +137,7 @@ static gboolean
 g_paste_prompt_request_answers (GPastePromptRequest *self,
                                 RequestKind          kind)
 {
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
-
-    if (priv->kind == kind)
+    if (self->kind == kind)
         return TRUE;
 
     g_warning ("A prompt answered a request with the wrong kind of reply; dismissing it");
@@ -157,9 +151,7 @@ g_paste_prompt_request_answers (GPastePromptRequest *self,
 static GTask *
 g_paste_prompt_request_claim (GPastePromptRequest *self)
 {
-    GPastePromptRequestPrivate *priv = g_paste_prompt_request_get_instance_private (self);
-
-    return g_steal_pointer (&priv->task);
+    return g_steal_pointer (&self->task);
 }
 
 /**
@@ -175,9 +167,7 @@ g_paste_prompt_request_get_confirm (const GPastePromptRequest *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), FALSE);
 
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
-
-    return priv->confirm;
+    return self->confirm;
 }
 
 /**
@@ -194,9 +184,7 @@ g_paste_prompt_request_get_error_message (const GPastePromptRequest *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), NULL);
 
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
-
-    return priv->error_message;
+    return self->error_message;
 }
 
 /**
@@ -212,9 +200,7 @@ g_paste_prompt_request_get_remember (const GPastePromptRequest *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
-
-    return priv->remember;
+    return self->remember;
 }
 
 /**
@@ -240,13 +226,11 @@ g_paste_prompt_request_get_offered (const GPastePromptRequest *self,
 
     g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), NULL);
 
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
+    g_return_val_if_fail (self->kind == REQUEST_MIGRATION, NULL);
 
-    g_return_val_if_fail (priv->kind == REQUEST_MIGRATION, NULL);
+    *n_offered = self->n_offered;
 
-    *n_offered = priv->n_offered;
-
-    return priv->offered;
+    return self->offered;
 }
 
 /**
@@ -262,9 +246,7 @@ g_paste_prompt_request_get_current (const GPastePromptRequest *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_NOOP);
 
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
-
-    return priv->current;
+    return self->current;
 }
 
 /**
@@ -340,11 +322,10 @@ g_paste_prompt_request_reply_migration (GPastePromptRequest *self,
      * this build cannot construct would be persisted and then silently degrade
      * to "no storage", leaving the daemon not persisting at all across
      * restarts. The toggles are clamped where they are acted on. */
-    const GPastePromptRequestPrivate *priv = _g_paste_prompt_request_get_instance_private (self);
     gboolean offered = FALSE;
 
-    for (guint i = 0; i < priv->n_offered && !offered; ++i)
-        offered = (priv->offered[i] == chosen);
+    for (guint i = 0; i < self->n_offered && !offered; ++i)
+        offered = (self->offered[i] == chosen);
 
     if (!offered)
     {
@@ -430,7 +411,7 @@ g_paste_prompt_passphrase_async (GPastePrompt         *self,
     g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_PASSPHRASE,
                                                                           g_paste_prompt_passphrase_async,
                                                                           callback, user_data);
-    GPastePromptRequestPrivate *priv = g_paste_prompt_request_get_instance_private (request);
+    GPastePromptRequest *priv = request;
 
     priv->confirm = confirm;
     priv->error_message = g_strdup (error_message);
@@ -517,7 +498,7 @@ g_paste_prompt_migration_async (GPastePrompt        *self,
     g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_MIGRATION,
                                                                           g_paste_prompt_migration_async,
                                                                           callback, user_data);
-    GPastePromptRequestPrivate *priv = g_paste_prompt_request_get_instance_private (request);
+    GPastePromptRequest *priv = request;
 
     priv->offered = g_memdup2 (offered, n_offered * sizeof (GPasteStorage));
     priv->n_offered = n_offered;

@@ -31,14 +31,11 @@
 struct _GPasteTextContentProvider
 {
     GdkContentProvider parent_instance;
+
+    gchar *text;
 };
 
-typedef struct
-{
-    gchar *text;
-} GPasteTextContentProviderPrivate;
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (TextContentProvider, text_content_provider, GDK_TYPE_CONTENT_PROVIDER)
+G_PASTE_DEFINE_TYPE (TextContentProvider, text_content_provider, GDK_TYPE_CONTENT_PROVIDER)
 
 /* The gtype is what lets local readers get our value directly, but the mime
  * types have to be advertised here as well: gdk_clipboard_write_async only
@@ -72,11 +69,11 @@ g_paste_text_content_provider_get_value (GdkContentProvider *provider,
                                          GValue             *value,
                                          GError            **error)
 {
-    const GPasteTextContentProviderPrivate *priv = _g_paste_text_content_provider_get_instance_private (G_PASTE_TEXT_CONTENT_PROVIDER (provider));
+    const GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
 
     if (G_VALUE_HOLDS (value, G_TYPE_STRING))
     {
-        g_value_set_string (value, priv->text);
+        g_value_set_string (value, self->text);
         return TRUE;
     }
 
@@ -145,13 +142,13 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider  *provid
                                                      GAsyncReadyCallback  callback,
                                                      gpointer             user_data)
 {
-    const GPasteTextContentProviderPrivate *priv = _g_paste_text_content_provider_get_instance_private (G_PASTE_TEXT_CONTENT_PROVIDER (provider));
+    const GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
     GTask *task = g_task_new (provider, cancellable, callback, user_data);
 
     g_task_set_priority (task, io_priority);
     g_task_set_source_tag (task, g_paste_text_content_provider_write_mime_type_async);
 
-    GBytes *bytes = g_paste_text_content_provider_encode (priv->text, mime_type);
+    GBytes *bytes = g_paste_text_content_provider_encode (self->text, mime_type);
 
     if (!bytes)
     {
@@ -190,9 +187,9 @@ g_paste_text_content_provider_write_mime_type_finish (GdkContentProvider *provid
 static void
 g_paste_text_content_provider_finalize (GObject *object)
 {
-    GPasteTextContentProviderPrivate *priv = g_paste_text_content_provider_get_instance_private (G_PASTE_TEXT_CONTENT_PROVIDER (object));
+    GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (object);
 
-    g_free (priv->text);
+    g_free (self->text);
 
     G_OBJECT_CLASS (g_paste_text_content_provider_parent_class)->finalize (object);
 }
@@ -230,9 +227,8 @@ g_paste_text_content_provider_new (const gchar *text)
     g_return_val_if_fail (text, NULL);
 
     GPasteTextContentProvider *self = g_object_new (G_PASTE_TYPE_TEXT_CONTENT_PROVIDER, NULL);
-    GPasteTextContentProviderPrivate *priv = g_paste_text_content_provider_get_instance_private (self);
 
-    priv->text = g_strdup (text);
+    self->text = g_strdup (text);
 
     return GDK_CONTENT_PROVIDER (self);
 }

@@ -20,10 +20,7 @@
 struct _GPasteHistorySaver
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     GPasteStorageBackend        *backend;
     gpointer                     owner; /* not ref'd: owns us, outlives us */
     GPasteHistorySaverLoadedFunc loaded;
@@ -49,9 +46,9 @@ typedef struct
      * in-flight load (which keeps us alive through the task's own reference) must
      * not hand its now-stale result back to it. */
     gboolean                     detached;
-} GPasteHistorySaverPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (HistorySaver, history_saver, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE (HistorySaver, history_saver, G_TYPE_OBJECT)
 
 /****************/
 /* Write path   */
@@ -110,15 +107,15 @@ g_paste_history_saver_write_task (GTask        *task,
                                   GCancellable *cancellable G_GNUC_UNUSED)
 {
     const GPasteHistorySaverWrite *data = task_data;
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (data->saver);
+    GPasteHistorySaver *self = data->saver;
 
     g_paste_history_saver_do_write (data);
 
     /* Let a concurrent g_paste_history_saver_drain() know this write is done. */
-    g_mutex_lock (&priv->drain_mutex);
-    priv->worker_running = FALSE;
-    g_cond_signal (&priv->drain_cond);
-    g_mutex_unlock (&priv->drain_mutex);
+    g_mutex_lock (&self->drain_mutex);
+    self->worker_running = FALSE;
+    g_cond_signal (&self->drain_cond);
+    g_mutex_unlock (&self->drain_mutex);
 
     g_task_return_boolean (task, TRUE);
 }
@@ -128,26 +125,24 @@ static void g_paste_history_saver_write_done (GObject *source_object, GAsyncResu
 static void
 g_paste_history_saver_start_write (GPasteHistorySaver *self)
 {
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
-    if (priv->write_in_progress || g_queue_is_empty (&priv->pending))
+    if (self->write_in_progress || g_queue_is_empty (&self->pending))
         return;
 
-    priv->write_in_progress = TRUE;
+    self->write_in_progress = TRUE;
 
     /* Set before launching so a drain that runs before the worker starts still
      * sees the write as in flight and waits for it. */
-    g_mutex_lock (&priv->drain_mutex);
-    priv->worker_running = TRUE;
-    g_mutex_unlock (&priv->drain_mutex);
+    g_mutex_lock (&self->drain_mutex);
+    self->worker_running = TRUE;
+    g_mutex_unlock (&self->drain_mutex);
 
-    GPasteHistorySaverWrite *data = g_queue_pop_head (&priv->pending);
+    GPasteHistorySaverWrite *data = g_queue_pop_head (&self->pending);
 
     /* Hold our own ref for the duration of the task: the owner keeps us alive
      * only as long as it still owns us, but g_paste_history_reload_backend()
      * swaps its saver out mid-flight, so rely on this ref (released in
      * write_done) rather than the owner to survive until the callback fires. */
-    g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_write_done, g_object_ref (self));
+    g_autoptr (GTask) task = g_task_new (self->owner, NULL, g_paste_history_saver_write_done, g_object_ref (self));
     g_task_set_static_name (task, "gpaste-history-write");
     g_task_set_task_data (task, data, g_paste_history_saver_write_free);
     g_task_run_in_thread (task, g_paste_history_saver_write_task);
@@ -159,9 +154,8 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
                                   gpointer      user_data)
 {
     g_autoptr (GPasteHistorySaver) self = user_data; /* the ref taken in start_write */
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
 
-    priv->write_in_progress = FALSE;
+    self->write_in_progress = FALSE;
 
     /* More changes may have queued up while we were writing: drain the next. */
     g_paste_history_saver_start_write (self);
@@ -193,13 +187,11 @@ g_paste_history_saver_record (GPasteHistorySaver  *self,
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
 
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
     /* A non-incremental backend ignores the granular hint and rewrites the whole
      * snapshot, so collapse any pending writes into a single full one. */
-    if (!g_paste_storage_backend_is_incremental (priv->backend))
+    if (!g_paste_storage_backend_is_incremental (self->backend))
     {
-        g_queue_clear_full (&priv->pending, g_paste_history_saver_write_free);
+        g_queue_clear_full (&self->pending, g_paste_history_saver_write_free);
         op = G_PASTE_HISTORY_SAVE_FULL;
         item = NULL;
         uuid = NULL;
@@ -207,14 +199,14 @@ g_paste_history_saver_record (GPasteHistorySaver  *self,
 
     GPasteHistorySaverWrite *data = g_new0 (GPasteHistorySaverWrite, 1);
     data->saver = self;
-    data->backend = g_object_ref (priv->backend);
+    data->backend = g_object_ref (self->backend);
     data->op = op;
     data->name = g_strdup (name);
     data->item = item ? g_object_ref ((GPasteItem *) item) : NULL;
     data->uuid = g_strdup (uuid);
     data->history = history;
 
-    g_queue_push_tail (&priv->pending, data);
+    g_queue_push_tail (&self->pending, data);
 
     g_paste_history_saver_start_write (self);
 }
@@ -234,20 +226,18 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
 
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
     /* Wait for the in-flight worker write (if any) to finish. We cannot spin the
      * main loop here (that is where the write-done callback would run), so the
      * worker signals us directly when its write completes. */
-    g_mutex_lock (&priv->drain_mutex);
-    while (priv->worker_running)
-        g_cond_wait (&priv->drain_cond, &priv->drain_mutex);
-    g_mutex_unlock (&priv->drain_mutex);
+    g_mutex_lock (&self->drain_mutex);
+    while (self->worker_running)
+        g_cond_wait (&self->drain_cond, &self->drain_mutex);
+    g_mutex_unlock (&self->drain_mutex);
 
     /* Apply whatever is still queued synchronously, in order. */
-    while (!g_queue_is_empty (&priv->pending))
+    while (!g_queue_is_empty (&self->pending))
     {
-        GPasteHistorySaverWrite *data = g_queue_pop_head (&priv->pending);
+        GPasteHistorySaverWrite *data = g_queue_pop_head (&self->pending);
 
         g_paste_history_saver_do_write (data);
         g_paste_history_saver_write_free (data);
@@ -274,9 +264,7 @@ g_paste_history_saver_detach (GPasteHistorySaver *self)
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
 
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
-    priv->detached = TRUE;
+    self->detached = TRUE;
 }
 
 /****************/
@@ -341,7 +329,6 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
                                  gpointer      user_data)
 {
     g_autoptr (GPasteHistorySaver) self = user_data; /* the ref taken in _load */
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
     const GPasteHistorySaverLoadData *data = g_task_get_task_data (G_TASK (result));
 
     g_autoptr (GError) error = NULL;
@@ -350,16 +337,16 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
     /* The owner replaced us (g_paste_history_reload_backend): this result comes
      * from the backend it just moved away from, so installing it would clobber
      * the freshly loaded one. */
-    if (priv->detached)
+    if (self->detached)
         return;
 
     /* A newer load superseded this one: leave load_in_progress set (the newer
      * load will clear it) and drop this stale result, so is_loading() does not
      * briefly report FALSE and let a save race the still-running load. */
-    if (data->generation != priv->load_generation)
+    if (data->generation != self->load_generation)
         return;
 
-    priv->load_in_progress = FALSE;
+    self->load_in_progress = FALSE;
 
     if (!load_result)
     {
@@ -368,7 +355,7 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    priv->loaded (priv->owner, g_steal_pointer (&load_result->history), load_result->size,
+    self->loaded (self->owner, g_steal_pointer (&load_result->history), load_result->size,
                   data->save_after, load_result->readable);
 }
 
@@ -388,24 +375,22 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
 
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
-    priv->load_in_progress = TRUE;
-    priv->load_generation++;
+    self->load_in_progress = TRUE;
+    self->load_generation++;
 
     GPasteHistorySaverLoadData *data = g_new (GPasteHistorySaverLoadData, 1);
-    data->backend = g_object_ref (priv->backend);
+    data->backend = g_object_ref (self->backend);
     data->name = g_strdup (name);
-    data->generation = priv->load_generation;
+    data->generation = self->load_generation;
     /* save_after exists so a snapshot-rewriting backend persists its read-time
      * normalization (format upgrade, uuid dedup, truncation). An incremental
      * backend normalizes its storage on open instead, so writing the whole
      * history back after a load would be pure churn: drop the request. */
-    data->save_after = save_after && !g_paste_storage_backend_is_incremental (priv->backend);
+    data->save_after = save_after && !g_paste_storage_backend_is_incremental (self->backend);
 
     /* Hold our own ref for the task (see start_write): reload_backend may drop
      * the owner's ref to us while this load is still in flight. */
-    g_autoptr (GTask) task = g_task_new (priv->owner, NULL, g_paste_history_saver_load_done, g_object_ref (self));
+    g_autoptr (GTask) task = g_task_new (self->owner, NULL, g_paste_history_saver_load_done, g_object_ref (self));
     g_task_set_static_name (task, "gpaste-history-load");
     g_task_set_task_data (task, data, g_paste_history_saver_load_data_free);
     g_task_run_in_thread (task, g_paste_history_saver_load_task);
@@ -426,13 +411,11 @@ g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
 
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
     /* The same mechanism a superseding load relies on: bumping the generation
      * makes load_done() drop the stale result. Unlike that case there is no
      * newer load to clear @load_in_progress, so clear it here. */
-    priv->load_generation++;
-    priv->load_in_progress = FALSE;
+    self->load_generation++;
+    self->load_in_progress = FALSE;
 }
 
 /**
@@ -446,9 +429,7 @@ g_paste_history_saver_is_loading (const GPasteHistorySaver *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY_SAVER (self), FALSE);
 
-    const GPasteHistorySaverPrivate *priv = _g_paste_history_saver_get_instance_private (self);
-
-    return priv->load_in_progress;
+    return self->load_in_progress;
 }
 
 /****************/
@@ -459,10 +440,9 @@ static void
 g_paste_history_saver_dispose (GObject *object)
 {
     GPasteHistorySaver *self = G_PASTE_HISTORY_SAVER (object);
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
 
-    g_queue_clear_full (&priv->pending, g_paste_history_saver_write_free);
-    g_clear_object (&priv->backend);
+    g_queue_clear_full (&self->pending, g_paste_history_saver_write_free);
+    g_clear_object (&self->backend);
 
     G_OBJECT_CLASS (g_paste_history_saver_parent_class)->dispose (object);
 }
@@ -470,10 +450,10 @@ g_paste_history_saver_dispose (GObject *object)
 static void
 g_paste_history_saver_finalize (GObject *object)
 {
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (G_PASTE_HISTORY_SAVER (object));
+    GPasteHistorySaver *self = G_PASTE_HISTORY_SAVER (object);
 
-    g_mutex_clear (&priv->drain_mutex);
-    g_cond_clear (&priv->drain_cond);
+    g_mutex_clear (&self->drain_mutex);
+    g_cond_clear (&self->drain_cond);
 
     G_OBJECT_CLASS (g_paste_history_saver_parent_class)->finalize (object);
 }
@@ -488,11 +468,9 @@ g_paste_history_saver_class_init (GPasteHistorySaverClass *klass)
 static void
 g_paste_history_saver_init (GPasteHistorySaver *self)
 {
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
-
-    g_queue_init (&priv->pending);
-    g_mutex_init (&priv->drain_mutex);
-    g_cond_init (&priv->drain_cond);
+    g_queue_init (&self->pending);
+    g_mutex_init (&self->drain_mutex);
+    g_cond_init (&self->drain_cond);
 }
 
 /**
@@ -518,11 +496,10 @@ g_paste_history_saver_new (GPasteStorageBackend        *backend,
     g_return_val_if_fail (loaded, NULL);
 
     GPasteHistorySaver *self = g_object_new (G_PASTE_TYPE_HISTORY_SAVER, NULL);
-    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
 
-    priv->backend = g_object_ref (backend);
-    priv->owner = owner;
-    priv->loaded = loaded;
+    self->backend = g_object_ref (backend);
+    self->owner = owner;
+    self->loaded = loaded;
 
     return self;
 }

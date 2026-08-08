@@ -10,10 +10,7 @@
 struct _GPasteImageItem
 {
     GPasteItem parent_instance;
-};
 
-typedef struct _GPasteImageItemPrivate
-{
     gchar      *checksum;
     GDateTime  *date;
     GdkTexture *image;
@@ -24,9 +21,9 @@ typedef struct _GPasteImageItemPrivate
     GBytes     *png;
 
     guint64    additional_size;
-} GPasteImageItemPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ImageItem, image_item, G_PASTE_TYPE_ITEM)
+G_PASTE_DEFINE_TYPE (ImageItem, image_item, G_PASTE_TYPE_ITEM)
 
 /**
  * g_paste_image_item_get_checksum:
@@ -41,9 +38,7 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-
-    return priv->checksum;
+    return self->checksum;
 }
 
 /**
@@ -59,9 +54,7 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-
-    return priv->date;
+    return self->date;
 }
 
 /**
@@ -77,9 +70,7 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-
-    return priv->image;
+    return self->image;
 }
 
 /**
@@ -96,9 +87,7 @@ g_paste_image_item_get_png_bytes (const GPasteImageItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-
-    return priv->png;
+    return self->png;
 }
 
 /* Attach the encoded PNG (transfer full) and account for the memory it keeps
@@ -107,7 +96,7 @@ static void
 g_paste_image_item_take_png (GPasteItem *self,
                              GBytes     *png)
 {
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
+    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
 
     priv->png = png;
     g_paste_item_add_size (self, g_bytes_get_size (png));
@@ -120,8 +109,8 @@ g_paste_image_item_equals (const GPasteItem *self,
     if (!_G_PASTE_IS_IMAGE_ITEM (other))
         return FALSE;
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (_G_PASTE_IMAGE_ITEM (self));
-    const GPasteImageItemPrivate *_priv = _g_paste_image_item_get_instance_private (_G_PASTE_IMAGE_ITEM (other));
+    const GPasteImageItem *priv = _G_PASTE_IMAGE_ITEM (self);
+    const GPasteImageItem *_priv = _G_PASTE_IMAGE_ITEM (other);
 
     return g_paste_str_equal (priv->checksum, _priv->checksum);
 }
@@ -129,7 +118,7 @@ g_paste_image_item_equals (const GPasteItem *self,
 static void
 g_paste_image_item_set_size (GPasteItem *self)
 {
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
+    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
     GdkTexture *image = priv->image;
 
     if (image)
@@ -157,7 +146,7 @@ static void
 g_paste_image_item_set_state (GPasteItem     *self,
                               GPasteItemState state)
 {
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
+    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
 
     switch (state)
     {
@@ -187,10 +176,10 @@ g_paste_image_item_set_state (GPasteItem     *self,
 static void
 g_paste_image_item_dispose (GObject *object)
 {
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
-    g_clear_pointer (&priv->date, g_date_time_unref);
-    g_clear_object (&priv->image);
-    g_clear_pointer (&priv->png, g_bytes_unref);
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (object);
+    g_clear_pointer (&self->date, g_date_time_unref);
+    g_clear_object (&self->image);
+    g_clear_pointer (&self->png, g_bytes_unref);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->dispose (object);
 }
@@ -198,9 +187,9 @@ g_paste_image_item_dispose (GObject *object)
 static void
 g_paste_image_item_finalize (GObject *object)
 {
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
+    const GPasteImageItem *self = G_PASTE_IMAGE_ITEM (object);
 
-    g_free (priv->checksum);
+    g_free (self->checksum);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->finalize (object);
 }
@@ -232,7 +221,7 @@ _g_paste_image_item_new (const gchar *path,
                          gchar       *checksum)
 {
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
+    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
 
     priv->date = date;
     priv->image = image;
@@ -375,9 +364,7 @@ g_paste_image_item_get_path_for_history (const GPasteImageItem *self,
     g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
     g_return_val_if_fail (history_name, NULL);
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-
-    return (priv->checksum) ? g_paste_image_item_get_image_path (history_name, priv->checksum) : NULL;
+    return (self->checksum) ? g_paste_image_item_get_image_path (history_name, self->checksum) : NULL;
 }
 
 /**
@@ -397,12 +384,10 @@ g_paste_image_item_set_history (GPasteImageItem *self,
     g_return_if_fail (_G_PASTE_IS_IMAGE_ITEM (self));
     g_return_if_fail (history_name);
 
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-
-    if (!priv->checksum)
+    if (!self->checksum)
         return;
 
-    g_autofree gchar *path = g_paste_image_item_get_image_path (history_name, priv->checksum);
+    g_autofree gchar *path = g_paste_image_item_get_image_path (history_name, self->checksum);
 
     g_paste_item_set_value (G_PASTE_ITEM (self), path);
 }

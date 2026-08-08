@@ -11,10 +11,8 @@
 
 G_BEGIN_DECLS
 
-/* The subset of the daemon's state the D-Bus method handlers operate on.
- * The fields are named to match GPasteDaemonPrivate so the handlers (and the
- * signal-emitting macros below, which reference priv->connection) can live
- * outside the daemon object with minimal change. */
+/* The subset of the daemon's state the D-Bus method handlers operate on, so
+ * they can live outside the daemon object. */
 typedef struct
 {
     GDBusConnection         *connection;
@@ -23,34 +21,38 @@ typedef struct
     GPasteClipboardsManager *clipboards_manager;
 } GPasteDaemonMethods;
 
-#define G_PASTE_SEND_DBUS_SIGNAL_FULLER(interface, sig, data, error) \
-    g_dbus_connection_emit_signal (priv->connection,                 \
-                                   NULL, /* destination_bus_name */  \
-                                   G_PASTE_DAEMON_OBJECT_PATH,       \
-                                   interface,                        \
-                                   sig,                              \
-                                   data,                             \
+/* @conn is explicit: these are expanded both from the daemon object and from
+ * the free-standing method handlers, which hold their connection in different
+ * places. They used to reach for a local named priv, which is why the context
+ * struct above had to mirror the daemon's field names. */
+#define G_PASTE_SEND_DBUS_SIGNAL_FULLER(conn, interface, sig, data, error) \
+    g_dbus_connection_emit_signal (conn,                                   \
+                                   NULL, /* destination_bus_name */        \
+                                   G_PASTE_DAEMON_OBJECT_PATH,             \
+                                   interface,                              \
+                                   sig,                                    \
+                                   data,                                   \
                                    error)
 
-#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,error) \
-    G_PASTE_SEND_DBUS_SIGNAL_FULLER (G_PASTE_DAEMON_INTERFACE_NAME, G_PASTE_DAEMON_SIG_##sig, data, error)
+#define G_PASTE_SEND_DBUS_SIGNAL_FULL(conn,sig,data,error) \
+    G_PASTE_SEND_DBUS_SIGNAL_FULLER (conn, G_PASTE_DAEMON_INTERFACE_NAME, G_PASTE_DAEMON_SIG_##sig, data, error)
 
-#define G_PASTE_SEND_DBUS_PROPERTIES_CHANGED(property, value)      \
-    GVariantDict dict;                                             \
-    g_variant_dict_init (&dict, NULL);                             \
-    g_variant_dict_insert_value (&dict, property, value);          \
-    GVariant *data = g_variant_new ("(s@a{sv}@as)",                \
-                                    G_PASTE_DAEMON_INTERFACE_NAME, \
-                                    g_variant_dict_end (&dict),    \
-                                    g_variant_new_strv (NULL, 0)); \
-    G_PASTE_SEND_DBUS_SIGNAL_FULLER ("org.freedesktop.DBus.Properties", "PropertiesChanged", data, NULL)
+#define G_PASTE_SEND_DBUS_PROPERTIES_CHANGED(conn, property, value) \
+    GVariantDict dict;                                              \
+    g_variant_dict_init (&dict, NULL);                              \
+    g_variant_dict_insert_value (&dict, property, value);           \
+    GVariant *data = g_variant_new ("(s@a{sv}@as)",                 \
+                                    G_PASTE_DAEMON_INTERFACE_NAME,  \
+                                    g_variant_dict_end (&dict),     \
+                                    g_variant_new_strv (NULL, 0));  \
+    G_PASTE_SEND_DBUS_SIGNAL_FULLER (conn, "org.freedesktop.DBus.Properties", "PropertiesChanged", data, NULL)
 
 #define __NODATA     g_variant_new_tuple (NULL,  0)
 #define __DATA(data) g_variant_new_tuple (&data, 1)
 
-#define G_PASTE_SEND_DBUS_SIGNAL(sig)             G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  NULL)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)  G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  error)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,d) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __DATA(d), NULL)
+#define G_PASTE_SEND_DBUS_SIGNAL(conn,sig)             G_PASTE_SEND_DBUS_SIGNAL_FULL(conn, sig, __NODATA,  NULL)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(conn,sig)  G_PASTE_SEND_DBUS_SIGNAL_FULL(conn, sig, __NODATA,  error)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(conn,sig,d) G_PASTE_SEND_DBUS_SIGNAL_FULL(conn, sig, __DATA(d), NULL)
 
 /* Bail out of a method handler with a #GPasteError. The domain is registered
  * with GDBus, so @code decides the error name the client sees and the code it

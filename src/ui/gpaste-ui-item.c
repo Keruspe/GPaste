@@ -8,10 +8,7 @@
 struct _GPasteUiItem
 {
     GPasteUiItemSkeleton parent_instance;
-};
 
-typedef struct
-{
     GPasteClient   *client;
     GPasteSettings *settings;
 
@@ -20,9 +17,9 @@ typedef struct
     guint64         index;
     gboolean        fake_index;
     gchar          *uuid;
-} GPasteUiItemPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
+G_PASTE_DEFINE_TYPE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
 
 /**
  * g_paste_ui_item_get_uuid:
@@ -37,9 +34,7 @@ g_paste_ui_item_get_uuid (GPasteUiItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_UI_ITEM (self), NULL);
 
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
-
-    return priv->uuid;
+    return self->uuid;
 }
 
 /**
@@ -55,15 +50,13 @@ g_paste_ui_item_activate (GPasteUiItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_UI_ITEM (self), FALSE);
 
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
-
-    if (!priv->uuid)
+    if (!self->uuid)
         return FALSE;
 
-    g_paste_client_select (priv->client, priv->uuid, NULL, NULL);
+    g_paste_client_select (self->client, self->uuid, NULL, NULL);
 
-    if (g_paste_settings_get_close_on_select (priv->settings))
-        gtk_window_close (priv->rootwin); /* Exit the application */
+    if (g_paste_settings_get_close_on_select (self->settings))
+        gtk_window_close (self->rootwin); /* Exit the application */
 
     return TRUE;
 }
@@ -74,9 +67,8 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
                                 gpointer      user_data)
 {
     g_autoptr (GPasteUiItem) self = user_data;
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    g_autoptr (GdkTexture) texture = g_paste_gtk_util_get_image_finish (priv->client, res, &error);
+    g_autoptr (GdkTexture) texture = g_paste_gtk_util_get_image_finish (self->client, res, &error);
 
     if (!texture)
     {
@@ -93,9 +85,8 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
                                gpointer      user_data)
 {
     g_autoptr (GPasteUiItem) self = user_data;
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    GPasteItemKind kind = g_paste_client_get_element_kind_finish (priv->client, res, &error);
+    GPasteItemKind kind = g_paste_client_get_element_kind_finish (self->client, res, &error);
 
     if (error)
         return;
@@ -106,7 +97,7 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
     g_paste_ui_item_skeleton_set_uploadable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
-        g_paste_client_get_image (priv->client, priv->uuid, g_paste_ui_item_on_image_ready, g_object_ref (self));
+        g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, g_object_ref (self));
     else
         g_paste_ui_item_skeleton_set_thumbnail (sk, NULL);
 }
@@ -118,13 +109,12 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
     if (!txt)
         return;
 
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autofree gchar *oneline = g_strdelimit (g_strdup (txt), "\n\t", ' ');
 
-    g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), priv->index, priv->uuid);
-    g_paste_client_get_element_kind (priv->client, priv->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));
+    g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), self->index, self->uuid);
+    g_paste_client_get_element_kind (self->client, self->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));
 
-    if (!priv->index)
+    if (!self->index)
         g_paste_ui_item_skeleton_set_text_bold (G_PASTE_UI_ITEM_SKELETON (self), oneline);
     else
         g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), oneline);
@@ -136,9 +126,8 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
                                gpointer      user_data)
 {
     g_autoptr (GPasteUiItem) self = user_data;
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
+    g_autofree gchar *txt = g_paste_client_get_element_finish (self->client, res, &error);
 
     if (!txt || error)
         return;
@@ -152,14 +141,13 @@ g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
                                gpointer      user_data)
 {
     g_autoptr (GPasteUiItem) self = user_data;
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClientItem) txt = g_paste_client_get_element_at_index_finish (priv->client, res, &error);
+    g_autoptr (GPasteClientItem) txt = g_paste_client_get_element_at_index_finish (self->client, res, &error);
 
     if (!txt || error)
         return;
 
-    g_set_str (&priv->uuid, g_paste_client_item_get_uuid (txt));
+    g_set_str (&self->uuid, g_paste_client_item_get_uuid (txt));
 
     _g_paste_ui_item_ready (self, g_paste_client_item_get_value (txt));
 }
@@ -169,12 +157,10 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
 
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
-
-    if (priv->fake_index)
-        g_paste_client_get_element (priv->client, priv->uuid, g_paste_ui_item_on_text_ready, g_object_ref (self));
+    if (self->fake_index)
+        g_paste_client_get_element (self->client, self->uuid, g_paste_ui_item_on_text_ready, g_object_ref (self));
     else
-        g_paste_client_get_element_at_index (priv->client, priv->index, g_paste_ui_item_on_item_ready, g_object_ref (self));
+        g_paste_client_get_element_at_index (self->client, self->index, g_paste_ui_item_on_item_ready, g_object_ref (self));
 }
 
 /**
@@ -196,17 +182,15 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
                             guint64       index,
                             gboolean      fake_index)
 {
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
-
-    priv->index = index;
-    priv->fake_index = fake_index;
+    self->index = index;
+    self->fake_index = fake_index;
 
     if (index != (guint64) -1)
     {
         g_paste_ui_item_reset_text (self);
         gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
     }
-    else if (priv->uuid)
+    else if (self->uuid)
         gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
 }
 
@@ -239,9 +223,7 @@ g_paste_ui_item_set_uuid (GPasteUiItem *self,
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
 
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
-
-    g_set_str (&priv->uuid, uuid);
+    g_set_str (&self->uuid, uuid);
 
     _g_paste_ui_item_set_index (self, (guint64) -2, TRUE);
 }
@@ -249,11 +231,11 @@ g_paste_ui_item_set_uuid (GPasteUiItem *self,
 static void
 g_paste_ui_item_dispose (GObject *object)
 {
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (object));
+    GPasteUiItem *self = G_PASTE_UI_ITEM (object);
 
-    g_clear_object (&priv->client);
-    g_clear_object (&priv->settings);
-    g_clear_pointer (&priv->uuid, g_free);
+    g_clear_object (&self->client);
+    g_clear_object (&self->settings);
+    g_clear_pointer (&self->uuid, g_free);
 
     G_OBJECT_CLASS (g_paste_ui_item_parent_class)->dispose (object);
 }
@@ -267,7 +249,7 @@ g_paste_ui_item_class_init (GPasteUiItemClass *klass)
 static void
 g_paste_ui_item_init (GPasteUiItem *self)
 {
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
+    GPasteUiItem *priv = G_PASTE_UI_ITEM (self);
 
     priv->index = (guint64) -1;
 }
@@ -295,7 +277,7 @@ g_paste_ui_item_new (GPasteClient   *client,
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_paste_ui_item_skeleton_new (G_PASTE_TYPE_UI_ITEM, client, settings, rootwin);
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
+    GPasteUiItem *priv = G_PASTE_UI_ITEM (self);
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);

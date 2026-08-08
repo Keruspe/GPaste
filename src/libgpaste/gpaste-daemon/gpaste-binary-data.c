@@ -6,15 +6,12 @@
 struct _GPasteBinaryData
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     GPasteSpecialAtom  mime;
     GBytes            *bytes;
-} GPasteBinaryDataPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (BinaryData, binary_data, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE (BinaryData, binary_data, G_TYPE_OBJECT)
 
 /**
  * g_paste_binary_data_get_mime:
@@ -29,9 +26,7 @@ g_paste_binary_data_get_mime (const GPasteBinaryData *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), G_PASTE_SPECIAL_ATOM_INVALID);
 
-    const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
-
-    return priv->mime;
+    return self->mime;
 }
 
 /**
@@ -47,9 +42,7 @@ g_paste_binary_data_get_bytes (const GPasteBinaryData *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
 
-    const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
-
-    return priv->bytes;
+    return self->bytes;
 }
 
 /**
@@ -66,10 +59,8 @@ g_paste_binary_data_to_base64 (const GPasteBinaryData *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
 
-    const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
-
     gsize len;
-    const guchar *data = g_bytes_get_data (priv->bytes, &len);
+    const guchar *data = g_bytes_get_data (self->bytes, &len);
 
     return g_base64_encode (data, len);
 }
@@ -77,9 +68,9 @@ g_paste_binary_data_to_base64 (const GPasteBinaryData *self)
 static void
 g_paste_binary_data_dispose (GObject *object)
 {
-    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (G_PASTE_BINARY_DATA (object));
+    GPasteBinaryData *self = G_PASTE_BINARY_DATA (object);
 
-    g_clear_pointer (&priv->bytes, g_bytes_unref);
+    g_clear_pointer (&self->bytes, g_bytes_unref);
 
     G_OBJECT_CLASS (g_paste_binary_data_parent_class)->dispose (object);
 }
@@ -113,10 +104,9 @@ g_paste_binary_data_new (GPasteSpecialAtom  mime,
     g_return_val_if_fail (g_bytes_get_size (bytes) > 0, NULL);
 
     GPasteBinaryData *self = g_object_new (G_PASTE_TYPE_BINARY_DATA, NULL);
-    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (self);
 
-    priv->mime = mime;
-    priv->bytes = bytes;
+    self->mime = mime;
+    self->bytes = bytes;
 
     return self;
 }

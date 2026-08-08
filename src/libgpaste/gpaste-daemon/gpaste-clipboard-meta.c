@@ -44,10 +44,7 @@
 struct _GPasteClipboardMeta
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     MetaSelection         *selection;
     MetaSelectionType      type;
     gboolean               is_clipboard;
@@ -56,35 +53,29 @@ typedef struct
     gulong                 owner_changed_id;
 
     GPasteClipboardContent content;
-} GPasteClipboardMetaPrivate;
+};
 
 static void g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT,
+G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT,
                                                 G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
 
 static gboolean
 g_paste_clipboard_meta_is_clipboard (const GPasteClipboardMeta *self)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
-
-    return priv->is_clipboard;
+    return self->is_clipboard;
 }
 
 static const gchar *
 g_paste_clipboard_meta_get_text (const GPasteClipboardMeta *self)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
-
-    return g_paste_clipboard_content_get_text (&priv->content);
+    return g_paste_clipboard_content_get_text (&self->content);
 }
 
 static const gchar *
 g_paste_clipboard_meta_get_image_checksum (const GPasteClipboardMeta *self)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
-
-    return g_paste_clipboard_content_get_image_checksum (&priv->content);
+    return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
 /* --- mimetype helpers --- */
@@ -149,7 +140,6 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
                                   GPasteClipboardMetaBytesCallback callback,
                                   gpointer                         user_data)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
     GPasteClipboardMetaReadData *data = g_new0 (GPasteClipboardMetaReadData, 1);
 
     /* Hold a ref for the duration of the async transfer so the provider cannot be
@@ -159,8 +149,8 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
     data->callback = callback;
     data->user_data = user_data;
 
-    meta_selection_transfer_async (priv->selection,
-                                   priv->type,
+    meta_selection_transfer_async (self->selection,
+                                   self->type,
                                    mimetype,
                                    -1, /* size unknown */
                                    data->ostream,
@@ -438,18 +428,16 @@ static void
 g_paste_clipboard_meta_publish_source (GPasteClipboardMeta       *self,
                                        GPasteClipboardMetaSource *source)
 {
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
-
     /* Keep our own ref so we can recognise the resulting owner-change as ours. */
-    g_set_object (&priv->owned_source, META_SELECTION_SOURCE (source));
-    meta_selection_set_owner (priv->selection, priv->type, META_SELECTION_SOURCE (source));
+    g_set_object (&self->owned_source, META_SELECTION_SOURCE (source));
+    meta_selection_set_owner (self->selection, self->type, META_SELECTION_SOURCE (source));
     g_object_unref (source);
 }
 
 /* --- select_text --- */
 
 static void
-g_paste_clipboard_meta_private_set_text (GPasteClipboardMetaPrivate *priv,
+g_paste_clipboard_meta_private_set_text (GPasteClipboardMeta *priv,
                                          const gchar                *text)
 {
     g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
@@ -459,7 +447,7 @@ g_paste_clipboard_meta_private_set_text (GPasteClipboardMetaPrivate *priv,
 
 /* Same, for the callers that already own the string they hand over. */
 static void
-g_paste_clipboard_meta_private_set_text_take (GPasteClipboardMetaPrivate *priv,
+g_paste_clipboard_meta_private_set_text_take (GPasteClipboardMeta *priv,
                                               gchar                      *text)
 {
     g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
@@ -471,11 +459,9 @@ static void
 g_paste_clipboard_meta_select_text (GPasteClipboardMeta *self,
                                     const gchar         *text)
 {
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
+    g_debug ("%s: select text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_debug ("%s: select text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
-
-    g_paste_clipboard_meta_private_set_text (priv, text);
+    g_paste_clipboard_meta_private_set_text (self, text);
 
     g_autoptr (GBytes) bytes = g_bytes_new (text, strlen (text));
     GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -510,8 +496,7 @@ static void
 g_paste_clipboard_meta_sync_text (const GPasteClipboardMeta *self,
                                   GPasteClipboardMeta       *other)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
-    GList *mimetypes = meta_selection_get_mimetypes (priv->selection, priv->type);
+    GList *mimetypes = meta_selection_get_mimetypes (self->selection, self->type);
     /* Prefer the utf-8 form but accept bare text/plain too, like update() does, so a
      * source that only advertises text/plain still syncs (both are static strings,
      * safe to hand to the async read after the list is freed). */
@@ -542,9 +527,7 @@ static gboolean
 g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
                                     GPasteItem          *item)
 {
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
-
-    g_debug ("%s: select item", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: select item", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -554,7 +537,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         if (!texture)
             return FALSE;
 
-        g_paste_clipboard_content_set_image_checksum (&priv->content, checksum);
+        g_paste_clipboard_content_set_image_checksum (&self->content, checksum);
 
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -570,7 +553,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
 
-        g_paste_clipboard_content_set_color (&priv->content, rgba);
+        g_paste_clipboard_content_set_color (&self->content, rgba);
 
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -593,7 +576,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     {
         GdkFileList *file_list = g_paste_uris_item_get_file_list (G_PASTE_URIS_ITEM (item));
 
-        g_paste_clipboard_content_set_file_list (&priv->content, file_list);
+        g_paste_clipboard_content_set_file_list (&self->content, file_list);
 
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -610,7 +593,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 
     /* Plain text, with any rich-text/HTML/XML special values offered alongside. */
     const gchar *real_value = g_paste_item_get_real_value (item);
-    g_paste_clipboard_meta_private_set_text (priv, real_value);
+    g_paste_clipboard_meta_private_set_text (self, real_value);
 
     g_autoptr (GBytes) bytes = g_bytes_new (real_value, strlen (real_value));
     GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -625,9 +608,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 static gboolean
 g_paste_clipboard_meta_is_empty (const GPasteClipboardMeta *self)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
-
-    return g_paste_clipboard_content_is_empty (&priv->content);
+    return g_paste_clipboard_content_is_empty (&self->content);
 }
 
 /* --- update --- */
@@ -710,7 +691,6 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
                                        gpointer             user_data)
 {
     GPasteClipboardMetaUpdateData *data = user_data;
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
 
     if (!bytes)
     {
@@ -730,7 +710,7 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
     g_autofree gchar *text = g_strndup (raw, size);
     g_autofree gchar *value = NULL;
 
-    switch (g_paste_clipboard_content_classify_text (&priv->content, priv->settings, priv->is_clipboard, text, &value))
+    switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
     {
     case G_PASTE_CLIPBOARD_TEXT_REJECT:
         g_paste_clipboard_meta_update_maybe_done (data);
@@ -740,12 +720,12 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
         break;
     case G_PASTE_CLIPBOARD_TEXT_SET:
         /* RESELECT above still needs @value, but this branch is done with it. */
-        g_paste_clipboard_meta_private_set_text_take (priv, g_steal_pointer (&value));
+        g_paste_clipboard_meta_private_set_text_take (self, g_steal_pointer (&value));
         break;
     }
 
     data->produced = TRUE;
-    data->text = g_strdup (priv->content.str);
+    data->text = g_strdup (self->content.str);
     g_paste_clipboard_meta_update_maybe_done (data);
 }
 
@@ -772,7 +752,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
                                                      gpointer      user_data)
 {
     GPasteClipboardMetaUpdateData *data = user_data;
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (data->self);
+    GPasteClipboardMeta *priv = data->self;
     g_auto (GValue) value = G_VALUE_INIT;
     g_autoptr (GError) error = NULL;
 
@@ -923,8 +903,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
                                GPasteClipboardProviderUpdateCallback callback,
                                gpointer                              user_data)
 {
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
-    GList *mimetypes = meta_selection_get_mimetypes (priv->selection, priv->type);
+    GList *mimetypes = meta_selection_get_mimetypes (self->selection, self->type);
     GPasteClipboardContentKind content_kind = CLIPBOARD_CONTENT_NONE;
     const gchar *content_mime = NULL;
 
@@ -936,7 +915,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         content_kind = CLIPBOARD_CONTENT_COLOR;
     }
-    else if (g_paste_settings_get_images_support (priv->settings) &&
+    else if (g_paste_settings_get_images_support (self->settings) &&
              (content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_TEXTURE, META_MIME_IMAGE)))
     {
         content_kind = CLIPBOARD_CONTENT_IMAGE;
@@ -951,7 +930,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         /* The selection was released: clear our cache so callers see an
          * empty clipboard and act accordingly (e.g. ensure_not_empty). */
-        g_paste_clipboard_content_clear (&priv->content);
+        g_paste_clipboard_content_clear (&self->content);
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -962,8 +941,8 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
          * while images-support is disabled). Don't track it, but flag the
          * clipboard as non-empty so ensure_not_empty doesn't override it. */
         g_list_free_full (mimetypes, g_free);
-        g_paste_clipboard_content_clear (&priv->content);
-        priv->content.kind = CLIPBOARD_CONTENT_IGNORED;
+        g_paste_clipboard_content_clear (&self->content);
+        self->content.kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -1000,7 +979,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     }
 
     if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
-        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (priv->settings)))
+        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (self->settings)))
     {
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
@@ -1028,17 +1007,15 @@ g_paste_clipboard_meta_on_owner_changed (GPasteClipboardMeta *self,
                                          guint                selection_type,
                                          MetaSelectionSource *source)
 {
-    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
-
-    if ((MetaSelectionType) selection_type != priv->type)
+    if ((MetaSelectionType) selection_type != self->type)
         return;
 
     /* Our own writes come back here too: skip them, just like the GDK backend
      * skips gdk_clipboard_is_local() changes. */
-    if (source && source == priv->owned_source)
+    if (source && source == self->owned_source)
         return;
 
-    g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (self->is_clipboard));
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
 }
 
@@ -1048,16 +1025,16 @@ G_PASTE_CLIPBOARD_PROVIDER_DEFINE_VFUNCS (meta, META)
 static void
 g_paste_clipboard_meta_dispose (GObject *object)
 {
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (G_PASTE_CLIPBOARD_META (object));
+    GPasteClipboardMeta *self = G_PASTE_CLIPBOARD_META (object);
 
-    if (priv->selection && priv->owner_changed_id)
+    if (self->selection && self->owner_changed_id)
     {
-        g_clear_signal_handler (&priv->owner_changed_id, priv->selection);
-        priv->owner_changed_id = 0;
+        g_clear_signal_handler (&self->owner_changed_id, self->selection);
+        self->owner_changed_id = 0;
     }
-    g_clear_object (&priv->owned_source);
-    g_clear_object (&priv->selection);
-    g_clear_object (&priv->settings);
+    g_clear_object (&self->owned_source);
+    g_clear_object (&self->selection);
+    g_clear_object (&self->settings);
 
     G_OBJECT_CLASS (g_paste_clipboard_meta_parent_class)->dispose (object);
 }
@@ -1065,9 +1042,9 @@ g_paste_clipboard_meta_dispose (GObject *object)
 static void
 g_paste_clipboard_meta_finalize (GObject *object)
 {
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (G_PASTE_CLIPBOARD_META (object));
+    GPasteClipboardMeta *self = G_PASTE_CLIPBOARD_META (object);
 
-    g_paste_clipboard_content_clear (&priv->content);
+    g_paste_clipboard_content_clear (&self->content);
 
     G_OBJECT_CLASS (g_paste_clipboard_meta_parent_class)->finalize (object);
 }
@@ -1092,14 +1069,13 @@ _g_paste_clipboard_meta_new (MetaSelection  *selection,
                              gboolean        is_clipboard)
 {
     GPasteClipboardMeta *self = g_object_new (G_PASTE_TYPE_CLIPBOARD_META, NULL);
-    GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
 
-    priv->selection = g_object_ref (selection);
-    priv->type = is_clipboard ? META_SELECTION_CLIPBOARD : META_SELECTION_PRIMARY;
-    priv->is_clipboard = is_clipboard;
-    priv->settings = g_object_ref (settings);
+    self->selection = g_object_ref (selection);
+    self->type = is_clipboard ? META_SELECTION_CLIPBOARD : META_SELECTION_PRIMARY;
+    self->is_clipboard = is_clipboard;
+    self->settings = g_object_ref (settings);
 
-    priv->owner_changed_id = g_signal_connect_swapped (selection,
+    self->owner_changed_id = g_signal_connect_swapped (selection,
                                                        "owner-changed",
                                                        G_CALLBACK (g_paste_clipboard_meta_on_owner_changed),
                                                        self);

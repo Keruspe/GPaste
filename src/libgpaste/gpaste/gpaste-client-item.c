@@ -6,15 +6,12 @@
 struct _GPasteClientItem
 {
     GObject parent_instance;
-};
 
-typedef struct
-{
     gchar *uuid;
     gchar *value;
-} GPasteClientItemPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ClientItem, client_item, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE (ClientItem, client_item, G_TYPE_OBJECT)
 
 /**
  * g_paste_client_item_get_uuid:
@@ -27,9 +24,7 @@ g_paste_client_item_get_uuid (const GPasteClientItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_CLIENT_ITEM (self), NULL);
 
-    const GPasteClientItemPrivate *priv = _g_paste_client_item_get_instance_private (self);
-
-    return priv->uuid;
+    return self->uuid;
 }
 
 /**
@@ -43,18 +38,16 @@ g_paste_client_item_get_value (const GPasteClientItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_CLIENT_ITEM (self), NULL);
 
-    const GPasteClientItemPrivate *priv = _g_paste_client_item_get_instance_private (self);
-
-    return priv->value;
+    return self->value;
 }
 
 static void
 g_paste_client_item_finalize (GObject *object)
 {
-    GPasteClientItemPrivate *priv = g_paste_client_item_get_instance_private (G_PASTE_CLIENT_ITEM (object));
+    GPasteClientItem *self = G_PASTE_CLIENT_ITEM (object);
 
-    g_free (priv->uuid);
-    g_free (priv->value);
+    g_free (self->uuid);
+    g_free (self->value);
 
     G_OBJECT_CLASS (g_paste_client_item_parent_class)->finalize (object);
 }
@@ -88,10 +81,9 @@ g_paste_client_item_new (const gchar *uuid,
     g_return_val_if_fail (g_utf8_validate (value, -1, NULL), NULL);
 
     GPasteClientItem *self = g_object_new (G_PASTE_TYPE_CLIENT_ITEM, NULL);
-    GPasteClientItemPrivate *priv = g_paste_client_item_get_instance_private (self);
 
-    priv->uuid = g_strdup (uuid);
-    priv->value = g_strdup (value);
+    self->uuid = g_strdup (uuid);
+    self->value = g_strdup (value);
 
     return self;
 }

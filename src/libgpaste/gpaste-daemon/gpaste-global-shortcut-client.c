@@ -75,19 +75,16 @@ _shortcut_free (gpointer data)
     g_free (s->description);
 }
 
-typedef struct
-{
-    gchar     *session_handle;
-    gboolean   session_creating; /* a CreateSession round-trip is in flight */
-    GPtrArray *shortcuts;  /* _Shortcut*, owned via _shortcut_free */
-} GPasteGlobalShortcutClientPrivate;
-
 struct _GPasteGlobalShortcutClient
 {
     GDBusProxy parent_instance;
+
+    gchar     *session_handle;
+    gboolean   session_creating; /* a CreateSession round-trip is in flight */
+    GPtrArray *shortcuts;  /* _Shortcut*, owned via _shortcut_free */
 };
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GlobalShortcutClient, global_shortcut_client, G_TYPE_DBUS_PROXY)
+G_PASTE_DEFINE_TYPE (GlobalShortcutClient, global_shortcut_client, G_TYPE_DBUS_PROXY)
 
 /**********************/
 /* Shortcut variant   */
@@ -132,7 +129,7 @@ gtk_accel_to_portal_trigger (const gchar *accel)
 }
 
 static GVariant *
-build_shortcuts_variant (GPasteGlobalShortcutClientPrivate *priv)
+build_shortcuts_variant (GPasteGlobalShortcutClient *priv)
 {
     g_auto (GVariantBuilder) builder;
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(sa{sv})"));
@@ -200,8 +197,7 @@ on_bind_method_done (GObject      *source,
     if (!ret)
     {
         GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (source);
-        GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
-        g_clear_pointer (&priv->session_handle, g_free);
+        g_clear_pointer (&self->session_handle, g_free);
         g_task_return_error (task, g_steal_pointer (&error));
     }
     else
@@ -212,15 +208,14 @@ static void
 start_bind_async (GPasteGlobalShortcutClient *self,
                   GTask                         *task)
 {
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
     GDBusProxy *proxy = G_DBUS_PROXY (self);
 
     g_auto (GVariantBuilder) options;
     g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
 
     GVariant *params[] = {
-        g_variant_new_object_path (priv->session_handle),
-        build_shortcuts_variant (priv),
+        g_variant_new_object_path (self->session_handle),
+        build_shortcuts_variant (self),
         g_variant_new_string (""),
         g_variant_builder_end (&options)
     };
@@ -244,8 +239,8 @@ on_session_created (GDBusConnection *conn,
     g_dbus_connection_signal_unsubscribe (conn, data->signal_id);
     data->signal_id = 0; /* already unsubscribed; don't let the free do it again */
 
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
-    priv->session_creating = FALSE;
+    GPasteGlobalShortcutClient *self = data->client;
+    self->session_creating = FALSE;
 
     guint response;
     g_autoptr (GVariant) results = NULL;
@@ -268,7 +263,7 @@ on_session_created (GDBusConnection *conn,
         return;
     }
 
-    g_set_str (&priv->session_handle, g_variant_get_string (handle_v, NULL));
+    g_set_str (&self->session_handle, g_variant_get_string (handle_v, NULL));
 
     g_autoptr (GPasteGlobalShortcutClient) client = g_object_ref (data->client);
     g_autoptr (GTask) task = g_object_ref (data->task);
@@ -283,9 +278,9 @@ static gboolean
 on_session_timeout (gpointer user_data)
 {
     _SessionRequestData *data = user_data;
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
+    GPasteGlobalShortcutClient *self = data->client;
 
-    priv->session_creating = FALSE;
+    self->session_creating = FALSE;
     data->timeout_id = 0; /* this source is firing; don't let the free remove it */
 
     g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_TIMED_OUT,
@@ -306,8 +301,8 @@ on_create_session_method_done (GObject      *source,
 
     if (!ret)
     {
-        GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
-        priv->session_creating = FALSE;
+        GPasteGlobalShortcutClient *self = data->client;
+        self->session_creating = FALSE;
         g_task_return_error (data->task, g_steal_pointer (&error));
         session_request_data_free (data);
         return;
@@ -374,18 +369,16 @@ on_provider_bind_done (GObject      *source   G_GNUC_UNUSED,
 static void
 close_session (GPasteGlobalShortcutClient *self)
 {
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
-
-    if (!priv->session_handle)
+    if (!self->session_handle)
         return;
 
     g_dbus_connection_call (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
                             g_dbus_proxy_get_name (G_DBUS_PROXY (self)),
-                            priv->session_handle,
+                            self->session_handle,
                             "org.freedesktop.portal.Session", "Close",
                             NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 
-    g_clear_pointer (&priv->session_handle, g_free);
+    g_clear_pointer (&self->session_handle, g_free);
 }
 
 /**
@@ -402,17 +395,15 @@ g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
     g_return_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
     g_return_if_fail (accels);
 
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
-
-    g_ptr_array_set_size (priv->shortcuts, 0);
+    g_ptr_array_set_size (self->shortcuts, 0);
 
     for (const GPasteKeybindingAccelerator *a = accels; a->id; a++)
-        g_ptr_array_add (priv->shortcuts, _shortcut_new (a->id, a->accelerator, a->description));
+        g_ptr_array_add (self->shortcuts, _shortcut_new (a->id, a->accelerator, a->description));
 
-    /* A CreateSession is already in flight: it will bind priv->shortcuts (the
+    /* A CreateSession is already in flight: it will bind self->shortcuts (the
      * latest set) when it completes, so let it finish rather than starting a
      * second session. */
-    if (priv->session_creating)
+    if (self->session_creating)
         return;
 
     g_autoptr (GTask) task = g_task_new (self, NULL, on_provider_bind_done, NULL);
@@ -421,9 +412,9 @@ g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
      * actually take effect. */
     close_session (self);
 
-    if (priv->shortcuts->len)
+    if (self->shortcuts->len)
     {
-        priv->session_creating = TRUE;
+        self->session_creating = TRUE;
         start_create_session_async (self, task);
     }
     else
@@ -441,13 +432,11 @@ g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient *self)
 {
     g_return_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
 
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
-
-    g_ptr_array_set_size (priv->shortcuts, 0);
+    g_ptr_array_set_size (self->shortcuts, 0);
 
     /* If a session is being created it will bind the now-empty set; otherwise
      * just drop the session, there is nothing left to bind. */
-    if (!priv->session_creating)
+    if (!self->session_creating)
         close_session (self);
 }
 
@@ -465,7 +454,6 @@ g_paste_global_shortcut_client_g_signal (GDBusProxy  *proxy,
 
     if (g_paste_str_equal (signal_name, G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED))
     {
-        GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
         const gchar *session_handle;
         const gchar *shortcut_id;
         guint64 timestamp G_GNUC_UNUSED;
@@ -473,7 +461,7 @@ g_paste_global_shortcut_client_g_signal (GDBusProxy  *proxy,
         g_variant_get (parameters, "(&o&st@a{sv})",
                        &session_handle, &shortcut_id, &timestamp, &options);
 
-        if (g_paste_str_equal (session_handle, priv->session_handle))
+        if (g_paste_str_equal (session_handle, self->session_handle))
             g_signal_emit (self, signals[KEYBINDING_ACTIVATED], 0, shortcut_id);
     }
 }
@@ -486,10 +474,9 @@ static void
 g_paste_global_shortcut_client_dispose (GObject *object)
 {
     GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (object);
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
 
-    g_clear_pointer (&priv->session_handle, g_free);
-    g_clear_pointer (&priv->shortcuts, g_ptr_array_unref);
+    g_clear_pointer (&self->session_handle, g_free);
+    g_clear_pointer (&self->shortcuts, g_ptr_array_unref);
 
     G_OBJECT_CLASS (g_paste_global_shortcut_client_parent_class)->dispose (object);
 }
@@ -531,9 +518,8 @@ g_paste_global_shortcut_client_init (GPasteGlobalShortcutClient *self)
 
     g_dbus_proxy_set_interface_info (proxy, dbus_info->interfaces[0]);
 
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
-    priv->session_handle = NULL;
-    priv->shortcuts = g_ptr_array_new_with_free_func (_shortcut_free);
+    self->session_handle = NULL;
+    self->shortcuts = g_ptr_array_new_with_free_func (_shortcut_free);
 }
 
 /**

@@ -8,11 +8,6 @@
 #include <gpaste-ui-panel-history.h>
 #include <gpaste-ui-panel.h>
 
-struct _GPasteUiPanel
-{
-    GtkBox parent_instance;
-};
-
 enum
 {
     C_SELECTION_CHANGED,
@@ -23,8 +18,10 @@ enum
     C_LAST_SIGNAL
 };
 
-typedef struct
+struct _GPasteUiPanel
 {
+    GtkBox parent_instance;
+
     GPasteClient      *client;
     GPasteSettings    *settings;
     GSignalGroup      *client_signals;
@@ -48,9 +45,9 @@ typedef struct
     gboolean           inhibit_switch;
 
     guint64            c_signals[C_LAST_SIGNAL];
-} GPasteUiPanelPrivate;
+};
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanel, ui_panel, GTK_TYPE_BOX)
+G_PASTE_DEFINE_TYPE (UiPanel, ui_panel, GTK_TYPE_BOX)
 
 static gint32
 history_equals (gconstpointer a,
@@ -81,8 +78,7 @@ g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
 {
     g_return_if_fail (_G_PASTE_IS_UI_PANEL (self));
 
-    const GPasteUiPanelPrivate *priv = _g_paste_ui_panel_get_instance_private (self);
-    GList *h = history_find (priv->histories, history);
+    GList *h = history_find (self->histories, history);
 
     if (h)
         g_paste_ui_panel_history_set_length (h->data, length);
@@ -93,7 +89,7 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
                     const gchar  *history,
                     gpointer      user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
 
     GList *h = history_find (priv->histories, history);
 
@@ -133,7 +129,7 @@ on_history_emptied (GPasteClient *client G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
+g_paste_ui_panel_add_history (GPasteUiPanel *priv,
                               const gchar          *history,
                               gboolean              select);
 
@@ -142,7 +138,7 @@ on_history_switched (GPasteClient *client G_GNUC_UNUSED,
                      const gchar  *history,
                      gpointer      user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
 
     g_paste_ui_panel_add_history (priv, history, TRUE);
 }
@@ -153,7 +149,7 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
                       guint              n_items G_GNUC_UNUSED,
                       gpointer           user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
 
     if (priv->inhibit_switch)
         return;
@@ -167,7 +163,7 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
+g_paste_ui_panel_add_history (GPasteUiPanel *priv,
                               const gchar          *history,
                               gboolean              select)
 {
@@ -211,15 +207,13 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GPasteUiPanel) self = data->self;
     g_autofree gchar *current = data->name;
 
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
-
-    if (!priv->client) /* panel was disposed while the call was in flight */
+    if (!self->client) /* panel was disposed while the call was in flight */
         return;
 
     g_autoptr (GError) error = NULL;
-    g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, &error);
+    g_auto (GStrv) histories = g_paste_client_list_histories_finish (self->client, res, &error);
 
-    g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
+    g_paste_ui_panel_add_history (self, G_PASTE_DEFAULT_HISTORY, g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
 
     if (error)
     {
@@ -228,7 +222,7 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     for (GStrv h = histories; *h; ++h)
-        g_paste_ui_panel_add_history (priv, *h, g_paste_str_equal (*h, current));
+        g_paste_ui_panel_add_history (self, *h, g_paste_str_equal (*h, current));
 }
 
 static void
@@ -237,22 +231,24 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
                gpointer      user_data)
 {
     g_autoptr (GPasteUiPanel) self = user_data;
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
 
-    if (!priv->client) /* panel was disposed while the call was in flight */
+    if (!self->client) /* panel was disposed while the call was in flight */
         return;
 
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, NULL);
     HistoriesData *data = g_new (HistoriesData, 1);
+    /* Grab the client before the steal below hands our ref to @data and leaves
+     * @self NULL. */
+    GPasteClient *client = self->client;
 
     data->self = g_steal_pointer (&self);
     data->name = g_steal_pointer (&name);
 
-    g_paste_client_list_histories (priv->client, on_histories_ready, data);
+    g_paste_client_list_histories (client, on_histories_ready, data);
 }
 
 static void
-g_paste_ui_panel_do_switch (GPasteUiPanelPrivate *priv)
+g_paste_ui_panel_do_switch (GPasteUiPanel *priv)
 {
     const gchar *text = gtk_editable_get_text (GTK_EDITABLE (priv->switch_entry));
 
@@ -281,7 +277,7 @@ on_setup_menu (AdwSidebar     *sidebar G_GNUC_UNUSED,
                AdwSidebarItem *item,
                gpointer        user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
 
     priv->menu_item = item;
 }
@@ -318,7 +314,7 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                           GVariant      *parameter G_GNUC_UNUSED,
                           gpointer       user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
     AdwSidebarItem *item = priv->menu_item;
 
     if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
@@ -364,7 +360,7 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                           GVariant      *parameter G_GNUC_UNUSED,
                           gpointer       user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
     AdwSidebarItem *item = priv->menu_item;
 
     if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
@@ -385,7 +381,7 @@ on_empty_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                          GVariant      *parameter G_GNUC_UNUSED,
                          gpointer       user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    GPasteUiPanel *priv = user_data;
     AdwSidebarItem *item = priv->menu_item;
 
     if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
@@ -399,28 +395,28 @@ on_empty_history_action (GSimpleAction *action    G_GNUC_UNUSED,
 static void
 g_paste_ui_panel_dispose (GObject *object)
 {
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (object));
+    GPasteUiPanel *self = G_PASTE_UI_PANEL (object);
 
-    if (priv->c_signals[C_SELECTION_CHANGED])
+    if (self->c_signals[C_SELECTION_CHANGED])
     {
-        g_signal_handler_disconnect (priv->items, priv->c_signals[C_SELECTION_CHANGED]);
-        g_signal_handler_disconnect (priv->switch_entry, priv->c_signals[C_SWITCH_ACTIVATED]);
-        g_signal_handler_disconnect (priv->jump_button, priv->c_signals[C_SWITCH_CLICKED]);
-        g_signal_handler_disconnect (priv->sidebar, priv->c_signals[C_SETUP_MENU]);
-        priv->c_signals[C_SELECTION_CHANGED] = 0;
+        g_signal_handler_disconnect (self->items, self->c_signals[C_SELECTION_CHANGED]);
+        g_signal_handler_disconnect (self->switch_entry, self->c_signals[C_SWITCH_ACTIVATED]);
+        g_signal_handler_disconnect (self->jump_button, self->c_signals[C_SWITCH_CLICKED]);
+        g_signal_handler_disconnect (self->sidebar, self->c_signals[C_SETUP_MENU]);
+        self->c_signals[C_SELECTION_CHANGED] = 0;
     }
 
-    g_clear_object (&priv->items);
+    g_clear_object (&self->items);
 
-    g_clear_object (&priv->client_signals);
-    g_clear_object (&priv->client);
+    g_clear_object (&self->client_signals);
+    g_clear_object (&self->client);
 
-    g_clear_object (&priv->settings);
+    g_clear_object (&self->settings);
 
     /* FIXME: adw_sidebar_section_dispose crashes with leftover items in libadwaita 1.9.0; drain manually until fixed upstream */
-    for (GList *h = priv->histories; h; h = h->next)
-        adw_sidebar_section_remove (priv->section, ADW_SIDEBAR_ITEM (h->data));
-    g_clear_pointer (&priv->histories, g_list_free);
+    for (GList *h = self->histories; h; h = h->next)
+        adw_sidebar_section_remove (self->section, ADW_SIDEBAR_ITEM (h->data));
+    g_clear_pointer (&self->histories, g_list_free);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);
 }
@@ -434,48 +430,47 @@ g_paste_ui_panel_class_init (GPasteUiPanelClass *klass)
 static void
 g_paste_ui_panel_init (GPasteUiPanel *self)
 {
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
     GtkBox *box = GTK_BOX (self);
 
     GtkWidget *sidebar = adw_sidebar_new ();
-    priv->sidebar = ADW_SIDEBAR (sidebar);
+    self->sidebar = ADW_SIDEBAR (sidebar);
 
     AdwSidebarSection *section = adw_sidebar_section_new ();
-    priv->section = section;
-    adw_sidebar_append (priv->sidebar, section);
+    self->section = section;
+    adw_sidebar_append (self->sidebar, section);
 
     gtk_widget_set_vexpand (sidebar, TRUE);
 
-    priv->items = adw_sidebar_get_items (priv->sidebar);
-    priv->c_signals[C_SELECTION_CHANGED] = g_signal_connect (priv->items,
+    self->items = adw_sidebar_get_items (self->sidebar);
+    self->c_signals[C_SELECTION_CHANGED] = g_signal_connect (self->items,
                                                              "selection-changed",
                                                              G_CALLBACK (on_selection_changed),
-                                                             priv);
+                                                             self);
 
     GtkWidget *switch_entry = adw_entry_row_new ();
-    priv->switch_entry = ADW_ENTRY_ROW (switch_entry);
+    self->switch_entry = ADW_ENTRY_ROW (switch_entry);
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch to history"));
     gtk_editable_set_enable_undo (GTK_EDITABLE (switch_entry), FALSE);
 
     GtkWidget *jump_button = gtk_button_new_from_icon_name ("go-jump-symbolic");
-    priv->jump_button = GTK_BUTTON (jump_button);
+    self->jump_button = GTK_BUTTON (jump_button);
     gtk_widget_set_valign (jump_button, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class (jump_button, "flat");
     gtk_widget_set_tooltip_text (jump_button, _("Switch to"));
     adw_entry_row_add_suffix (ADW_ENTRY_ROW (switch_entry), jump_button);
 
-    priv->c_signals[C_SWITCH_ACTIVATED] = g_signal_connect (G_OBJECT (switch_entry),
+    self->c_signals[C_SWITCH_ACTIVATED] = g_signal_connect (G_OBJECT (switch_entry),
                                                             "entry-activated",
                                                             G_CALLBACK (g_paste_ui_panel_switch_activated),
-                                                            priv);
-    priv->c_signals[C_SWITCH_CLICKED] = g_signal_connect (G_OBJECT (jump_button),
+                                                            self);
+    self->c_signals[C_SWITCH_CLICKED] = g_signal_connect (G_OBJECT (jump_button),
                                                           "clicked",
                                                           G_CALLBACK (g_paste_ui_panel_switch_clicked),
-                                                          priv);
+                                                          self);
 
     /* The sidebar's own suffix slot, rather than a boxed-list GtkListBox
      * alongside it: libadwaita styles and spaces the slot for us. */
-    adw_sidebar_set_suffix (priv->sidebar, switch_entry);
+    adw_sidebar_set_suffix (self->sidebar, switch_entry);
 
     gtk_box_append (box, sidebar);
 }
@@ -506,7 +501,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
     GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_PANEL,
                                       "orientation", GTK_ORIENTATION_VERTICAL,
                                       NULL);
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (self));
+    GPasteUiPanel *priv = G_PASTE_UI_PANEL (self);
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);

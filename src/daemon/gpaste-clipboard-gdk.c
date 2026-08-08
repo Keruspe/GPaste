@@ -12,11 +12,6 @@
 #include <gpaste-daemon/gpaste-special-atom.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
-struct _GPasteClipboardGdk
-{
-    GObject parent_instance;
-};
-
 enum
 {
     C_CHANGED,
@@ -24,8 +19,10 @@ enum
     C_LAST_SIGNAL
 };
 
-typedef struct
+struct _GPasteClipboardGdk
 {
+    GObject parent_instance;
+
     GdkClipboard          *real;
     gboolean               is_clipboard;
     GPasteSettings        *settings;
@@ -33,11 +30,11 @@ typedef struct
     GPasteClipboardContent content;
 
     guint64                c_signals[C_LAST_SIGNAL];
-} GPasteClipboardGdkPrivate;
+};
 
 static void g_paste_clipboard_gdk_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE (ClipboardGdk, clipboard_gdk, G_TYPE_OBJECT,
+G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardGdk, clipboard_gdk, G_TYPE_OBJECT,
                                                 G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_gdk_provider_iface_init)
 
 typedef void (*GPasteClipboardGdkTextCallback)    (GPasteClipboardGdk *self,
@@ -51,21 +48,17 @@ typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
 static gboolean
 g_paste_clipboard_gdk_is_clipboard (const GPasteClipboardGdk *self)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
-    return priv->is_clipboard;
+    return self->is_clipboard;
 }
 
 static const gchar *
 g_paste_clipboard_gdk_get_text (const GPasteClipboardGdk *self)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
-    return g_paste_clipboard_content_get_text (&priv->content);
+    return g_paste_clipboard_content_get_text (&self->content);
 }
 
 static void
-g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdkPrivate *priv,
+g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdk *priv,
                                         const gchar               *text)
 {
     g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
@@ -75,7 +68,7 @@ g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdkPrivate *priv,
 
 /* Same, for the callers that already own the string they hand over. */
 static void
-g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdkPrivate *priv,
+g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdk *priv,
                                              gchar                     *text)
 {
     g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
@@ -111,10 +104,9 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
         return;
     }
 
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
     g_autofree gchar *value = NULL;
 
-    switch (g_paste_clipboard_content_classify_text (&priv->content, priv->settings, priv->is_clipboard, text, &value))
+    switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
     {
     case G_PASTE_CLIPBOARD_TEXT_REJECT:
         if (data->callback)
@@ -125,12 +117,12 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
         break;
     case G_PASTE_CLIPBOARD_TEXT_SET:
         /* RESELECT above still needs @value, but this branch is done with it. */
-        g_paste_clipboard_gdk_private_set_text_take (priv, g_steal_pointer (&value));
+        g_paste_clipboard_gdk_private_set_text_take (self, g_steal_pointer (&value));
         break;
     }
 
     if (data->callback)
-        data->callback (self, priv->content.str, data->user_data);
+        data->callback (self, self->content.str, data->user_data);
 }
 
 static void
@@ -138,7 +130,6 @@ g_paste_clipboard_gdk_set_text (GPasteClipboardGdk            *self,
                                 GPasteClipboardGdkTextCallback callback,
                                 gpointer                       user_data)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
     GPasteClipboardGdkTextCallbackData *data = g_new (GPasteClipboardGdkTextCallbackData, 1);
 
     /* Hold a ref for the whole read, as the meta backend does: nothing else
@@ -147,7 +138,7 @@ g_paste_clipboard_gdk_set_text (GPasteClipboardGdk            *self,
     data->callback = callback;
     data->user_data = user_data;
 
-    gdk_clipboard_read_text_async (priv->real,
+    gdk_clipboard_read_text_async (self->real,
                                    NULL, /* cancellable */
                                    g_paste_clipboard_gdk_on_text_ready,
                                    data);
@@ -157,16 +148,14 @@ static void
 g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
                                    const gchar        *text)
 {
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-
-    g_debug ("%s: select text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: select text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     /* Avoid cycling twice as setting the content will make the clipboards manager react */
-    g_paste_clipboard_gdk_private_set_text (priv, text);
+    g_paste_clipboard_gdk_private_set_text (self, text);
 
     g_autoptr (GdkContentProvider) provider = g_paste_text_content_provider_new (text);
 
-    gdk_clipboard_set_content (priv->real, provider);
+    gdk_clipboard_set_content (self->real, provider);
 }
 
 static void
@@ -188,11 +177,9 @@ static void
 g_paste_clipboard_gdk_sync_text (const GPasteClipboardGdk *self,
                                  GPasteClipboardGdk       *other)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
     /* The target outlives us in practice, but the read is asynchronous: hold a
      * ref on it until the text lands, as the meta backend does. */
-    gdk_clipboard_read_text_async (priv->real, NULL, g_paste_clipboard_gdk_sync_ready, g_object_ref (other));
+    gdk_clipboard_read_text_async (self->real, NULL, g_paste_clipboard_gdk_sync_ready, g_object_ref (other));
 }
 
 static void
@@ -209,11 +196,9 @@ g_paste_clipboard_gdk_store_async_done (GObject      *source_object,
 static void
 g_paste_clipboard_gdk_store (GPasteClipboardGdk *self)
 {
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
+    g_debug ("%s: store", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_debug ("%s: store", g_paste_clipboard_provider_target_name (priv->is_clipboard));
-
-    gdk_clipboard_store_async (priv->real,
+    gdk_clipboard_store_async (self->real,
                                G_PRIORITY_DEFAULT,
                                NULL, /* cancellable */
                                g_paste_clipboard_gdk_store_async_done,
@@ -223,20 +208,18 @@ g_paste_clipboard_gdk_store (GPasteClipboardGdk *self)
 static const gchar *
 g_paste_clipboard_gdk_get_image_checksum (const GPasteClipboardGdk *self)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
-    return g_paste_clipboard_content_get_image_checksum (&priv->content);
+    return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
 static void
-g_paste_clipboard_gdk_private_set_image_checksum (GPasteClipboardGdkPrivate *priv,
+g_paste_clipboard_gdk_private_set_image_checksum (GPasteClipboardGdk *priv,
                                                   const gchar               *image_checksum)
 {
     g_paste_clipboard_content_set_image_checksum (&priv->content, image_checksum);
 }
 
 static void
-g_paste_clipboard_gdk_private_set_color (GPasteClipboardGdkPrivate *priv,
+g_paste_clipboard_gdk_private_set_color (GPasteClipboardGdk *priv,
                                          const GdkRGBA             *rgba)
 {
     g_debug ("%s: set color", g_paste_clipboard_provider_target_name (priv->is_clipboard));
@@ -245,7 +228,7 @@ g_paste_clipboard_gdk_private_set_color (GPasteClipboardGdkPrivate *priv,
 }
 
 static void
-g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdkPrivate *priv,
+g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdk *priv,
                                              GdkFileList               *file_list)
 {
     g_debug ("%s: set file list", g_paste_clipboard_provider_target_name (priv->is_clipboard));
@@ -254,7 +237,7 @@ g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdkPrivate *priv,
 }
 
 static void
-g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdkPrivate *priv,
+g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *priv,
                                               GdkTexture                *texture,
                                               const gchar               *checksum)
 {
@@ -292,17 +275,16 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
         return;
     }
 
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
     g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
     GdkTexture *result = NULL;
 
-    if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))
+    if (self->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, self->content.str))
     {
         /* Same image, nothing to do */
     }
     else
     {
-        g_paste_clipboard_gdk_private_select_texture (priv, texture, checksum);
+        g_paste_clipboard_gdk_private_select_texture (self, texture, checksum);
         result = texture;  /* borrowed from the g_autoptr above */
     }
 
@@ -315,7 +297,6 @@ g_paste_clipboard_gdk_set_texture (GPasteClipboardGdk               *self,
                                    GPasteClipboardGdkTextureCallback callback,
                                    gpointer                          user_data)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
     GPasteClipboardGdkTextureCallbackData *data = g_new (GPasteClipboardGdkTextureCallbackData, 1);
 
     /* Ref for the whole read (see set_text). */
@@ -323,7 +304,7 @@ g_paste_clipboard_gdk_set_texture (GPasteClipboardGdk               *self,
     data->callback = callback;
     data->user_data = user_data;
 
-    gdk_clipboard_read_texture_async (priv->real,
+    gdk_clipboard_read_texture_async (self->real,
                                       NULL, /* cancellable */
                                       g_paste_clipboard_gdk_on_texture_ready,
                                       data);
@@ -367,19 +348,17 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
         return;
     }
 
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-
-    if (priv->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->content.rgba))
+    if (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba))
     {
         if (data->callback)
             data->callback (self, NULL, data->user_data);
         return;
     }
 
-    g_paste_clipboard_gdk_private_set_color (priv, rgba);
+    g_paste_clipboard_gdk_private_set_color (self, rgba);
 
     if (data->callback)
-        data->callback (self, &priv->content.rgba, data->user_data);
+        data->callback (self, &self->content.rgba, data->user_data);
 }
 
 static void
@@ -387,7 +366,6 @@ g_paste_clipboard_gdk_set_color (GPasteClipboardGdk            *self,
                                  GPasteClipboardGdkRGBACallback callback,
                                  gpointer                       user_data)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
     GPasteClipboardGdkRGBACallbackData *data = g_new (GPasteClipboardGdkRGBACallbackData, 1);
 
     /* Ref for the whole read (see set_text). */
@@ -395,7 +373,7 @@ g_paste_clipboard_gdk_set_color (GPasteClipboardGdk            *self,
     data->callback = callback;
     data->user_data = user_data;
 
-    gdk_clipboard_read_value_async (priv->real,
+    gdk_clipboard_read_value_async (self->real,
                                     GDK_TYPE_RGBA,
                                     G_PRIORITY_DEFAULT,
                                     NULL, /* cancellable */
@@ -476,7 +454,6 @@ g_paste_clipboard_gdk_fetch_special_atom (GPasteClipboardGdk                   *
                                           GPasteClipboardGdkSpecialAtomCallback callback,
                                           gpointer                              user_data)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
     GPasteClipboardGdkSpecialAtomData *data = g_new (GPasteClipboardGdkSpecialAtomData, 1);
 
     /* Ref for the whole read (see set_text), across both of its halves. */
@@ -490,7 +467,7 @@ g_paste_clipboard_gdk_fetch_special_atom (GPasteClipboardGdk                   *
      * collapsed into one read; update() already fires these reads in parallel. */
     const gchar *mime_types[] = { g_paste_special_atom_get (atom), NULL };
 
-    gdk_clipboard_read_async (priv->real,
+    gdk_clipboard_read_async (self->real,
                               mime_types,
                               G_PRIORITY_DEFAULT,
                               NULL, /* cancellable */
@@ -591,16 +568,14 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
         return;
     }
 
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-
-    if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&priv->content), file_list))
+    if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&self->content), file_list))
     {
         g_paste_clipboard_gdk_update_maybe_done (data);
         return;
     }
 
-    g_paste_clipboard_gdk_private_set_file_list (priv, file_list);
-    data->file_list = g_paste_clipboard_content_get_file_list (&priv->content);
+    g_paste_clipboard_gdk_private_set_file_list (self, file_list);
+    data->file_list = g_paste_clipboard_content_get_file_list (&self->content);
 
     g_paste_clipboard_gdk_update_maybe_done (data);
 }
@@ -609,9 +584,7 @@ static void
 g_paste_clipboard_gdk_fetch_file_list (GPasteClipboardGdk           *self,
                                        GPasteClipboardGdkUpdateData *data)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
-    gdk_clipboard_read_value_async (priv->real,
+    gdk_clipboard_read_value_async (self->real,
                                     GDK_TYPE_FILE_LIST,
                                     G_PRIORITY_DEFAULT,
                                     NULL, /* cancellable */
@@ -668,14 +641,13 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
                               GPasteClipboardProviderUpdateCallback callback,
                               gpointer                              user_data)
 {
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-    GdkContentFormats *formats = gdk_clipboard_get_formats (priv->real);
+    GdkContentFormats *formats = gdk_clipboard_get_formats (self->real);
     GPasteClipboardContentKind content_kind = CLIPBOARD_CONTENT_NONE;
     if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
         content_kind = CLIPBOARD_CONTENT_FILE_LIST;
     else if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA))
         content_kind = CLIPBOARD_CONTENT_COLOR;
-    else if (g_paste_settings_get_images_support (priv->settings) &&
+    else if (g_paste_settings_get_images_support (self->settings) &&
              gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE))
         content_kind = CLIPBOARD_CONTENT_IMAGE;
     else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
@@ -684,7 +656,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     {
         /* The selection was released: clear our cache so callers see an
          * empty clipboard and act accordingly (e.g. ensure_not_empty). */
-        g_paste_clipboard_content_clear (&priv->content);
+        g_paste_clipboard_content_clear (&self->content);
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -694,8 +666,8 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         /* The owner only provides types we don't handle (e.g. an image
          * while images-support is disabled). Don't track it, but flag the
          * clipboard as non-empty so ensure_not_empty doesn't override it. */
-        g_paste_clipboard_content_clear (&priv->content);
-        priv->content.kind = CLIPBOARD_CONTENT_IGNORED;
+        g_paste_clipboard_content_clear (&self->content);
+        self->content.kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -714,7 +686,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
 
     if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
-        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (priv->settings)))
+        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (self->settings)))
     {
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
@@ -759,9 +731,7 @@ static gboolean
 g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
                                    GPasteItem         *item)
 {
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-
-    g_debug ("%s: select item", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: select item", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -771,7 +741,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
         if (!texture)
             return FALSE;
 
-        g_paste_clipboard_gdk_private_select_texture (priv, texture, checksum);
+        g_paste_clipboard_gdk_private_select_texture (self, texture, checksum);
         return TRUE;
     }
 
@@ -779,7 +749,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
 
-        g_paste_clipboard_gdk_private_set_color (priv, rgba);
+        g_paste_clipboard_gdk_private_set_color (self, rgba);
 
         /* Offer the colour itself plus its textual form, so it can be pasted both
          * into colour-aware apps (application/x-color) and into plain text fields. */
@@ -789,7 +759,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
         };
         g_autoptr (GdkContentProvider) provider = gdk_content_provider_new_union (providers, G_N_ELEMENTS (providers));
 
-        gdk_clipboard_set_content (priv->real, provider);
+        gdk_clipboard_set_content (self->real, provider);
         return TRUE;
     }
 
@@ -798,13 +768,13 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     if (_G_PASTE_IS_URIS_ITEM (item))
     {
         GdkFileList *file_list = g_paste_uris_item_get_file_list (G_PASTE_URIS_ITEM (item));
-        g_paste_clipboard_gdk_private_set_file_list (priv, file_list);
+        g_paste_clipboard_gdk_private_set_file_list (self, file_list);
         g_ptr_array_add (providers, gdk_content_provider_new_typed (GDK_TYPE_FILE_LIST, file_list));
     }
     else
     {
         const gchar *real_value = g_paste_item_get_real_value (item);
-        g_paste_clipboard_gdk_private_set_text (priv, real_value);
+        g_paste_clipboard_gdk_private_set_text (self, real_value);
         g_ptr_array_add (providers, g_paste_text_content_provider_new (real_value));
     }
 
@@ -820,7 +790,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     else
         provider = gdk_content_provider_new_union ((GdkContentProvider **) providers->pdata, providers->len);
 
-    gdk_clipboard_set_content (priv->real, provider);
+    gdk_clipboard_set_content (self->real, provider);
 
     return TRUE;
 }
@@ -828,29 +798,25 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 static gboolean
 g_paste_clipboard_gdk_is_empty (const GPasteClipboardGdk *self)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
-    return g_paste_clipboard_content_is_empty (&priv->content);
+    return g_paste_clipboard_content_is_empty (&self->content);
 }
 
 static void
 g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
 {
-    const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
-
     /* Unlike GTK3's owner-change, GdkClipboard::changed fires for local writes too.
      * Skip them to avoid re-processing our own clipboard content. */
-    if (gdk_clipboard_is_local (priv->real))
+    if (gdk_clipboard_is_local (self->real))
         return;
 
     /* GTK4 fires changed twice per external selection event: once immediately
      * with empty formats (before TARGETS resolves) and once with the real
      * format list after TARGETS have been fetched. Only process the latter —
      * equivalent to GTK3 filtering out GDK_OWNER_CHANGE_DESTROY/CLOSE. */
-    if (gdk_content_formats_is_empty (gdk_clipboard_get_formats (priv->real)))
+    if (gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
         return;
 
-    g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (self->is_clipboard));
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
 }
 
@@ -860,13 +826,13 @@ G_PASTE_CLIPBOARD_PROVIDER_DEFINE_VFUNCS (gdk, GDK)
 static void
 g_paste_clipboard_gdk_dispose (GObject *object)
 {
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (G_PASTE_CLIPBOARD_GDK (object));
+    GPasteClipboardGdk *self = G_PASTE_CLIPBOARD_GDK (object);
 
-    if (priv->settings)
+    if (self->settings)
     {
-        g_signal_handler_disconnect (priv->real, priv->c_signals[C_CHANGED]);
-        g_clear_object (&priv->real);
-        g_clear_object (&priv->settings);
+        g_signal_handler_disconnect (self->real, self->c_signals[C_CHANGED]);
+        g_clear_object (&self->real);
+        g_clear_object (&self->settings);
     }
 
     G_OBJECT_CLASS (g_paste_clipboard_gdk_parent_class)->dispose (object);
@@ -875,9 +841,9 @@ g_paste_clipboard_gdk_dispose (GObject *object)
 static void
 g_paste_clipboard_gdk_finalize (GObject *object)
 {
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (G_PASTE_CLIPBOARD_GDK (object));
+    GPasteClipboardGdk *self = G_PASTE_CLIPBOARD_GDK (object);
 
-    g_paste_clipboard_content_clear (&priv->content);
+    g_paste_clipboard_content_clear (&self->content);
 
     G_OBJECT_CLASS (g_paste_clipboard_gdk_parent_class)->finalize (object);
 }
@@ -901,15 +867,14 @@ _g_paste_clipboard_gdk_new (GPasteSettings *settings,
                             gboolean        is_clipboard)
 {
     GPasteClipboardGdk *self = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
-    GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
 
     GdkDisplay *display = gdk_display_get_default ();
-    priv->real = g_object_ref (is_clipboard ? gdk_display_get_clipboard (display)
+    self->real = g_object_ref (is_clipboard ? gdk_display_get_clipboard (display)
                                             : gdk_display_get_primary_clipboard (display));
-    priv->is_clipboard = is_clipboard;
-    priv->settings = g_object_ref (settings);
+    self->is_clipboard = is_clipboard;
+    self->settings = g_object_ref (settings);
 
-    priv->c_signals[C_CHANGED] = g_signal_connect_swapped (priv->real,
+    self->c_signals[C_CHANGED] = g_signal_connect_swapped (self->real,
                                                            "changed",
                                                            G_CALLBACK (g_paste_clipboard_gdk_on_real_changed),
                                                            self);

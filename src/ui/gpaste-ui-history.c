@@ -12,10 +12,7 @@
 struct _GPasteUiHistory
 {
     GtkBox parent_instance;
-};
 
-typedef struct
-{
     GPasteClient   *client;
     GPasteSettings *settings;
     GPasteUiPanel  *panel;
@@ -38,7 +35,7 @@ typedef struct
 
     gchar          *search;
     GStrv           search_results;
-} GPasteUiHistoryPrivate;
+};
 
 enum
 {
@@ -49,28 +46,24 @@ enum
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHistory, ui_history, GTK_TYPE_BOX)
+G_PASTE_DEFINE_TYPE (UiHistory, ui_history, GTK_TYPE_BOX)
 
 static void
 g_paste_ui_history_show_status (GPasteUiHistory *self,
                                  const gchar     *icon,
                                  const gchar     *title)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    adw_status_page_set_icon_name (priv->status_page, icon);
-    adw_status_page_set_title (priv->status_page, title);
-    gtk_widget_set_visible (GTK_WIDGET (priv->status_page), TRUE);
-    gtk_widget_set_visible (GTK_WIDGET (priv->scroll), FALSE);
+    adw_status_page_set_icon_name (self->status_page, icon);
+    adw_status_page_set_title (self->status_page, title);
+    gtk_widget_set_visible (GTK_WIDGET (self->status_page), TRUE);
+    gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
 }
 
 static void
 g_paste_ui_history_show_list (GPasteUiHistory *self)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    gtk_widget_set_visible (GTK_WIDGET (priv->status_page), FALSE);
-    gtk_widget_set_visible (GTK_WIDGET (priv->scroll), TRUE);
+    gtk_widget_set_visible (GTK_WIDGET (self->status_page), FALSE);
+    gtk_widget_set_visible (GTK_WIDGET (self->scroll), TRUE);
 }
 
 static void
@@ -134,15 +127,13 @@ static void g_paste_ui_history_refresh (GPasteUiHistory *self,
 static guint64
 g_paste_ui_history_batch (GPasteUiHistory *self)
 {
-    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
-
-    if (priv->item_height > 0 && priv->scroll)
+    if (self->item_height > 0 && self->scroll)
     {
-        GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (priv->scroll);
+        GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (self->scroll);
         gdouble page = gtk_adjustment_get_page_size (vadjustment);
 
         if (page > 0)
-            return (guint64) (page / priv->item_height) + 1;
+            return (guint64) (page / self->item_height) + 1;
     }
 
     return G_PASTE_UI_HISTORY_DEFAULT_BATCH;
@@ -163,76 +154,75 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     g_autofree OnUpdateCallbackData *cdata = user_data;
     g_autofree gchar *name = cdata->name;
     GPasteUiHistory *self = cdata->self;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    if (!priv->client)
+    if (!self->client)
         return;
 
-    /* A later refresh superseded this one: leave priv->loading set (the newer
+    /* A later refresh superseded this one: leave self->loading set (the newer
      * refresh clears it) and don't re-index from this stale from_index, which
      * could leave shifted rows with wrong indices. */
-    if (cdata->generation != priv->refresh_generation)
+    if (cdata->generation != self->refresh_generation)
         return;
 
-    guint64 old_size = priv->size;
+    guint64 old_size = self->size;
     guint64 refreshTextBound = old_size;
-    guint64 new_size = g_paste_client_get_history_size_finish (priv->client, res, NULL);
+    guint64 new_size = g_paste_client_get_history_size_finish (self->client, res, NULL);
 
-    priv->loading = FALSE;
-    priv->available = new_size;
+    self->loading = FALSE;
+    self->available = new_size;
     /* Never keep a display limit larger than what the history can fill: when it
      * shrinks (items removed, emptied, or a smaller history selected), drop back
      * so lazy growth restarts from a single batch instead of eagerly reloading
      * the old depth should the history grow again. */
-    priv->limit = MIN (priv->limit, MAX (g_paste_ui_history_batch (self), new_size));
-    priv->size = MIN (new_size, priv->limit);
+    self->limit = MIN (self->limit, MAX (g_paste_ui_history_batch (self), new_size));
+    self->size = MIN (new_size, self->limit);
 
-    if (priv->size)
+    if (self->size)
         g_paste_ui_history_show_list (self);
     else
         g_paste_ui_history_show_status (self, "edit-paste-symbolic", _("Empty"));
 
-    g_paste_ui_panel_update_history_length (priv->panel, name, new_size);
+    g_paste_ui_panel_update_history_length (self->panel, name, new_size);
 
-    if (old_size < priv->size)
+    if (old_size < self->size)
     {
-        for (guint64 i = old_size; i < priv->size; ++i)
+        for (guint64 i = old_size; i < self->size; ++i)
         {
-            GtkWidget *item = g_paste_ui_item_new (priv->client, priv->settings, priv->rootwin, i);
+            GtkWidget *item = g_paste_ui_item_new (self->client, self->settings, self->rootwin, i);
             /* Rows loaded while in merge mode must be selectable like the rest. */
-            gtk_list_box_row_set_selectable (GTK_LIST_BOX_ROW (item), priv->selection_mode);
-            gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (item), !priv->selection_mode);
-            priv->items = g_slist_append (priv->items, item);
+            gtk_list_box_row_set_selectable (GTK_LIST_BOX_ROW (item), self->selection_mode);
+            gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (item), !self->selection_mode);
+            self->items = g_slist_append (self->items, item);
         }
-        g_paste_ui_history_add_list (priv->list_box, g_slist_nth (priv->items, old_size));
+        g_paste_ui_history_add_list (self->list_box, g_slist_nth (self->items, old_size));
         refreshTextBound = old_size;
     }
-    else if (old_size > priv->size)
+    else if (old_size > self->size)
     {
-        if (priv->size)
+        if (self->size)
         {
-            GSList *last = g_slist_nth (priv->items, priv->size - 1);
+            GSList *last = g_slist_nth (self->items, self->size - 1);
             g_return_if_fail (last);
-            g_paste_ui_history_drop_list (priv->list_box, g_slist_next (last));
+            g_paste_ui_history_drop_list (self->list_box, g_slist_next (last));
             last->next = NULL;
         }
         else
         {
-            g_paste_ui_history_drop_list (priv->list_box, priv->items);
-            priv->items = NULL;
+            g_paste_ui_history_drop_list (self->list_box, self->items);
+            self->items = NULL;
         }
-        refreshTextBound = priv->size;
+        refreshTextBound = self->size;
     }
 
-    GSList *item = priv->items;
+    GSList *item = self->items;
 
     for (guint64 i = 0; i < cdata->from_index; ++i)
         item = g_slist_next (item);
     for (guint64 i = cdata->from_index; i < refreshTextBound && item; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, i);
 
-    if (!priv->item_height && priv->items)
-        gtk_widget_measure (GTK_WIDGET (priv->items->data), GTK_ORIENTATION_VERTICAL, -1, NULL, &priv->item_height, NULL, NULL);
+    if (!self->item_height && self->items)
+        gtk_widget_measure (GTK_WIDGET (self->items->data), GTK_ORIENTATION_VERTICAL, -1, NULL, &self->item_height, NULL, NULL);
 }
 
 static void
@@ -241,7 +231,7 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
                gpointer      user_data)
 {
     OnUpdateCallbackData *cdata = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (cdata->self);
+    GPasteUiHistory *priv = cdata->self;
 
     if (!priv->client)
     {
@@ -258,42 +248,36 @@ static void
 g_paste_ui_history_refresh (GPasteUiHistory *self,
                             guint64          from_index)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    if (!priv->client)
+    if (!self->client)
         return;
 
-    if (priv->search)
-        g_paste_ui_history_search (self, priv->search);
+    if (self->search)
+        g_paste_ui_history_search (self, self->search);
     else
     {
         OnUpdateCallbackData *cdata = g_new (OnUpdateCallbackData, 1);
         cdata->self = self;
         cdata->from_index = from_index;
-        cdata->generation = ++priv->refresh_generation;
+        cdata->generation = ++self->refresh_generation;
 
-        priv->loading = TRUE;
-        g_paste_client_get_history_name (priv->client, on_name_ready, cdata);
+        self->loading = TRUE;
+        g_paste_client_get_history_name (self->client, on_name_ready, cdata);
     }
 }
 
 static gboolean
 g_paste_ui_history_can_grow (GPasteUiHistory *self)
 {
-    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
-
     /* size is MIN (available, limit), so there is more to load iff the history
      * holds more items than our current display limit. */
-    return priv->client && !priv->search && !priv->loading && priv->available > priv->limit;
+    return self->client && !self->search && !self->loading && self->available > self->limit;
 }
 
 static void
 g_paste_ui_history_grow (GPasteUiHistory *self)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    priv->limit += g_paste_ui_history_batch (self);
-    g_paste_ui_history_refresh (self, priv->size);
+    self->limit += g_paste_ui_history_batch (self);
+    g_paste_ui_history_refresh (self, self->size);
 }
 
 /* While the loaded items do not yet overflow the viewport, keep loading more so
@@ -304,7 +288,6 @@ g_paste_ui_history_on_adjustment_changed (GtkAdjustment *adjustment,
                                           gpointer       user_data)
 {
     GPasteUiHistory *self = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
     gdouble page = gtk_adjustment_get_page_size (adjustment);
 
     /* Cap eager filling assuming a sane minimum row height, so zero/near-zero
@@ -313,7 +296,7 @@ g_paste_ui_history_on_adjustment_changed (GtkAdjustment *adjustment,
 
     /* page <= 0 means the viewport is not allocated yet. */
     if (page > 0 && gtk_adjustment_get_upper (adjustment) <= page &&
-        priv->size < max_fill && g_paste_ui_history_can_grow (self))
+        self->size < max_fill && g_paste_ui_history_can_grow (self))
         g_paste_ui_history_grow (self);
 }
 
@@ -336,34 +319,33 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                  gpointer      user_data)
 {
     g_autoptr (GPasteUiHistory) self = user_data; /* ref taken in _search */
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
     /* Only meaningful because the ref above kept us allocated: dispose clears
      * the client, so a NULL one means we were disposed mid-flight. */
-    if (!priv->client)
+    if (!self->client)
         return;
 
-    GSList *item = priv->items;
+    GSList *item = self->items;
 
-    g_set_strv_take (&priv->search_results, g_paste_client_search_finish (priv->client, res, NULL /* error */));
+    g_set_strv_take (&self->search_results, g_paste_client_search_finish (self->client, res, NULL /* error */));
     /* A failed search leaves this NULL, and g_strv_length() has no more patience
      * with that than the daemon side had (c0022cf2). */
-    guint64 search_results_size = (priv->search_results) ? g_strv_length (priv->search_results) : 0;
+    guint64 search_results_size = (self->search_results) ? g_strv_length (self->search_results) : 0;
 
     if (search_results_size)
     {
         g_paste_ui_history_show_list (self);
 
-        if (search_results_size > priv->size)
-            search_results_size = priv->size;
+        if (search_results_size > self->size)
+            search_results_size = self->size;
 
         for (guint64 i = 0; i < search_results_size; ++i, item = g_slist_next (item))
-            g_paste_ui_item_set_uuid (item->data, priv->search_results[i]);
+            g_paste_ui_item_set_uuid (item->data, self->search_results[i]);
     }
     else
         g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"));
 
-    for (guint64 i = search_results_size; i < priv->size; ++i, item = g_slist_next (item))
+    for (guint64 i = search_results_size; i < self->size; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, (guint64) -1);
 }
 
@@ -380,22 +362,20 @@ g_paste_ui_history_search (GPasteUiHistory *self,
 {
     g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
 
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    if (!priv->client)
+    if (!self->client)
         return;
 
     if (g_paste_str_equal (search, ""))
     {
-        g_clear_pointer (&priv->search, g_free);
-        g_clear_pointer (&priv->search_results, g_strfreev);
+        g_clear_pointer (&self->search, g_free);
+        g_clear_pointer (&self->search_results, g_strfreev);
         g_paste_ui_history_refresh (self, 0);
     }
     else
     {
-        g_set_str (&priv->search, search);
+        g_set_str (&self->search, search);
         /* The callback owns this ref (see on_search_ready). */
-        g_paste_client_search (priv->client, search, on_search_ready, g_object_ref (self));
+        g_paste_client_search (self->client, search, on_search_ready, g_object_ref (self));
     }
 }
 
@@ -412,12 +392,10 @@ g_paste_ui_history_select_first (GPasteUiHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
 
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    if (!priv->items)
+    if (!self->items)
         return FALSE;
 
-    return g_paste_ui_item_activate (priv->items->data);
+    return g_paste_ui_item_activate (self->items->data);
 }
 
 /**
@@ -435,8 +413,7 @@ g_paste_ui_history_activate_index (GPasteUiHistory *self,
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
 
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-    GPasteUiItem *item = g_slist_nth_data (priv->items, index);
+    GPasteUiItem *item = g_slist_nth_data (self->items, index);
 
     if (!item)
         return FALSE;
@@ -452,10 +429,9 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               gpointer           user_data)
 {
     GPasteUiHistory *self = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
     gboolean refresh = FALSE;
 
-    if (!priv->client)
+    if (!self->client)
         return;
 
     switch (target)
@@ -471,7 +447,7 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
             /* Lazy loading means the changed position may be past the rows we
              * have materialised (a password renamed deep in the history, say);
              * there is simply nothing on screen to refresh then. */
-            GPasteUiItem *item = g_slist_nth_data (priv->items, position);
+            GPasteUiItem *item = g_slist_nth_data (self->items, position);
 
             if (item)
                 g_paste_ui_item_refresh (item);
@@ -497,9 +473,8 @@ on_selected_rows_changed (GtkListBox *list_box G_GNUC_UNUSED,
                           gpointer    user_data)
 {
     GPasteUiHistory *self = user_data;
-    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
 
-    g_signal_emit (self, signals[SELECTION_CHANGED], 0, priv->selection->len);
+    g_signal_emit (self, signals[SELECTION_CHANGED], 0, self->selection->len);
 }
 
 static void
@@ -527,13 +502,11 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
 {
     g_return_if_fail (_G_PASTE_IS_UI_HISTORY (self));
 
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    self->selection_mode = selection_mode;
+    g_ptr_array_set_size (self->selection, 0);
 
-    priv->selection_mode = selection_mode;
-    g_ptr_array_set_size (priv->selection, 0);
-
-    gtk_list_box_set_selection_mode (priv->list_box, selection_mode ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_NONE);
-    g_slist_foreach (priv->items, apply_selectable, &selection_mode);
+    gtk_list_box_set_selection_mode (self->list_box, selection_mode ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_NONE);
+    g_slist_foreach (self->items, apply_selectable, &selection_mode);
 
     /* Leaving the mode (GTK_SELECTION_NONE) already cleared the selection. */
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, 0u);
@@ -556,13 +529,12 @@ g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
     g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY (self), NULL);
     g_return_val_if_fail (length, NULL);
 
-    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
-    for (guint i = 0; i < priv->selection->len; ++i)
-        g_strv_builder_add (builder, g_ptr_array_index (priv->selection, i));
+    for (guint i = 0; i < self->selection->len; ++i)
+        g_strv_builder_add (builder, g_ptr_array_index (self->selection, i));
 
-    *length = priv->selection->len;
+    *length = self->selection->len;
 
     return g_strv_builder_end (builder);
 }
@@ -578,12 +550,11 @@ on_row_pressed (GtkGestureClick *gesture,
                 gpointer         user_data)
 {
     GPasteUiHistory *self = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    if (!priv->selection_mode)
+    if (!self->selection_mode)
         return;
 
-    GtkListBoxRow *row = gtk_list_box_get_row_at_y (priv->list_box, (gint) y);
+    GtkListBoxRow *row = gtk_list_box_get_row_at_y (self->list_box, (gint) y);
 
     if (!row)
         return;
@@ -594,21 +565,21 @@ on_row_pressed (GtkGestureClick *gesture,
 
     if (gtk_list_box_row_is_selected (row))
     {
-        for (guint i = 0; uuid && i < priv->selection->len; ++i)
+        for (guint i = 0; uuid && i < self->selection->len; ++i)
         {
-            if (g_paste_str_equal (g_ptr_array_index (priv->selection, i), uuid))
+            if (g_paste_str_equal (g_ptr_array_index (self->selection, i), uuid))
             {
-                g_ptr_array_remove_index (priv->selection, i);
+                g_ptr_array_remove_index (self->selection, i);
                 break;
             }
         }
-        gtk_list_box_unselect_row (priv->list_box, row);
+        gtk_list_box_unselect_row (self->list_box, row);
     }
     else
     {
         if (uuid)
-            g_ptr_array_add (priv->selection, g_strdup (uuid));
-        gtk_list_box_select_row (priv->list_box, row);
+            g_ptr_array_add (self->selection, g_strdup (uuid));
+        gtk_list_box_select_row (self->list_box, row);
     }
 }
 
@@ -616,15 +587,14 @@ static void
 g_paste_ui_history_dispose (GObject *object)
 {
     GPasteUiHistory *self = G_PASTE_UI_HISTORY (object);
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    g_clear_slist (&priv->items, g_object_unref);
-    g_clear_pointer (&priv->selection, g_ptr_array_unref);
+    g_clear_slist (&self->items, g_object_unref);
+    g_clear_pointer (&self->selection, g_ptr_array_unref);
 
-    g_clear_pointer (&priv->search, g_free);
-    g_clear_pointer (&priv->search_results, g_strfreev);
-    g_clear_object (&priv->client);
-    g_clear_object (&priv->settings);
+    g_clear_pointer (&self->search, g_free);
+    g_clear_pointer (&self->search_results, g_strfreev);
+    g_clear_object (&self->client);
+    g_clear_object (&self->settings);
 
     G_OBJECT_CLASS (g_paste_ui_history_parent_class)->dispose (object);
 }
@@ -649,9 +619,7 @@ g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 static void
 g_paste_ui_history_init (GPasteUiHistory *self)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    priv->selection = g_ptr_array_new_with_free_func (g_free);
+    self->selection = g_ptr_array_new_with_free_func (g_free);
 }
 
 /**
@@ -680,7 +648,7 @@ g_paste_ui_history_new (GPasteClient   *client,
     GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_HISTORY,
                                       "orientation", GTK_ORIENTATION_VERTICAL,
                                       NULL);
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (self));
+    GPasteUiHistory *priv = G_PASTE_UI_HISTORY (self);
     GtkBox *box = GTK_BOX (self);
 
     priv->client = g_object_ref (client);
