@@ -1518,7 +1518,10 @@ g_paste_history_new (GPasteSettings *settings)
     self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded);
     self->settings = g_object_ref (settings);
 
-    /* FIXME: track text item size settings */
+    /* The text item size settings are deliberately absent: they filter what
+     * gets in (see g_paste_clipboard_content_*), and narrowing them must not
+     * retroactively delete items already recorded under the old bounds, the way
+     * the size and memory limits below do. */
     GSignalGroup *settings_signals = self->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals, "notify::" G_PASTE_MAX_HISTORY_SIZE_SETTING,
                             G_CALLBACK (g_paste_history_on_max_history_size_changed), self);

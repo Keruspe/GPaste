@@ -301,7 +301,7 @@ extract_replace_arg (gint  *argc,
 gint
 main (gint argc, gchar *argv[])
 {
-    /* FIXME: remove this once gtk supports clipboard correctly on wayland */
+    /* GTK doesn't support global clipboard events on wayland */
     gdk_set_allowed_backends ("x11");
 
     gboolean replace = extract_replace_arg (&argc, argv);
