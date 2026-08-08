@@ -125,7 +125,7 @@ install_headers(
 pkg.generate(
   libgpaste_gtk4,
   name: 'GPasteGtk4',
-  filebase: 'gpaste-gtk-4',
+  filebase: 'gpaste-gtk4',
   subdirs: 'gpaste',
   description: 'Library to manage GPaste settings and perform graphical operations',
   requires: libgpaste_gtk4_deps,
@@ -165,7 +165,7 @@ if get_option('vapi')
   )
 
   gnome.generate_vapi(
-    'gpaste-gtk-4',
+    'gpaste-gtk4',
     sources: [libgpaste_gtk4_gir[0]],
     packages: [ libgpaste_vapi, 'gtk4', 'libadwaita-1'],
     install: true,
