@@ -545,6 +545,119 @@ test_get_by_uuid (void)
     g_assert_null (g_paste_history_get_by_uuid (history, "nope"));
 }
 
+/* The uuid index is a second structure alongside the item array, so it can drift
+ * from it. Every operation that reshuffles the history has to leave a lookup
+ * finding exactly what a walk would: removals from anywhere (including the
+ * middle, which shifts every position after it), a select that moves an item to
+ * the front, and a replace that swaps one item for another under a new uuid. */
+static void
+test_uuid_lookup_survives_reshuffling (void)
+{
+    const guint n_uuids = 6;
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 100);
+    /* NULL-terminated and freed as a strv: g_autofree on an array would free
+     * only its first element, since the cleanup is handed the array's address. */
+    g_auto (GStrv) uuids = g_new0 (gchar *, n_uuids + 1);
+
+    for (guint i = 0; i < n_uuids; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("item-%u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+        uuids[i] = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 0)));
+    }
+
+    /* Newest first, so uuids[5] is at 0 and uuids[0] at 5. */
+    for (guint i = 0; i < n_uuids; ++i)
+    {
+        const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
+
+        g_assert_nonnull (item);
+        g_assert_cmpstr (g_paste_item_get_uuid (item), ==, uuids[i]);
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 5 - i)), ==, uuids[i]);
+    }
+
+    /* Remove from the middle: everything after it shifts down by one. */
+    g_assert_true (g_paste_history_remove_by_uuid (history, uuids[3]));
+    g_assert_null (g_paste_history_get_by_uuid (history, uuids[3]));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 5);
+
+    /* Remove by position too, so both removal paths are covered. */
+    g_paste_history_remove (history, 0);
+    g_assert_null (g_paste_history_get_by_uuid (history, uuids[5]));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 4);
+
+    /* Selecting the oldest survivor moves it to the front without losing it. */
+    g_assert_true (g_paste_history_select (history, uuids[0]));
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuids[0]);
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuids[0]));
+
+    /* A replace retires the old uuid and publishes the new one. */
+    g_paste_history_replace (history, uuids[0], "replaced");
+    g_assert_null (g_paste_history_get_by_uuid (history, uuids[0]));
+
+    const GPasteItem *replaced = g_paste_history_get (history, 0);
+    g_assert_cmpstr (g_paste_item_get_value (replaced), ==, "replaced");
+    g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (replaced)) == replaced);
+
+    /* Whatever is left must still be reachable both ways, and nothing else. */
+    for (guint i = 0; i < g_paste_history_get_length (history); ++i)
+    {
+        const GPasteItem *item = g_paste_history_get (history, i);
+
+        g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (item)) == item);
+    }
+    g_assert_null (g_paste_history_get_by_uuid (history, "not-a-uuid"));
+}
+
+/* Eviction under max-memory-usage repeatedly drops the biggest non-active item
+ * and re-elects a new one. Both halves lean on the uuid index and on borrowed
+ * uuid strings belonging to items being freed, so drive it hard enough that it
+ * has to evict several times in a row rather than just once. */
+static void
+test_memory_eviction_evicts_repeatedly (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 100);
+
+    /* 1 MiB each, and the schema floors max-memory-usage at 5 MiB, so twelve of
+     * them leave plenty to evict. Each stays well under the budget on its own,
+     * which is what add() rejects outright. */
+    g_autofree gchar *big = g_strnfill (1024 * 1024, 'x');
+
+    for (guint i = 0; i < 12; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("%u%s", i, big);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+    }
+
+    guint64 before = g_paste_history_get_length (history);
+    g_assert_cmpuint (before, ==, 12);
+
+    /* 5 MiB against ~12 MiB: several have to go, one eviction after another.
+     * The first (active) item is never a candidate, so one always survives. */
+    g_paste_settings_set_max_memory_usage (settings, 5);
+
+    guint64 after = g_paste_history_get_length (history);
+    g_assert_cmpuint (after, <, before);
+    g_assert_cmpuint (after, >, 0);
+
+    /* Whatever survived must still be consistent both ways. */
+    for (guint i = 0; i < after; ++i)
+    {
+        const GPasteItem *item = g_paste_history_get (history, i);
+
+        g_assert_nonnull (item);
+        g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (item)) == item);
+    }
+
+    /* And the history still works afterwards. */
+    g_paste_history_add (history, g_paste_text_item_new ("after"));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "after");
+}
+
 static void
 test_select_moves_to_front (void)
 {
@@ -2164,6 +2277,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/remove", test_remove);
     g_test_add_func ("/history/remove_by_uuid", test_remove_by_uuid);
     g_test_add_func ("/history/get_by_uuid", test_get_by_uuid);
+    g_test_add_func ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
+    g_test_add_func ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
     g_test_add_func ("/history/empty", test_empty);
     g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);

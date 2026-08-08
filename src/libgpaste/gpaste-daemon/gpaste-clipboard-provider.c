@@ -194,12 +194,12 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
     if (!g_paste_clipboard_provider_is_empty (self))
         return;
 
-    const GList *hist = g_paste_history_get_history (history);
+    const GPtrArray *hist = g_paste_history_get_history (history);
 
-    if (!hist)
+    if (!hist->len)
         return;
 
-    GPasteItem *item = hist->data;
+    GPasteItem *item = g_ptr_array_index (hist, 0);
 
     if (!g_paste_clipboard_provider_select_item (self, item))
         g_paste_history_remove (history, 0);

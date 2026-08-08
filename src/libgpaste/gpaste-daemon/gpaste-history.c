@@ -39,7 +39,16 @@ typedef struct
     GPasteHistorySaver   *saver;
     GPasteSettings       *settings;
     GSignalGroup         *settings_signals;
-    GList                *history;
+
+    /* The model: newest first, holding a ref on each item, plus an index from
+     * uuid to the very same items. The hash borrows both — the key is the
+     * item's own uuid string and the value is the item the array owns — so an
+     * entry is only ever valid while the item is in the array, and the two are
+     * updated together. That is safe because a uuid never changes once its item
+     * is in the history: only the storage backends call
+     * g_paste_item_set_uuid(), while loading, before the item gets here. */
+    GPtrArray            *history;
+    GHashTable           *by_uuid;
     gsize                 size;
 
     gchar                *name;
@@ -121,20 +130,16 @@ g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
     priv->biggest_uuid = NULL;
     priv->biggest_size = 0;
 
-    GList *history = priv->history;
-
-    if (history)
+    /* From 1: the first (active) item is never tracked. */
+    for (guint i = 1; i < priv->history->len; ++i)
     {
-        for (history = history->next; history; history = history->next)
-        {
-            GPasteItem *item = history->data;
-            guint64 size = g_paste_item_get_size (item);
+        GPasteItem *item = g_ptr_array_index (priv->history, i);
+        guint64 size = g_paste_item_get_size (item);
 
-            if (size > priv->biggest_size)
-            {
-                priv->biggest_uuid = g_paste_item_get_uuid (item);
-                priv->biggest_size = size;
-            }
+        if (size > priv->biggest_size)
+        {
+            priv->biggest_uuid = g_paste_item_get_uuid (item);
+            priv->biggest_size = size;
         }
     }
 }
@@ -148,21 +153,28 @@ g_paste_history_item_free (gpointer data)
         g_paste_image_item_delete_files (g_paste_item_get_value (item));
 }
 
+/* Drop the item at @index from the model. The array's ref is *stolen* rather
+ * than released, so this never frees on its own: with @remove_leftovers the
+ * item (and any backing file it owns) is disposed of here, without it the
+ * caller has taken the ref over — either to free it itself or because the item
+ * is only being moved to the front. */
 static void
 g_paste_history_private_remove (GPasteHistoryPrivate *priv,
-                                GList                *elem,
+                                guint                 index,
                                 gboolean              remove_leftovers)
 {
-    if (!elem)
-        return;
+    g_return_if_fail (index < priv->history->len);
 
-    GPasteItem *item = elem->data;
+    GPasteItem *item = g_ptr_array_index (priv->history, index);
 
     priv->size -= g_paste_item_get_size (item);
 
+    /* Before the steal: the key belongs to the item. */
+    g_hash_table_remove (priv->by_uuid, g_paste_item_get_uuid (item));
+    g_ptr_array_steal_index (priv->history, index);
+
     if (remove_leftovers)
         g_paste_history_item_free (item);
-    priv->history = g_list_delete_link (priv->history, elem);
 }
 
 static void
@@ -193,18 +205,52 @@ g_paste_history_emit_switch (GPasteHistory *self,
                    NULL);
 }
 
-static gpointer
-g_paste_history_copy_ref (gconstpointer src,
-                          gpointer      data G_GNUC_UNUSED)
-{
-    return g_object_ref ((gpointer) src);
-}
-
-/* A deep, ref-holding copy of the current history, to be handed to the saver. */
+/* A ref-holding copy of the current history, to be handed to the saver.
+ *
+ * GList is the storage layer's interchange type and stays that way: writing a
+ * history out is a one-shot bulk operation where a list costs nothing, so the
+ * backends, the saver and the migration code keep taking one. Only the live
+ * model is an array. Built back to front, so the list comes out newest-first
+ * like the array it is copied from. */
 static GList *
 g_paste_history_snapshot (const GPasteHistoryPrivate *priv)
 {
-    return g_list_copy_deep (priv->history, g_paste_history_copy_ref, NULL);
+    GList *snapshot = NULL;
+
+    for (guint i = priv->history->len; i > 0; --i)
+        snapshot = g_list_prepend (snapshot, g_object_ref (g_ptr_array_index (priv->history, i - 1)));
+
+    return snapshot;
+}
+
+/* Drop every item, keeping the containers. Releases the array's refs through
+ * its free func (a plain unref: unlike g_paste_history_empty this is a history
+ * being swapped out, not thrown away, so backing files are left alone). */
+static void
+g_paste_history_private_clear (GPasteHistoryPrivate *priv)
+{
+    g_ptr_array_set_size (priv->history, 0);
+    g_hash_table_remove_all (priv->by_uuid);
+}
+
+/* Take over an item list from the storage layer (transfer full) and install it
+ * as the model, rebuilding the uuid index with it. */
+static void
+g_paste_history_private_set_from_list (GPasteHistoryPrivate *priv,
+                                       GList                *history)
+{
+    g_paste_history_private_clear (priv);
+
+    for (GList *h = history; h; h = g_list_next (h))
+    {
+        GPasteItem *item = h->data;
+
+        g_ptr_array_add (priv->history, item);
+        g_hash_table_insert (priv->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);
+    }
+
+    /* The refs moved into the array; only the links are ours to free. */
+    g_list_free (history);
 }
 
 static void
@@ -258,12 +304,11 @@ g_paste_history_activate_first (GPasteHistory *self,
                                 gboolean       select)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GList *history = priv->history;
 
-    if (!history)
+    if (!priv->history->len)
         return;
 
-    GPasteItem *first = history->data;
+    GPasteItem *first = g_ptr_array_index (priv->history, 0);
 
     priv->size -= g_paste_item_get_size (first);
     g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
@@ -273,35 +318,33 @@ g_paste_history_activate_first (GPasteHistory *self,
         g_paste_history_selected (self, first);
 }
 
-static GList *
-g_paste_history_private_get_item_by_uuid (const GPasteHistoryPrivate *priv,
-                                          const gchar                *uuid,
-                                          guint64                    *index)
-{
-    guint64 idx = 0;
-
-    for (GList *history = priv->history; history; history = history->next, ++idx)
-    {
-        const GPasteItem *item = history->data;
-
-        if (g_paste_str_equal (g_paste_item_get_uuid (item), uuid))
-        {
-            if (index)
-                *index = idx;
-            return history;
-        }
-    }
-
-    return NULL;
-}
-
 static GPasteItem *
 g_paste_history_private_get_by_uuid (const GPasteHistoryPrivate *priv,
                                      const gchar                *uuid)
 {
-    GList *item = g_paste_history_private_get_item_by_uuid (priv, uuid, NULL);
+    return (uuid) ? g_hash_table_lookup (priv->by_uuid, uuid) : NULL;
+}
 
-    return (item) ? item->data : NULL;
+/* The item plus where it currently sits.
+ *
+ * The position is looked up rather than indexed, because indexing it would cost
+ * more than it saves: adding prepends, which shifts every position, so a
+ * uuid->position map would have to be rewritten on every single add. This scan
+ * compares pointers, where the old list walk compared uuid strings. */
+static GPasteItem *
+g_paste_history_private_get_indexed_by_uuid (const GPasteHistoryPrivate *priv,
+                                             const gchar                *uuid,
+                                             guint                      *index)
+{
+    GPasteItem *item = g_paste_history_private_get_by_uuid (priv, uuid);
+
+    if (!item)
+        return NULL;
+
+    /* In the index but not in the array would mean the two had drifted apart. */
+    g_return_val_if_fail (g_ptr_array_find (priv->history, item, index), NULL);
+
+    return item;
 }
 
 static void
@@ -311,11 +354,13 @@ g_paste_history_private_check_memory_usage (GPasteHistoryPrivate *priv)
 
     while (priv->size > max_memory && priv->biggest_uuid)
     {
-        GList *biggest = g_paste_history_private_get_item_by_uuid (priv, priv->biggest_uuid, NULL);
+        guint index;
 
-        if (biggest)
-            g_paste_history_private_remove (priv, biggest, TRUE);
+        if (g_paste_history_private_get_indexed_by_uuid (priv, priv->biggest_uuid, &index))
+            g_paste_history_private_remove (priv, index, TRUE);
 
+        /* Also re-points biggest_uuid, which borrowed its string from the item
+         * just freed. */
         g_paste_history_private_elect_new_biggest (priv);
     }
 }
@@ -323,28 +368,12 @@ g_paste_history_private_check_memory_usage (GPasteHistoryPrivate *priv)
 static void
 g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
 {
-    GList *history = priv->history;
     guint64 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
-    guint64 length = g_list_length (history);
 
-    if (length > max_history_size)
-    {
-        history = g_list_nth (history, max_history_size);
-        g_return_if_fail (history);
-
-        for (GList *_history = history; _history; _history = g_list_next (_history))
-            priv->size -= g_paste_item_get_size (_history->data);
-
-        if (history->prev)
-        {
-            history->prev->next = NULL;
-            history->prev = NULL;
-        }
-        else
-            priv->history = NULL;
-
-        g_list_free_full (history, g_paste_history_item_free);
-    }
+    /* Truncate from the tail: private_remove already does the size bookkeeping,
+     * the uuid index and the leftover backing files. */
+    while (priv->history->len > max_history_size)
+        g_paste_history_private_remove (priv, priv->history->len - 1, TRUE);
 }
 
 static gboolean
@@ -386,15 +415,14 @@ _g_paste_history_add (GPasteHistory *self,
     if (g_paste_item_get_size (item) > max_memory)
         return;
 
-    GList *history = priv->history;
-    gboolean election_needed = !history; // If we don't have an history we want to initalize the biggest
+    gboolean election_needed = !priv->history->len; // If we don't have an history we want to initalize the biggest
     GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_ALL;
 
     g_debug ("history: add");
 
-    if (history)
+    if (priv->history->len)
     {
-        GPasteItem *old_first = history->data;
+        GPasteItem *old_first = g_ptr_array_index (priv->history, 0);
 
         if (g_paste_item_equals (old_first, item))
             return;
@@ -407,7 +435,7 @@ _g_paste_history_add (GPasteHistory *self,
             /* old_first is a distinct object replaced by the grown item; free it
              * (its shared backing file, if any, is kept). */
             g_autoptr (GPasteItem) dropped = old_first;
-            g_paste_history_private_remove (priv, history, FALSE);
+            g_paste_history_private_remove (priv, 0, FALSE);
         }
         else
         {
@@ -425,19 +453,20 @@ _g_paste_history_add (GPasteHistory *self,
                 priv->biggest_size = size;
             }
 
-            for (history = history->next; history; history = history->next)
+            /* Dedup is by value, not by uuid, so the index cannot help here. */
+            for (guint i = 1; i < priv->history->len; ++i)
             {
-                if (g_paste_item_equals (history->data, item) || (new_selection && g_paste_history_private_is_growing_line (priv, history->data, item)))
-                {
-                    GPasteItem *entry = history->data;
+                GPasteItem *entry = g_ptr_array_index (priv->history, i);
 
+                if (g_paste_item_equals (entry, item) || (new_selection && g_paste_history_private_is_growing_line (priv, entry, item)))
+                {
                     if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (entry)))
                         election_needed = TRUE;
                     /* On add, @entry is a distinct duplicate to free (its shared
                      * backing file is kept). On select, @entry IS @item being moved
                      * to the front, so its ref must be left alone. */
                     g_autoptr (GPasteItem) dropped = new_selection ? entry : NULL;
-                    g_paste_history_private_remove (priv, history, FALSE);
+                    g_paste_history_private_remove (priv, i, FALSE);
                     break;
                 }
             }
@@ -451,8 +480,9 @@ _g_paste_history_add (GPasteHistory *self,
     if (_G_PASTE_IS_IMAGE_ITEM (item) && new_selection)
         g_paste_image_item_set_history (G_PASTE_IMAGE_ITEM (item), priv->name);
 
-    priv->history = g_list_prepend (priv->history, item);
-    g_steal_pointer (&owned); /* ownership transferred to the history list */
+    g_ptr_array_insert (priv->history, 0, item);
+    g_hash_table_insert (priv->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);
+    g_steal_pointer (&owned); /* ownership transferred to the history */
 
     g_paste_history_activate_first (self, FALSE);
     priv->size += g_paste_item_get_size (item);
@@ -489,16 +519,16 @@ g_paste_history_add (GPasteHistory *self,
 static void
 g_paste_history_remove_common (GPasteHistory        *self,
                                GPasteHistoryPrivate *priv,
-                               GList                *item,
-                               guint64               index)
+                               GPasteItem           *item,
+                               guint                 index)
 {
     if (!item)
         return;
 
-    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (item->data));
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (item));
     gboolean was_biggest = g_paste_str_equal (priv->biggest_uuid, uuid);
 
-    g_paste_history_private_remove (priv, item, TRUE);
+    g_paste_history_private_remove (priv, index, TRUE);
 
     if (!index)
         g_paste_history_activate_first (self, TRUE);
@@ -514,16 +544,12 @@ g_paste_history_remove_locked (GPasteHistory        *self,
                                GPasteHistoryPrivate *priv,
                                guint64               index)
 {
-    GList *history = priv->history;
-
     g_debug ("history: remove '%" G_GUINT64_FORMAT "'", index);
 
-    if (index >= g_list_length (history))
+    if (index >= priv->history->len)
         return;
 
-    GList *item = g_list_nth (history, index);
-
-    g_paste_history_remove_common (self, priv, item, index);
+    g_paste_history_remove_common (self, priv, g_ptr_array_index (priv->history, index), (guint) index);
 }
 
 /**
@@ -565,8 +591,8 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
 
     g_debug ("history: remove '%s", uuid);
 
-    guint64 index;
-    GList *item = g_paste_history_private_get_item_by_uuid (priv, uuid, &index);
+    guint index;
+    GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (priv, uuid, &index);
 
     if (!item)
         return FALSE;
@@ -579,12 +605,7 @@ static GPasteItem *
 g_paste_history_private_get (const GPasteHistoryPrivate *priv,
                              guint64                     index)
 {
-    GList *history = priv->history;
-
-    if (index >= g_list_length (history))
-        return NULL;
-
-    return G_PASTE_ITEM (g_list_nth_data (history, index));
+    return (index < priv->history->len) ? g_ptr_array_index (priv->history, index) : NULL;
 }
 
 /**
@@ -685,20 +706,26 @@ g_paste_history_select (GPasteHistory *self,
 
 static void
 _g_paste_history_replace (GPasteHistory *self,
-                          guint64        index,
-                          GPasteItem    *new,
-                          GList         *todel)
+                          guint          index,
+                          GPasteItem    *new)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GPasteItem *old = todel->data;
+    GPasteItem *old = g_ptr_array_index (priv->history, index);
     g_autofree gchar *old_uuid = g_strdup (g_paste_item_get_uuid (old));
     gboolean was_biggest = g_paste_str_equal (priv->biggest_uuid, old_uuid);
 
     priv->size -= g_paste_item_get_size (old);
     priv->size += g_paste_item_get_size (new);
 
+    /* Swap in place: the steal hands back the array's ref (its free func does
+     * not run) so we drop it ourselves, exactly as before, and @new takes the
+     * same slot. Unlike a removal this keeps any backing file, since only the
+     * item wrapping it is being replaced. */
+    g_hash_table_remove (priv->by_uuid, old_uuid);
+    g_ptr_array_steal_index (priv->history, index);
     g_object_unref (old);
-    todel->data = new;
+    g_ptr_array_insert (priv->history, index, new);
+    g_hash_table_insert (priv->by_uuid, (gpointer) g_paste_item_get_uuid (new), new);
 
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (priv);
@@ -724,19 +751,17 @@ g_paste_history_replace (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
-    guint64 index;
-    GList *todel = g_paste_history_private_get_item_by_uuid (priv, uuid, &index);
+    guint index;
+    GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (priv, uuid, &index);
 
-    if (!todel)
+    if (!item)
         return;
-
-    GPasteItem *item = todel->data;
 
     g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
-    _g_paste_history_replace (self, index, new, todel);
+    _g_paste_history_replace (self, index, new);
 
     if (!index)
         g_paste_history_selected (self, new);
@@ -747,11 +772,10 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
                                        const gchar                *name,
                                        guint64                    *index)
 {
-    guint64 idx = 0;
-
-    for (GList *h = priv->history; h; h = g_list_next (h), ++idx)
+    for (guint idx = 0; idx < priv->history->len; ++idx)
     {
-        GPasteItem *i = h->data;
+        GPasteItem *i = g_ptr_array_index (priv->history, idx);
+
         if (_G_PASTE_IS_PASSWORD_ITEM (i) &&
             g_paste_str_equal (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
         {
@@ -784,19 +808,16 @@ g_paste_history_set_password (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
-    guint64 index;
-    GList *todel = g_paste_history_private_get_item_by_uuid (priv, uuid, &index);
+    guint index;
+    GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (priv, uuid, &index);
 
-    g_return_if_fail (todel);
-
-    GPasteItem *item = todel->data;
-
+    g_return_if_fail (item);
     g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
     g_return_if_fail (!_g_paste_history_private_get_password (priv, name, NULL));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
-    _g_paste_history_replace (self, index, password, todel);
+    _g_paste_history_replace (self, index, password);
 }
 
 /**
@@ -886,7 +907,11 @@ g_paste_history_empty (GPasteHistory *self)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    g_clear_list (&priv->history, g_paste_history_item_free);
+    /* Through private_remove rather than the array's own free func: emptying
+     * also drops each item's backing file, and keeps the uuid index in step. */
+    while (priv->history->len)
+        g_paste_history_private_remove (priv, priv->history->len - 1, TRUE);
+
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
@@ -909,7 +934,9 @@ g_paste_history_save (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history);
+    g_autolist (GPasteItem) snapshot = g_paste_history_snapshot (priv);
+
+    g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, snapshot);
 }
 
 /**
@@ -956,7 +983,7 @@ g_paste_history_load_locked (GPasteHistory        *self,
                              GPasteHistoryPrivate *priv,
                              const gchar          *name)
 {
-    g_clear_list (&priv->history, g_object_unref);
+    g_paste_history_private_clear (priv);
     priv->size = 0;
 
     g_set_str (&priv->name, (name) ? name : g_paste_settings_get_history_name (priv->settings));
@@ -968,12 +995,15 @@ g_paste_history_load_locked (GPasteHistory        *self,
      * clears the flag: it is this history's own readability that decides,
      * otherwise one unreadable history would silently stop persisting every
      * other one loaded afterwards. */
-    priv->unreadable = !g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
+    GList *history = NULL;
+
+    priv->unreadable = !g_paste_storage_backend_read_history (priv->backend, priv->name, &history, &priv->size);
+    g_paste_history_private_set_from_list (priv, history);
 
     if (priv->unreadable)
         g_warning ("Could not read the history back; it will not be overwritten");
 
-    if (priv->history)
+    if (priv->history->len)
         g_paste_history_activate_first (self, TRUE);
 
     /* Unconditional: biggest_uuid borrows the uuid of an item we just freed, so
@@ -1016,11 +1046,10 @@ g_paste_history_on_loaded (gpointer  user_data,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    g_clear_list (&priv->history, g_object_unref);
-    priv->history = history;
+    g_paste_history_private_set_from_list (priv, history);
     priv->size = size;
 
-    if (priv->history)
+    if (priv->history->len)
         g_paste_history_activate_first (self, TRUE);
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
@@ -1076,7 +1105,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
     priv->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (priv->settings), priv->settings);
     priv->saver = g_paste_history_saver_new (priv->backend, self, g_paste_history_on_loaded);
 
-    g_clear_list (&priv->history, g_object_unref);
+    g_paste_history_private_clear (priv);
     priv->size = 0;
     g_paste_history_private_elect_new_biggest (priv);
     /* The deliberate end of the handover g_paste_history_flush() opened: the
@@ -1119,7 +1148,7 @@ g_paste_history_load_async (GPasteHistory *self,
         return;
 
     g_set_str (&priv->name, resolved);
-    g_clear_list (&priv->history, g_object_unref);
+    g_paste_history_private_clear (priv);
     priv->size = 0;
     /* A previously unreadable history must not keep the *next* one from being
      * persisted: the load's own result decides (see g_paste_history_on_loaded).
@@ -1229,7 +1258,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 
     g_debug ("history: name changed to '%s'", priv->name);
 
-    g_clear_list (&priv->history, g_object_unref);
+    g_paste_history_private_clear (priv);
     priv->size = 0;
     /* Switching away from an unreadable history resumes recording: the new one
      * stands on its own (see g_paste_history_load_async). A flushed history
@@ -1291,7 +1320,8 @@ g_paste_history_dispose (GObject *object)
     g_clear_object (&priv->saver);
     g_clear_object (&priv->backend);
     g_clear_object (&priv->pending_selection);
-    g_clear_list (&priv->history, g_object_unref);
+    g_clear_pointer (&priv->history, g_ptr_array_unref);
+    g_clear_pointer (&priv->by_uuid, g_hash_table_unref);
     g_clear_object (&priv->settings_signals);
     g_clear_object (&priv->settings);
 
@@ -1386,6 +1416,11 @@ g_paste_history_init (GPasteHistory *self)
 
     g_mutex_init (&priv->lock);
 
+    /* The array owns a ref per item; the index borrows both its keys and its
+     * values from it, so it gets no free funcs of its own. */
+    priv->history = g_ptr_array_new_with_free_func (g_object_unref);
+    priv->by_uuid = g_hash_table_new (g_str_hash, g_str_equal);
+
     G_PASTE_LOCK_HISTORY;
 
     g_paste_history_private_elect_new_biggest (priv);
@@ -1397,9 +1432,10 @@ g_paste_history_init (GPasteHistory *self)
  *
  * Get the inner history of a #GPasteHistory
  *
- * Returns: (element-type GPasteItem) (transfer none): The inner history
+ * Returns: (element-type GPasteItem) (transfer none): The inner history,
+ *          newest first
  */
-G_PASTE_VISIBLE const GList *
+G_PASTE_VISIBLE const GPtrArray *
 g_paste_history_get_history (const GPasteHistory *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
@@ -1425,7 +1461,7 @@ g_paste_history_get_length (GPasteHistory *self)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    return g_list_length (priv->history);
+    return priv->history->len;
 }
 
 /**
@@ -1484,9 +1520,9 @@ g_paste_history_search (GPasteHistory *self,
     g_autoptr (GArray) results = g_array_new (TRUE, /* zero-terminated */
                                               TRUE, /* clear */
                                               sizeof (gchar *));
-    for (GList *history = priv->history; history; history = g_list_next (history))
+    for (guint i = 0; i < priv->history->len; ++i)
     {
-        const GPasteItem *item = (GPasteItem *) history->data;
+        const GPasteItem *item = g_ptr_array_index (priv->history, i);
         const gchar *uuid = g_paste_item_get_uuid (item);
         gboolean match = FALSE;
 

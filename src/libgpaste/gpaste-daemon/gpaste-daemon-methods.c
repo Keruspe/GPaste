@@ -359,15 +359,15 @@ g_paste_daemon_methods_get_elements (const GPasteDaemonMethods *priv,
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_get_history (const GPasteDaemonMethods *priv)
 {
-    const GList *history = g_paste_history_get_history (priv->history);
-    guint64 length = g_list_length ((GList *) history);
+    const GPtrArray *history = g_paste_history_get_history (priv->history);
     GVariantBuilder builder;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
 
-    for (guint64 i = 0; i < length; ++i, history = g_list_next (history))
+    for (guint i = 0; i < history->len; ++i)
     {
-        const GPasteItem *item = history->data;
+        const GPasteItem *item = g_ptr_array_index (history, i);
+
         g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
     }
 
@@ -458,15 +458,15 @@ g_paste_daemon_methods_get_raw_element (const GPasteDaemonMethods *priv,
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_get_raw_history (const GPasteDaemonMethods *priv)
 {
-    const GList *history = g_paste_history_get_history (priv->history);
-    guint64 length = g_list_length ((GList *) history);
+    const GPtrArray *history = g_paste_history_get_history (priv->history);
     GVariantBuilder builder;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
 
-    for (guint64 i = 0; i < length; ++i, history = g_list_next (history))
+    for (guint i = 0; i < history->len; ++i)
     {
-        const GPasteItem *item = history->data;
+        const GPasteItem *item = g_ptr_array_index (history, i);
+
         g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_value (item));
     }
 

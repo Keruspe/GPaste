@@ -55,7 +55,7 @@ void         g_paste_history_switch      (GPasteHistory *self,
 gboolean     g_paste_history_delete      (GPasteHistory *self,
                                           const gchar   *name,
                                           GError       **error);
-const GList *g_paste_history_get_history (const GPasteHistory *self);
+const GPtrArray *g_paste_history_get_history (const GPasteHistory *self);
 guint64      g_paste_history_get_length  (GPasteHistory *self);
 const gchar *g_paste_history_get_current (const GPasteHistory *self);
 
