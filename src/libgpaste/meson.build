@@ -64,6 +64,7 @@ pkg.generate(
   subdirs: 'gpaste',
   description: 'Library to handle and communicate with GPaste',
   requires: libgpaste_deps,
+  url: 'https://github.com/Keruspe/GPaste',
 )
 
 
@@ -127,7 +128,8 @@ pkg.generate(
   filebase: 'gpaste-gtk-4',
   subdirs: 'gpaste',
   description: 'Library to manage GPaste settings and perform graphical operations',
-  libraries: libgpaste_gtk4_deps,
+  requires: libgpaste_gtk4_deps,
+  url: 'https://github.com/Keruspe/GPaste',
 )
 
 if get_option('introspection')
@@ -340,6 +342,20 @@ install_headers(
 install_headers(
   gpaste_daemon_public_headers,
   subdir: 'gpaste/gpaste-daemon',
+)
+
+# Only gpaste-3: no public daemon header names a toolkit type, so gtk4 and gcr-4
+# are private to the implementation even though the library links them. That is
+# the same reason the GIR carries no toolkit namespace — gnome-shell hosts this
+# library and can initialise neither GTK nor Adwaita.
+pkg.generate(
+  libgpaste_daemon,
+  name: 'GPasteDaemon',
+  filebase: 'gpaste-daemon',
+  subdirs: 'gpaste',
+  description: 'Library to run a GPaste daemon and manipulate its clipboard history',
+  requires: libgpaste,
+  url: 'https://github.com/Keruspe/GPaste',
 )
 
 if get_option('introspection')
