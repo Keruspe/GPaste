@@ -8,7 +8,7 @@ cc = meson.get_compiler('c')
 gnome = import('gnome')
 i18n = import('i18n')
 
-apiversion = '2'
+apiversion = '3'
 
 adwaita_req_version = '1.10.alpha'
 gcr_req_version = '4.0.0'

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-settings.h>
+#include <gpaste-3/gpaste-settings.h>
 
 #include <adwaita.h>
 

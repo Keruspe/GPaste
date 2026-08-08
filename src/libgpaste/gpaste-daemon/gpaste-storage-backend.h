@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <gpaste/gpaste-settings.h>
-#include <gpaste/gpaste-storage.h>
+#include <gpaste-3/gpaste-settings.h>
+#include <gpaste-3/gpaste-storage.h>
 
 #include <gpaste-daemon/gpaste-item.h>
 

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste/gpaste-gdbus-macros.h>
-#include <gpaste/gpaste-update-enums.h>
+#include <gpaste-3/gpaste-gdbus-macros.h>
+#include <gpaste-3/gpaste-update-enums.h>
 
 struct _GPasteClient
 {

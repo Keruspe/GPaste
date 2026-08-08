@@ -9,8 +9,8 @@
 
 #ifndef __GI_SCANNER__
 
-#include <gpaste/gpaste-gdbus-defines.h>
-#include <gpaste/gpaste-util.h>
+#include <gpaste-3/gpaste-gdbus-defines.h>
+#include <gpaste-3/gpaste-util.h>
 
 G_BEGIN_DECLS
 

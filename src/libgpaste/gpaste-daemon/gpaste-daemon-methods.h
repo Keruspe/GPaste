@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <gpaste/gpaste-error.h>
-#include <gpaste/gpaste-gdbus-defines.h>
+#include <gpaste-3/gpaste-error.h>
+#include <gpaste-3/gpaste-gdbus-defines.h>
 
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-history.h>

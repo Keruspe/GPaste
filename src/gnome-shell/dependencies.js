@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 import Gio from 'gi://Gio';
-import GPaste from 'gi://GPaste?version=2';
+import GPaste from 'gi://GPaste?version=3';
 
 import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 

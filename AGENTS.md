@@ -117,8 +117,19 @@ GPaste is a GNOME clipboard manager split across several binaries and a shared l
 
 The core libraries used by all other components. Two sub-modules:
 
-- `gpaste/` → **libgpaste** — daemon-agnostic types: `GPasteClient` (D-Bus client), `GPasteClientItem` (the lightweight item representation transferred over D-Bus), `GPasteSettings` (GSettings wrapper), enums, utilities.
+- `gpaste-3/` → **libgpaste** — daemon-agnostic types: `GPasteClient` (D-Bus client), `GPasteClientItem` (the lightweight item representation transferred over D-Bus), `GPasteSettings` (GSettings wrapper), enums, utilities.
 - `gpaste-gtk4/` → **libgpaste-gtk4** — GTK4 + Adwaita helpers (the preferences widgets).
+
+**The core library's directory carries `apiversion`, so it is renamed on every major bump** (`gpaste-2/` → `gpaste-3/` for this release), and its includes are spelled `<gpaste-3/gpaste-macros.h>`. That is not decoration: the installed headers live at `$prefix/include/gpaste/gpaste-3/` with `-I …/include/gpaste`, and the *same* include text has to resolve both in-tree and against the install prefix, since these are the same files. In-tree it resolves through `include_directories('.')` = `src/libgpaste`. Keeping the two spellings identical is what makes a broken installed header a build failure here rather than a downstream bug report. `gpaste-gtk4/` and `gpaste-daemon/` are named for their library rather than for a version, so they never move.
+
+The installed layout is one shared directory, with each library owning a subdirectory of it:
+
+```
+include/gpaste/{gpaste.h, gpaste-gtk4.h, gpaste-daemon.h}   <- the three umbrellas
+include/gpaste/{gpaste-3/, gpaste-gtk4/, gpaste-daemon/}    <- per-library headers
+```
+
+Both `.pc` files therefore declare `Cflags: -I${includedir}/gpaste` (meson `subdirs: 'gpaste'`) — that line is what puts the include path on a consumer's command line, so it is the one to check when the layout changes. `libgpaste` is versioned all the way through (`libgpaste-3.so`, `gpaste-3.pc`, `GPaste-3` typelib, `gpaste-3.vapi`, all derived from `apiversion`); `libgpaste-gtk4`'s `4` is GTK's version and `GPasteDaemon-1`'s is its own, so neither tracks the GPaste major.
 
 **Observing a setting: use `notify::<key>`.** Every setting is a GObject property named exactly like its GSettings key, so `notify::track-changes` *is* the change notification — there is no separate `changed` signal, and `g_object_bind_property()` works directly. `GPasteSettings` emits exactly one signal of its own, **`rebind::<key>`**, and it is not a duplicate: a rebind is an action to take (re-register a keybinding), not a value that changed, and only the keybinding settings carry it. Prefer the detailed form; `notify` undetailed fires for all twenty-nine keys. Note the callback takes a `GParamSpec *`, not the key string.
 

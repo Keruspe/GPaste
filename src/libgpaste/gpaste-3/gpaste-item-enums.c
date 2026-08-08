@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste/gpaste-macros.h>
-#include <gpaste/gpaste-item-enums.h>
+#include <gpaste-3/gpaste-macros.h>
+#include <gpaste-3/gpaste-item-enums.h>
 
 G_PASTE_VISIBLE GType
 g_paste_item_kind_get_type (void)

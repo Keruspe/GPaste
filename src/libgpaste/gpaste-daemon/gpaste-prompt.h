@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <gpaste/gpaste-macros.h>
-#include <gpaste/gpaste-storage.h>
+#include <gpaste-3/gpaste-macros.h>
+#include <gpaste-3/gpaste-storage.h>
 
 #include <gpaste-daemon/gpaste-passphrase.h>
 

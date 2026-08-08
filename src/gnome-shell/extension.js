@@ -6,7 +6,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GPaste from 'gi://GPaste?version=2';
+import GPaste from 'gi://GPaste?version=3';
 
 import {GPasteDaemonRunner} from './daemon.js';
 import {GPasteIndicator} from './indicator.js';

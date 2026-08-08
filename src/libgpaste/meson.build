@@ -1,34 +1,34 @@
-libgpaste_soversion = '0.1.1'
+libgpaste_soversion = '0.0.0'
 libgpaste_gtk4_soversion = '1.0.1'
 
 pkg = import('pkgconfig')
 
 libgpaste_sources = [
-  'gpaste/gpaste-client-item.c',
-  'gpaste/gpaste-client.c',
-  'gpaste/gpaste-error.c',
-  'gpaste/gpaste-item-enums.c',
-  'gpaste/gpaste-screensaver-client.c',
-  'gpaste/gpaste-settings.c',
-  'gpaste/gpaste-storage.c',
-  'gpaste/gpaste-update-enums.c',
-  'gpaste/gpaste-util.c',
+  'gpaste-3/gpaste-client-item.c',
+  'gpaste-3/gpaste-client.c',
+  'gpaste-3/gpaste-error.c',
+  'gpaste-3/gpaste-item-enums.c',
+  'gpaste-3/gpaste-screensaver-client.c',
+  'gpaste-3/gpaste-settings.c',
+  'gpaste-3/gpaste-storage.c',
+  'gpaste-3/gpaste-update-enums.c',
+  'gpaste-3/gpaste-util.c',
 ]
 
 libgpaste_headers = [
-  'gpaste/gpaste-client-item.h',
-  'gpaste/gpaste-client.h',
-  'gpaste/gpaste-error.h',
-  'gpaste/gpaste-gdbus-defines.h',
-  'gpaste/gpaste-gdbus-macros.h',
-  'gpaste/gpaste-gsettings-keys.h',
-  'gpaste/gpaste-item-enums.h',
-  'gpaste/gpaste-macros.h',
-  'gpaste/gpaste-screensaver-client.h',
-  'gpaste/gpaste-settings.h',
-  'gpaste/gpaste-storage.h',
-  'gpaste/gpaste-update-enums.h',
-  'gpaste/gpaste-util.h',
+  'gpaste-3/gpaste-client-item.h',
+  'gpaste-3/gpaste-client.h',
+  'gpaste-3/gpaste-error.h',
+  'gpaste-3/gpaste-gdbus-defines.h',
+  'gpaste-3/gpaste-gdbus-macros.h',
+  'gpaste-3/gpaste-gsettings-keys.h',
+  'gpaste-3/gpaste-item-enums.h',
+  'gpaste-3/gpaste-macros.h',
+  'gpaste-3/gpaste-screensaver-client.h',
+  'gpaste-3/gpaste-settings.h',
+  'gpaste-3/gpaste-storage.h',
+  'gpaste-3/gpaste-update-enums.h',
+  'gpaste-3/gpaste-util.h',
 ]
 
 libgpaste = library(
@@ -50,18 +50,18 @@ libgpaste_internal_dep = declare_dependency(
 
 install_headers(
   ['gpaste.h'],
-  subdir: 'gpaste-' + apiversion,
+  subdir: 'gpaste',
 )
 install_headers(
   libgpaste_headers,
-  subdir: 'gpaste-' + apiversion + '/gpaste',
+  subdir: 'gpaste/gpaste-' + apiversion,
 )
 
 pkg.generate(
   libgpaste,
   name: 'GPaste',
   filebase: 'gpaste-' + apiversion,
-  subdirs: 'gpaste-' + apiversion,
+  subdirs: 'gpaste',
   description: 'Library to handle and communicate with GPaste',
   requires: libgpaste_deps,
 )
@@ -114,18 +114,18 @@ libgpaste_gtk4_internal_dep = declare_dependency(
 
 install_headers(
   ['gpaste-gtk4.h'],
-  subdir: 'gpaste-' + apiversion,
+  subdir: 'gpaste',
 )
 install_headers(
   libgpaste_gtk4_headers,
-  subdir: 'gpaste-' + apiversion + '/gpaste-gtk4',
+  subdir: 'gpaste/gpaste-gtk4',
 )
 
 pkg.generate(
   libgpaste_gtk4,
   name: 'GPasteGtk4',
   filebase: 'gpaste-gtk-4',
-  subdirs: 'gpaste-' + apiversion,
+  subdirs: 'gpaste',
   description: 'Library to manage GPaste settings and perform graphical operations',
   libraries: libgpaste_gtk4_deps,
 )
@@ -335,11 +335,11 @@ gpaste_daemon_internal_dep = declare_dependency(
 
 install_headers(
   ['gpaste-daemon.h'],
-  subdir: 'gpaste-' + apiversion,
+  subdir: 'gpaste',
 )
 install_headers(
   gpaste_daemon_public_headers,
-  subdir: 'gpaste-' + apiversion + '/gpaste-daemon',
+  subdir: 'gpaste/gpaste-daemon',
 )
 
 if get_option('introspection')

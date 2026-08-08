@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <gpaste/gpaste-client-item.h>
-#include <gpaste/gpaste-item-enums.h>
+#include <gpaste-3/gpaste-client-item.h>
+#include <gpaste-3/gpaste-item-enums.h>
 
 G_BEGIN_DECLS
 

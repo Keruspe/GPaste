@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-macros.h>
+#include <gpaste-3/gpaste-macros.h>
 
 #include <gtk/gtk.h>
 

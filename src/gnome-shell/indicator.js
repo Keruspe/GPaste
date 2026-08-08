@@ -13,7 +13,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import GPaste from 'gi://GPaste?version=2';
+import GPaste from 'gi://GPaste?version=3';
 
 import {GPasteActions} from './actions.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';

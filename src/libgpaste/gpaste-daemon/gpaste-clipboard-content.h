@@ -5,7 +5,7 @@
 
 #include <gdk/gdk.h>
 
-#include <gpaste/gpaste-settings.h>
+#include <gpaste-3/gpaste-settings.h>
 
 G_BEGIN_DECLS
 

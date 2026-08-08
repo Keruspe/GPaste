@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste/gpaste-gdbus-macros.h>
-#include <gpaste/gpaste-screensaver-client.h>
+#include <gpaste-3/gpaste-gdbus-macros.h>
+#include <gpaste-3/gpaste-screensaver-client.h>
 
 #define G_PASTE_SCREENSAVER_OBJECT_PATH    "/org/gnome/ScreenSaver"
 #define G_PASTE_SCREENSAVER_INTERFACE_NAME "org.gnome.ScreenSaver"

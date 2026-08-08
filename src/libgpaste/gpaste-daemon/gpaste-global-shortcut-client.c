@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste/gpaste-gdbus-macros.h>
+#include <gpaste-3/gpaste-gdbus-macros.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 #include <gpaste-keyval.h>
 

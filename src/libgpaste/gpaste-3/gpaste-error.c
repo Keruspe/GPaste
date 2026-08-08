@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste/gpaste-error.h>
-#include <gpaste/gpaste-gdbus-defines.h>
+#include <gpaste-3/gpaste-error.h>
+#include <gpaste-3/gpaste-gdbus-defines.h>
 
 /**
  * g_paste_error_quark:

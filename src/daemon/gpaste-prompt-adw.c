@@ -3,7 +3,7 @@
 
 #include "gpaste-prompt-adw.h"
 
-#include <gpaste/gpaste-util.h>
+#include <gpaste-3/gpaste-util.h>
 
 /* The libadwaita half of the prompt contract: everything here is widgets and
  * the answers they produce. What to do with those answers — which passphrase

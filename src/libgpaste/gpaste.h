@@ -6,28 +6,28 @@
 #define __G_PASTE_H_INSIDE__
 
 /* Misc. macros */
-#include <gpaste/gpaste-macros.h>
+#include <gpaste-3/gpaste-macros.h>
 
 /* GDBus utils */
-#include <gpaste/gpaste-error.h>
-#include <gpaste/gpaste-gdbus-defines.h>
-#include <gpaste/gpaste-gdbus-macros.h>
-#include <gpaste/gpaste-item-enums.h>
-#include <gpaste/gpaste-update-enums.h>
+#include <gpaste-3/gpaste-error.h>
+#include <gpaste-3/gpaste-gdbus-defines.h>
+#include <gpaste-3/gpaste-gdbus-macros.h>
+#include <gpaste-3/gpaste-item-enums.h>
+#include <gpaste-3/gpaste-update-enums.h>
 
 /* GPasteSettings */
-#include <gpaste/gpaste-gsettings-keys.h>
-#include <gpaste/gpaste-settings.h>
-#include <gpaste/gpaste-storage.h>
+#include <gpaste-3/gpaste-gsettings-keys.h>
+#include <gpaste-3/gpaste-settings.h>
+#include <gpaste-3/gpaste-storage.h>
 
 /* GPasteClient */
-#include <gpaste/gpaste-client.h>
-#include <gpaste/gpaste-client-item.h>
+#include <gpaste-3/gpaste-client.h>
+#include <gpaste-3/gpaste-client-item.h>
 
 /* GPasteUtil */
-#include <gpaste/gpaste-util.h>
+#include <gpaste-3/gpaste-util.h>
 
 /* GPasteScreensaverClient */
-#include <gpaste/gpaste-screensaver-client.h>
+#include <gpaste-3/gpaste-screensaver-client.h>
 
 #undef __G_PASTE_H_INSIDE__

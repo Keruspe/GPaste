@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste/gpaste-util.h>
+#include <gpaste-3/gpaste-util.h>
 
 #include <getopt.h>
 #include <stdio.h>
