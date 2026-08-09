@@ -33,6 +33,10 @@
 
 #include <sqlite3.h>
 #include <string.h>
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <sodium.h>
+#endif
 #endif
 
 /* Build a fresh, empty history backed by an in-memory GSettings.
@@ -1956,6 +1960,87 @@ test_sqlite_version_guard (void)
 #endif
 
 #if defined(G_PASTE_ENABLE_SQLITE) && defined(G_PASTE_ENABLE_ENCRYPTION)
+/* The Argon2 parameters live in the store's own `meta` table, so anything that
+ * can write to $XDG_DATA_HOME dictates them. An absurd opslimit would otherwise
+ * have crypto_pwhash run effectively forever -- a denial of service just from
+ * opening the history -- so deriving a key with them must be refused outright
+ * rather than attempted. The real data must survive the refusal. */
+static void
+test_encrypted_sqlite_absurd_kdf_params (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* The refusals below warn; see test_sqlite_version_guard. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        const gchar *name = "sqlite-absurd-kdf";
+        const gchar *passphrase = "correct horse battery staple";
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        g_autofree gchar *path = g_paste_util_get_history_file_path (name, "dbs");
+        sqlite3 *db = NULL;
+
+        /* Way past crypto_pwhash_OPSLIMIT_SENSITIVE. Deriving with this is what
+         * we must never get as far as doing. */
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "UPDATE meta SET value = 4000000000 WHERE key = 'opslimit';", NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_assert_null (loaded);
+
+            /* And the refusal must not let a write clobber what is still there. */
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        /* Note what is deliberately *not* asserted here: that the passphrase is
+         * rejected. A store we cannot open is corrupt, not proof of a wrong
+         * passphrase, and saying otherwise would tell the user their correct one
+         * is wrong. Refusing the read and the write is what keeps the data safe,
+         * and that is what the restore below proves. */
+
+        /* Put the real parameters back: the original data is untouched. */
+        g_autofree gchar *restore = g_strdup_printf ("UPDATE meta SET value = %u WHERE key = 'opslimit';",
+                                                     (guint) crypto_pwhash_OPSLIMIT_MODERATE);
+
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, restore, NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
+        GList *loaded = NULL;
+        gsize size = 0;
+
+        g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "precious");
+        g_list_free_full (loaded, g_object_unref);
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_passed ();
+    g_test_trap_assert_stderr ("*Unreasonable key-derivation parameters*");
+}
+
 /* The encrypted SQLite flavor must round-trip everything the plain one does,
  * plus password items (real value and name), with no plaintext content ever
  * reaching the ".dbs" file. */
@@ -2367,6 +2452,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/history/encrypted_sqlite_absurd_kdf_params", test_encrypted_sqlite_absurd_kdf_params);
     g_test_add_func ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);
     g_test_add_func ("/history/encrypted_sqlite_wrong_passphrase", test_encrypted_sqlite_wrong_passphrase);
     g_test_add_func ("/history/encrypted_sqlite_rekey", test_encrypted_sqlite_rekey);

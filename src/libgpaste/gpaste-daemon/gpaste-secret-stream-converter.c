@@ -125,15 +125,55 @@ push_chunk (GPasteSecretStreamConverter *priv,
         g_byte_array_remove_range (priv->in, 0, len);
 }
 
-static gboolean
-derive_key (GPasteSecretStreamConverter *priv,
-            const unsigned char                *salt,
-            guint64                             opslimit,
-            guint64                             memlimit,
-            GError                            **error)
+/**
+ * g_paste_crypto_derive_key:
+ * @passphrase: the passphrase to derive from
+ * @passphrase_len: its length
+ * @salt: crypto_pwhash_SALTBYTES of salt
+ * @opslimit: the Argon2 operations limit the store asks for
+ * @memlimit: the Argon2 memory limit the store asks for
+ * @key: (out caller-allocates): where to write @key_len bytes of key
+ * @key_len: how much key to derive
+ * @error: return location for a #GError, or %NULL
+ *
+ * Derive a key with Argon2id, refusing parameters no GPaste ever wrote.
+ *
+ * Every caller reads @opslimit and @memlimit back from the store -- an
+ * encrypted stream's header, or the SQLite `meta` table -- so both are
+ * attacker-controlled for anything that can write to $XDG_DATA_HOME. A huge
+ * opslimit would make crypto_pwhash run effectively forever: a denial of
+ * service just from opening a history. We only ever write MODERATE parameters,
+ * so anything beyond SENSITIVE is corrupt or tampered with. Deriving through
+ * here is what keeps that bound from being forgotten at a new call site.
+ *
+ * Fails with %G_IO_ERROR_INVALID_DATA for out-of-range parameters and
+ * %G_IO_ERROR_FAILED when the derivation itself does not complete.
+ *
+ * Returns: whether @key was derived
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_crypto_derive_key (const gchar   *passphrase,
+                           gsize          passphrase_len,
+                           const guchar  *salt,
+                           guint64        opslimit,
+                           guint64        memlimit,
+                           guchar        *key,
+                           gsize          key_len,
+                           GError       **error)
 {
-    if (crypto_pwhash (priv->key, KEYBYTES,
-                       (const char *) priv->passphrase, priv->passphrase_len,
+    g_return_val_if_fail (passphrase, FALSE);
+    g_return_val_if_fail (salt, FALSE);
+    g_return_val_if_fail (key, FALSE);
+
+    if (opslimit > crypto_pwhash_OPSLIMIT_SENSITIVE || memlimit > crypto_pwhash_MEMLIMIT_SENSITIVE)
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                             "Unreasonable key-derivation parameters");
+        return FALSE;
+    }
+
+    if (crypto_pwhash (key, key_len,
+                       passphrase, passphrase_len,
                        salt, opslimit, (size_t) memlimit,
                        crypto_pwhash_ALG_ARGON2ID13) != 0)
     {
@@ -143,6 +183,18 @@ derive_key (GPasteSecretStreamConverter *priv,
     }
 
     return TRUE;
+}
+
+static gboolean
+derive_key (GPasteSecretStreamConverter *priv,
+            const unsigned char         *salt,
+            guint64                      opslimit,
+            guint64                      memlimit,
+            GError                     **error)
+{
+    return g_paste_crypto_derive_key ((const gchar *) priv->passphrase, priv->passphrase_len,
+                                      salt, opslimit, memlimit,
+                                      priv->key, KEYBYTES, error);
 }
 
 static gboolean
@@ -218,17 +270,8 @@ decrypt_process (GPasteSecretStreamConverter *priv,
         guint64 memlimit = read_u64_le (salt + SALTBYTES + 8);
         const unsigned char *header = salt + SALTBYTES + 16;
 
-        /* The parameters come from an untrusted header; a huge opslimit would make
-         * crypto_pwhash run effectively forever (a denial of service just from
-         * opening the history). We only ever write MODERATE parameters, so reject
-         * anything beyond SENSITIVE as corrupt or tampered. */
-        if (opslimit > crypto_pwhash_OPSLIMIT_SENSITIVE || memlimit > crypto_pwhash_MEMLIMIT_SENSITIVE)
-        {
-            g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
-                                 "Unreasonable key-derivation parameters in the encryption header");
-            return FALSE;
-        }
-
+        /* derive_key() is what refuses the parameters this untrusted header asks
+         * for; see g_paste_crypto_derive_key(). */
         if (!derive_key (priv, salt, opslimit, memlimit, error))
             return FALSE;
 

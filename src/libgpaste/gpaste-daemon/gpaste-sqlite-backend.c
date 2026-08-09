@@ -18,6 +18,8 @@
 #include <gcr/gcr.h>
 
 #include <sodium.h>
+
+#include <gpaste-daemon/gpaste-secret-stream-converter.h>
 #endif
 
 /* The SQLite storage backend: one database per history (<name>.db in the
@@ -206,6 +208,9 @@ g_paste_sqlite_backend_decrypt (const guchar *key,
     return g_steal_pointer (&plain);
 }
 
+/* The parameters come out of the `meta` table, so they are only as trustworthy
+ * as the file: g_paste_crypto_derive_key() is what refuses the ones no GPaste
+ * ever wrote. */
 static gboolean
 g_paste_sqlite_backend_derive_key (const gchar  *passphrase,
                                    const guchar *salt,
@@ -213,10 +218,16 @@ g_paste_sqlite_backend_derive_key (const gchar  *passphrase,
                                    guint64       memlimit,
                                    guchar       *key)
 {
-    return crypto_pwhash (key, crypto_secretbox_KEYBYTES,
-                          passphrase, strlen (passphrase),
-                          salt, opslimit, memlimit,
-                          crypto_pwhash_ALG_ARGON2ID13) == 0;
+    g_autoptr (GError) error = NULL;
+
+    if (g_paste_crypto_derive_key (passphrase, strlen (passphrase),
+                                   salt, opslimit, memlimit,
+                                   key, crypto_secretbox_KEYBYTES, &error))
+        return TRUE;
+
+    g_warning ("sqlite: %s", error->message);
+
+    return FALSE;
 }
 
 /* Read the salt, Argon2 parameters and key-check blob from the meta table.
@@ -524,11 +535,9 @@ g_paste_sqlite_backend_setup_crypto (sqlite3     *db,
 
     if (g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length))
     {
+        /* derive_key() has already said why. */
         if (!g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key))
-        {
-            g_warning ("sqlite: could not derive the encryption key (out of memory?)");
             return FALSE;
-        }
 
         if (g_paste_sqlite_backend_key_checks_out (key, check, check_length))
             return TRUE;

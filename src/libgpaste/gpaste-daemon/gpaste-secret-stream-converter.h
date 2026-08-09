@@ -22,4 +22,13 @@ G_PASTE_FINAL_TYPE (SecretStreamConverter, secret_stream_converter, SECRET_STREA
 GConverter *g_paste_secret_stream_converter_new (GPasteSecretStreamDirection  direction,
                                                  const gchar                 *passphrase);
 
+gboolean g_paste_crypto_derive_key (const gchar   *passphrase,
+                                    gsize          passphrase_len,
+                                    const guchar  *salt,
+                                    guint64        opslimit,
+                                    guint64        memlimit,
+                                    guchar        *key,
+                                    gsize          key_len,
+                                    GError       **error);
+
 G_END_DECLS
