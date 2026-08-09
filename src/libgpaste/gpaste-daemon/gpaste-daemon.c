@@ -555,12 +555,14 @@ g_paste_daemon_on_history_switch (GPasteDaemon *self,
 }
 
 static void
-g_paste_daemon_on_screensaver_active_changed (GPasteDaemon *self,
-                                              gboolean             active,
-                                              gpointer             user_data G_GNUC_UNUSED)
+g_paste_daemon_on_screensaver_active_changed (GPasteDaemon            *self,
+                                              GParamSpec              *pspec G_GNUC_UNUSED,
+                                              GPasteScreensaverClient *screensaver)
 {
     if (!self->registered)
         return;
+
+    gboolean active = g_paste_screensaver_client_is_active (screensaver);
 
     /* The deactivate signal is always sent, but not the activate one */
     /* We always do the activate action, so that the deactivate one works anyways */
@@ -771,7 +773,7 @@ g_paste_daemon_init (GPasteDaemon *self)
 
     self->screensaver_signals = g_signal_group_new (G_PASTE_TYPE_SCREENSAVER_CLIENT);
     g_signal_group_connect_swapped (self->screensaver_signals,
-                                    "active-changed",
+                                    "notify::active",
                                     G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
                                     self);
 

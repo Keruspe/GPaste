@@ -46,6 +46,16 @@ enum
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
+enum
+{
+    PROP_0,
+    PROP_SELECTION_MODE,
+
+    N_PROPERTIES
+};
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL };
+
 G_PASTE_DEFINE_TYPE (UiHistory, ui_history, GTK_TYPE_BOX)
 
 static void
@@ -532,6 +542,8 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
 {
     g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
 
+    gboolean changed = (self->selection_mode != selection_mode);
+
     self->selection_mode = selection_mode;
     g_ptr_array_set_size (self->selection, 0);
 
@@ -540,6 +552,9 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
 
     /* Leaving the mode (GTK_SELECTION_NONE) already cleared the selection. */
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, 0u);
+
+    if (changed)
+        g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SELECTION_MODE]);
 }
 
 /**
@@ -640,9 +655,63 @@ g_paste_ui_history_dispose (GObject *object)
 }
 
 static void
+g_paste_ui_history_get_property (GObject    *object,
+                                 guint       prop_id,
+                                 GValue     *value,
+                                 GParamSpec *pspec)
+{
+    GPasteUiHistory *self = G_PASTE_UI_HISTORY (object);
+
+    switch (prop_id)
+    {
+    case PROP_SELECTION_MODE:
+        g_value_set_boolean (value, self->selection_mode);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
+g_paste_ui_history_set_property (GObject      *object,
+                                 guint         prop_id,
+                                 const GValue *value,
+                                 GParamSpec   *pspec)
+{
+    GPasteUiHistory *self = G_PASTE_UI_HISTORY (object);
+
+    switch (prop_id)
+    {
+    case PROP_SELECTION_MODE:
+        g_paste_ui_history_set_selection_mode (self, g_value_get_boolean (value));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
 g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_history_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_ui_history_dispose;
+    object_class->get_property = g_paste_ui_history_get_property;
+    object_class->set_property = g_paste_ui_history_set_property;
+
+    /**
+     * GPasteUiHistory:selection-mode:
+     *
+     * Whether the merge selection mode is on: rows become multi-selectable and
+     * stop pasting on click.
+     *
+     * G_PARAM_EXPLICIT_NOTIFY: the setter does the work and notifies only when
+     * the mode actually flipped.
+     */
+    properties[PROP_SELECTION_MODE] = g_param_spec_boolean ("selection-mode", NULL, NULL, FALSE,
+                                                            G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+
+    g_object_class_install_properties (object_class, N_PROPERTIES, properties);
 
     signals[SELECTION_CHANGED] = g_signal_new ("selection-changed",
                                                G_PASTE_TYPE_UI_HISTORY,

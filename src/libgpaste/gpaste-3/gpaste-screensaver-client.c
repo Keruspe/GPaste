@@ -21,18 +21,39 @@
 struct _GPasteScreensaverClient
 {
     GDBusProxy parent_instance;
+
+    gboolean active;
 };
 
 G_PASTE_DEFINE_TYPE (ScreensaverClient, screensaver_client, G_TYPE_DBUS_PROXY)
 
 enum
 {
-    ACTIVE_CHANGED,
+    PROP_0,
+    PROP_ACTIVE,
 
-    LAST_SIGNAL
+    N_PROPERTIES
 };
 
-static guint64 signals[LAST_SIGNAL] = { 0 };
+static GParamSpec *properties[N_PROPERTIES] = { NULL };
+
+static void
+g_paste_screensaver_client_get_property (GObject    *object,
+                                         guint       prop_id,
+                                         GValue     *value,
+                                         GParamSpec *pspec)
+{
+    GPasteScreensaverClient *self = G_PASTE_SCREENSAVER_CLIENT (object);
+
+    switch (prop_id)
+    {
+    case PROP_ACTIVE:
+        g_value_set_boolean (value, self->active);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
 
 static void
 g_paste_screensaver_client_g_signal (GDBusProxy  *proxy,
@@ -47,36 +68,54 @@ g_paste_screensaver_client_g_signal (GDBusProxy  *proxy,
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
         g_autoptr (GVariant) value = g_variant_iter_next_value (&params_iter);
-        g_signal_emit (self,
-                       signals[ACTIVE_CHANGED],
-                       0, /* detail */
-                       g_variant_get_boolean (value),
-                       NULL);
+        gboolean active = g_variant_get_boolean (value);
+
+        /* The screensaver re-announces the state it is already in (the
+         * deactivate signal is sent unconditionally), so filter here rather
+         * than making every handler check whether anything moved. */
+        if (self->active == active)
+            return;
+
+        self->active = active;
+        g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ACTIVE]);
     }
 }
 
-static void
-g_paste_screensaver_client_class_init (GPasteScreensaverClientClass *klass G_GNUC_UNUSED)
+/**
+ * g_paste_screensaver_client_is_active:
+ * @self: a #GPasteScreensaverClient instance
+ *
+ * Whether the screensaver is currently showing.
+ *
+ * Returns: %TRUE when the screensaver is active
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_screensaver_client_is_active (GPasteScreensaverClient *self)
 {
+    g_return_val_if_fail (G_PASTE_IS_SCREENSAVER_CLIENT (self), FALSE);
+
+    return self->active;
+}
+
+static void
+g_paste_screensaver_client_class_init (GPasteScreensaverClientClass *klass)
+{
+    G_OBJECT_CLASS (klass)->get_property = g_paste_screensaver_client_get_property;
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_screensaver_client_g_signal;
 
     /**
-     * GPasteScreensaverClient::active-changed:
-     * @screensaver: the object on which the signal was emitted
-     * @active: whether the screensaver is now active or not
+     * GPasteScreensaverClient:active:
      *
-     * The "active-changed" signal is emitted when the screensaver appears or vanishes
+     * Whether the screensaver is currently showing.
+     *
+     * Read-only: the screensaver owns this, we only mirror what it announces.
+     * G_PARAM_EXPLICIT_NOTIFY because the notify comes from the D-Bus signal
+     * handler, once the mirrored value has actually changed.
      */
-    signals[ACTIVE_CHANGED] = g_signal_new ("active-changed",
-                                             G_PASTE_TYPE_SCREENSAVER_CLIENT,
-                                             G_SIGNAL_RUN_LAST,
-                                             0, /* class offset */
-                                             NULL, /* accumulator */
-                                             NULL, /* accumulator data */
-                                             g_cclosure_marshal_VOID__BOOLEAN,
-                                             G_TYPE_NONE,
-                                             1,
-                                             G_TYPE_BOOLEAN);
+    properties[PROP_ACTIVE] = g_param_spec_boolean ("active", NULL, NULL, FALSE,
+                                                    G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+
+    g_object_class_install_properties (G_OBJECT_CLASS (klass), N_PROPERTIES, properties);
 }
 
 static void

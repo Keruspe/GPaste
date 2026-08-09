@@ -17,6 +17,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (ScreensaverClient, screensaver_client, SCREENSAVER_CLIENT, GDBusProxy)
 
+gboolean                 g_paste_screensaver_client_is_active  (GPasteScreensaverClient *self);
+
 GPasteScreensaverClient *g_paste_screensaver_client_new_sync   (GError **error);
 void                     g_paste_screensaver_client_new        (GAsyncReadyCallback callback,
                                                                 gpointer            user_data);
