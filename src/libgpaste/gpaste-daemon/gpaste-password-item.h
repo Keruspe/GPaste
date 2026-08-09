@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include <gpaste-daemon/gpaste-text-item.h>
+#include <gpaste-daemon/gpaste-item.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_PASSWORD_ITEM (g_paste_password_item_get_type ())
 
-G_PASTE_FINAL_TYPE (PasswordItem, password_item, PASSWORD_ITEM, GPasteTextItem)
+G_PASTE_FINAL_TYPE (PasswordItem, password_item, PASSWORD_ITEM, GPasteItem)
 
 const gchar *g_paste_password_item_get_name (GPastePasswordItem *self);
 

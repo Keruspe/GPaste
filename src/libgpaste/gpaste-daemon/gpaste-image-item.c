@@ -136,10 +136,10 @@ g_paste_image_item_set_size (GPasteItem *self)
     }
 }
 
-static const gchar *
+static GPasteItemKind
 g_paste_image_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
-    return "Image";
+    return G_PASTE_ITEM_KIND_IMAGE;
 }
 
 static void

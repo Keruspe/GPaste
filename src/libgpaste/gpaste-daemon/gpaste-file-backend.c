@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -254,11 +255,13 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     for (const GList *h = history; success && h; h = g_list_next (h))
     {
         GPasteItem *item = h->data;
-        const gchar *kind = g_paste_item_get_kind (item);
+        GPasteItemKind kind = g_paste_item_get_kind (item);
         const gchar *uuid = g_paste_item_get_uuid (item);
 
-        if (!encrypted && g_paste_str_equal (kind, "Password"))
+        if (!encrypted && kind == G_PASTE_ITEM_KIND_PASSWORD)
             continue;
+
+        const gchar *kind_str = g_paste_item_kind_to_string (kind);
 
         g_autofree gchar *image_reference = NULL;
 
@@ -284,7 +287,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         g_autofree gchar *text = g_paste_util_xml_encode ((image_reference) ? image_reference : g_paste_item_get_real_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, &error) ||
-            !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, &error) ||
+            !g_output_stream_write_all (stream, kind_str, strlen (kind_str), NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, &error) ||
             (G_PASTE_IS_PASSWORD_ITEM (item) && !_g_paste_file_backend_write_password_name (stream, G_PASTE_PASSWORD_ITEM (item), &error)) ||
@@ -347,18 +350,11 @@ typedef enum
     END
 } State;
 
-typedef enum
-{
-    TEXT,
-    IMAGE,
-    URIS,
-    PASSWORD,
-    COLOR,
-    /* No usable "kind" attribute (missing, or naming a kind this version does
-     * not know). Reset per item, so one such item never makes the next one —
-     * which may have no kind of its own — inherit its type. */
-    UNKNOWN_TYPE
-} Type;
+/* The "kind" attribute is the #GPasteItemKind nick, so parsing it back is
+ * g_paste_item_kind_from_string(). %G_PASTE_ITEM_KIND_INVALID covers the item
+ * with no usable kind — missing, or naming one this version does not know — and
+ * is reset per item, so such an item never makes the next one, which may have
+ * no kind of its own, inherit its type. */
 
 /* 2.0 is the only format read. 1.0 -- which held an item's value as text
  * directly inside <item> rather than in a <value> child -- was dropped: it is
@@ -378,7 +374,7 @@ typedef struct
     GList            *history;
     gsize             mem_size;
     State             state;
-    Type              type;
+    GPasteItemKind    type;
     guint64           current_size;
     guint64           max_size;
     gboolean          images_support;
@@ -504,7 +500,7 @@ start_tag (GMarkupParseContext *context,
     else if (g_paste_str_equal (element_name, "item"))
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
-        data->type = UNKNOWN_TYPE;
+        data->type = G_PASTE_ITEM_KIND_INVALID;
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->checksum, g_free);
@@ -515,17 +511,8 @@ start_tag (GMarkupParseContext *context,
         {
             if (g_paste_str_equal (*a, "kind"))
             {
-                if (g_paste_str_equal (*v, "Text"))
-                    data->type = TEXT;
-                else if (g_paste_str_equal (*v, "Image"))
-                    data->type = IMAGE;
-                else if (g_paste_str_equal (*v, "Uris"))
-                    data->type = URIS;
-                else if (g_paste_str_equal (*v, "Password"))
-                    data->type = PASSWORD;
-                else if (g_paste_str_equal (*v, "Color"))
-                    data->type = COLOR;
-                else
+                data->type = g_paste_item_kind_from_string (*v);
+                if (data->type == G_PASTE_ITEM_KIND_INVALID)
                     WARN_AT ("Unknown item kind: %s", *v);
             }
             else if (g_paste_str_equal (*a, "uuid"))
@@ -538,27 +525,27 @@ start_tag (GMarkupParseContext *context,
              * attributes that follow it (the uuid among them). */
             else if (g_paste_str_equal (*a, "date"))
             {
-                if (data->type != IMAGE)
+                if (data->type != G_PASTE_ITEM_KIND_IMAGE)
                 {
-                    WARN_AT ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
+                    WARN_AT ("Expected an Image item, but got a %s one", g_paste_item_kind_to_string (data->type));
                     continue;
                 }
                 data->date = g_strdup (*v);
             }
             else if (g_paste_str_equal (*a, "checksum"))
             {
-                if (data->type != IMAGE)
+                if (data->type != G_PASTE_ITEM_KIND_IMAGE)
                 {
-                    WARN_AT ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
+                    WARN_AT ("Expected an Image item, but got a %s one", g_paste_item_kind_to_string (data->type));
                     continue;
                 }
                 data->checksum = g_strdup (*v);
             }
             else if (g_paste_str_equal (*a, "name"))
             {
-                if (data->type != PASSWORD)
+                if (data->type != G_PASTE_ITEM_KIND_PASSWORD)
                 {
-                    WARN_AT ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, PASSWORD, data->type);
+                    WARN_AT ("Expected a Password item, but got a %s one", g_paste_item_kind_to_string (data->type));
                     continue;
                 }
                 data->name = g_strdup (*v);
@@ -596,26 +583,26 @@ add_item (Data *data)
      * %NULL one with a critical: an <item> with no usable kind, or with no
      * <value> at all (absent, empty or whitespace-only), carries nothing we can
      * restore and is skipped — along with its special values, released below. */
-    Type type = (data->text) ? data->type : UNKNOWN_TYPE;
+    GPasteItemKind type = (data->text) ? data->type : G_PASTE_ITEM_KIND_INVALID;
 
-    if (type == UNKNOWN_TYPE)
+    if (type == G_PASTE_ITEM_KIND_INVALID)
         g_warning ("Ignoring an item with no usable kind or value in file “%s”", data->history_file_path);
 
     switch (type)
     {
-    case TEXT:
+    case G_PASTE_ITEM_KIND_TEXT:
         item = g_paste_text_item_new (data->text);
         break;
-    case URIS:
+    case G_PASTE_ITEM_KIND_URIS:
         item = g_paste_uris_item_new_from_str (data->text);
         break;
-    case PASSWORD:
+    case G_PASTE_ITEM_KIND_PASSWORD:
         item = g_paste_password_item_new (data->name, data->text);
         break;
-    case COLOR:
+    case G_PASTE_ITEM_KIND_COLOR:
         item = g_paste_color_item_new_from_str (data->text);
         break;
-    case IMAGE:
+    case G_PASTE_ITEM_KIND_IMAGE:
         if (data->images_support && data->date)
         {
             g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
@@ -633,7 +620,7 @@ add_item (Data *data)
         else
             g_paste_image_item_delete_files (data->text);
         break;
-    case UNKNOWN_TYPE:
+    case G_PASTE_ITEM_KIND_INVALID:
         break;
     }
 
@@ -826,7 +813,7 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
             NULL,
             0,
             BEGIN,
-            UNKNOWN_TYPE, /* set per item from its "kind" attribute */
+            G_PASTE_ITEM_KIND_INVALID, /* set per item from its "kind" attribute */
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),

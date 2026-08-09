@@ -225,7 +225,7 @@ test_file_image_materialization (void)
     g_paste_storage_backend_read_history (backend, name, &loaded, &size);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
-    g_assert_cmpstr (g_paste_item_get_kind (loaded->data), ==, "Image");
+    g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, cache_path);
 
     g_list_free_full (loaded, g_object_unref);
@@ -300,7 +300,7 @@ test_file_image_per_history (void)
     g_paste_storage_backend_read_history (backend, "per-history-b", &loaded, &size);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
-    g_assert_cmpstr (g_paste_item_get_kind (loaded->data), ==, "Image");
+    g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
 
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items_a, g_object_unref);
@@ -349,7 +349,7 @@ test_file_backup_owns_images (void)
     g_paste_storage_backend_read_history (backend, "backup-dst", &loaded, &size);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
-    g_assert_cmpstr (g_paste_item_get_kind (loaded->data), ==, "Image");
+    g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, dst_path);
 
     g_list_free_full (loaded, g_object_unref);
@@ -1042,15 +1042,15 @@ test_encrypted_roundtrip (void)
     for (const GList *l = loaded; l; l = l->next)
     {
         GPasteItem *item = l->data;
-        const gchar *kind = g_paste_item_get_kind (item);
+        GPasteItemKind kind = g_paste_item_get_kind (item);
 
-        if (g_strcmp0 (kind, "Password") == 0)
+        if (kind == G_PASTE_ITEM_KIND_PASSWORD)
         {
             found_password = TRUE;
             g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
             g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
         }
-        else if (g_strcmp0 (kind, "Image") == 0)
+        else if (kind == G_PASTE_ITEM_KIND_IMAGE)
         {
             found_image = TRUE;
 
@@ -1249,15 +1249,15 @@ test_encrypted_rekey (void)
             for (const GList *l = loaded; l; l = l->next)
             {
                 GPasteItem *item = l->data;
-                const gchar *kind = g_paste_item_get_kind (item);
+                GPasteItemKind kind = g_paste_item_get_kind (item);
 
-                if (g_paste_str_equal (kind, "Password"))
+                if (kind == G_PASTE_ITEM_KIND_PASSWORD)
                 {
                     found_password = TRUE;
                     g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
                     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
                 }
-                else if (g_paste_str_equal (kind, "Image"))
+                else if (kind == G_PASTE_ITEM_KIND_IMAGE)
                 {
                     found_image = TRUE;
 
@@ -1464,11 +1464,11 @@ test_sqlite_roundtrip (void)
         GPasteItem *read = l->data;
         GPasteItem *orig = o->data;
 
-        g_assert_cmpstr (g_paste_item_get_kind (read), ==, g_paste_item_get_kind (orig));
+        g_assert_cmpint (g_paste_item_get_kind (read), ==, g_paste_item_get_kind (orig));
         g_assert_cmpstr (g_paste_item_get_uuid (read), ==, g_paste_item_get_uuid (orig));
         /* An image comes back from its stored blob, re-anchored at its
          * canonical cache path — its bytes are compared below instead. */
-        if (!g_paste_str_equal (g_paste_item_get_kind (read), "Image"))
+        if (g_paste_item_get_kind (read) != G_PASTE_ITEM_KIND_IMAGE)
             g_assert_cmpstr (g_paste_item_get_real_value (read), ==, g_paste_item_get_real_value (orig));
     }
 
@@ -1808,7 +1808,7 @@ test_sqlite_image_blob (void)
     GPasteImageItem *image = G_PASTE_IMAGE_ITEM (read);
     GBytes *read_png = g_paste_image_item_get_png_bytes (image);
 
-    g_assert_cmpstr (g_paste_item_get_kind (read), ==, "Image");
+    g_assert_cmpint (g_paste_item_get_kind (read), ==, G_PASTE_ITEM_KIND_IMAGE);
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, png));
     g_assert_cmpstr (g_paste_image_item_get_checksum (image),
@@ -2032,7 +2032,7 @@ test_encrypted_sqlite_roundtrip (void)
     g_assert_cmpmem (g_bytes_get_data (g_paste_binary_data_get_bytes (svs->data), NULL), strlen (html_value),
                      html_value, strlen (html_value));
 
-    g_assert_cmpstr (g_paste_item_get_kind (read_password), ==, "Password");
+    g_assert_cmpint (g_paste_item_get_kind (read_password), ==, G_PASTE_ITEM_KIND_PASSWORD);
     g_assert_cmpstr (g_paste_item_get_real_value (read_password), ==, secret);
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM ((gpointer) read_password)), ==, pw_name);
 
@@ -2221,15 +2221,15 @@ test_encrypted_sqlite_rekey (void)
             for (const GList *l = loaded; l; l = l->next)
             {
                 GPasteItem *item = l->data;
-                const gchar *kind = g_paste_item_get_kind (item);
+                GPasteItemKind kind = g_paste_item_get_kind (item);
 
-                if (g_paste_str_equal (kind, "Password"))
+                if (kind == G_PASTE_ITEM_KIND_PASSWORD)
                 {
                     found_password = TRUE;
                     g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
                     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
                 }
-                else if (g_paste_str_equal (kind, "Image"))
+                else if (kind == G_PASTE_ITEM_KIND_IMAGE)
                 {
                     found_image = TRUE;
 

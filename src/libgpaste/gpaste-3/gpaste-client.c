@@ -389,9 +389,7 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
     if (!g_paste_daemon2_call_get_element_kind_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &kind, NULL /* cancellable */, error))
         return G_PASTE_ITEM_KIND_INVALID;
 
-    const GEnumValue *k = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind);
-
-    return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
+    return g_paste_item_kind_from_string (kind);
 }
 
 /**
@@ -1848,9 +1846,7 @@ g_paste_client_get_element_kind_finish (GPasteClient *self,
     if (!g_paste_daemon2_call_get_element_kind_finish (G_PASTE_DAEMON2 (self), &kind, result, error))
         return G_PASTE_ITEM_KIND_INVALID;
 
-    const GEnumValue *k = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind);
-
-    return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
+    return g_paste_item_kind_from_string (kind);
 }
 
 /**

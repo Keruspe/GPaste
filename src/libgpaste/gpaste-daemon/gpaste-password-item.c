@@ -7,12 +7,12 @@
 
 struct _GPastePasswordItem
 {
-    GPasteTextItem parent_instance;
+    GPasteItem parent_instance;
 
     gchar *name;
 };
 
-G_PASTE_DEFINE_TYPE (PasswordItem, password_item, G_PASTE_TYPE_TEXT_ITEM)
+G_PASTE_DEFINE_TYPE (PasswordItem, password_item, G_PASTE_TYPE_ITEM)
 
 /**
  * g_paste_password_item_get_name:
@@ -65,10 +65,10 @@ g_paste_password_item_get_value (GPasteItem *self G_GNUC_UNUSED)
     return "******";
 }
 
-static const gchar *
+static GPasteItemKind
 g_paste_password_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
-    return "Password";
+    return G_PASTE_ITEM_KIND_PASSWORD;
 }
 
 static gboolean

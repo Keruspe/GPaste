@@ -894,7 +894,8 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
                                   gint          meta_base)
 {
     sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
-    sqlite3_bind_text (stmt, 2, g_paste_item_get_kind (item), -1, SQLITE_STATIC);
+    /* The nick is a static string owned by the enum class, hence SQLITE_STATIC. */
+    sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (g_paste_item_get_kind (item)), -1, SQLITE_STATIC);
     g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
 
     if (G_PASTE_IS_IMAGE_ITEM (item))
@@ -954,7 +955,7 @@ static gboolean
 g_paste_sqlite_backend_stores_item (const guchar *key,
                                     GPasteItem   *item)
 {
-    return key || !g_paste_str_equal (g_paste_item_get_kind (item), "Password");
+    return key || g_paste_item_get_kind (item) != G_PASTE_ITEM_KIND_PASSWORD;
 }
 
 /* How many of @history's items this backend actually persists. Used to rank a
@@ -1089,7 +1090,8 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
                                   const guchar *key,
                                   gboolean      images_support)
 {
-    const gchar *kind = (const gchar *) sqlite3_column_text (stmt, 2);
+    const gchar *kind_str = (const gchar *) sqlite3_column_text (stmt, 2);
+    GPasteItemKind kind = g_paste_item_kind_from_string (kind_str);
     g_autofree gchar *value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, NULL);
 
     if (!value)
@@ -1098,20 +1100,21 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         return NULL;
     }
 
-    if (g_paste_str_equal (kind, "Text"))
+    switch (kind)
+    {
+    case G_PASTE_ITEM_KIND_TEXT:
         return g_paste_text_item_new (value);
-    if (g_paste_str_equal (kind, "Uris"))
+    case G_PASTE_ITEM_KIND_URIS:
         return g_paste_uris_item_new_from_str (value);
-    if (g_paste_str_equal (kind, "Password"))
+    case G_PASTE_ITEM_KIND_PASSWORD:
     {
         g_autofree gchar *name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
 
         return g_paste_password_item_new (name, value);
     }
-    if (g_paste_str_equal (kind, "Color"))
+    case G_PASTE_ITEM_KIND_COLOR:
         return g_paste_color_item_new_from_str (value);
-
-    if (g_paste_str_equal (kind, "Image"))
+    case G_PASTE_ITEM_KIND_IMAGE:
     {
         if (images_support && sqlite3_column_type (stmt, 4) != SQLITE_NULL)
         {
@@ -1146,8 +1149,11 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
 
         return NULL;
     }
+    case G_PASTE_ITEM_KIND_INVALID:
+        break;
+    }
 
-    g_warning ("Unknown item kind: %s", kind);
+    g_warning ("Unknown item kind: %s", kind_str);
 
     return NULL;
 }

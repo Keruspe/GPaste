@@ -9,6 +9,7 @@
 #include <gpaste-daemon/gpaste-history-saver.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
+#include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <gio/gio.h>
@@ -373,18 +374,24 @@ g_paste_history_private_check_size (GPasteHistory *self)
         g_paste_history_private_remove (self, self->history->len - 1, TRUE);
 }
 
+/* A line grows as it is typed or selected, which only plain text and uri lists
+ * do. An image has no meaningful prefix, and a password is never merged into
+ * its neighbour. */
+static gboolean
+g_paste_history_private_kind_grows (GPasteItemKind kind)
+{
+    return kind == G_PASTE_ITEM_KIND_TEXT || kind == G_PASTE_ITEM_KIND_URIS;
+}
+
 static gboolean
 g_paste_history_private_is_growing_line (GPasteHistory *self,
-                                         GPasteItem           *old,
-                                         GPasteItem           *new)
+                                         GPasteItem    *old,
+                                         GPasteItem    *new)
 {
-    if (G_PASTE_IS_IMAGE_ITEM (old) || G_PASTE_IS_IMAGE_ITEM (new))
+    if (!g_paste_settings_get_growing_lines (self->settings) ||
+        !g_paste_history_private_kind_grows (g_paste_item_get_kind (old)) ||
+        !g_paste_history_private_kind_grows (g_paste_item_get_kind (new)))
         return FALSE;
-
-    if (!(g_paste_settings_get_growing_lines (self->settings) &&
-        G_PASTE_IS_TEXT_ITEM (old) && G_PASTE_IS_TEXT_ITEM (new) &&
-        !G_PASTE_IS_PASSWORD_ITEM (old) && !G_PASTE_IS_PASSWORD_ITEM (new)))
-            return FALSE;
 
     const gchar *n = g_paste_item_get_value (new);
     const gchar *o = g_paste_item_get_value (old);
@@ -744,7 +751,7 @@ g_paste_history_replace (GPasteHistory *self,
     if (!item)
         return;
 
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
@@ -798,7 +805,7 @@ g_paste_history_set_password (GPasteHistory *self,
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
 
     g_return_if_fail (item);
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
     g_return_if_fail (!_g_paste_history_private_get_password (self, name, NULL));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));

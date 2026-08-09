@@ -222,7 +222,7 @@ g_paste_daemon_methods_get_element_kind (const GPasteDaemonMethods *priv,
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no item for this index", NULL);
 
-    return g_paste_item_get_kind (item);
+    return g_paste_item_kind_to_string (g_paste_item_get_kind (item));
 }
 
 G_PASTE_VISIBLE GVariant *
@@ -448,7 +448,7 @@ g_paste_daemon_methods_replace (const GPasteDaemonMethods *priv,
     GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
     G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
-    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
     G_PASTE_DBUS_ASSERT (contents && *contents, G_PASTE_ERROR_INVALID_ARGUMENT, "no contents given");
 
     g_paste_history_replace (priv->history, uuid, contents);
@@ -463,7 +463,7 @@ g_paste_daemon_methods_set_password (const GPasteDaemonMethods *priv,
     GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
     G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
-    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password name given");
     G_PASTE_DBUS_ASSERT (!g_paste_history_get_password (priv->history, name), G_PASTE_ERROR_ALREADY_EXISTS, "a password with that name already exists");
 

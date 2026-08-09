@@ -28,18 +28,10 @@ g_paste_color_item_get_rgba (GPasteColorItem *self)
     return &self->rgba;
 }
 
-static gboolean
-g_paste_color_item_equals (GPasteItem *self,
-                           GPasteItem *other)
-{
-    return (G_PASTE_IS_COLOR_ITEM (other) &&
-            G_PASTE_ITEM_CLASS (g_paste_color_item_parent_class)->equals (self, other));
-}
-
-static const gchar *
+static GPasteItemKind
 g_paste_color_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
-    return "Color";
+    return G_PASTE_ITEM_KIND_COLOR;
 }
 
 static void
@@ -47,7 +39,6 @@ g_paste_color_item_class_init (GPasteColorItemClass *klass)
 {
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
-    item_class->equals = g_paste_color_item_equals;
     item_class->get_kind = g_paste_color_item_get_kind;
 }
 

@@ -116,6 +116,9 @@ g_paste_item_get_display_string (GPasteItem *self)
  *
  * Compare the two instances
  *
+ * One dispatch is enough: every implementation of the vfunc is symmetric,
+ * because the default one starts by comparing the two kinds.
+ *
  * Returns: true if equals, false otherwise
  */
 G_PASTE_VISIBLE gboolean
@@ -128,26 +131,25 @@ g_paste_item_equals (GPasteItem *self,
     if (self == other)
         return TRUE;
 
-    return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other) && G_PASTE_ITEM_GET_CLASS (other)->equals (other, self);
+    return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other);
 }
 
 /**
  * g_paste_item_get_kind:
  * @self: a #GPasteItem instance
  *
- * Get the kind of #GPasteItem as string (for serialization)
+ * Get the kind of #GPasteItem. Use g_paste_item_kind_to_string() to serialize it.
  *
- * Returns: read-only string containing the kind of GPasteItem
- *          can be "Text", "Uris" or "Image"
+ * Returns: the #GPasteItemKind
  */
-G_PASTE_VISIBLE const gchar *
+G_PASTE_VISIBLE GPasteItemKind
 g_paste_item_get_kind (GPasteItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), G_PASTE_ITEM_KIND_INVALID);
 
     const GPasteItemClass *klass = G_PASTE_ITEM_GET_CLASS (self);
 
-    g_return_val_if_fail (klass->get_kind, NULL);
+    g_return_val_if_fail (klass->get_kind, G_PASTE_ITEM_KIND_INVALID);
 
     return klass->get_kind (self);
 }
@@ -374,12 +376,18 @@ g_paste_item_finalize (GObject *object)
     G_OBJECT_CLASS (g_paste_item_parent_class)->finalize (object);
 }
 
+/* Two items match when they are of the same kind and carry the same value. The
+ * kind comparison is what makes this symmetric, and hence what lets
+ * g_paste_item_equals() dispatch only once. */
 static gboolean
 g_paste_item_default_equals (GPasteItem *self,
                              GPasteItem *other)
 {
     if (self == other)
         return TRUE;
+
+    if (g_paste_item_get_kind (self) != g_paste_item_get_kind (other))
+        return FALSE;
 
     const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
     const GPasteItemPrivate *_priv = g_paste_item_get_instance_private (other);

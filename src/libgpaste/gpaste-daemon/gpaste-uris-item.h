@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <gpaste-daemon/gpaste-text-item.h>
+#include <gpaste-daemon/gpaste-item.h>
 
 #include <gtk/gtk.h>
 
@@ -11,7 +11,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_URIS_ITEM (g_paste_uris_item_get_type ())
 
-G_PASTE_FINAL_TYPE (UrisItem, uris_item, URIS_ITEM, GPasteTextItem)
+G_PASTE_FINAL_TYPE (UrisItem, uris_item, URIS_ITEM, GPasteItem)
 
 GdkFileList *g_paste_uris_item_get_file_list (GPasteUrisItem *self);
 

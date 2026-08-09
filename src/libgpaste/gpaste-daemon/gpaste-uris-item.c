@@ -7,12 +7,12 @@
 
 struct _GPasteUrisItem
 {
-    GPasteTextItem parent_instance;
+    GPasteItem parent_instance;
 
     GdkFileList *file_list;
 };
 
-G_PASTE_DEFINE_TYPE (UrisItem, uris_item, G_PASTE_TYPE_TEXT_ITEM)
+G_PASTE_DEFINE_TYPE (UrisItem, uris_item, G_PASTE_TYPE_ITEM)
 
 /**
  * g_paste_uris_item_get_file_list:
@@ -30,18 +30,10 @@ g_paste_uris_item_get_file_list (GPasteUrisItem *self)
     return self->file_list;
 }
 
-static gboolean
-g_paste_uris_item_equals (GPasteItem *self,
-                          GPasteItem *other)
-{
-    return (G_PASTE_IS_URIS_ITEM (other) &&
-            G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other));
-}
-
-static const gchar *
+static GPasteItemKind
 g_paste_uris_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
-    return "Uris";
+    return G_PASTE_ITEM_KIND_URIS;
 }
 
 static void
@@ -59,7 +51,6 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
 {
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
-    item_class->equals = g_paste_uris_item_equals;
     item_class->get_kind = g_paste_uris_item_get_kind;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_uris_item_finalize;

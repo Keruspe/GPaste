@@ -16,10 +16,14 @@ typedef enum {
     G_PASTE_ITEM_KIND_URIS,
     G_PASTE_ITEM_KIND_IMAGE,
     G_PASTE_ITEM_KIND_PASSWORD,
+    G_PASTE_ITEM_KIND_COLOR,
     G_PASTE_ITEM_KIND_INVALID = 0
 } GPasteItemKind;
 
 #define G_PASTE_TYPE_ITEM_KIND (g_paste_item_kind_get_type ())
 GType g_paste_item_kind_get_type (void);
+
+const gchar   *g_paste_item_kind_to_string   (GPasteItemKind kind);
+GPasteItemKind g_paste_item_kind_from_string (const gchar   *kind);
 
 G_END_DECLS

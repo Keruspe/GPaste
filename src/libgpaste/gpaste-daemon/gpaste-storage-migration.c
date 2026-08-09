@@ -177,7 +177,7 @@ static gboolean
 imported_item_matches (GPasteItem *source,
                        GPasteItem *written)
 {
-    if (!g_paste_str_equal (g_paste_item_get_kind (source), g_paste_item_get_kind (written)))
+    if (g_paste_item_get_kind (source) != g_paste_item_get_kind (written))
         return FALSE;
 
     if (G_PASTE_IS_IMAGE_ITEM (source))
@@ -253,7 +253,7 @@ import_histories (GPasteSettings *settings,
                 w = g_list_next (w);
             }
             else
-                ok = !chosen_stores_passwords && g_paste_str_equal (g_paste_item_get_kind (h->data), "Password");
+                ok = !chosen_stores_passwords && g_paste_item_get_kind (h->data) == G_PASTE_ITEM_KIND_PASSWORD;
         }
 
         /* Nothing may read back that was not written. */

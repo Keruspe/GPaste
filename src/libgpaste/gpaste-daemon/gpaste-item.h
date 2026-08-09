@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <gpaste-3/gpaste-item-enums.h>
 #include <gpaste-daemon/gpaste-binary-data.h>
 
 G_BEGIN_DECLS
@@ -29,7 +30,7 @@ struct _GPasteItemClass
     gboolean      (*secure)    (GPasteItem *self);
 
     /*< pure virtual >*/
-    const gchar *(*get_kind) (GPasteItem *self);
+    GPasteItemKind (*get_kind) (GPasteItem *self);
 };
 
 const gchar  *g_paste_item_get_uuid           (GPasteItem *self);
@@ -39,7 +40,7 @@ const GSList *g_paste_item_get_special_values (GPasteItem *self);
 const gchar  *g_paste_item_get_display_string (GPasteItem *self);
 gboolean      g_paste_item_equals             (GPasteItem *self,
                                                GPasteItem *other);
-const gchar  *g_paste_item_get_kind           (GPasteItem *self);
+GPasteItemKind g_paste_item_get_kind          (GPasteItem *self);
 guint64       g_paste_item_get_size           (GPasteItem *self);
 
 void g_paste_item_set_state (GPasteItem     *self,
