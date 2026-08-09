@@ -357,6 +357,25 @@ g_paste_util_replace (const gchar *text,
 }
 
 /**
+ * g_paste_util_one_line:
+ * @text: the initial text
+ *
+ * Fold @text onto a single line, replacing every carriage return, line feed and
+ * tabulation with a space. This is what everything displaying an item in a
+ * one-line context — the command line's --oneline, the history rows, the search
+ * provider's results — has to do to it first.
+ *
+ * Returns: the newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_util_one_line (const gchar *text)
+{
+    g_return_val_if_fail (text, NULL);
+
+    return g_strdelimit (g_strdup (text), "\n\r\t", ' ');
+}
+
+/**
  * g_paste_util_has_gnome_shell:
  *
  * Check whether gnome-shell is installed or not

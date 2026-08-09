@@ -30,6 +30,7 @@ gboolean g_paste_util_empty_with_confirmation_sync (GPasteClient   *client,
 gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *pattern,
                                          const gchar *substitution);
+gchar   *g_paste_util_one_line          (const gchar *text);
 
 gboolean g_paste_util_has_gnome_shell (void);
 

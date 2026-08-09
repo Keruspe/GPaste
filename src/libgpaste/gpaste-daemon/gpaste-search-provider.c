@@ -154,7 +154,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         GPasteClientItem *item = i->data;
         const gchar *value = g_paste_client_item_get_value (item);
         g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
-        g_autofree gchar *result = g_strdelimit (g_strdup (value), "\n\t", ' ');
+        g_autofree gchar *result = g_paste_util_one_line (value);
 
         append_dict_entry (&dict, "id", uuids[n]);
         append_dict_entry (&dict, "name", result);

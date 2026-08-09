@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-util.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-item.h>
@@ -168,7 +169,7 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
     if (!txt)
         return;
 
-    g_autofree gchar *oneline = g_strdelimit (g_strdup (txt), "\n\t", ' ');
+    g_autofree gchar *oneline = g_paste_util_one_line (txt);
 
     g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), self->index, self->uuid);
     g_paste_client_get_element_kind (self->client, self->uuid, g_paste_ui_item_on_kind_ready, async_callback_data_new (self));

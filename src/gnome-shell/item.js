@@ -5,6 +5,7 @@ import {PopupMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
+import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
@@ -116,7 +117,7 @@ class GPasteItem extends PopupMenuItem {
             this.label.clutter_text.set_text(this._displayedText);
             this.hide();
         } else {
-            const text = (value ?? '').replace(/[\t\n\r]/g, ' ');
+            const text = GPaste.util_one_line(value ?? '');
             if (text !== this._displayedText) {
                 this._displayedText = text;
                 this.label.clutter_text.set_text(text);

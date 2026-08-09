@@ -112,17 +112,6 @@ extract_pipe_data (void)
     return (*data->str) ? g_strdup (data->str) : NULL;
 }
 
-static const gchar *
-strip_newline (gchar *str)
-{
-    for (gchar *s = str; *s; ++s)
-    {
-        if (*s == '\n')
-            *s = ' ';
-    }
-    return str;
-}
-
 static void
 print_history_line (gchar       *line,
                     guint        index,
@@ -136,7 +125,9 @@ print_history_line (gchar       *line,
         else
             printf ("%s: ", uuid);
     }
-    printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
+    g_autofree gchar *oneline = (ctx->oneline) ? g_paste_util_one_line (line) : NULL;
+
+    printf ("%s%c", (oneline) ?: line, (ctx->zero) ? '\0' : '\n');
 }
 
 static gint
