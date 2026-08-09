@@ -375,7 +375,19 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 /* One handler per method on the generated skeleton, connected swapped so @self
  * comes first. Each one runs the method and answers the invocation: the error it
  * set, or the reply its matching completion builds. Returning %TRUE says the
- * method was handled, which is what stops the skeleton from replying itself. */
+ * method was handled, which is what stops the skeleton from replying itself.
+ *
+ * They come in four shapes, by whether the method answers anything and whether
+ * it can fail. PARAMS is what the interface adds after the invocation and ARGS
+ * the matching arguments to forward; both are parenthesized so the preprocessor
+ * takes each as one macro argument, and ARGLIST supplies the comma joining them
+ * -- disappearing when the list is empty.
+ *
+ * A handler's signature is not checked against the vfunc it is connected to, so
+ * concentrating them here is also what keeps that hazard in four places rather
+ * than thirty-three: compare these against struct _GPasteDaemon2Iface by hand
+ * when a method changes. */
+#define ARGLIST(...) , ##__VA_ARGS__
 
 #define G_PASTE_DAEMON_ANSWER(complete_call)                                          \
     do {                                                                              \
@@ -386,9 +398,63 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
         return TRUE;                                                                  \
     } while (FALSE)
 
+#define G_PASTE_DAEMON_HANDLER_HEAD(name, PARAMS)                                     \
+    static gboolean                                                                   \
+    g_paste_daemon_handle_##name (GPasteDaemon          *self,                        \
+                                  GDBusMethodInvocation *invocation ARGLIST PARAMS)
+
+/* Answers nothing, cannot fail. */
+#define G_PASTE_DAEMON_HANDLER(name, PARAMS, ARGS)                                    \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
+    {                                                                                 \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
+                                                                                      \
+        g_paste_daemon_methods_##name (&methods ARGLIST ARGS);                        \
+        g_paste_daemon2_complete_##name (self->skeleton, invocation);                 \
+                                                                                      \
+        return TRUE;                                                                  \
+    }
+
+/* Answers nothing, may fail. */
+#define G_PASTE_DAEMON_HANDLER_ERR(name, PARAMS, ARGS)                                \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
+    {                                                                                 \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
+        g_autoptr (GError) error = NULL;                                              \
+                                                                                      \
+        g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);                \
+                                                                                      \
+        G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_##name (self->skeleton, invocation)); \
+    }
+
+/* Answers something, cannot fail. */
+#define G_PASTE_DAEMON_HANDLER_RET(name, PARAMS, ARGS)                                \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
+    {                                                                                 \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
+                                                                                      \
+        g_paste_daemon2_complete_##name (self->skeleton,                              \
+                                         invocation,                                  \
+                                         g_paste_daemon_methods_##name (&methods ARGLIST ARGS)); \
+                                                                                      \
+        return TRUE;                                                                  \
+    }
+
+/* Answers something, may fail: @decl declares what the method hands back and
+ * @value is what the completion sends. */
+#define G_PASTE_DAEMON_HANDLER_RET_ERR(name, decl, value, PARAMS, ARGS)               \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
+    {                                                                                 \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
+        g_autoptr (GError) error = NULL;                                              \
+        decl = g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);         \
+                                                                                      \
+        G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_##name (self->skeleton, invocation, value)); \
+    }
+
 static gboolean
 g_paste_daemon_handle_about (GPasteDaemon          *self,
-                             GDBusMethodInvocation *invocation)
+                              GDBusMethodInvocation *invocation)
 {
     g_paste_util_activate_ui ("about", NULL);
     g_paste_daemon2_complete_about (self->skeleton, invocation);
@@ -396,63 +462,17 @@ g_paste_daemon_handle_about (GPasteDaemon          *self,
     return TRUE;
 }
 
-static gboolean
-g_paste_daemon_handle_add (GPasteDaemon          *self,
-                           GDBusMethodInvocation *invocation,
-                           const gchar           *text)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
+G_PASTE_DAEMON_HANDLER_ERR (add, (const gchar *text), (text))
 
-    g_paste_daemon_methods_add (&methods, text, &error);
+G_PASTE_DAEMON_HANDLER_ERR (add_file, (const gchar *file), (file))
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_add (self->skeleton, invocation));
-}
+G_PASTE_DAEMON_HANDLER_ERR (add_password, (const gchar *name, const gchar *password), (name, password))
 
-static gboolean
-g_paste_daemon_handle_add_file (GPasteDaemon          *self,
-                                GDBusMethodInvocation *invocation,
-                                const gchar           *file)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_add_file (&methods, file, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_add_file (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_add_password (GPasteDaemon          *self,
-                                    GDBusMethodInvocation *invocation,
-                                    const gchar           *name,
-                                    const gchar           *password)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_add_password (&methods, name, password, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_add_password (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_backup_history (GPasteDaemon          *self,
-                                      GDBusMethodInvocation *invocation,
-                                      const gchar           *history,
-                                      const gchar           *backup)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_backup_history (&methods, history, backup, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_backup_history (self->skeleton, invocation));
-}
+G_PASTE_DAEMON_HANDLER_ERR (backup_history, (const gchar *history, const gchar *backup), (history, backup))
 
 static gboolean
 g_paste_daemon_handle_change_passphrase (GPasteDaemon          *self,
-                                         GDBusMethodInvocation *invocation)
+                              GDBusMethodInvocation *invocation)
 {
     g_autoptr (GError) error = NULL;
 
@@ -461,74 +481,22 @@ g_paste_daemon_handle_change_passphrase (GPasteDaemon          *self,
     G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_change_passphrase (self->skeleton, invocation));
 }
 
-static gboolean
-g_paste_daemon_handle_delete (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation,
-                              const gchar           *uuid)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
+G_PASTE_DAEMON_HANDLER_ERR (delete, (const gchar *uuid), (uuid))
 
-    g_paste_daemon_methods_delete (&methods, uuid, &error);
+G_PASTE_DAEMON_HANDLER_ERR (delete_history, (const gchar *name), (name))
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_delete (self->skeleton, invocation));
-}
+G_PASTE_DAEMON_HANDLER_ERR (delete_password, (const gchar *name), (name))
 
-static gboolean
-g_paste_daemon_handle_delete_history (GPasteDaemon          *self,
-                                      GDBusMethodInvocation *invocation,
-                                      const gchar           *name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
+G_PASTE_DAEMON_HANDLER (empty_history, (const gchar *name), (name))
 
-    g_paste_daemon_methods_delete_history (&methods, name, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_delete_history (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_delete_password (GPasteDaemon          *self,
-                                       GDBusMethodInvocation *invocation,
-                                       const gchar           *name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_delete_password (&methods, name, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_delete_password (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_empty_history (GPasteDaemon          *self,
-                                     GDBusMethodInvocation *invocation,
-                                     const gchar           *name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-
-    g_paste_daemon_methods_empty_history (&methods, name);
-    g_paste_daemon2_complete_empty_history (self->skeleton, invocation);
-
-    return TRUE;
-}
-
-static gboolean
-g_paste_daemon_handle_get_element (GPasteDaemon          *self,
-                                   GDBusMethodInvocation *invocation,
-                                   const gchar           *uuid)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    const gchar *value = g_paste_daemon_methods_get_element (&methods, uuid, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_element (self->skeleton, invocation, value));
-}
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_element,
+                                const gchar *value, value,
+                                (const gchar *uuid), (uuid))
 
 static gboolean
 g_paste_daemon_handle_get_element_at_index (GPasteDaemon          *self,
-                                            GDBusMethodInvocation *invocation,
-                                            guint64                index)
+                              GDBusMethodInvocation *invocation,
+                              guint64 index)
 {
     const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
     g_autoptr (GError) error = NULL;
@@ -539,129 +507,40 @@ g_paste_daemon_handle_get_element_at_index (GPasteDaemon          *self,
     G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_element_at_index (self->skeleton, invocation, uuid, value));
 }
 
-static gboolean
-g_paste_daemon_handle_get_element_kind (GPasteDaemon          *self,
-                                        GDBusMethodInvocation *invocation,
-                                        const gchar           *uuid)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    const gchar *kind = g_paste_daemon_methods_get_element_kind (&methods, uuid, &error);
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_element_kind,
+                                const gchar *kind, kind,
+                                (const gchar *uuid), (uuid))
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_element_kind (self->skeleton, invocation, kind));
-}
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_elements,
+                                GVariant *elements, elements,
+                                (const gchar * const *uuids), (uuids))
 
-static gboolean
-g_paste_daemon_handle_get_elements (GPasteDaemon          *self,
-                                    GDBusMethodInvocation *invocation,
-                                    const gchar * const   *uuids)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    GVariant *elements = g_paste_daemon_methods_get_elements (&methods, uuids, &error);
+G_PASTE_DAEMON_HANDLER_RET (get_history, (), ())
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_elements (self->skeleton, invocation, elements));
-}
+G_PASTE_DAEMON_HANDLER_RET (get_history_name, (), ())
 
-static gboolean
-g_paste_daemon_handle_get_history (GPasteDaemon          *self,
-                                   GDBusMethodInvocation *invocation)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+G_PASTE_DAEMON_HANDLER_RET (get_history_size, (const gchar *name), (name))
 
-    g_paste_daemon2_complete_get_history (self->skeleton, invocation, g_paste_daemon_methods_get_history (&methods));
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_image,
+                                GVariant *image, image,
+                                (const gchar *uuid), (uuid))
 
-    return TRUE;
-}
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_raw_element,
+                                const gchar *value, value,
+                                (const gchar *uuid), (uuid))
 
-static gboolean
-g_paste_daemon_handle_get_history_name (GPasteDaemon          *self,
-                                        GDBusMethodInvocation *invocation)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+G_PASTE_DAEMON_HANDLER_RET (get_raw_history, (), ())
 
-    g_paste_daemon2_complete_get_history_name (self->skeleton, invocation, g_paste_daemon_methods_get_history_name (&methods));
+G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
+                                g_auto (GStrv) histories, (const gchar * const *) histories,
+                                (), ())
 
-    return TRUE;
-}
-
-static gboolean
-g_paste_daemon_handle_get_history_size (GPasteDaemon          *self,
-                                        GDBusMethodInvocation *invocation,
-                                        const gchar           *name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-
-    g_paste_daemon2_complete_get_history_size (self->skeleton, invocation, g_paste_daemon_methods_get_history_size (&methods, name));
-
-    return TRUE;
-}
-
-static gboolean
-g_paste_daemon_handle_get_image (GPasteDaemon          *self,
-                                 GDBusMethodInvocation *invocation,
-                                 const gchar           *uuid)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    GVariant *image = g_paste_daemon_methods_get_image (&methods, uuid, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_image (self->skeleton, invocation, image));
-}
-
-static gboolean
-g_paste_daemon_handle_get_raw_element (GPasteDaemon          *self,
-                                       GDBusMethodInvocation *invocation,
-                                       const gchar           *uuid)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    const gchar *value = g_paste_daemon_methods_get_raw_element (&methods, uuid, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_raw_element (self->skeleton, invocation, value));
-}
-
-static gboolean
-g_paste_daemon_handle_get_raw_history (GPasteDaemon          *self,
-                                       GDBusMethodInvocation *invocation)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-
-    g_paste_daemon2_complete_get_raw_history (self->skeleton, invocation, g_paste_daemon_methods_get_raw_history (&methods));
-
-    return TRUE;
-}
-
-static gboolean
-g_paste_daemon_handle_list_histories (GPasteDaemon          *self,
-                                      GDBusMethodInvocation *invocation)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    g_auto (GStrv) histories = g_paste_daemon_methods_list_histories (&methods, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_list_histories (self->skeleton, invocation, (const gchar * const *) histories));
-}
-
-static gboolean
-g_paste_daemon_handle_merge (GPasteDaemon          *self,
-                             GDBusMethodInvocation *invocation,
-                             const gchar           *decoration,
-                             const gchar           *separator,
-                             const gchar * const   *uuids)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_merge (&methods, decoration, separator, uuids, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_merge (self->skeleton, invocation));
-}
+G_PASTE_DAEMON_HANDLER_ERR (merge, (const gchar *decoration, const gchar *separator, const gchar * const *uuids), (decoration, separator, uuids))
 
 static gboolean
 g_paste_daemon_handle_on_extension_state_changed (GPasteDaemon          *self,
-                                                  GDBusMethodInvocation *invocation,
-                                                  gboolean               extension_state)
+                              GDBusMethodInvocation *invocation,
+                              gboolean extension_state)
 {
     const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
 
@@ -673,7 +552,7 @@ g_paste_daemon_handle_on_extension_state_changed (GPasteDaemon          *self,
 
 static gboolean
 g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
-                                 GDBusMethodInvocation *invocation)
+                              GDBusMethodInvocation *invocation)
 {
     g_paste_daemon_reexecute (self);
     g_paste_daemon2_complete_reexecute (self->skeleton, invocation);
@@ -681,76 +560,21 @@ g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
     return TRUE;
 }
 
-static gboolean
-g_paste_daemon_handle_rename_password (GPasteDaemon          *self,
-                                       GDBusMethodInvocation *invocation,
-                                       const gchar           *old_name,
-                                       const gchar           *new_name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
+G_PASTE_DAEMON_HANDLER_ERR (rename_password, (const gchar *old_name, const gchar *new_name), (old_name, new_name))
 
-    g_paste_daemon_methods_rename_password (&methods, old_name, new_name, &error);
+G_PASTE_DAEMON_HANDLER_ERR (replace, (const gchar *uuid, const gchar *contents), (uuid, contents))
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_rename_password (self->skeleton, invocation));
-}
+G_PASTE_DAEMON_HANDLER_RET_ERR (search,
+                                g_auto (GStrv) results, (const gchar * const *) results,
+                                (const gchar *query), (query))
 
-static gboolean
-g_paste_daemon_handle_replace (GPasteDaemon          *self,
-                               GDBusMethodInvocation *invocation,
-                               const gchar           *uuid,
-                               const gchar           *contents)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
+G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 
-    g_paste_daemon_methods_replace (&methods, uuid, contents, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_replace (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_search (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation,
-                              const gchar           *query)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    g_auto (GStrv) results = g_paste_daemon_methods_search (&methods, query, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_search (self->skeleton, invocation, (const gchar * const *) results));
-}
-
-static gboolean
-g_paste_daemon_handle_select (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation,
-                              const gchar           *uuid)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_select (&methods, uuid, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_select (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_set_password (GPasteDaemon          *self,
-                                    GDBusMethodInvocation *invocation,
-                                    const gchar           *uuid,
-                                    const gchar           *name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_methods_set_password (&methods, uuid, name, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_set_password (self->skeleton, invocation));
-}
+G_PASTE_DAEMON_HANDLER_ERR (set_password, (const gchar *uuid, const gchar *name), (uuid, name))
 
 static gboolean
 g_paste_daemon_handle_show_history (GPasteDaemon          *self,
-                                    GDBusMethodInvocation *invocation)
+                              GDBusMethodInvocation *invocation)
 {
     g_autoptr (GError) error = NULL;
 
@@ -759,36 +583,14 @@ g_paste_daemon_handle_show_history (GPasteDaemon          *self,
     G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_show_history (self->skeleton, invocation));
 }
 
-static gboolean
-g_paste_daemon_handle_switch_history (GPasteDaemon          *self,
-                                      GDBusMethodInvocation *invocation,
-                                      const gchar           *name)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
+G_PASTE_DAEMON_HANDLER_ERR (switch_history, (const gchar *name), (name))
 
-    g_paste_daemon_methods_switch_history (&methods, name, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_switch_history (self->skeleton, invocation));
-}
-
-static gboolean
-g_paste_daemon_handle_track (GPasteDaemon          *self,
-                             GDBusMethodInvocation *invocation,
-                             gboolean               tracking_state)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-
-    g_paste_daemon_methods_track (&methods, tracking_state);
-    g_paste_daemon2_complete_track (self->skeleton, invocation);
-
-    return TRUE;
-}
+G_PASTE_DAEMON_HANDLER (track, (gboolean tracking_state), (tracking_state))
 
 static gboolean
 g_paste_daemon_handle_upload (GPasteDaemon          *self,
                               GDBusMethodInvocation *invocation,
-                              const gchar           *uuid)
+                              const gchar *uuid)
 {
     if (g_paste_daemon_upload (self, uuid))
         g_paste_daemon2_complete_upload (self->skeleton, invocation);
@@ -802,6 +604,8 @@ g_paste_daemon_handle_upload (GPasteDaemon          *self,
 
     return TRUE;
 }
+
+#undef ARGLIST
 
 /* Every method the interface declares, wired in one place so a method added to
  * the XML without a handler here shows up as a missing symbol rather than a
@@ -977,6 +781,13 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
 
     g_signal_group_set_target (daemon->settings_signals, daemon->settings);
     g_signal_group_set_target (daemon->history_signals, daemon->history);
+
+    /* Seed "Active" from the setting: set_target does not emit notify, so the
+     * handler above only ever runs on a later change, and the property would
+     * read FALSE until the user toggled tracking. Here rather than in init() so
+     * it is the state as of the moment the interface goes on the bus. */
+    g_paste_daemon_tracking (daemon, NULL, daemon->settings);
+
     daemon->registered = TRUE;
 
     g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed_once, g_object_ref (self)), "[GPaste] Startup - changed");
@@ -1070,7 +881,8 @@ g_paste_daemon_init (GPasteDaemon *self)
 {
     /* The skeleton owns the marshalling and the property store; the daemon owns
      * the skeleton. "Version" never changes, so it is set once here; "Active"
-     * follows the track-changes setting (see g_paste_daemon_tracking()). */
+     * follows the track-changes setting, and is seeded from it when the
+     * interface is exported (see g_paste_daemon_tracking()). */
     self->skeleton = G_PASTE_DAEMON2 (g_paste_daemon2_skeleton_new ());
     g_paste_daemon2_set_version (self->skeleton, VERSION);
 
