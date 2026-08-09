@@ -524,9 +524,12 @@ g_paste_global_shortcut_client_init (GPasteGlobalShortcutClient *self)
 
 /**
  * g_paste_global_shortcut_client_new_sync:
- * @error: Return location for error or %NULL.
+ * @error: return location for a #GError, or %NULL
  *
  * Create a new instance of #GPasteGlobalShortcutClient
+ *
+ * A failure is a %G_DBUS_ERROR or a %G_IO_ERROR: this only reaches the portal's
+ * bus name, never a shortcut request.
  *
  * Returns: a newly allocated #GPasteGlobalShortcutClient
  *          free it with g_object_unref
@@ -554,9 +557,12 @@ g_paste_global_shortcut_client_new (GAsyncReadyCallback callback,
 /**
  * g_paste_global_shortcut_client_new_finish:
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
- * @error: Return location for error or %NULL.
+ * @error: return location for a #GError, or %NULL
  *
  * Create a new instance of #GPasteGlobalShortcutClient
+ *
+ * A failure is a %G_DBUS_ERROR or a %G_IO_ERROR: this only reaches the portal's
+ * bus name, never a shortcut request.
  *
  * Returns: a newly allocated #GPasteGlobalShortcutClient
  *          free it with g_object_unref

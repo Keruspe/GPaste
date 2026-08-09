@@ -53,6 +53,15 @@ tools/check-includes.sh
 - clang-format is not yet enforced; do not run it automatically.
 - **Braces**: Remove braces from `if`/`else if`/`else` branches whose body is a single statement on a single line. Keep braces when the body has multiple statements OR spans multiple lines (e.g. a nested if-else chain). Multi-statement macros that need to appear as a single statement must use the `do { ... } while (0)` idiom — `SWITCH_STATE` in `gpaste-file-backend.c` does this and can safely appear without surrounding braces.
 
+### Documenting errors
+
+GIR cannot express *which* domain a function throws: the format only has a boolean `throws="1"` per callable, plus `glib:error-domain` on the enumeration (which `GPasteError` carries). A `@error:` parameter line does not survive into the GIR at all — introspection drops the throws parameter — so anything a binding consumer needs to know has to be in the function's *description*, not on its `@error:` line.
+
+- The `@error:` line is always exactly `@error: return location for a #GError, or %NULL`. It carries no annotations: `(nullable)` on a throws parameter is discarded along with the parameter.
+- State the domain in the description of any function that throws, naming the concrete domains (`%G_PASTE_ERROR`, `%G_DBUS_ERROR`, `%G_IO_ERROR`, …). Where a whole class shares one error story, the class doc carries it instead of repeating it on every method — `GPasteClient` does this for its D-Bus methods, and only its constructors, which never reach the daemon, restate theirs.
+- Say so explicitly when a failure is *not* an error: `g_paste_prompt_passphrase_finish()` and `g_paste_prompt_migration_finish()` report a dismissal through the return value with `@error` left unset.
+- The name in a doc block's first line must match the symbol exactly. A typo silently detaches the whole block — the function then reaches the GIR with no documentation at all, with nothing to warn you.
+
 ### JavaScript (GNOME Shell extension)
 
 The `src/gnome-shell/` extension follows upstream GNOME Shell's JS conventions, enforced by the **same tooling, layout, and configuration** as upstream:

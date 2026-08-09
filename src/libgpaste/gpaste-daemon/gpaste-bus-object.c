@@ -9,9 +9,11 @@ G_PASTE_DEFINE_ABSTRACT_TYPE (BusObject, bus_object, G_TYPE_OBJECT)
  * g_paste_bus_object_register_on_connection:
  * @self: a #GPasteBusObject
  * @connection: a #GDBusConnection
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Register the #GPasteBusObject on the connection
+ *
+ * Failures come from GDBus registering the object, so they land in %G_IO_ERROR.
  *
  * Returns: Whether the action succeeded or not
  */

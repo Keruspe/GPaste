@@ -429,9 +429,14 @@ g_paste_prompt_passphrase_async (GPastePrompt         *self,
  *            whether the passphrase turned out to be the right one, and
  *            remembering a wrong one costs a prompt on every startup until it
  *            is discarded
- * @error: (nullable): a #GError, or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * Collect the passphrase the user entered.
+ *
+ * A dismissal is not a failure: it comes back as %NULL with @error left unset,
+ * so callers must check the return value rather than @error. @error is there
+ * for a #GPastePrompt implementation that fails outright, which the built-in
+ * ones never do.
  *
  * Returns: (transfer full) (nullable): the passphrase, already in secure
  *          memory, or %NULL if the prompt was dismissed
@@ -514,9 +519,14 @@ g_paste_prompt_migration_async (GPastePrompt        *self,
  * @chosen: (out) (optional): the backend the user picked
  * @import: (out) (optional): whether to copy the current history into it
  * @cleanup: (out) (optional): whether to delete the previous on-disk history
- * @error: (nullable): a #GError, or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * Collect what the user chose.
+ *
+ * A dismissal is not a failure: it comes back as %FALSE with @error left unset,
+ * so callers must check the return value rather than @error. @error is there
+ * for a #GPastePrompt implementation that fails outright, which the built-in
+ * ones never do.
  *
  * Returns: %TRUE if the prompt was confirmed, %FALSE if it was dismissed, in
  *          which case the out parameters are left untouched

@@ -105,9 +105,12 @@ _spawn_sync (GDBusProxy *proxy,
 /**
  * g_paste_util_spawn_sync:
  * @app: the GPaste app to spawn
- * @error: a #GError or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * spawn a GPaste app
+ *
+ * The app is started through its org.freedesktop.Application interface, so a
+ * failure is a %G_DBUS_ERROR or a %G_IO_ERROR rather than a %G_PASTE_ERROR.
  *
  * Returns: whether the spawn was successful
  */
@@ -194,9 +197,12 @@ g_paste_util_activate_ui (const gchar *action,
  * g_paste_util_activate_ui_sync:
  * @action: the action to activate
  * @arg: (nullable): the action argument
- * @error: a #GError or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * activate an action from GPaste Ui
+ *
+ * The action is dispatched over D-Bus, so a failure is a %G_DBUS_ERROR or a
+ * %G_IO_ERROR rather than a %G_PASTE_ERROR.
  *
  * Returns: whether the action was successful
  */
@@ -273,10 +279,14 @@ g_paste_util_empty_with_confirmation (GPasteClient         *client,
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
  * @history: the name of the history to empty
- * @error: a #GError or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * Empty a history after confirmation.
  * Confirmation is skipped if GPaste is configured to do so.
+ *
+ * The two paths fail differently: asking for confirmation goes through GPaste
+ * Ui (%G_DBUS_ERROR, %G_IO_ERROR), while emptying straight away goes through
+ * @client and can also yield a %G_PASTE_ERROR from the daemon.
  *
  * Returns: whether the action was successful
  */
@@ -310,7 +320,7 @@ g_paste_util_empty_with_confirmation_sync (GPasteClient         *client,
 }
 
 /**
- * g_paste_util_relace:
+ * g_paste_util_replace:
  * @text: the initial text
  * @pattern: the pattern to replace
  * @substitution: the replacement text
@@ -497,7 +507,7 @@ g_paste_util_read_pid_file (const gchar *component)
 /**
  * g_paste_util_reexecute_daemon:
  * @client: a connected #GPasteClient
- * @error: a #GError or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * Ask the daemon to re-execute itself through @client. It tears its D-Bus
  * connection down before replying, so a missing reply (%G_DBUS_ERROR_NO_REPLY)
@@ -530,13 +540,17 @@ g_paste_util_reexecute_daemon (GPasteClient *client,
 /**
  * g_paste_util_trigger_storage_migration:
  * @client: a connected #GPasteClient
- * @error: a #GError or %NULL
+ * @error: return location for a #GError, or %NULL
  *
  * Open the storage-migration gate and re-execute the daemon through @client
  * (g_paste_util_reexecute_daemon()), so on its next start it flushes, re-runs
  * the migration and reloads the chosen backend instead of another process racing
  * the running daemon. Resetting the backend revision to its default is exactly the
  * "never migrated" state that opens the gate.
+ *
+ * Errors come from the re-exec it delegates to, so they carry that call's
+ * domains (%G_PASTE_ERROR from the daemon, %G_DBUS_ERROR or %G_IO_ERROR from
+ * the transport) rather than any of its own.
  *
  * Returns: %TRUE if the migration was triggered
  */

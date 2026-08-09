@@ -70,9 +70,12 @@ g_paste_daemon_update (GPasteDaemon      *self,
 /**
  * g_paste_daemon_show_history:
  * @self: (transfer none): the #GPasteDaemon
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Emit the signal to show history
+ *
+ * Emitting is all this does, so a failure is a %G_IO_ERROR from the connection,
+ * never a %G_PASTE_ERROR: nothing here inspects the request.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self,

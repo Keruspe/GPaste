@@ -336,9 +336,13 @@ _g_paste_storage_backend_delete_history_images (const gchar *name)
  * g_paste_storage_backend_delete_history:
  * @self: a #GPasteStorageBackend instance
  * @name: the name of the history to delete
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete a history from our storage backend
+ *
+ * Backends only ever propagate what unlinking their store returned, so errors
+ * land in %G_IO_ERROR or %G_FILE_ERROR. The image sweep that follows is
+ * best-effort and never reported here.
  */
 G_PASTE_VISIBLE void
 g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
@@ -423,9 +427,13 @@ _g_paste_storage_backend_list_histories_by_extension (const GPasteStorageBackend
 /**
  * g_paste_storage_backend_list_histories:
  * @self: a #GPasteStorageBackend instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the list of available histories from our storage backend
+ *
+ * Errors come from enumerating the store, in %G_IO_ERROR or %G_FILE_ERROR. A
+ * partial listing is never returned as a success: if any flavor fails, so does
+ * the call.
  *
  * Returns: (transfer full): The list of history names
  */

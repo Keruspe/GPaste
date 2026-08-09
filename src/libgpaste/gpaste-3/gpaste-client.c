@@ -9,6 +9,26 @@ struct _GPasteClient
     GDBusProxy parent_instance;
 };
 
+/**
+ * GPasteClient:
+ *
+ * A proxy for the GPaste daemon's D-Bus interface.
+ *
+ * Every method comes in a synchronous flavor and an async pair, and both report
+ * failures the same way, in one of two kinds of domain:
+ *
+ * - %G_PASTE_ERROR for a request the daemon understood and refused, e.g.
+ *   %G_PASTE_ERROR_NOT_FOUND for an unknown uuid. The daemon registers the
+ *   domain with g_dbus_error_register_error_domain(), so the code survives the
+ *   round-trip and callers can switch on it instead of matching on the message.
+ * - %G_DBUS_ERROR or %G_IO_ERROR for a failure of the transport itself: no
+ *   daemon on the bus, it went away mid-call, the call was cancelled. These say
+ *   nothing about the request.
+ *
+ * A caller that wants to tell "the daemon said no" from "the daemon is not
+ * there" should therefore check the domain with g_error_matches(), not the bare
+ * code: the numbering of the two overlaps.
+ */
 G_PASTE_DEFINE_TYPE (Client, client, G_TYPE_DBUS_PROXY)
 
 enum
@@ -188,7 +208,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 /**
  * g_paste_client_about_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Display the about dialog
  */
@@ -203,7 +223,7 @@ g_paste_client_about_sync (GPasteClient *self,
  * g_paste_client_add_sync:
  * @self: a #GPasteClient instance
  * @text: the text to add
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Add an item to the #GPasteDaemon
  */
@@ -219,7 +239,7 @@ g_paste_client_add_sync (GPasteClient *self,
  * g_paste_client_add_file_sync:
  * @self: a #GPasteClient instance
  * @file: the file to add
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Add the file contents to the #GPasteDaemon
  */
@@ -244,7 +264,7 @@ g_paste_client_add_file_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @name: the name to identify the password to add
  * @password: the password to add
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Add the password to the #GPasteDaemon
  */
@@ -267,7 +287,7 @@ g_paste_client_add_password_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @history: the name of the history
  * @backup: the name of the backup
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Backup the current history
  */
@@ -288,7 +308,7 @@ g_paste_client_backup_history_sync (GPasteClient *self,
 /**
  * g_paste_client_change_passphrase_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Change the passphrase of the encrypted history, re-encrypting it with the new
  * one. The daemon prompts for the passphrases itself: they never travel over the
@@ -305,7 +325,7 @@ g_paste_client_change_passphrase_sync (GPasteClient *self,
  * g_paste_client_delete_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to delete
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete an item from the #GPasteDaemon
  */
@@ -321,7 +341,7 @@ g_paste_client_delete_sync (GPasteClient *self,
  * g_paste_client_delete_history_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history to delete
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete a history
  */
@@ -337,7 +357,7 @@ g_paste_client_delete_history_sync (GPasteClient *self,
  * g_paste_client_delete_password_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the password to delete
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete the password from the #GPasteDaemon
  */
@@ -353,7 +373,7 @@ g_paste_client_delete_password_sync (GPasteClient *self,
  * g_paste_client_empty_history_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history to empty
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Empty the history from the #GPasteDaemon
  */
@@ -369,7 +389,7 @@ g_paste_client_empty_history_sync (GPasteClient *self,
  * g_paste_client_get_element_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to get
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an item from the #GPasteDaemon
  *
@@ -387,7 +407,7 @@ g_paste_client_get_element_sync (GPasteClient *self,
  * g_paste_client_get_element_at_index_sync:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to get
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an item from the #GPasteDaemon
  *
@@ -413,7 +433,7 @@ _g_paste_client_get_element_kind_sync (GPasteClient *self,
  * g_paste_client_get_element_kind_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to get
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the kind of an item from the #GPasteDaemon
  *
@@ -435,7 +455,7 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @uuids: (array length=n_uuids): the uuids of the elements we want to get
  * @n_uuids: the number of uuids
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get some items from the #GPasteDaemon
  *
@@ -454,7 +474,7 @@ g_paste_client_get_elements_sync (GPasteClient  *self,
 /**
  * g_paste_client_get_history_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the history from the #GPasteDaemon
  *
@@ -470,7 +490,7 @@ g_paste_client_get_history_sync (GPasteClient *self,
 /**
  * g_paste_client_get_history_name_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the name of the history from the #GPasteDaemon
  *
@@ -487,7 +507,7 @@ g_paste_client_get_history_name_sync (GPasteClient *self,
  * g_paste_client_get_history_size_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the history size from the #GPasteDaemon
  *
@@ -505,7 +525,7 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
  * g_paste_client_get_image_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the image element we want to get
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an image item's bytes from the #GPasteDaemon, so clients never have to
  * dereference the item's path themselves
@@ -524,7 +544,7 @@ g_paste_client_get_image_sync (GPasteClient *self,
  * g_paste_client_get_raw_element_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to get
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an item from the #GPasteDaemon
  *
@@ -541,7 +561,7 @@ g_paste_client_get_raw_element_sync (GPasteClient *self,
 /**
  * g_paste_client_get_raw_history_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the history from the #GPasteDaemon
  *
@@ -557,7 +577,7 @@ g_paste_client_get_raw_history_sync (GPasteClient *self,
 /**
  * g_paste_client_list_histories_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * List all available hisotries
  *
@@ -577,7 +597,7 @@ g_paste_client_list_histories_sync (GPasteClient *self,
  * @separator: (nullable): the separator to add between each entry
  * @uuids: (array length=n_uuids): the uuids of the elements we want to get
  * @n_uuids: the number of uuids
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Merge some history entries
  *
@@ -605,7 +625,7 @@ g_paste_client_merge_sync (GPasteClient  *self,
  * g_paste_client_on_extension_state_changed_sync:
  * @self: a #GPasteClient instance
  * @state: the new state of the extension
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Call this when the extension changes its state
  */
@@ -620,7 +640,7 @@ g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
 /**
  * g_paste_client_reexecute_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Reexecute the #GPasteDaemon
  */
@@ -636,7 +656,7 @@ g_paste_client_reexecute_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @old_name: the name of the password to rename
  * @new_name: the new name to give it
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Rename the password in the #GPasteDaemon
  */
@@ -659,7 +679,7 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to replace
  * @contents: the replacement contents
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Replace the contents of an item
  */
@@ -681,7 +701,7 @@ g_paste_client_replace_sync (GPasteClient *self,
  * g_paste_client_search_sync:
  * @self: a #GPasteClient instance
  * @pattern: the pattern to look for in history
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Search for items matching @pattern in history
  *
@@ -699,7 +719,7 @@ g_paste_client_search_sync (GPasteClient *self,
  * g_paste_client_select_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to select
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Select an item from the #GPasteDaemon
  */
@@ -716,7 +736,7 @@ g_paste_client_select_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to set as password
  * @name: the name to identify the password
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Set the item as password
  */
@@ -737,7 +757,7 @@ g_paste_client_set_password_sync (GPasteClient *self,
 /**
  * g_paste_client_show_history_sync:
  * @self: a #GPasteClient instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Emit the ShowHistory signal
  */
@@ -751,7 +771,7 @@ g_paste_client_show_history_sync (GPasteClient *self,
  * g_paste_client_switch_history_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Switch to another history
  */
@@ -767,7 +787,7 @@ g_paste_client_switch_history_sync (GPasteClient *self,
  * g_paste_client_track_sync:
  * @self: a #GPasteClient instance
  * @state: the new tracking state of the #GPasteDaemon
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Change the tracking state of the #GPasteDaemon
  */
@@ -783,7 +803,7 @@ g_paste_client_track_sync (GPasteClient *self,
  * g_paste_client_upload_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to upload
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Upload an item to a pastebin service
  */
@@ -1481,7 +1501,7 @@ g_paste_client_upload (GPasteClient       *self,
  * g_paste_client_about_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Display the about dialog
  */
@@ -1497,7 +1517,7 @@ g_paste_client_about_finish (GPasteClient *self,
  * g_paste_client_add_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Add an item to the #GPasteDaemon
  */
@@ -1513,7 +1533,7 @@ g_paste_client_add_finish (GPasteClient *self,
  * g_paste_client_add_file_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Add the file contents to the #GPasteDaemon
  */
@@ -1529,7 +1549,7 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * g_paste_client_add_password_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Add the password to the #GPasteDaemon
  */
@@ -1545,7 +1565,7 @@ g_paste_client_add_password_finish (GPasteClient *self,
  * g_paste_client_backup_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Backup the current history
  */
@@ -1561,7 +1581,7 @@ g_paste_client_backup_history_finish (GPasteClient *self,
  * g_paste_client_change_passphrase_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Change the passphrase of the encrypted history
  */
@@ -1577,7 +1597,7 @@ g_paste_client_change_passphrase_finish (GPasteClient *self,
  * g_paste_client_delete_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete an item from the #GPasteDaemon
  */
@@ -1593,7 +1613,7 @@ g_paste_client_delete_finish (GPasteClient *self,
  * g_paste_client_delete_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete a history
  */
@@ -1609,7 +1629,7 @@ g_paste_client_delete_history_finish (GPasteClient *self,
  * g_paste_client_delete_password_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Delete the password from the #GPasteDaemon
  */
@@ -1625,7 +1645,7 @@ g_paste_client_delete_password_finish (GPasteClient *self,
  * g_paste_client_empty_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Empty the history from the #GPasteDaemon
  */
@@ -1641,7 +1661,7 @@ g_paste_client_empty_history_finish (GPasteClient *self,
  * g_paste_client_get_element_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an item from the #GPasteDaemon
  *
@@ -1659,7 +1679,7 @@ g_paste_client_get_element_finish (GPasteClient *self,
  * g_paste_client_get_element_at_index_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an item from the #GPasteDaemon
  *
@@ -1685,7 +1705,7 @@ _g_paste_client_get_element_kind_finish (GPasteClient *self,
  * g_paste_client_get_element_kind_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get this kind of an item from the #GPasteDaemon
  *
@@ -1706,7 +1726,7 @@ g_paste_client_get_element_kind_finish (GPasteClient *self,
  * g_paste_client_get_elements_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get some items from the #GPasteDaemon
  *
@@ -1724,7 +1744,7 @@ g_paste_client_get_elements_finish (GPasteClient *self,
  * g_paste_client_get_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the history from the #GPasteDaemon
  *
@@ -1742,7 +1762,7 @@ g_paste_client_get_history_finish (GPasteClient *self,
  * g_paste_client_get_history_name_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the name of the history from the #GPasteDaemon
  *
@@ -1760,7 +1780,7 @@ g_paste_client_get_history_name_finish (GPasteClient *self,
  * g_paste_client_get_history_size_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the history size from the #GPasteDaemon
  *
@@ -1778,7 +1798,7 @@ g_paste_client_get_history_size_finish (GPasteClient *self,
  * g_paste_client_get_raw_element_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an item from the #GPasteDaemon
  *
@@ -1796,7 +1816,7 @@ g_paste_client_get_raw_element_finish (GPasteClient *self,
  * g_paste_client_get_image_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get an image item's bytes from the #GPasteDaemon
  *
@@ -1814,7 +1834,7 @@ g_paste_client_get_image_finish (GPasteClient *self,
  * g_paste_client_get_raw_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the history from the #GPasteDaemon
  *
@@ -1832,7 +1852,7 @@ g_paste_client_get_raw_history_finish (GPasteClient *self,
  * g_paste_client_list_histories_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * List all available hisotries
  *
@@ -1850,7 +1870,7 @@ g_paste_client_list_histories_finish (GPasteClient *self,
  * g_paste_client_merge_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Merge some history entries
  */
@@ -1866,7 +1886,7 @@ g_paste_client_merge_finish (GPasteClient *self,
  * g_paste_client_on_extension_state_changed_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Call this when the extension changes its state
  */
@@ -1882,7 +1902,7 @@ g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
  * g_paste_client_reexecute_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Reexecute the #GPasteDaemon
  */
@@ -1898,7 +1918,7 @@ g_paste_client_reexecute_finish (GPasteClient *self,
  * g_paste_client_rename_password_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Rename the password in the #GPasteDaemon
  */
@@ -1914,7 +1934,7 @@ g_paste_client_rename_password_finish (GPasteClient *self,
  * g_paste_client_replace_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Replace the contents of an item
  */
@@ -1930,7 +1950,7 @@ g_paste_client_replace_finish (GPasteClient *self,
  * g_paste_client_search_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Search for items matching @pattern in history
  *
@@ -1948,7 +1968,7 @@ g_paste_client_search_finish (GPasteClient *self,
  * g_paste_client_select_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Select an item from the #GPasteDaemon
  */
@@ -1964,7 +1984,7 @@ g_paste_client_select_finish (GPasteClient *self,
  * g_paste_client_set_password_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Set the item as password
  */
@@ -1980,7 +2000,7 @@ g_paste_client_set_password_finish (GPasteClient *self,
  * g_paste_client_show_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Emit the ShowHistory signal
  */
@@ -1996,7 +2016,7 @@ g_paste_client_show_history_finish (GPasteClient *self,
  * g_paste_client_switch_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Switch to another history
  */
@@ -2012,7 +2032,7 @@ g_paste_client_switch_history_finish (GPasteClient *self,
  * g_paste_client_track_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Change the tracking state of the #GPasteDaemon
  */
@@ -2028,7 +2048,7 @@ g_paste_client_track_finish (GPasteClient *self,
  * g_paste_client_upload_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Upload an item to a pastebin service
  */
@@ -2233,9 +2253,12 @@ g_paste_client_init (GPasteClient *self)
 
 /**
  * g_paste_client_new_sync:
- * @error: Return location for error or %NULL.
+ * @error: return location for a #GError, or %NULL
  *
  * Create a new instance of #GPasteClient
+ *
+ * This only reaches the bus, never the daemon's own code, so a failure is
+ * always a %G_DBUS_ERROR or a %G_IO_ERROR — never a %G_PASTE_ERROR.
  *
  * Returns: (transfer full): a newly allocated #GPasteClient
  *                           free it with g_object_unref
@@ -2263,9 +2286,12 @@ g_paste_client_new (GAsyncReadyCallback callback,
 /**
  * g_paste_client_new_finish:
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
- * @error: Return location for error or %NULL.
+ * @error: return location for a #GError, or %NULL
  *
  * Create a new instance of #GPasteClient
+ *
+ * This only reaches the bus, never the daemon's own code, so a failure is
+ * always a %G_DBUS_ERROR or a %G_IO_ERROR — never a %G_PASTE_ERROR.
  *
  * Returns: (transfer full): a newly allocated #GPasteClient
  *                           free it with g_object_unref

@@ -59,11 +59,15 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
  * g_paste_gtk_util_get_image_finish:
  * @client: the #GPasteClient the g_paste_client_get_image() call was made on
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to g_paste_client_get_image()
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Finish a g_paste_client_get_image() call as a ready-to-display texture. The
  * core client stays toolkit-free and hands image items over as bytes; this is
  * the GTK-side conversion for its consumers.
+ *
+ * It can fail on either half: fetching the item carries the #GPasteClient
+ * domains (%G_PASTE_ERROR, %G_DBUS_ERROR, %G_IO_ERROR), while decoding bytes
+ * GDK cannot make a texture out of yields %GDK_TEXTURE_ERROR.
  *
  * Returns: (transfer full) (nullable): the image as a newly allocated #GdkTexture
  */

@@ -1153,10 +1153,13 @@ g_paste_history_switch (GPasteHistory *self,
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
  * @name: (nullable): the history to delete (defaults to the configured one)
- * @error: a #GError, set to %G_IO_ERROR_BUSY when the store has been handed over
- *         (see g_paste_history_flush()) and nothing was deleted
+ * @error: return location for a #GError, or %NULL
  *
  * Delete the current #GPasteHistory
+ *
+ * Fails with %G_IO_ERROR_BUSY, having deleted nothing, when the store has been
+ * handed over (see g_paste_history_flush()); otherwise errors are whatever the
+ * storage backend reports for unlinking it, in %G_IO_ERROR or %G_FILE_ERROR.
  *
  * Returns: whether the history was deleted
  */
@@ -1537,9 +1540,11 @@ g_paste_history_new (GPasteSettings *settings)
 /**
  * g_paste_history_list:
  * @self: a #GPasteHistory instance
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Get the list of available histories
+ *
+ * Errors are the storage backend's own, in %G_IO_ERROR or %G_FILE_ERROR.
  *
  * Returns: (transfer full): The list of history names
  *                           free it with g_array_unref
