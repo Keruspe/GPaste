@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 22:03+0200\n"
+"POT-Creation-Date: 2026-08-09 22:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -51,7 +51,7 @@ msgid "Preferences"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
-#: src/gnome-shell/actions.js:37 src/ui/gpaste-ui-header.c:262
+#: src/gnome-shell/actions.js:37 src/ui/gpaste-ui-header.c:286
 msgid "About"
 msgstr ""
 
@@ -1471,7 +1471,7 @@ msgstr ""
 #: src/gnome-shell/prompt.js:92 src/gnome-shell/prompt.js:276
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:196
-#: src/ui/gpaste-ui-header.c:272 src/ui/gpaste-ui-panel.c:313
+#: src/ui/gpaste-ui-header.c:296 src/ui/gpaste-ui-panel.c:313
 msgid "Cancel"
 msgstr ""
 
@@ -1806,34 +1806,34 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:88
+#: src/ui/gpaste-ui-header.c:105
 msgid "Restart"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:89
+#: src/ui/gpaste-ui-header.c:106
 msgid "Do you really want to restart the daemon?"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:224
+#: src/ui/gpaste-ui-header.c:248
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/gpaste-ui-header.c:248
+#: src/ui/gpaste-ui-header.c:272
 msgid "GPaste Settings"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:251
+#: src/ui/gpaste-ui-header.c:275
 msgid "Search"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:264
+#: src/ui/gpaste-ui-header.c:288
 msgid "Restart the daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:268
+#: src/ui/gpaste-ui-header.c:292
 msgid "Select items to merge"
 msgstr ""
 
@@ -1841,11 +1841,11 @@ msgstr ""
 msgid "No Results"
 msgstr ""
 
-#: src/ui/gpaste-ui-item-skeleton.c:393
+#: src/ui/gpaste-ui-item.c:590
 msgid "Upload"
 msgstr ""
 
-#: src/ui/gpaste-ui-item-skeleton.c:394 src/ui/gpaste-ui-panel.c:360
+#: src/ui/gpaste-ui-item.c:591 src/ui/gpaste-ui-panel.c:360
 #: src/ui/gpaste-ui-panel.c:515
 msgid "Delete"
 msgstr ""
@@ -1889,47 +1889,47 @@ msgid "Do you really want to stop tracking clipboard changes?"
 msgstr ""
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:394
+#: src/ui/gpaste-ui-window.c:393
 msgid "New line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:395
+#: src/ui/gpaste-ui-window.c:394
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:396
+#: src/ui/gpaste-ui-window.c:395
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:397
+#: src/ui/gpaste-ui-window.c:396
 msgid "Tabulation"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:405
+#: src/ui/gpaste-ui-window.c:404
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:410
+#: src/ui/gpaste-ui-window.c:409
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:421
+#: src/ui/gpaste-ui-window.c:420
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:473
+#: src/ui/gpaste-ui-window.c:472
 msgid "Quit"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:534 src/ui/gpaste-ui-window.c:535
+#: src/ui/gpaste-ui-window.c:533 src/ui/gpaste-ui-window.c:534
 msgid "Couldn't connect to GPaste daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:576
+#: src/ui/gpaste-ui-window.c:575
 msgid "Histories"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:577
+#: src/ui/gpaste-ui-window.c:576
 msgid "History"
 msgstr ""
 

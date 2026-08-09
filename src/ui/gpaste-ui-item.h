@@ -3,13 +3,16 @@
 
 #pragma once
 
-#include <gpaste-ui-item-skeleton.h>
+#include <gpaste-3/gpaste-client.h>
+#include <gpaste-3/gpaste-settings.h>
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_ITEM (g_paste_ui_item_get_type ())
 
-G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GPasteUiItemSkeleton)
+G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GtkBox)
 
 const gchar *g_paste_ui_item_get_uuid (GPasteUiItem *self);
 
