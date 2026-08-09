@@ -9,7 +9,7 @@ import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {GPasteDeleteItemPart} from './deleteItemPart.js';
+import {GPasteDeleteButton} from './deleteButton.js';
 
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
@@ -37,7 +37,7 @@ class GPasteItem extends PopupMenuItem {
             this._indexLabelVisible = false;
         }
 
-        this._deleteItem = new GPasteDeleteItemPart(client, this._uuid);
+        this._deleteItem = new GPasteDeleteButton(client, this._uuid);
         this.add_child(this._deleteItem);
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;

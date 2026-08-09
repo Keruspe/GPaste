@@ -5,7 +5,23 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {GPasteActionButtonActor} from './actionButtonActor.js';
+// The parent button fills its flex cell, so keep the icon+label group at its
+// natural width and centered rather than stretched to the left edge.
+function actionButtonActor(iconName, label) {
+    const actor = new St.BoxLayout({
+        style: 'spacing: 10px;',
+        x_expand: false,
+        x_align: Clutter.ActorAlign.CENTER,
+    });
+
+    actor.add_child(new St.Icon({
+        icon_name: iconName,
+        style_class: 'popup-menu-icon',
+    }));
+    actor.add_child(new St.Bin({child: new St.Label({text: label})}));
+
+    return actor;
+}
 
 export const GPasteActionButton = GObject.registerClass(
 class GPasteActionButton extends St.Button {
@@ -19,7 +35,7 @@ class GPasteActionButton extends St.Button {
             can_focus: true,
             track_hover: true,
             style_class: 'button',
-            child: new GPasteActionButtonActor(iconName, label),
+            child: actionButtonActor(iconName, label),
         });
 
         this._action = action;

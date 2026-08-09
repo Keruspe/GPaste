@@ -1,14 +1,10 @@
 shell_extension_files = [
-  'aboutItem.js',
   'actionButton.js',
-  'actionButtonActor.js',
   'actions.js',
   'daemon.js',
   'deleteButton.js',
-  'deleteItemPart.js',
   'dependencies.js',
   'dummyHistoryItem.js',
-  'emptyHistoryItem.js',
   'extension.js',
   'indicator.js',
   'item.js',
@@ -16,8 +12,6 @@ shell_extension_files = [
   'prompt.js',
   'searchItem.js',
   'stateSwitch.js',
-  'statusIcon.js',
-  'uiItem.js',
 ]
 
 npm = find_program('npm', required: false)

@@ -6,12 +6,9 @@ data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in
 src/client/gpaste-client.c
 src/daemon/gpaste-daemon.c
 src/daemon/gpaste-prompt-adw.c
-src/gnome-shell/aboutItem.js
-src/gnome-shell/actionButtonActor.js
+src/gnome-shell/actions.js
 src/gnome-shell/deleteButton.js
-src/gnome-shell/deleteItemPart.js
 src/gnome-shell/dummyHistoryItem.js
-src/gnome-shell/emptyHistoryItem.js
 src/gnome-shell/extension.js
 src/gnome-shell/indicator.js
 src/gnome-shell/item.js
@@ -19,8 +16,6 @@ src/gnome-shell/prefs.js
 src/gnome-shell/prompt.js
 src/gnome-shell/searchItem.js
 src/gnome-shell/stateSwitch.js
-src/gnome-shell/statusIcon.js
-src/gnome-shell/uiItem.js
 src/libgpaste/gpaste-3/gpaste-client-item.c
 src/libgpaste/gpaste-3/gpaste-client.c
 src/libgpaste/gpaste-3/gpaste-item-enums.c
@@ -79,8 +74,6 @@ src/ui/gpaste-ui-item.c
 src/ui/gpaste-ui-new-item.c
 src/ui/gpaste-ui-panel-history.c
 src/ui/gpaste-ui-panel.c
-src/ui/gpaste-ui-search-bar.c
-src/ui/gpaste-ui-search.c
 src/ui/gpaste-ui-shortcuts-window.c
 src/ui/gpaste-ui-switch.c
 src/ui/gpaste-ui-window.c

@@ -3,6 +3,8 @@
 
 import './dependencies.js';
 
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
@@ -15,13 +17,12 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import GPaste from 'gi://GPaste?version=3';
 
+import {GPasteActionButton} from './actionButton.js';
 import {GPasteActions} from './actions.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
-import {GPasteEmptyHistoryItem} from './emptyHistoryItem.js';
 import {GPasteItem} from './item.js';
 import {GPasteSearchItem} from './searchItem.js';
 import {GPasteStateSwitch} from './stateSwitch.js';
-import {GPasteStatusIcon} from './statusIcon.js';
 
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
@@ -33,7 +34,11 @@ class GPasteIndicator extends Button {
     constructor() {
         super(0.0, 'GPaste');
 
-        this._statusIcon = new GPasteStatusIcon();
+        this._statusIcon = new St.BoxLayout({style_class: 'panel-status-menu-box'});
+        this._statusIcon.add_child(new St.Icon({
+            icon_name: 'edit-paste-symbolic',
+            style_class: 'system-status-icon',
+        }));
         this.add_child(this._statusIcon);
 
         this._settings = new GPaste.Settings();
@@ -94,7 +99,15 @@ class GPasteIndicator extends Button {
             return;
         }
 
-        this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
+        // The button drops what the action returns, so this promise is nobody's
+        // to await: catch here, or a daemon that goes away mid-call surfaces as
+        // an unhandled rejection.
+        this._emptyHistoryItem = new GPasteActionButton('edit-clear-all-symbolic', _('Empty history'), () => {
+            this.menu.itemActivated();
+            this._client.get_history_name()
+                .then(name => GPaste.util_empty_with_confirmation(this._client, this._settings, name))
+                .catch(console.error);
+        });
         this._switch = new GPasteStateSwitch(this._client);
 
         // Header, inserted before the dummy placeholder added in the constructor.

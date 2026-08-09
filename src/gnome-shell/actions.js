@@ -7,8 +7,11 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {GPasteAboutItem} from './aboutItem.js';
-import {GPasteUiItem} from './uiItem.js';
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+
+import GPaste from 'gi://GPaste?version=3';
+
+import {GPasteActionButton} from './actionButton.js';
 
 export const GPasteActions = GObject.registerClass(
 class GPasteActions extends PopupBaseMenuItem {
@@ -26,9 +29,15 @@ class GPasteActions extends PopupBaseMenuItem {
             x_align: Clutter.ActorAlign.CENTER,
             layout_manager: new Clutter.BoxLayout({homogeneous: true}),
         });
-        box.add_child(new GPasteUiItem(menu));
+        box.add_child(new GPasteActionButton('go-home-symbolic', _('Graphical tool'), () => {
+            menu.itemActivated();
+            GPaste.util_spawn('Ui');
+        }));
         box.add_child(emptyHistoryItem);
-        box.add_child(new GPasteAboutItem(client, menu));
+        box.add_child(new GPasteActionButton('dialog-information-symbolic', _('About'), () => {
+            menu.itemActivated();
+            client.about(null);
+        }));
         this.add_child(box);
 
         // Left/Right navigation between these buttons is driven from the
