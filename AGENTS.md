@@ -55,12 +55,6 @@ Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
 throwaway `XDG_DATA_HOME`, so they need no display server or dconf. The `eslint`
 test lints the GNOME Shell extension JS.
 
-Check header include ordering:
-
-```sh
-tools/check-includes.sh
-```
-
 ## Code style
 
 - C standard: GNU17
