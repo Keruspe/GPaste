@@ -54,7 +54,10 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                  gpointer      user_data)
 {
     g_autofree gpointer *data = (gpointer *) user_data;
-    GPasteClient *client = data[0];
+    /* Reffed by the caller: the provider owns the only other reference and may
+     * be finalized while this is in flight. The invocation is not reffed -- GDBus
+     * hands it to the method handler and return_value() consumes it. */
+    g_autoptr (GPasteClient) client = data[0];
     GDBusMethodInvocation *invocation = data[1];
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) results = g_paste_client_search_finish (client, res, &error);
@@ -79,7 +82,7 @@ _do_search (const GPasteSearchProvider *priv,
     {
         gpointer *data = g_new (gpointer, 2);
 
-        data[0] = priv->client;
+        data[0] = g_object_ref (priv->client);
         data[1] = invocation;
 
         g_paste_client_search (priv->client,
@@ -138,7 +141,8 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
                    gpointer      user_data)
 {
     g_autofree GetResultMetasData *data = user_data;
-    GPasteClient *client = data->client;
+    /* See on_search_ready: the client is reffed for us, the invocation is not. */
+    g_autoptr (GPasteClient) client = data->client;
     g_auto (GStrv) uuids = data->uuids;
     /* Initialized in the declaration: a g_auto() builder that goes out of scope
      * before its init() would have g_variant_builder_clear() run on stack
@@ -200,7 +204,7 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProvider *pr
 
     GetResultMetasData *data = g_new (GetResultMetasData, 1);
 
-    data->client = priv->client;
+    data->client = g_object_ref (priv->client);
     data->invocation = invocation;
     data->uuids = g_steal_pointer (&uuids);
 
@@ -353,10 +357,13 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
-    GPasteSearchProvider *priv = user_data;
+    /* The callback owns this ref: holding it is what keeps dispose from running
+     * while the client is being created, so the assignment below always lands in
+     * a live provider and is cleared by the dispose our unref triggers. */
+    g_autoptr (GPasteSearchProvider) self = user_data;
     g_autoptr (GError) error = NULL;
 
-    priv->client = g_paste_client_new_finish (res, &error);
+    self->client = g_paste_client_new_finish (res, &error);
 
     /* Never abort here: this provider is also built inside gnome-shell, where
      * g_error() would take the whole compositor down over a transient D-Bus
@@ -380,7 +387,7 @@ g_paste_search_provider_init (GPasteSearchProvider *self)
     vtable->get_property = NULL;
     vtable->set_property = NULL;
 
-    g_paste_client_new (on_client_ready, self);
+    g_paste_client_new (on_client_ready, g_object_ref (self));
 }
 
 /**
