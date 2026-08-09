@@ -9,6 +9,7 @@
 
 #include <gpaste.h>
 
+#include <adwaita.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
@@ -32,5 +33,9 @@ void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
                                             const gchar    *history);
 
 void     g_paste_gtk_util_show_window      (GApplication *application);
+
+AdwAlertDialog *g_paste_gtk_util_text_dialog (const gchar    *confirm_label,
+                                              const gchar    *text,
+                                              GtkTextBuffer **buffer);
 
 G_END_DECLS

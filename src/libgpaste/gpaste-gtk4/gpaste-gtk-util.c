@@ -153,3 +153,50 @@ g_paste_gtk_util_show_window (GApplication *application)
             gtk_window_present (wins->data);
     }
 }
+
+/**
+ * g_paste_gtk_util_text_dialog:
+ * @confirm_label: the label of the confirm response
+ * @text: (nullable): what the text view starts with
+ * @buffer: (out) (transfer none): the text view's buffer, to read the answer from
+ *
+ * The dialog for composing an item: a wrapping, scrollable text view inside an
+ * alert dialog offering to cancel or to confirm. Both adding a new item and
+ * editing an existing one put up the same one.
+ *
+ * Returns: (transfer none): a newly created #AdwAlertDialog, to present with
+ *          adw_alert_dialog_choose()
+ */
+G_PASTE_VISIBLE AdwAlertDialog *
+g_paste_gtk_util_text_dialog (const gchar    *confirm_label,
+                              const gchar    *text,
+                              GtkTextBuffer **buffer)
+{
+    g_return_val_if_fail (confirm_label, NULL);
+    g_return_val_if_fail (buffer, NULL);
+
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, NULL));
+    GtkWidget *view = gtk_text_view_new ();
+    GtkTextView *tv = GTK_TEXT_VIEW (view);
+    GtkWidget *scroll = gtk_scrolled_window_new ();
+    GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
+
+    *buffer = gtk_text_view_get_buffer (tv);
+
+    gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
+    if (text)
+        gtk_text_buffer_set_text (*buffer, text, -1);
+
+    gtk_scrolled_window_set_min_content_height (sw, 300);
+    gtk_scrolled_window_set_min_content_width (sw, 600);
+    gtk_scrolled_window_set_child (sw, view);
+    gtk_widget_set_vexpand (scroll, TRUE);
+
+    adw_alert_dialog_add_responses (dialog,
+                                    "cancel",  _("Cancel"),
+                                    "confirm", confirm_label,
+                                    NULL);
+    adw_alert_dialog_set_extra_child (dialog, scroll);
+
+    return dialog;
+}

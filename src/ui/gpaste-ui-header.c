@@ -6,7 +6,6 @@
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-new-item.h>
-#include <gpaste-ui-search.h>
 #include <gpaste-ui-switch.h>
 
 typedef struct
@@ -98,7 +97,7 @@ on_reexec_clicked (GtkButton *button G_GNUC_UNUSED,
  *
  * Show the prefs pane
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_header_show_prefs (AdwHeaderBar *self)
 {
     g_return_if_fail (ADW_IS_HEADER_BAR (self));
@@ -115,7 +114,7 @@ g_paste_ui_header_show_prefs (AdwHeaderBar *self)
  *
  * Update the subtitle shown in the window title widget
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
                                 const gchar  *subtitle)
 {
@@ -134,7 +133,7 @@ g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
  *
  * Returns: (transfer none): the #GtkToggleButton for search
  */
-G_PASTE_VISIBLE GtkToggleButton *
+GtkToggleButton *
 g_paste_ui_header_get_search_button (AdwHeaderBar *self)
 {
     g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
@@ -152,7 +151,7 @@ g_paste_ui_header_get_search_button (AdwHeaderBar *self)
  *
  * Returns: (transfer none): the merge #GtkButton
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_header_get_merge_button (AdwHeaderBar *self)
 {
     g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
@@ -170,7 +169,7 @@ g_paste_ui_header_get_merge_button (AdwHeaderBar *self)
  *
  * Returns: (transfer none): the cancel #GtkButton
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_header_get_cancel_button (AdwHeaderBar *self)
 {
     g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
@@ -188,7 +187,7 @@ g_paste_ui_header_get_cancel_button (AdwHeaderBar *self)
  * Switch the header between its normal look and the selection-mode look (accent
  * styling, the merge button replaced by a cancel button).
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_header_set_selection_mode (AdwHeaderBar *self,
                                       gboolean      selection_mode)
 {
@@ -215,7 +214,7 @@ g_paste_ui_header_set_selection_mode (AdwHeaderBar *self,
  *
  * Update the title to reflect how many items are selected for merging.
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_header_set_selection_count (AdwHeaderBar *self,
                                        guint         count)
 {
@@ -237,7 +236,7 @@ g_paste_ui_header_set_selection_count (AdwHeaderBar *self,
  * Returns: a newly allocated #AdwHeaderBar
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_header_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {
@@ -247,7 +246,11 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     GtkWidget *self = adw_header_bar_new ();
     AdwHeaderBar *bar = ADW_HEADER_BAR (self);
     GtkWidget *settings = header_button_new ("preferences-system-symbolic", _("GPaste Settings"), G_CALLBACK (on_settings_clicked), NULL, NULL);
-    GtkWidget *search = g_paste_ui_search_new ();
+    GtkWidget *search = gtk_toggle_button_new ();
+
+    gtk_widget_set_tooltip_text (search, _("Search"));
+    gtk_widget_set_valign (search, GTK_ALIGN_CENTER);
+    gtk_button_set_child (GTK_BUTTON (search), gtk_image_new_from_icon_name ("edit-find-symbolic"));
     GtkWidget *title = adw_window_title_new (PACKAGE_NAME, NULL);
 
     gtk_widget_add_css_class (settings, "flat");

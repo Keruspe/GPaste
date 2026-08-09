@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <adwaita.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-new-item.h>
 
@@ -47,27 +47,12 @@ static void
 g_paste_ui_new_item_clicked (GtkButton *button)
 {
     GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (button);
-    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, NULL));
-    GtkWidget *text = gtk_text_view_new ();
-    GtkTextView *tv = GTK_TEXT_VIEW (text);
-    GtkWidget *scroll = gtk_scrolled_window_new ();
-    GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
-
-    gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
-    gtk_scrolled_window_set_min_content_height (sw, 300);
-    gtk_scrolled_window_set_min_content_width (sw, 600);
-    gtk_scrolled_window_set_child (sw, text);
-    gtk_widget_set_vexpand (scroll, TRUE);
-
-    adw_alert_dialog_add_responses (dialog,
-                                    "cancel",  _("Cancel"),
-                                    "confirm", _("Add new item"),
-                                    NULL);
-    adw_alert_dialog_set_extra_child (dialog, scroll);
+    GtkTextBuffer *buf = NULL;
+    AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Add new item"), NULL, &buf);
 
     NewItemDialogData *data = g_new (NewItemDialogData, 1);
     data->client = g_object_ref (self->client);
-    data->buffer = g_object_ref (gtk_text_view_get_buffer (tv));
+    data->buffer = g_object_ref (buf);
 
     adw_alert_dialog_choose (dialog, GTK_WIDGET (self->rootwin), NULL, on_new_item_response, data);
 }
@@ -109,7 +94,7 @@ g_paste_ui_new_item_init (GPasteUiNewItem *self)
  * Returns: a newly allocated #GPasteUiNewItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_new_item_new (GtkWindow    *rootwin,
                          GPasteClient *client)
 {

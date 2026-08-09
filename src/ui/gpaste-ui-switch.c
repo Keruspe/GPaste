@@ -82,7 +82,7 @@ on_gesture_pressed (GtkGestureClick *gesture,
  * Returns: a newly allocated #GtkSwitch
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_switch_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {

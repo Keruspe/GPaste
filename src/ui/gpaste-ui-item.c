@@ -79,7 +79,7 @@ async_callback_data_new (GPasteUiItem *self)
  *
  * Returns: (nullable): the uuid, owned by the item
  */
-G_PASTE_VISIBLE const gchar *
+const gchar *
 g_paste_ui_item_get_uuid (GPasteUiItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), NULL);
@@ -95,7 +95,7 @@ g_paste_ui_item_get_uuid (GPasteUiItem *self)
  *
  * returns: whether there was anything to select or not
  */
-G_PASTE_VISIBLE gboolean
+gboolean
 g_paste_ui_item_activate (GPasteUiItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), FALSE);
@@ -260,7 +260,7 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
  *
  * Track a new index
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_set_index (GPasteUiItem *self,
                            guint64       index)
 {
@@ -276,7 +276,7 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
  *
  * Track a new uuid
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_set_uuid (GPasteUiItem *self,
                           const gchar  *uuid)
 {
@@ -325,7 +325,7 @@ g_paste_ui_item_init (GPasteUiItem *self)
  * Returns: a newly allocated #GPasteUiItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_item_new (GPasteClient   *client,
                      GPasteSettings *settings,
                      GtkWindow      *rootwin,

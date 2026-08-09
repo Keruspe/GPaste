@@ -68,7 +68,7 @@ g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
  *
  * Mark the item as being editable or not
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
                                        gboolean              editable)
 {
@@ -88,7 +88,7 @@ g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
  *
  * Mark the item as being uploadable or not
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_skeleton_set_uploadable (GPasteUiItemSkeleton *self,
                                          gboolean              uploadable)
 {
@@ -108,7 +108,7 @@ g_paste_ui_item_skeleton_set_uploadable (GPasteUiItemSkeleton *self,
  *
  * Changes the displayed text
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
                                    const gchar          *text)
 {
@@ -128,7 +128,7 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
  *
  * Changes the displayed text, rendered in bold
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_skeleton_set_text_bold (GPasteUiItemSkeleton *self,
                                         const gchar          *text)
 {
@@ -161,7 +161,7 @@ action_set_uuid (gpointer data,
  *
  * Changes the displayed item
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
                                              guint64               index,
                                              const gchar          *uuid)
@@ -189,7 +189,7 @@ g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
  *
  * Set the thumbnail for this item if it's an image
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
                                         GdkTexture           *texture)
 {
@@ -376,7 +376,7 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
  * Returns: a newly allocated #GPasteUiItemSkeleton
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_item_skeleton_new (GType           type,
                               GPasteClient   *client,
                               GPasteSettings *settings,

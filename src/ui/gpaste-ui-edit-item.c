@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <adwaita.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-edit-item.h>
 
@@ -63,25 +63,8 @@ on_item_ready (GObject      *source_object,
     if (!old_item)
         return;
 
-    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, NULL));
-    GtkWidget *text = gtk_text_view_new ();
-    GtkTextView *tv = GTK_TEXT_VIEW (text);
-    GtkTextBuffer *buf = gtk_text_view_get_buffer (tv);
-    GtkWidget *scroll = gtk_scrolled_window_new ();
-    GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
-
-    gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
-    gtk_text_buffer_set_text (buf, old_item, -1);
-    gtk_scrolled_window_set_min_content_height (sw, 300);
-    gtk_scrolled_window_set_min_content_width (sw, 600);
-    gtk_scrolled_window_set_child (sw, text);
-    gtk_widget_set_vexpand (scroll, TRUE);
-
-    adw_alert_dialog_add_responses (dialog,
-                                    "cancel",  _("Cancel"),
-                                    "confirm", _("Edit"),
-                                    NULL);
-    adw_alert_dialog_set_extra_child (dialog, scroll);
+    GtkTextBuffer *buf = NULL;
+    AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Edit"), old_item, &buf);
 
     EditItemDialogData *dialog_data = g_new (EditItemDialogData, 1);
     dialog_data->client = g_object_ref (client);
@@ -126,7 +109,7 @@ g_paste_ui_edit_item_init (GPasteUiEditItem *self G_GNUC_UNUSED)
  * Returns: a newly allocated #GPasteUiEditItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_edit_item_new (GPasteClient *client,
                           GtkWindow    *rootwin)
 {

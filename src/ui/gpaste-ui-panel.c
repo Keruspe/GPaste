@@ -73,7 +73,7 @@ history_find (GList       *histories,
  *
  * Update the displayed length of the specified history
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
                                         const gchar   *history,
                                         guint64        length)
@@ -490,7 +490,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
  * Returns: a newly allocated #GPasteUiPanel
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_panel_new (GPasteClient   *client,
                       GPasteSettings *settings,
                       GtkWindow      *rootwin,

@@ -14,7 +14,7 @@
  * Returns: a newly allocated #AdwShortcutsDialog
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_shortcuts_window_new (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);

@@ -432,7 +432,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
  *
  * Apply a search to the history list
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_history_search (GPasteUiHistory *self,
                            const gchar     *search)
 {
@@ -533,7 +533,7 @@ on_item_activated (GtkListView *list_view G_GNUC_UNUSED,
  *
  * returns: whether anything was selected or not
  */
-G_PASTE_VISIBLE gboolean
+gboolean
 g_paste_ui_history_select_first (GPasteUiHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
@@ -550,7 +550,7 @@ g_paste_ui_history_select_first (GPasteUiHistory *self)
  *
  * returns: whether anything was activated or not
  */
-G_PASTE_VISIBLE gboolean
+gboolean
 g_paste_ui_history_activate_index (GPasteUiHistory *self,
                                    guint64          index)
 {
@@ -872,7 +872,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
  * Returns: a newly allocated #GPasteUiHistory
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_history_new (GPasteClient   *client,
                         GPasteSettings *settings,
                         GPasteUiPanel  *panel,

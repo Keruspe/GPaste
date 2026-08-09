@@ -21,7 +21,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItemAction, ui_item_action, GTK_TYPE_BUTTON)
  *
  * Track a new uuid
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
                                  const gchar        *uuid)
 {
@@ -94,7 +94,7 @@ g_paste_ui_item_action_init (GPasteUiItemAction *self G_GNUC_UNUSED)
  * Returns: a newly allocated #GPasteUiItemAction
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_item_action_new (GType         type,
                             GPasteClient *client,
                             const gchar  *icon_name,
@@ -131,7 +131,7 @@ g_paste_ui_item_action_new (GType         type,
  * Returns: a newly allocated #GPasteUiItemAction
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_item_action_new_simple (GPasteClient          *client,
                                    const gchar           *icon_name,
                                    const gchar           *tooltip,

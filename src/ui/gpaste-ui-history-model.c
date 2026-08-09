@@ -30,7 +30,7 @@ G_PASTE_DEFINE_TYPE (UiHistoryItem, ui_history_item, G_TYPE_OBJECT)
  *
  * Returns: (nullable): the uuid, owned by the item, or %NULL for a positional row
  */
-G_PASTE_VISIBLE const gchar *
+const gchar *
 g_paste_ui_history_item_get_uuid (GPasteUiHistoryItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ITEM (self), NULL);
@@ -46,7 +46,7 @@ g_paste_ui_history_item_get_uuid (GPasteUiHistoryItem *self)
  *
  * Returns: (transfer none) (nullable): the widget, or %NULL if the row is not realised
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_history_item_get_widget (GPasteUiHistoryItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ITEM (self), NULL);
@@ -61,7 +61,7 @@ g_paste_ui_history_item_get_widget (GPasteUiHistoryItem *self)
  *
  * Record which widget currently displays this item.
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_history_item_set_widget (GPasteUiHistoryItem *self,
                                     GtkWidget           *widget)
 {
@@ -158,7 +158,7 @@ g_paste_ui_history_model_list_model_iface_init (GListModelInterface *iface)
  *
  * Returns: (transfer none) (nullable): the item, or %NULL past the end
  */
-G_PASTE_VISIBLE GPasteUiHistoryItem *
+GPasteUiHistoryItem *
 g_paste_ui_history_model_peek (GPasteUiHistoryModel *self,
                                guint64               position)
 {
@@ -199,7 +199,7 @@ g_paste_ui_history_model_reset (GPasteUiHistoryModel *self,
  *
  * Returns: %TRUE if every row was rebuilt, leaving nothing to invalidate
  */
-G_PASTE_VISIBLE gboolean
+gboolean
 g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
                                    guint64               size)
 {
@@ -242,7 +242,7 @@ g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
  *
  * Switch to a search view listing @uuids.
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_history_model_set_search (GPasteUiHistoryModel *self,
                                      const gchar * const  *uuids)
 {
@@ -263,7 +263,7 @@ g_paste_ui_history_model_set_search (GPasteUiHistoryModel *self,
  * longer show the same thing — history entries shift when one is added or
  * removed. The bound rows refetch; the rest are none of the view's business.
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_history_model_invalidate (GPasteUiHistoryModel *self,
                                      guint64               position,
                                      guint64               n_items)
@@ -300,7 +300,7 @@ g_paste_ui_history_model_invalidate (GPasteUiHistoryModel *self,
  *
  * Report that a single row changed in place, with nothing around it moving.
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_history_model_item_replaced (GPasteUiHistoryModel *self,
                                         guint64               position)
 {
@@ -337,7 +337,7 @@ g_paste_ui_history_model_init (GPasteUiHistoryModel *self)
  * Returns: (transfer full): a newly allocated #GPasteUiHistoryModel
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteUiHistoryModel *
+GPasteUiHistoryModel *
 g_paste_ui_history_model_new (void)
 {
     return g_object_new (G_PASTE_TYPE_UI_HISTORY_MODEL, NULL);

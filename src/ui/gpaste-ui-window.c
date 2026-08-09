@@ -5,7 +5,6 @@
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
-#include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
@@ -35,8 +34,6 @@ struct _GPasteUiWindow
     GSignalGroup    *client_signals;
 
     gboolean         initialized;
-    guint            save_state_id;
-    gboolean         geometry_moved_again;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -69,7 +66,7 @@ _empty (gpointer user_data)
  *
  * Empty a history
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_window_empty_history (GPasteUiWindow *self,
                                  const gchar    *history)
 {
@@ -114,7 +111,7 @@ _search (gpointer user_data)
  *
  * Do a search
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_window_search (GPasteUiWindow *self,
                           const gchar    *search)
 {
@@ -151,7 +148,7 @@ _show_prefs (gpointer user_data)
  *
  * Show the prefs pane
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
@@ -207,69 +204,6 @@ on_escape (GtkWidget *widget,
 
     gtk_window_close (GTK_WINDOW (self));
     return TRUE;
-}
-
-/* Hand the window's geometry to the session manager, so a restored session
- * gets the size it was left at instead of the 800x600 default. A no-op unless
- * the compositor speaks the session-management protocol, which is why nothing
- * here needs a capability check or has anything to report when it does
- * nothing. */
-static gboolean
-save_session_state (gpointer user_data)
-{
-    GPasteUiWindow *self = user_data;
-
-    /* Still moving: wait another tick rather than saving mid-drag: the geometry
-     * notifications only raise the flag, this source decides when to save. */
-    if (self->geometry_moved_again)
-    {
-        self->geometry_moved_again = FALSE;
-        return G_SOURCE_CONTINUE;
-    }
-
-    self->save_state_id = 0;
-
-    /* FIXME: gtk_application_save() is private again as of GTK commit eabaa008d5
-     * ("application: Drop public save/restore API"): the async save/restore API
-     * did not make GTK 4.24, so the sync one was hidden rather than stabilised.
-     * Restore this call once GTK exposes save/restore again.
-     *
-     * Losing it costs less than it looks: GTK saves on its own from
-     * gtk_application_shutdown() unless the app was forgotten, and autosaves on
-     * a timer while the app is focused. What is missing until then is only the
-     * prompt save right after a resize settles.
-     *
-     * GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
-     *
-     * if (app)
-     *     gtk_application_save (app);
-     */
-
-    return G_SOURCE_REMOVE;
-}
-
-/* A drag-resize notifies on every frame — twice, since width and height both
- * move — so coalesce rather than asking the session manager to write the same
- * window down a hundred times. One source for the whole drag: while it is
- * running, a notification only says "not yet", and the callback re-arms itself
- * instead of every frame destroying and rebuilding a GTimeoutSource (two
- * allocations and four locked walks of the main context's source list each). */
-static void
-on_geometry_changed (GObject    *object,
-                     GParamSpec *pspec     G_GNUC_UNUSED,
-                     gpointer    user_data G_GNUC_UNUSED)
-{
-    GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
-
-    if (self->save_state_id)
-    {
-        self->geometry_moved_again = TRUE;
-        return;
-    }
-
-    self->geometry_moved_again = FALSE;
-    self->save_state_id = g_timeout_add_seconds (1, save_session_state, self);
-    g_source_set_name_by_id (self->save_state_id, "[GPaste] save_session_state");
 }
 
 static void
@@ -508,14 +442,6 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_object (&self->settings);
     g_clear_object (&self->shortcuts);
 
-    /* Disconnect before clearing the timeout, and both before chaining up:
-     * unrooting the window down there notifies "maximized"/"fullscreened" on
-     * the way past, and on_geometry_changed() would re-arm the timeout with a
-     * bare @self it holds no reference on — landing a second later in a window
-     * that has since been finalized. */
-    g_signal_handlers_disconnect_by_func (self, on_geometry_changed, NULL);
-    g_clear_handle_id (&self->save_state_id, g_source_remove);
-
     /* Chaining up unparents (and frees) every widget below, so drop the one
      * anything still in flight tests to know the window is gone. */
     self->banner = NULL;
@@ -548,8 +474,13 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_quit), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
 
-    GtkWidget *search_bar = g_paste_ui_search_bar_new ();
+    GtkWidget *search_bar = gtk_search_bar_new ();
+    GtkWidget *search_entry = gtk_search_entry_new ();
+
     self->search_bar = GTK_SEARCH_BAR (search_bar);
+    self->search_entry = GTK_SEARCH_ENTRY (search_entry);
+    gtk_search_bar_set_child (self->search_bar, search_entry);
+    gtk_search_bar_connect_entry (self->search_bar, GTK_EDITABLE (search_entry));
     gtk_box_append (GTK_BOX (vbox), search_bar);
 
     gtk_search_bar_set_key_capture_widget (self->search_bar, GTK_WIDGET (self));
@@ -564,7 +495,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), toolbar_view);
 
-    GtkSearchEntry *entry = self->search_entry = g_paste_ui_search_bar_get_entry (self->search_bar);
+    GtkSearchEntry *entry = self->search_entry;
 
     GSignalGroup *search_signals = self->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
     g_signal_group_connect (search_signals, "activate", G_CALLBACK (on_search_activate), self);
@@ -576,18 +507,8 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     add_shortcuts (self);
 
-    /* Our own starting geometry, set before the notifications below are hooked
-     * up: arming the timeout for it would have us hand the session manager the
-     * hardcoded default a second after every launch — over the very geometry a
-     * restored session was about to give the window. Only what happens to the
-     * window afterwards is worth saving. */
     gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
     gtk_widget_set_size_request (GTK_WIDGET (self), 400, 300);
-
-    g_signal_connect (self, "notify::default-width", G_CALLBACK (on_geometry_changed), NULL);
-    g_signal_connect (self, "notify::default-height", G_CALLBACK (on_geometry_changed), NULL);
-    g_signal_connect (self, "notify::maximized", G_CALLBACK (on_geometry_changed), NULL);
-    g_signal_connect (self, "notify::fullscreened", G_CALLBACK (on_geometry_changed), NULL);
 }
 
 static void
@@ -689,7 +610,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
  * Returns: a newly allocated #GPasteUiWindow
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+GtkWidget *
 g_paste_ui_window_new (GtkApplication *app)
 {
     g_return_val_if_fail (GTK_IS_APPLICATION (app), NULL);

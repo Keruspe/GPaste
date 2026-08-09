@@ -20,7 +20,7 @@ G_PASTE_DEFINE_TYPE (UiPanelHistory, ui_panel_history, ADW_TYPE_SIDEBAR_ITEM)
  *
  * Switch to this history
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
@@ -35,7 +35,7 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
  *
  * Update the displayed length of this history
  */
-G_PASTE_VISIBLE void
+void
 g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
                                      guint64               length)
 {
@@ -54,7 +54,7 @@ g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
  *
  * Returns: the name of the history
  */
-G_PASTE_VISIBLE const gchar *
+const gchar *
 g_paste_ui_panel_history_get_history (GPasteUiPanelHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
@@ -120,7 +120,7 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self G_GNUC_UNUSED)
  * Returns: a newly allocated #GPasteUiPanelHistory
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteUiPanelHistory *
+GPasteUiPanelHistory *
 g_paste_ui_panel_history_new (GPasteClient *client,
                               const gchar  *history)
 {
