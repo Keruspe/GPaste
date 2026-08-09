@@ -172,8 +172,7 @@ typedef struct
 static void
 session_request_data_free (_SessionRequestData *data)
 {
-    if (data->timeout_id)
-        g_source_remove (data->timeout_id);
+    g_clear_handle_id (&data->timeout_id, g_source_remove);
     if (data->signal_id)
         g_dbus_connection_signal_unsubscribe (data->connection, data->signal_id);
     g_clear_object (&data->client);

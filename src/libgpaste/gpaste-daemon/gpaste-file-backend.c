@@ -794,7 +794,7 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
                                         GList                **history,
                                         gsize                 *size)
 {
-    GPasteSettings *settings = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     g_autofree gchar *text = NULL;
 
@@ -1025,7 +1025,7 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
-    GPasteSettings *settings = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
                                                                                   new_passphrase);
     g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (self, name);

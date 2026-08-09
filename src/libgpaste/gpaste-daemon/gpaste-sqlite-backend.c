@@ -78,12 +78,6 @@ struct _GPasteSqliteBackend
 
 G_PASTE_DEFINE_TYPE (SqliteBackend, sqlite_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
-static GPasteSqliteBackend *
-g_paste_sqlite_backend_get_priv (GPasteStorageBackend *self)
-{
-    return g_paste_sqlite_backend_get_instance_private (G_PASTE_SQLITE_BACKEND ((gpointer) self));
-}
-
 static void
 g_paste_sqlite_backend_close (sqlite3 *db)
 {
@@ -157,7 +151,7 @@ g_paste_sqlite_backend_query_int64 (sqlite3     *db,
 static const gchar *
 g_paste_sqlite_backend_get_passphrase (GPasteStorageBackend *self)
 {
-    return g_paste_sqlite_backend_get_priv (self)->passphrase;
+    return G_PASTE_SQLITE_BACKEND (self)->passphrase;
 }
 
 /* The derived content key of the currently open database, or NULL for the
@@ -165,7 +159,7 @@ g_paste_sqlite_backend_get_passphrase (GPasteStorageBackend *self)
 static const guchar *
 g_paste_sqlite_backend_get_key (GPasteStorageBackend *self)
 {
-    return g_paste_sqlite_backend_get_priv (self)->key;
+    return G_PASTE_SQLITE_BACKEND (self)->key;
 }
 
 /* Encrypt @length bytes into a freshly allocated nonce ‖ ciphertext blob. */
@@ -626,16 +620,16 @@ static sqlite3 *
 g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                              const gchar          *db_path)
 {
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
 
-    if (priv->db && g_paste_str_equal (priv->db_path, db_path))
-        return priv->db;
+    if (backend->db && g_paste_str_equal (backend->db_path, db_path))
+        return backend->db;
 
-    g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
-    g_clear_pointer (&priv->db_path, g_free);
+    g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
+    g_clear_pointer (&backend->db_path, g_free);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* The key is salt-dependent, so it dies with its database's connection. */
-    g_clear_pointer (&priv->key, gcr_secure_memory_free);
+    g_clear_pointer (&backend->key, gcr_secure_memory_free);
 #endif
 
     if (!g_paste_util_ensure_history_dir_exists ())
@@ -687,12 +681,12 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    if (priv->passphrase)
+    if (backend->passphrase)
     {
         guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
         gboolean wrong_passphrase = FALSE;
 
-        if (!g_paste_sqlite_backend_setup_crypto (db, priv->passphrase, key, &wrong_passphrase))
+        if (!g_paste_sqlite_backend_setup_crypto (db, backend->passphrase, key, &wrong_passphrase))
         {
             if (wrong_passphrase)
                 g_warning ("sqlite: the passphrase does not unlock “%s”; not touching it", db_path);
@@ -701,7 +695,7 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
             return NULL;
         }
 
-        priv->key = key;
+        backend->key = key;
     }
 #endif
 
@@ -713,8 +707,8 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                                      "WHERE items.id = ranked.id;");
     }
 
-    priv->db = db;
-    priv->db_path = g_strdup (db_path);
+    backend->db = db;
+    backend->db_path = g_strdup (db_path);
 
     return db;
 }
@@ -983,8 +977,8 @@ g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
                                            const gchar          *history_file_path,
                                            const GList          *history)
 {
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
     if (!db)
@@ -1165,9 +1159,9 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
                                           GList                **history,
                                           gsize                 *size)
 {
-    GPasteSettings *settings = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     /* Opening creates the database on first read, so a fresh history shows up
      * in listings just like the file backend's empty placeholder. */
     sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
@@ -1327,8 +1321,8 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
                                  const GList          *history)
 {
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     if (!db)
@@ -1359,8 +1353,8 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
                                     const gchar          *uuid)
 {
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     if (!db)
@@ -1389,8 +1383,8 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
                                      GPasteItem           *item)
 {
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     if (!db)
@@ -1453,8 +1447,8 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
                                       const gchar          *name)
 {
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     /* Keep the (now empty) database so the history is still listed. */
@@ -1483,10 +1477,10 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
     }
 
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     /* Opening verifies the current passphrase against the stored key check, so
-     * by here priv->key is the one everything is encrypted with. */
+     * by here backend->key is the one everything is encrypted with. */
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     if (!db)
@@ -1518,7 +1512,7 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
 
     for (guint64 i = 0; success && i < G_N_ELEMENTS (g_paste_sqlite_backend_content_columns); ++i)
     {
-        success = g_paste_sqlite_backend_rekey_column (db, priv->key, new_key,
+        success = g_paste_sqlite_backend_rekey_column (db, backend->key, new_key,
                                                        g_paste_sqlite_backend_content_columns[i].ids_sql,
                                                        g_paste_sqlite_backend_content_columns[i].select_sql,
                                                        g_paste_sqlite_backend_content_columns[i].update_sql);
@@ -1544,9 +1538,9 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
      * key no longer matching what is now on disk; re-opening this database
      * through this instance then refuses it at the key check rather than reading
      * it with a stale key. */
-    g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
-    g_clear_pointer (&priv->db_path, g_free);
-    g_clear_pointer (&priv->key, gcr_secure_memory_free);
+    g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
+    g_clear_pointer (&backend->db_path, g_free);
+    g_clear_pointer (&backend->key, gcr_secure_memory_free);
     gcr_secure_memory_free (new_key);
 
     return TRUE;
@@ -1560,17 +1554,17 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend  *self,
 {
     const gchar *extension = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self);
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, extension);
-    GPasteSqliteBackend *priv = g_paste_sqlite_backend_get_priv (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
 
     /* Close our connection first so the WAL is checkpointed and its sidecar
      * files can go away with the database. */
-    if (priv->db && g_paste_str_equal (priv->db_path, db_path))
+    if (backend->db && g_paste_str_equal (backend->db_path, db_path))
     {
-        g_clear_pointer (&priv->db, g_paste_sqlite_backend_close);
-        g_clear_pointer (&priv->db_path, g_free);
+        g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
+        g_clear_pointer (&backend->db_path, g_free);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-        g_clear_pointer (&priv->key, gcr_secure_memory_free);
+        g_clear_pointer (&backend->key, gcr_secure_memory_free);
 #endif
     }
 
@@ -1671,9 +1665,9 @@ g_paste_sqlite_backend_new_encrypted (GPasteSettings *settings,
     }
 
     GPasteStorageBackend *self = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-    GPasteSqliteBackend *priv = G_PASTE_SQLITE_BACKEND (self);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
 
-    priv->passphrase = gcr_secure_memory_strdup (passphrase);
+    backend->passphrase = gcr_secure_memory_strdup (passphrase);
 
     return self;
 }

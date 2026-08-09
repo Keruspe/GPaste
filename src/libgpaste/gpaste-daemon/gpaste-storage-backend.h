@@ -32,7 +32,6 @@ struct _GPasteStorageBackendClass
 
     /*< protected >*/
     const gchar          *(*get_extension)  (GPasteStorageBackend *self);
-    GPasteSettings       *(*get_settings)   (GPasteStorageBackend *self);
     void                  (*delete_history) (GPasteStorageBackend *self,
                                              const gchar          *name,
                                              GError               **error);
@@ -63,6 +62,8 @@ struct _GPasteStorageBackendClass
     void     (*clear_history)        (GPasteStorageBackend *self,
                                       const gchar          *name);
 };
+
+GPasteSettings *g_paste_storage_backend_get_settings (GPasteStorageBackend *self);
 
 gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
                                                const gchar          *name,

@@ -71,7 +71,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     G_PASTE_VISIBLE type                                                                               \
     g_paste_settings_get_##name (GPasteSettings *self)                                           \
     {                                                                                                  \
-        g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), fail);                           \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                           \
         GPasteSettings *priv = self;             \
         return priv->name;                                                                             \
     }                                                                                                  \
@@ -622,7 +622,7 @@ STRING_SETTING (upload, UPLOAD)
 G_PASTE_VISIBLE gboolean
 g_paste_settings_get_extension_enabled (GPasteSettings *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
     return self->extension_enabled;
 }
 

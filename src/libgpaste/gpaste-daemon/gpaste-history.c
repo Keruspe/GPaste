@@ -1485,9 +1485,7 @@ g_paste_history_search (GPasteHistory *self,
     if (!regex)
         return NULL;
 
-    g_autoptr (GArray) results = g_array_new (TRUE, /* zero-terminated */
-                                              TRUE, /* clear */
-                                              sizeof (gchar *));
+    g_autoptr (GStrvBuilder) results = g_strv_builder_new ();
     for (guint i = 0; i < self->history->len; ++i)
     {
         GPasteItem *item = g_ptr_array_index (self->history, i);
@@ -1502,13 +1500,10 @@ g_paste_history_search (GPasteHistory *self,
             match = TRUE;
 
         if (match)
-        {
-            gchar *id = g_strdup (uuid);
-            g_array_append_val (results, id);
-        }
+            g_strv_builder_add (results, uuid);
     }
 
-    return g_array_steal (results, NULL);
+    return g_strv_builder_end (results);
 }
 
 /**

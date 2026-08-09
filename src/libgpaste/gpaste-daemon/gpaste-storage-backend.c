@@ -196,6 +196,18 @@ typedef struct
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
 
+/* A backend that can update the stored history in place does; one that cannot
+ * has the whole thing written out again. */
+#define G_PASTE_STORAGE_BACKEND_UPDATE(vfunc, ...)                                  \
+    do {                                                                            \
+        const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self); \
+                                                                                    \
+        if (klass->vfunc)                                                           \
+            klass->vfunc (self, name, ##__VA_ARGS__);                               \
+        else                                                                        \
+            g_paste_storage_backend_write_history (self, name, history);            \
+    } while (FALSE)
+
 static gchar *
 _g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
                                                 const gchar          *name)
@@ -493,10 +505,7 @@ g_paste_storage_backend_add_item (GPasteStorageBackend *self,
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item)
-        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item (self, name, item, history);
-    else
-        g_paste_storage_backend_write_history (self, name, history);
+    G_PASTE_STORAGE_BACKEND_UPDATE (add_item, item, history);
 }
 
 /**
@@ -517,10 +526,7 @@ g_paste_storage_backend_remove_item (GPasteStorageBackend *self,
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item)
-        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item (self, name, uuid);
-    else
-        g_paste_storage_backend_write_history (self, name, history);
+    G_PASTE_STORAGE_BACKEND_UPDATE (remove_item, uuid);
 }
 
 /**
@@ -544,10 +550,7 @@ g_paste_storage_backend_replace_item (GPasteStorageBackend *self,
     g_return_if_fail (name);
     g_return_if_fail (old_uuid);
 
-    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item)
-        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item (self, name, old_uuid, item);
-    else
-        g_paste_storage_backend_write_history (self, name, history);
+    G_PASTE_STORAGE_BACKEND_UPDATE (replace_item, old_uuid, item);
 }
 
 /**
@@ -566,10 +569,7 @@ g_paste_storage_backend_clear_history (GPasteStorageBackend *self,
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history)
-        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history (self, name);
-    else
-        g_paste_storage_backend_write_history (self, name, history);
+    G_PASTE_STORAGE_BACKEND_UPDATE (clear_history);
 }
 
 /**
@@ -605,9 +605,12 @@ g_paste_storage_backend_dispose (GObject *object)
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
 }
 
-static GPasteSettings *
+/* Not a vfunc: no backend has ever had settings of its own to hand back. */
+G_PASTE_VISIBLE GPasteSettings *
 g_paste_storage_backend_get_settings (GPasteStorageBackend *self)
 {
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), NULL);
+
     const GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
 
     return priv->settings;
@@ -619,7 +622,6 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->read_history_file = NULL;
     klass->write_history_file = NULL;
     klass->get_extension = NULL;
-    klass->get_settings = g_paste_storage_backend_get_settings;
     klass->delete_history = NULL;
     klass->list_histories = NULL;
     klass->rekey = NULL;
