@@ -208,10 +208,24 @@ G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TY
             g_paste_storage_backend_write_history (self, name, history);            \
     } while (FALSE)
 
-static gchar *
-_g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
-                                                const gchar          *name)
+/**
+ * g_paste_storage_backend_get_history_file_path:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of a history
+ *
+ * Where this backend keeps the history called @name. A history is identified by
+ * its name everywhere; the path is each backend's own business, which is why it
+ * derives it here rather than being handed one.
+ *
+ * Returns: the newly allocated path
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
+                                               const gchar          *name)
 {
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), NULL);
+    g_return_val_if_fail (name, NULL);
+
     return g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
 }
 
@@ -245,9 +259,7 @@ g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
      * with each other and with the empty history the caller is holding. */
     *size = 0;
 
-    g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
-
-    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);
+    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, name, history, size);
 }
 
 /**
@@ -266,9 +278,7 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *self,
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
-
-    G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
+    G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, name, history);
 }
 
 /* Whether any storage flavor still keeps a history under @name on disk. The

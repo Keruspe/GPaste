@@ -219,16 +219,16 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
 
 static void
 g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
-                                         const gchar          *history_file_path,
+                                         const gchar          *history_name,
                                          const GList          *history)
 {
     if (!g_paste_util_ensure_history_dir_exists ())
         return;
 
-    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     /* Images are referenced (and materialized) under the history being
      * written, which may not be the one the items belong to (a backup). */
-    g_autofree gchar *history_name = g_paste_util_get_history_name_from_file_path (history_file_path);
+    g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, history_name);
+    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     GPasteFileBackend *real_self = G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
@@ -790,11 +790,12 @@ g_paste_file_backend_load_contents (GPasteStorageBackend  *self,
 
 static gboolean
 g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
-                                        const gchar           *history_file_path,
+                                        const gchar           *name,
                                         GList                **history,
                                         gsize                 *size)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
+    g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     g_autofree gchar *text = NULL;
 
@@ -975,7 +976,7 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
                                        const gchar          *name)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *history_path = g_paste_storage_backend_get_history_file_path (self, name);
 
     if (g_file_test (history_path, G_FILE_TEST_EXISTS))
         g_strv_builder_add (builder, history_path);

@@ -19,15 +19,18 @@ struct _GPasteStorageBackendClass
     GObjectClass parent_class;
 
     /*< pure virtual >*/
-    /* Returns %FALSE when the history file is present but could not be read back
+    /* Every vfunc here is given the history's *name*, not a path: the path is
+     * the backend's own, derived with g_paste_storage_backend_get_history_file_path().
+     *
+     * Returns %FALSE when the history file is present but could not be read back
      * (a failed decryption, parse or I/O error), so a caller can tell a genuine
      * empty history apart from a read that silently yielded nothing. */
     gboolean (*read_history_file)  (GPasteStorageBackend *self,
-                                    const gchar          *history_file_path,
+                                    const gchar          *name,
                                     GList                **history,
                                     gsize                *size);
     void (*write_history_file) (GPasteStorageBackend *self,
-                                const gchar          *history_file_path,
+                                const gchar          *name,
                                 const GList          *history);
 
     /*< protected >*/
@@ -64,6 +67,9 @@ struct _GPasteStorageBackendClass
 };
 
 GPasteSettings *g_paste_storage_backend_get_settings (GPasteStorageBackend *self);
+
+gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
+                                                      const gchar          *name);
 
 gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
                                                const gchar          *name,

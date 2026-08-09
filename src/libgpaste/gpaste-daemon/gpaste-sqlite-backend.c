@@ -974,11 +974,12 @@ g_paste_sqlite_backend_count_stored (const guchar *key,
 
 static void
 g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
-                                           const gchar          *history_file_path,
+                                           const gchar          *name,
                                            const GList          *history)
 {
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+    g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
     if (!db)
@@ -1155,13 +1156,14 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
 
 static gboolean
 g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
-                                          const gchar           *history_file_path,
+                                          const gchar           *name,
                                           GList                **history,
                                           gsize                 *size)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+    g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     /* Opening creates the database on first read, so a fresh history shows up
      * in listings just like the file backend's empty placeholder. */
     sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
@@ -1197,17 +1199,13 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
         return FALSE;
     }
 
-    /* The history name, for anchoring blob-loaded images under its own images
-     * directory. */
-    g_autofree gchar *basename = g_paste_util_get_history_name_from_file_path (history_file_path);
-
     GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
     while (sqlite3_step (stmt) == SQLITE_ROW)
     {
-        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, basename, key, images_support);
+        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, name, key, images_support);
 
         if (!item)
             continue;
@@ -1320,7 +1318,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
                                  GPasteItem           *item,
                                  const GList          *history)
 {
-    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
@@ -1352,7 +1350,7 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
                                     const gchar          *name,
                                     const gchar          *uuid)
 {
-    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
@@ -1382,7 +1380,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
                                      const gchar          *old_uuid,
                                      GPasteItem           *item)
 {
-    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
@@ -1446,7 +1444,7 @@ static void
 g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
                                       const gchar          *name)
 {
-    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
@@ -1476,7 +1474,7 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
-    g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     /* Opening verifies the current passphrase against the stored key check, so

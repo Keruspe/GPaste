@@ -16,7 +16,7 @@ G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
 static gboolean
 g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self G_GNUC_UNUSED,
-                                        const gchar           *history_file_path G_GNUC_UNUSED,
+                                        const gchar           *name G_GNUC_UNUSED,
                                         GList                **history,
                                         gsize                 *size)
 {
@@ -29,7 +29,7 @@ g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self G_GNUC_UNUSE
 
 static void
 g_paste_noop_backend_write_history_file (GPasteStorageBackend *self G_GNUC_UNUSED,
-                                         const gchar          *history_file_path G_GNUC_UNUSED,
+                                         const gchar          *name G_GNUC_UNUSED,
                                          const GList          *history G_GNUC_UNUSED)
 {
 }

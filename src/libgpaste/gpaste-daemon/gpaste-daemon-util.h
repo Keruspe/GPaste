@@ -27,7 +27,6 @@ gchar *g_paste_util_get_history_dir_path  (void);
 GFile *g_paste_util_get_history_dir       (void);
 gchar *g_paste_util_get_history_file_path (const gchar *name,
                                            const gchar *extension);
-gchar *g_paste_util_get_history_name_from_file_path (const gchar *path);
 GFile *g_paste_util_get_history_file      (const gchar *name,
                                            const gchar *extension);
 
