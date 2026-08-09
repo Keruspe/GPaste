@@ -17,16 +17,9 @@ gboolean g_paste_util_spawn_sync        (const gchar *app,
                                          GError     **error);
 void     g_paste_util_activate_ui       (const gchar *action,
                                          GVariant    *arg);
-gboolean g_paste_util_activate_ui_sync  (const gchar *action,
-                                         GVariant    *arg,
-                                         GError     **error);
 void     g_paste_util_empty_with_confirmation (GPasteClient   *client,
                                                GPasteSettings *settings,
                                                const gchar    *history);
-gboolean g_paste_util_empty_with_confirmation_sync (GPasteClient   *client,
-                                                    GPasteSettings *settings,
-                                                    const gchar    *history,
-                                                    GError         **error);
 gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *pattern,
                                          const gchar *substitution);
@@ -34,11 +27,7 @@ gchar   *g_paste_util_one_line          (const gchar *text);
 
 gboolean g_paste_util_has_gnome_shell (void);
 
-guint32 *g_paste_util_get_dbus_au_result (GVariant *variant,
-                                          guint64  *len);
-
-GPasteClientItem *g_paste_util_get_dbus_item_result  (GVariant *variant);
-GList            *g_paste_util_get_dbus_items_result (GVariant *variant);
+GList *g_paste_util_get_dbus_items_result (GVariant *variant);
 
 void g_paste_util_write_pid_file (const gchar *component);
 GPid g_paste_util_read_pid_file  (const gchar *component);

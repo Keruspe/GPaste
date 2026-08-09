@@ -114,9 +114,6 @@ const gchar *g_paste_storage_get_extension (GPasteStorage storage_kind);
 void         g_paste_storage_backend_set_passphrase (const gchar *passphrase);
 const gchar *g_paste_storage_backend_get_passphrase (void);
 
-gchar *g_paste_storage_passphrase_dup  (const gchar *passphrase);
-void   g_paste_storage_passphrase_free (gchar       *passphrase);
-
 gboolean g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
                                                  GPasteSettings *settings,
                                                  const gchar    *passphrase);

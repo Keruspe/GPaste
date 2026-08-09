@@ -44,7 +44,6 @@ void g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient     *
 /* Constructors */
 /****************/
 
-GPasteGlobalShortcutClient *g_paste_global_shortcut_client_new_sync   (GError             **error);
 void                           g_paste_global_shortcut_client_new        (GAsyncReadyCallback  callback,
                                                                               gpointer             user_data);
 GPasteGlobalShortcutClient *g_paste_global_shortcut_client_new_finish (GAsyncResult        *result,

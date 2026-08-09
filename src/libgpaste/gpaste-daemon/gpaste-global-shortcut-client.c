@@ -522,34 +522,6 @@ g_paste_global_shortcut_client_init (GPasteGlobalShortcutClient *self)
 }
 
 /**
- * g_paste_global_shortcut_client_new_sync:
- * @error: return location for a #GError, or %NULL
- *
- * Create a new instance of #GPasteGlobalShortcutClient
- *
- * A failure is a %G_DBUS_ERROR or a %G_IO_ERROR: this only reaches the portal's
- * bus name, never a shortcut request.
- *
- * Returns: a newly allocated #GPasteGlobalShortcutClient
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteGlobalShortcutClient *
-g_paste_global_shortcut_client_new_sync (GError **error)
-{
-    GInitable *self = g_initable_new (G_PASTE_TYPE_GLOBAL_SHORTCUT_CLIENT,
-                                      NULL, /* cancellable */
-                                      error,
-                                      "g-bus-type",       G_BUS_TYPE_SESSION,
-                                      "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
-                                      "g-name",           G_PASTE_GLOBAL_SHORTCUT_BUS_NAME,
-                                      "g-object-path",    G_PASTE_GLOBAL_SHORTCUT_OBJECT_PATH,
-                                      "g-interface-name", G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME,
-                                      NULL);
-
-    return (self) ? G_PASTE_GLOBAL_SHORTCUT_CLIENT (self) : NULL;
-}
-
-/**
  * g_paste_global_shortcut_client_new:
  * @callback: Callback function to invoke when the proxy is ready.
  * @user_data: User data to pass to @callback.

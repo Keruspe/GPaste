@@ -32,31 +32,16 @@
  * threading the secret through every constructor. */
 static gchar *g_paste_storage_passphrase = NULL;
 
-/**
- * g_paste_storage_passphrase_dup:
- * @passphrase: (nullable): the passphrase to copy
- *
- * Copy a passphrase into gcr secure (non-pageable) memory, so callers keeping
- * one of their own — the migration dialog holding the source history's key
- * while a new one is being chosen for the destination — get the same treatment
- * as the process-wide passphrase without pulling gcr in themselves.
- *
- * Returns: (nullable): a newly allocated copy, %NULL for a %NULL or empty
- *          @passphrase; free it with g_paste_storage_passphrase_free()
- */
-G_PASTE_VISIBLE gchar *
+/* Copy a passphrase into gcr secure (non-pageable) memory. NULL for a NULL or
+ * empty one; free it with g_paste_storage_passphrase_free(). */
+static gchar *
 g_paste_storage_passphrase_dup (const gchar *passphrase)
 {
     return (passphrase && *passphrase) ? gcr_secure_memory_strdup (passphrase) : NULL;
 }
 
-/**
- * g_paste_storage_passphrase_free:
- * @passphrase: (nullable): a passphrase from g_paste_storage_passphrase_dup()
- *
- * Wipe and release a passphrase copy.
- */
-G_PASTE_VISIBLE void
+/* Wipe and release a passphrase copy. */
+static void
 g_paste_storage_passphrase_free (gchar *passphrase)
 {
     gcr_secure_memory_strfree (passphrase);

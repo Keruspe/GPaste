@@ -40,7 +40,6 @@ void g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
 void g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
                                              GdkTexture           *texture);
 
-GtkInscription *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
 
 GtkWidget *g_paste_ui_item_skeleton_new (GType           type,
                                          GPasteClient   *client,

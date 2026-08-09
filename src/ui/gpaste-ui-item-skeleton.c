@@ -262,24 +262,6 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
     return TRUE;
 }
 
-/**
- * g_paste_ui_item_skeleton_get_label:
- * @self: a #GPasteUiItemSkeleton
- *
- * Get the item's label
- *
- * Returns: (transfer none): the label
- */
-G_PASTE_VISIBLE GtkInscription *
-g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self), NULL);
-
-    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
-
-    return priv->label;
-}
-
 static void
 add_action (gpointer data,
             gpointer user_data)

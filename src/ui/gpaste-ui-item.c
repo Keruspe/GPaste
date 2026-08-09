@@ -233,24 +233,6 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
         g_paste_client_get_element_at_index (self->client, self->index, g_paste_ui_item_on_item_ready, async_callback_data_new (self));
 }
 
-/**
- * g_paste_ui_item_refresh:
- * @self: a #GPasteUiItem instance
- *
- * Refresh the item
- */
-G_PASTE_VISIBLE void
-g_paste_ui_item_refresh (GPasteUiItem *self)
-{
-    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
-
-    /* What this row shows is being redefined, so the fill already in flight is
-     * stale too: it would otherwise land after ours and restore the old text. */
-    ++self->generation;
-
-    g_paste_ui_item_reset_text (self);
-}
-
 static void
 _g_paste_ui_item_set_index (GPasteUiItem *self,
                             guint64       index,

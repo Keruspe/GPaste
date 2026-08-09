@@ -194,63 +194,6 @@ g_paste_util_activate_ui (const gchar *action,
 }
 
 /**
- * g_paste_util_activate_ui_sync:
- * @action: the action to activate
- * @arg: (nullable): the action argument
- * @error: return location for a #GError, or %NULL
- *
- * activate an action from GPaste Ui
- *
- * The action is dispatched over D-Bus, so a failure is a %G_DBUS_ERROR or a
- * %G_IO_ERROR rather than a %G_PASTE_ERROR.
- *
- * Returns: whether the action was successful
- */
-G_PASTE_VISIBLE gboolean
-g_paste_util_activate_ui_sync (const gchar *action,
-                               GVariant    *arg,
-                               GError     **error)
-{
-    g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
-    g_return_val_if_fail (!error || !(*error), FALSE);
-
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                  G_DBUS_PROXY_FLAGS_NONE,
-                                                                  NULL,
-                                                                  "org.gnome.GPaste.Ui",
-                                                                  "/org/gnome/GPaste/Ui",
-                                                                  "org.freedesktop.Application",
-                                                                  NULL,
-                                                                  error);
-
-    if (!proxy)
-        return FALSE;
-
-    g_auto (GVariantBuilder) params;
-
-    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
-
-    if (arg)
-        g_variant_builder_add (&params, "v", arg);
-
-    /* The call's own result is what says whether it worked: @error may be %NULL
-     * (g_paste_util_empty_with_confirmation_sync() forwards its caller's), in
-     * which case there is nothing to look at. */
-    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                       "ActivateAction",
-                                                       g_variant_new ("(sav@a{sv})",
-                                                                      action,
-                                                                      &params,
-                                                                      app_get_platform_data ()),
-                                                       G_DBUS_CALL_FLAGS_NONE,
-                                                       -1,
-                                                       NULL, /* cancellable */
-                                                       error);
-
-    return !!res;
-}
-
-/**
  * g_paste_util_empty_with_confirmation:
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
@@ -272,51 +215,6 @@ g_paste_util_empty_with_confirmation (GPasteClient   *client,
         g_paste_util_activate_ui ("empty", g_variant_new_string (history));
     else
         g_paste_client_empty_history (client, history, NULL, NULL);
-}
-
-/**
- * g_paste_util_empty_with_confirmation_sync:
- * @client: a #GPasteClient instance
- * @settings: a #GPasteSettings instance
- * @history: the name of the history to empty
- * @error: return location for a #GError, or %NULL
- *
- * Empty a history after confirmation.
- * Confirmation is skipped if GPaste is configured to do so.
- *
- * The two paths fail differently: asking for confirmation goes through GPaste
- * Ui (%G_DBUS_ERROR, %G_IO_ERROR), while emptying straight away goes through
- * @client and can also yield a %G_PASTE_ERROR from the daemon.
- *
- * Returns: whether the action was successful
- */
-G_PASTE_VISIBLE gboolean
-g_paste_util_empty_with_confirmation_sync (GPasteClient    *client,
-                                           GPasteSettings  *settings,
-                                           const gchar     *history,
-                                           GError         **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
-    g_return_val_if_fail (g_utf8_validate (history, -1, NULL), FALSE);
-    g_return_val_if_fail (!error || !(*error), FALSE);
-
-    if (g_paste_settings_get_empty_history_confirmation (settings))
-        return g_paste_util_activate_ui_sync ("empty", g_variant_new_string (history), error);
-    else
-    {
-        g_autoptr (GError) _error = NULL;
-
-        g_paste_client_empty_history_sync (client, history, &_error);
-
-        if (error)
-        {
-            *error = _error;
-            _error = NULL;
-        }
-
-        return !_error && !(error && *error);
-    }
 }
 
 /**
@@ -395,38 +293,8 @@ g_paste_util_has_gnome_shell (void)
     return !!schema;
 }
 
-/**
- * g_paste_util_get_dbus_au_result:
- * @variant: a #GVariant
- * @len: the length of the resulting array
- *
- * Get the "au" GVariant as an array of guint32
- *
- * Returns: (array length=len): The resulting array
- */
-G_PASTE_VISIBLE guint32 *
-g_paste_util_get_dbus_au_result (GVariant *variant,
-                                 guint64  *len)
-{
-    gsize _len;
-    const guint32 *r = g_variant_get_fixed_array (variant, &_len, sizeof (guint32));
-    guint32 *ret = g_memdup2 (r, _len * sizeof (guint32));
-
-    if (len)
-        *len = _len;
-
-    return ret;
-}
-
-/**
- * g_paste_util_get_dbus_item_result:
- * @variant: a #GVariant
- *
- * Get the "(ss)" GVariant as an item
- *
- * Returns: (transfer full): The item
- */
-G_PASTE_VISIBLE GPasteClientItem *
+/* Turn a "(ss)" GVariant into an item. */
+static GPasteClientItem *
 g_paste_util_get_dbus_item_result (GVariant *variant)
 {
     const gchar *uuid, *value;
