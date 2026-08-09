@@ -17,9 +17,58 @@ struct _GPasteUiItem
     guint64         index;
     gboolean        fake_index;
     gchar          *uuid;
+
+    /* Bumped on every (re)binding. GtkListView recycles row widgets, so a reply
+     * for a previous binding must be dropped rather than overwrite the content
+     * the widget has since been rebound to. */
+    guint64         generation;
 };
 
 G_PASTE_DEFINE_TYPE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
+
+/* Carried by every step of the fill chain. @self is owned: the widget's only
+ * owner is the list item, so a row recycled or a window closed mid-flight would
+ * otherwise finalize it before the reply lands. */
+typedef struct
+{
+    GPasteUiItem *self;
+    guint64       generation;
+} AsyncCallbackData;
+
+static void
+async_callback_data_free (AsyncCallbackData *data)
+{
+    g_object_unref (data->self);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (AsyncCallbackData, async_callback_data_free)
+
+/* Whether the reply @data was made for is still the one @self is waiting on.
+ *
+ * The ref @data holds keeps the widget allocated, not alive: dispose() may
+ * already have cleared the client the call was made on, and calling its
+ * _finish() would be calling it on %NULL. So this is asked before touching the
+ * result at all, not after. */
+static gboolean
+g_paste_ui_item_still_wants (GPasteUiItem      *self,
+                             AsyncCallbackData *data)
+{
+    return self->client && data->generation == self->generation;
+}
+
+/* Only ever called while @self's generation is the current one — every step of
+ * the chain bails before continuing it — so the new data inherits it. */
+static AsyncCallbackData *
+async_callback_data_new (GPasteUiItem *self)
+{
+    AsyncCallbackData *data = g_new (AsyncCallbackData, 1);
+
+    data->self = g_object_ref (self);
+    data->generation = self->generation;
+
+    return data;
+}
 
 /**
  * g_paste_ui_item_get_uuid:
@@ -66,7 +115,12 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
                                 GAsyncResult *res,
                                 gpointer      user_data)
 {
-    g_autoptr (GPasteUiItem) self = user_data;
+    g_autoptr (AsyncCallbackData) data = user_data;
+    GPasteUiItem *self = data->self;
+
+    if (!g_paste_ui_item_still_wants (self, data))
+        return;
+
     g_autoptr (GError) error = NULL;
     g_autoptr (GdkTexture) texture = g_paste_gtk_util_get_image_finish (self->client, res, &error);
 
@@ -84,7 +138,12 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    g_autoptr (GPasteUiItem) self = user_data;
+    g_autoptr (AsyncCallbackData) data = user_data;
+    GPasteUiItem *self = data->self;
+
+    if (!g_paste_ui_item_still_wants (self, data))
+        return;
+
     g_autoptr (GError) error = NULL;
     GPasteItemKind kind = g_paste_client_get_element_kind_finish (self->client, res, &error);
 
@@ -97,7 +156,7 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
     g_paste_ui_item_skeleton_set_uploadable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
-        g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, g_object_ref (self));
+        g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
     else
         g_paste_ui_item_skeleton_set_thumbnail (sk, NULL);
 }
@@ -112,7 +171,7 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
     g_autofree gchar *oneline = g_strdelimit (g_strdup (txt), "\n\t", ' ');
 
     g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), self->index, self->uuid);
-    g_paste_client_get_element_kind (self->client, self->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));
+    g_paste_client_get_element_kind (self->client, self->uuid, g_paste_ui_item_on_kind_ready, async_callback_data_new (self));
 
     if (!self->index)
         g_paste_ui_item_skeleton_set_text_bold (G_PASTE_UI_ITEM_SKELETON (self), oneline);
@@ -125,7 +184,12 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    g_autoptr (GPasteUiItem) self = user_data;
+    g_autoptr (AsyncCallbackData) data = user_data;
+    GPasteUiItem *self = data->self;
+
+    if (!g_paste_ui_item_still_wants (self, data))
+        return;
+
     g_autoptr (GError) error = NULL;
     g_autofree gchar *txt = g_paste_client_get_element_finish (self->client, res, &error);
 
@@ -140,7 +204,12 @@ g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    g_autoptr (GPasteUiItem) self = user_data;
+    g_autoptr (AsyncCallbackData) data = user_data;
+    GPasteUiItem *self = data->self;
+
+    if (!g_paste_ui_item_still_wants (self, data))
+        return;
+
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClientItem) txt = g_paste_client_get_element_at_index_finish (self->client, res, &error);
 
@@ -158,9 +227,9 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     if (self->fake_index)
-        g_paste_client_get_element (self->client, self->uuid, g_paste_ui_item_on_text_ready, g_object_ref (self));
+        g_paste_client_get_element (self->client, self->uuid, g_paste_ui_item_on_text_ready, async_callback_data_new (self));
     else
-        g_paste_client_get_element_at_index (self->client, self->index, g_paste_ui_item_on_item_ready, g_object_ref (self));
+        g_paste_client_get_element_at_index (self->client, self->index, g_paste_ui_item_on_item_ready, async_callback_data_new (self));
 }
 
 /**
@@ -174,6 +243,10 @@ g_paste_ui_item_refresh (GPasteUiItem *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
+    /* What this row shows is being redefined, so the fill already in flight is
+     * stale too: it would otherwise land after ours and restore the old text. */
+    ++self->generation;
+
     g_paste_ui_item_reset_text (self);
 }
 
@@ -182,16 +255,19 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
                             guint64       index,
                             gboolean      fake_index)
 {
+    ++self->generation;
+
     self->index = index;
     self->fake_index = fake_index;
 
+    /* The list view shows exactly the rows the model holds, so an unbound one is
+     * simply not on screen — there is nothing to hide. Drop its uuid, though: a
+     * recycled row must not be activatable — or, in merge mode, pickable — as
+     * the item it used to display. */
     if (index != (guint64) -1)
-    {
         g_paste_ui_item_reset_text (self);
-        gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
-    }
-    else if (self->uuid)
-        gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
+    else
+        g_clear_pointer (&self->uuid, g_free);
 }
 
 /**

@@ -1,6 +1,7 @@
 gpaste_ui_sources = [
   'gpaste-ui-edit-item.c',
   'gpaste-ui-header.c',
+  'gpaste-ui-history-model.c',
   'gpaste-ui-history.c',
   'gpaste-ui-item-action.c',
   'gpaste-ui-item-skeleton.c',
@@ -19,6 +20,7 @@ gpaste_ui_sources = [
 gpaste_ui_headers = [
   'gpaste-ui-edit-item.h',
   'gpaste-ui-header.h',
+  'gpaste-ui-history-model.h',
   'gpaste-ui-history.h',
   'gpaste-ui-item-action.h',
   'gpaste-ui-item-skeleton.h',

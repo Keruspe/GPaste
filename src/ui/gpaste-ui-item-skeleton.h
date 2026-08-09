@@ -16,15 +16,13 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_ITEM_SKELETON (g_paste_ui_item_skeleton_get_type ())
 
-G_PASTE_DERIVABLE_TYPE (UiItemSkeleton, ui_item_skeleton, UI_ITEM_SKELETON, GtkListBoxRow)
+G_PASTE_DERIVABLE_TYPE (UiItemSkeleton, ui_item_skeleton, UI_ITEM_SKELETON, GtkBox)
 
 struct _GPasteUiItemSkeletonClass
 {
-    GtkListBoxRowClass parent_class;
+    GtkBoxClass parent_class;
 };
 
-void g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
-                                               gboolean              activatable);
 void g_paste_ui_item_skeleton_set_editable    (GPasteUiItemSkeleton *self,
                                                gboolean              editable);
 void g_paste_ui_item_skeleton_set_uploadable  (GPasteUiItemSkeleton *self,

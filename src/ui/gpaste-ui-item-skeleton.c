@@ -26,7 +26,7 @@ typedef struct
     gboolean        uploadable;
 } GPasteUiItemSkeletonPrivate;
 
-G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemSkeleton, ui_item_skeleton, GTK_TYPE_LIST_BOX_ROW)
+G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemSkeleton, ui_item_skeleton, GTK_TYPE_BOX)
 
 static void
 g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
@@ -59,42 +59,6 @@ g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
     }
 
     gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), has_image && g_paste_settings_get_images_preview (settings));
-}
-
-static void
-action_set_activatable (gpointer data,
-                        gpointer user_data)
-{
-    GtkWidget *w = data;
-    gboolean *a = user_data;
-
-    gtk_widget_set_sensitive (w, *a);
-}
-
-/**
- * g_paste_ui_item_skeleton_set_activatable:
- * @self: the #GPasteUiItemSkeleton instance
- * @activatable: whether the item should now be activatable or not
- *
- * Mark the item as being activatable or not
- */
-G_PASTE_VISIBLE void
-g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
-                                          gboolean              activatable)
-{
-    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
-
-    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
-
-    gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), activatable);
-    gtk_widget_set_sensitive (GTK_WIDGET (priv->label), activatable);
-
-    g_slist_foreach (priv->actions, action_set_activatable, &activatable);
-
-    if (priv->edit)
-        gtk_widget_set_sensitive (priv->edit, activatable && priv->editable);
-    if (priv->upload)
-        gtk_widget_set_sensitive (priv->upload, activatable && priv->uploadable);
 }
 
 /**
@@ -385,8 +349,12 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     gtk_inscription_set_text_overflow (priv->label, GTK_INSCRIPTION_OVERFLOW_ELLIPSIZE_END);
     gtk_inscription_set_xalign (priv->label, 0.0);
 
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+    /* The skeleton is the row's own box: GtkListView wraps the factory widget in
+     * its own GtkListItem, so there is nothing to nest inside here. */
+    GtkWidget *hbox = GTK_WIDGET (self);
     priv->hbox = hbox;
+    gtk_orientable_set_orientation (GTK_ORIENTABLE (self), GTK_ORIENTATION_HORIZONTAL);
+    gtk_box_set_spacing (GTK_BOX (self), 2);
     gtk_widget_set_margin_start (hbox, 6);
     gtk_widget_set_margin_end (hbox, 6);
 
@@ -412,8 +380,6 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
 
     gtk_box_append (GTK_BOX (thumbnail_container), thumbnail);
     gtk_box_append (GTK_BOX (hbox), thumbnail_container);
-
-    gtk_list_box_row_set_child (GTK_LIST_BOX_ROW (self), hbox);
 }
 
 /**
@@ -439,7 +405,7 @@ g_paste_ui_item_skeleton_new (GType           type,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_object_new (type, "selectable", FALSE, NULL);
+    GtkWidget *self = g_object_new (type, NULL);
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (self));
     GtkWidget *edit = g_paste_ui_edit_item_new (client, rootwin);
     GtkWidget *upload = g_paste_ui_item_action_new_simple (client, "document-send-symbolic", _("Upload"), upload_item_action);

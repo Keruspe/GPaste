@@ -7,6 +7,7 @@
 #include <adwaita.h>
 
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-history-model.h>
 #include <gpaste-ui-item.h>
 
 struct _GPasteUiHistory
@@ -17,24 +18,24 @@ struct _GPasteUiHistory
     GPasteSettings *settings;
     GPasteUiPanel  *panel;
 
-    AdwStatusPage      *status_page;
-    GtkScrolledWindow  *scroll;
-    GtkListBox         *list_box;
+    AdwStatusPage        *status_page;
+    GtkScrolledWindow    *scroll;
+    GtkListView          *list_view;
+    GPasteUiHistoryModel *model;
+    GtkSelectionModel    *selection_model; /* borrowed: the list view owns it */
 
     GtkWindow      *rootwin;
 
-    GSList         *items;
-    guint64         size;       /* number of item widgets currently allocated */
+    guint64         size;       /* number of rows currently in the model */
     guint64         limit;      /* how many items we currently allow on screen; grows lazily */
     guint64         available;  /* last known total size of the history */
     gboolean        loading;    /* a lazy-growth refresh is in flight */
     guint64         display_generation; /* bumped per refresh and per search; stale callbacks bail */
     gboolean        selection_mode; /* merge mode: rows are multi-selectable */
-    GPtrArray      *selection;       /* selected uuids, in the order they were picked */
+    GArray         *selection;       /* selected positions, in the order they were picked */
     gint32          item_height;
 
     gchar          *search;
-    GStrv           search_results;
 };
 
 enum
@@ -76,48 +77,89 @@ g_paste_ui_history_show_list (GPasteUiHistory *self)
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), TRUE);
 }
 
+/* In merge mode a plain click should toggle that one row, where the list view
+ * would otherwise replace the whole selection, so claim the press before its own
+ * gesture runs. The gesture lives on the row widget, which its #GtkListItem owns
+ * and outlives, so the list item can be borrowed to ask where the row sits. */
 static void
-on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
-                  GtkListBoxRow *row)
+on_row_pressed (GtkGestureClick *gesture,
+                gint             n_press G_GNUC_UNUSED,
+                gdouble          x       G_GNUC_UNUSED,
+                gdouble          y       G_GNUC_UNUSED,
+                gpointer         user_data)
 {
-    g_paste_ui_item_activate (G_PASTE_UI_ITEM (row));
+    GPasteUiHistory *self = user_data;
+
+    if (!self->selection_mode || !self->selection_model)
+        return;
+
+    GtkListItem *list_item = g_object_get_data (G_OBJECT (gesture), "gpaste-list-item");
+    guint position = gtk_list_item_get_position (list_item);
+
+    if (position == GTK_INVALID_LIST_POSITION)
+        return;
+
+    gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+
+    if (gtk_selection_model_is_selected (self->selection_model, position))
+        gtk_selection_model_unselect_item (self->selection_model, position);
+    else
+        gtk_selection_model_select_item (self->selection_model, position, FALSE);
+}
+
+/* The list view recycles a small pool of row widgets: "setup" builds one empty
+ * row, "bind" points it at the model item it should display (which kicks off the
+ * async fetch of its content), and "unbind" clears it so a fetch from the
+ * previous binding cannot land on the reused widget. */
+static void
+g_paste_ui_history_setup_item (GtkListItemFactory *factory G_GNUC_UNUSED,
+                               GtkListItem        *list_item,
+                               gpointer            user_data)
+{
+    GPasteUiHistory *self = user_data;
+    GtkWidget *item = g_paste_ui_item_new (self->client, self->settings, self->rootwin, (guint64) -1);
+    GtkGesture *gesture = gtk_gesture_click_new ();
+
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_CAPTURE);
+    g_object_set_data (G_OBJECT (gesture), "gpaste-list-item", list_item);
+    g_signal_connect_object (gesture, "pressed", G_CALLBACK (on_row_pressed), self, 0);
+    gtk_widget_add_controller (item, GTK_EVENT_CONTROLLER (gesture));
+
+    gtk_list_item_set_child (list_item, item);
 }
 
 static void
-g_paste_ui_history_add_item (gpointer data,
-                             gpointer user_data)
+g_paste_ui_history_bind_item (GtkListItemFactory *factory G_GNUC_UNUSED,
+                              GtkListItem        *list_item,
+                              gpointer            user_data G_GNUC_UNUSED)
 {
-    GtkListBox *list_box = user_data;
-    GtkWidget *item = data;
+    GPasteUiHistoryItem *model_item = gtk_list_item_get_item (list_item);
+    GtkWidget *widget = gtk_list_item_get_child (list_item);
+    const gchar *uuid = g_paste_ui_history_item_get_uuid (model_item);
 
-    g_object_ref (item);
-    gtk_list_box_append (list_box, item);
+    g_paste_ui_history_item_set_widget (model_item, widget);
+
+    /* A search row knows its uuid; a positional one's history index is simply
+     * where it sits, so there is no second copy of it to go stale. */
+    if (uuid)
+        g_paste_ui_item_set_uuid (G_PASTE_UI_ITEM (widget), uuid);
+    else
+        g_paste_ui_item_set_index (G_PASTE_UI_ITEM (widget), gtk_list_item_get_position (list_item));
 }
 
 static void
-g_paste_ui_history_add_list (GtkListBox *list_box,
-                             GSList     *list)
+g_paste_ui_history_unbind_item (GtkListItemFactory *factory G_GNUC_UNUSED,
+                                GtkListItem        *list_item,
+                                gpointer            user_data G_GNUC_UNUSED)
 {
-    g_slist_foreach (list, g_paste_ui_history_add_item, list_box);
-}
+    GPasteUiHistoryItem *model_item = gtk_list_item_get_item (list_item);
+    GtkWidget *widget = gtk_list_item_get_child (list_item);
 
-static void
-g_paste_ui_history_remove (gpointer data,
-                           gpointer user_data)
-{
-    GtkWidget *item = data;
-    GtkListBox *list_box = user_data;
+    if (model_item)
+        g_paste_ui_history_item_set_widget (model_item, NULL);
 
-    gtk_list_box_remove (list_box, item);
-    g_object_unref (item);
-}
-
-static void
-g_paste_ui_history_drop_list (GtkListBox *list_box,
-                              GSList     *list)
-{
-    g_slist_foreach (list, g_paste_ui_history_remove, list_box);
-    g_slist_free (list);
+    /* Clears the row, and invalidates whatever this binding left in flight. */
+    g_paste_ui_item_set_index (G_PASTE_UI_ITEM (widget), (guint64) -1);
 }
 
 static void g_paste_ui_history_refresh (GPasteUiHistory *self,
@@ -202,11 +244,20 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (cdata->generation != self->display_generation)
         return;
 
+    g_autoptr (GError) error = NULL;
     guint64 old_size = self->size;
-    guint64 refreshTextBound = old_size;
-    guint64 new_size = g_paste_client_get_history_size_finish (self->client, res, NULL);
+    guint64 new_size = g_paste_client_get_history_size_finish (self->client, res, &error);
 
     self->loading = FALSE;
+
+    /* A failed size reads back as 0, which would blank the list and tell the
+     * panel the history is empty. Keep showing what is there instead. */
+    if (error)
+    {
+        g_warning ("Could not get the size of history \"%s\": %s", cdata->name, error->message);
+        return;
+    }
+
     self->available = new_size;
     /* Never keep a display limit larger than what the history can fill: when it
      * shrinks (items removed, emptied, or a smaller history selected), drop back
@@ -222,45 +273,16 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     g_paste_ui_panel_update_history_length (self->panel, cdata->name, new_size);
 
-    if (old_size < self->size)
-    {
-        for (guint64 i = old_size; i < self->size; ++i)
-        {
-            GtkWidget *item = g_paste_ui_item_new (self->client, self->settings, self->rootwin, i);
-            /* Rows loaded while in merge mode must be selectable like the rest. */
-            gtk_list_box_row_set_selectable (GTK_LIST_BOX_ROW (item), self->selection_mode);
-            gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (item), !self->selection_mode);
-            self->items = g_slist_append (self->items, item);
-        }
-        g_paste_ui_history_add_list (self->list_box, g_slist_nth (self->items, old_size));
-        refreshTextBound = old_size;
-    }
-    else if (old_size > self->size)
-    {
-        if (self->size)
-        {
-            GSList *last = g_slist_nth (self->items, self->size - 1);
-            g_return_if_fail (last);
-            g_paste_ui_history_drop_list (self->list_box, g_slist_next (last));
-            last->next = NULL;
-        }
-        else
-        {
-            g_paste_ui_history_drop_list (self->list_box, self->items);
-            self->items = NULL;
-        }
-        refreshTextBound = self->size;
-    }
+    gboolean rebuilt = g_paste_ui_history_model_set_size (self->model, self->size);
 
-    GSList *item = self->items;
+    /* The rows the resize just added or dropped are already accounted for. The
+     * ones that survive it keep their positions but not necessarily their
+     * contents — history entries shift as one is added or removed — so those
+     * from @from_index on have to refetch. */
+    guint64 kept = MIN (old_size, self->size);
 
-    for (guint64 i = 0; i < cdata->from_index; ++i)
-        item = g_slist_next (item);
-    for (guint64 i = cdata->from_index; i < refreshTextBound && item; ++i, item = g_slist_next (item))
-        g_paste_ui_item_set_index (item->data, i);
-
-    if (!self->item_height && self->items)
-        gtk_widget_measure (GTK_WIDGET (self->items->data), GTK_ORIENTATION_VERTICAL, -1, NULL, &self->item_height, NULL, NULL);
+    if (!rebuilt && cdata->from_index < kept)
+        g_paste_ui_history_model_invalidate (self->model, cdata->from_index, kept - cdata->from_index);
 }
 
 static void
@@ -279,7 +301,22 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    cdata->name = g_paste_client_get_history_name_finish (self->client, res, NULL);
+    g_autoptr (GError) error = NULL;
+
+    cdata->name = g_paste_client_get_history_name_finish (self->client, res, &error);
+
+    /* No name, no history to size: the daemon went away mid-refresh (a re-exec
+     * after an upgrade is the usual way). Passing the %NULL on would build the
+     * next call as g_variant_new ("(s)", NULL). */
+    if (!cdata->name)
+    {
+        g_warning ("Could not get the history name: %s", error->message);
+        /* This refresh is still the current one (checked above), so it owns the
+         * flag: leaving it set would wedge lazy growth for good. */
+        self->loading = FALSE;
+        display_callback_data_free (cdata);
+        return;
+    }
 
     g_paste_client_get_history_size (self->client, cdata->name, g_paste_ui_history_refresh_history, cdata);
 }
@@ -324,13 +361,20 @@ g_paste_ui_history_on_adjustment_changed (GtkAdjustment *adjustment,
 {
     GPasteUiHistory *self = user_data;
     gdouble page = gtk_adjustment_get_page_size (adjustment);
+    gdouble upper = gtk_adjustment_get_upper (adjustment);
+
+    /* The list view owns the rows, so ask the laid-out content how tall one is
+     * rather than measuring a widget we do not hold: upper covers every row in
+     * the model, extrapolated from the ones actually realised. */
+    if (upper > 0 && self->size)
+        self->item_height = MAX (1, (gint32) (upper / self->size));
 
     /* Cap eager filling assuming a sane minimum row height, so zero/near-zero
      * height rows can't keep upper <= page forever and load the whole history. */
     guint64 max_fill = (guint64) (page / G_PASTE_UI_HISTORY_MIN_ROW_HEIGHT) + 2;
 
     /* page <= 0 means the viewport is not allocated yet. */
-    if (page > 0 && gtk_adjustment_get_upper (adjustment) <= page &&
+    if (page > 0 && upper <= page &&
         self->size < max_fill && g_paste_ui_history_can_grow (self))
         g_paste_ui_history_grow (self);
 }
@@ -366,28 +410,19 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     if (cdata->generation != self->display_generation)
         return;
 
-    GSList *item = self->items;
-
-    g_set_strv_take (&self->search_results, g_paste_client_search_finish (self->client, res, NULL /* error */));
+    g_auto (GStrv) results = g_paste_client_search_finish (self->client, res, NULL /* error */);
     /* A failed search leaves this NULL, and g_strv_length() has no more patience
      * with that than the daemon side had (c0022cf2). */
-    guint64 search_results_size = (self->search_results) ? g_strv_length (self->search_results) : 0;
+    self->size = (results) ? g_strv_length (results) : 0;
 
-    if (search_results_size)
-    {
+    /* No lazy growth to stage here: the view realises only the rows on screen,
+     * so every match can be listed and each fetches its own content on demand. */
+    g_paste_ui_history_model_set_search (self->model, (const gchar * const *) results);
+
+    if (self->size)
         g_paste_ui_history_show_list (self);
-
-        if (search_results_size > self->size)
-            search_results_size = self->size;
-
-        for (guint64 i = 0; i < search_results_size; ++i, item = g_slist_next (item))
-            g_paste_ui_item_set_uuid (item->data, self->search_results[i]);
-    }
     else
         g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"));
-
-    for (guint64 i = search_results_size; i < self->size; ++i, item = g_slist_next (item))
-        g_paste_ui_item_set_index (item->data, (guint64) -1);
 }
 
 /**
@@ -409,7 +444,6 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     if (g_paste_str_equal (search, ""))
     {
         g_clear_pointer (&self->search, g_free);
-        g_clear_pointer (&self->search_results, g_strfreev);
         g_paste_ui_history_refresh (self, 0);
     }
     else
@@ -417,6 +451,78 @@ g_paste_ui_history_search (GPasteUiHistory *self,
         g_set_str (&self->search, search);
         g_paste_client_search (self->client, search, on_search_ready, display_callback_data_new (self, 0));
     }
+}
+
+static void
+g_paste_ui_history_select_uuid (GPasteUiHistory *self,
+                                const gchar     *uuid)
+{
+    g_paste_client_select (self->client, uuid, NULL, NULL);
+
+    if (g_paste_settings_get_close_on_select (self->settings))
+        gtk_window_close (self->rootwin); /* Exit the application */
+}
+
+static void
+on_activate_element_ready (GObject      *source_object G_GNUC_UNUSED,
+                           GAsyncResult *res,
+                           gpointer      user_data)
+{
+    g_autoptr (GPasteUiHistory) self = user_data;
+
+    if (!self->client)
+        return;
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_finish (self->client, res, &error);
+
+    /* The activation simply does not happen otherwise, which is worth a word:
+     * the user pressed a row and nothing at all moved. */
+    if (!item)
+    {
+        g_warning ("Could not get the item to activate: %s", error->message);
+        return;
+    }
+
+    g_paste_ui_history_select_uuid (self, g_paste_client_item_get_uuid (item));
+}
+
+/* Rows are only realised while they are on screen, so the item to activate may
+ * have no widget to ask: for a search row the model still holds its uuid, and a
+ * positional one is at the index it sits at, which is a round trip away. */
+static gboolean
+g_paste_ui_history_activate_position (GPasteUiHistory *self,
+                                      guint64          position)
+{
+    if (!self->client)
+        return FALSE;
+
+    GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (self->model, position);
+
+    if (!item)
+        return FALSE;
+
+    GtkWidget *widget = g_paste_ui_history_item_get_widget (item);
+
+    if (widget)
+        return g_paste_ui_item_activate (G_PASTE_UI_ITEM (widget));
+
+    const gchar *uuid = g_paste_ui_history_item_get_uuid (item);
+
+    if (uuid)
+        g_paste_ui_history_select_uuid (self, uuid);
+    else
+        g_paste_client_get_element_at_index (self->client, position, on_activate_element_ready, g_object_ref (self));
+
+    return TRUE;
+}
+
+static void
+on_item_activated (GtkListView *list_view G_GNUC_UNUSED,
+                   guint        position,
+                   gpointer     user_data)
+{
+    g_paste_ui_history_activate_position (user_data, position);
 }
 
 /**
@@ -432,10 +538,7 @@ g_paste_ui_history_select_first (GPasteUiHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
 
-    if (!self->items)
-        return FALSE;
-
-    return g_paste_ui_item_activate (self->items->data);
+    return g_paste_ui_history_activate_position (self, 0);
 }
 
 /**
@@ -453,12 +556,7 @@ g_paste_ui_history_activate_index (GPasteUiHistory *self,
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
 
-    GPasteUiItem *item = g_slist_nth_data (self->items, index);
-
-    if (!item)
-        return FALSE;
-
-    return g_paste_ui_item_activate (item);
+    return g_paste_ui_history_activate_position (self, index);
 }
 
 static void
@@ -483,16 +581,13 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
         switch (action)
         {
         case G_PASTE_UPDATE_ACTION_REPLACE:
-        {
-            /* Lazy loading means the changed position may be past the rows we
-             * have materialised (a password renamed deep in the history, say);
-             * there is simply nothing on screen to refresh then. */
-            GPasteUiItem *item = g_slist_nth_data (self->items, position);
-
-            if (item)
-                g_paste_ui_item_refresh (item);
+            /* Positions mean history indices, which the search view does not
+             * list; and lazy loading means the changed one may be past the rows
+             * we hold at all (a password renamed deep in the history, say). The
+             * model shrugs off both: it only reports what it has. */
+            if (!self->search)
+                g_paste_ui_history_model_item_replaced (self->model, position);
             break;
-        }
         case G_PASTE_UPDATE_ACTION_REMOVE:
             refresh = TRUE;
             break;
@@ -508,24 +603,49 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
         g_paste_ui_history_refresh (self, position);
 }
 
+/* Where @position sits in the pick order, or -1 when it is not picked. */
+static gint
+g_paste_ui_history_picked_at (GPasteUiHistory *self,
+                              guint            position)
+{
+    for (guint i = 0; i < self->selection->len; ++i)
+    {
+        if (g_array_index (self->selection, guint, i) == position)
+            return (gint) i;
+    }
+
+    return -1;
+}
+
+/* The selection model tracks which positions are picked; the merge wants them in
+ * the order they were picked, which a #GtkBitset cannot express. So mirror each
+ * change into @selection, which keeps that order.
+ *
+ * Positions, not uuids: a row that is not realised has no widget to read a uuid
+ * off, and select-all over a lazily loaded history picks plenty of those. They
+ * are resolved in one go by g_paste_ui_history_get_selected_uuids (). */
 static void
-on_selected_rows_changed (GtkListBox *list_box G_GNUC_UNUSED,
-                          gpointer    user_data)
+on_selection_changed (GtkSelectionModel *model,
+                      guint              position,
+                      guint              n_items,
+                      gpointer           user_data)
 {
     GPasteUiHistory *self = user_data;
 
+    for (guint i = position; i < position + n_items; ++i)
+    {
+        gint at = g_paste_ui_history_picked_at (self, i);
+
+        if (gtk_selection_model_is_selected (model, i))
+        {
+            if (at < 0)
+                g_array_append_val (self->selection, i);
+        }
+        else if (at >= 0)
+            g_array_remove_index (self->selection, at);
+    }
+
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, self->selection->len);
-}
-
-static void
-apply_selectable (gpointer data,
-                  gpointer user_data)
-{
-    GtkListBoxRow *row = data;
-    const gboolean *on = user_data;
-
-    gtk_list_box_row_set_selectable (row, *on);
-    gtk_list_box_row_set_activatable (row, !*on);
 }
 
 /**
@@ -545,12 +665,24 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
     gboolean changed = (self->selection_mode != selection_mode);
 
     self->selection_mode = selection_mode;
-    g_ptr_array_set_size (self->selection, 0);
+    g_array_set_size (self->selection, 0);
 
-    gtk_list_box_set_selection_mode (self->list_box, selection_mode ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_NONE);
-    g_slist_foreach (self->items, apply_selectable, &selection_mode);
+    /* Selectability is the selection model's to grant, so swap the model rather
+     * than the rows: a #GtkMultiSelection to pick with, a #GtkNoSelection the
+     * rest of the time. Whichever is installed, the list view owns it. */
+    GListModel *model = G_LIST_MODEL (g_object_ref (self->model));
+    g_autoptr (GtkSelectionModel) selection = (selection_mode)
+        ? GTK_SELECTION_MODEL (gtk_multi_selection_new (model))
+        : GTK_SELECTION_MODEL (gtk_no_selection_new (model));
 
-    /* Leaving the mode (GTK_SELECTION_NONE) already cleared the selection. */
+    g_signal_connect_object (selection, "selection-changed", G_CALLBACK (on_selection_changed), self, 0);
+    gtk_list_view_set_model (self->list_view, selection);
+    self->selection_model = selection;
+
+    /* Clicking picks rather than pastes while picking. */
+    gtk_list_view_set_single_click_activate (self->list_view, !selection_mode);
+
+    /* The model that held the old selection is gone with it. */
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, 0u);
 
     if (changed)
@@ -565,7 +697,12 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
  * Collect the uuids of the rows selected in merge mode, in the order they were
  * picked (so the merge keeps that order).
  *
- * Returns: (transfer full): a NULL-terminated array of uuids
+ * Search rows carry their uuid; positional ones are the history index they sit
+ * at, so those are resolved against the history itself -- one round trip for the
+ * whole selection, however much of it was ever on screen.
+ *
+ * Returns: (transfer full) (nullable): a NULL-terminated array of uuids, or
+ *          %NULL if the selection could not be resolved
  */
 GStrv
 g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
@@ -574,58 +711,49 @@ g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), NULL);
     g_return_val_if_fail (length, NULL);
 
+    *length = 0;
+
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    g_autolist (GPasteClientItem) history = NULL;
+    gboolean fetched = FALSE;
 
     for (guint i = 0; i < self->selection->len; ++i)
-        g_strv_builder_add (builder, g_ptr_array_index (self->selection, i));
+    {
+        guint position = g_array_index (self->selection, guint, i);
+        GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (self->model, position);
+        const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
 
-    *length = self->selection->len;
+        if (!uuid)
+        {
+            /* Positional row: its position is its history index. Fetched once,
+             * on the first one that needs it. */
+            if (!fetched)
+            {
+                g_autoptr (GError) error = NULL;
+
+                history = g_paste_client_get_history_sync (self->client, &error);
+                fetched = TRUE;
+
+                if (error)
+                {
+                    g_warning ("Could not read the history to resolve the selection: %s", error->message);
+                    return NULL;
+                }
+            }
+
+            GPasteClientItem *client_item = g_list_nth_data (history, position);
+
+            if (!client_item)
+                continue;
+
+            uuid = g_paste_client_item_get_uuid (client_item);
+        }
+
+        g_strv_builder_add (builder, uuid);
+        ++*length;
+    }
 
     return g_strv_builder_end (builder);
-}
-
-/* In merge mode, a plain click should toggle that row's selection (GtkListBox
- * would otherwise replace the whole selection). Claim the press so the default
- * gesture does not run. */
-static void
-on_row_pressed (GtkGestureClick *gesture,
-                gint             n_press G_GNUC_UNUSED,
-                gdouble          x       G_GNUC_UNUSED,
-                gdouble          y,
-                gpointer         user_data)
-{
-    GPasteUiHistory *self = user_data;
-
-    if (!self->selection_mode)
-        return;
-
-    GtkListBoxRow *row = gtk_list_box_get_row_at_y (self->list_box, (gint) y);
-
-    if (!row)
-        return;
-
-    gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-
-    const gchar *uuid = g_paste_ui_item_get_uuid (G_PASTE_UI_ITEM (row));
-
-    if (gtk_list_box_row_is_selected (row))
-    {
-        for (guint i = 0; uuid && i < self->selection->len; ++i)
-        {
-            if (g_paste_str_equal (g_ptr_array_index (self->selection, i), uuid))
-            {
-                g_ptr_array_remove_index (self->selection, i);
-                break;
-            }
-        }
-        gtk_list_box_unselect_row (self->list_box, row);
-    }
-    else
-    {
-        if (uuid)
-            g_ptr_array_add (self->selection, g_strdup (uuid));
-        gtk_list_box_select_row (self->list_box, row);
-    }
 }
 
 static void
@@ -633,23 +761,23 @@ g_paste_ui_history_dispose (GObject *object)
 {
     GPasteUiHistory *self = G_PASTE_UI_HISTORY (object);
 
-    g_clear_slist (&self->items, g_object_unref);
-    g_clear_pointer (&self->selection, g_ptr_array_unref);
+    g_clear_pointer (&self->selection, g_array_unref);
 
     g_clear_pointer (&self->search, g_free);
-    g_clear_pointer (&self->search_results, g_strfreev);
+    g_clear_object (&self->model);
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
 
     /* All borrowed: the panel and root window outlive us, and chaining up
-     * destroys the children. A callback that survives us checks the client
-     * above, but g_paste_ui_history_refresh_history() also reaches for these,
-     * so leave nothing behind that still looks alive. */
+     * destroys the children (and with them the selection model). A callback that
+     * survives us checks the client above, but g_paste_ui_history_refresh_history()
+     * also reaches for these, so leave nothing behind that still looks alive. */
     self->panel = NULL;
     self->rootwin = NULL;
     self->status_page = NULL;
     self->scroll = NULL;
-    self->list_box = NULL;
+    self->list_view = NULL;
+    self->selection_model = NULL;
 
     G_OBJECT_CLASS (g_paste_ui_history_parent_class)->dispose (object);
 }
@@ -728,7 +856,8 @@ g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 static void
 g_paste_ui_history_init (GPasteUiHistory *self)
 {
-    self->selection = g_ptr_array_new_with_free_func (g_free);
+    self->selection = g_array_new (FALSE, FALSE, sizeof (guint));
+    self->model = g_paste_ui_history_model_new ();
 }
 
 /**
@@ -774,8 +903,15 @@ g_paste_ui_history_new (GPasteClient   *client,
     gtk_widget_set_vexpand (status_page, TRUE);
     gtk_box_append (box, status_page);
 
-    GtkWidget *list_box = gtk_list_box_new ();
-    priv->list_box = GTK_LIST_BOX (list_box);
+    GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
+    g_signal_connect_object (factory, "setup", G_CALLBACK (g_paste_ui_history_setup_item), self, 0);
+    g_signal_connect_object (factory, "bind", G_CALLBACK (g_paste_ui_history_bind_item), self, 0);
+    g_signal_connect_object (factory, "unbind", G_CALLBACK (g_paste_ui_history_unbind_item), self, 0);
+
+    /* The model is installed by set_selection_mode() below, which is what picks
+     * between selectable rows and plain ones. */
+    GtkWidget *list_view = gtk_list_view_new (NULL, factory);
+    priv->list_view = GTK_LIST_VIEW (list_view);
 
     GtkWidget *scroll = gtk_scrolled_window_new ();
     priv->scroll = GTK_SCROLLED_WINDOW (scroll);
@@ -784,7 +920,7 @@ g_paste_ui_history_new (GPasteClient   *client,
     gtk_widget_set_vexpand (scroll, TRUE);
     gtk_widget_set_halign (scroll, GTK_ALIGN_FILL);
     gtk_widget_set_valign (scroll, GTK_ALIGN_FILL);
-    gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), list_box);
+    gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), list_view);
     gtk_widget_set_visible (scroll, FALSE);
     gtk_box_append (box, scroll);
 
@@ -792,15 +928,9 @@ g_paste_ui_history_new (GPasteClient   *client,
     g_signal_connect_object (vadjustment, "changed", G_CALLBACK (g_paste_ui_history_on_adjustment_changed), self, 0);
     g_signal_connect_object (scroll, "edge-reached", G_CALLBACK (g_paste_ui_history_on_edge_reached), self, 0);
 
-    g_signal_connect (list_box, "row-activated", G_CALLBACK (on_row_activated), NULL);
-    g_signal_connect_object (list_box, "selected-rows-changed", G_CALLBACK (on_selected_rows_changed), self, 0);
+    g_signal_connect_object (list_view, "activate", G_CALLBACK (on_item_activated), self, 0);
 
-    /* Toggle-on-click for merge mode; capture phase so it runs before the
-     * list box's own selection gesture. */
-    GtkGesture *select_gesture = gtk_gesture_click_new ();
-    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (select_gesture), GTK_PHASE_CAPTURE);
-    g_signal_connect_object (select_gesture, "pressed", G_CALLBACK (on_row_pressed), self, 0);
-    gtk_widget_add_controller (list_box, GTK_EVENT_CONTROLLER (select_gesture));
+    g_paste_ui_history_set_selection_mode (priv, FALSE);
 
     g_signal_connect_object (client,
                              "update",
