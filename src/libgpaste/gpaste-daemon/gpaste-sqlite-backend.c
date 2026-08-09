@@ -1617,6 +1617,50 @@ g_paste_sqlite_backend_finalize (GObject *object)
     G_OBJECT_CLASS (g_paste_sqlite_backend_parent_class)->finalize (object);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* See the vfunc: only encrypted data this backend's key does not open refutes
+ * the passphrase. No crypto parameters (a corrupt or foreign file) and an empty
+ * history both say nothing -- the latter gets re-keyed on open instead of
+ * locking the user out. */
+static gboolean
+g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
+                                                   const gchar          *name)
+{
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
+    sqlite3 *db = NULL;
+
+    /* Read-only: verification must never create or touch anything. */
+    if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    {
+        sqlite3_close (db);
+        return FALSE;
+    }
+
+    guchar salt[crypto_pwhash_SALTBYTES];
+    guint64 opslimit = 0;
+    guint64 memlimit = 0;
+    g_autofree guchar *check = NULL;
+    gsize check_length = 0;
+
+    if (!g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length))
+    {
+        sqlite3_close (db);
+        return FALSE;
+    }
+
+    const gchar *passphrase = g_paste_sqlite_backend_get_passphrase (self);
+    guchar key[crypto_secretbox_KEYBYTES];
+    gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
+    gboolean checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
+    gboolean has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
+
+    sodium_memzero (key, sizeof (key));
+    sqlite3_close (db);
+
+    return derived && !checks_out && has_data;
+}
+#endif
+
 static void
 g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
 {
@@ -1634,6 +1678,7 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     storage_class->rekey = g_paste_sqlite_backend_rekey;
+    storage_class->history_refutes_passphrase = g_paste_sqlite_backend_history_refutes_passphrase;
 #endif
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_sqlite_backend_finalize;
@@ -1681,79 +1726,4 @@ g_paste_sqlite_backend_new_encrypted (GPasteSettings *settings,
     return self;
 }
 
-/**
- * g_paste_sqlite_backend_passphrase_can_decrypt:
- * @settings: a #GPasteSettings instance
- * @passphrase: the passphrase to check
- *
- * Check whether @passphrase actually unlocks the existing encrypted SQLite
- * history. This guards against accepting a wrong passphrase: the backend would
- * refuse every database and the history would look empty, or worse, an empty
- * one would get re-keyed. Quiet on a mismatch, since re-prompting on a wrong
- * passphrase is an expected flow.
- *
- * Returns: %FALSE only when an encrypted history holding data is present and
- *          @passphrase does not unlock it; %TRUE when it does, or when there is
- *          no real encrypted data on disk to lose
- */
-G_PASTE_VISIBLE gboolean
-g_paste_sqlite_backend_passphrase_can_decrypt (GPasteSettings *settings,
-                                               const gchar    *passphrase)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
-    g_return_val_if_fail (passphrase && *passphrase, FALSE);
-
-    if (sodium_init () < 0)
-        return FALSE;
-
-    g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, passphrase);
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
-
-    for (GStrv name = names; name && *name; ++name)
-    {
-        g_autofree gchar *path = g_paste_util_get_history_file_path (*name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
-        sqlite3 *db = NULL;
-
-        /* Read-only: verification must never create or touch anything. */
-        if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
-        {
-            sqlite3_close (db);
-            continue;
-        }
-
-        guchar salt[crypto_pwhash_SALTBYTES];
-        guint64 opslimit = 0;
-        guint64 memlimit = 0;
-        g_autofree guchar *check = NULL;
-        gsize check_length = 0;
-
-        /* No crypto parameters (a corrupt or foreign file) means no encrypted
-         * data this passphrase could be wrong about. */
-        if (!g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length))
-        {
-            sqlite3_close (db);
-            continue;
-        }
-
-        guchar key[crypto_secretbox_KEYBYTES];
-        gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
-        gboolean checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
-        /* A mismatch only condemns the passphrase when there is data to lose:
-         * an empty history gets re-keyed on open instead. */
-        gboolean has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
-
-        sodium_memzero (key, sizeof (key));
-        sqlite3_close (db);
-
-        /* Keep checking the remaining histories even after a success: with
-         * several .dbs keyed differently (one re-keyed while empty, later
-         * filled), accepting a passphrase that fails another data-holding
-         * history would load that one empty and let its next save overwrite
-         * the real content. */
-        if (!checks_out && derived && has_data)
-            return FALSE;
-    }
-
-    return TRUE;
-}
 #endif

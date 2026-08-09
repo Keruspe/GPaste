@@ -1959,6 +1959,71 @@ test_sqlite_version_guard (void)
 }
 #endif
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Two histories of the same flavor, keyed differently -- the state a rekey that
+ * fails partway through leaves behind, and which the migration warns about by
+ * name. A passphrase that opens one of them but not the other must be refused:
+ * accepting it would load the one it cannot open as empty, and that history's
+ * next save would then destroy the real content. The file backend used to
+ * answer on the first history that opened, so this is its regression test. */
+static void
+test_encrypted_split_keys_refuse_passphrase (void)
+{
+    const struct {
+        GPasteStorage kind;
+        const gchar  *first;
+        const gchar  *second;
+    } flavors[] = {
+        { G_PASTE_STORAGE_ENCRYPTED_FILE, "split-file-a", "split-file-b" },
+#ifdef G_PASTE_ENABLE_SQLITE
+        { G_PASTE_STORAGE_ENCRYPTED_SQLITE, "split-db-a", "split-db-b" },
+#endif
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (flavors); ++i)
+    {
+        const gchar *one = "passphrase one";
+        const gchar *two = "passphrase two";
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        /* Both hold data, so neither can be silently re-keyed on open. */
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("first"));
+
+            g_paste_storage_backend_write_history (backend, flavors[i].first, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("second"));
+
+            g_paste_storage_backend_write_history (backend, flavors[i].second, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        /* Each opens its own and not the other, whichever is enumerated first. */
+        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, one));
+        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
+
+        /* Both must go: every test in this binary shares one XDG_DATA_HOME, and
+         * a pair no single passphrase opens would make every later can_decrypt
+         * refuse -- which is precisely the behaviour under test.
+         *
+         * Not asserted for the same reason: that a passphrase opening
+         * everything is accepted. The scan sees whatever the other tests have
+         * left lying around under their own passphrases. */
+        g_autoptr (GPasteStorageBackend) cleanup_one = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
+        g_autoptr (GPasteStorageBackend) cleanup_two = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
+
+        g_paste_storage_backend_delete_history (cleanup_one, flavors[i].first, NULL);
+        g_paste_storage_backend_delete_history (cleanup_two, flavors[i].second, NULL);
+    }
+}
+#endif
+
 #if defined(G_PASTE_ENABLE_SQLITE) && defined(G_PASTE_ENABLE_ENCRYPTION)
 /* The Argon2 parameters live in the store's own `meta` table, so anything that
  * can write to $XDG_DATA_HOME dictates them. An absurd opslimit would otherwise
@@ -2441,6 +2506,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
     g_test_add_func ("/history/encrypted_rekey", test_encrypted_rekey);
+    g_test_add_func ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history/sqlite_roundtrip", test_sqlite_roundtrip);

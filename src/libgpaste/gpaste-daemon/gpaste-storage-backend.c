@@ -719,23 +719,56 @@ g_paste_storage_get_extension (GPasteStorage storage_kind)
  * the @storage_kind flavor, so a wrong (or stale keyring) passphrase is never
  * accepted and given the chance to overwrite the real data.
  *
- * Returns: %FALSE only when encrypted data is present and @passphrase does not
- *          unlock it
+ * Returns: %FALSE when encrypted data is present and @passphrase does not
+ *          unlock it, and when the histories could not be listed at all -- an
+ *          unverifiable passphrase is refused rather than assumed good
  */
+static GPasteStorageBackend *_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
+                                                                     GPasteSettings *settings,
+                                                                     const gchar    *passphrase);
+
 G_PASTE_VISIBLE gboolean
 g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
                                         GPasteSettings *settings,
                                         const gchar    *passphrase)
 {
-    switch (storage_kind)
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
+    g_return_val_if_fail (passphrase && *passphrase, FALSE);
+
+    g_autoptr (GPasteStorageBackend) backend = _g_paste_storage_backend_new_encrypted (storage_kind, settings, passphrase);
+
+    /* A flavor this build cannot construct stores nothing to be wrong about. */
+    if (!backend)
+        return TRUE;
+
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (backend);
+
+    if (!klass->history_refutes_passphrase)
+        return TRUE;
+
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &error);
+
+    /* Cannot read the store, so nothing refutes the passphrase and nothing
+     * confirms it either. Refuse: the caller either prompts again or keeps the
+     * history closed, where accepting would open it empty over real data. */
+    if (!names)
     {
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-        return g_paste_sqlite_backend_passphrase_can_decrypt (settings, passphrase);
-#endif
-    default:
-        return g_paste_file_backend_passphrase_can_decrypt (settings, passphrase);
+        g_warning ("Could not list the histories to verify the passphrase: %s", error->message);
+        return FALSE;
     }
+
+    /* Every history, not just up to the first that opens: they can be keyed
+     * differently (one re-keyed while empty, then filled), and accepting a
+     * passphrase that fails a data-holding one would load that history empty
+     * and let its next save overwrite the real content. */
+    for (GStrv name = names; name && *name; ++name)
+    {
+        if (klass->history_refutes_passphrase (backend, *name))
+            return FALSE;
+    }
+
+    return TRUE;
 }
 
 /* NULL when this build cannot construct the requested encrypted flavor. */

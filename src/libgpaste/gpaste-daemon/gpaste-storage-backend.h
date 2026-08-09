@@ -41,6 +41,17 @@ struct _GPasteStorageBackendClass
     GStrv                 (*list_histories) (GPasteStorageBackend *self,
                                              GError               **error);
 
+    /*< protected, optional: passphrase verification >*/
+    /* Whether the history called @name proves this backend's passphrase wrong:
+     * it holds encrypted data the backend cannot open. Everything else -- an
+     * empty placeholder, a truncated or foreign file, an I/O error -- is
+     * inconclusive and must answer %FALSE: condemning a passphrase over a
+     * corrupt file tells the user their correct one is wrong.
+     *
+     * Only ever asked of a backend built with the passphrase under test. */
+    gboolean (*history_refutes_passphrase) (GPasteStorageBackend *self,
+                                            const gchar          *name);
+
     /*< protected, optional: re-encrypt an existing history under a new key >*/
     /* @self holds the passphrase the history is currently encrypted with; only
      * the encrypted flavors implement this. Returns %FALSE when @name was left

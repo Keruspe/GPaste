@@ -24,8 +24,6 @@ struct _GPasteFileBackendClass
 GPasteStorageBackend *g_paste_file_backend_new_encrypted (GPasteSettings *settings,
                                                           const gchar    *passphrase);
 
-gboolean g_paste_file_backend_passphrase_can_decrypt (GPasteSettings *settings,
-                                                      const gchar    *passphrase);
 #endif
 
 G_END_DECLS
