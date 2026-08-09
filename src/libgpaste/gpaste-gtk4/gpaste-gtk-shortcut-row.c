@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
-#include <gpaste-keyval.h>
+#include <gpaste-3/gpaste-keyval.h>
 
 enum
 {

@@ -2,7 +2,7 @@
 # library, because both sides need it and a GType may only be registered once in
 # a process — gnome-shell loads libgpaste and libgpaste-daemon at the same time:
 #
-#   - GPasteDaemon2Proxy is what GPasteClient derives from, in this library;
+#   - GPasteDaemon2 is the interface GPasteClient implements, in this library;
 #   - GPasteDaemon2Skeleton is what GPasteDaemon exports, in libgpaste-daemon,
 #     which links this one.
 #

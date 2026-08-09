@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
-#include <gpaste-keyval.h>
+#include <gpaste-3/gpaste-keyval.h>
 
 #include <gtk/gtk.h>
 

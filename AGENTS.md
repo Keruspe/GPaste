@@ -54,7 +54,9 @@ Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
 (add/dedup/size-enforcement/remove/select) against an in-memory `GSettings`
 (`GSETTINGS_BACKEND=memory` + the schema compiled into the build tree) and a
 throwaway `XDG_DATA_HOME`, so they need no display server or dconf. The `eslint`
-test lints the GNOME Shell extension JS.
+test lints the GNOME Shell extension JS, and `completions` checks the shell
+completions and the man page against `gpaste-client`'s own list of verbs. None
+of the three needs a session bus.
 
 ## Code style
 
@@ -71,7 +73,7 @@ test lints the GNOME Shell extension JS.
 
 ### D-Bus
 
-Every interface GPaste speaks is described by an XML file that `gdbus-codegen` turns into both halves of the wire. Nothing hand-marshals a `GVariant` for a method or a signal any more.
+Every interface GPaste speaks is described by an XML file that `gdbus-codegen` turns into both halves of the wire. No method hand-marshals a `GVariant` any more. One place still does: `g_paste_client_g_signal()` unpacks the incoming signals by hand, because `GPasteClient` implements the interface rather than deriving from the generated proxy (below) and so never gets the proxy's own demarshalling.
 
 - **The XML is the source of truth.** `data/dbus/org.gnome.GPaste2.xml` is the daemon's own interface; it is installed to `$datadir/dbus-1/interfaces` (path from `dbus-1.pc`'s `interfaces_dir`, overridable with `-Ddbus-interfaces-dir`) so anything can read the contract without building GPaste. `src/libgpaste/gpaste-daemon/org.gnome.Shell.SearchProvider2.xml` is gnome-shell's interface, kept only to feed codegen and deliberately **not** installed — gnome-shell ships the authoritative copy.
 - **The generated code is internal.** It is produced by `gnome.gdbus_codegen()` from `src/libgpaste/gpaste-3/meson.build` and `src/libgpaste/gpaste-daemon/meson.build`, which exist only so the output lands in those subdirectories and the `<gpaste-3/…>` include style keeps working. It is never installed and never introspected: `GPasteClient` is the whole public story and is hand-written. Confirm with `grep -c Daemon2 build/src/libgpaste/GPaste-3.gir` — it must stay `0`.
@@ -81,7 +83,8 @@ Every interface GPaste speaks is described by an XML file that `gdbus-codegen` t
 - **`GPasteClient` implements `GPasteDaemon2` rather than deriving from the generated proxy.** Deriving would drag the generated class struct into the installed `gpaste-client.h`; implementing the interface is what makes `g_paste_daemon2_call_*()` usable while the public header, the GIR and the VAPI stay exactly as they were. It therefore overrides the interface's `Active` and `Version` properties (`g_paste_daemon2_override_properties`) and keeps its own `g_signal`/`g_properties_changed` handlers, which turn the wire signals into GPaste's richer ones.
 - **The interface's signals carry `Raw*` C names.** That is not decoration: without it the generated `update`, `delete-history`, … would collide with the identically named signals `GPasteClient` declares itself. The daemon emits them with `g_paste_daemon2_emit_raw_*()`.
 - **`ay` needs `org.gtk.GDBus.C.ForceGVariant`.** The default mapping for a byte array is a C bytestring, which stops at the first NUL — that would truncate every PNG `GetImage` returns. The annotation is load-bearing; do not drop it.
-- **Handler signatures are not checked by the compiler.** `g_signal_connect_swapped (skeleton, "handle-x", G_CALLBACK (…), self)` erases the prototype, so a handler whose arguments do not match the generated `handle_x` vfunc is undefined behaviour at runtime, not a build error. When adding or changing a method, compare the handler against `struct _GPasteDaemon2Iface` in the generated header by hand.
+- **Handler signatures are not checked by the compiler.** `g_signal_connect_swapped (skeleton, "handle-x", G_CALLBACK (…), self)` erases the prototype, so a handler whose arguments do not match the generated `handle_x` vfunc is undefined behaviour at runtime, not a build error. When adding or changing a method, compare the handler against `struct _GPasteDaemon2Iface` in the generated header by hand. The `G_PASTE_DAEMON_HANDLER*` macros in `gpaste-daemon.c` are what keep that to four places instead of thirty-three.
+- **The three flavours of a client method are generated, and so are the handlers.** A method reaches the daemon as `g_paste_client_x_sync()`, `g_paste_client_x()` and `g_paste_client_x_finish()`, and comes back through one handler; both ends are written from macros — `G_PASTE_CLIENT_METHOD*` in `gpaste-client.c`, `G_PASTE_DAEMON_HANDLER*` in `gpaste-daemon.c` — with the signature and the forwarded arguments passed as parenthesized lists and `ARGLIST` supplying the comma that vanishes for a method with no arguments of its own. **The gtk-doc block goes above the invocation**: g-ir-scanner matches a block to a symbol by the name on its first line, not by what follows it, which is the same trick `gpaste-settings.c` uses for its accessors. Add a method by adding an invocation; only reach for a hand-written body when there is genuinely one (a relative path to resolve, two out parameters, a precondition of its own).
 
 ### Documenting errors
 
@@ -104,7 +107,7 @@ The `src/gnome-shell/` extension follows upstream GNOME Shell's JS conventions, 
 - This tooling applies **only** to the JavaScript code; it does not affect the C/meson sources.
 
 Code conventions (also following upstream):
-- **Don't version-pin core `gi://` imports** — write `gi://GObject`, `gi://GLib`, `gi://Gio`, `gi://Pango`, `gi://Clutter`, `gi://St`. Only pin typelibs that genuinely ship multiple versions: `gi://GPaste?version=2`, `gi://GPasteDaemon?version=1`, `gi://GPasteGtk?version=4`.
+- **Don't version-pin core `gi://` imports** — write `gi://GObject`, `gi://GLib`, `gi://Gio`, `gi://Pango`, `gi://Clutter`, `gi://St`. Only pin typelibs that genuinely ship multiple versions: `gi://GPaste?version=3`, `gi://GPasteDaemon?version=1`, `gi://GPasteGtk?version=4`.
 - **Manage signal lifecycles with `connectObject`/`disconnectObject`** (owner = `this`) for connections to long-lived non-actor GObjects (settings, the `GPaste.Client`), rather than tracking handler ids and disconnecting them by hand. They auto-disconnect when the owner actor is destroyed.
 - **Use a standard `constructor()` (calling `super(...)`) in `GObject.registerClass` classes**, not `_init()`/`super._init()`. GJS bridges to the `_init()`-based shell/St/Clutter base classes transparently (positional args like `super(0.0, 'GPaste')` and property dicts like `super({...})` both work).
 
@@ -143,9 +146,33 @@ Key rules:
 - Build NULL-terminated string vectors with `GStrvBuilder` (`g_strv_builder_add` for borrowed strings, `g_strv_builder_take` for owned ones, `g_strv_builder_end` to get the `GStrv`) rather than hand-managing a `GPtrArray` + manual `NULL` terminator + `(GStrv) ->pdata` cast. It also avoids the deep `g_strdupv` copy that returning a `GPtrArray`'s contents requires.
 - Prefer `g_signal_connect_object (source, sig, cb, gobject, 0)` over plain `g_signal_connect` when the handler's data is a **GObject** shorter-lived than the signal source and you would otherwise not disconnect — it auto-disconnects when that object is finalized. Do **not** convert sites that pass non-GObject data (a `priv`/struct pointer), pass `NULL` data, or that deliberately disconnect early in `dispose` for ordering reasons (where `g_signal_connect_object` would only disconnect at finalize and regress that ordering).
 
+## Single sources of truth
+
+Four lists in this tree used to exist in several copies and drift apart. Each is
+now written down once; add to the list, not to its consumers.
+
+| List | Lives in | Drives |
+|---|---|---|
+| The keyboard shortcuts | `G_PASTE_FOR_EACH_KEYBINDING` in `gpaste-3/gpaste-keybindings.h` | the shortcuts dialog, the preferences' shortcuts page, and `data/control-center/42-gpaste.xml`, generated at build time by `tools/gen-keybindings-xml.py` |
+| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, and `show_help()`, printed straight from it |
+| A `GPasteItem`'s kind | `GPasteItemKind` in `gpaste-3/gpaste-item-enums.h` | the item classes, both storage backends and the wire, through `g_paste_item_kind_to_string()` / `_from_string()` |
+| The D-Bus methods | `data/dbus/org.gnome.GPaste2.xml` | both halves of the wire, via gdbus-codegen |
+
+The shell completions and the man page are the exception: each verb completes
+its arguments differently and the man page says more than a table could carry,
+so they stay hand-written and `tests/completions` checks them against
+`commands[]` instead — every verb and alias has to be offered by all three
+shells and every canonical verb documented in the man page.
+
+An enumeration exposed to a binding needs a GType: `GPasteItemKind`,
+`GPasteStorage` and `GPasteUpdateAction` each register one, which is what lets a
+setting like `storage-backend` be a `g_param_spec_enum` rather than a widened
+integer.
+
 ## Maintenance rules
 
 - A public library function is exported by marking its definition `G_PASTE_VISIBLE` (the libraries build with `gnu_symbol_visibility: 'hidden'`, so anything unmarked stays internal). There are no `.sym` version scripts to maintain; the `G_PASTE_*_TYPE` macros already mark their generated `get_type`. Conditionally-compiled (feature-gated) symbols just need the marker — they export only in configurations where they are compiled.
+- **`G_PASTE_VISIBLE` belongs to the libraries only.** `src/ui/`, `src/client/`, `src/daemon/` and `src/preferences/` build executables, which export nothing; their headers are reached through their own directory and carry no umbrella guard either.
 - When updating source files in this repository, keep `AGENTS.md` up to date to reflect any new patterns, rules, or architectural decisions introduced.
 
 ## Architecture
@@ -158,6 +185,8 @@ The core libraries used by all other components. Two sub-modules:
 
 - `gpaste-3/` → **libgpaste** — daemon-agnostic types: `GPasteClient` (D-Bus client), `GPasteClientItem` (the lightweight item representation transferred over D-Bus), `GPasteSettings` (GSettings wrapper), enums, utilities.
 - `gpaste-gtk4/` → **libgpaste-gtk4** — GTK4 + Adwaita helpers (the preferences widgets).
+
+**All three libraries split their headers into an installed half and an internal one**, and the internal half is what a new header joins unless something outside the library names it. libgpaste-gtk4 installs exactly two types — the preferences dialog and the preferences widget `prefs.js` embeds — while the groups, the shortcut row and the four pages it is built from stay in; its GIR is generated from `libgpaste_gtk4_public_sources` alone, so an internal symbol cannot leak into it. The four pages are plain functions returning an `AdwPreferencesPage`, not types: they carry no state, and both callers build them from one list (`g_paste_gtk_preferences_pages_new()`) so they cannot drift apart.
 
 **The core library's directory carries `apiversion`, so it is renamed on every major bump** (`gpaste-2/` → `gpaste-3/` for this release), and its includes are spelled `<gpaste-3/gpaste-macros.h>`. That is not decoration: the installed headers live at `$prefix/include/gpaste/gpaste-3/` with `-I …/include/gpaste`, and the *same* include text has to resolve both in-tree and against the install prefix, since these are the same files. In-tree it resolves through `include_directories('.')` = `src/libgpaste`. Keeping the two spellings identical is what makes a broken installed header a build failure here rather than a downstream bug report. `gpaste-gtk4/` and `gpaste-daemon/` are named for their library rather than for a version, so they never move.
 
@@ -174,7 +203,7 @@ All three `.pc` files therefore declare `Cflags: -I${includedir}/gpaste` (meson 
 
 **Observing a setting: use `notify::<key>`.** Every setting is a GObject property named exactly like its GSettings key, so `notify::track-changes` *is* the change notification — there is no separate `changed` signal, and `g_object_bind_property()` works directly. `GPasteSettings` emits exactly one signal of its own, **`rebind::<key>`**, and it is not a duplicate: a rebind is an action to take (re-register a keybinding), not a value that changed, and only the keybinding settings carry it. Prefer the detailed form; `notify` undetailed fires for all twenty-nine keys. Note the callback takes a `GParamSpec *`, not the key string.
 
-A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/` and holds the rich clipboard item hierarchy along with the rest of the daemon objects. Each library exports the symbols marked `G_PASTE_VISIBLE` (built with hidden default visibility), and GIR + Vala bindings are generated from it.
+A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/` and holds the rich clipboard item hierarchy along with the rest of the daemon objects, plus the utility helpers nothing outside it calls: `gpaste-daemon-util.h` has the history-path helpers and the file backend's XML escaping, which is why `gpaste-3/gpaste-util.h` no longer declares them (nor includes `gpaste-client.h`). Each library exports the symbols marked `G_PASTE_VISIBLE` (built with hidden default visibility), and GIR + Vala bindings are generated from it.
 
 **The history model is a `GPtrArray` plus a uuid `GHashTable`**, newest first. The array owns a ref per item; the index borrows both halves from it (the key is the item's own uuid string, the value the item the array owns), so the two are always updated together — `g_paste_history_private_remove()` drops the index entry *before* stealing the array's ref, since the key belongs to the item. That is only sound because a uuid never changes once its item is in the history: `g_paste_item_set_uuid()` is called by the storage backends alone, while loading. Positions are *not* indexed — adding prepends, which shifts every position, so a uuid→position map would have to be rewritten on every add; `g_paste_history_private_get_indexed_by_uuid()` scans for it instead, comparing pointers. **`GList` remains the storage layer's interchange type**: `read_history_file`/`write_history_file`, the saver's snapshots and the migration code all still take one, because persisting is a one-shot bulk operation where a list costs nothing. `g_paste_history_snapshot()` and `g_paste_history_private_set_from_list()` are the two conversion points. Note the three ways items leave the history and how they differ: `private_remove(…, TRUE)` disposes of the item *and its backing file*, `private_clear()` swaps a history out with a plain unref (files kept, since the items are only being put away), and `dispose` destroys the containers themselves.
 
@@ -201,7 +230,7 @@ A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/
 The background service. Owns the clipboard history and exposes it over D-Bus (`org.gnome.GPaste`). Almost all of its objects live in the installed, introspectable **libgpaste-daemon** library (sources under `src/libgpaste/gpaste-daemon/`, umbrella header `src/libgpaste/gpaste-daemon.h`, `GPasteDaemon-1` GIR/typelib); `src/daemon/gpaste-daemon.c` is the thin executable entry point that links it. What stays in `src/daemon/` is what only that executable uses: the **GDK clipboard backend** (`gpaste-clipboard-gdk.{c,h}` and its `gpaste-text-content-provider.{c,h}`), which is why `gtk4-x11` is a dependency of the executable and not of the library. They are compiled straight into the binary, include each other with quoted local includes, and carry no `G_PASTE_VISIBLE` — nothing exports them. Its types keep the `GPaste`/`g_paste_` prefix, so the GIR passes an explicit `identifier_prefix: 'GPaste'` / `symbol_prefix: 'g_paste'` to place them in the `GPasteDaemon` namespace. Handles:
 
 - Clipboard watching (primary + clipboard selections), through the backend-agnostic `GPasteClipboardProvider` interface
-- The rich clipboard item type hierarchy: the abstract `GPasteItem` base, the plain `GPasteTextItem`/`GPastePasswordItem`, the GTK4-backed `GPasteColorItem`/`GPasteImageItem`/`GPasteUrisItem`, and the `GPasteSpecialAtom`/`GPasteBinaryData` helpers (the UI/client instead use libgpaste's lightweight `GPasteClientItem`)
+- The rich clipboard item type hierarchy: the abstract `GPasteItem` base and the five kinds deriving from it directly — `GPasteTextItem`, `GPastePasswordItem`, `GPasteColorItem`, `GPasteImageItem`, `GPasteUrisItem` — plus the `GPasteSpecialAtom`/`GPasteBinaryData` helpers (the UI/client instead use libgpaste's lightweight `GPasteClientItem`). **The hierarchy is flat on purpose.** Uris and password items used to derive from `GPasteTextItem` while inheriting nothing from it, which is what forced `g_paste_item_equals()` to dispatch in both directions and made `G_PASTE_IS_TEXT_ITEM()` true for things that were not text. The base's `equals` compares kind and value, which is symmetric, so one dispatch does; only the image (checksum) and the password (never equal) override it.
 - Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGlobalShortcutClient`, used directly by the keybinder); if the portal is unavailable, keyboard shortcuts are simply disabled
 - History persistence to disk: `GPasteHistory` owns the in-memory model and dedup/size policy, but delegates the asynchronous I/O to `GPasteHistorySaver`. Each mutation records an operation (`g_paste_history_saver_record` with a `GPasteHistorySaveOp` — add/remove/replace/clear/full — plus the item/uuid involved and, when the backend will consume it, a snapshot of the items: incremental backends only get one on *add*, where it is reconciled against; the other operations pass NULL). An incremental backend (see below) applies the queued operations in order; a non-incremental one rewrites the whole snapshot, so the saver collapses the queue down to the latest snapshot (the previous coalescing behaviour). Loads carry a `save_after` flag so a snapshot-rewriting backend persists its read-time normalization after a history switch; the saver drops it for incremental backends (they normalize on open): a load reads at most `max-history-size` rows, and the next add reconciles the store down to the loaded snapshot, so rows beyond the cap survive only until then. The saver never touches the live list, so it shares no locking with the model; it hands load results back through a callback. The model itself is guarded by a **non-recursive** `GMutex` taken through two macros: `G_PASTE_DO_LOCK_HISTORY` just locks for the rest of the scope, while `G_PASTE_LOCK_HISTORY` — what public entry points use — additionally declares a `g_auto` scope guard *before* the locker, so its cleanup runs after the unlock. That guard is what emits the `SELECTED` signal: `g_paste_history_selected()` only records the item in `priv->pending_selection`, because emitting inline would drive the clipboards manager (hence GTK's clipboard and the X11 selection machinery) with the lock held, queueing every other caller — all the D-Bus methods included — behind it, and a handler calling back into us (`g_paste_history_remove()` when an item turns out to be invalid) would deadlock outright. The signal is still emitted before the caller regains control, so ordering towards clients is unchanged. Any new code path emitting a signal that can re-enter the history must go through the same mechanism.
 
@@ -278,7 +307,7 @@ Native shell integration. Provides the panel indicator and quick-access popover,
 
 Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings schemas (`gsettings/`), systemd user units, AppStream metadata, shell completions (`completions/`).
 
-**Shell completions** (`data/completions/gpaste-client` for bash, `_gpaste-client` for zsh, `gpaste-client.fish` for fish — each behind its own `*-completion` meson option) mirror `gpaste-client`'s dispatch table, so a new verb, alias or option has to be added to all three (and to `show_help()` and `man/1/gpaste-client.1`). Two rules every one of them follows:
+**Shell completions** (`data/completions/gpaste-client` for bash, `_gpaste-client` for zsh, `gpaste-client.fish` for fish — each behind its own `*-completion` meson option) mirror `gpaste-client`'s `commands[]` table, so a new verb or alias has to be added to all three and to `man/1/gpaste-client.1` — `show_help()` is printed from the table itself and needs nothing. `meson test -C build completions` fails until they agree. Two rules every one of them follows:
 
 - **Never activate the daemon from a completion.** Anything that needs the daemon first checks `org.freedesktop.DBus.NameHasOwner org.gnome.GPaste` with `gdbus` and gives up when nothing owns it — otherwise hitting tab would start a daemon behind the user's back and block the shell while it loads the history.
 - **History names come off disk**, not from `list-histories`: one file per history, `<name>.{xml,xmls,db,dbs}` under `$XDG_DATA_HOME/GPaste` (falling back to `.../gpaste`, the same `PACKAGE_NAME`/`PACKAGE` rule as `g_paste_util_get_history_dir_path`), so they complete instantly with no daemon at all.

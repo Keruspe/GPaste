@@ -19,6 +19,13 @@ NEW in 51.0 (UNRELEASED)
 - Install the daemon's D-Bus interface definition as $datadir/dbus-1/interfaces/org.gnome.GPaste2.xml, so anything can read the contract without building GPaste
 - API: take a mutable instance pointer everywhere, as GObject itself does, and drop the const shims that existed to work around it (_G_PASTE_IS_FOO, _G_PASTE_FOO and friends are gone; use the stock macros)
 - API: GPasteScreensaverClient exposes an "active" property instead of the "active-changed" signal, so the screensaver state can be read and not just watched
+- API: g_paste_item_get_kind() answers a GPasteItemKind instead of a string, and the enumeration gained the Color member it was missing -- gpaste-client get-kind reported colour items as invalid
+- API: g_paste_client_get_elements(), merge() and their sync twins take a NULL-terminated array of uuids instead of an array and a length
+- API: GPasteStorage is a registered enumeration, so the "storage-backend" setting is typed rather than a widened integer
+- API: the utility helpers only the daemon ever used -- the history paths, the XML escaping -- moved to libgpaste-daemon, along with GPasteScreensaverClient; gpaste-util.h no longer pulls in the whole client API
+- API: libgpaste-gtk4 installs and introspects only the preferences dialog and the embeddable preferences widget; the groups, pages and rows they are built from are internal
+- API: drop nine exported functions nothing called (g_paste_util_get_dbus_au_result, the synchronous empty-with-confirmation and activate-ui, g_paste_ui_item_refresh, ...)
+- Fix "gpaste-client --oneline" emitting literal tabulations, which broke parsing its output on a colon
 - Fix the graphical tool crashing on startup, and several cases where a window closing while a D-Bus call was in flight left the reply writing into freed memory
 - Fix search results being overwritten by a history refresh that was already in flight, and older search replies winning over newer ones
 - Document which GError domain each throwing function reports in

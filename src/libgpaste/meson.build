@@ -15,6 +15,9 @@ libgpaste_sources = [
   'gpaste-3/gpaste-util.c',
 ]
 
+# gpaste-3/gpaste-keyval.h is deliberately in neither list: it is a static
+# inline helper shared by libgpaste-gtk4 and libgpaste-daemon, so it is compiled
+# in-tree through include_directories('.') and never installed nor introspected.
 libgpaste_headers = [
   'gpaste-3/gpaste-client-item.h',
   'gpaste-3/gpaste-client.h',
@@ -161,7 +164,7 @@ if get_option('introspection')
     libgpaste_gtk4,
     sources: [ libgpaste_gtk4_public_sources, libgpaste_gtk4_headers ],
     includes: [ libgpaste_gir[0], 'Adw-1', 'Gtk-4.0', 'Gdk-4.0' ],
-    dependencies: [ ],
+    dependencies: libgpaste_gtk4_deps,
     header: 'gpaste-gtk4.h',
     namespace: 'GPasteGtk',
     nsversion: '4',
