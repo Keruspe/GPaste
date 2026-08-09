@@ -1,0 +1,253 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!--
+  SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+  SPDX-License-Identifier: BSD-2-Clause
+
+  The interface the GPaste daemon exports on /org/gnome/GPaste, and the single
+  source of truth for both sides of it: gdbus-codegen turns this file into the
+  GPasteDaemon2 GInterface, the proxy GPasteClient derives from, and the skeleton
+  GPasteDaemon exports.
+
+  Also installed to $datadir/dbus-1/interfaces so that anything speaking to the
+  daemon can read the contract without building GPaste.
+-->
+<node>
+  <!--
+    org.gnome.GPaste2:
+    @short_description: The GPaste daemon
+
+    The "2" is the interface version, not a second daemon: it is what the C name
+    below keeps, so that the generated g_paste_daemon2_* symbols never collide
+    with the g_paste_daemon_* ones of the GPasteDaemon object that implements it.
+  -->
+  <interface name="org.gnome.GPaste2">
+    <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon2"/>
+
+    <!-- Show the about dialog -->
+    <method name="About"/>
+
+    <!-- Add a text item to the history -->
+    <method name="Add">
+      <arg type="s" direction="in" name="text"/>
+    </method>
+
+    <!-- Add the contents of a file to the history -->
+    <method name="AddFile">
+      <arg type="s" direction="in" name="file"/>
+    </method>
+
+    <!-- Add a password item to the history -->
+    <method name="AddPassword">
+      <arg type="s" direction="in" name="name"/>
+      <arg type="s" direction="in" name="password"/>
+    </method>
+
+    <!-- Backup a history under another name -->
+    <method name="BackupHistory">
+      <arg type="s" direction="in" name="history"/>
+      <arg type="s" direction="in" name="backup"/>
+    </method>
+
+    <!-- Re-encrypt the history with a new passphrase, prompted for by the daemon -->
+    <method name="ChangePassphrase"/>
+
+    <!-- Delete one item from the history -->
+    <method name="Delete">
+      <arg type="s" direction="in" name="uuid"/>
+    </method>
+
+    <!-- Delete a whole history -->
+    <method name="DeleteHistory">
+      <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!-- Delete a password item, by name -->
+    <method name="DeletePassword">
+      <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!-- Empty a history, keeping it around -->
+    <method name="EmptyHistory">
+      <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!-- The displayable value of one item -->
+    <method name="GetElement">
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="out" name="value"/>
+    </method>
+
+    <!-- The item at a given position, as a (uuid, value) pair -->
+    <method name="GetElementAtIndex">
+      <arg type="t" direction="in"  name="index"/>
+      <arg type="s" direction="out" name="uuid"/>
+      <arg type="s" direction="out" name="value"/>
+    </method>
+
+    <!-- The kind of one item, as a GPasteItemKind nick -->
+    <method name="GetElementKind">
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="out" name="kind"/>
+    </method>
+
+    <!-- The (uuid, value) pairs for the given uuids -->
+    <method name="GetElements">
+      <arg type="as"    direction="in"  name="uuids"/>
+      <arg type="a(ss)" direction="out" name="elements"/>
+    </method>
+
+    <!-- The whole history, as (uuid, value) pairs -->
+    <method name="GetHistory">
+      <arg type="a(ss)" direction="out" name="history"/>
+    </method>
+
+    <!-- The name of the history currently in use -->
+    <method name="GetHistoryName">
+      <arg type="s" direction="out" name="name"/>
+    </method>
+
+    <!-- How many items a given history holds -->
+    <method name="GetHistorySize">
+      <arg type="s" direction="in"  name="name"/>
+      <arg type="t" direction="out" name="size"/>
+    </method>
+
+    <!--
+      The raw image data of an image item.
+
+      ForceGVariant is load-bearing: the default mapping for "ay" is a C
+      bytestring, which stops at the first NUL and would truncate every PNG.
+    -->
+    <method name="GetImage">
+      <arg type="s"  direction="in"  name="uuid"/>
+      <arg type="ay" direction="out" name="image">
+        <annotation name="org.gtk.GDBus.C.ForceGVariant" value="true"/>
+      </arg>
+    </method>
+
+    <!-- The value of one item, untruncated and unformatted -->
+    <method name="GetRawElement">
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="out" name="value"/>
+    </method>
+
+    <!-- The whole history, with raw values -->
+    <method name="GetRawHistory">
+      <arg type="a(ss)" direction="out" name="history"/>
+    </method>
+
+    <!-- The names of every known history -->
+    <method name="ListHistories">
+      <arg type="as" direction="out" name="histories"/>
+    </method>
+
+    <!-- Merge several items into a new one -->
+    <method name="Merge">
+      <arg type="s"  direction="in" name="decoration"/>
+      <arg type="s"  direction="in" name="separator"/>
+      <arg type="as" direction="in" name="uuids"/>
+    </method>
+
+    <!-- Tell the daemon whether the gnome-shell extension is running -->
+    <method name="OnExtensionStateChanged">
+      <arg type="b" direction="in" name="extension_state"/>
+    </method>
+
+    <!-- Have the daemon exec a fresh copy of itself -->
+    <method name="Reexecute"/>
+
+    <!-- Rename a password item -->
+    <method name="RenamePassword">
+      <arg type="s" direction="in" name="old_name"/>
+      <arg type="s" direction="in" name="new_name"/>
+    </method>
+
+    <!-- Replace the contents of one item -->
+    <method name="Replace">
+      <arg type="s" direction="in" name="uuid"/>
+      <arg type="s" direction="in" name="contents"/>
+    </method>
+
+    <!-- The uuids of the items matching a query -->
+    <method name="Search">
+      <arg type="s"  direction="in"  name="query"/>
+      <arg type="as" direction="out" name="results"/>
+    </method>
+
+    <!-- Make one item the current selection -->
+    <method name="Select">
+      <arg type="s" direction="in" name="uuid"/>
+    </method>
+
+    <!-- Turn one item into a password item -->
+    <method name="SetPassword">
+      <arg type="s" direction="in" name="uuid"/>
+      <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!-- Ask for the history to be displayed -->
+    <method name="ShowHistory"/>
+
+    <!-- Switch to another history -->
+    <method name="SwitchHistory">
+      <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!-- Start or stop tracking clipboard changes -->
+    <method name="Track">
+      <arg type="b" direction="in" name="tracking_state"/>
+    </method>
+
+    <!-- Upload one item to a pastebin service -->
+    <method name="Upload">
+      <arg type="s" direction="in" name="uuid"/>
+    </method>
+
+    <!--
+      Every signal below is generated under a "Raw" C name, hence a "raw-*"
+      GObject signal on the proxy. GPasteClient re-emits each one under its
+      public name: that keeps the public signal free to carry a richer payload
+      (Update hands out GPasteUpdateAction/GPasteUpdateTarget enums rather than
+      their nicks) and keeps the whole public surface declared on GPasteClient
+      itself, where the GIR and the VAPI can see it.
+    -->
+
+    <!-- A history was deleted -->
+    <signal name="DeleteHistory">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawDeleteHistory"/>
+      <arg type="s" name="history"/>
+    </signal>
+
+    <!-- A history was emptied -->
+    <signal name="EmptyHistory">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawEmptyHistory"/>
+      <arg type="s" name="history"/>
+    </signal>
+
+    <!-- The history should be displayed -->
+    <signal name="ShowHistory">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawShowHistory"/>
+    </signal>
+
+    <!-- Another history is now in use -->
+    <signal name="SwitchHistory">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawSwitchHistory"/>
+      <arg type="s" name="history"/>
+    </signal>
+
+    <!-- Something changed in the history: @action and @target are enum nicks -->
+    <signal name="Update">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawUpdate"/>
+      <arg type="s" name="action"/>
+      <arg type="s" name="target"/>
+      <arg type="t" name="index"/>
+    </signal>
+
+    <!-- Whether the daemon is tracking clipboard changes -->
+    <property name="Active" type="b" access="read"/>
+
+    <!-- The version of the running daemon -->
+    <property name="Version" type="s" access="read"/>
+  </interface>
+</node>

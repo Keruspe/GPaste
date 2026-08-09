@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-3/gpaste-gdbus-macros.h>
 #include <gpaste-3/gpaste-screensaver-client.h>
 
 #define G_PASTE_SCREENSAVER_OBJECT_PATH    "/org/gnome/ScreenSaver"
@@ -144,7 +143,17 @@ g_paste_screensaver_client_init (GPasteScreensaverClient *self)
 G_PASTE_VISIBLE GPasteScreensaverClient *
 g_paste_screensaver_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (SCREENSAVER_CLIENT, SCREENSAVER, G_PASTE_SCREENSAVER_BUS_NAME);
+    GInitable *self = g_initable_new (G_PASTE_TYPE_SCREENSAVER_CLIENT,
+                                      NULL, /* cancellable */
+                                      error,
+                                      "g-bus-type",       G_BUS_TYPE_SESSION,
+                                      "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
+                                      "g-name",           G_PASTE_SCREENSAVER_BUS_NAME,
+                                      "g-object-path",    G_PASTE_SCREENSAVER_OBJECT_PATH,
+                                      "g-interface-name", G_PASTE_SCREENSAVER_INTERFACE_NAME,
+                                      NULL);
+
+    return (self) ? G_PASTE_SCREENSAVER_CLIENT (self) : NULL;
 }
 
 /**
@@ -158,7 +167,17 @@ G_PASTE_VISIBLE void
 g_paste_screensaver_client_new (GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (SCREENSAVER_CLIENT, SCREENSAVER, G_PASTE_SCREENSAVER_BUS_NAME);
+    g_async_initable_new_async (G_PASTE_TYPE_SCREENSAVER_CLIENT,
+                                G_PRIORITY_DEFAULT,
+                                NULL, /* cancellable */
+                                callback,
+                                user_data,
+                                "g-bus-type",       G_BUS_TYPE_SESSION,
+                                "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
+                                "g-name",           G_PASTE_SCREENSAVER_BUS_NAME,
+                                "g-object-path",    G_PASTE_SCREENSAVER_OBJECT_PATH,
+                                "g-interface-name", G_PASTE_SCREENSAVER_INTERFACE_NAME,
+                                NULL);
 }
 
 /**
@@ -177,5 +196,14 @@ G_PASTE_VISIBLE GPasteScreensaverClient *
 g_paste_screensaver_client_new_finish (GAsyncResult *result,
                                        GError      **error)
 {
-    CUSTOM_PROXY_NEW_FINISH (SCREENSAVER_CLIENT);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GObject) source = g_async_result_get_source_object (result);
+
+    g_assert (source);
+
+    GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source), result, error);
+
+    return (self) ? G_PASTE_SCREENSAVER_CLIENT (self) : NULL;
 }

@@ -47,8 +47,15 @@ adwaita_minor = adwaita_req_version.split('.')[1].to_int()
 # Don't make dbus/gnome-control-center a build dependency if so desired.
 # They're still required at runtime though.
 dbus_service_dir = get_option('dbus-services-dir')
-if dbus_service_dir == ''
-  dbus_service_dir = dependency('dbus-1').get_variable(pkgconfig: 'session_bus_services_dir')
+dbus_interfaces_dir = get_option('dbus-interfaces-dir')
+if dbus_service_dir == '' or dbus_interfaces_dir == ''
+  dbus_dep = dependency('dbus-1')
+  if dbus_service_dir == ''
+    dbus_service_dir = dbus_dep.get_variable(pkgconfig: 'session_bus_services_dir')
+  endif
+  if dbus_interfaces_dir == ''
+    dbus_interfaces_dir = dbus_dep.get_variable(pkgconfig: 'interfaces_dir')
+  endif
 endif
 
 keybindings_dir = get_option('control-center-keybindings-dir')
@@ -137,6 +144,11 @@ conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')
 
 gpaste_po_dir = meson.current_source_dir() / 'po'
+
+# The daemon's D-Bus interface, declared here because src/ is configured before
+# data/: gdbus-codegen turns it into both sides of the wire under src/libgpaste,
+# and data/dbus installs it.
+gpaste_dbus_interface_xml = files('data/dbus/org.gnome.GPaste2.xml')
 
 subdir('man')
 subdir('po')

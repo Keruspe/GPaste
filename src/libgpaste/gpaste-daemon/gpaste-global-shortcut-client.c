@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-3/gpaste-gdbus-macros.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 #include <gpaste-keyval.h>
 
@@ -537,7 +536,17 @@ g_paste_global_shortcut_client_init (GPasteGlobalShortcutClient *self)
 G_PASTE_VISIBLE GPasteGlobalShortcutClient *
 g_paste_global_shortcut_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (GLOBAL_SHORTCUT_CLIENT, GLOBAL_SHORTCUT, G_PASTE_GLOBAL_SHORTCUT_BUS_NAME);
+    GInitable *self = g_initable_new (G_PASTE_TYPE_GLOBAL_SHORTCUT_CLIENT,
+                                      NULL, /* cancellable */
+                                      error,
+                                      "g-bus-type",       G_BUS_TYPE_SESSION,
+                                      "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
+                                      "g-name",           G_PASTE_GLOBAL_SHORTCUT_BUS_NAME,
+                                      "g-object-path",    G_PASTE_GLOBAL_SHORTCUT_OBJECT_PATH,
+                                      "g-interface-name", G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME,
+                                      NULL);
+
+    return (self) ? G_PASTE_GLOBAL_SHORTCUT_CLIENT (self) : NULL;
 }
 
 /**
@@ -551,7 +560,17 @@ G_PASTE_VISIBLE void
 g_paste_global_shortcut_client_new (GAsyncReadyCallback callback,
                                     gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (GLOBAL_SHORTCUT_CLIENT, GLOBAL_SHORTCUT, G_PASTE_GLOBAL_SHORTCUT_BUS_NAME);
+    g_async_initable_new_async (G_PASTE_TYPE_GLOBAL_SHORTCUT_CLIENT,
+                                G_PRIORITY_DEFAULT,
+                                NULL, /* cancellable */
+                                callback,
+                                user_data,
+                                "g-bus-type",       G_BUS_TYPE_SESSION,
+                                "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
+                                "g-name",           G_PASTE_GLOBAL_SHORTCUT_BUS_NAME,
+                                "g-object-path",    G_PASTE_GLOBAL_SHORTCUT_OBJECT_PATH,
+                                "g-interface-name", G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME,
+                                NULL);
 }
 
 /**
@@ -571,5 +590,14 @@ G_PASTE_VISIBLE GPasteGlobalShortcutClient *
 g_paste_global_shortcut_client_new_finish (GAsyncResult *result,
                                            GError      **error)
 {
-    CUSTOM_PROXY_NEW_FINISH (GLOBAL_SHORTCUT_CLIENT);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GObject) source = g_async_result_get_source_object (result);
+
+    g_assert (source);
+
+    GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source), result, error);
+
+    return (self) ? G_PASTE_GLOBAL_SHORTCUT_CLIENT (self) : NULL;
 }

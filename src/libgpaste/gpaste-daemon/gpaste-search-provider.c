@@ -5,6 +5,7 @@
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-search-provider.h>
+#include <gpaste-daemon/gpaste-shell-search-provider2.h>
 
 #include <string.h>
 
@@ -12,111 +13,103 @@ struct _GPasteSearchProvider
 {
     GPasteBusObject parent_instance;
 
-    GDBusConnection     *connection;
-    guint64              id_on_bus;
-    gboolean             registered;
+    GPasteShellSearchProvider2 *skeleton;
+    gboolean                    registered;
 
-    GPasteClient        *client;
-
-    GDBusNodeInfo       *g_paste_search_provider_dbus_info;
-    GDBusInterfaceVTable g_paste_search_provider_dbus_vtable;
+    GPasteClient               *client;
 };
 
 G_PASTE_DEFINE_TYPE (SearchProvider, search_provider, G_PASTE_TYPE_BUS_OBJECT)
 
-static char *
-g_paste_dbus_get_as_result (GVariant *variant)
+/* GetInitialResultSet and GetSubsearchResultSet answer the same way but have
+ * their own completion, so the search path carries whichever one applies. */
+typedef void (*SearchCompleteFunc) (GPasteShellSearchProvider2 *object,
+                                    GDBusMethodInvocation      *invocation,
+                                    const gchar * const        *results);
+
+typedef struct
 {
-    gsize _len;
-    g_autofree const gchar **r = g_variant_get_strv (variant, &_len);
-
-    return g_strjoinv (" ", (gchar **) r);
-}
-
-static char *
-_g_paste_dbus_get_as_result (GVariant *parameters)
-{
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
-    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
-    return g_paste_dbus_get_as_result (variant);
-}
-
-/****************/
-/* DBus Mathods */
-/****************/
+    /* Reffed: the provider owns the client and the skeleton this needs on the
+     * way back, and it may be finalized while the call is in flight. The
+     * invocation is not reffed -- GDBus hands it to the handler and completing
+     * it consumes it. */
+    GPasteSearchProvider  *provider;
+    GDBusMethodInvocation *invocation;
+    SearchCompleteFunc     complete;
+} SearchData;
 
 static void
 on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
-    g_autofree gpointer *data = (gpointer *) user_data;
-    /* Reffed by the caller: the provider owns the only other reference and may
-     * be finalized while this is in flight. The invocation is not reffed -- GDBus
-     * hands it to the method handler and return_value() consumes it. */
-    g_autoptr (GPasteClient) client = data[0];
-    GDBusMethodInvocation *invocation = data[1];
+    g_autofree SearchData *data = user_data;
+    g_autoptr (GPasteSearchProvider) self = data->provider;
     g_autoptr (GError) error = NULL;
-    g_auto (GStrv) results = g_paste_client_search_finish (client, res, &error);
+    g_auto (GStrv) results = g_paste_client_search_finish (self->client, res, &error);
+
     if (error)
         g_warning ("GPaste search failed: %s", error->message);
 
-    GVariant *ans = g_variant_new_strv ((const char * const *) results, results ? -1 : 0);
-    g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
+    const gchar *empty[] = { NULL };
+
+    data->complete (self->skeleton, data->invocation, (results) ? (const gchar * const *) results : empty);
+}
+
+/* @terms is how the shell splits what was typed; GPaste searches the whole
+ * phrase, so they go back together. */
+static gchar *
+g_paste_search_provider_join_terms (const gchar * const *terms)
+{
+    return g_strjoinv (" ", (GStrv) terms);
 }
 
 static gboolean
-_do_search (GPasteSearchProvider  *priv,
-            gchar                 *search,
-            GDBusMethodInvocation *invocation)
+g_paste_search_provider_search (GPasteSearchProvider  *self,
+                                GDBusMethodInvocation *invocation,
+                                const gchar * const   *terms,
+                                SearchCompleteFunc     complete)
 {
-    if (strlen (search) < 3 || !priv->client)
-    {
-        GVariant *ans = g_variant_new_strv (NULL, 0);
-        g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
-    }
-    else
-    {
-        gpointer *data = g_new (gpointer, 2);
+    g_autofree gchar *search = g_paste_search_provider_join_terms (terms);
 
-        data[0] = g_object_ref (priv->client);
-        data[1] = invocation;
+    /* Too short to be worth a round trip, or no daemon to make it against. */
+    if (strlen (search) < 3 || !self->client)
+    {
+        const gchar *empty[] = { NULL };
 
-        g_paste_client_search (priv->client,
-                               search,
-                               on_search_ready,
-                               data);
+        complete (self->skeleton, invocation, empty);
+
+        return TRUE;
     }
+
+    SearchData *data = g_new (SearchData, 1);
+
+    data->provider = g_object_ref (self);
+    data->invocation = invocation;
+    data->complete = complete;
+
+    g_paste_client_search (self->client, search, on_search_ready, data);
 
     return TRUE;
 }
 
 static gboolean
-g_paste_search_provider_private_get_initial_result_set (GPasteSearchProvider  *priv,
-                                                        GDBusMethodInvocation *invocation,
-                                                        GVariant              *parameters)
+g_paste_search_provider_handle_get_initial_result_set (GPasteSearchProvider  *self,
+                                                       GDBusMethodInvocation *invocation,
+                                                       const gchar * const   *terms)
 {
-    g_autofree gchar *search = _g_paste_dbus_get_as_result (parameters);
-    return _do_search (priv, search, invocation);
+    return g_paste_search_provider_search (self, invocation, terms,
+                                           g_paste_shell_search_provider2_complete_get_initial_result_set);
 }
 
 static gboolean
-g_paste_search_provider_private_get_subsearch_result_set (GPasteSearchProvider  *priv,
-                                                          GDBusMethodInvocation *invocation,
-                                                          GVariant              *parameters)
+g_paste_search_provider_handle_get_subsearch_result_set (GPasteSearchProvider  *self,
+                                                         GDBusMethodInvocation *invocation,
+                                                         const gchar * const   *previous_results G_GNUC_UNUSED,
+                                                         const gchar * const   *terms)
 {
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
-    G_GNUC_UNUSED g_autoptr (GVariant) old_results = g_variant_iter_next_value (&parameters_iter);
-    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
-    g_autofree gchar *search = g_paste_dbus_get_as_result (variant);
-
-    return _do_search (priv, search, invocation);
+    return g_paste_search_provider_search (self, invocation, terms,
+                                           g_paste_shell_search_provider2_complete_get_subsearch_result_set);
 }
 
 static void
@@ -130,7 +123,9 @@ append_dict_entry (GVariantBuilder *dict,
 
 typedef struct
 {
-    GPasteClient          *client;
+    /* Same ownership as SearchData, plus the uuids: they name the results and
+     * are read again once the values come back. */
+    GPasteSearchProvider  *provider;
     GDBusMethodInvocation *invocation;
     GStrv                  uuids;
 } GetResultMetasData;
@@ -141,8 +136,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
                    gpointer      user_data)
 {
     g_autofree GetResultMetasData *data = user_data;
-    /* See on_search_ready: the client is reffed for us, the invocation is not. */
-    g_autoptr (GPasteClient) client = data->client;
+    g_autoptr (GPasteSearchProvider) self = data->provider;
     g_auto (GStrv) uuids = data->uuids;
     /* Initialized in the declaration: a g_auto() builder that goes out of scope
      * before its init() would have g_variant_builder_clear() run on stack
@@ -150,7 +144,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
 
     g_autoptr (GError) error = NULL;
-    g_autolist (GPasteClientItem) results = g_paste_client_get_elements_finish (client, res, &error);
+    g_autolist (GPasteClientItem) results = g_paste_client_get_elements_finish (self->client, res, &error);
     if (error)
         g_warning ("GPaste get elements failed: %s", error->message);
     guint64 n = 0;
@@ -170,137 +164,86 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         g_variant_builder_add_value (&builder, g_variant_builder_end (&dict));
     }
 
-    GVariant *ans = g_variant_builder_end (&builder);
-    g_dbus_method_invocation_return_value (data->invocation, g_variant_new_tuple (&ans, 1));
+    g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
 }
 
 static gboolean
-g_paste_search_provider_private_get_result_metas (GPasteSearchProvider  *priv,
-                                                  GDBusMethodInvocation *invocation,
-                                                  GVariant              *parameters)
+g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
+                                                 GDBusMethodInvocation *invocation,
+                                                 const gchar * const   *identifiers)
 {
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
-    g_autoptr (GVariant) results = g_variant_iter_next_value (&parameters_iter);
-    gsize len;
-    /* Deep-copy: the strings must outlive `results` since they are used again
-     * in the async on_elements_ready callback. */
-    g_auto (GStrv) uuids = g_variant_dup_strv (results, &len);
+    gsize len = (identifiers) ? g_strv_length ((GStrv) identifiers) : 0;
 
     /* Nothing to describe, or no daemon connection to describe it with: answer
-     * an empty (but correctly typed) result set rather than the NULL the
-     * caller's generic "not async" path would return for an "aa{sv}" method. */
-    if (!len || !priv->client)
+     * an empty (but correctly typed) result set. */
+    if (!len || !self->client)
     {
         g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
-        GVariant *ans = g_variant_builder_end (&builder);
 
-        g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
+        g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, invocation, g_variant_builder_end (&builder));
 
         return TRUE;
     }
 
     GetResultMetasData *data = g_new (GetResultMetasData, 1);
 
-    data->client = g_object_ref (priv->client);
+    data->provider = g_object_ref (self);
     data->invocation = invocation;
-    data->uuids = g_steal_pointer (&uuids);
+    /* Deep-copy: the strings must outlive @identifiers, since on_elements_ready
+     * reads them once the call comes back. */
+    data->uuids = g_strdupv ((GStrv) identifiers);
 
-    g_paste_client_get_elements (priv->client, (const gchar **) data->uuids, len, on_elements_ready, data);
+    g_paste_client_get_elements (self->client, (const gchar **) data->uuids, len, on_elements_ready, data);
 
     return TRUE;
 }
 
 static gboolean
-g_paste_search_provider_private_activate_result (GPasteSearchProvider *priv,
-                                                 GVariant             *parameters)
+g_paste_search_provider_handle_activate_result (GPasteSearchProvider  *self,
+                                                GDBusMethodInvocation *invocation,
+                                                const gchar           *identifier,
+                                                const gchar * const   *terms G_GNUC_UNUSED,
+                                                guint                  timestamp G_GNUC_UNUSED)
 {
-    GVariantIter parameters_iter;
+    /* Failing to reach the daemon is not fatal to this process, so the client
+     * can legitimately be missing for good — as the other entry points already
+     * assume. */
+    if (self->client)
+        g_paste_client_select (self->client, identifier, NULL, NULL);
 
-    g_variant_iter_init (&parameters_iter, parameters);
+    g_paste_shell_search_provider2_complete_activate_result (self->skeleton, invocation);
 
-    g_autoptr (GVariant) indexv = g_variant_iter_next_value (&parameters_iter);
-    G_GNUC_UNUSED g_autoptr (GVariant) terms = g_variant_iter_next_value (&parameters_iter);
-    G_GNUC_UNUSED g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
-
-    /* Failing to reach the daemon is no longer fatal to this process, so the
-     * client can legitimately be missing for good — as the other two entry
-     * points already assume. */
-    if (priv->client)
-        g_paste_client_select (priv->client, g_variant_get_string (indexv, NULL), NULL, NULL);
-
-    return FALSE;
+    return TRUE;
 }
 
 static gboolean
-g_paste_search_provider_private_launch_search (GPasteSearchProvider *priv G_GNUC_UNUSED,
-                                               GVariant             *parameters)
+g_paste_search_provider_handle_launch_search (GPasteSearchProvider  *self,
+                                              GDBusMethodInvocation *invocation,
+                                              const gchar * const   *terms,
+                                              guint                  timestamp G_GNUC_UNUSED)
 {
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
-    g_autoptr (GVariant) searchv = g_variant_iter_next_value (&parameters_iter);
-    G_GNUC_UNUSED g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
-    g_autofree gchar *search = g_paste_dbus_get_as_result (searchv);
+    g_autofree gchar *search = g_paste_search_provider_join_terms (terms);
 
     g_paste_util_activate_ui ("search", g_variant_new_string (search));
 
-    return FALSE;
+    g_paste_shell_search_provider2_complete_launch_search (self->skeleton, invocation);
+
+    return TRUE;
 }
 
-static void
-g_paste_search_provider_dbus_method_call (GDBusConnection       *connection     G_GNUC_UNUSED,
-                                          const gchar           *sender         G_GNUC_UNUSED,
-                                          const gchar           *object_path    G_GNUC_UNUSED,
-                                          const gchar           *interface_name G_GNUC_UNUSED,
-                                          const gchar           *method_name,
-                                          GVariant              *parameters,
-                                          GDBusMethodInvocation *invocation,
-                                          gpointer               user_data)
-{
-    GPasteSearchProvider *self = user_data;
-    gboolean async = FALSE;
-
-    if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_INITIAL_RESULT_SET))
-        async = g_paste_search_provider_private_get_initial_result_set (self, invocation, parameters);
-    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_SUBSEARCH_RESULT_SET))
-        async = g_paste_search_provider_private_get_subsearch_result_set (self, invocation, parameters);
-    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_RESULT_METAS))
-        async = g_paste_search_provider_private_get_result_metas (self, invocation, parameters);
-    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_ACTIVATE_RESULT))
-        async = g_paste_search_provider_private_activate_result (self, parameters);
-    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_LAUNCH_SEARCH))
-        async = g_paste_search_provider_private_launch_search (self, parameters);
-
-    if (!async)
-        g_dbus_method_invocation_return_value (invocation, NULL);
-}
-
-static void
-g_paste_search_provider_unregister_object (gpointer user_data)
-{
-    g_autoptr (GPasteSearchProvider) self = G_PASTE_SEARCH_PROVIDER (user_data);
-
-    self->registered = FALSE;
-}
-
-/* See g_paste_bus_object_unregister_on_connection(): the registration owns a
- * reference on us, so it has to be dropped explicitly or the object path stays
- * exported on a connection that outlives the daemon (gnome-shell's). */
+/* See g_paste_bus_object_unregister_on_connection(): the export has to be
+ * dropped explicitly or the object path stays exported on a connection that
+ * outlives the daemon (gnome-shell's). */
 static void
 g_paste_search_provider_unregister_on_connection (GPasteBusObject *self)
 {
     GPasteSearchProvider *priv = G_PASTE_SEARCH_PROVIDER (self);
 
-    if (!priv->connection)
+    if (!priv->registered)
         return;
 
-    g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
-    priv->id_on_bus = 0;
-    g_clear_object (&priv->connection);
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (priv->skeleton));
+    priv->registered = FALSE;
 }
 
 static void
@@ -308,16 +251,9 @@ g_paste_search_provider_dispose (GObject *object)
 {
     GPasteSearchProvider *self = G_PASTE_SEARCH_PROVIDER (object);
 
-    if (self->connection)
-    {
-        g_dbus_connection_unregister_object (self->connection, self->id_on_bus);
-        self->id_on_bus = 0;
-        g_clear_object (&self->connection);
-    }
+    g_paste_search_provider_unregister_on_connection (G_PASTE_BUS_OBJECT (self));
 
-    /* Not gated on the connection: it may already have been dropped by
-     * g_paste_search_provider_unregister_on_connection(). */
-    g_clear_pointer (&self->g_paste_search_provider_dbus_info, g_dbus_node_info_unref);
+    g_clear_object (&self->skeleton);
     g_clear_object (&self->client);
 
     G_OBJECT_CLASS (g_paste_search_provider_parent_class)->dispose (object);
@@ -330,18 +266,15 @@ g_paste_search_provider_register_on_connection (GPasteBusObject *self,
 {
     GPasteSearchProvider *priv = G_PASTE_SEARCH_PROVIDER (self);
 
-    g_clear_object (&priv->connection);
-    priv->connection = g_object_ref (connection);
+    if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (priv->skeleton),
+                                           connection,
+                                           G_PASTE_SEARCH_PROVIDER_OBJECT_PATH,
+                                           error))
+    {
+        return FALSE;
+    }
 
-    priv->id_on_bus = g_dbus_connection_register_object (connection,
-                                                         G_PASTE_SEARCH_PROVIDER_OBJECT_PATH,
-                                                         priv->g_paste_search_provider_dbus_info->interfaces[0],
-                                                         &priv->g_paste_search_provider_dbus_vtable,
-                                                         g_object_ref (self),
-                                                         g_paste_search_provider_unregister_object,
-                                                         error);
-
-    return (priv->registered = !!priv->id_on_bus);
+    return (priv->registered = TRUE);
 }
 
 static void
@@ -367,7 +300,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     /* Never abort here: this provider is also built inside gnome-shell, where
      * g_error() would take the whole compositor down over a transient D-Bus
-     * failure. Without a client every search simply answers empty (_do_search). */
+     * failure. Without a client every search simply answers empty. */
     if (error)
         g_warning ("Failed to connect to GPaste daemon, searching is disabled: %s", error->message);
 }
@@ -375,17 +308,19 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 static void
 g_paste_search_provider_init (GPasteSearchProvider *self)
 {
-    GDBusInterfaceVTable *vtable = &self->g_paste_search_provider_dbus_vtable;
+    self->skeleton = G_PASTE_SHELL_SEARCH_PROVIDER2 (g_paste_shell_search_provider2_skeleton_new ());
 
-    self->id_on_bus = 0;
-    g_autoptr (GError) error = NULL;
-    self->g_paste_search_provider_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_SEARCH_PROVIDER_INTERFACE,
-                                                                            &error);
-    g_assert_no_error (error);
-
-    vtable->method_call = g_paste_search_provider_dbus_method_call;
-    vtable->get_property = NULL;
-    vtable->set_property = NULL;
+    /* Swapped, so @self leads each handler. */
+    g_signal_connect_swapped (self->skeleton, "handle-get-initial-result-set",
+                              G_CALLBACK (g_paste_search_provider_handle_get_initial_result_set), self);
+    g_signal_connect_swapped (self->skeleton, "handle-get-subsearch-result-set",
+                              G_CALLBACK (g_paste_search_provider_handle_get_subsearch_result_set), self);
+    g_signal_connect_swapped (self->skeleton, "handle-get-result-metas",
+                              G_CALLBACK (g_paste_search_provider_handle_get_result_metas), self);
+    g_signal_connect_swapped (self->skeleton, "handle-activate-result",
+                              G_CALLBACK (g_paste_search_provider_handle_activate_result), self);
+    g_signal_connect_swapped (self->skeleton, "handle-launch-search",
+                              G_CALLBACK (g_paste_search_provider_handle_launch_search), self);
 
     g_paste_client_new (on_client_ready, g_object_ref (self));
 }

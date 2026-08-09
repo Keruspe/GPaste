@@ -1,6 +1,7 @@
 option('bash-completion', type: 'boolean', value: true, description: 'install bash completion files')
 option('fish-completion', type: 'boolean', value: true, description: 'install fish completion files')
 option('dbus-services-dir', type: 'string', value: '', description: 'path to the dbus services dir')
+option('dbus-interfaces-dir', type: 'string', value: '', description: 'path to the dbus interfaces dir')
 option('introspection', type: 'boolean', value: true, description: 'build GIR data')
 option('control-center-keybindings-dir', type: 'string', value: '', description: 'path to where gnome-control-center stores its keybindings')
 option('encryption', type: 'feature', value: 'auto', description: 'build libsodium-based history encryption support')

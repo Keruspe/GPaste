@@ -35,12 +35,11 @@ g_paste_bus_object_register_on_connection (GPasteBusObject *self,
  *
  * Unexport the #GPasteBusObject from the connection it was registered on.
  *
- * g_dbus_connection_register_object() keeps a reference on @self as its
- * user_data, so an object that is never unregistered can never be finalized —
- * and its object path stays exported on a connection that outlives it (the
- * shared session bus inside gnome-shell). Unregistering here breaks that cycle,
- * so a later registration at the same path succeeds instead of failing with
- * %G_IO_ERROR_EXISTS.
+ * An export lasts until it is dropped explicitly, so an object path stays taken
+ * on a connection that outlives the object that claimed it — the shared session
+ * bus inside gnome-shell is exactly such a connection. Unexporting here frees
+ * the path, so a later registration at the same one succeeds instead of failing
+ * with %G_IO_ERROR_EXISTS.
  */
 G_PASTE_VISIBLE void
 g_paste_bus_object_unregister_on_connection (GPasteBusObject *self)

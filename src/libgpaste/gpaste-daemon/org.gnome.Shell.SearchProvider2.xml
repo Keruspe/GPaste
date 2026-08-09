@@ -1,0 +1,49 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!--
+  SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+  SPDX-License-Identifier: BSD-2-Clause
+
+  gnome-shell's search provider interface, which GPasteSearchProvider implements.
+
+  This one is gnome-shell's contract, not ours: it is here only to feed
+  gdbus-codegen, and it is deliberately not installed — gnome-shell already ships
+  the authoritative copy as org.gnome.ShellSearchProvider2.xml.
+-->
+<node>
+  <interface name="org.gnome.Shell.SearchProvider2">
+    <annotation name="org.gtk.GDBus.C.Name" value="PasteShellSearchProvider2"/>
+
+    <!-- The uuids matching a fresh set of search terms -->
+    <method name="GetInitialResultSet">
+      <arg type="as" direction="in"  name="terms"/>
+      <arg type="as" direction="out" name="results"/>
+    </method>
+
+    <!-- The uuids matching terms refined from a previous result set -->
+    <method name="GetSubsearchResultSet">
+      <arg type="as" direction="in"  name="previous_results"/>
+      <arg type="as" direction="in"  name="terms"/>
+      <arg type="as" direction="out" name="results"/>
+    </method>
+
+    <!-- What to display for each result -->
+    <method name="GetResultMetas">
+      <arg type="as"     direction="in"  name="identifiers"/>
+      <arg type="aa{sv}" direction="out" name="metas"/>
+    </method>
+
+    <!-- One result was picked -->
+    <method name="ActivateResult">
+      <arg type="s"  direction="in" name="identifier"/>
+      <arg type="as" direction="in" name="terms"/>
+      <arg type="u"  direction="in" name="timestamp"/>
+    </method>
+
+    <!-- The search itself was picked, rather than one of its results -->
+    <method name="LaunchSearch">
+      <arg type="as" direction="in" name="terms"/>
+      <arg type="u"  direction="in" name="timestamp"/>
+    </method>
+  </interface>
+</node>

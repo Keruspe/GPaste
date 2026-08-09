@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <gpaste-3/gpaste-daemon2.h>
 #include <gpaste-3/gpaste-error.h>
-#include <gpaste-3/gpaste-gdbus-defines.h>
 
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-history.h>
@@ -12,47 +12,18 @@
 G_BEGIN_DECLS
 
 /* The subset of the daemon's state the D-Bus method handlers operate on, so
- * they can live outside the daemon object. */
+ * they can live outside the daemon object.
+ *
+ * @skeleton is the generated org.gnome.GPaste2 implementation the daemon
+ * exports: handlers reach it to emit the interface's signals, which is all they
+ * need the bus for — marshalling both ways is the skeleton's job now. */
 typedef struct
 {
-    GDBusConnection         *connection;
+    GPasteDaemon2           *skeleton;
     GPasteHistory           *history;
     GPasteSettings          *settings;
     GPasteClipboardsManager *clipboards_manager;
 } GPasteDaemonMethods;
-
-/* @conn is explicit: these are expanded both from the daemon object and from
- * the free-standing method handlers, which hold their connection in different
- * places. They used to reach for a local named priv, which is why the context
- * struct above had to mirror the daemon's field names. */
-#define G_PASTE_SEND_DBUS_SIGNAL_FULLER(conn, interface, sig, data, error) \
-    g_dbus_connection_emit_signal (conn,                                   \
-                                   NULL, /* destination_bus_name */        \
-                                   G_PASTE_DAEMON_OBJECT_PATH,             \
-                                   interface,                              \
-                                   sig,                                    \
-                                   data,                                   \
-                                   error)
-
-#define G_PASTE_SEND_DBUS_SIGNAL_FULL(conn,sig,data,error) \
-    G_PASTE_SEND_DBUS_SIGNAL_FULLER (conn, G_PASTE_DAEMON_INTERFACE_NAME, G_PASTE_DAEMON_SIG_##sig, data, error)
-
-#define G_PASTE_SEND_DBUS_PROPERTIES_CHANGED(conn, property, value) \
-    GVariantDict dict;                                              \
-    g_variant_dict_init (&dict, NULL);                              \
-    g_variant_dict_insert_value (&dict, property, value);           \
-    GVariant *data = g_variant_new ("(s@a{sv}@as)",                 \
-                                    G_PASTE_DAEMON_INTERFACE_NAME,  \
-                                    g_variant_dict_end (&dict),     \
-                                    g_variant_new_strv (NULL, 0));  \
-    G_PASTE_SEND_DBUS_SIGNAL_FULLER (conn, "org.freedesktop.DBus.Properties", "PropertiesChanged", data, NULL)
-
-#define __NODATA     g_variant_new_tuple (NULL,  0)
-#define __DATA(data) g_variant_new_tuple (&data, 1)
-
-#define G_PASTE_SEND_DBUS_SIGNAL(conn,sig)             G_PASTE_SEND_DBUS_SIGNAL_FULL(conn, sig, __NODATA,  NULL)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(conn,sig)  G_PASTE_SEND_DBUS_SIGNAL_FULL(conn, sig, __NODATA,  error)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(conn,sig,d) G_PASTE_SEND_DBUS_SIGNAL_FULL(conn, sig, __DATA(d), NULL)
 
 /* Bail out of a method handler with a #GPasteError. The domain is registered
  * with GDBus, so @code decides the error name the client sees and the code it
@@ -69,83 +40,95 @@ typedef struct
 
 #define G_PASTE_DBUS_ASSERT(cond, code, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, code, _msg, ;)
 
+/* The handlers below take the method's arguments as the generated skeleton
+ * hands them over, and return what its matching g_paste_daemon2_complete_*()
+ * wants. A borrowed const gchar * is one the reply copies before the call
+ * returns; a GVariant * is floating and consumed by the completion. */
+
 void      g_paste_daemon_methods_do_add                     (const GPasteDaemonMethods *priv,
                                                              const gchar               *text,
                                                              guint64                    length,
                                                              GError                   **error);
 void      g_paste_daemon_methods_add                        (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *text,
                                                              GError                   **error);
 void      g_paste_daemon_methods_add_file                   (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *file,
                                                              GError                   **error);
 void      g_paste_daemon_methods_add_password               (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *name,
+                                                             const gchar               *password,
                                                              GError                   **error);
 void      g_paste_daemon_methods_backup_history             (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *history,
+                                                             const gchar               *backup,
                                                              GError                   **error);
 void      g_paste_daemon_methods_delete                     (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *uuid,
                                                              GError                   **error);
 void      g_paste_daemon_methods_delete_history             (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *name,
                                                              GError                   **error);
 void      g_paste_daemon_methods_delete_password            (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *name,
                                                              GError                   **error);
 void      g_paste_daemon_methods_empty_history              (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters);
-GVariant *g_paste_daemon_methods_get_element               (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *name);
+const gchar *g_paste_daemon_methods_get_element             (const GPasteDaemonMethods *priv,
+                                                             const gchar               *uuid,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_get_element_at_index      (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+gboolean  g_paste_daemon_methods_get_element_at_index       (const GPasteDaemonMethods *priv,
+                                                             guint64                    index,
+                                                             const gchar              **uuid,
+                                                             const gchar              **value,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_get_element_kind          (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+const gchar *g_paste_daemon_methods_get_element_kind        (const GPasteDaemonMethods *priv,
+                                                             const gchar               *uuid,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_get_elements              (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+GVariant *g_paste_daemon_methods_get_elements               (const GPasteDaemonMethods *priv,
+                                                             const gchar * const       *uuids,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_get_history               (const GPasteDaemonMethods *priv);
-GVariant *g_paste_daemon_methods_get_history_name          (const GPasteDaemonMethods *priv);
-GVariant *g_paste_daemon_methods_get_history_size          (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters);
-GVariant *g_paste_daemon_methods_get_image                 (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+GVariant *g_paste_daemon_methods_get_history                (const GPasteDaemonMethods *priv);
+const gchar *g_paste_daemon_methods_get_history_name        (const GPasteDaemonMethods *priv);
+guint64   g_paste_daemon_methods_get_history_size           (const GPasteDaemonMethods *priv,
+                                                             const gchar               *name);
+GVariant *g_paste_daemon_methods_get_image                  (const GPasteDaemonMethods *priv,
+                                                             const gchar               *uuid,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_get_raw_element           (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+const gchar *g_paste_daemon_methods_get_raw_element         (const GPasteDaemonMethods *priv,
+                                                             const gchar               *uuid,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_get_raw_history           (const GPasteDaemonMethods *priv);
-GVariant *g_paste_daemon_methods_list_histories            (const GPasteDaemonMethods *priv,
+GVariant *g_paste_daemon_methods_get_raw_history            (const GPasteDaemonMethods *priv);
+GStrv     g_paste_daemon_methods_list_histories             (const GPasteDaemonMethods *priv,
                                                              GError                   **error);
 void      g_paste_daemon_methods_merge                      (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *decoration,
+                                                             const gchar               *separator,
+                                                             const gchar * const       *uuids,
                                                              GError                   **error);
 void      g_paste_daemon_methods_rename_password            (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *old_name,
+                                                             const gchar               *new_name,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_search                    (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+GStrv     g_paste_daemon_methods_search                     (const GPasteDaemonMethods *priv,
+                                                             const gchar               *query,
                                                              GError                   **error);
 void      g_paste_daemon_methods_select                     (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *uuid,
                                                              GError                   **error);
 void      g_paste_daemon_methods_replace                    (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *uuid,
+                                                             const gchar               *contents,
                                                              GError                   **error);
 void      g_paste_daemon_methods_set_password               (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *uuid,
+                                                             const gchar               *name,
                                                              GError                   **error);
 void      g_paste_daemon_methods_switch_history             (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters,
+                                                             const gchar               *name,
                                                              GError                   **error);
 void      g_paste_daemon_methods_track                      (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters);
-void      g_paste_daemon_methods_on_extension_state_changed (const GPasteDaemonMethods *priv,
-                                                             GVariant                  *parameters);
+                                                             gboolean                   tracking_state);
 void      g_paste_daemon_methods_extension_state_changed    (const GPasteDaemonMethods *priv,
                                                              gboolean                   state);
 

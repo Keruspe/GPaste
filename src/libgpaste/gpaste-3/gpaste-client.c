@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-3/gpaste-gdbus-macros.h>
+#include <gpaste-3/gpaste-daemon2.h>
+#include <gpaste-3/gpaste-gdbus-defines.h>
+#include <gpaste-3/gpaste-util.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
 struct _GPasteClient
@@ -29,7 +31,17 @@ struct _GPasteClient
  * there" should therefore check the domain with g_error_matches(), not the bare
  * code: the numbering of the two overlaps.
  */
-G_PASTE_DEFINE_TYPE (Client, client, G_TYPE_DBUS_PROXY)
+static void g_paste_client_daemon2_iface_init (GPasteDaemon2Iface *iface);
+
+G_PASTE_DEFINE_TYPE_WITH_INTERFACE (Client, client, G_TYPE_DBUS_PROXY, G_TYPE_PASTE_DAEMON2, g_paste_client_daemon2_iface_init)
+
+/* The ids g_paste_daemon2_override_properties() hands out, in the order the
+ * interface declares them. */
+enum
+{
+    PROP_ACTIVE = 1,
+    PROP_VERSION,
+};
 
 enum
 {
@@ -45,128 +57,9 @@ enum
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
-/*******************/
-/* Methods / Async */
-/*******************/
-
-#define DBUS_CALL_NO_PARAM_ASYNC(method) \
-    DBUS_CALL_NO_PARAM_ASYNC_BASE (CLIENT, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_ASYNC_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAMV_ASYNC(method, paramv) \
-    DBUS_CALL_ONE_PARAMV_ASYNC_BASE (CLIENT, paramv, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_TWO_PARAMS_ASYNC(method, params) \
-    DBUS_CALL_TWO_PARAMS_ASYNC_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_THREE_PARAMS_ASYNC(method, params) \
-    DBUS_CALL_THREE_PARAMS_ASYNC_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
-
-/****************************/
-/* Methods / Async - Finish */
-/****************************/
-
-#define DBUS_ASYNC_FINISH_NO_RETURN \
-    DBUS_ASYNC_FINISH_NO_RETURN_BASE (CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_STRING \
-    DBUS_ASYNC_FINISH_RET_STRING_BASE (CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_BYTES \
-    DBUS_ASYNC_FINISH_RET_BYTES_BASE (CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_ITEM \
-    DBUS_ASYNC_FINISH_RET_ITEM_BASE (CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_STRV \
-    DBUS_ASYNC_FINISH_RET_STRV_BASE (CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_ITEMS \
-    DBUS_ASYNC_FINISH_RET_ITEMS_BASE (CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_UINT64 \
-    DBUS_ASYNC_FINISH_RET_UINT64_BASE (CLIENT)
-
-/******************/
-/* Methods / Sync */
-/******************/
-
-#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (CLIENT, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_NO_PARAM_RET_STRING(method) \
-    DBUS_CALL_NO_PARAM_RET_STRING_BASE (CLIENT, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_NO_PARAM_RET_STRV(method) \
-    DBUS_CALL_NO_PARAM_RET_STRV_BASE (CLIENT, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_NO_PARAM_RET_ITEMS(method) \
-    DBUS_CALL_NO_PARAM_RET_ITEMS_BASE (CLIENT, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_RET_UINT64(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_UINT64_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_RET_BYTES(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_BYTES_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_RET_STRV(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_STRV_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_RET_ITEM(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_ITEM_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAMV_RET_ITEMS(method, paramv) \
-    DBUS_CALL_ONE_PARAMV_RET_ITEMS_BASE (CLIENT, G_PASTE_DAEMON_##method, paramv)
-
-#define DBUS_CALL_TWO_PARAMS_NO_RETURN(method, params) \
-    DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_THREE_PARAMS_NO_RETURN(method, params) \
-    DBUS_CALL_THREE_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
-
-/**************/
-/* Properties */
-/**************/
-
-#define DBUS_GET_BOOLEAN_PROPERTY(property) \
-    DBUS_GET_BOOLEAN_PROPERTY_BASE (CLIENT, G_PASTE_DAEMON_PROP_##property)
-
-#define DBUS_GET_STRING_PROPERTY(property) \
-    DBUS_GET_STRING_PROPERTY_BASE (CLIENT, G_PASTE_DAEMON_PROP_##property)
-
 /***********/
 /* Signals */
 /***********/
-
-#define HANDLE_SIGNAL(sig)                                         \
-    if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_##sig)) \
-    {                                                              \
-        g_signal_emit (self,                                       \
-                       signals[sig],                               \
-                       0, /* detail */                             \
-                       NULL);                                      \
-    }
-#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, get_data)                         \
-    if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_##sig))               \
-    {                                                                            \
-        GVariantIter params_iter;                                                \
-        g_variant_iter_init (&params_iter, parameters);                          \
-        g_autoptr (GVariant) variant = g_variant_iter_next_value (&params_iter); \
-        ans_type answer = get_data;                                              \
-        g_signal_emit (self,                                                     \
-                       signals[sig],                                             \
-                       0, /* detail */                                           \
-                       answer,                                                   \
-                       NULL);                                                    \
-    }
 
 #define NEW_SIGNAL(name)                         \
     g_signal_new (name,                          \
@@ -201,6 +94,24 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
                   1,                               \
                   G_TYPE_##type)
 
+/*
+ * Our own API takes an explicit length; the generated marshalling wants the
+ * NULL-terminated array a D-Bus "as" is built from. Only the array is ours, so
+ * g_autofree (not g_auto (GStrv)) is what frees it: the strings belong to the
+ * caller.
+ */
+static const gchar **
+g_paste_client_terminate_strv (const gchar **strv,
+                               guint64       length)
+{
+    const gchar **terminated = g_new0 (const gchar *, length + 1);
+
+    for (guint64 i = 0; i < length; ++i)
+        terminated[i] = strv[i];
+
+    return terminated;
+}
+
 /******************/
 /* Methods / Sync */
 /******************/
@@ -216,7 +127,10 @@ G_PASTE_VISIBLE void
 g_paste_client_about_sync (GPasteClient *self,
                            GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (ABOUT);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_about_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -232,7 +146,10 @@ g_paste_client_add_sync (GPasteClient *self,
                          const gchar  *text,
                          GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (ADD, string, text);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_add_sync (G_PASTE_DAEMON2 (self), text, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -248,6 +165,9 @@ g_paste_client_add_file_sync (GPasteClient *self,
                               const gchar  *file,
                               GError      **error)
 {
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
     g_autofree gchar *absolute_path = NULL;
 
     if (!g_path_is_absolute (file))
@@ -256,7 +176,7 @@ g_paste_client_add_file_sync (GPasteClient *self,
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
-    DBUS_CALL_ONE_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+    g_paste_daemon2_call_add_file_sync (G_PASTE_DAEMON2 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -274,12 +194,10 @@ g_paste_client_add_password_sync (GPasteClient *self,
                                   const gchar  *password,
                                   GError      **error)
 {
-    GVariant *params[] = {
-        g_variant_new_string (name),
-        g_variant_new_string (password)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
 
-    DBUS_CALL_TWO_PARAMS_NO_RETURN (ADD_PASSWORD, params);
+    g_paste_daemon2_call_add_password_sync (G_PASTE_DAEMON2 (self), name, password, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -297,12 +215,10 @@ g_paste_client_backup_history_sync (GPasteClient *self,
                                     const gchar  *backup,
                                     GError      **error)
 {
-    GVariant *params[] = {
-        g_variant_new_string (history),
-        g_variant_new_string (backup)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
 
-    DBUS_CALL_TWO_PARAMS_NO_RETURN (BACKUP_HISTORY, params);
+    g_paste_daemon2_call_backup_history_sync (G_PASTE_DAEMON2 (self), history, backup, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -318,7 +234,10 @@ G_PASTE_VISIBLE void
 g_paste_client_change_passphrase_sync (GPasteClient *self,
                                        GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (CHANGE_PASSPHRASE);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_change_passphrase_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -334,7 +253,10 @@ g_paste_client_delete_sync (GPasteClient *self,
                             const gchar  *uuid,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_delete_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -350,7 +272,10 @@ g_paste_client_delete_history_sync (GPasteClient *self,
                                     const gchar  *name,
                                     GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE_HISTORY, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_delete_history_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -366,7 +291,10 @@ g_paste_client_delete_password_sync (GPasteClient *self,
                                      const gchar  *name,
                                      GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE_PASSWORD, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_delete_password_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -382,7 +310,10 @@ g_paste_client_empty_history_sync (GPasteClient *self,
                                    const gchar  *name,
                                    GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (EMPTY_HISTORY, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_empty_history_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -400,7 +331,14 @@ g_paste_client_get_element_sync (GPasteClient *self,
                                  const gchar  *uuid,
                                  GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, string, uuid);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_element_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &value, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_steal_pointer (&value);
 }
 
 /**
@@ -418,15 +356,15 @@ g_paste_client_get_element_at_index_sync (GPasteClient *self,
                                           guint64       index,
                                           GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_ITEM (GET_ELEMENT_AT_INDEX, uint64, index);
-}
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
 
-static gchar *
-_g_paste_client_get_element_kind_sync (GPasteClient *self,
-                                       const gchar  *uuid,
-                                       GError      **error)
-{
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, string, uuid);
+    g_autofree gchar *uuid = NULL;
+        g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_element_at_index_sync (G_PASTE_DAEMON2 (self), index, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &uuid, &value, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_paste_client_item_new (uuid, value);
 }
 
 /**
@@ -444,8 +382,14 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
                                       const gchar  *uuid,
                                       GError      **error)
 {
-    g_autofree gchar *kind = _g_paste_client_get_element_kind_sync (self, uuid, error);
-    GEnumValue *k = (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind) : NULL;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), G_PASTE_ITEM_KIND_INVALID);
+    g_return_val_if_fail (!error || !(*error), G_PASTE_ITEM_KIND_INVALID);
+
+    g_autofree gchar *kind = NULL;
+    if (!g_paste_daemon2_call_get_element_kind_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &kind, NULL /* cancellable */, error))
+        return G_PASTE_ITEM_KIND_INVALID;
+
+    const GEnumValue *k = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind);
 
     return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
 }
@@ -467,8 +411,16 @@ g_paste_client_get_elements_sync (GPasteClient  *self,
                                   guint64        n_uuids,
                                   GError       **error)
 {
-    GVariant *param = g_variant_new_strv (uuids, n_uuids);
-    DBUS_CALL_ONE_PARAMV_RET_ITEMS (GET_ELEMENTS, param);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
+    g_autoptr (GVariant) elements = NULL;
+
+    if (!g_paste_daemon2_call_get_elements_sync (G_PASTE_DAEMON2 (self), (const gchar * const *) terminated, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &elements, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_paste_util_get_dbus_items_result (elements);
 }
 
 /**
@@ -484,7 +436,14 @@ G_PASTE_VISIBLE GList *
 g_paste_client_get_history_sync (GPasteClient *self,
                                  GError      **error)
 {
-    DBUS_CALL_NO_PARAM_RET_ITEMS (GET_HISTORY);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) history = NULL;
+    if (!g_paste_daemon2_call_get_history_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &history, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_paste_util_get_dbus_items_result (history);
 }
 
 /**
@@ -500,7 +459,14 @@ G_PASTE_VISIBLE gchar *
 g_paste_client_get_history_name_sync (GPasteClient *self,
                                       GError      **error)
 {
-    DBUS_CALL_NO_PARAM_RET_STRING (GET_HISTORY_NAME);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *name = NULL;
+    if (!g_paste_daemon2_call_get_history_name_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &name, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_steal_pointer (&name);
 }
 
 /**
@@ -518,7 +484,14 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
                                       const gchar  *name,
                                       GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_UINT64 (GET_HISTORY_SIZE, string, name);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), 0);
+    g_return_val_if_fail (!error || !(*error), 0);
+
+    guint64 size = 0;
+    if (!g_paste_daemon2_call_get_history_size_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &size, NULL /* cancellable */, error))
+        return 0;
+
+    return size;
 }
 
 /**
@@ -537,7 +510,14 @@ g_paste_client_get_image_sync (GPasteClient *self,
                                const gchar  *uuid,
                                GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_BYTES (GET_IMAGE, string, uuid);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) image = NULL;
+    if (!g_paste_daemon2_call_get_image_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &image, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_variant_get_data_as_bytes (image);
 }
 
 /**
@@ -555,7 +535,14 @@ g_paste_client_get_raw_element_sync (GPasteClient *self,
                                      const gchar  *uuid,
                                      GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_RAW_ELEMENT, string, uuid);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_raw_element_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &value, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_steal_pointer (&value);
 }
 
 /**
@@ -571,7 +558,14 @@ G_PASTE_VISIBLE GList *
 g_paste_client_get_raw_history_sync (GPasteClient *self,
                                      GError      **error)
 {
-    DBUS_CALL_NO_PARAM_RET_ITEMS (GET_RAW_HISTORY);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) history = NULL;
+    if (!g_paste_daemon2_call_get_raw_history_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &history, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_paste_util_get_dbus_items_result (history);
 }
 
 /**
@@ -587,7 +581,14 @@ G_PASTE_VISIBLE GStrv
 g_paste_client_list_histories_sync (GPasteClient *self,
                                     GError      **error)
 {
-    DBUS_CALL_NO_PARAM_RET_STRV (LIST_HISTORIES);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_auto (GStrv) histories = NULL;
+    if (!g_paste_daemon2_call_list_histories_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &histories, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_steal_pointer (&histories);
 }
 
 /**
@@ -612,13 +613,19 @@ g_paste_client_merge_sync (GPasteClient  *self,
                            guint64        n_uuids,
                            GError       **error)
 {
-    GVariant *params[] = {
-        g_variant_new_string (decoration ? decoration : ""),
-        g_variant_new_string (separator  ? separator  : ""),
-        g_variant_new_strv (uuids, n_uuids)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
 
-    DBUS_CALL_THREE_PARAMS_NO_RETURN (MERGE, params);
+    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
+
+    g_paste_daemon2_call_merge_sync (G_PASTE_DAEMON2 (self),
+                                     (decoration) ? decoration : "",
+                                     (separator) ? separator : "",
+                                     (const gchar * const *) terminated,
+                                     G_DBUS_CALL_FLAGS_NONE,
+                                     -1, /* timeout */
+                                     NULL, /* cancellable */
+                                     error);
 }
 
 /**
@@ -634,7 +641,10 @@ g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
                                                 gboolean      state,
                                                 GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (ON_EXTENSION_STATE_CHANGED, boolean, state);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_on_extension_state_changed_sync (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -648,7 +658,10 @@ G_PASTE_VISIBLE void
 g_paste_client_reexecute_sync (GPasteClient *self,
                                GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (REEXECUTE);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_reexecute_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -666,12 +679,10 @@ g_paste_client_rename_password_sync (GPasteClient *self,
                                      const gchar  *new_name,
                                      GError      **error)
 {
-    GVariant *params[] = {
-        g_variant_new_string (old_name),
-        g_variant_new_string (new_name)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
 
-    DBUS_CALL_TWO_PARAMS_NO_RETURN (RENAME_PASSWORD, params);
+    g_paste_daemon2_call_rename_password_sync (G_PASTE_DAEMON2 (self), old_name, new_name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -689,12 +700,10 @@ g_paste_client_replace_sync (GPasteClient *self,
                              const gchar  *contents,
                              GError      **error)
 {
-    GVariant *params[] = {
-        g_variant_new_string (uuid),
-        g_variant_new_string (contents)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
 
-    DBUS_CALL_TWO_PARAMS_NO_RETURN (REPLACE, params);
+    g_paste_daemon2_call_replace_sync (G_PASTE_DAEMON2 (self), uuid, contents, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -712,7 +721,14 @@ g_paste_client_search_sync (GPasteClient *self,
                             const gchar  *pattern,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRV (SEARCH, string, pattern);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_auto (GStrv) results = NULL;
+    if (!g_paste_daemon2_call_search_sync (G_PASTE_DAEMON2 (self), pattern, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &results, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_steal_pointer (&results);
 }
 
 /**
@@ -728,7 +744,10 @@ g_paste_client_select_sync (GPasteClient *self,
                             const gchar  *uuid,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_select_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -746,12 +765,10 @@ g_paste_client_set_password_sync (GPasteClient *self,
                                   const gchar  *name,
                                   GError      **error)
 {
-    GVariant *params[] = {
-        g_variant_new_string (uuid),
-        g_variant_new_string (name)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
 
-    DBUS_CALL_TWO_PARAMS_NO_RETURN (SET_PASSWORD, params);
+    g_paste_daemon2_call_set_password_sync (G_PASTE_DAEMON2 (self), uuid, name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -765,7 +782,10 @@ G_PASTE_VISIBLE void
 g_paste_client_show_history_sync (GPasteClient *self,
                                   GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_HISTORY);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_show_history_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 /**
  * g_paste_client_switch_history_sync:
@@ -780,7 +800,10 @@ g_paste_client_switch_history_sync (GPasteClient *self,
                                     const gchar  *name,
                                     GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (SWITCH_HISTORY, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_switch_history_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -796,7 +819,10 @@ g_paste_client_track_sync (GPasteClient *self,
                            gboolean      state,
                            GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (TRACK, boolean, state);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_track_sync (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /**
@@ -812,7 +838,10 @@ g_paste_client_upload_sync (GPasteClient *self,
                             const gchar  *uuid,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (UPLOAD, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_upload_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
 }
 
 /*******************/
@@ -833,7 +862,9 @@ g_paste_client_about (GPasteClient       *self,
                       GAsyncReadyCallback callback,
                       gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (ABOUT);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_about (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -852,7 +883,9 @@ g_paste_client_add (GPasteClient       *self,
                     GAsyncReadyCallback callback,
                     gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (ADD, string, text);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_add (G_PASTE_DAEMON2 (self), text, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -871,6 +904,8 @@ g_paste_client_add_file (GPasteClient       *self,
                          GAsyncReadyCallback callback,
                          gpointer            user_data)
 {
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
     g_autofree gchar *absolute_path = NULL;
 
     if (!g_path_is_absolute (file))
@@ -879,7 +914,7 @@ g_paste_client_add_file (GPasteClient       *self,
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
-    DBUS_CALL_ONE_PARAM_ASYNC (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+    g_paste_daemon2_call_add_file (G_PASTE_DAEMON2 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -900,12 +935,9 @@ g_paste_client_add_password (GPasteClient       *self,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-    GVariant *params[] = {
-        g_variant_new_string (name),
-        g_variant_new_string (password)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
-    DBUS_CALL_TWO_PARAMS_ASYNC (ADD_PASSWORD, params);
+    g_paste_daemon2_call_add_password (G_PASTE_DAEMON2 (self), name, password, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -926,12 +958,9 @@ g_paste_client_backup_history (GPasteClient       *self,
                                GAsyncReadyCallback callback,
                                gpointer            user_data)
 {
-    GVariant *params[] = {
-        g_variant_new_string (history),
-        g_variant_new_string (backup)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
-    DBUS_CALL_TWO_PARAMS_ASYNC (BACKUP_HISTORY, params);
+    g_paste_daemon2_call_backup_history (G_PASTE_DAEMON2 (self), history, backup, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -950,7 +979,9 @@ g_paste_client_change_passphrase (GPasteClient       *self,
                                   GAsyncReadyCallback callback,
                                   gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (CHANGE_PASSPHRASE);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_change_passphrase (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -969,7 +1000,9 @@ g_paste_client_delete (GPasteClient       *self,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (DELETE, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_delete (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -988,7 +1021,9 @@ g_paste_client_delete_history (GPasteClient       *self,
                                GAsyncReadyCallback callback,
                                gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (DELETE_HISTORY, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_delete_history (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1007,7 +1042,9 @@ g_paste_client_delete_password (GPasteClient       *self,
                                 GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (DELETE_PASSWORD, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_delete_password (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1026,7 +1063,9 @@ g_paste_client_empty_history (GPasteClient       *self,
                               GAsyncReadyCallback callback,
                               gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (EMPTY_HISTORY, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_empty_history (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1045,7 +1084,9 @@ g_paste_client_get_element (GPasteClient       *self,
                             GAsyncReadyCallback callback,
                             gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_element (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1064,7 +1105,9 @@ g_paste_client_get_element_at_index (GPasteClient       *self,
                                      GAsyncReadyCallback callback,
                                      gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_AT_INDEX, uint64, index);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_element_at_index (G_PASTE_DAEMON2 (self), index, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1083,7 +1126,9 @@ g_paste_client_get_element_kind (GPasteClient       *self,
                                  GAsyncReadyCallback callback,
                                  gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_KIND, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_element_kind (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1104,8 +1149,11 @@ g_paste_client_get_elements (GPasteClient       *self,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-    GVariant *param = g_variant_new_strv (uuids, n_uuids);
-    DBUS_CALL_ONE_PARAMV_ASYNC (GET_ELEMENTS, param);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
+
+    g_paste_daemon2_call_get_elements (G_PASTE_DAEMON2 (self), (const gchar * const *) terminated, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1122,7 +1170,9 @@ g_paste_client_get_history (GPasteClient       *self,
                             GAsyncReadyCallback callback,
                             gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (GET_HISTORY);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_history (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1139,7 +1189,9 @@ g_paste_client_get_history_name (GPasteClient       *self,
                                  GAsyncReadyCallback callback,
                                  gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (GET_HISTORY_NAME);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_history_name (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1158,7 +1210,9 @@ g_paste_client_get_history_size (GPasteClient       *self,
                                  GAsyncReadyCallback callback,
                                  gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_HISTORY_SIZE, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_history_size (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1177,7 +1231,9 @@ g_paste_client_get_image (GPasteClient       *self,
                           GAsyncReadyCallback callback,
                           gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_IMAGE, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_image (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1196,7 +1252,9 @@ g_paste_client_get_raw_element (GPasteClient       *self,
                                 GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_RAW_ELEMENT, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_raw_element (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1213,7 +1271,9 @@ g_paste_client_get_raw_history (GPasteClient       *self,
                                 GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (GET_RAW_HISTORY);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_raw_history (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1230,7 +1290,9 @@ g_paste_client_list_histories (GPasteClient       *self,
                                GAsyncReadyCallback callback,
                                gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (LIST_HISTORIES);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_list_histories (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1258,13 +1320,19 @@ g_paste_client_merge (GPasteClient       *self,
                       GAsyncReadyCallback callback,
                       gpointer            user_data)
 {
-    GVariant *params[] = {
-        g_variant_new_string (decoration ? decoration : ""),
-        g_variant_new_string (separator  ? separator  : ""),
-        g_variant_new_strv (uuids, n_uuids)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
-    DBUS_CALL_THREE_PARAMS_ASYNC (MERGE, params);
+    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
+
+    g_paste_daemon2_call_merge (G_PASTE_DAEMON2 (self),
+                                (decoration) ? decoration : "",
+                                (separator) ? separator : "",
+                                (const gchar * const *) terminated,
+                                G_DBUS_CALL_FLAGS_NONE,
+                                -1, /* timeout */
+                                NULL, /* cancellable */
+                                callback,
+                                user_data);
 }
 
 /**
@@ -1283,7 +1351,9 @@ g_paste_client_on_extension_state_changed (GPasteClient       *self,
                                            GAsyncReadyCallback callback,
                                            gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (ON_EXTENSION_STATE_CHANGED, boolean, state);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_on_extension_state_changed (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1300,7 +1370,9 @@ g_paste_client_reexecute (GPasteClient       *self,
                           GAsyncReadyCallback callback,
                           gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (REEXECUTE);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_reexecute (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1321,12 +1393,9 @@ g_paste_client_rename_password (GPasteClient       *self,
                                 GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    GVariant *params[] = {
-        g_variant_new_string (old_name),
-        g_variant_new_string (new_name)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
-    DBUS_CALL_TWO_PARAMS_ASYNC (RENAME_PASSWORD, params);
+    g_paste_daemon2_call_rename_password (G_PASTE_DAEMON2 (self), old_name, new_name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1347,12 +1416,9 @@ g_paste_client_replace (GPasteClient       *self,
                         GAsyncReadyCallback callback,
                         gpointer            user_data)
 {
-    GVariant *params[] = {
-        g_variant_new_string (uuid),
-        g_variant_new_string (contents)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
-    DBUS_CALL_TWO_PARAMS_ASYNC (REPLACE, params);
+    g_paste_daemon2_call_replace (G_PASTE_DAEMON2 (self), uuid, contents, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1371,7 +1437,9 @@ g_paste_client_search (GPasteClient       *self,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (SEARCH, string, pattern);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_search (G_PASTE_DAEMON2 (self), pattern, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1390,7 +1458,9 @@ g_paste_client_select (GPasteClient       *self,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_select (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1411,12 +1481,9 @@ g_paste_client_set_password (GPasteClient       *self,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-    GVariant *params[] = {
-        g_variant_new_string (uuid),
-        g_variant_new_string (name)
-    };
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
-    DBUS_CALL_TWO_PARAMS_ASYNC (SET_PASSWORD, params);
+    g_paste_daemon2_call_set_password (G_PASTE_DAEMON2 (self), uuid, name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1433,7 +1500,9 @@ g_paste_client_show_history (GPasteClient       *self,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (SHOW_HISTORY);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_show_history (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1452,7 +1521,9 @@ g_paste_client_switch_history (GPasteClient       *self,
                                GAsyncReadyCallback callback,
                                gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (SWITCH_HISTORY, string, name);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_switch_history (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1471,7 +1542,9 @@ g_paste_client_track (GPasteClient *self,
                       GAsyncReadyCallback callback,
                       gpointer             user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (TRACK, boolean, state);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_track (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1490,7 +1563,9 @@ g_paste_client_upload (GPasteClient       *self,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (UPLOAD, string, uuid);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_upload (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /****************************/
@@ -1510,7 +1585,11 @@ g_paste_client_about_finish (GPasteClient *self,
                              GAsyncResult *result,
                              GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_about_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1526,7 +1605,11 @@ g_paste_client_add_finish (GPasteClient *self,
                            GAsyncResult *result,
                            GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_add_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1542,7 +1625,11 @@ g_paste_client_add_file_finish (GPasteClient *self,
                                 GAsyncResult *result,
                                 GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_add_file_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1558,7 +1645,11 @@ g_paste_client_add_password_finish (GPasteClient *self,
                                     GAsyncResult *result,
                                     GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_add_password_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1574,7 +1665,11 @@ g_paste_client_backup_history_finish (GPasteClient *self,
                                       GAsyncResult *result,
                                       GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_backup_history_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1590,7 +1685,11 @@ g_paste_client_change_passphrase_finish (GPasteClient *self,
                                          GAsyncResult *result,
                                          GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_change_passphrase_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1606,7 +1705,11 @@ g_paste_client_delete_finish (GPasteClient *self,
                               GAsyncResult *result,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_delete_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1622,7 +1725,11 @@ g_paste_client_delete_history_finish (GPasteClient *self,
                                       GAsyncResult *result,
                                       GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_delete_history_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1638,7 +1745,11 @@ g_paste_client_delete_password_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_delete_password_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1654,7 +1765,11 @@ g_paste_client_empty_history_finish (GPasteClient *self,
                                      GAsyncResult *result,
                                      GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_empty_history_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1672,7 +1787,15 @@ g_paste_client_get_element_finish (GPasteClient *self,
                                    GAsyncResult *result,
                                    GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRING;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_element_finish (G_PASTE_DAEMON2 (self), &value, result, error))
+        return NULL;
+
+    return g_steal_pointer (&value);
 }
 
 /**
@@ -1690,15 +1813,16 @@ g_paste_client_get_element_at_index_finish (GPasteClient *self,
                                             GAsyncResult *result,
                                             GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_ITEM;
-}
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
 
-static gchar *
-_g_paste_client_get_element_kind_finish (GPasteClient *self,
-                                         GAsyncResult *result,
-                                         GError      **error)
-{
-    DBUS_ASYNC_FINISH_RET_STRING;
+    g_autofree gchar *uuid = NULL;
+        g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_element_at_index_finish (G_PASTE_DAEMON2 (self), &uuid, &value, result, error))
+        return NULL;
+
+    return g_paste_client_item_new (uuid, value);
 }
 
 /**
@@ -1716,8 +1840,15 @@ g_paste_client_get_element_kind_finish (GPasteClient *self,
                                         GAsyncResult *result,
                                         GError      **error)
 {
-    g_autofree gchar *kind = _g_paste_client_get_element_kind_finish (self, result, error);
-    GEnumValue *k = (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind) : NULL;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), G_PASTE_ITEM_KIND_INVALID);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), G_PASTE_ITEM_KIND_INVALID);
+    g_return_val_if_fail (!error || !(*error), G_PASTE_ITEM_KIND_INVALID);
+
+    g_autofree gchar *kind = NULL;
+    if (!g_paste_daemon2_call_get_element_kind_finish (G_PASTE_DAEMON2 (self), &kind, result, error))
+        return G_PASTE_ITEM_KIND_INVALID;
+
+    const GEnumValue *k = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind);
 
     return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
 }
@@ -1737,7 +1868,16 @@ g_paste_client_get_elements_finish (GPasteClient *self,
                                     GAsyncResult *result,
                                     GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_ITEMS;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) elements = NULL;
+
+    if (!g_paste_daemon2_call_get_elements_finish (G_PASTE_DAEMON2 (self), &elements, result, error))
+        return NULL;
+
+    return g_paste_util_get_dbus_items_result (elements);
 }
 
 /**
@@ -1755,7 +1895,15 @@ g_paste_client_get_history_finish (GPasteClient *self,
                                    GAsyncResult *result,
                                    GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_ITEMS;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) history = NULL;
+    if (!g_paste_daemon2_call_get_history_finish (G_PASTE_DAEMON2 (self), &history, result, error))
+        return NULL;
+
+    return g_paste_util_get_dbus_items_result (history);
 }
 
 /**
@@ -1773,7 +1921,15 @@ g_paste_client_get_history_name_finish (GPasteClient *self,
                                         GAsyncResult *result,
                                         GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRING;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *name = NULL;
+    if (!g_paste_daemon2_call_get_history_name_finish (G_PASTE_DAEMON2 (self), &name, result, error))
+        return NULL;
+
+    return g_steal_pointer (&name);
 }
 
 /**
@@ -1791,7 +1947,15 @@ g_paste_client_get_history_size_finish (GPasteClient *self,
                                         GAsyncResult *result,
                                         GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_UINT64;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), 0);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), 0);
+    g_return_val_if_fail (!error || !(*error), 0);
+
+    guint64 size = 0;
+    if (!g_paste_daemon2_call_get_history_size_finish (G_PASTE_DAEMON2 (self), &size, result, error))
+        return 0;
+
+    return size;
 }
 
 /**
@@ -1809,7 +1973,15 @@ g_paste_client_get_raw_element_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRING;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_raw_element_finish (G_PASTE_DAEMON2 (self), &value, result, error))
+        return NULL;
+
+    return g_steal_pointer (&value);
 }
 
 /**
@@ -1827,7 +1999,15 @@ g_paste_client_get_image_finish (GPasteClient *self,
                                  GAsyncResult *result,
                                  GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_BYTES;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) image = NULL;
+    if (!g_paste_daemon2_call_get_image_finish (G_PASTE_DAEMON2 (self), &image, result, error))
+        return NULL;
+
+    return g_variant_get_data_as_bytes (image);
 }
 
 /**
@@ -1845,7 +2025,15 @@ g_paste_client_get_raw_history_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_ITEMS;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GVariant) history = NULL;
+    if (!g_paste_daemon2_call_get_raw_history_finish (G_PASTE_DAEMON2 (self), &history, result, error))
+        return NULL;
+
+    return g_paste_util_get_dbus_items_result (history);
 }
 
 /**
@@ -1863,7 +2051,15 @@ g_paste_client_list_histories_finish (GPasteClient *self,
                                       GAsyncResult *result,
                                       GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRV;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_auto (GStrv) histories = NULL;
+    if (!g_paste_daemon2_call_list_histories_finish (G_PASTE_DAEMON2 (self), &histories, result, error))
+        return NULL;
+
+    return g_steal_pointer (&histories);
 }
 
 /**
@@ -1879,7 +2075,11 @@ g_paste_client_merge_finish (GPasteClient *self,
                              GAsyncResult *result,
                              GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_merge_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1895,7 +2095,11 @@ g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
                                                   GAsyncResult *result,
                                                   GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_on_extension_state_changed_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1911,7 +2115,11 @@ g_paste_client_reexecute_finish (GPasteClient *self,
                                  GAsyncResult *result,
                                  GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_reexecute_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1927,7 +2135,11 @@ g_paste_client_rename_password_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_rename_password_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1943,7 +2155,11 @@ g_paste_client_replace_finish (GPasteClient *self,
                                GAsyncResult *result,
                                GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_replace_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1961,7 +2177,15 @@ g_paste_client_search_finish (GPasteClient *self,
                               GAsyncResult *result,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRV;
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_auto (GStrv) results = NULL;
+    if (!g_paste_daemon2_call_search_finish (G_PASTE_DAEMON2 (self), &results, result, error))
+        return NULL;
+
+    return g_steal_pointer (&results);
 }
 
 /**
@@ -1977,7 +2201,11 @@ g_paste_client_select_finish (GPasteClient *self,
                               GAsyncResult *result,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_select_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -1993,7 +2221,11 @@ g_paste_client_set_password_finish (GPasteClient *self,
                                     GAsyncResult *result,
                                     GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_set_password_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -2009,7 +2241,11 @@ g_paste_client_show_history_finish (GPasteClient *self,
                                     GAsyncResult *result,
                                     GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_show_history_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -2025,7 +2261,11 @@ g_paste_client_switch_history_finish (GPasteClient *self,
                                       GAsyncResult *result,
                                       GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_switch_history_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -2041,7 +2281,11 @@ g_paste_client_track_finish (GPasteClient *self,
                              GAsyncResult *result,
                              GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_track_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**
@@ -2057,7 +2301,11 @@ g_paste_client_upload_finish (GPasteClient *self,
                               GAsyncResult *result,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_NO_RETURN;
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_upload_finish (G_PASTE_DAEMON2 (self), result, error);
 }
 
 /**************/
@@ -2075,7 +2323,11 @@ g_paste_client_upload_finish (GPasteClient *self,
 G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
-    DBUS_GET_BOOLEAN_PROPERTY (ACTIVE);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), FALSE);
+
+    g_autoptr (GVariant) active = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), G_PASTE_DAEMON_PROP_ACTIVE);
+
+    return (active) ? g_variant_get_boolean (active) : FALSE;
 }
 
 /**
@@ -2089,7 +2341,63 @@ g_paste_client_is_active (GPasteClient *self)
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_version (GPasteClient *self)
 {
-    DBUS_GET_STRING_PROPERTY (VERSION);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+
+    g_autoptr (GVariant) version = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), G_PASTE_DAEMON_PROP_VERSION);
+
+    return (version) ? g_variant_dup_string (version, NULL) : NULL;
+}
+
+static void
+g_paste_client_daemon2_iface_init (GPasteDaemon2Iface *iface G_GNUC_UNUSED)
+{
+    /* Nothing to fill in: the interface is implemented for its client half, and
+     * the generated g_paste_daemon2_call_*() go straight through GDBusProxy.
+     * The handle_*() and get_*() vfuncs belong to whoever *serves* the
+     * interface, which is GPasteDaemon's skeleton, not this proxy. */
+}
+
+static void
+g_paste_client_get_property (GObject    *object,
+                             guint       prop_id,
+                             GValue     *value,
+                             GParamSpec *pspec)
+{
+    GPasteClient *self = G_PASTE_CLIENT (object);
+
+    switch (prop_id)
+    {
+    case PROP_ACTIVE:
+        g_value_set_boolean (value, g_paste_client_is_active (self));
+        break;
+    case PROP_VERSION:
+        g_value_take_string (value, g_paste_client_get_version (self));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        break;
+    }
+}
+
+/* Both properties are read-only on the wire. The interface declares them
+ * writable all the same, so overriding them requires a setter to exist, but
+ * there is nothing a client could set: say so rather than pretend. */
+static void
+g_paste_client_set_property (GObject      *object,
+                             guint         prop_id,
+                             const GValue *value G_GNUC_UNUSED,
+                             GParamSpec   *pspec)
+{
+    switch (prop_id)
+    {
+    case PROP_ACTIVE:
+    case PROP_VERSION:
+        g_warning ("GPasteClient:%s is owned by the daemon and cannot be set", pspec->name);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        break;
+    }
 }
 
 static void
@@ -2099,22 +2407,34 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
                          GVariant    *parameters)
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
+    const gchar *history;
 
-    HANDLE_SIGNAL (SHOW_HISTORY)
-    else HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL_WITH_DATA (EMPTY_HISTORY,  const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
+    if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_SHOW_HISTORY))
+        g_signal_emit (self, signals[SHOW_HISTORY], 0 /* detail */);
+    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_DELETE_HISTORY))
+    {
+        g_variant_get (parameters, "(&s)", &history);
+        g_signal_emit (self, signals[DELETE_HISTORY], 0 /* detail */, history);
+    }
+    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_EMPTY_HISTORY))
+    {
+        g_variant_get (parameters, "(&s)", &history);
+        g_signal_emit (self, signals[EMPTY_HISTORY], 0 /* detail */, history);
+    }
+    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_SWITCH_HISTORY))
+    {
+        g_variant_get (parameters, "(&s)", &history);
+        g_signal_emit (self, signals[SWITCH_HISTORY], 0 /* detail */, history);
+    }
     else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
     {
-        GVariantIter params_iter;
-        g_variant_iter_init (&params_iter, parameters);
-        g_autoptr (GVariant) v1 = g_variant_iter_next_value (&params_iter);
-        g_autoptr (GVariant) v2 = g_variant_iter_next_value (&params_iter);
-        g_autoptr (GVariant) v3 = g_variant_iter_next_value (&params_iter);
-        const GEnumValue *action = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION),
-                                                             g_variant_get_string (v1, NULL));
-        const GEnumValue *target = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET),
-                                                             g_variant_get_string (v2, NULL));
+        const gchar *action_nick, *target_nick;
+        guint64 index;
+
+        g_variant_get (parameters, "(&s&st)", &action_nick, &target_nick, &index);
+
+        const GEnumValue *action = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action_nick);
+        const GEnumValue *target = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), target_nick);
 
         /* A daemon newer than us can name an action or a target we do not know —
          * which is exactly what a re-exec after an upgrade leaves us talking to,
@@ -2126,13 +2446,7 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
             return;
         }
 
-        g_signal_emit (self,
-                       signals[UPDATE],
-                       0, /* detail */
-                       action->value,
-                       target->value,
-                       g_variant_get_uint64 (v3),
-                       NULL);
+        g_signal_emit (self, signals[UPDATE], 0 /* detail */, action->value, target->value, index);
     }
 }
 
@@ -2148,23 +2462,31 @@ g_paste_client_g_properties_changed (GDBusProxy          *proxy,
 
     if (g_variant_dict_contains (&dict, G_PASTE_DAEMON_PROP_ACTIVE))
     {
-        g_autoptr (GVariant) v = g_dbus_proxy_get_cached_property (proxy, G_PASTE_DAEMON_PROP_ACTIVE);
-
-        g_signal_emit (self,
-                       signals[TRACKING],
-                       0, /* detail */
-                       g_variant_get_boolean (v),
-                       NULL);
+        g_object_notify (G_OBJECT (self), "active");
+        g_signal_emit (self, signals[TRACKING], 0 /* detail */, g_paste_client_is_active (self));
     }
+
+    if (g_variant_dict_contains (&dict, G_PASTE_DAEMON_PROP_VERSION))
+        g_object_notify (G_OBJECT (self), "version");
+
+    g_variant_dict_clear (&dict);
 }
 
 static void
 g_paste_client_class_init (GPasteClientClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GDBusProxyClass *proxy_class = G_DBUS_PROXY_CLASS (klass);
+
+    object_class->get_property = g_paste_client_get_property;
+    object_class->set_property = g_paste_client_set_property;
 
     proxy_class->g_signal = g_paste_client_g_signal;
     proxy_class->g_properties_changed = g_paste_client_g_properties_changed;
+
+    /* Installs the interface's "Active" and "Version" on us, in the PROP_* order
+     * declared above. */
+    g_paste_daemon2_override_properties (object_class, PROP_ACTIVE);
 
     /**
      * GPasteClient::delete-history:
@@ -2242,13 +2564,9 @@ g_paste_client_class_init (GPasteClientClass *klass)
 static void
 g_paste_client_init (GPasteClient *self)
 {
-    GDBusProxy *proxy = G_DBUS_PROXY (self);
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GDBusNodeInfo) g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
-                                                                                       &error);
-    g_assert_no_error (error);
-
-    g_dbus_proxy_set_interface_info (proxy, g_paste_daemon_dbus_info->interfaces[0]);
+    /* Straight out of the generated binding, so the wire format this proxy
+     * expects and the one the daemon serves cannot drift apart. */
+    g_dbus_proxy_set_interface_info (G_DBUS_PROXY (self), g_paste_daemon2_interface_info ());
 }
 
 /**
@@ -2266,7 +2584,17 @@ g_paste_client_init (GPasteClient *self)
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (CLIENT, DAEMON, G_PASTE_BUS_NAME);
+    GInitable *self = g_initable_new (G_PASTE_TYPE_CLIENT,
+                                      NULL, /* cancellable */
+                                      error,
+                                      "g-bus-type",       G_BUS_TYPE_SESSION,
+                                      "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
+                                      "g-name",           G_PASTE_BUS_NAME,
+                                      "g-object-path",    G_PASTE_DAEMON_OBJECT_PATH,
+                                      "g-interface-name", G_PASTE_DAEMON_INTERFACE_NAME,
+                                      NULL);
+
+    return (self) ? G_PASTE_CLIENT (self) : NULL;
 }
 
 /**
@@ -2280,7 +2608,17 @@ G_PASTE_VISIBLE void
 g_paste_client_new (GAsyncReadyCallback callback,
                     gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (CLIENT, DAEMON, G_PASTE_BUS_NAME);
+    g_async_initable_new_async (G_PASTE_TYPE_CLIENT,
+                                G_PRIORITY_DEFAULT,
+                                NULL, /* cancellable */
+                                callback,
+                                user_data,
+                                "g-bus-type",       G_BUS_TYPE_SESSION,
+                                "g-flags",          G_DBUS_PROXY_FLAGS_NONE,
+                                "g-name",           G_PASTE_BUS_NAME,
+                                "g-object-path",    G_PASTE_DAEMON_OBJECT_PATH,
+                                "g-interface-name", G_PASTE_DAEMON_INTERFACE_NAME,
+                                NULL);
 }
 
 /**
@@ -2300,5 +2638,14 @@ G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_finish (GAsyncResult *result,
                            GError      **error)
 {
-    CUSTOM_PROXY_NEW_FINISH (CLIENT);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autoptr (GObject) source = g_async_result_get_source_object (result);
+
+    g_assert (source);
+
+    GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source), result, error);
+
+    return (self) ? G_PASTE_CLIENT (self) : NULL;
 }

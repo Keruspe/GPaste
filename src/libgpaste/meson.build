@@ -20,7 +20,6 @@ libgpaste_headers = [
   'gpaste-3/gpaste-client.h',
   'gpaste-3/gpaste-error.h',
   'gpaste-3/gpaste-gdbus-defines.h',
-  'gpaste-3/gpaste-gdbus-macros.h',
   'gpaste-3/gpaste-gsettings-keys.h',
   'gpaste-3/gpaste-item-enums.h',
   'gpaste-3/gpaste-macros.h',
@@ -31,9 +30,11 @@ libgpaste_headers = [
   'gpaste-3/gpaste-util.h',
 ]
 
+subdir('gpaste-3')
+
 libgpaste = library(
   'gpaste-' + apiversion,
-  sources: libgpaste_sources,
+  sources: libgpaste_sources + libgpaste_gdbus_sources,
   version: libgpaste_soversion,
   dependencies: libgpaste_deps,
   install: true,
@@ -46,6 +47,11 @@ libgpaste = library(
 libgpaste_internal_dep = declare_dependency(
   link_with: libgpaste,
   include_directories: include_directories('.'),
+  # Carries the generated gpaste-3/gpaste-daemon2.h to everything that links
+  # this library, so no dependent can start compiling before it exists. Only the
+  # header: handing over the whole codegen output would compile gpaste-daemon2.c
+  # into every dependent too, and each copy registers the GPasteDaemon2 GType.
+  sources: libgpaste_gdbus_sources[1],
 )
 
 install_headers(
@@ -308,16 +314,20 @@ if get_option('gnome-shell')
   gpaste_daemon_deps += dependency('libmutter-51')
 endif
 
+subdir('gpaste-daemon')
+
 gpaste_daemon_headers_dep = declare_dependency(
   include_directories: include_directories('.'),
-  sources: gpaste_daemon_headers,
+  # As in libgpaste_internal_dep above: the generated header only, so the
+  # library below stays the one place gpaste-shell-search-provider2.c is built.
+  sources: gpaste_daemon_headers + [ gpaste_daemon_gdbus_sources[1] ],
 )
 
 gpaste_daemon_deps += gpaste_daemon_headers_dep
 
 libgpaste_daemon = library(
   'gpaste-daemon',
-  sources: gpaste_daemon_sources,
+  sources: gpaste_daemon_sources + gpaste_daemon_gdbus_sources,
   version: libgpaste_daemon_soversion,
   dependencies: gpaste_daemon_deps,
   install: true,
