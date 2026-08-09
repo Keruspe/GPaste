@@ -144,109 +144,7 @@ spawn (const gchar *app)
     return EXIT_SUCCESS;
 }
 
-static void
-show_help (void)
-{
-    const char *progname = g_get_prgname ();
-
-    printf (_("Usage:\n"));
-    /* Translators: help for gpaste history */
-    printf ("  %s [history]: %s\n", progname, _("print the history with UUIDs"));
-    /* Translators: help for gpaste history-size */
-    printf ("  %s history-size: %s\n", progname, _("print the size of the history"));
-    /* Translators: help for gpaste search <pattern> */
-    printf ("  %s search <%s>: %s\n", progname, _("pattern"), _("print the items of the history matching <pattern>"));
-    /* Translators: help for gpaste get-history */
-    printf ("  %s get-history: %s\n", progname, _("get the name of the current history"));
-    /* Translators: help for gpaste backup-history <name> */
-    printf ("  %s backup-history <%s>: %s\n", progname, _("name"), _("backup current history"));
-    /* Translators: help for gpaste switch-history <name> */
-    printf ("  %s switch-history <%s>: %s\n", progname, _("name"), _("switch to another history"));
-    /* Translators: help for gpaste delete-history <name> */
-    printf ("  %s delete-history <%s>: %s\n", progname, _("name"),  _("delete a history"));
-    /* Translators: help for gpaste list-histories */
-    printf ("  %s list-histories: %s\n", progname, _("list available histories"));
-    /* Translators: help for gpaste add <text> */
-    printf ("  %s add <%s>: %s\n", progname, _("text"), _("set text to clipboard"));
-    /* Translators: help for gpaste add-password <name> <text> */
-    printf ("  %s add-password <%s> <%s>: %s\n", progname, _("name"), _("password"), _("add the name - password couple to the clipboard"));
-    /* Translators: help for gpaste rename-password <old name> <new name> */
-    printf ("  %s rename-password <%s> <%s>: %s\n", progname, _("old name"), _("new name"), _("rename the password"));
-    /* Translators: help for gpaste get <uuid> */
-    printf ("  %s get <uuid>: %s\n", progname, _("get the item <uuid> from the history"));
-    /* Translators: help for gpaste select <uuid> */
-    printf ("  %s select <uuid>: %s\n", progname, _("set the item <uuid> from the history to the clipboard"));
-    /* Translators: help for gpaste replace <uuid> <contents> */
-    printf ("  %s replace <uuid>  <%s>: %s\n", progname, _("contents"), _("replace the contents of the item <uuid> from the history with the provided one"));
-    /* Translators: help for gpaste merge <uuid> … <uuid> */
-    printf ("  %s merge <uuid> … <uuid>: %s\n", progname, _("merge the items matching the UUIDs from the history and put the result in the clipboard"));
-    /* Translators: help for gpaste set-password <uuid> <name> */
-    printf ("  %s set-password <uuid> <%s>: %s\n", progname, _("name"), _("set the item <uuid> from the history as a password named <name>"));
-    /* Translators: help for gpaste delete <uuid> */
-    printf ("  %s delete <uuid>: %s\n", progname, _("delete item <uuid> from the history"));
-    /* Translators: help for gpaste delete-passworf <name> */
-    printf ("  %s delete-password <%s>: %s\n", progname, _("name"), _("delete the password <name> from the history"));
-    /* Translators: help for gpaste file <path> */
-    printf ("  %s file <%s>: %s\n", progname, _("path"), _("put the content of the file at <path> into the clipboard"));
-    /* Translators: help for whatever | gpaste */
-    printf ("  %s | %s: %s\n", _("whatever"), progname, _("set the output of whatever to clipboard"));
-    /* Translators: help for gpaste empty */
-    printf ("  %s empty: %s\n", progname, _("empty the history"));
-    /* Translators: help for gpaste start */
-    printf ("  %s start: %s\n", progname, _("start tracking clipboard changes"));
-    /* Translators: help for gpaste stop */
-    printf ("  %s stop: %s\n", progname, _("stop tracking clipboard changes"));
-    /* Translators: help for gpaste quit */
-    printf ("  %s quit: %s\n", progname, _("alias for stop"));
-    /* Translators: help for gpaste daemon-reexec */
-    printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
-    /* Translators: help for gpaste migrate */
-    printf ("  %s migrate: %s\n", progname, _("migrate the history to a different storage backend"));
-    /* Translators: help for gpaste change-passphrase */
-    printf ("  %s change-passphrase: %s\n", progname, _("change the passphrase of the encrypted history"));
-    /* Translators: help for gpaste preferences */
-    printf ("  %s preferences: %s\n", progname, _("launch the configuration tool"));
-    /* Translators: help for gpaste ui */
-    printf ("  %s ui: %s\n", progname, _("launch the graphical tool"));
-    /* Translators: help for gpaste show-history */
-    printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
-    /* Translators: help for gpaste upload */
-    printf ("  %s upload <uuid>: %s\n", progname, _("upload the item <uuid> to a pastebin service"));
-    /* Translators: help for gpaste version */
-    printf ("  %s version: %s\n", progname, _("display the version"));
-    /* Translators: help for gpaste daemon-version */
-    printf ("  %s daemon-version: %s\n", progname, _("display the daemon version"));
-    /* Translators: help for gpaste help */
-    printf ("  %s help: %s\n", progname, _("display this help"));
-    /* Translators: help for gpaste about */
-    printf ("  %s about: %s\n", progname, _("display the about dialog"));
-
-    printf("\n");
-    printf(_("Convenience options:"));
-    printf("\n");
-    /* Translators: help for --use-index */
-    printf("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
-
-    printf("\n");
-    printf(_("Display options:"));
-    printf("\n");
-    /* Translators: help for --oneline */
-    printf("  --oneline: %s\n", _("display each item on only one line"));
-    /* Translators: help for --raw */
-    printf("  --raw: %s\n", _("display each item raw (without line numbers)"));
-    /* Translators: help for --reverse */
-    printf("  --reverse: %s\n", _("display the items in reverse order"));
-    /* Translators: help for --zero */
-    printf("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
-
-    printf("\n");
-    printf(_("Merge options:"));
-    printf("\n");
-    /* Translators: help for --decoration <string> */
-    printf("  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
-    /* Translators: help for --separator <string> */
-    printf("  --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
-}
+static void show_help (void);
 
 static void
 show_version (void)
@@ -695,101 +593,163 @@ g_paste_merge (Context *ctx,
  * Main
  */
 
+/* Every verb GPaste answers to, in the order --help lists them. Carrying the
+ * usage and the description here rather than in a second list is what stops a
+ * verb from being added without them; tests/completions checks the shell
+ * completions and the man page against it. */
+typedef struct
+{
+    gint         argc;         /* argv count, verb included */
+    const gchar *verb;         /* canonical name, NULL for the verb-less forms */
+    const gchar *aliases;      /* space separated, or NULL */
+    gint         extra_args;
+    gboolean     needs_client;
+    const gchar *args;         /* what --help shows after the verb */
+    const gchar *doc;          /* untranslated */
+    gint       (*handler) (Context *ctx,
+                           GError **error);
+} Command;
+
+static const Command commands[] = {
+        /* The verb-less forms, first: a flag with no verb at all, then a piped-in
+         * item or, with nothing at all, the history. */
+        { 0, NULL, NULL, G_MAXINT, FALSE, NULL, NULL, g_paste_flag_action },
+        { 0, NULL, NULL, 0,        TRUE,  NULL, NULL, g_paste_add         },
+        { 0, NULL, NULL, 0,        TRUE,  NULL, NULL, g_paste_history     },
+
+        { 1, "history",           "h",               0,        TRUE,  NULL,                    N_ ("print the history with UUIDs"),                                                            g_paste_history },
+        { 1, "history-size",      "hs",              1,        TRUE,  NULL,                    N_ ("print the size of the history"),                                                           g_paste_history_size },
+        { 2, "search",            NULL,              0,        TRUE,  "<pattern>",             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
+        { 1, "get-history",       "gh",              0,        TRUE,  NULL,                    N_ ("get the name of the current history"),                                                     g_paste_get_history },
+        { 2, "backup-history",    "bh",              1,        TRUE,  "<name>",                N_ ("backup current history"),                                                                  g_paste_backup_history },
+        { 2, "switch-history",    "sh",              0,        TRUE,  "<name>",                N_ ("switch to another history"),                                                               g_paste_switch_history },
+        { 1, "delete-history",    "dh",              1,        TRUE,  "<name>",                N_ ("delete a history"),                                                                        g_paste_delete_history },
+        { 1, "list-histories",    "lh",              0,        TRUE,  NULL,                    N_ ("list available histories"),                                                                g_paste_list_histories },
+        { 1, "add",               "a",               1,        TRUE,  "<text>",                N_ ("set text to clipboard"),                                                                   g_paste_add },
+        { 2, "add-password",      "ap",              1,        TRUE,  "<name> <password>",     N_ ("add the name - password couple to the clipboard"),                                         g_paste_add_password },
+        { 3, "rename-password",   "rp",              0,        TRUE,  "<old name> <new name>", N_ ("rename the password"),                                                                     g_paste_rename_password },
+        { 2, "get",               "g",               0,        TRUE,  "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
+        { 2, "select",            "s set",           0,        TRUE,  "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
+        { 2, "replace",           NULL,              1,        TRUE,  "<uuid> <contents>",     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },
+        { 4, "merge",             "m",               G_MAXINT, TRUE,  "<uuid> … <uuid>",       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
+        { 3, "set-password",      "sp",              0,        TRUE,  "<uuid> <name>",         N_ ("set the item <uuid> from the history as a password named <name>"),                         g_paste_set_password },
+        { 2, "delete",            "d del rm remove", 0,        TRUE,  "<uuid>",                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
+        { 2, "delete-password",   "dp",              0,        TRUE,  "<name>",                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
+        { 2, "file",              "f",               0,        TRUE,  "<path>",                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
+        { 1, "empty",             "e",               1,        TRUE,  NULL,                    N_ ("empty the history"),                                                                       g_paste_empty },
+        { 1, "start",             "d daemon",        0,        TRUE,  NULL,                    N_ ("start tracking clipboard changes"),                                                        g_paste_start },
+        { 1, "stop",              "q quit",          0,        TRUE,  NULL,                    N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
+        { 1, "daemon-reexec",     "dr",              0,        TRUE,  NULL,                    N_ ("reexecute the daemon (after upgrading...)"),                                               g_paste_daemon_reexec },
+        { 1, "migrate",           NULL,              0,        TRUE,  NULL,                    N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
+        { 1, "change-passphrase", NULL,              0,        TRUE,  NULL,                    N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
+        { 1, "preferences",       "p settings",      0,        FALSE, NULL,                    N_ ("launch the configuration tool"),                                                           g_paste_preferences },
+        { 1, "ui",                NULL,              0,        FALSE, NULL,                    N_ ("launch the graphical tool"),                                                               g_paste_ui },
+        { 1, "show-history",      NULL,              0,        TRUE,  NULL,                    N_ ("make the applet or extension display the history"),                                        g_paste_show_history },
+        { 2, "upload",            "u",               0,        TRUE,  "<uuid>",                N_ ("upload the item <uuid> to a pastebin service"),                                            g_paste_upload },
+        { 1, "version",           "v",               0,        FALSE, NULL,                    N_ ("display the version"),                                                                     g_paste_version },
+        { 1, "daemon-version",    "dv",              0,        TRUE,  NULL,                    N_ ("display the daemon version"),                                                              g_paste_daemon_version },
+        { 1, "help",              NULL,              0,        FALSE, NULL,                    N_ ("display this help"),                                                                       g_paste_help },
+        { 1, "about",             NULL,              0,        TRUE,  NULL,                    N_ ("display the about dialog"),                                                                g_paste_about },
+};
+
+/* @verb is the canonical name or any of the aliases. */
+static gboolean
+command_matches (const Command *command,
+                 const gchar   *verb)
+{
+    if (g_paste_str_equal (verb, command->verb))
+        return TRUE;
+
+    if (!command->aliases)
+        return FALSE;
+
+    for (const gchar *a = command->aliases; *a; )
+    {
+        const gchar *end = strchr (a, ' ');
+        gsize len = (end) ? (gsize) (end - a) : strlen (a);
+
+        if (!strncmp (verb, a, len) && !verb[len])
+            return TRUE;
+
+        a = (end) ? end + 1 : a + len;
+    }
+
+    return FALSE;
+}
+
+static void
+show_help (void)
+{
+    const char *progname = g_get_prgname ();
+
+    printf (_("Usage:\n"));
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (commands); ++i)
+    {
+        const Command *c = &commands[i];
+
+        if (!c->verb)
+            continue;
+
+        /* The history is what running with no verb at all does, so it is shown
+         * the way it is actually reached. */
+        if (g_paste_str_equal (c->verb, "history"))
+            printf ("  %s [%s]: %s\n", progname, c->verb, _(c->doc));
+        else if (c->args)
+            printf ("  %s %s %s: %s\n", progname, c->verb, _(c->args), _(c->doc));
+        else
+            printf ("  %s %s: %s\n", progname, c->verb, _(c->doc));
+    }
+
+    /* Not a verb: the item comes in on stdin. */
+    printf ("  %s | %s: %s\n", _("whatever"), progname, _("set the output of whatever to clipboard"));
+
+    printf ("\n");
+    printf (_("Convenience options:"));
+    printf ("\n");
+    /* Translators: help for --use-index */
+    printf ("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
+
+    printf ("\n");
+    printf (_("Display options:"));
+    printf ("\n");
+    /* Translators: help for --oneline */
+    printf ("  --oneline: %s\n", _("display each item on only one line"));
+    /* Translators: help for --raw */
+    printf ("  --raw: %s\n", _("display each item raw (without line numbers)"));
+    /* Translators: help for --reverse */
+    printf ("  --reverse: %s\n", _("display the items in reverse order"));
+    /* Translators: help for --zero */
+    printf ("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
+
+    printf ("\n");
+    printf (_("Merge options:"));
+    printf ("\n");
+    /* Translators: help for --decoration <string> */
+    printf ("  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
+    /* Translators: help for --separator <string> */
+    printf ("  --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
+}
+
 static gint
 g_paste_dispatch (gint         argc,
                   const gchar *verb,
                   Context     *ctx,
                   GError     **error)
 {
-    static struct {
-        gint         argc;
-        const gchar *verb;
-        gint         extra_args;
-        gboolean     needs_client;
-        gint       (*handler) (Context *ctx,
-                               GError **error);
-    } dispatch[] = {
-        { 0, NULL,                G_MAXINT, FALSE, g_paste_flag_action       },
-        { 0, NULL,                0,        TRUE,  g_paste_add               },
-        { 0, NULL,                0,        TRUE,  g_paste_history           },
-        { 1, "help",              0,        FALSE, g_paste_help              },
-        { 1, "v",                 0,        FALSE, g_paste_version           },
-        { 1, "version",           0,        FALSE, g_paste_version           },
-        { 1, "about",             0,        TRUE,  g_paste_about             },
-        { 1, "dr",                0,        TRUE,  g_paste_daemon_reexec     },
-        { 1, "daemon-reexec",     0,        TRUE,  g_paste_daemon_reexec     },
-        { 1, "migrate",           0,        TRUE,  g_paste_migrate           },
-        { 1, "change-passphrase", 0,        TRUE,  g_paste_change_passphrase },
-        { 1, "dv",                0,        TRUE,  g_paste_daemon_version    },
-        { 1, "daemon-version",    0,        TRUE,  g_paste_daemon_version    },
-        { 1, "e",                 1,        TRUE,  g_paste_empty             },
-        { 1, "empty",             1,        TRUE,  g_paste_empty             },
-        { 1, "gh",                0,        TRUE,  g_paste_get_history       },
-        { 1, "get-history",       0,        TRUE,  g_paste_get_history       },
-        { 1, "h",                 0,        TRUE,  g_paste_history           },
-        { 1, "history",           0,        TRUE,  g_paste_history           },
-        { 1, "hs",                1,        TRUE,  g_paste_history_size      },
-        { 1, "history-size",      1,        TRUE,  g_paste_history_size      },
-        { 1, "lh",                0,        TRUE,  g_paste_list_histories    },
-        { 1, "list-histories",    0,        TRUE,  g_paste_list_histories    },
-        { 1, "dh",                1,        TRUE,  g_paste_delete_history    },
-        { 1, "delete-history",    1,        TRUE,  g_paste_delete_history    },
-        { 1, "settings",          0,        FALSE, g_paste_preferences       },
-        { 1, "p",                 0,        FALSE, g_paste_preferences       },
-        { 1, "preferences",       0,        FALSE, g_paste_preferences       },
-        { 1, "show-history",      0,        TRUE,  g_paste_show_history      },
-        { 1, "start",             0,        TRUE,  g_paste_start             },
-        { 1, "d",                 0,        TRUE,  g_paste_start             },
-        { 1, "daemon",            0,        TRUE,  g_paste_start             },
-        { 1, "stop",              0,        TRUE,  g_paste_stop              },
-        { 1, "q",                 0,        TRUE,  g_paste_stop              },
-        { 1, "quit",              0,        TRUE,  g_paste_stop              },
-        { 1, "ui",                0,        FALSE, g_paste_ui                },
-        { 1, "a",                 1,        TRUE,  g_paste_add               },
-        { 1, "add",               1,        TRUE,  g_paste_add               },
-        { 2, "ap",                1,        TRUE,  g_paste_add_password      },
-        { 2, "add-password",      1,        TRUE,  g_paste_add_password      },
-        { 2, "bh",                1,        TRUE,  g_paste_backup_history    },
-        { 2, "backup-history",    1,        TRUE,  g_paste_backup_history    },
-        { 2, "d",                 0,        TRUE,  g_paste_delete            },
-        { 2, "del",               0,        TRUE,  g_paste_delete            },
-        { 2, "delete",            0,        TRUE,  g_paste_delete            },
-        { 2, "rm",                0,        TRUE,  g_paste_delete            },
-        { 2, "remove",            0,        TRUE,  g_paste_delete            },
-        { 2, "dp",                0,        TRUE,  g_paste_delete_password   },
-        { 2, "delete-password",   0,        TRUE,  g_paste_delete_password   },
-        { 2, "f",                 0,        TRUE,  g_paste_file              },
-        { 2, "file",              0,        TRUE,  g_paste_file              },
-        { 2, "g",                 0,        TRUE,  g_paste_get               },
-        { 2, "get",               0,        TRUE,  g_paste_get               },
-        { 2, "replace",           1,        TRUE,  g_paste_replace           },
-        { 2, "search",            0,        TRUE,  g_paste_search            },
-        { 2, "s",                 0,        TRUE,  g_paste_select            },
-        { 2, "set",               0,        TRUE,  g_paste_select            },
-        { 2, "select",            0,        TRUE,  g_paste_select            },
-        { 2, "sh",                0,        TRUE,  g_paste_switch_history    },
-        { 2, "switch-history",    0,        TRUE,  g_paste_switch_history    },
-        { 2, "u",                 0,        TRUE,  g_paste_upload            },
-        { 2, "upload",            0,        TRUE,  g_paste_upload            },
-        { 3, "rp",                0,        TRUE,  g_paste_rename_password   },
-        { 3, "rename-password",   0,        TRUE,  g_paste_rename_password   },
-        { 3, "sp",                0,        TRUE,  g_paste_set_password      },
-        { 3, "set-password",      0,        TRUE,  g_paste_set_password      },
-        { 4, "m",                 G_MAXINT, TRUE,  g_paste_merge             },
-        { 4, "merge",             G_MAXINT, TRUE,  g_paste_merge             },
-    };
-
-    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
+    for (guint64 i = 0; i < G_N_ELEMENTS (commands); ++i)
     {
-        if (argc == dispatch[i].argc || dispatch[i].extra_args == G_MAXINT || (argc > dispatch[i].argc && argc <= (dispatch[i].argc + dispatch[i].extra_args)))
+        const Command *c = &commands[i];
+
+        if (argc == c->argc || c->extra_args == G_MAXINT || (argc > c->argc && argc <= (c->argc + c->extra_args)))
         {
-            if (argc > 0 && dispatch[i].verb && !g_paste_str_equal (verb, dispatch[i].verb))
+            if (argc > 0 && c->verb && !command_matches (c, verb))
                 continue;
 
-            if (dispatch[i].needs_client && !ctx->client)
+            if (c->needs_client && !ctx->client)
                 return EXIT_FAILURE;
 
-            gint ret = dispatch[i].handler(ctx, error);
+            gint ret = c->handler (ctx, error);
             if (ret >= 0)
                 return ret;
         }
@@ -797,7 +757,6 @@ g_paste_dispatch (gint         argc,
 
     return -1;
 }
-
 gint
 main (gint argc, gchar *argv[])
 {
