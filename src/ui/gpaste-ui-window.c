@@ -348,11 +348,17 @@ on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
                          GAsyncResult *res,
                          gpointer      user_data)
 {
-    GPasteUiWindow *priv = user_data;
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+    g_autoptr (GPasteUiWindow) self = user_data; /* ref taken at the call site */
+
+    /* Only meaningful because of that ref: dispose clears the client, so a NULL
+     * one means the window went away while this was in flight. */
+    if (!self->client)
+        return;
+
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, NULL);
 
     if (name)
-        g_paste_ui_header_set_subtitle (priv->header, name);
+        g_paste_ui_header_set_subtitle (self->header, name);
 }
 
 static void
@@ -667,7 +673,8 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_signal_group_set_target (self->client_signals, self->client);
 
-    g_paste_client_get_history_name (self->client, on_initial_history_name, self);
+    /* The callback owns this ref (see on_initial_history_name). */
+    g_paste_client_get_history_name (self->client, on_initial_history_name, g_object_ref (self));
 
     self->initialized = TRUE;
     gtk_window_present (win);
