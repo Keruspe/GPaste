@@ -7,31 +7,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 GPaste uses Meson + Ninja:
 
 ```sh
-mkdir build && cd build
-meson ..
-ninja
+meson setup build
+ninja -C build
 ```
 
-Common build options (`meson .. -Doption=value`):
+The build directory is `build`, not `builddir`.
 
-| Option | Default | Description |
-|---|---|---|
-| `gnome-shell` | true | Build the GNOME Shell extension |
-| `introspection` | true | Generate GIR data |
-| `vapi` | true | Generate Vala bindings (requires introspection) |
-| `systemd` | true | systemd user unit |
+Build options (`meson setup build -Doption=value`, or `meson configure build`).
+The `feature` ones default to `auto`: enabled when the dependency is found,
+skipped otherwise, so a build silently loses a feature if its dependency is
+missing — pass `enabled` to make that fatal.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `encryption` | feature | auto | libsodium-based history encryption (`G_PASTE_ENABLE_ENCRYPTION`) |
+| `sqlite` | feature | auto | SQLite storage backends, needs SQLite ≥ 3.35 (`G_PASTE_ENABLE_SQLITE`) |
+| `libsecret` | feature | auto | passphrase in the keyring, only with `encryption` (`G_PASTE_ENABLE_LIBSECRET`) |
+| `pwquality` | feature | auto | passphrase strength rating, only with `encryption` (`G_PASTE_ENABLE_PWQUALITY`) |
+| `gnome-shell` | bool | true | GNOME Shell extension + mutter clipboard backend (`G_PASTE_ENABLE_GNOME_SHELL`) |
+| `introspection` | bool | true | Generate GIR data |
+| `vapi` | bool | true | Generate Vala bindings (errors out without `introspection`) |
+| `systemd` | bool | true | systemd user unit |
+| `bash-completion`, `zsh-completion`, `fish-completion` | bool | true | Shell completions |
+
+Three string options — `dbus-services-dir`, `control-center-keybindings-dir` and
+`systemd-user-unit-dir` — override install paths that are otherwise queried from
+`dbus-1`, `gnome-keybindings` and `systemd` via pkg-config. Setting them is how a
+packager avoids pulling those in as build dependencies; they are still required
+at runtime.
 
 For a lighter build that skips the GNOME Shell extension, GIR introspection data
 and Vala bindings (the daemon, UI and preferences apps are always built):
 
 ```sh
-meson .. -Dgnome-shell=false -Dintrospection=false -Dvapi=false
+meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 ```
 
-Run tests from the build directory:
+Run the tests:
 
 ```sh
-ninja test          # or: meson test -C build
+ninja -C build test          # or: meson test -C build
 ```
 
 Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
