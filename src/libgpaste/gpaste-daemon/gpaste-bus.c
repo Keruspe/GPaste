@@ -103,8 +103,8 @@ G_PASTE_VISIBLE void
 g_paste_bus_add_object (GPasteBus       *self,
                         GPasteBusObject *object)
 {
-    g_return_if_fail (_G_PASTE_IS_BUS (self));
-    g_return_if_fail (_G_PASTE_IS_BUS_OBJECT (object));
+    g_return_if_fail (G_PASTE_IS_BUS (self));
+    g_return_if_fail (G_PASTE_IS_BUS_OBJECT (object));
 
     g_ptr_array_add (self->objects, g_object_ref (object));
 
@@ -128,7 +128,7 @@ G_PASTE_VISIBLE void
 g_paste_bus_own_name_full (GPasteBus *self,
                            gboolean   replace)
 {
-    g_return_if_fail (_G_PASTE_IS_BUS (self));
+    g_return_if_fail (G_PASTE_IS_BUS (self));
 
     g_return_if_fail (!self->id_on_bus);
 
@@ -168,7 +168,7 @@ g_paste_bus_own_name_full (GPasteBus *self,
 G_PASTE_VISIBLE void
 g_paste_bus_unown_name (GPasteBus *self)
 {
-    g_return_if_fail (_G_PASTE_IS_BUS (self));
+    g_return_if_fail (G_PASTE_IS_BUS (self));
 
     if (self->id_on_bus)
     {
@@ -198,7 +198,7 @@ g_paste_bus_unown_name (GPasteBus *self)
 G_PASTE_VISIBLE gboolean
 g_paste_bus_is_connected (GPasteBus *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_BUS (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_BUS (self), FALSE);
 
     return self->connection && !g_dbus_connection_is_closed (self->connection);
 }

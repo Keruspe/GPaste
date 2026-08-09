@@ -81,7 +81,7 @@ G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self,
                              GError      **error)
 {
-    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (self->connection, SHOW_HISTORY);
 }
@@ -98,7 +98,7 @@ g_paste_daemon_show_history (GPasteDaemon *self,
 G_PASTE_VISIBLE void
 g_paste_daemon_flush (GPasteDaemon *self)
 {
-    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     g_paste_history_flush (self->history);
 }
@@ -114,7 +114,7 @@ g_paste_daemon_flush (GPasteDaemon *self)
 G_PASTE_VISIBLE void
 g_paste_daemon_resume (GPasteDaemon *self)
 {
-    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     g_paste_history_resume (self->history);
 }
@@ -133,7 +133,7 @@ g_paste_daemon_resume (GPasteDaemon *self)
 G_PASTE_VISIBLE void
 g_paste_daemon_reload_storage (GPasteDaemon *self)
 {
-    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     g_paste_history_reload_backend (self->history);
 }
@@ -154,7 +154,7 @@ G_PASTE_VISIBLE void
 g_paste_daemon_extension_state_changed (GPasteDaemon *self,
                                         gboolean      state)
 {
-    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     const GPasteDaemonMethods methods = {
         self->connection,
@@ -255,9 +255,9 @@ G_PASTE_VISIBLE gboolean
 g_paste_daemon_upload (GPasteDaemon *self,
                        const gchar  *uuid)
 {
-    g_return_val_if_fail (_G_PASTE_IS_DAEMON (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
 
-    const GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (self->history, uuid) : g_paste_history_get (self->history, 0);
+    GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (self->history, uuid) : g_paste_history_get (self->history, 0);
 
     if (!item)
         return FALSE;
@@ -305,7 +305,7 @@ keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
                           gpointer          data)
 {
     GPasteHistory *history = data;
-    const GPasteItem *first = g_paste_history_get (history, 0);
+    GPasteItem *first = g_paste_history_get (history, 0);
 
     if (!first)
         return;
@@ -496,7 +496,7 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
                                   GError         **error G_GNUC_UNUSED,
                                   gpointer         user_data)
 {
-    const GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
 
     if (g_paste_str_equal (property_name, G_PASTE_DAEMON_PROP_ACTIVE))
         return g_variant_new_boolean (g_paste_settings_get_track_changes (self->settings));
@@ -801,9 +801,9 @@ g_paste_daemon_new (GPasteSettings          *settings,
                     GPasteClipboardProvider *clipboard,
                     GPasteClipboardProvider *primary)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (clipboard), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (primary), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (clipboard), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (primary), NULL);
 
     GPasteDaemon *self = G_PASTE_DAEMON (g_object_new (G_PASTE_TYPE_DAEMON, NULL));
 
@@ -838,7 +838,7 @@ G_PASTE_VISIBLE GPasteDaemon *
 g_paste_daemon_new_meta (GPasteSettings *settings,
                          GObject        *selection)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (META_IS_SELECTION (selection), NULL);
 
     MetaSelection *meta_selection = META_SELECTION (selection);

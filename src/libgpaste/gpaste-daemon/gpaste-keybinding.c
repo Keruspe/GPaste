@@ -26,9 +26,9 @@ G_PASTE_DEFINE_TYPE (Keybinding, keybinding, G_TYPE_OBJECT)
  * Returns: the dconf key
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
+g_paste_keybinding_get_dconf_key (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
 
     return self->dconf_key;
 }
@@ -42,9 +42,9 @@ g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
  * Returns: the description
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_keybinding_get_description (const GPasteKeybinding *self)
+g_paste_keybinding_get_description (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
 
     return self->description;
 }
@@ -58,11 +58,11 @@ g_paste_keybinding_get_description (const GPasteKeybinding *self)
  * Returns: the accelerator
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
-                                    const GPasteSettings   *settings)
+g_paste_keybinding_get_accelerator (GPasteKeybinding *self,
+                                    GPasteSettings   *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
 
     return self->getter (settings);
 }
@@ -78,8 +78,8 @@ G_PASTE_VISIBLE void
 g_paste_keybinding_activate (GPasteKeybinding *self,
                              GPasteSettings   *settings)
 {
-    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
     g_return_if_fail (!self->active);
 
@@ -108,7 +108,7 @@ g_paste_keybinding_activate (GPasteKeybinding *self,
 G_PASTE_VISIBLE void
 g_paste_keybinding_deactivate (GPasteKeybinding *self)
 {
-    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
     g_return_if_fail (self->active);
 
@@ -126,7 +126,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding *self)
 G_PASTE_VISIBLE gboolean
 g_paste_keybinding_is_active (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), FALSE);
 
     return self->active;
 }
@@ -140,7 +140,7 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 G_PASTE_VISIBLE void
 g_paste_keybinding_perform (GPasteKeybinding *self)
 {
-    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
     self->callback (self, self->user_data);
 }
@@ -159,7 +159,7 @@ g_paste_keybinding_dispose (GObject *object)
 static void
 g_paste_keybinding_finalize (GObject *object)
 {
-    const GPasteKeybinding *self = G_PASTE_KEYBINDING (object);
+    GPasteKeybinding *self = G_PASTE_KEYBINDING (object);
 
     g_free (self->dconf_key);
     g_free (self->description);

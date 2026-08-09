@@ -21,7 +21,7 @@ void g_paste_ui_panel_history_activate   (GPasteUiPanelHistory *self);
 void g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
                                           guint64               length);
 
-const gchar *g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self);
+const gchar *g_paste_ui_panel_history_get_history (GPasteUiPanelHistory *self);
 
 GPasteUiPanelHistory *g_paste_ui_panel_history_new (GPasteClient *client,
                                                     const gchar  *history);

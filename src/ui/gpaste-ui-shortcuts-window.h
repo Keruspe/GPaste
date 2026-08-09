@@ -13,7 +13,7 @@
 
 G_BEGIN_DECLS
 
-GtkWidget *g_paste_ui_shortcuts_window_new (const GPasteSettings *settings);
+GtkWidget *g_paste_ui_shortcuts_window_new (GPasteSettings *settings);
 
 G_END_DECLS
 

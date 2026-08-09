@@ -23,9 +23,9 @@ G_PASTE_DEFINE_TYPE (PasswordItem, password_item, G_PASTE_TYPE_TEXT_ITEM)
  * Returns: read-only string containing the name
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_password_item_get_name (const GPastePasswordItem *self)
+g_paste_password_item_get_name (GPastePasswordItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), NULL);
 
     return self->name;
 }
@@ -41,7 +41,7 @@ G_PASTE_VISIBLE void
 g_paste_password_item_set_name (GPastePasswordItem *self,
                                 const gchar        *name)
 {
-    g_return_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_PASSWORD_ITEM (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     if (!name)
@@ -60,30 +60,30 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
 }
 
 static const gchar *
-g_paste_password_item_get_value (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_password_item_get_value (GPasteItem *self G_GNUC_UNUSED)
 {
     return "******";
 }
 
 static const gchar *
-g_paste_password_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_password_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
     return "Password";
 }
 
 static gboolean
-g_paste_password_item_equals (const GPasteItem *self,
-                              const GPasteItem *other)
+g_paste_password_item_equals (GPasteItem *self,
+                              GPasteItem *other)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self), FALSE);
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (other), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
 
     /* Passwords are never considered equals, except when it's the exact same object */
     return FALSE;
 }
 
 static gboolean
-g_paste_password_item_secure (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_password_item_secure (GPasteItem *self G_GNUC_UNUSED)
 {
     return TRUE;
 }
@@ -91,7 +91,7 @@ g_paste_password_item_secure (const GPasteItem *self G_GNUC_UNUSED)
 static void
 g_paste_password_item_finalize (GObject *object)
 {
-    const GPastePasswordItem *self = G_PASTE_PASSWORD_ITEM (object);
+    GPastePasswordItem *self = G_PASTE_PASSWORD_ITEM (object);
 
     g_free (self->name);
 

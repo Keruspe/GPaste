@@ -11,7 +11,7 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (PasswordItem, password_item, PASSWORD_ITEM, GPasteTextItem)
 
-const gchar *g_paste_password_item_get_name (const GPastePasswordItem *self);
+const gchar *g_paste_password_item_get_name (GPastePasswordItem *self);
 
 void g_paste_password_item_set_name (GPastePasswordItem *self,
                                      const char         *name);

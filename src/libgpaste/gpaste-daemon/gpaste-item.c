@@ -28,11 +28,11 @@ G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (Item, item, G_TYPE_OBJECT)
  * Returns: read-only string containing the uuid
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_item_get_uuid (const GPasteItem *self)
+g_paste_item_get_uuid (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     return priv->uuid;
 }
@@ -46,11 +46,11 @@ g_paste_item_get_uuid (const GPasteItem *self)
  * Returns: read-only string containing the value
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_item_get_value (const GPasteItem *self)
+g_paste_item_get_value (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    return _G_PASTE_ITEM_GET_CLASS (self)->get_value (self);
+    return G_PASTE_ITEM_GET_CLASS (self)->get_value (self);
 }
 
 /**
@@ -63,11 +63,11 @@ g_paste_item_get_value (const GPasteItem *self)
  * Returns: read-only string containing the real value
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_item_get_real_value (const GPasteItem *self)
+g_paste_item_get_real_value (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     return priv->value;
 }
@@ -81,11 +81,11 @@ g_paste_item_get_real_value (const GPasteItem *self)
  * Returns: (element-type GPasteBinaryData): read-only list containing the special values
  */
 G_PASTE_VISIBLE const GSList *
-g_paste_item_get_special_values (const GPasteItem *self)
+g_paste_item_get_special_values (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     return priv->special_values;
 }
@@ -99,11 +99,11 @@ g_paste_item_get_special_values (const GPasteItem *self)
  * Returns: read-only display string
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_item_get_display_string (const GPasteItem *self)
+g_paste_item_get_display_string (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
     const gchar *display_string = priv->display_string;
 
     return (display_string) ? display_string : priv->value;
@@ -119,16 +119,16 @@ g_paste_item_get_display_string (const GPasteItem *self)
  * Returns: true if equals, false otherwise
  */
 G_PASTE_VISIBLE gboolean
-g_paste_item_equals (const GPasteItem *self,
-                     const GPasteItem *other)
+g_paste_item_equals (GPasteItem *self,
+                     GPasteItem *other)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), FALSE);
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (other), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
 
     if (self == other)
         return TRUE;
 
-    return _G_PASTE_ITEM_GET_CLASS (self)->equals (self, other) && _G_PASTE_ITEM_GET_CLASS (other)->equals (other, self);
+    return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other) && G_PASTE_ITEM_GET_CLASS (other)->equals (other, self);
 }
 
 /**
@@ -141,11 +141,11 @@ g_paste_item_equals (const GPasteItem *self,
  *          can be "Text", "Uris" or "Image"
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_item_get_kind (const GPasteItem *self)
+g_paste_item_get_kind (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    const GPasteItemClass *klass = _G_PASTE_ITEM_GET_CLASS (self);
+    const GPasteItemClass *klass = G_PASTE_ITEM_GET_CLASS (self);
 
     g_return_val_if_fail (klass->get_kind, NULL);
 
@@ -161,11 +161,11 @@ g_paste_item_get_kind (const GPasteItem *self)
  * Returns: The size of its contents
  */
 G_PASTE_VISIBLE guint64
-g_paste_item_get_size (const GPasteItem *self)
+g_paste_item_get_size (GPasteItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), 0);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), 0);
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     return priv->size;
 }
@@ -181,7 +181,7 @@ G_PASTE_VISIBLE void
 g_paste_item_set_size (GPasteItem *self,
                        guint64     size)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
@@ -199,7 +199,7 @@ G_PASTE_VISIBLE void
 g_paste_item_add_size (GPasteItem *self,
                        guint64     size)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
@@ -217,7 +217,7 @@ G_PASTE_VISIBLE void
 g_paste_item_remove_size (GPasteItem *self,
                           guint64     size)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
@@ -237,7 +237,7 @@ G_PASTE_VISIBLE void
 g_paste_item_set_display_string (GPasteItem *self,
                                  gchar      *display_string)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
@@ -267,7 +267,7 @@ G_PASTE_VISIBLE void
 g_paste_item_add_special_value (GPasteItem       *self,
                                 GPasteBinaryData *binary_data)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
@@ -286,7 +286,7 @@ G_PASTE_VISIBLE void
 g_paste_item_set_state (GPasteItem     *self,
                         GPasteItemState state)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
 
     g_debug ("item: set state: %d", state);
 
@@ -304,7 +304,7 @@ G_PASTE_VISIBLE void
 g_paste_item_set_uuid (GPasteItem  *self,
                        const gchar *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
     g_return_if_fail (g_uuid_string_is_valid (uuid));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
@@ -326,11 +326,11 @@ G_PASTE_VISIBLE void
 g_paste_item_set_value (GPasteItem  *self,
                         const gchar *value)
 {
-    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
     g_return_if_fail (value);
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
-    gboolean secure = _G_PASTE_ITEM_GET_CLASS (self)->secure (self);
+    gboolean secure = G_PASTE_ITEM_GET_CLASS (self)->secure (self);
 
     /* Also guards against @value aliasing our current value, which would be
      * read after free below. */
@@ -361,11 +361,11 @@ g_paste_item_dispose (GObject *object)
 static void
 g_paste_item_finalize (GObject *object)
 {
-    const GPasteItem *self = _G_PASTE_ITEM (object);
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    GPasteItem *self = G_PASTE_ITEM (object);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     g_free (priv->uuid);
-    if (_G_PASTE_ITEM_GET_CLASS (self)->secure (self))
+    if (G_PASTE_ITEM_GET_CLASS (self)->secure (self))
         gcr_secure_memory_strfree (priv->value);
     else
         g_free (priv->value);
@@ -375,14 +375,14 @@ g_paste_item_finalize (GObject *object)
 }
 
 static gboolean
-g_paste_item_default_equals (const GPasteItem *self,
-                             const GPasteItem *other)
+g_paste_item_default_equals (GPasteItem *self,
+                             GPasteItem *other)
 {
     if (self == other)
         return TRUE;
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
-    const GPasteItemPrivate *_priv = _g_paste_item_get_instance_private (other);
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+    const GPasteItemPrivate *_priv = g_paste_item_get_instance_private (other);
 
     return g_paste_str_equal (priv->value, _priv->value);
 }
@@ -394,7 +394,7 @@ g_paste_item_default_set_state (GPasteItem     *self  G_GNUC_UNUSED,
 }
 
 static gboolean
-g_paste_item_default_secure (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_item_default_secure (GPasteItem *self G_GNUC_UNUSED)
 {
     return FALSE;
 }
@@ -439,7 +439,7 @@ g_paste_item_new (GType        type,
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     priv->uuid = g_uuid_string_random ();
-    priv->value = (_G_PASTE_ITEM_GET_CLASS (self)->secure (self)) ? gcr_secure_memory_strdup (value) : g_strdup (value);
+    priv->value = (G_PASTE_ITEM_GET_CLASS (self)->secure (self)) ? gcr_secure_memory_strdup (value) : g_strdup (value);
     priv->display_string = NULL;
 
     priv->size = strlen (priv->value) + 1;

@@ -69,7 +69,7 @@ g_paste_text_content_provider_get_value (GdkContentProvider *provider,
                                          GValue             *value,
                                          GError            **error)
 {
-    const GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
+    GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
 
     if (G_VALUE_HOLDS (value, G_TYPE_STRING))
     {
@@ -142,7 +142,7 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider  *provid
                                                      GAsyncReadyCallback  callback,
                                                      gpointer             user_data)
 {
-    const GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
+    GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
     GTask *task = g_task_new (provider, cancellable, callback, user_data);
 
     g_task_set_priority (task, io_priority);

@@ -48,8 +48,8 @@ G_PASTE_VISIBLE void
 g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
                                           GPasteClipboardProvider         *clipboard)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (clipboard));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (clipboard));
 
     _Clipboard *clip = g_new0 (_Clipboard, 1);
 
@@ -72,7 +72,7 @@ G_PASTE_VISIBLE void
 g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
                                          gboolean                 from_clipboard)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     GPasteClipboardProvider *_from = NULL;
     GPasteClipboardProvider *_to = NULL;
@@ -194,7 +194,7 @@ g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
@@ -217,8 +217,8 @@ G_PASTE_VISIBLE gboolean
 g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
                                    GPasteItem              *item)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self), FALSE);
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (item), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
 
     g_debug ("clipboards-manager: select");
 
@@ -245,7 +245,7 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_store (GPasteClipboardsManager *self)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     g_debug ("clipboards-manager: store");
 
@@ -317,8 +317,8 @@ G_PASTE_VISIBLE GPasteClipboardsManager *
 g_paste_clipboards_manager_new (GPasteHistory  *history,
                                 GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (history), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GPasteClipboardsManager *self = g_object_new (G_PASTE_TYPE_CLIPBOARDS_MANAGER, NULL);
 

@@ -6,15 +6,15 @@
 G_PASTE_DEFINE_TYPE (TextItem, text_item, G_PASTE_TYPE_ITEM)
 
 static gboolean
-g_paste_text_item_equals (const GPasteItem *self,
-                          const GPasteItem *other)
+g_paste_text_item_equals (GPasteItem *self,
+                          GPasteItem *other)
 {
-    return (_G_PASTE_IS_TEXT_ITEM (other) &&
+    return (G_PASTE_IS_TEXT_ITEM (other) &&
             G_PASTE_ITEM_CLASS (g_paste_text_item_parent_class)->equals (self, other));
 }
 
 static const gchar *
-g_paste_text_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_text_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
     return "Text";
 }

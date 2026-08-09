@@ -31,24 +31,24 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (FileBackend, file_backend, G_PASTE_TYPE_STORAG
 /* The passphrase, or NULL for a plain history. Safe to call whether or not
  * encryption was built in (it is always NULL without it). */
 static const gchar *
-g_paste_file_backend_get_passphrase (const GPasteStorageBackend *self)
+g_paste_file_backend_get_passphrase (GPasteStorageBackend *self)
 {
-    const GPasteFileBackendPrivate *priv = _g_paste_file_backend_get_instance_private (_G_PASTE_FILE_BACKEND (self));
+    const GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
 
     return priv->passphrase;
 }
 
-static gboolean g_paste_file_backend_load_contents (const GPasteStorageBackend *self,
-                                                    const gchar                *history_file_path,
-                                                    GFile                      *history_file,
-                                                    gchar                     **text,
-                                                    gsize                      *text_length,
-                                                    GError                    **error);
+static gboolean g_paste_file_backend_load_contents (GPasteStorageBackend *self,
+                                                    const gchar          *history_file_path,
+                                                    GFile                *history_file,
+                                                    gchar                **text,
+                                                    gsize                *text_length,
+                                                    GError               **error);
 
 static gboolean
-_g_paste_file_backend_write_password_name (GOutputStream           *stream,
-                                           const GPastePasswordItem *item,
-                                           GError                  **error)
+_g_paste_file_backend_write_password_name (GOutputStream       *stream,
+                                           GPastePasswordItem  *item,
+                                           GError             **error)
 {
     g_autofree gchar *name = g_paste_util_xml_encode (g_paste_password_item_get_name (item));
 
@@ -65,9 +65,9 @@ _g_paste_file_backend_write_password_name (GOutputStream           *stream,
  * reaches the disk in clear. Best effort: a failure only costs this image, not
  * the write. */
 static void
-_g_paste_file_backend_ensure_image_file (const GPasteFileBackend *self,
-                                         const GPasteImageItem   *item,
-                                         const gchar             *reference)
+_g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
+                                         GPasteImageItem   *item,
+                                         const gchar       *reference)
 {
     gboolean encrypted = (g_paste_file_backend_get_passphrase (G_PASTE_STORAGE_BACKEND ((gpointer) self)) != NULL);
     const gchar *path = g_paste_item_get_value (G_PASTE_ITEM ((gpointer) item));
@@ -108,7 +108,7 @@ _g_paste_file_backend_ensure_image_file (const GPasteFileBackend *self,
     /* get_output_stream wraps the file with the encryption converter exactly
      * when this backend has a passphrase, matching the target chosen above. */
     g_autoptr (GFile) target_file = g_file_new_for_path (target);
-    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, target_file);
+    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, target_file);
 
     if (!stream)
         return;
@@ -125,8 +125,8 @@ _g_paste_file_backend_ensure_image_file (const GPasteFileBackend *self,
  * side file. NULL when this backend reads images by path (plain flavor) or
  * there is no side file (yet) for @path. */
 static GBytes *
-_g_paste_file_backend_load_image_bytes (const GPasteStorageBackend *self,
-                                        const gchar                *path)
+_g_paste_file_backend_load_image_bytes (GPasteStorageBackend *self,
+                                        const gchar          *path)
 {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     if (!g_paste_file_backend_get_passphrase (self))
@@ -159,9 +159,9 @@ _g_paste_file_backend_load_image_bytes (const GPasteStorageBackend *self,
 }
 
 static gboolean
-_g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
-                                            const GPasteImageItem *item,
-                                            GError               **error)
+_g_paste_file_backend_write_image_metadata (GOutputStream    *stream,
+                                            GPasteImageItem  *item,
+                                            GError          **error)
 {
     g_autofree gchar *date_str = g_date_time_format ((GDateTime *) g_paste_image_item_get_date (item), "%s");
     const gchar *checksum = g_paste_image_item_get_checksum (item);
@@ -186,7 +186,7 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
 {
     for (const GSList *val = special_values; val; val = val->next)
     {
-        const GPasteBinaryData *value = val->data;
+        GPasteBinaryData *value = val->data;
         GEnumValue *gev = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), g_paste_binary_data_get_mime (value));
 
         /* Skip a value carrying an unknown atom rather than dereferencing NULL,
@@ -216,9 +216,9 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
 }
 
 static void
-g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
-                                         const gchar                *history_file_path,
-                                         const GList                *history)
+g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
+                                         const gchar          *history_file_path,
+                                         const GList          *history)
 {
     if (!g_paste_util_ensure_history_dir_exists ())
         return;
@@ -228,14 +228,14 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
      * written, which may not be the one the items belong to (a backup). */
     g_autofree gchar *history_name = g_paste_util_get_history_name_from_file_path (history_file_path);
 
-    const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
+    GPasteFileBackend *real_self = G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
      * without the passphrase) and persists their real value, not the mask. */
     gboolean encrypted = (g_paste_file_backend_get_passphrase (self) != NULL);
 
     g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
     g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp_path);
-    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, tmp_file);
+    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, tmp_file);
 
     if (!stream)
         return;
@@ -253,7 +253,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
 
     for (const GList *h = history; success && h; h = g_list_next (h))
     {
-        const GPasteItem *item = h->data;
+        GPasteItem *item = h->data;
         const gchar *kind = g_paste_item_get_kind (item);
         const gchar *uuid = g_paste_item_get_uuid (item);
 
@@ -262,9 +262,9 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
 
         g_autofree gchar *image_reference = NULL;
 
-        if (_G_PASTE_IS_IMAGE_ITEM (item))
+        if (G_PASTE_IS_IMAGE_ITEM (item))
         {
-            const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (item);
+            GPasteImageItem *image = G_PASTE_IMAGE_ITEM (item);
 
             /* Reference the image under the history being written, wherever
              * the (possibly shared, possibly live) item itself is anchored: a
@@ -287,8 +287,8 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, &error) ||
-            (_G_PASTE_IS_PASSWORD_ITEM (item) && !_g_paste_file_backend_write_password_name (stream, _G_PASTE_PASSWORD_ITEM (item), &error)) ||
-            (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item), &error)) ||
+            (G_PASTE_IS_PASSWORD_ITEM (item) && !_g_paste_file_backend_write_password_name (stream, G_PASTE_PASSWORD_ITEM (item), &error)) ||
+            (G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, G_PASTE_IMAGE_ITEM (item), &error)) ||
             !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, &error) ||
@@ -373,7 +373,7 @@ typedef enum
 
 typedef struct
 {
-    const GPasteStorageBackend *backend;
+    GPasteStorageBackend *backend;
     const gchar      *history_file_path;
     GList            *history;
     gsize             mem_size;
@@ -459,7 +459,7 @@ history_contains_uuid (const GList *history,
 {
     for (; history; history = g_list_next (history))
     {
-        const GPasteItem *item = history->data;
+        GPasteItem *item = history->data;
 
         if (g_paste_str_equal (g_paste_item_get_uuid (item), uuid))
             return TRUE;
@@ -761,12 +761,12 @@ static void on_error (GMarkupParseContext *context,
 /* Load the raw history document, transparently decrypting it for an encrypted
  * backend. Returns the (caller-owned) bytes through @text / @text_length. */
 static gboolean
-g_paste_file_backend_load_contents (const GPasteStorageBackend *self,
-                                    const gchar                *history_file_path,
-                                    GFile                      *history_file,
-                                    gchar                     **text,
-                                    gsize                      *text_length,
-                                    GError                    **error)
+g_paste_file_backend_load_contents (GPasteStorageBackend  *self,
+                                    const gchar           *history_file_path,
+                                    GFile                 *history_file,
+                                    gchar                **text,
+                                    gsize                 *text_length,
+                                    GError               **error)
 {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     const gchar *passphrase = g_paste_file_backend_get_passphrase (self);
@@ -801,12 +801,12 @@ g_paste_file_backend_load_contents (const GPasteStorageBackend *self,
 }
 
 static gboolean
-g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
-                                        const gchar                *history_file_path,
-                                        GList                     **history,
-                                        gsize                      *size)
+g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
+                                        const gchar           *history_file_path,
+                                        GList                **history,
+                                        gsize                 *size)
 {
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    GPasteSettings *settings = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     g_autofree gchar *text = NULL;
 
@@ -915,11 +915,11 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 }
 
 static void
-g_paste_file_backend_delete_history (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      GError                   **error)
+g_paste_file_backend_delete_history (GPasteStorageBackend  *self,
+                                      const gchar          *name,
+                                      GError              **error)
 {
-    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
 
     g_file_delete (history_file, NULL, error);
 }
@@ -931,10 +931,10 @@ g_paste_file_backend_delete_history (const GPasteStorageBackend *self,
  * back through the new key before the caller is told it worked, so a bad write
  * is caught while the original is still the only thing in place. */
 static gboolean
-_g_paste_file_backend_reencrypt_file (const GPasteStorageBackend *self,
-                                      const GPasteStorageBackend *rekeyed,
-                                      const gchar                *path,
-                                      gchar                     **tmp_path)
+_g_paste_file_backend_reencrypt_file (GPasteStorageBackend  *self,
+                                      GPasteStorageBackend  *rekeyed,
+                                      const gchar           *path,
+                                      gchar                **tmp_path)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
     g_autofree gchar *text = NULL;
@@ -949,7 +949,7 @@ _g_paste_file_backend_reencrypt_file (const GPasteStorageBackend *self,
 
     g_autofree gchar *tmp = g_strconcat (path, ".rekey", NULL);
     g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
-    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (rekeyed)->get_output_stream (_G_PASTE_FILE_BACKEND ((gpointer) rekeyed),
+    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (rekeyed)->get_output_stream (G_PASTE_FILE_BACKEND ((gpointer) rekeyed),
                                                                                                      tmp_file);
 
     if (!stream)
@@ -983,11 +983,11 @@ _g_paste_file_backend_reencrypt_file (const GPasteStorageBackend *self,
 /* Every file of @name that is encrypted: the history itself and the image side
  * files it references, which live in the history's own images directory. */
 static GStrv
-_g_paste_file_backend_encrypted_files (const GPasteStorageBackend *self,
-                                       const gchar                *name)
+_g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
+                                       const gchar          *name)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
 
     if (g_file_test (history_path, G_FILE_TEST_EXISTS))
         g_strv_builder_add (builder, history_path);
@@ -1027,9 +1027,9 @@ _g_paste_file_backend_encrypted_files (const GPasteStorageBackend *self,
  * filter, so changing a passphrase would quietly drop items the user still has.
  * A key change must change nothing but the key. */
 static gboolean
-g_paste_file_backend_rekey (const GPasteStorageBackend *self,
-                            const gchar                *name,
-                            const gchar                *new_passphrase)
+g_paste_file_backend_rekey (GPasteStorageBackend *self,
+                            const gchar          *name,
+                            const gchar          *new_passphrase)
 {
     if (!g_paste_file_backend_get_passphrase (self))
     {
@@ -1037,7 +1037,7 @@ g_paste_file_backend_rekey (const GPasteStorageBackend *self,
         return FALSE;
     }
 
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    GPasteSettings *settings = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
                                                                                   new_passphrase);
     g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (self, name);
@@ -1089,7 +1089,7 @@ g_paste_file_backend_rekey (const GPasteStorageBackend *self,
 #endif
 
 static const gchar *
-g_paste_file_backend_get_extension (const GPasteStorageBackend *self)
+g_paste_file_backend_get_extension (GPasteStorageBackend *self)
 {
     /* ".xmls" (s for "secret", like https vs http) for an encrypted history. */
     return g_paste_storage_get_extension (g_paste_file_backend_get_passphrase (self)
@@ -1098,8 +1098,8 @@ g_paste_file_backend_get_extension (const GPasteStorageBackend *self)
 }
 
 static GOutputStream *
-g_paste_file_backend_get_output_stream (const GPasteFileBackend *self G_GNUC_UNUSED,
-                                        GFile                   *output_file)
+g_paste_file_backend_get_output_stream (GPasteFileBackend *self G_GNUC_UNUSED,
+                                        GFile             *output_file)
 {
     g_autoptr (GError) error = NULL;
     GOutputStream *stream = G_OUTPUT_STREAM (g_file_replace (output_file,
@@ -1115,7 +1115,7 @@ g_paste_file_backend_get_output_stream (const GPasteFileBackend *self G_GNUC_UNU
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    const GPasteFileBackendPrivate *priv = _g_paste_file_backend_get_instance_private (self);
+    const GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (self);
 
     if (priv->passphrase)
     {
@@ -1218,7 +1218,7 @@ g_paste_file_backend_passphrase_can_decrypt (GPasteSettings *settings,
     g_return_val_if_fail (passphrase && *passphrase, FALSE);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
-    const gchar *extension = _G_PASTE_STORAGE_BACKEND_GET_CLASS (backend)->get_extension (backend);
+    const gchar *extension = G_PASTE_STORAGE_BACKEND_GET_CLASS (backend)->get_extension (backend);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
 
     for (GStrv name = names; name && *name; ++name)

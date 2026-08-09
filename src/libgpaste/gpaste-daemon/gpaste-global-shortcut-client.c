@@ -392,7 +392,7 @@ G_PASTE_VISIBLE void
 g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
                                              const GPasteKeybindingAccelerator *accels)
 {
-    g_return_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
+    g_return_if_fail (G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
     g_return_if_fail (accels);
 
     g_ptr_array_set_size (self->shortcuts, 0);
@@ -430,7 +430,7 @@ g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
 G_PASTE_VISIBLE void
 g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient *self)
 {
-    g_return_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
+    g_return_if_fail (G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
 
     g_ptr_array_set_size (self->shortcuts, 0);
 

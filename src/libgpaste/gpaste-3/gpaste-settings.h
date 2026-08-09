@@ -15,35 +15,35 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Settings, settings, SETTINGS, GObject)
 
-gboolean     g_paste_settings_get_close_on_select            (const GPasteSettings *self);
-gboolean     g_paste_settings_get_open_centered              (const GPasteSettings *self);
-guint64      g_paste_settings_get_element_size               (const GPasteSettings *self);
-gboolean     g_paste_settings_get_empty_history_confirmation (const GPasteSettings *self);
-gboolean     g_paste_settings_get_experimental_meta_daemon   (const GPasteSettings *self);
-gboolean     g_paste_settings_get_growing_lines              (const GPasteSettings *self);
-const gchar *g_paste_settings_get_history_name               (const GPasteSettings *self);
-gboolean     g_paste_settings_get_images_preview             (const GPasteSettings *self);
-guint64      g_paste_settings_get_images_preview_size        (const GPasteSettings *self);
-gboolean     g_paste_settings_get_images_support             (const GPasteSettings *self);
-const gchar *g_paste_settings_get_launch_ui                  (const GPasteSettings *self);
-const gchar *g_paste_settings_get_make_password              (const GPasteSettings *self);
-guint64      g_paste_settings_get_max_history_size           (const GPasteSettings *self);
-guint64      g_paste_settings_get_max_memory_usage           (const GPasteSettings *self);
-guint64      g_paste_settings_get_max_text_item_size         (const GPasteSettings *self);
-guint64      g_paste_settings_get_min_text_item_size         (const GPasteSettings *self);
-const gchar *g_paste_settings_get_pop                        (const GPasteSettings *self);
-gboolean     g_paste_settings_get_primary_to_history         (const GPasteSettings *self);
-gboolean     g_paste_settings_get_rich_text_support          (const GPasteSettings *self);
-const gchar *g_paste_settings_get_show_history               (const GPasteSettings *self);
-guint        g_paste_settings_get_storage_backend            (const GPasteSettings *self);
-guint64      g_paste_settings_get_storage_backend_revision   (const GPasteSettings *self);
-const gchar *g_paste_settings_get_sync_clipboard_to_primary  (const GPasteSettings *self);
-const gchar *g_paste_settings_get_sync_primary_to_clipboard  (const GPasteSettings *self);
-gboolean     g_paste_settings_get_synchronize_clipboards     (const GPasteSettings *self);
-gboolean     g_paste_settings_get_track_changes              (const GPasteSettings *self);
-gboolean     g_paste_settings_get_track_extension_state      (const GPasteSettings *self);
-gboolean     g_paste_settings_get_trim_items                 (const GPasteSettings *self);
-const gchar *g_paste_settings_get_upload                     (const GPasteSettings *self);
+gboolean     g_paste_settings_get_close_on_select            (GPasteSettings *self);
+gboolean     g_paste_settings_get_open_centered              (GPasteSettings *self);
+guint64      g_paste_settings_get_element_size               (GPasteSettings *self);
+gboolean     g_paste_settings_get_empty_history_confirmation (GPasteSettings *self);
+gboolean     g_paste_settings_get_experimental_meta_daemon   (GPasteSettings *self);
+gboolean     g_paste_settings_get_growing_lines              (GPasteSettings *self);
+const gchar *g_paste_settings_get_history_name               (GPasteSettings *self);
+gboolean     g_paste_settings_get_images_preview             (GPasteSettings *self);
+guint64      g_paste_settings_get_images_preview_size        (GPasteSettings *self);
+gboolean     g_paste_settings_get_images_support             (GPasteSettings *self);
+const gchar *g_paste_settings_get_launch_ui                  (GPasteSettings *self);
+const gchar *g_paste_settings_get_make_password              (GPasteSettings *self);
+guint64      g_paste_settings_get_max_history_size           (GPasteSettings *self);
+guint64      g_paste_settings_get_max_memory_usage           (GPasteSettings *self);
+guint64      g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
+guint64      g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
+const gchar *g_paste_settings_get_pop                        (GPasteSettings *self);
+gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
+gboolean     g_paste_settings_get_rich_text_support          (GPasteSettings *self);
+const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
+guint        g_paste_settings_get_storage_backend            (GPasteSettings *self);
+guint64      g_paste_settings_get_storage_backend_revision   (GPasteSettings *self);
+const gchar *g_paste_settings_get_sync_clipboard_to_primary  (GPasteSettings *self);
+const gchar *g_paste_settings_get_sync_primary_to_clipboard  (GPasteSettings *self);
+gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *self);
+gboolean     g_paste_settings_get_track_changes              (GPasteSettings *self);
+gboolean     g_paste_settings_get_track_extension_state      (GPasteSettings *self);
+gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *self);
+const gchar *g_paste_settings_get_upload                     (GPasteSettings *self);
 
 
 void g_paste_settings_set_close_on_select            (GPasteSettings *self,
@@ -105,7 +105,7 @@ void g_paste_settings_set_trim_items                 (GPasteSettings *self,
 void g_paste_settings_set_upload                     (GPasteSettings *self,
                                                       const gchar    *value);
 
-gboolean g_paste_settings_get_extension_enabled (const GPasteSettings *self);
+gboolean g_paste_settings_get_extension_enabled (GPasteSettings *self);
 void     g_paste_settings_set_extension_enabled (GPasteSettings *self,
                                                  gboolean        value);
 

@@ -69,10 +69,10 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 
 #define SETTING(name, key, type, setting_type, fail, guards, assign_owned, assign_borrowed)            \
     G_PASTE_VISIBLE type                                                                               \
-    g_paste_settings_get_##name (const GPasteSettings *self)                                           \
+    g_paste_settings_get_##name (GPasteSettings *self)                                           \
     {                                                                                                  \
-        g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) self), fail);                           \
-        const GPasteSettings *priv = self;             \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), fail);                           \
+        GPasteSettings *priv = self;             \
         return priv->name;                                                                             \
     }                                                                                                  \
     static void                                                                                        \
@@ -85,7 +85,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     g_paste_settings_set_##name (GPasteSettings *self,                                                 \
                                  type            value)                                                \
     {                                                                                                  \
-        g_return_if_fail (_G_PASTE_IS_SETTINGS (self));                                                \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                \
         guards                                                                                         \
         GPasteSettings *priv = self;                    \
         assign_borrowed (priv->name, value);                                                           \
@@ -620,9 +620,9 @@ STRING_SETTING (upload, UPLOAD)
  * Returns: Whether the gnome-shell extension is enabled or not
  */
 G_PASTE_VISIBLE gboolean
-g_paste_settings_get_extension_enabled (const GPasteSettings *self)
+g_paste_settings_get_extension_enabled (GPasteSettings *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
     return self->extension_enabled;
 }
 
@@ -658,7 +658,7 @@ G_PASTE_VISIBLE void
 g_paste_settings_set_extension_enabled (GPasteSettings *self,
                                         gboolean        value)
 {
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
     g_auto (GStrv) extensions = NULL;
 
@@ -901,7 +901,7 @@ G_PASTE_VISIBLE void
 g_paste_settings_reset (GPasteSettings *self,
                         const gchar    *key)
 {
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     g_return_if_fail (key);
 
     g_settings_reset (self->settings, key);
@@ -921,7 +921,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_settings_is_default (GPasteSettings *self,
                              const gchar    *key)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (self), TRUE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), TRUE);
     g_return_val_if_fail (key, TRUE);
 
     g_autoptr (GVariant) user_value = g_settings_get_user_value (self->settings, key);
@@ -943,7 +943,7 @@ g_paste_settings_is_default (GPasteSettings *self,
 G_PASTE_VISIBLE void
 g_paste_settings_sync (GPasteSettings *self)
 {
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
     g_settings_sync ();
 }
@@ -964,7 +964,7 @@ g_paste_settings_sync (GPasteSettings *self)
 G_PASTE_VISIBLE void
 g_paste_settings_reload (GPasteSettings *self)
 {
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
     for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
         setting_entries[i].from_dconf (self);
@@ -986,7 +986,7 @@ g_paste_settings_dispose (GObject *object)
 static void
 g_paste_settings_finalize (GObject *object)
 {
-    const GPasteSettings *self = G_PASTE_SETTINGS (object);
+    GPasteSettings *self = G_PASTE_SETTINGS (object);
 
     g_free (self->history_name);
     g_free (self->launch_ui);

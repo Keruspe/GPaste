@@ -260,12 +260,12 @@ g_paste_util_activate_ui_sync (const gchar *action,
  * Confirmation is skipped if GPaste is configured to do so.
  */
 G_PASTE_VISIBLE void
-g_paste_util_empty_with_confirmation (GPasteClient         *client,
-                                      const GPasteSettings *settings,
-                                      const gchar          *history)
+g_paste_util_empty_with_confirmation (GPasteClient   *client,
+                                      GPasteSettings *settings,
+                                      const gchar    *history)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIENT (client));
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
     if (g_paste_settings_get_empty_history_confirmation (settings))
@@ -291,13 +291,13 @@ g_paste_util_empty_with_confirmation (GPasteClient         *client,
  * Returns: whether the action was successful
  */
 G_PASTE_VISIBLE gboolean
-g_paste_util_empty_with_confirmation_sync (GPasteClient         *client,
-                                           const GPasteSettings *settings,
-                                           const gchar          *history,
-                                           GError              **error)
+g_paste_util_empty_with_confirmation_sync (GPasteClient    *client,
+                                           GPasteSettings  *settings,
+                                           const gchar     *history,
+                                           GError         **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), FALSE);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
@@ -519,7 +519,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_util_reexecute_daemon (GPasteClient *client,
                                GError      **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
     g_return_val_if_fail (!error || !*error, FALSE);
 
     g_autoptr (GError) err = NULL;
@@ -558,7 +558,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_util_trigger_storage_migration (GPasteClient *client,
                                         GError      **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 

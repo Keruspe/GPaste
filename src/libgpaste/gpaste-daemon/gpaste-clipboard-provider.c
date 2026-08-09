@@ -45,9 +45,9 @@ g_paste_clipboard_provider_default_init (GPasteClipboardProviderInterface *iface
  * Returns: %TRUE if this provider drives the clipboard
  */
 G_PASTE_VISIBLE gboolean
-g_paste_clipboard_provider_is_clipboard (const GPasteClipboardProvider *self)
+g_paste_clipboard_provider_is_clipboard (GPasteClipboardProvider *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
 
     return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->is_clipboard (self);
 }
@@ -61,9 +61,9 @@ g_paste_clipboard_provider_is_clipboard (const GPasteClipboardProvider *self)
  * Returns: read-only string containing the text or %NULL
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_clipboard_provider_get_text (const GPasteClipboardProvider *self)
+g_paste_clipboard_provider_get_text (GPasteClipboardProvider *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
 
     return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->get_text (self);
 }
@@ -77,9 +77,9 @@ g_paste_clipboard_provider_get_text (const GPasteClipboardProvider *self)
  * Returns: read-only string containing the checksum or %NULL
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_clipboard_provider_get_image_checksum (const GPasteClipboardProvider *self)
+g_paste_clipboard_provider_get_image_checksum (GPasteClipboardProvider *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
 
     return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->get_image_checksum (self);
 }
@@ -93,9 +93,9 @@ g_paste_clipboard_provider_get_image_checksum (const GPasteClipboardProvider *se
  * Returns: %TRUE if the provider holds nothing
  */
 G_PASTE_VISIBLE gboolean
-g_paste_clipboard_provider_is_empty (const GPasteClipboardProvider *self)
+g_paste_clipboard_provider_is_empty (GPasteClipboardProvider *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self), TRUE);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), TRUE);
 
     return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->is_empty (self);
 }
@@ -115,7 +115,7 @@ g_paste_clipboard_provider_update (GPasteClipboardProvider              *self,
                                    GPasteClipboardProviderUpdateCallback callback,
                                    gpointer                              user_data)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
 
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->update (self, callback, user_data);
 }
@@ -131,7 +131,7 @@ G_PASTE_VISIBLE void
 g_paste_clipboard_provider_select_text (GPasteClipboardProvider *self,
                                         const gchar             *text)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
     g_return_if_fail (text);
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
@@ -146,11 +146,11 @@ g_paste_clipboard_provider_select_text (GPasteClipboardProvider *self,
  * Synchronise the text between two providers
  */
 G_PASTE_VISIBLE void
-g_paste_clipboard_provider_sync_text (const GPasteClipboardProvider *self,
-                                      GPasteClipboardProvider       *other)
+g_paste_clipboard_provider_sync_text (GPasteClipboardProvider *self,
+                                      GPasteClipboardProvider *other)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (other));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (other));
 
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->sync_text (self, other);
 }
@@ -168,8 +168,8 @@ G_PASTE_VISIBLE gboolean
 g_paste_clipboard_provider_select_item (GPasteClipboardProvider *self,
                                         GPasteItem              *item)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
-    g_return_val_if_fail (_G_PASTE_IS_ITEM (item), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
 
     return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_item (self, item);
 }
@@ -185,8 +185,8 @@ G_PASTE_VISIBLE void
 g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
                                              GPasteHistory           *history)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
-    g_return_if_fail (_G_PASTE_IS_HISTORY (history));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (history));
 
     /* Identical for every backend: if we hold nothing, re-own the selection with
      * the history's head (dropping it if the backend rejects it). Backends only
@@ -214,7 +214,7 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
 G_PASTE_VISIBLE void
 g_paste_clipboard_provider_store (GPasteClipboardProvider *self)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
 
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->store (self);
 }
@@ -229,7 +229,7 @@ g_paste_clipboard_provider_store (GPasteClipboardProvider *self)
 G_PASTE_VISIBLE void
 g_paste_clipboard_provider_emit_changed (GPasteClipboardProvider *self)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
 
     g_signal_emit (self, signals[CHANGED], 0);
 }

@@ -13,14 +13,14 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Keybinding, keybinding, KEYBINDING, GObject)
 
-typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
+typedef const gchar *(*GPasteKeybindingGetter) (GPasteSettings *settings);
 typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self,
                                                 gpointer          data);
 
-const gchar    *g_paste_keybinding_get_dconf_key   (const GPasteKeybinding *self);
-const gchar    *g_paste_keybinding_get_description (const GPasteKeybinding *self);
-const gchar    *g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
-                                                    const GPasteSettings   *settings);
+const gchar    *g_paste_keybinding_get_dconf_key   (GPasteKeybinding *self);
+const gchar    *g_paste_keybinding_get_description (GPasteKeybinding *self);
+const gchar    *g_paste_keybinding_get_accelerator (GPasteKeybinding *self,
+                                                    GPasteSettings   *settings);
 
 void            g_paste_keybinding_activate      (GPasteKeybinding *self,
                                                   GPasteSettings   *settings);

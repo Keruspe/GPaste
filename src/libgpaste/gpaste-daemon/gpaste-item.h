@@ -21,26 +21,26 @@ struct _GPasteItemClass
     GObjectClass parent_class;
 
     /*< virtual >*/
-    const gchar * (*get_value) (const GPasteItem *self);
-    gboolean      (*equals)    (const GPasteItem *self,
-                                const GPasteItem *other);
+    const gchar * (*get_value) (GPasteItem *self);
+    gboolean      (*equals)    (GPasteItem *self,
+                                GPasteItem *other);
     void          (*set_state) (GPasteItem     *self,
                                 GPasteItemState state);
-    gboolean      (*secure)    (const GPasteItem *self);
+    gboolean      (*secure)    (GPasteItem *self);
 
     /*< pure virtual >*/
-    const gchar *(*get_kind) (const GPasteItem *self);
+    const gchar *(*get_kind) (GPasteItem *self);
 };
 
-const gchar  *g_paste_item_get_uuid           (const GPasteItem *self);
-const gchar  *g_paste_item_get_value          (const GPasteItem *self);
-const gchar  *g_paste_item_get_real_value     (const GPasteItem *self);
-const GSList *g_paste_item_get_special_values (const GPasteItem *self);
-const gchar  *g_paste_item_get_display_string (const GPasteItem *self);
-gboolean      g_paste_item_equals             (const GPasteItem *self,
-                                               const GPasteItem *other);
-const gchar  *g_paste_item_get_kind           (const GPasteItem *self);
-guint64       g_paste_item_get_size           (const GPasteItem *self);
+const gchar  *g_paste_item_get_uuid           (GPasteItem *self);
+const gchar  *g_paste_item_get_value          (GPasteItem *self);
+const gchar  *g_paste_item_get_real_value     (GPasteItem *self);
+const GSList *g_paste_item_get_special_values (GPasteItem *self);
+const gchar  *g_paste_item_get_display_string (GPasteItem *self);
+gboolean      g_paste_item_equals             (GPasteItem *self,
+                                               GPasteItem *other);
+const gchar  *g_paste_item_get_kind           (GPasteItem *self);
+guint64       g_paste_item_get_size           (GPasteItem *self);
 
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);

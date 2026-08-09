@@ -145,7 +145,7 @@ g_paste_history_item_free (gpointer data)
 {
     g_autoptr (GPasteItem) item = data;
 
-    if (_G_PASTE_IS_IMAGE_ITEM (item))
+    if (G_PASTE_IS_IMAGE_ITEM (item))
         g_paste_image_item_delete_files (g_paste_item_get_value (item));
 }
 
@@ -207,7 +207,7 @@ g_paste_history_emit_switch (GPasteHistory *self,
  * model is an array. Built back to front, so the list comes out newest-first
  * like the array it is copied from. */
 static GList *
-g_paste_history_snapshot (const GPasteHistory *self)
+g_paste_history_snapshot (GPasteHistory *self)
 {
     GList *snapshot = NULL;
 
@@ -265,13 +265,13 @@ g_paste_history_emit_update (GPasteHistory     *self,
 }
 
 static void
-g_paste_history_update (GPasteHistory      *self,
-                        GPasteUpdateAction  action,
-                        GPasteUpdateTarget  target,
-                        guint64             position,
-                        GPasteHistorySaveOp op,
-                        const GPasteItem   *item,
-                        const gchar        *uuid)
+g_paste_history_update (GPasteHistory       *self,
+                        GPasteUpdateAction   action,
+                        GPasteUpdateTarget   target,
+                        guint64              position,
+                        GPasteHistorySaveOp  op,
+                        GPasteItem          *item,
+                        const gchar         *uuid)
 {
     /* Don't persist intermediate states while an async load is replacing the
      * history (the load result triggers its own save when appropriate), nor once
@@ -309,8 +309,8 @@ g_paste_history_activate_first (GPasteHistory *self,
 }
 
 static GPasteItem *
-g_paste_history_private_get_by_uuid (const GPasteHistory *self,
-                                     const gchar                *uuid)
+g_paste_history_private_get_by_uuid (GPasteHistory *self,
+                                     const gchar   *uuid)
 {
     return (uuid) ? g_hash_table_lookup (self->by_uuid, uuid) : NULL;
 }
@@ -322,9 +322,9 @@ g_paste_history_private_get_by_uuid (const GPasteHistory *self,
  * uuid->position map would have to be rewritten on every single add. This scan
  * compares pointers, where the old list walk compared uuid strings. */
 static GPasteItem *
-g_paste_history_private_get_indexed_by_uuid (const GPasteHistory *self,
-                                             const gchar                *uuid,
-                                             guint                      *index)
+g_paste_history_private_get_indexed_by_uuid (GPasteHistory *self,
+                                             const gchar   *uuid,
+                                             guint         *index)
 {
     GPasteItem *item = g_paste_history_private_get_by_uuid (self, uuid);
 
@@ -378,12 +378,12 @@ g_paste_history_private_is_growing_line (GPasteHistory *self,
                                          GPasteItem           *old,
                                          GPasteItem           *new)
 {
-    if (_G_PASTE_IS_IMAGE_ITEM (old) || _G_PASTE_IS_IMAGE_ITEM (new))
+    if (G_PASTE_IS_IMAGE_ITEM (old) || G_PASTE_IS_IMAGE_ITEM (new))
         return FALSE;
 
     if (!(g_paste_settings_get_growing_lines (self->settings) &&
-        _G_PASTE_IS_TEXT_ITEM (old) && _G_PASTE_IS_TEXT_ITEM (new) &&
-        !_G_PASTE_IS_PASSWORD_ITEM (old) && !_G_PASTE_IS_PASSWORD_ITEM (new)))
+        G_PASTE_IS_TEXT_ITEM (old) && G_PASTE_IS_TEXT_ITEM (new) &&
+        !G_PASTE_IS_PASSWORD_ITEM (old) && !G_PASTE_IS_PASSWORD_ITEM (new)))
             return FALSE;
 
     const gchar *n = g_paste_item_get_value (new);
@@ -397,8 +397,8 @@ _g_paste_history_add (GPasteHistory *self,
                       GPasteItem    *item,
                       gboolean       new_selection)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (_G_PASTE_IS_ITEM (item));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (item));
 
     guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
 
@@ -473,7 +473,7 @@ _g_paste_history_add (GPasteHistory *self,
      * in several histories never shares (and never cross-deletes) a file:
      * anchor it under ours before it gets persisted. A select re-anchors to
      * the same path, and loaded items keep the path they were stored with. */
-    if (_G_PASTE_IS_IMAGE_ITEM (item) && new_selection)
+    if (G_PASTE_IS_IMAGE_ITEM (item) && new_selection)
         g_paste_image_item_set_history (G_PASTE_IMAGE_ITEM (item), self->name);
 
     g_ptr_array_insert (self->history, 0, item);
@@ -503,8 +503,8 @@ G_PASTE_VISIBLE void
 g_paste_history_add (GPasteHistory *self,
                      GPasteItem    *item)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (_G_PASTE_IS_ITEM (item));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_ITEM (item));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -556,7 +556,7 @@ G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
                         guint64        index)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -576,7 +576,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_history_remove_by_uuid (GPasteHistory *self,
                                 const gchar   *uuid)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
 
     G_PASTE_LOCK_HISTORY;
 
@@ -593,8 +593,8 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
 }
 
 static GPasteItem *
-g_paste_history_private_get (const GPasteHistory *self,
-                             guint64                     index)
+g_paste_history_private_get (GPasteHistory *self,
+                             guint64        index)
 {
     return (index < self->history->len) ? g_ptr_array_index (self->history, index) : NULL;
 }
@@ -608,11 +608,11 @@ g_paste_history_private_get (const GPasteHistory *self,
  *
  * Returns: a read-only #GPasteItem
  */
-G_PASTE_VISIBLE const GPasteItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_history_get (GPasteHistory *self,
                      guint64        index)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     G_PASTE_LOCK_HISTORY;
 
@@ -628,11 +628,11 @@ g_paste_history_get (GPasteHistory *self,
  *
  * Returns: a read-only #GPasteItem
  */
-G_PASTE_VISIBLE const GPasteItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_history_get_by_uuid (GPasteHistory *self,
                              const gchar   *uuid)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     G_PASTE_LOCK_HISTORY;
 
@@ -654,7 +654,7 @@ G_PASTE_VISIBLE GPasteItem *
 g_paste_history_dup (GPasteHistory *self,
                      guint64        index)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     G_PASTE_LOCK_HISTORY;
 
@@ -677,7 +677,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_history_select (GPasteHistory *self,
                         const gchar   *uuid)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
     g_debug ("history: select '%s'", uuid);
 
     G_PASTE_LOCK_HISTORY;
@@ -732,7 +732,7 @@ g_paste_history_replace (GPasteHistory *self,
                          const gchar   *uuid,
                          const gchar   *contents)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!contents || g_utf8_validate (contents, -1, NULL));
 
     G_PASTE_LOCK_HISTORY;
@@ -742,7 +742,7 @@ g_paste_history_replace (GPasteHistory *self,
     if (!item)
         return;
 
-    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
@@ -753,15 +753,15 @@ g_paste_history_replace (GPasteHistory *self,
 }
 
 static GPasteItem *
-_g_paste_history_private_get_password (const GPasteHistory *self,
-                                       const gchar                *name,
-                                       guint64                    *index)
+_g_paste_history_private_get_password (GPasteHistory *self,
+                                       const gchar   *name,
+                                       guint64       *index)
 {
     for (guint idx = 0; idx < self->history->len; ++idx)
     {
         GPasteItem *i = g_ptr_array_index (self->history, idx);
 
-        if (_G_PASTE_IS_PASSWORD_ITEM (i) &&
+        if (G_PASTE_IS_PASSWORD_ITEM (i) &&
             g_paste_str_equal (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
         {
             if (index)
@@ -788,7 +788,7 @@ g_paste_history_set_password (GPasteHistory *self,
                               const gchar   *uuid,
                               const gchar   *name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     G_PASTE_LOCK_HISTORY;
@@ -796,7 +796,7 @@ g_paste_history_set_password (GPasteHistory *self,
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
 
     g_return_if_fail (item);
-    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
     g_return_if_fail (!_g_paste_history_private_get_password (self, name, NULL));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
@@ -813,11 +813,11 @@ g_paste_history_set_password (GPasteHistory *self,
  *
  * Returns: (nullable): a #GPastePasswordItem or %NULL
  */
-G_PASTE_VISIBLE const GPastePasswordItem *
+G_PASTE_VISIBLE GPastePasswordItem *
 g_paste_history_get_password (GPasteHistory *self,
                               const gchar   *name)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
     G_PASTE_LOCK_HISTORY;
@@ -837,7 +837,7 @@ G_PASTE_VISIBLE void
 g_paste_history_delete_password (GPasteHistory *self,
                                  const gchar   *name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     G_PASTE_LOCK_HISTORY;
@@ -860,7 +860,7 @@ g_paste_history_rename_password (GPasteHistory *self,
                                  const gchar   *old_name,
                                  const gchar   *new_name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL));
     g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
@@ -883,7 +883,7 @@ g_paste_history_rename_password (GPasteHistory *self,
 G_PASTE_VISIBLE void
 g_paste_history_empty (GPasteHistory *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -909,7 +909,7 @@ G_PASTE_VISIBLE void
 g_paste_history_save (GPasteHistory *self,
                       const gchar   *name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -929,7 +929,7 @@ g_paste_history_save (GPasteHistory *self,
 G_PASTE_VISIBLE void
 g_paste_history_flush (GPasteHistory *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -948,7 +948,7 @@ g_paste_history_flush (GPasteHistory *self)
 G_PASTE_VISIBLE void
 g_paste_history_resume (GPasteHistory *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -998,7 +998,7 @@ G_PASTE_VISIBLE void
 g_paste_history_load (GPasteHistory *self,
                       const gchar   *name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     G_PASTE_LOCK_HISTORY;
@@ -1058,7 +1058,7 @@ g_paste_history_on_loaded (gpointer  user_data,
 G_PASTE_VISIBLE void
 g_paste_history_reload_backend (GPasteHistory *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     G_PASTE_LOCK_HISTORY;
 
@@ -1109,7 +1109,7 @@ G_PASTE_VISIBLE void
 g_paste_history_load_async (GPasteHistory *self,
                              const gchar   *name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     G_PASTE_LOCK_HISTORY;
@@ -1142,7 +1142,7 @@ G_PASTE_VISIBLE void
 g_paste_history_switch (GPasteHistory *self,
                         const gchar   *name)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (name);
     g_return_if_fail (g_utf8_validate (name, -1, NULL));
 
@@ -1168,7 +1168,7 @@ g_paste_history_delete (GPasteHistory *self,
                         const gchar   *name,
                         GError       **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
 
     const gchar *history_name = (name) ? name : self->name;
 
@@ -1400,9 +1400,9 @@ g_paste_history_init (GPasteHistory *self)
  *          newest first
  */
 G_PASTE_VISIBLE const GPtrArray *
-g_paste_history_get_history (const GPasteHistory *self)
+g_paste_history_get_history (GPasteHistory *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     return self->history;
 }
@@ -1418,7 +1418,7 @@ g_paste_history_get_history (const GPasteHistory *self)
 G_PASTE_VISIBLE guint64
 g_paste_history_get_length (GPasteHistory *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), 0);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
 
     G_PASTE_LOCK_HISTORY;
 
@@ -1434,9 +1434,9 @@ g_paste_history_get_length (GPasteHistory *self)
  * Returns: The name of the current history
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_history_get_current (const GPasteHistory *self)
+g_paste_history_get_current (GPasteHistory *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), 0);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
 
     return self->name;
 }
@@ -1454,7 +1454,7 @@ G_PASTE_VISIBLE GStrv
 g_paste_history_search (GPasteHistory *self,
                         const gchar   *pattern)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
     g_return_val_if_fail (strlen (pattern) <= 256, NULL);
 
@@ -1480,13 +1480,13 @@ g_paste_history_search (GPasteHistory *self,
                                               sizeof (gchar *));
     for (guint i = 0; i < self->history->len; ++i)
     {
-        const GPasteItem *item = g_ptr_array_index (self->history, i);
+        GPasteItem *item = g_ptr_array_index (self->history, i);
         const gchar *uuid = g_paste_item_get_uuid (item);
         gboolean match = FALSE;
 
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
-        else if (_G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal (pattern, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item))))
+        else if (G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal (pattern, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item))))
             match = TRUE;
         else if (g_regex_match (regex, g_paste_item_get_value (item), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             match = TRUE;
@@ -1513,7 +1513,7 @@ g_paste_history_search (GPasteHistory *self,
 G_PASTE_VISIBLE GPasteHistory *
 g_paste_history_new (GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
 
@@ -1553,7 +1553,7 @@ G_PASTE_VISIBLE GStrv
 g_paste_history_list (GPasteHistory *self,
                       GError       **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
     return g_paste_storage_backend_list_histories (self->backend, error);

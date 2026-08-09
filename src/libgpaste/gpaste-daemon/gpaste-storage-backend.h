@@ -22,82 +22,82 @@ struct _GPasteStorageBackendClass
     /* Returns %FALSE when the history file is present but could not be read back
      * (a failed decryption, parse or I/O error), so a caller can tell a genuine
      * empty history apart from a read that silently yielded nothing. */
-    gboolean (*read_history_file)  (const GPasteStorageBackend *self,
-                                    const gchar                *history_file_path,
-                                    GList                     **history,
-                                    gsize                      *size);
-    void (*write_history_file) (const GPasteStorageBackend *self,
-                                const gchar                *history_file_path,
-                                const GList                *history);
+    gboolean (*read_history_file)  (GPasteStorageBackend *self,
+                                    const gchar          *history_file_path,
+                                    GList                **history,
+                                    gsize                *size);
+    void (*write_history_file) (GPasteStorageBackend *self,
+                                const gchar          *history_file_path,
+                                const GList          *history);
 
     /*< protected >*/
-    const gchar          *(*get_extension)  (const GPasteStorageBackend *self);
-    const GPasteSettings *(*get_settings)   (const GPasteStorageBackend *self);
-    void                  (*delete_history) (const GPasteStorageBackend *self,
-                                             const gchar                *name,
-                                             GError                   **error);
-    GStrv                 (*list_histories) (const GPasteStorageBackend *self,
-                                             GError                   **error);
+    const gchar          *(*get_extension)  (GPasteStorageBackend *self);
+    GPasteSettings       *(*get_settings)   (GPasteStorageBackend *self);
+    void                  (*delete_history) (GPasteStorageBackend *self,
+                                             const gchar          *name,
+                                             GError               **error);
+    GStrv                 (*list_histories) (GPasteStorageBackend *self,
+                                             GError               **error);
 
     /*< protected, optional: re-encrypt an existing history under a new key >*/
     /* @self holds the passphrase the history is currently encrypted with; only
      * the encrypted flavors implement this. Returns %FALSE when @name was left
      * as it was, so a caller re-keying several histories can stop instead of
      * ending up with a set split across two passphrases. */
-    gboolean (*rekey)                (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      const gchar                *new_passphrase);
+    gboolean (*rekey)                (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      const gchar          *new_passphrase);
 
     /*< protected, optional: incremental updates >*/
-    void     (*add_item)             (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      const GPasteItem           *item,
-                                      const GList                *history);
-    void     (*remove_item)          (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      const gchar                *uuid);
-    void     (*replace_item)         (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      const gchar                *old_uuid,
-                                      const GPasteItem           *item);
-    void     (*clear_history)        (const GPasteStorageBackend *self,
-                                      const gchar                *name);
+    void     (*add_item)             (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      GPasteItem           *item,
+                                      const GList          *history);
+    void     (*remove_item)          (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      const gchar          *uuid);
+    void     (*replace_item)         (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      const gchar          *old_uuid,
+                                      GPasteItem           *item);
+    void     (*clear_history)        (GPasteStorageBackend *self,
+                                      const gchar          *name);
 };
 
-gboolean g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
-                                               const gchar                *name,
-                                               GList                     **history,
-                                               gsize                      *size);
-void g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
-                                            const gchar                *name,
-                                            const GList                *history);
-void g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
-                                             const gchar                *name,
-                                             GError                   **error);
-GStrv g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
-                                              GError                   **error);
-gboolean g_paste_storage_backend_rekey (const GPasteStorageBackend *self,
-                                        const gchar                *name,
-                                        const gchar                *new_passphrase);
+gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
+                                               const gchar          *name,
+                                               GList                **history,
+                                               gsize                *size);
+void g_paste_storage_backend_write_history (GPasteStorageBackend *self,
+                                            const gchar          *name,
+                                            const GList          *history);
+void g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
+                                             const gchar          *name,
+                                             GError               **error);
+GStrv g_paste_storage_backend_list_histories (GPasteStorageBackend *self,
+                                              GError               **error);
+gboolean g_paste_storage_backend_rekey (GPasteStorageBackend *self,
+                                        const gchar          *name,
+                                        const gchar          *new_passphrase);
 
-void     g_paste_storage_backend_add_item             (const GPasteStorageBackend *self,
-                                                       const gchar                *name,
-                                                       const GPasteItem           *item,
-                                                       const GList                *history);
-void     g_paste_storage_backend_remove_item          (const GPasteStorageBackend *self,
-                                                       const gchar                *name,
-                                                       const gchar                *uuid,
-                                                       const GList                *history);
-void     g_paste_storage_backend_replace_item         (const GPasteStorageBackend *self,
-                                                       const gchar                *name,
-                                                       const gchar                *old_uuid,
-                                                       const GPasteItem           *item,
-                                                       const GList                *history);
-void     g_paste_storage_backend_clear_history        (const GPasteStorageBackend *self,
-                                                       const gchar                *name,
-                                                       const GList                *history);
+void     g_paste_storage_backend_add_item             (GPasteStorageBackend *self,
+                                                       const gchar          *name,
+                                                       GPasteItem           *item,
+                                                       const GList          *history);
+void     g_paste_storage_backend_remove_item          (GPasteStorageBackend *self,
+                                                       const gchar          *name,
+                                                       const gchar          *uuid,
+                                                       const GList          *history);
+void     g_paste_storage_backend_replace_item         (GPasteStorageBackend *self,
+                                                       const gchar          *name,
+                                                       const gchar          *old_uuid,
+                                                       GPasteItem           *item,
+                                                       const GList          *history);
+void     g_paste_storage_backend_clear_history        (GPasteStorageBackend *self,
+                                                       const gchar          *name,
+                                                       const GList          *history);
 
-gboolean g_paste_storage_backend_is_incremental       (const GPasteStorageBackend *self);
+gboolean g_paste_storage_backend_is_incremental       (GPasteStorageBackend *self);
 
 void g_paste_storage_backend_lock   (void);
 void g_paste_storage_backend_unlock (void);

@@ -46,13 +46,13 @@ typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
                                                    gpointer            user_data);
 
 static gboolean
-g_paste_clipboard_gdk_is_clipboard (const GPasteClipboardGdk *self)
+g_paste_clipboard_gdk_is_clipboard (GPasteClipboardGdk *self)
 {
     return self->is_clipboard;
 }
 
 static const gchar *
-g_paste_clipboard_gdk_get_text (const GPasteClipboardGdk *self)
+g_paste_clipboard_gdk_get_text (GPasteClipboardGdk *self)
 {
     return g_paste_clipboard_content_get_text (&self->content);
 }
@@ -174,8 +174,8 @@ g_paste_clipboard_gdk_sync_ready (GObject      *source_object,
 }
 
 static void
-g_paste_clipboard_gdk_sync_text (const GPasteClipboardGdk *self,
-                                 GPasteClipboardGdk       *other)
+g_paste_clipboard_gdk_sync_text (GPasteClipboardGdk *self,
+                                 GPasteClipboardGdk *other)
 {
     /* The target outlives us in practice, but the read is asynchronous: hold a
      * ref on it until the text lands, as the meta backend does. */
@@ -206,7 +206,7 @@ g_paste_clipboard_gdk_store (GPasteClipboardGdk *self)
 }
 
 static const gchar *
-g_paste_clipboard_gdk_get_image_checksum (const GPasteClipboardGdk *self)
+g_paste_clipboard_gdk_get_image_checksum (GPasteClipboardGdk *self)
 {
     return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
@@ -733,7 +733,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 {
     g_debug ("%s: select item", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    if (_G_PASTE_IS_IMAGE_ITEM (item))
+    if (G_PASTE_IS_IMAGE_ITEM (item))
     {
         GdkTexture *texture = g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item));
         const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item));
@@ -745,7 +745,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
         return TRUE;
     }
 
-    if (_G_PASTE_IS_COLOR_ITEM (item))
+    if (G_PASTE_IS_COLOR_ITEM (item))
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
 
@@ -765,7 +765,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 
     g_autoptr (GPtrArray) providers = g_ptr_array_new ();
 
-    if (_G_PASTE_IS_URIS_ITEM (item))
+    if (G_PASTE_IS_URIS_ITEM (item))
     {
         GdkFileList *file_list = g_paste_uris_item_get_file_list (G_PASTE_URIS_ITEM (item));
         g_paste_clipboard_gdk_private_set_file_list (self, file_list);
@@ -780,7 +780,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
     {
-        const GPasteBinaryData *v = sv->data;
+        GPasteBinaryData *v = sv->data;
         g_ptr_array_add (providers, gdk_content_provider_new_for_bytes (g_paste_special_atom_get (g_paste_binary_data_get_mime (v)), g_paste_binary_data_get_bytes (v)));
     }
 
@@ -796,7 +796,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 }
 
 static gboolean
-g_paste_clipboard_gdk_is_empty (const GPasteClipboardGdk *self)
+g_paste_clipboard_gdk_is_empty (GPasteClipboardGdk *self)
 {
     return g_paste_clipboard_content_is_empty (&self->content);
 }
@@ -894,7 +894,7 @@ _g_paste_clipboard_gdk_new (GPasteSettings *settings,
 GPasteClipboardProvider *
 g_paste_clipboard_gdk_new_clipboard (GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     return _g_paste_clipboard_gdk_new (settings, TRUE);
 }
@@ -911,7 +911,7 @@ g_paste_clipboard_gdk_new_clipboard (GPasteSettings *settings)
 GPasteClipboardProvider *
 g_paste_clipboard_gdk_new_primary (GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     return _g_paste_clipboard_gdk_new (settings, FALSE);
 }

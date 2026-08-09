@@ -87,7 +87,7 @@ g_paste_ui_switch_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_switch_new ();
 

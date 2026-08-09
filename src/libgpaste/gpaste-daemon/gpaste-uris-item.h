@@ -13,7 +13,7 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UrisItem, uris_item, URIS_ITEM, GPasteTextItem)
 
-GdkFileList *g_paste_uris_item_get_file_list (const GPasteUrisItem *self);
+GdkFileList *g_paste_uris_item_get_file_list (GPasteUrisItem *self);
 
 GPasteItem  *g_paste_uris_item_new          (GdkFileList *file_list);
 GPasteItem  *g_paste_uris_item_new_from_str (const gchar *str);

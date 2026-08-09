@@ -186,7 +186,7 @@ static void
 g_paste_prompt_adw_migration (GPastePrompt        *prompt,
                               GPastePromptRequest *request)
 {
-    const GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
+    GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
     MigrationDialog *self = g_new0 (MigrationDialog, 1);
 
     self->request = g_object_ref (request);
@@ -424,7 +424,7 @@ static void
 g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
                                GPastePromptRequest *request)
 {
-    const GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
+    GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
     PassphraseDialog *self = g_new0 (PassphraseDialog, 1);
     gboolean confirm = g_paste_prompt_request_get_confirm (request);
     const gchar *error_message = g_paste_prompt_request_get_error_message (request);

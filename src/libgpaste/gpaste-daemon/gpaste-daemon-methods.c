@@ -281,7 +281,7 @@ g_paste_daemon_methods_get_element (const GPasteDaemonMethods *priv,
                                     GError                   **error)
 {
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-    const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
 
@@ -299,7 +299,7 @@ g_paste_daemon_methods_get_element_at_index (const GPasteDaemonMethods *priv,
 
     G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), G_PASTE_ERROR_INVALID_INDEX, "invalid index received", NULL);
 
-    const GPasteItem *item = g_paste_history_get (history, index);
+    GPasteItem *item = g_paste_history_get (history, index);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no value for this index", NULL);
 
@@ -319,7 +319,7 @@ g_paste_daemon_methods_get_element_kind (const GPasteDaemonMethods *priv,
     GPasteHistory *history = priv->history;
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no item for this index", NULL);
 
@@ -346,7 +346,7 @@ g_paste_daemon_methods_get_elements (const GPasteDaemonMethods *priv,
 
     for (gsize i = 0; i < len; ++i)
     {
-        const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
+        GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
         G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no value for this index", NULL);
         g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
     }
@@ -366,7 +366,7 @@ g_paste_daemon_methods_get_history (const GPasteDaemonMethods *priv)
 
     for (guint i = 0; i < history->len; ++i)
     {
-        const GPasteItem *item = g_ptr_array_index (history, i);
+        GPasteItem *item = g_ptr_array_index (history, i);
 
         g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
     }
@@ -411,16 +411,16 @@ g_paste_daemon_methods_get_image (const GPasteDaemonMethods *priv,
                                   GError                   **error)
 {
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-    const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
-    G_PASTE_DBUS_ASSERT_FULL (_G_PASTE_IS_IMAGE_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "Provided uuid doesn't match an image item.", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_IMAGE_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "Provided uuid doesn't match an image item.", NULL);
 
     /* Hand the bytes over so clients never dereference the item's path
      * themselves: how and where the image is stored stays the daemon's
      * business. The item carries its PNG when it came from a blob-storing
      * backend (or a fresh capture); older path-based items read their file. */
-    GBytes *png = g_paste_image_item_get_png_bytes (_G_PASTE_IMAGE_ITEM (item));
+    GBytes *png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
     g_autoptr (GBytes) bytes = NULL;
 
     if (png)
@@ -447,7 +447,7 @@ g_paste_daemon_methods_get_raw_element (const GPasteDaemonMethods *priv,
                                         GError                   **error)
 {
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-    const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
 
@@ -465,7 +465,7 @@ g_paste_daemon_methods_get_raw_history (const GPasteDaemonMethods *priv)
 
     for (guint i = 0; i < history->len; ++i)
     {
-        const GPasteItem *item = g_ptr_array_index (history, i);
+        GPasteItem *item = g_ptr_array_index (history, i);
 
         g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_value (item));
     }
@@ -515,7 +515,7 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *priv,
 
     for (guint64 i = 0; i < length; ++i)
     {
-        const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
+        GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
 
         G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "no item matching this uuid");
 
@@ -621,10 +621,10 @@ g_paste_daemon_methods_replace (const GPasteDaemonMethods *priv,
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     const gchar *uuid = g_variant_get_string (variant1, NULL);
 
-    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
     G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
-    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *contents = g_variant_dup_string (variant2, &length);
@@ -647,10 +647,10 @@ g_paste_daemon_methods_set_password (const GPasteDaemonMethods *priv,
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     const gchar *uuid = g_variant_get_string (variant1, NULL);
-    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
     G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
-    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *name = g_variant_dup_string (variant2, &length);

@@ -13,9 +13,9 @@
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_shortcuts_window_new (const GPasteSettings *settings)
+g_paste_ui_shortcuts_window_new (GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     AdwDialog *self = adw_shortcuts_dialog_new ();
     AdwShortcutsSection *section = adw_shortcuts_section_new (_("General"));

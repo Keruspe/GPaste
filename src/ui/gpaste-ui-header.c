@@ -242,7 +242,7 @@ g_paste_ui_header_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = adw_header_bar_new ();
     AdwHeaderBar *bar = ADW_HEADER_BAR (self);

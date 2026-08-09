@@ -82,9 +82,9 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
                                           gboolean              activatable)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), activatable);
     gtk_widget_set_sensitive (GTK_WIDGET (priv->label), activatable);
@@ -108,7 +108,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
                                        gboolean              editable)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
@@ -128,7 +128,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_uploadable (GPasteUiItemSkeleton *self,
                                          gboolean              uploadable)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
@@ -148,10 +148,10 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
                                    const gchar          *text)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     gtk_inscription_set_attributes (priv->label, NULL);
     gtk_inscription_set_text (priv->label, text);
@@ -168,10 +168,10 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_text_bold (GPasteUiItemSkeleton *self,
                                         const gchar          *text)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     g_autoptr (PangoAttrList) attrs = pango_attr_list_new ();
     pango_attr_list_insert (attrs, pango_attr_weight_new (PANGO_WEIGHT_BOLD));
@@ -202,9 +202,9 @@ g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
                                              guint64               index,
                                              const gchar          *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     if (index == (guint64) -1 || index == (guint64) -2)
         gtk_label_set_text (priv->index_label, "");
@@ -229,7 +229,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
                                         GdkTexture           *texture)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
@@ -309,9 +309,9 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
 G_PASTE_VISIBLE GtkInscription *
 g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self), NULL);
 
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    const GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     return priv->label;
 }
@@ -435,8 +435,8 @@ g_paste_ui_item_skeleton_new (GType           type,
                               GtkWindow      *rootwin)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_ITEM_SKELETON), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_object_new (type, "selectable", FALSE, NULL);

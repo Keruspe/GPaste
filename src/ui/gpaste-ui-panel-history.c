@@ -23,7 +23,7 @@ G_PASTE_DEFINE_TYPE (UiPanelHistory, ui_panel_history, ADW_TYPE_SIDEBAR_ITEM)
 G_PASTE_VISIBLE void
 g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
 
     g_paste_client_switch_history (self->client, self->history, NULL, NULL);
 }
@@ -39,7 +39,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
                                      guint64               length)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
 
     g_autofree gchar *str = g_strdup_printf ("%" G_GUINT64_FORMAT, length);
 
@@ -55,11 +55,11 @@ g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
  * Returns: the name of the history
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self)
+g_paste_ui_panel_history_get_history (GPasteUiPanelHistory *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
 
-    const GPasteUiPanelHistory *priv = (GPasteUiPanelHistory *) self;
+    GPasteUiPanelHistory *priv = (GPasteUiPanelHistory *) self;
 
     return priv->history;
 }
@@ -124,7 +124,7 @@ G_PASTE_VISIBLE GPasteUiPanelHistory *
 g_paste_ui_panel_history_new (GPasteClient *client,
                               const gchar  *history)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);
 
     GPasteUiPanelHistory *self = g_object_new (G_PASTE_TYPE_UI_PANEL_HISTORY, NULL);

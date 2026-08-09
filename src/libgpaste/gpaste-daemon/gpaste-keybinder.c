@@ -87,8 +87,8 @@ G_PASTE_VISIBLE void
 g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
                                   GPasteKeybinding *binding)
 {
-    g_return_if_fail (_G_PASTE_IS_KEYBINDER (self));
-    g_return_if_fail (_G_PASTE_IS_KEYBINDING (binding));
+    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (binding));
 
     g_hash_table_insert (self->keybindings,
                          (gpointer) g_paste_keybinding_get_dconf_key (binding),
@@ -104,7 +104,7 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
 G_PASTE_VISIBLE void
 g_paste_keybinder_activate_all (GPasteKeybinder *self)
 {
-    g_return_if_fail (_G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
     g_autoptr (GList) values = g_hash_table_get_values (self->keybindings);
 
@@ -144,7 +144,7 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 G_PASTE_VISIBLE void
 g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 {
-    g_return_if_fail (_G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
     g_paste_global_shortcut_client_ungrab_all (self->provider);
 
@@ -209,8 +209,8 @@ G_PASTE_VISIBLE GPasteKeybinder *
 g_paste_keybinder_new (GPasteSettings                *settings,
                        GPasteGlobalShortcutClient *provider)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (provider), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (provider), NULL);
 
     GPasteKeybinder *self = G_PASTE_KEYBINDER (g_object_new (G_PASTE_TYPE_KEYBINDER, NULL));
 

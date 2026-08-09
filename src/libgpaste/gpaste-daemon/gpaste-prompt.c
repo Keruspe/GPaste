@@ -163,9 +163,9 @@ g_paste_prompt_request_claim (GPastePromptRequest *self)
  * Returns: whether to confirm the passphrase
  */
 G_PASTE_VISIBLE gboolean
-g_paste_prompt_request_get_confirm (const GPastePromptRequest *self)
+g_paste_prompt_request_get_confirm (GPastePromptRequest *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), FALSE);
 
     return self->confirm;
 }
@@ -180,9 +180,9 @@ g_paste_prompt_request_get_confirm (const GPastePromptRequest *self)
  * Returns: (nullable): read-only string, or %NULL when there is nothing to say
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_prompt_request_get_error_message (const GPastePromptRequest *self)
+g_paste_prompt_request_get_error_message (GPastePromptRequest *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
 
     return self->error_message;
 }
@@ -196,9 +196,9 @@ g_paste_prompt_request_get_error_message (const GPastePromptRequest *self)
  * Returns: the initial state of the switch
  */
 G_PASTE_VISIBLE GPasteStorageRemember
-g_paste_prompt_request_get_remember (const GPastePromptRequest *self)
+g_paste_prompt_request_get_remember (GPastePromptRequest *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_REMEMBER_UNCHANGED);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 
     return self->remember;
 }
@@ -213,8 +213,8 @@ g_paste_prompt_request_get_remember (const GPastePromptRequest *self)
  * Returns: (array length=n_offered) (transfer none): the backends
  */
 G_PASTE_VISIBLE const GPasteStorage *
-g_paste_prompt_request_get_offered (const GPastePromptRequest *self,
-                                    guint                     *n_offered)
+g_paste_prompt_request_get_offered (GPastePromptRequest *self,
+                                    guint               *n_offered)
 {
     g_return_val_if_fail (n_offered, NULL);
 
@@ -224,7 +224,7 @@ g_paste_prompt_request_get_offered (const GPastePromptRequest *self,
      * pointer to walk that many entries of. */
     *n_offered = 0;
 
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
 
     g_return_val_if_fail (self->kind == REQUEST_MIGRATION, NULL);
 
@@ -242,9 +242,9 @@ g_paste_prompt_request_get_offered (const GPastePromptRequest *self,
  * Returns: the current backend
  */
 G_PASTE_VISIBLE GPasteStorage
-g_paste_prompt_request_get_current (const GPastePromptRequest *self)
+g_paste_prompt_request_get_current (GPastePromptRequest *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_NOOP);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_NOOP);
 
     return self->current;
 }
@@ -266,7 +266,7 @@ g_paste_prompt_request_reply_passphrase (GPastePromptRequest  *self,
                                          const gchar          *passphrase,
                                          GPasteStorageRemember remember)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self));
+    g_return_if_fail (G_PASTE_IS_PROMPT_REQUEST (self));
 
     if (!g_paste_prompt_request_answers (self, REQUEST_PASSPHRASE))
         return;
@@ -311,7 +311,7 @@ g_paste_prompt_request_reply_migration (GPastePromptRequest *self,
                                         gboolean             import,
                                         gboolean             cleanup)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self));
+    g_return_if_fail (G_PASTE_IS_PROMPT_REQUEST (self));
 
     if (!g_paste_prompt_request_answers (self, REQUEST_MIGRATION))
         return;
@@ -357,7 +357,7 @@ g_paste_prompt_request_reply_migration (GPastePromptRequest *self,
 G_PASTE_VISIBLE void
 g_paste_prompt_request_dismiss (GPastePromptRequest *self)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT_REQUEST (self));
+    g_return_if_fail (G_PASTE_IS_PROMPT_REQUEST (self));
 
     g_autoptr (GTask) task = g_paste_prompt_request_claim (self);
 
@@ -404,7 +404,7 @@ g_paste_prompt_passphrase_async (GPastePrompt         *self,
                                  GAsyncReadyCallback   callback,
                                  gpointer              user_data)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT (self));
+    g_return_if_fail (G_PASTE_IS_PROMPT (self));
 
     /* Ours to drop once the vfunc has had it: a backend that keeps it has
      * referenced it, and one that has not gets a dismissal from dispose. */
@@ -451,7 +451,7 @@ g_paste_prompt_passphrase_finish (GPastePrompt          *self,
     if (remember)
         *remember = G_PASTE_STORAGE_REMEMBER_UNCHANGED;
 
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT (self), NULL);
     g_return_val_if_fail (g_task_is_valid (result, self), NULL);
     /* The two concerns return different payloads through the same task type, so
      * the tag is what keeps a migration result from being read as a passphrase. */
@@ -495,7 +495,7 @@ g_paste_prompt_migration_async (GPastePrompt        *self,
                                 GAsyncReadyCallback  callback,
                                 gpointer             user_data)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT (self));
+    g_return_if_fail (G_PASTE_IS_PROMPT (self));
     g_return_if_fail (offered && n_offered);
 
     /* Ours to drop once the vfunc has had it: a backend that keeps it has
@@ -539,7 +539,7 @@ g_paste_prompt_migration_finish (GPastePrompt   *self,
                                  gboolean       *cleanup,
                                  GError        **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_PROMPT (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_PROMPT (self), FALSE);
     g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
     g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_prompt_migration_async, FALSE);
 

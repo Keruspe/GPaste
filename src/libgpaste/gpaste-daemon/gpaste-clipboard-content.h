@@ -67,7 +67,7 @@ typedef enum
 } GPasteClipboardTextAction;
 
 GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
-                                                                  const GPasteSettings         *settings,
+                                                                  GPasteSettings         *settings,
                                                                   gboolean                      is_clipboard,
                                                                   const gchar                  *text,
                                                                   gchar                       **out_value);

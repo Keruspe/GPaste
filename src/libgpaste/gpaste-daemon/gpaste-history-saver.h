@@ -49,7 +49,7 @@ typedef enum
 void     g_paste_history_saver_record       (GPasteHistorySaver  *self,
                                              GPasteHistorySaveOp  op,
                                              const gchar         *name,
-                                             const GPasteItem    *item,
+                                             GPasteItem    *item,
                                              const gchar         *uuid,
                                              GList               *history);
 void     g_paste_history_saver_load         (GPasteHistorySaver *self,
@@ -58,7 +58,7 @@ void     g_paste_history_saver_load         (GPasteHistorySaver *self,
 void     g_paste_history_saver_drain        (GPasteHistorySaver *self);
 void     g_paste_history_saver_detach       (GPasteHistorySaver *self);
 void     g_paste_history_saver_abandon_load (GPasteHistorySaver *self);
-gboolean g_paste_history_saver_is_loading   (const GPasteHistorySaver *self);
+gboolean g_paste_history_saver_is_loading   (GPasteHistorySaver *self);
 
 /****************/
 /* Constructor  */

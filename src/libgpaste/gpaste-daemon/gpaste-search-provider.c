@@ -69,9 +69,9 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static gboolean
-_do_search (const GPasteSearchProvider *priv,
-            gchar                             *search,
-            GDBusMethodInvocation             *invocation)
+_do_search (GPasteSearchProvider  *priv,
+            gchar                 *search,
+            GDBusMethodInvocation *invocation)
 {
     if (strlen (search) < 3 || !priv->client)
     {
@@ -95,18 +95,18 @@ _do_search (const GPasteSearchProvider *priv,
 }
 
 static gboolean
-g_paste_search_provider_private_get_initial_result_set (const GPasteSearchProvider *priv,
-                                                        GDBusMethodInvocation             *invocation,
-                                                        GVariant                          *parameters)
+g_paste_search_provider_private_get_initial_result_set (GPasteSearchProvider  *priv,
+                                                        GDBusMethodInvocation *invocation,
+                                                        GVariant              *parameters)
 {
     g_autofree gchar *search = _g_paste_dbus_get_as_result (parameters);
     return _do_search (priv, search, invocation);
 }
 
 static gboolean
-g_paste_search_provider_private_get_subsearch_result_set (const GPasteSearchProvider *priv,
-                                                          GDBusMethodInvocation             *invocation,
-                                                          GVariant                          *parameters)
+g_paste_search_provider_private_get_subsearch_result_set (GPasteSearchProvider  *priv,
+                                                          GDBusMethodInvocation *invocation,
+                                                          GVariant              *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -157,7 +157,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 
     for (const GList *i = results; i; i = i->next, ++n)
     {
-        const GPasteClientItem *item = i->data;
+        GPasteClientItem *item = i->data;
         const gchar *value = g_paste_client_item_get_value (item);
         g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
         g_autofree gchar *result = g_strdelimit (g_strdup (value), "\n\t", ' ');
@@ -175,9 +175,9 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static gboolean
-g_paste_search_provider_private_get_result_metas (const GPasteSearchProvider *priv,
-                                                  GDBusMethodInvocation             *invocation,
-                                                  GVariant                          *parameters)
+g_paste_search_provider_private_get_result_metas (GPasteSearchProvider  *priv,
+                                                  GDBusMethodInvocation *invocation,
+                                                  GVariant              *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -214,8 +214,8 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProvider *pr
 }
 
 static gboolean
-g_paste_search_provider_private_activate_result (const GPasteSearchProvider *priv,
-                                                 GVariant                          *parameters)
+g_paste_search_provider_private_activate_result (GPasteSearchProvider *priv,
+                                                 GVariant             *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -235,8 +235,8 @@ g_paste_search_provider_private_activate_result (const GPasteSearchProvider *pri
 }
 
 static gboolean
-g_paste_search_provider_private_launch_search (const GPasteSearchProvider *priv G_GNUC_UNUSED,
-                                               GVariant                          *parameters)
+g_paste_search_provider_private_launch_search (GPasteSearchProvider *priv G_GNUC_UNUSED,
+                                               GVariant             *parameters)
 {
     GVariantIter parameters_iter;
 

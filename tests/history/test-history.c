@@ -90,7 +90,7 @@ static const gchar *
 value_at (GPasteHistory *history,
           guint64        index)
 {
-    const GPasteItem *item = g_paste_history_get (history, index);
+    GPasteItem *item = g_paste_history_get (history, index);
     return item ? g_paste_item_get_value (item) : NULL;
 }
 
@@ -249,7 +249,7 @@ test_history_anchors_image (void)
 
     g_paste_history_add (history, g_paste_image_item_new (texture));
 
-    const GPasteItem *item = g_paste_history_get (history, 0);
+    GPasteItem *item = g_paste_history_get (history, 0);
     g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
     g_autofree gchar *expected_dir = g_build_filename (history_dir, "images", "anchor-test", NULL);
     g_autofree gchar *dir = g_path_get_dirname (g_paste_item_get_value (item));
@@ -331,7 +331,7 @@ test_file_backup_owns_images (void)
 
     /* The backup got its own copy; the item still belongs to the source. */
     const gchar *src_path = g_paste_item_get_value (items->data);
-    g_autofree gchar *dst_path = g_paste_image_item_get_path_for_history (_G_PASTE_IMAGE_ITEM (items->data), "backup-dst");
+    g_autofree gchar *dst_path = g_paste_image_item_get_path_for_history (G_PASTE_IMAGE_ITEM (items->data), "backup-dst");
 
     g_assert_true (g_strstr_len (src_path, -1, "backup-src") != NULL);
     g_assert_true (g_file_test (src_path, G_FILE_TEST_EXISTS));
@@ -538,7 +538,7 @@ test_get_by_uuid (void)
     g_paste_history_add (history, g_paste_text_item_new ("hello"));
     g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 0)));
 
-    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
+    GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
     g_assert_nonnull (item);
     g_assert_cmpstr (g_paste_item_get_value (item), ==, "hello");
 
@@ -571,7 +571,7 @@ test_uuid_lookup_survives_reshuffling (void)
     /* Newest first, so uuids[5] is at 0 and uuids[0] at 5. */
     for (guint i = 0; i < n_uuids; ++i)
     {
-        const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
+        GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
 
         g_assert_nonnull (item);
         g_assert_cmpstr (g_paste_item_get_uuid (item), ==, uuids[i]);
@@ -597,14 +597,14 @@ test_uuid_lookup_survives_reshuffling (void)
     g_paste_history_replace (history, uuids[0], "replaced");
     g_assert_null (g_paste_history_get_by_uuid (history, uuids[0]));
 
-    const GPasteItem *replaced = g_paste_history_get (history, 0);
+    GPasteItem *replaced = g_paste_history_get (history, 0);
     g_assert_cmpstr (g_paste_item_get_value (replaced), ==, "replaced");
     g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (replaced)) == replaced);
 
     /* Whatever is left must still be reachable both ways, and nothing else. */
     for (guint i = 0; i < g_paste_history_get_length (history); ++i)
     {
-        const GPasteItem *item = g_paste_history_get (history, i);
+        GPasteItem *item = g_paste_history_get (history, i);
 
         g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (item)) == item);
     }
@@ -647,7 +647,7 @@ test_memory_eviction_evicts_repeatedly (void)
     /* Whatever survived must still be consistent both ways. */
     for (guint i = 0; i < after; ++i)
     {
-        const GPasteItem *item = g_paste_history_get (history, i);
+        GPasteItem *item = g_paste_history_get (history, i);
 
         g_assert_nonnull (item);
         g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (item)) == item);
@@ -1461,8 +1461,8 @@ test_sqlite_roundtrip (void)
 
     for (guint i = 0; i < 4; ++i, l = l->next, o = o->next)
     {
-        const GPasteItem *read = l->data;
-        const GPasteItem *orig = o->data;
+        GPasteItem *read = l->data;
+        GPasteItem *orig = o->data;
 
         g_assert_cmpstr (g_paste_item_get_kind (read), ==, g_paste_item_get_kind (orig));
         g_assert_cmpstr (g_paste_item_get_uuid (read), ==, g_paste_item_get_uuid (orig));
@@ -1480,8 +1480,8 @@ test_sqlite_roundtrip (void)
 
     for (; read_svs && orig_svs; read_svs = read_svs->next, orig_svs = orig_svs->next)
     {
-        const GPasteBinaryData *read_sv = read_svs->data;
-        const GPasteBinaryData *orig_sv = orig_svs->data;
+        GPasteBinaryData *read_sv = read_svs->data;
+        GPasteBinaryData *orig_sv = orig_svs->data;
 
         g_assert_cmpint (g_paste_binary_data_get_mime (read_sv), ==, g_paste_binary_data_get_mime (orig_sv));
         g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (read_sv), g_paste_binary_data_get_bytes (orig_sv)));
@@ -1490,7 +1490,7 @@ test_sqlite_roundtrip (void)
     /* Image metadata survives, and the image itself comes back as the blob the
      * backend stored — byte-identical to the source PNG, so the item no longer
      * depends on any file on disk. */
-    const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (g_list_nth_data (loaded, 3));
+    GPasteImageItem *image = G_PASTE_IMAGE_ITEM (g_list_nth_data (loaded, 3));
 
     g_assert_cmpint (g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)), ==, 1234567890);
     g_assert_cmpstr (g_paste_image_item_get_checksum (image), ==,
@@ -1805,14 +1805,14 @@ test_sqlite_image_blob (void)
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
 
     GPasteItem *read = loaded->data;
-    const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (read);
+    GPasteImageItem *image = G_PASTE_IMAGE_ITEM (read);
     GBytes *read_png = g_paste_image_item_get_png_bytes (image);
 
     g_assert_cmpstr (g_paste_item_get_kind (read), ==, "Image");
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, png));
     g_assert_cmpstr (g_paste_image_item_get_checksum (image),
-                     ==, g_paste_image_item_get_checksum (_G_PASTE_IMAGE_ITEM (items->data)));
+                     ==, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (items->data)));
 
     /* The texture rebuilds from the bytes, with no file anywhere. */
     g_assert_false (g_file_test (g_paste_item_get_value (read), G_FILE_TEST_EXISTS));
@@ -2019,10 +2019,10 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_assert_cmpuint (g_list_length (loaded), ==, 4);
 
-    const GPasteItem *read_text = loaded->data;
-    const GPasteItem *read_password = loaded->next->data;
-    const GPasteItem *read_color = loaded->next->next->data;
-    const GPasteItem *read_image = loaded->next->next->next->data;
+    GPasteItem *read_text = loaded->data;
+    GPasteItem *read_password = loaded->next->data;
+    GPasteItem *read_color = loaded->next->next->data;
+    GPasteItem *read_image = loaded->next->next->next->data;
 
     g_assert_cmpstr (g_paste_item_get_value (read_text), ==, text_value);
 
@@ -2038,7 +2038,7 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_assert_cmpstr (g_paste_item_get_value (read_color), ==, g_paste_item_get_value (g_list_nth_data (items, 2)));
 
-    GBytes *read_png = g_paste_image_item_get_png_bytes (_G_PASTE_IMAGE_ITEM (read_image));
+    GBytes *read_png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (read_image));
 
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, png));

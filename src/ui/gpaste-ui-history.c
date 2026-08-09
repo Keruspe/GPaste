@@ -530,7 +530,7 @@ void
 g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
                                        gboolean         selection_mode)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_HISTORY (self));
+    g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
 
     self->selection_mode = selection_mode;
     g_ptr_array_set_size (self->selection, 0);
@@ -556,7 +556,7 @@ GStrv
 g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
                                        guint64         *length)
 {
-    g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), NULL);
     g_return_val_if_fail (length, NULL);
 
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
@@ -680,9 +680,9 @@ g_paste_ui_history_new (GPasteClient   *client,
                         GPasteUiPanel  *panel,
                         GtkWindow      *rootwin)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_UI_PANEL (panel), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_PANEL (panel), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_HISTORY,

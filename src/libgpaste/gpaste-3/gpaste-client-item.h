@@ -15,8 +15,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (ClientItem, client_item, CLIENT_ITEM, GObject)
 
-const gchar *g_paste_client_item_get_uuid  (const GPasteClientItem *self);
-const gchar *g_paste_client_item_get_value (const GPasteClientItem *self);
+const gchar *g_paste_client_item_get_uuid  (GPasteClientItem *self);
+const gchar *g_paste_client_item_get_value (GPasteClientItem *self);
 
 GPasteClientItem *g_paste_client_item_new (const gchar *uuid,
                                            const gchar *value);

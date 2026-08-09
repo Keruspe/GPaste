@@ -20,9 +20,9 @@ G_PASTE_DEFINE_TYPE (ClientItem, client_item, G_TYPE_OBJECT)
  * Returns the uuid of the item
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_client_item_get_uuid (const GPasteClientItem *self)
+g_paste_client_item_get_uuid (GPasteClientItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), NULL);
 
     return self->uuid;
 }
@@ -34,9 +34,9 @@ g_paste_client_item_get_uuid (const GPasteClientItem *self)
  * Returns the value of the item
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_client_item_get_value (const GPasteClientItem *self)
+g_paste_client_item_get_value (GPasteClientItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), NULL);
 
     return self->value;
 }

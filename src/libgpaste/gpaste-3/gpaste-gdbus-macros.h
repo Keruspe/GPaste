@@ -93,7 +93,7 @@ G_BEGIN_DECLS
 /*****************************/
 
 #define DBUS_CALL_ASYNC_FULL(TYPE_CHECKER, decl, method, params, n_params) \
-    g_return_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self));                  \
+    g_return_if_fail (G_PASTE_IS_##TYPE_CHECKER (self));                  \
     decl;                                                                  \
     g_dbus_proxy_call (G_DBUS_PROXY(self),                                 \
                        method,                                             \
@@ -135,7 +135,7 @@ G_BEGIN_DECLS
     DBUS_RETURN (if_fail, extract_and_return_answer)
 
 #define DBUS_ASYNC_FINISH_WITH_RETURN_FULL(TYPE_CHECKER, if_fail, iter, extract_and_return_answer) \
-    DBUS_ASYNC_FINISH_FULL (g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), if_fail);     \
+    DBUS_ASYNC_FINISH_FULL (g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), if_fail);     \
                             g_return_val_if_fail (G_IS_ASYNC_RESULT (result), if_fail);            \
                             g_return_val_if_fail (!error || !(*error), if_fail),                   \
                             if_fail,                                                               \
@@ -150,7 +150,7 @@ G_BEGIN_DECLS
 /***********************************/
 
 #define DBUS_ASYNC_FINISH_NO_RETURN_BASE(TYPE_CHECKER)                            \
-    DBUS_ASYNC_FINISH_FULL (g_return_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self)); \
+    DBUS_ASYNC_FINISH_FULL (g_return_if_fail (G_PASTE_IS_##TYPE_CHECKER (self)); \
                             g_return_if_fail (G_IS_ASYNC_RESULT (result));        \
                             g_return_if_fail (!error || !(*error)), ;, {})
 
@@ -202,7 +202,7 @@ G_BEGIN_DECLS
 /****************************************/
 
 #define DBUS_CALL_NO_RETURN_BASE(TYPE_CHECKER, decl, method, params, n_params) \
-    DBUS_CALL_FULL (g_return_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self));      \
+    DBUS_CALL_FULL (g_return_if_fail (G_PASTE_IS_##TYPE_CHECKER (self));      \
                     g_return_if_fail (!error || !(*error)), decl, method, params, n_params, ;, {})
 
 /******************************************/
@@ -210,7 +210,7 @@ G_BEGIN_DECLS
 /******************************************/
 
 #define DBUS_CALL_WITH_RETURN_FULL_BASE(TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract, pre_extract) \
-    DBUS_CALL_FULL (g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), if_fail);                                       \
+    DBUS_CALL_FULL (g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), if_fail);                                       \
                     g_return_val_if_fail (!error || !(*error), if_fail), decl, method, params, n_params, if_fail,            \
                     pre_extract;                                                                                             \
                     variant_extract)
@@ -321,7 +321,7 @@ G_BEGIN_DECLS
 /************************/
 
 #define DBUS_GET_PROPERTY_INIT(TYPE_CHECKER, property,  _default)                        \
-    g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), _default);                  \
+    g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), _default);                  \
     g_autoptr (GVariant) result = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), \
                                                                     property);           \
     if (!result)                                                                         \
@@ -340,7 +340,7 @@ G_BEGIN_DECLS
 /************************/
 
 #define DBUS_SET_GENERIC_PROPERTY_BASE(TYPE_CHECKER, iface, property, value, vtype)              \
-    g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), FALSE);                             \
+    g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), FALSE);                             \
     GVariant *prop[] = {                                                                         \
         g_variant_new_string (iface),                                                            \
         g_variant_new_string (property),                                                         \

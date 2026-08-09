@@ -161,7 +161,7 @@ migration_finish (MigrationData *self)
 G_PASTE_VISIBLE gboolean
 g_paste_storage_migration_needed (GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
 
     return g_paste_settings_get_storage_backend_revision (settings) != G_PASTE_STORAGE_BACKEND_REVISION;
 }
@@ -174,15 +174,15 @@ g_paste_storage_migration_needed (GPasteSettings *settings)
  * real value round-tripped (an encrypted backend persists it) — so it is not a
  * drop-in replacement here. */
 static gboolean
-imported_item_matches (const GPasteItem *source,
-                       const GPasteItem *written)
+imported_item_matches (GPasteItem *source,
+                       GPasteItem *written)
 {
     if (!g_paste_str_equal (g_paste_item_get_kind (source), g_paste_item_get_kind (written)))
         return FALSE;
 
-    if (_G_PASTE_IS_IMAGE_ITEM (source))
-        return g_paste_str_equal (g_paste_image_item_get_checksum (_G_PASTE_IMAGE_ITEM (source)),
-                                  g_paste_image_item_get_checksum (_G_PASTE_IMAGE_ITEM (written)));
+    if (G_PASTE_IS_IMAGE_ITEM (source))
+        return g_paste_str_equal (g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (source)),
+                                  g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (written)));
 
     return g_paste_str_equal (g_paste_item_get_real_value (source), g_paste_item_get_real_value (written));
 }
@@ -712,8 +712,8 @@ g_paste_storage_migration_show (GPastePrompt                   *prompt,
                                 GPasteStorageMigrationDoneFunc  done,
                                 gpointer                        user_data)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT (prompt));
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
     /* Detect the backend the history currently lives in from the files on disk,
      * and apply it right away so this session keeps the right backend even if the
@@ -737,7 +737,7 @@ g_paste_storage_migration_show (GPastePrompt                   *prompt,
 G_PASTE_VISIBLE gboolean
 g_paste_storage_decryption_needed (GPasteSettings *settings)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* Only an encrypted history that is not already unlocked needs decrypting. */
@@ -794,8 +794,8 @@ g_paste_storage_decryption_show (GPastePrompt                   *prompt,
                                  GPasteStorageMigrationDoneFunc  done,
                                  gpointer                        user_data)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT (prompt));
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     DecryptionDone *decryption = g_new0 (DecryptionDone, 1);
@@ -1044,8 +1044,8 @@ g_paste_storage_rekey_show (GPastePrompt                   *prompt,
                             GPasteStorageMigrationDoneFunc  done,
                             gpointer                        user_data)
 {
-    g_return_if_fail (_G_PASTE_IS_PROMPT (prompt));
-    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);

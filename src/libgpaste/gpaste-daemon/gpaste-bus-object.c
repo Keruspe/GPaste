@@ -22,7 +22,7 @@ g_paste_bus_object_register_on_connection (GPasteBusObject *self,
                                            GDBusConnection *connection,
                                            GError         **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_BUS_OBJECT (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_BUS_OBJECT (self), FALSE);
     g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
@@ -45,7 +45,7 @@ g_paste_bus_object_register_on_connection (GPasteBusObject *self,
 G_PASTE_VISIBLE void
 g_paste_bus_object_unregister_on_connection (GPasteBusObject *self)
 {
-    g_return_if_fail (_G_PASTE_IS_BUS_OBJECT (self));
+    g_return_if_fail (G_PASTE_IS_BUS_OBJECT (self));
 
     if (G_PASTE_BUS_OBJECT_GET_CLASS (self)->unregister_on_connection)
         G_PASTE_BUS_OBJECT_GET_CLASS (self)->unregister_on_connection (self);

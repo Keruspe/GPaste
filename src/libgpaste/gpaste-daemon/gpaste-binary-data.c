@@ -22,9 +22,9 @@ G_PASTE_DEFINE_TYPE (BinaryData, binary_data, G_TYPE_OBJECT)
  * Returns: the #GPasteSpecialAtom
  */
 G_PASTE_VISIBLE GPasteSpecialAtom
-g_paste_binary_data_get_mime (const GPasteBinaryData *self)
+g_paste_binary_data_get_mime (GPasteBinaryData *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), G_PASTE_SPECIAL_ATOM_INVALID);
+    g_return_val_if_fail (G_PASTE_IS_BINARY_DATA (self), G_PASTE_SPECIAL_ATOM_INVALID);
 
     return self->mime;
 }
@@ -38,9 +38,9 @@ g_paste_binary_data_get_mime (const GPasteBinaryData *self)
  * Returns: (transfer none): read-only #GBytes
  */
 G_PASTE_VISIBLE GBytes *
-g_paste_binary_data_get_bytes (const GPasteBinaryData *self)
+g_paste_binary_data_get_bytes (GPasteBinaryData *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_BINARY_DATA (self), NULL);
 
     return self->bytes;
 }
@@ -55,9 +55,9 @@ g_paste_binary_data_get_bytes (const GPasteBinaryData *self)
  *          free it with g_free
  */
 G_PASTE_VISIBLE gchar *
-g_paste_binary_data_to_base64 (const GPasteBinaryData *self)
+g_paste_binary_data_to_base64 (GPasteBinaryData *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_BINARY_DATA (self), NULL);
 
     gsize len;
     const guchar *data = g_bytes_get_data (self->bytes, &len);

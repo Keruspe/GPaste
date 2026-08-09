@@ -32,7 +32,7 @@ G_PASTE_DEFINE_TYPE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
 G_PASTE_VISIBLE const gchar *
 g_paste_ui_item_get_uuid (GPasteUiItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_UI_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), NULL);
 
     return self->uuid;
 }
@@ -48,7 +48,7 @@ g_paste_ui_item_get_uuid (GPasteUiItem *self)
 G_PASTE_VISIBLE gboolean
 g_paste_ui_item_activate (GPasteUiItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_UI_ITEM (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), FALSE);
 
     if (!self->uuid)
         return FALSE;
@@ -155,7 +155,7 @@ g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
 static void
 g_paste_ui_item_reset_text (GPasteUiItem *self)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     if (self->fake_index)
         g_paste_client_get_element (self->client, self->uuid, g_paste_ui_item_on_text_ready, g_object_ref (self));
@@ -172,7 +172,7 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
 G_PASTE_VISIBLE void
 g_paste_ui_item_refresh (GPasteUiItem *self)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     g_paste_ui_item_reset_text (self);
 }
@@ -205,7 +205,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_set_index (GPasteUiItem *self,
                            guint64       index)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     _g_paste_ui_item_set_index (self, index, FALSE);
 }
@@ -221,7 +221,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_set_uuid (GPasteUiItem *self,
                           const gchar  *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     g_set_str (&self->uuid, uuid);
 
@@ -272,8 +272,8 @@ g_paste_ui_item_new (GPasteClient   *client,
                      GtkWindow      *rootwin,
                      guint64         index)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_paste_ui_item_skeleton_new (G_PASTE_TYPE_UI_ITEM, client, settings, rootwin);

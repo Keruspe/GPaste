@@ -73,7 +73,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_window_empty_history (GPasteUiWindow *self,
                                  const gchar    *history)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
     gpointer *data = g_new (gpointer, 2);
@@ -118,7 +118,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_window_search (GPasteUiWindow *self,
                           const gchar    *search)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (search, -1, NULL));
 
     gpointer *data = g_new (gpointer, 2);
@@ -154,7 +154,7 @@ _show_prefs (gpointer user_data)
 G_PASTE_VISIBLE void
 g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
 
     g_source_set_name_by_id (g_idle_add (_show_prefs, g_object_ref (self)), "[GPaste] show_prefs");
 }

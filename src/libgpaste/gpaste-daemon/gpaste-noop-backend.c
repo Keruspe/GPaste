@@ -15,10 +15,10 @@ G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
  * history is ever listed on disk. */
 
 static gboolean
-g_paste_noop_backend_read_history_file (const GPasteStorageBackend *self G_GNUC_UNUSED,
-                                        const gchar                *history_file_path G_GNUC_UNUSED,
-                                        GList                     **history,
-                                        gsize                      *size)
+g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self G_GNUC_UNUSED,
+                                        const gchar           *history_file_path G_GNUC_UNUSED,
+                                        GList                **history,
+                                        gsize                 *size)
 {
     *history = NULL;
     *size = 0;
@@ -28,14 +28,14 @@ g_paste_noop_backend_read_history_file (const GPasteStorageBackend *self G_GNUC_
 }
 
 static void
-g_paste_noop_backend_write_history_file (const GPasteStorageBackend *self G_GNUC_UNUSED,
-                                         const gchar                *history_file_path G_GNUC_UNUSED,
-                                         const GList                *history G_GNUC_UNUSED)
+g_paste_noop_backend_write_history_file (GPasteStorageBackend *self G_GNUC_UNUSED,
+                                         const gchar          *history_file_path G_GNUC_UNUSED,
+                                         const GList          *history G_GNUC_UNUSED)
 {
 }
 
 static const gchar *
-g_paste_noop_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
+g_paste_noop_backend_get_extension (GPasteStorageBackend *self G_GNUC_UNUSED)
 {
     return g_paste_storage_get_extension (G_PASTE_STORAGE_NOOP);
 }

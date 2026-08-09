@@ -38,7 +38,6 @@ G_PASTE_FINAL_TYPE (PromptRequest, prompt_request, PROMPT_REQUEST, GObject)
 G_PASTE_VISIBLE
 G_DECLARE_INTERFACE (GPastePrompt, g_paste_prompt, G_PASTE, PROMPT, GObject)
 
-G_PASTE_CONST_FUNCS (Prompt, PROMPT)
 
 /**
  * GPastePromptInterface:
@@ -83,12 +82,12 @@ struct _GPastePromptInterface
 
 /* What the prompt was asked. Only the getters matching the vfunc that received
  * the request are meaningful. */
-gboolean              g_paste_prompt_request_get_confirm       (const GPastePromptRequest *self);
-const gchar          *g_paste_prompt_request_get_error_message (const GPastePromptRequest *self);
-GPasteStorageRemember g_paste_prompt_request_get_remember      (const GPastePromptRequest *self);
-const GPasteStorage  *g_paste_prompt_request_get_offered       (const GPastePromptRequest *self,
-                                                                guint                     *n_offered);
-GPasteStorage         g_paste_prompt_request_get_current       (const GPastePromptRequest *self);
+gboolean              g_paste_prompt_request_get_confirm       (GPastePromptRequest *self);
+const gchar          *g_paste_prompt_request_get_error_message (GPastePromptRequest *self);
+GPasteStorageRemember g_paste_prompt_request_get_remember      (GPastePromptRequest *self);
+const GPasteStorage  *g_paste_prompt_request_get_offered       (GPastePromptRequest *self,
+                                                                guint               *n_offered);
+GPasteStorage         g_paste_prompt_request_get_current       (GPastePromptRequest *self);
 
 /* Answer it. Exactly one of these ends the request; later calls are ignored, so
  * a dialog that both replies and then reports its destruction is harmless. */

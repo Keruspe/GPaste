@@ -61,19 +61,19 @@ G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT
                                                 G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
 
 static gboolean
-g_paste_clipboard_meta_is_clipboard (const GPasteClipboardMeta *self)
+g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
 {
     return self->is_clipboard;
 }
 
 static const gchar *
-g_paste_clipboard_meta_get_text (const GPasteClipboardMeta *self)
+g_paste_clipboard_meta_get_text (GPasteClipboardMeta *self)
 {
     return g_paste_clipboard_content_get_text (&self->content);
 }
 
 static const gchar *
-g_paste_clipboard_meta_get_image_checksum (const GPasteClipboardMeta *self)
+g_paste_clipboard_meta_get_image_checksum (GPasteClipboardMeta *self)
 {
     return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
@@ -410,11 +410,11 @@ g_paste_clipboard_meta_source_add_value (GPasteClipboardMetaSource *self,
  * carries, mirroring g_paste_clipboard_gdk_select_item. */
 static void
 g_paste_clipboard_meta_source_add_special_values (GPasteClipboardMetaSource *self,
-                                                  const GPasteItem          *item)
+                                                  GPasteItem                *item)
 {
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
     {
-        const GPasteBinaryData *v = sv->data;
+        GPasteBinaryData *v = sv->data;
 
         g_paste_clipboard_meta_source_add (self,
                                            g_paste_special_atom_get (g_paste_binary_data_get_mime (v)),
@@ -493,8 +493,8 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
 }
 
 static void
-g_paste_clipboard_meta_sync_text (const GPasteClipboardMeta *self,
-                                  GPasteClipboardMeta       *other)
+g_paste_clipboard_meta_sync_text (GPasteClipboardMeta *self,
+                                  GPasteClipboardMeta *other)
 {
     GList *mimetypes = meta_selection_get_mimetypes (self->selection, self->type);
     /* Prefer the utf-8 form but accept bare text/plain too, like update() does, so a
@@ -529,7 +529,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 {
     g_debug ("%s: select item", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    if (_G_PASTE_IS_IMAGE_ITEM (item))
+    if (G_PASTE_IS_IMAGE_ITEM (item))
     {
         GdkTexture *texture = g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item));
         const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item));
@@ -549,7 +549,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         return TRUE;
     }
 
-    if (_G_PASTE_IS_COLOR_ITEM (item))
+    if (G_PASTE_IS_COLOR_ITEM (item))
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
 
@@ -572,7 +572,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         return TRUE;
     }
 
-    if (_G_PASTE_IS_URIS_ITEM (item))
+    if (G_PASTE_IS_URIS_ITEM (item))
     {
         GdkFileList *file_list = g_paste_uris_item_get_file_list (G_PASTE_URIS_ITEM (item));
 
@@ -606,7 +606,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 }
 
 static gboolean
-g_paste_clipboard_meta_is_empty (const GPasteClipboardMeta *self)
+g_paste_clipboard_meta_is_empty (GPasteClipboardMeta *self)
 {
     return g_paste_clipboard_content_is_empty (&self->content);
 }
@@ -1098,7 +1098,7 @@ g_paste_clipboard_meta_new_clipboard (MetaSelection  *selection,
                                       GPasteSettings *settings)
 {
     g_return_val_if_fail (META_IS_SELECTION (selection), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     return _g_paste_clipboard_meta_new (selection, settings, TRUE);
 }
@@ -1118,7 +1118,7 @@ g_paste_clipboard_meta_new_primary (MetaSelection  *selection,
                                     GPasteSettings *settings)
 {
     g_return_val_if_fail (META_IS_SELECTION (selection), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     return _g_paste_clipboard_meta_new (selection, settings, FALSE);
 }

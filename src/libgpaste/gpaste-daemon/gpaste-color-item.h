@@ -13,7 +13,7 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (ColorItem, color_item, COLOR_ITEM, GPasteItem)
 
-const GdkRGBA *g_paste_color_item_get_rgba (const GPasteColorItem *self);
+const GdkRGBA *g_paste_color_item_get_rgba (GPasteColorItem *self);
 
 GPasteItem *g_paste_color_item_new          (const GdkRGBA *rgba);
 GPasteItem *g_paste_color_item_new_from_str (const gchar   *str);

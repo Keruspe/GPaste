@@ -19,10 +19,10 @@ void              g_paste_history_remove             (GPasteHistory *self,
                                                       guint64        index);
 gboolean          g_paste_history_remove_by_uuid     (GPasteHistory *self,
                                                       const gchar   *uuid);
-const GPasteItem *g_paste_history_get                (GPasteHistory *self,
+GPasteItem *g_paste_history_get                (GPasteHistory *self,
                                                       guint64        index);
-const GPasteItem *g_paste_history_get_by_uuid        (GPasteHistory *self,
-                                                      const gchar   *uuid);
+GPasteItem *g_paste_history_get_by_uuid        (GPasteHistory     *self,
+                                                      const gchar *uuid);
 GPasteItem       *g_paste_history_dup                (GPasteHistory *self,
                                                       guint64        index);
 gboolean          g_paste_history_select             (GPasteHistory *self,
@@ -33,8 +33,8 @@ void              g_paste_history_replace            (GPasteHistory *self,
 void                      g_paste_history_set_password    (GPasteHistory *self,
                                                            const gchar   *uuid,
                                                            const gchar   *name);
-const GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
-                                                           const gchar   *name);
+GPastePasswordItem *g_paste_history_get_password    (GPasteHistory     *self,
+                                                           const gchar *name);
 void                      g_paste_history_delete_password (GPasteHistory *self,
                                                            const gchar   *name);
 void                      g_paste_history_rename_password (GPasteHistory *self,
@@ -55,9 +55,9 @@ void         g_paste_history_switch      (GPasteHistory *self,
 gboolean     g_paste_history_delete      (GPasteHistory *self,
                                           const gchar   *name,
                                           GError       **error);
-const GPtrArray *g_paste_history_get_history (const GPasteHistory *self);
+const GPtrArray *g_paste_history_get_history (GPasteHistory *self);
 guint64      g_paste_history_get_length  (GPasteHistory *self);
-const gchar *g_paste_history_get_current (const GPasteHistory *self);
+const gchar *g_paste_history_get_current (GPasteHistory *self);
 
 GStrv g_paste_history_search (GPasteHistory *self,
                               const gchar   *pattern);

@@ -53,7 +53,9 @@ static gint32
 history_equals (gconstpointer a,
                 gconstpointer b)
 {
-    return !g_paste_str_equal (b, g_paste_ui_panel_history_get_history (a));
+    /* GCompareFunc hands us a gconstpointer; GObject accessors take a mutable
+     * instance, so the cast is the caller's to make. */
+    return !g_paste_str_equal (b, g_paste_ui_panel_history_get_history ((GPasteUiPanelHistory *) a));
 }
 
 static GList *
@@ -76,7 +78,7 @@ g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
                                         const gchar   *history,
                                         guint64        length)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_PANEL (self));
+    g_return_if_fail (G_PASTE_IS_UI_PANEL (self));
 
     GList *h = history_find (self->histories, history);
 
@@ -494,8 +496,8 @@ g_paste_ui_panel_new (GPasteClient   *client,
                       GtkWindow      *rootwin,
                       GtkSearchEntry *search_entry)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
     g_return_val_if_fail (GTK_IS_SEARCH_ENTRY (search_entry), NULL);
 

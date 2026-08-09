@@ -46,7 +46,7 @@ on_new_item_response (GObject      *dialog   G_GNUC_UNUSED,
 static void
 g_paste_ui_new_item_clicked (GtkButton *button)
 {
-    const GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (button);
+    GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (button);
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, NULL));
     GtkWidget *text = gtk_text_view_new ();
     GtkTextView *tv = GTK_TEXT_VIEW (text);
@@ -113,7 +113,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_new_item_new (GtkWindow    *rootwin,
                          GPasteClient *client)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_NEW_ITEM, NULL);

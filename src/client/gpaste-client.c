@@ -311,7 +311,7 @@ g_paste_history (Context *ctx,
 
     for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = ctx->reverse ? i->prev : i->next)
     {
-        const GPasteClientItem *item = i->data;
+        GPasteClientItem *item = i->data;
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
         print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }
@@ -642,7 +642,7 @@ g_paste_search (Context *ctx,
 
     for (const GList *i = items; i; i = i->next)
     {
-        const GPasteClientItem *item = i->data;
+        GPasteClientItem *item = i->data;
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
         print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }

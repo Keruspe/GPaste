@@ -199,11 +199,11 @@ g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
  * Returns: the action the backend should take for @text
  */
 G_PASTE_VISIBLE GPasteClipboardTextAction
-g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
-                                         const GPasteSettings         *settings,
-                                         gboolean                      is_clipboard,
-                                         const gchar                  *text,
-                                         gchar                       **out_value)
+g_paste_clipboard_content_classify_text (const GPasteClipboardContent  *content,
+                                         GPasteSettings                *settings,
+                                         gboolean                       is_clipboard,
+                                         const gchar                   *text,
+                                         gchar                        **out_value)
 {
     gboolean trim_items = g_paste_settings_get_trim_items (settings);
     g_autofree gchar *stripped = trim_items ? g_strstrip (g_strdup (text)) : NULL;

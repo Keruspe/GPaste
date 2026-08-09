@@ -181,11 +181,11 @@ G_PASTE_VISIBLE void
 g_paste_history_saver_record (GPasteHistorySaver  *self,
                               GPasteHistorySaveOp  op,
                               const gchar         *name,
-                              const GPasteItem    *item,
+                              GPasteItem          *item,
                               const gchar         *uuid,
                               GList               *history)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     /* A non-incremental backend ignores the granular hint and rewrites the whole
      * snapshot, so collapse any pending writes into a single full one. */
@@ -224,7 +224,7 @@ g_paste_history_saver_record (GPasteHistorySaver  *self,
 G_PASTE_VISIBLE void
 g_paste_history_saver_drain (GPasteHistorySaver *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     /* Wait for the in-flight worker write (if any) to finish. We cannot spin the
      * main loop here (that is where the write-done callback would run), so the
@@ -262,7 +262,7 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
 G_PASTE_VISIBLE void
 g_paste_history_saver_detach (GPasteHistorySaver *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     self->detached = TRUE;
 }
@@ -373,7 +373,7 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
                             const gchar        *name,
                             gboolean            save_after)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     self->load_in_progress = TRUE;
     self->load_generation++;
@@ -409,7 +409,7 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
 G_PASTE_VISIBLE void
 g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     /* The same mechanism a superseding load relies on: bumping the generation
      * makes load_done() drop the stale result. Unlike that case there is no
@@ -425,9 +425,9 @@ g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
  * Returns: whether a load is currently in progress
  */
 G_PASTE_VISIBLE gboolean
-g_paste_history_saver_is_loading (const GPasteHistorySaver *self)
+g_paste_history_saver_is_loading (GPasteHistorySaver *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY_SAVER (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY_SAVER (self), FALSE);
 
     return self->load_in_progress;
 }
@@ -491,7 +491,7 @@ g_paste_history_saver_new (GPasteStorageBackend        *backend,
                            gpointer                     owner,
                            GPasteHistorySaverLoadedFunc loaded)
 {
-    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (backend), NULL);
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (backend), NULL);
     g_return_val_if_fail (G_IS_OBJECT (owner), NULL);
     g_return_val_if_fail (loaded, NULL);
 

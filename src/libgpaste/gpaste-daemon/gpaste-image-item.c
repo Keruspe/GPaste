@@ -34,9 +34,9 @@ G_PASTE_DEFINE_TYPE (ImageItem, image_item, G_PASTE_TYPE_ITEM)
  * Returns: read-only string representatig the SHA256 checksum of the image
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_image_item_get_checksum (const GPasteImageItem *self)
+g_paste_image_item_get_checksum (GPasteImageItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
     return self->checksum;
 }
@@ -50,9 +50,9 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
  * Returns: read-only GDateTime containing the image's creation date
  */
 G_PASTE_VISIBLE const GDateTime *
-g_paste_image_item_get_date (const GPasteImageItem *self)
+g_paste_image_item_get_date (GPasteImageItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
     return self->date;
 }
@@ -66,9 +66,9 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
  * Returns: (transfer none): the GdkTexture of the image
  */
 G_PASTE_VISIBLE GdkTexture *
-g_paste_image_item_get_image (const GPasteImageItem *self)
+g_paste_image_item_get_image (GPasteImageItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
     return self->image;
 }
@@ -83,9 +83,9 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
  * Returns: (transfer none) (nullable): the PNG bytes
  */
 G_PASTE_VISIBLE GBytes *
-g_paste_image_item_get_png_bytes (const GPasteImageItem *self)
+g_paste_image_item_get_png_bytes (GPasteImageItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
     return self->png;
 }
@@ -103,14 +103,14 @@ g_paste_image_item_take_png (GPasteItem *self,
 }
 
 static gboolean
-g_paste_image_item_equals (const GPasteItem *self,
-                           const GPasteItem *other)
+g_paste_image_item_equals (GPasteItem *self,
+                           GPasteItem *other)
 {
-    if (!_G_PASTE_IS_IMAGE_ITEM (other))
+    if (!G_PASTE_IS_IMAGE_ITEM (other))
         return FALSE;
 
-    const GPasteImageItem *priv = _G_PASTE_IMAGE_ITEM (self);
-    const GPasteImageItem *_priv = _G_PASTE_IMAGE_ITEM (other);
+    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
+    GPasteImageItem *_priv = G_PASTE_IMAGE_ITEM (other);
 
     return g_paste_str_equal (priv->checksum, _priv->checksum);
 }
@@ -137,7 +137,7 @@ g_paste_image_item_set_size (GPasteItem *self)
 }
 
 static const gchar *
-g_paste_image_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_image_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
     return "Image";
 }
@@ -187,7 +187,7 @@ g_paste_image_item_dispose (GObject *object)
 static void
 g_paste_image_item_finalize (GObject *object)
 {
-    const GPasteImageItem *self = G_PASTE_IMAGE_ITEM (object);
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (object);
 
     g_free (self->checksum);
 
@@ -358,10 +358,10 @@ g_paste_image_item_get_image_path (const gchar *history_name,
  * Returns: (nullable): the canonical cache path, or %NULL without a checksum
  */
 G_PASTE_VISIBLE gchar *
-g_paste_image_item_get_path_for_history (const GPasteImageItem *self,
-                                         const gchar           *history_name)
+g_paste_image_item_get_path_for_history (GPasteImageItem *self,
+                                         const gchar     *history_name)
 {
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
     g_return_val_if_fail (history_name, NULL);
 
     return (self->checksum) ? g_paste_image_item_get_image_path (history_name, self->checksum) : NULL;
@@ -381,7 +381,7 @@ G_PASTE_VISIBLE void
 g_paste_image_item_set_history (GPasteImageItem *self,
                                 const gchar     *history_name)
 {
-    g_return_if_fail (_G_PASTE_IS_IMAGE_ITEM (self));
+    g_return_if_fail (G_PASTE_IS_IMAGE_ITEM (self));
     g_return_if_fail (history_name);
 
     if (!self->checksum)

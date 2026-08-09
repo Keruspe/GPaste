@@ -211,10 +211,10 @@ typedef struct
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
 
 static gchar *
-_g_paste_storage_backend_get_history_file_path (const GPasteStorageBackend *self,
-                                                const gchar                *name)
+_g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
+                                                const gchar          *name)
 {
-    return g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    return g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
 }
 
 /**
@@ -231,12 +231,12 @@ _g_paste_storage_backend_get_history_file_path (const GPasteStorageBackend *self
  *          a genuinely empty or absent history)
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      GList                     **history,
-                                      gsize                      *size)
+g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
+                                      const gchar           *name,
+                                      GList                **history,
+                                      gsize                 *size)
 {
-    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
     g_return_val_if_fail (history && !*history, FALSE);
     g_return_val_if_fail (size, FALSE);
@@ -249,7 +249,7 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);
+    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);
 }
 
 /**
@@ -261,16 +261,16 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
  * Save the history by writing it to our storage backend
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
-                                       const gchar                *name,
-                                       const GList                *history)
+g_paste_storage_backend_write_history (GPasteStorageBackend *self,
+                                       const gchar          *name,
+                                       const GList          *history)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
+    G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
 }
 
 /* Whether any storage flavor still keeps a history under @name on disk. The
@@ -345,15 +345,15 @@ _g_paste_storage_backend_delete_history_images (const gchar *name)
  * best-effort and never reported here.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
-                                         const gchar                *name,
-                                         GError                   **error)
+g_paste_storage_backend_delete_history (GPasteStorageBackend  *self,
+                                         const gchar          *name,
+                                         GError              **error)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
-        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
+        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
 
     /* Only sweep the images once the name is gone from every flavor: another
      * backend may still reference them (a migration's destination, whose
@@ -366,12 +366,12 @@ g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
  * backend's flavour (its get_extension suffix), so e.g. plain ".xml" and
  * encrypted ".xmls" histories never get mixed up. */
 static GStrv
-_g_paste_storage_backend_list_histories_by_extension (const GPasteStorageBackend *self,
-                                                      GError                    **error)
+_g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend  *self,
+                                                      GError               **error)
 {
     g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-    g_autofree gchar *suffix = g_strconcat (".", _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
+    g_autofree gchar *suffix = g_strconcat (".", G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
     gsize suffix_len = strlen (suffix);
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -438,14 +438,14 @@ _g_paste_storage_backend_list_histories_by_extension (const GPasteStorageBackend
  * Returns: (transfer full): The list of history names
  */
 G_PASTE_VISIBLE GStrv
-g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
-                                         GError                   **error)
+g_paste_storage_backend_list_histories (GPasteStorageBackend  *self,
+                                         GError              **error)
 {
-    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
-    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories)
-        return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories (self, error);
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories)
+        return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories (self, error);
 
     return _g_paste_storage_backend_list_histories_by_extension (self, error);
 }
@@ -472,21 +472,21 @@ g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
  *          passphrases
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_backend_rekey (const GPasteStorageBackend *self,
-                               const gchar                *name,
-                               const gchar                *new_passphrase)
+g_paste_storage_backend_rekey (GPasteStorageBackend *self,
+                               const gchar          *name,
+                               const gchar          *new_passphrase)
 {
-    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
     g_return_val_if_fail (new_passphrase && *new_passphrase, FALSE);
 
-    if (!_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey)
+    if (!G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey)
     {
         g_warning ("This storage backend has no passphrase to change");
         return FALSE;
     }
 
-    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey (self, name, new_passphrase);
+    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey (self, name, new_passphrase);
 }
 
 /**
@@ -499,16 +499,16 @@ g_paste_storage_backend_rekey (const GPasteStorageBackend *self,
  * Persist a newly added item, possibly without rewriting the whole history
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_add_item (const GPasteStorageBackend *self,
-                                  const gchar                *name,
-                                  const GPasteItem           *item,
-                                  const GList                *history)
+g_paste_storage_backend_add_item (GPasteStorageBackend *self,
+                                  const gchar          *name,
+                                  GPasteItem           *item,
+                                  const GList          *history)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item)
-        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item (self, name, item, history);
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item)
+        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item (self, name, item, history);
     else
         g_paste_storage_backend_write_history (self, name, history);
 }
@@ -523,16 +523,16 @@ g_paste_storage_backend_add_item (const GPasteStorageBackend *self,
  * Persist the removal of an item, possibly without rewriting the whole history
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_remove_item (const GPasteStorageBackend *self,
-                                     const gchar                *name,
-                                     const gchar                *uuid,
-                                     const GList                *history)
+g_paste_storage_backend_remove_item (GPasteStorageBackend *self,
+                                     const gchar          *name,
+                                     const gchar          *uuid,
+                                     const GList          *history)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item)
-        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item (self, name, uuid);
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item)
+        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item (self, name, uuid);
     else
         g_paste_storage_backend_write_history (self, name, history);
 }
@@ -548,18 +548,18 @@ g_paste_storage_backend_remove_item (const GPasteStorageBackend *self,
  * Persist an item replacement, possibly without rewriting the whole history
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_replace_item (const GPasteStorageBackend *self,
-                                      const gchar                *name,
-                                      const gchar                *old_uuid,
-                                      const GPasteItem           *item,
-                                      const GList                *history)
+g_paste_storage_backend_replace_item (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      const gchar          *old_uuid,
+                                      GPasteItem           *item,
+                                      const GList          *history)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
     g_return_if_fail (old_uuid);
 
-    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item)
-        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item (self, name, old_uuid, item);
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item)
+        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item (self, name, old_uuid, item);
     else
         g_paste_storage_backend_write_history (self, name, history);
 }
@@ -573,15 +573,15 @@ g_paste_storage_backend_replace_item (const GPasteStorageBackend *self,
  * Persist the emptying of a history, possibly without rewriting the whole file
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_clear_history (const GPasteStorageBackend *self,
-                                       const gchar                *name,
-                                       const GList                *history)
+g_paste_storage_backend_clear_history (GPasteStorageBackend *self,
+                                       const gchar          *name,
+                                       const GList          *history)
 {
-    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history)
-        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history (self, name);
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history)
+        G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history (self, name);
     else
         g_paste_storage_backend_write_history (self, name, history);
 }
@@ -600,11 +600,11 @@ g_paste_storage_backend_clear_history (const GPasteStorageBackend *self,
  * Returns: %TRUE if every incremental update method is implemented
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_backend_is_incremental (const GPasteStorageBackend *self)
+g_paste_storage_backend_is_incremental (GPasteStorageBackend *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
 
-    const GPasteStorageBackendClass *klass = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
 
     return klass->add_item && klass->remove_item && klass->replace_item && klass->clear_history;
 }
@@ -619,10 +619,10 @@ g_paste_storage_backend_dispose (GObject *object)
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
 }
 
-static const GPasteSettings *
-g_paste_storage_backend_get_settings (const GPasteStorageBackend *self)
+static GPasteSettings *
+g_paste_storage_backend_get_settings (GPasteStorageBackend *self)
 {
-    const GPasteStorageBackendPrivate *priv = _g_paste_storage_backend_get_instance_private (self);
+    const GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
 
     return priv->settings;
 }

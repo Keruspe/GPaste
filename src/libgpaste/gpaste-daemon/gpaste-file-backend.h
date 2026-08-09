@@ -16,8 +16,8 @@ struct _GPasteFileBackendClass
     GPasteStorageBackendClass parent_class;
 
     /*< protected >*/
-    GOutputStream *(*get_output_stream) (const GPasteFileBackend *self,
-                                         GFile                   *output_file);
+    GOutputStream *(*get_output_stream) (GPasteFileBackend *self,
+                                         GFile             *output_file);
 };
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

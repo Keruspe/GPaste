@@ -21,23 +21,23 @@ G_PASTE_DEFINE_TYPE (ColorItem, color_item, G_PASTE_TYPE_ITEM)
  * Returns: (transfer none): read-only #GdkRGBA
  */
 G_PASTE_VISIBLE const GdkRGBA *
-g_paste_color_item_get_rgba (const GPasteColorItem *self)
+g_paste_color_item_get_rgba (GPasteColorItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_COLOR_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_COLOR_ITEM (self), NULL);
 
     return &self->rgba;
 }
 
 static gboolean
-g_paste_color_item_equals (const GPasteItem *self,
-                           const GPasteItem *other)
+g_paste_color_item_equals (GPasteItem *self,
+                           GPasteItem *other)
 {
-    return (_G_PASTE_IS_COLOR_ITEM (other) &&
+    return (G_PASTE_IS_COLOR_ITEM (other) &&
             G_PASTE_ITEM_CLASS (g_paste_color_item_parent_class)->equals (self, other));
 }
 
 static const gchar *
-g_paste_color_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_color_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
     return "Color";
 }

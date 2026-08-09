@@ -23,23 +23,23 @@ G_PASTE_DEFINE_TYPE (UrisItem, uris_item, G_PASTE_TYPE_TEXT_ITEM)
  * Returns: (transfer none): read-only #GdkFileList
  */
 G_PASTE_VISIBLE GdkFileList *
-g_paste_uris_item_get_file_list (const GPasteUrisItem *self)
+g_paste_uris_item_get_file_list (GPasteUrisItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_URIS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), NULL);
 
     return self->file_list;
 }
 
 static gboolean
-g_paste_uris_item_equals (const GPasteItem *self,
-                          const GPasteItem *other)
+g_paste_uris_item_equals (GPasteItem *self,
+                          GPasteItem *other)
 {
-    return (_G_PASTE_IS_URIS_ITEM (other) &&
+    return (G_PASTE_IS_URIS_ITEM (other) &&
             G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other));
 }
 
 static const gchar *
-g_paste_uris_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
+g_paste_uris_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {
     return "Uris";
 }

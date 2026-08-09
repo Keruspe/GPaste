@@ -25,7 +25,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
                                  const gchar        *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM_ACTION (self));
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_ACTION (self));
 
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
 
@@ -37,7 +37,7 @@ g_paste_ui_item_action_real_activate (GPasteUiItemAction *self,
                                       GPasteClient       *client,
                                       const gchar        *uuid)
 {
-    const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (self);
+    const GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
 
     /* Default for subclass-less actions created via _new_simple. */
     if (priv->activate_func)
@@ -48,7 +48,7 @@ static void
 g_paste_ui_item_action_clicked (GtkButton *button)
 {
     GPasteUiItemAction *self = G_PASTE_UI_ITEM_ACTION (button);
-    const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (self);
+    const GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
     GPasteUiItemActionClass *klass = G_PASTE_UI_ITEM_ACTION_GET_CLASS (self);
 
     /* A row is on screen before the item it stands for has been fetched, so it
@@ -101,7 +101,7 @@ g_paste_ui_item_action_new (GType         type,
                             const gchar  *tooltip)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_ITEM_ACTION), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = g_object_new (type, NULL);
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (self));
