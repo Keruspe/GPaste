@@ -4,6 +4,7 @@
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>

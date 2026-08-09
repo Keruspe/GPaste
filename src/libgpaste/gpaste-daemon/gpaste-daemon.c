@@ -6,6 +6,7 @@
 #include <gpaste-daemon/gpaste-daemon.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-keybinder.h>
+#include <gpaste-daemon/gpaste-screensaver-client.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 

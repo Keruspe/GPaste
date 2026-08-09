@@ -28,6 +28,5 @@
 #include <gpaste-3/gpaste-util.h>
 
 /* GPasteScreensaverClient */
-#include <gpaste-3/gpaste-screensaver-client.h>
 
 #undef __G_PASTE_H_INSIDE__

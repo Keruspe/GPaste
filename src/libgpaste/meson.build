@@ -8,7 +8,6 @@ libgpaste_sources = [
   'gpaste-3/gpaste-client.c',
   'gpaste-3/gpaste-error.c',
   'gpaste-3/gpaste-item-enums.c',
-  'gpaste-3/gpaste-screensaver-client.c',
   'gpaste-3/gpaste-settings.c',
   'gpaste-3/gpaste-storage.c',
   'gpaste-3/gpaste-update-enums.c',
@@ -23,7 +22,6 @@ libgpaste_headers = [
   'gpaste-3/gpaste-gsettings-keys.h',
   'gpaste-3/gpaste-item-enums.h',
   'gpaste-3/gpaste-macros.h',
-  'gpaste-3/gpaste-screensaver-client.h',
   'gpaste-3/gpaste-settings.h',
   'gpaste-3/gpaste-storage.h',
   'gpaste-3/gpaste-update-enums.h',
@@ -232,6 +230,7 @@ gpaste_daemon_public_headers = [
 # New headers belong here unless the extension needs them.
 gpaste_daemon_internal_sources = [
   'gpaste-daemon/gpaste-clipboard-content.c',
+  'gpaste-daemon/gpaste-daemon-util.c',
   'gpaste-daemon/gpaste-clipboards-manager.c',
   'gpaste-daemon/gpaste-color-item.c',
   'gpaste-daemon/gpaste-daemon-methods.c',
@@ -242,11 +241,13 @@ gpaste_daemon_internal_sources = [
   'gpaste-daemon/gpaste-keybinder.c',
   'gpaste-daemon/gpaste-keybinding.c',
   'gpaste-daemon/gpaste-noop-backend.c',
+  'gpaste-daemon/gpaste-screensaver-client.c',
   'gpaste-daemon/gpaste-uris-item.c',
 ]
 
 gpaste_daemon_internal_headers = [
   'gpaste-daemon/gpaste-clipboard-content.h',
+  'gpaste-daemon/gpaste-daemon-util.h',
   'gpaste-daemon/gpaste-clipboards-manager.h',
   'gpaste-daemon/gpaste-color-item.h',
   'gpaste-daemon/gpaste-daemon-methods.h',
@@ -257,6 +258,7 @@ gpaste_daemon_internal_headers = [
   'gpaste-daemon/gpaste-keybinder.h',
   'gpaste-daemon/gpaste-keybinding.h',
   'gpaste-daemon/gpaste-noop-backend.h',
+  'gpaste-daemon/gpaste-screensaver-client.h',
   'gpaste-daemon/gpaste-uris-item.h',
 ]
 

@@ -20,9 +20,6 @@ void     g_paste_util_activate_ui       (const gchar *action,
 void     g_paste_util_empty_with_confirmation (GPasteClient   *client,
                                                GPasteSettings *settings,
                                                const gchar    *history);
-gchar   *g_paste_util_replace           (const gchar *text,
-                                         const gchar *pattern,
-                                         const gchar *substitution);
 gchar   *g_paste_util_one_line          (const gchar *text);
 
 gboolean g_paste_util_has_gnome_shell (void);
@@ -36,18 +33,5 @@ gboolean g_paste_util_reexecute_daemon          (GPasteClient *client,
                                                  GError      **error);
 gboolean g_paste_util_trigger_storage_migration (GPasteClient *client,
                                                  GError      **error);
-
-gchar *g_paste_util_xml_decode (const gchar *text);
-gchar *g_paste_util_xml_encode (const gchar *text);
-
-gchar *g_paste_util_get_history_dir_path  (void);
-GFile *g_paste_util_get_history_dir       (void);
-gchar *g_paste_util_get_history_file_path (const gchar *name,
-                                           const gchar *extension);
-gchar *g_paste_util_get_history_name_from_file_path (const gchar *path);
-GFile *g_paste_util_get_history_file      (const gchar *name,
-                                           const gchar *extension);
-
-gboolean g_paste_util_ensure_history_dir_exists (void);
 
 G_END_DECLS

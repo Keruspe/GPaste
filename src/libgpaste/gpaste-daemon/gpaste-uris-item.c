@@ -3,6 +3,7 @@
 
 #include <gpaste-3/gpaste-util.h>
 
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 struct _GPasteUrisItem
