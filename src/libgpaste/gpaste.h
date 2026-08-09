@@ -13,6 +13,7 @@
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-item-enums.h>
+#include <gpaste-3/gpaste-keybindings.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
 /* GPasteSettings */

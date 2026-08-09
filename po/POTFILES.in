@@ -24,7 +24,7 @@ src/gnome-shell/uiItem.js
 src/libgpaste/gpaste-3/gpaste-client-item.c
 src/libgpaste/gpaste-3/gpaste-client.c
 src/libgpaste/gpaste-3/gpaste-item-enums.c
-src/libgpaste/gpaste-3/gpaste-screensaver-client.c
+src/libgpaste/gpaste-3/gpaste-keybindings.h
 src/libgpaste/gpaste-3/gpaste-settings.c
 src/libgpaste/gpaste-3/gpaste-update-enums.c
 src/libgpaste/gpaste-3/gpaste-util.c
@@ -49,6 +49,7 @@ src/libgpaste/gpaste-daemon/gpaste-keybinding.c
 src/libgpaste/gpaste-daemon/gpaste-noop-backend.c
 src/libgpaste/gpaste-daemon/gpaste-password-item.c
 src/libgpaste/gpaste-daemon/gpaste-prompt.c
+src/libgpaste/gpaste-daemon/gpaste-screensaver-client.c
 src/libgpaste/gpaste-daemon/gpaste-search-provider.c
 src/libgpaste/gpaste-daemon/gpaste-secret-stream-converter.c
 src/libgpaste/gpaste-daemon/gpaste-special-atom.c
