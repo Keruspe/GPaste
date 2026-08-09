@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 22:20+0200\n"
+"POT-Creation-Date: 2026-08-09 23:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1546,6 +1546,10 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-color-item.c:59
 msgid "[Color]"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:182
+msgid "Could not create history dir"
 msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon.c:349
