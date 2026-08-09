@@ -160,55 +160,176 @@ build_shortcuts_variant (GPasteGlobalShortcutClient *priv)
 /* Async session/bind */
 /**********************/
 
+/* Every portal call here is a Request: the method returns an object path and the
+ * real answer -- including the user rejecting the dialog -- arrives later as
+ * that Request's Response signal. Waiting for it is the whole point, so both
+ * calls go through here rather than treating the method return as the answer.
+ *
+ * @session_creating covers the whole grab -- CreateSession *and* the
+ * BindShortcuts that follows it -- because both have to be done before another
+ * grab may drop the session and start over. So it is cleared where the sequence
+ * ends (a bound session, a rejected or failed request, a timeout) and not on the
+ * CreateSession response, which only hands over to the bind. */
+typedef void (*PortalResponseFunc) (GPasteGlobalShortcutClient *self,
+                                    GTask                      *task,
+                                    GVariant                   *results);
+
+static void close_session (GPasteGlobalShortcutClient *self);
+
 typedef struct
 {
     GPasteGlobalShortcutClient *client;
-    GTask                         *task;
-    GDBusConnection               *connection;
-    guint                          signal_id;
-    guint                          timeout_id;
-} _SessionRequestData;
+    GTask                      *task;
+    GDBusConnection            *connection;
+    const gchar                *what;     /* the method, for messages */
+    PortalResponseFunc          on_response;
+    guint                       signal_id;
+    guint                       timeout_id;
+} _PortalRequest;
 
 static void
-session_request_data_free (_SessionRequestData *data)
+portal_request_free (_PortalRequest *request)
 {
-    g_clear_handle_id (&data->timeout_id, g_source_remove);
-    if (data->signal_id)
-        g_dbus_connection_signal_unsubscribe (data->connection, data->signal_id);
-    g_clear_object (&data->client);
-    g_clear_object (&data->task);
-    g_clear_object (&data->connection);
-    g_free (data);
+    g_clear_handle_id (&request->timeout_id, g_source_remove);
+    if (request->signal_id)
+        g_dbus_connection_signal_unsubscribe (request->connection, request->signal_id);
+    g_clear_object (&request->client);
+    g_clear_object (&request->task);
+    g_clear_object (&request->connection);
+    g_free (request);
 }
 
-static void start_bind_async (GPasteGlobalShortcutClient *self, GTask *task);
+static void
+on_portal_response (GDBusConnection *conn,
+                    const gchar     *sender G_GNUC_UNUSED,
+                    const gchar     *path   G_GNUC_UNUSED,
+                    const gchar     *iface  G_GNUC_UNUSED,
+                    const gchar     *sig    G_GNUC_UNUSED,
+                    GVariant        *params,
+                    gpointer         user_data)
+{
+    _PortalRequest *request = user_data;
+
+    g_dbus_connection_signal_unsubscribe (conn, request->signal_id);
+    request->signal_id = 0; /* already unsubscribed; don't let the free do it again */
+
+    guint response;
+    g_autoptr (GVariant) results = NULL;
+
+    g_variant_get (params, "(u@a{sv})", &response, &results);
+
+    /* 1 is the user cancelling, 2 is the portal ending it some other way. */
+    if (response != 0)
+    {
+        request->client->session_creating = FALSE;
+        g_task_return_new_error (request->task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                 "%s portal request failed with response %u", request->what, response);
+        portal_request_free (request);
+        return;
+    }
+
+    g_autoptr (GPasteGlobalShortcutClient) client = g_object_ref (request->client);
+    g_autoptr (GTask) task = g_object_ref (request->task);
+    PortalResponseFunc on_response = request->on_response;
+    g_autoptr (GVariant) kept = g_variant_ref (results);
+
+    portal_request_free (request);
+
+    on_response (client, task, kept);
+}
+
+/* The portal Request may never emit Response (a broken portal); recover rather
+ * than leave the caller waiting forever. */
+static gboolean
+on_portal_timeout (gpointer user_data)
+{
+    _PortalRequest *request = user_data;
+
+    request->client->session_creating = FALSE;
+    request->timeout_id = 0; /* this source is firing; don't let the free remove it */
+
+    g_task_return_new_error (request->task, G_IO_ERROR, G_IO_ERROR_TIMED_OUT,
+                             "Timed out waiting for the GlobalShortcuts portal to answer %s", request->what);
+    portal_request_free (request);
+
+    return G_SOURCE_REMOVE;
+}
 
 static void
-on_bind_method_done (GObject      *source,
-                     GAsyncResult *result,
-                     gpointer      user_data)
+on_portal_method_done (GObject      *source,
+                       GAsyncResult *result,
+                       gpointer      user_data)
 {
-    g_autoptr (GTask) task = user_data;
+    _PortalRequest *request = user_data;
     g_autoptr (GError) error = NULL;
     g_autoptr (GVariant) ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (source), result, &error);
 
     if (!ret)
     {
-        GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (source);
-        g_clear_pointer (&self->session_handle, g_free);
-        g_task_return_error (task, g_steal_pointer (&error));
+        request->client->session_creating = FALSE;
+        /* CreateSession failing leaves nothing behind (no handle yet);
+         * BindShortcuts failing leaves a session nothing will ever bind, so hand
+         * it back to the portal rather than just forgetting its path. */
+        close_session (request->client);
+        g_task_return_error (request->task, g_steal_pointer (&error));
+        portal_request_free (request);
+        return;
     }
-    else
-        g_task_return_boolean (task, TRUE);
+
+    const gchar *request_path;
+
+    g_variant_get (ret, "(&o)", &request_path);
+
+    request->signal_id = g_dbus_connection_signal_subscribe (
+        request->connection, NULL,
+        "org.freedesktop.portal.Request", "Response",
+        request_path, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
+        on_portal_response, request, NULL);
+
+    request->timeout_id = g_timeout_add_seconds (30, on_portal_timeout, request);
+    g_source_set_name_by_id (request->timeout_id, "[GPaste] portal request timeout");
+}
+
+/* Call @method and answer @task from its Request's Response, not from the
+ * method return. Consumes the floating @params. */
+static void
+portal_request_async (GPasteGlobalShortcutClient *self,
+                      GTask                      *task,
+                      const gchar                *method,
+                      GVariant                   *params,
+                      PortalResponseFunc          on_response)
+{
+    GDBusProxy *proxy = G_DBUS_PROXY (self);
+    _PortalRequest *request = g_new0 (_PortalRequest, 1);
+
+    request->client = g_object_ref (self);
+    request->task = g_object_ref (task);
+    request->connection = g_object_ref (g_dbus_proxy_get_connection (proxy));
+    request->what = method;
+    request->on_response = on_response;
+
+    g_dbus_proxy_call (proxy, method, params,
+                       G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+                       on_portal_method_done, request);
+}
+
+/* The end of the grab: the session exists and now holds the shortcuts. */
+static void
+on_shortcuts_bound (GPasteGlobalShortcutClient *self,
+                    GTask                      *task,
+                    GVariant                   *results G_GNUC_UNUSED)
+{
+    self->session_creating = FALSE;
+
+    g_task_return_boolean (task, TRUE);
 }
 
 static void
 start_bind_async (GPasteGlobalShortcutClient *self,
-                  GTask                         *task)
+                  GTask                      *task)
 {
-    GDBusProxy *proxy = G_DBUS_PROXY (self);
-
     g_auto (GVariantBuilder) options;
+
     g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
 
     GVariant *params[] = {
@@ -218,133 +339,46 @@ start_bind_async (GPasteGlobalShortcutClient *self,
         g_variant_builder_end (&options)
     };
 
-    g_dbus_proxy_call (proxy, G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS,
-                       g_variant_new_tuple (params, 4),
-                       G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-                       on_bind_method_done, g_object_ref (task));
+    portal_request_async (self, task, G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS,
+                          g_variant_new_tuple (params, 4), on_shortcuts_bound);
 }
 
 static void
-on_session_created (GDBusConnection *conn,
-                    const gchar     *sender G_GNUC_UNUSED,
-                    const gchar     *path   G_GNUC_UNUSED,
-                    const gchar     *iface  G_GNUC_UNUSED,
-                    const gchar     *sig    G_GNUC_UNUSED,
-                    GVariant        *params,
-                    gpointer         user_data)
+on_session_created (GPasteGlobalShortcutClient *self,
+                    GTask                      *task,
+                    GVariant                   *results)
 {
-    _SessionRequestData *data = user_data;
-    g_dbus_connection_signal_unsubscribe (conn, data->signal_id);
-    data->signal_id = 0; /* already unsubscribed; don't let the free do it again */
+    /* Typed: the value is about to be handed to g_variant_new_object_path (),
+     * which aborts on anything that is not one. */
+    g_autoptr (GVariant) handle_v = g_variant_lookup_value (results, "session_handle", G_VARIANT_TYPE_STRING);
+    const gchar *handle = (handle_v) ? g_variant_get_string (handle_v, NULL) : NULL;
 
-    GPasteGlobalShortcutClient *self = data->client;
-    self->session_creating = FALSE;
-
-    guint response;
-    g_autoptr (GVariant) results = NULL;
-    g_variant_get (params, "(u@a{sv})", &response, &results);
-
-    if (response != 0)
+    if (!handle || !g_variant_is_object_path (handle))
     {
-        g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_FAILED,
-                                 "CreateSession portal request failed with response %u", response);
-        session_request_data_free (data);
-        return;
-    }
-
-    g_autoptr (GVariant) handle_v = g_variant_lookup_value (results, "session_handle", NULL);
-    if (!handle_v)
-    {
-        g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_FAILED,
-                                 "CreateSession response missing session_handle");
-        session_request_data_free (data);
-        return;
-    }
-
-    g_set_str (&self->session_handle, g_variant_get_string (handle_v, NULL));
-
-    g_autoptr (GPasteGlobalShortcutClient) client = g_object_ref (data->client);
-    g_autoptr (GTask) task = g_object_ref (data->task);
-    session_request_data_free (data);
-
-    start_bind_async (client, task);
-}
-
-/* The portal Request may never emit Response (e.g. a broken portal); recover so
- * session_creating does not stay set forever, blocking every later grab. */
-static gboolean
-on_session_timeout (gpointer user_data)
-{
-    _SessionRequestData *data = user_data;
-    GPasteGlobalShortcutClient *self = data->client;
-
-    self->session_creating = FALSE;
-    data->timeout_id = 0; /* this source is firing; don't let the free remove it */
-
-    g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_TIMED_OUT,
-                             "Timed out waiting for the GlobalShortcuts portal to create a session");
-    session_request_data_free (data);
-
-    return G_SOURCE_REMOVE;
-}
-
-static void
-on_create_session_method_done (GObject      *source,
-                               GAsyncResult *result,
-                               gpointer      user_data)
-{
-    _SessionRequestData *data = user_data;
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GVariant) ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (source), result, &error);
-
-    if (!ret)
-    {
-        GPasteGlobalShortcutClient *self = data->client;
         self->session_creating = FALSE;
-        g_task_return_error (data->task, g_steal_pointer (&error));
-        session_request_data_free (data);
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                 "CreateSession response carries no usable session_handle");
         return;
     }
 
-    const gchar *request_path;
-    g_variant_get (ret, "(o)", &request_path);
+    g_set_str (&self->session_handle, handle);
 
-    data->signal_id = g_dbus_connection_signal_subscribe (
-        data->connection, NULL,
-        "org.freedesktop.portal.Request", "Response",
-        request_path, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
-        on_session_created, data, NULL);
-
-    data->timeout_id = g_timeout_add_seconds (30, on_session_timeout, data);
-    g_source_set_name_by_id (data->timeout_id, "[GPaste] portal session timeout");
+    start_bind_async (self, task);
 }
 
 static void
 start_create_session_async (GPasteGlobalShortcutClient *self,
                             GTask                      *task)
 {
-    GDBusProxy *proxy = G_DBUS_PROXY (self);
-    GDBusConnection *connection = g_dbus_proxy_get_connection (proxy);
-
-    _SessionRequestData *data = g_new (_SessionRequestData, 1);
-    data->client = g_object_ref (self);
-    data->task = g_object_ref (task);
-    data->connection = g_object_ref (connection);
-    data->signal_id = 0;
-    data->timeout_id = 0; /* only set once the session is created; the synchronous
-                           * failure path frees data before then and would
-                           * otherwise g_source_remove() an uninitialised id */
-
     g_auto (GVariantBuilder) options;
+
     g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add (&options, "{sv}", "session_handle_token", g_variant_new_string ("gpaste"));
 
     GVariant *params[] = { g_variant_builder_end (&options) };
 
-    g_dbus_proxy_call (proxy, G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION,
-                       g_variant_new_tuple (params, 1),
-                       G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-                       on_create_session_method_done, data);
+    portal_request_async (self, task, G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION,
+                          g_variant_new_tuple (params, 1), on_session_created);
 }
 
 /**********************/
