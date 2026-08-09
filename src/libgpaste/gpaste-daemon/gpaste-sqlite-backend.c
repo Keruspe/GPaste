@@ -1339,7 +1339,9 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
         success = g_paste_sqlite_backend_upsert_item (db, key, item, rank);
     }
 
-    if (success)
+    /* A %NULL history says nothing was displaced by this add, so no row can
+     * have been orphaned and there is nothing to reconcile. */
+    if (success && history)
         g_paste_sqlite_backend_reconcile (db, key, history);
 
     g_paste_sqlite_backend_finish_transaction (db, success);

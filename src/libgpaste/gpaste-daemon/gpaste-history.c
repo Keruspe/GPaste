@@ -265,6 +265,9 @@ g_paste_history_emit_update (GPasteHistory     *self,
                    NULL);
 }
 
+/* @displaced says whether anything left the history alongside the change: a
+ * dedup, a grown line replacing its shorter self, or an eviction. It only means
+ * anything for an add on an incremental backend -- see below. */
 static void
 g_paste_history_update (GPasteHistory       *self,
                         GPasteUpdateAction   action,
@@ -272,17 +275,22 @@ g_paste_history_update (GPasteHistory       *self,
                         guint64              position,
                         GPasteHistorySaveOp  op,
                         GPasteItem          *item,
-                        const gchar         *uuid)
+                        const gchar         *uuid,
+                        gboolean             displaced)
 {
     /* Don't persist intermediate states while an async load is replacing the
      * history (the load result triggers its own save when appropriate), nor once
      * we have been flushed for handover (a successor daemon owns the file now). */
     if (!self->stopped && !self->unreadable && !g_paste_history_saver_is_loading (self->saver))
     {
-        /* An incremental backend only ever consumes the snapshot on an add (to
-         * reconcile dedups and evictions that ride along with it); skip the
-         * per-item ref-copy for the operations that would just free it. */
-        GList *snapshot = (op == G_PASTE_HISTORY_SAVE_ADD || !g_paste_storage_backend_is_incremental (self->backend))
+        /* A non-incremental backend rewrites everything and always needs the
+         * snapshot. An incremental one only reconciles what rode along with an
+         * add -- and reconciliation only ever deletes rows the history no longer
+         * has, so with nothing displaced there is provably nothing to delete.
+         * That is the common case, and it is where the per-item ref-copy of the
+         * whole history on every single clipboard change used to happen. */
+        gboolean full = !g_paste_storage_backend_is_incremental (self->backend);
+        GList *snapshot = (full || (op == G_PASTE_HISTORY_SAVE_ADD && displaced))
             ? g_paste_history_snapshot (self)
             : NULL;
 
@@ -418,7 +426,8 @@ _g_paste_history_add (GPasteHistory *self,
     if (g_paste_item_get_size (item) > max_memory)
         return;
 
-    gboolean election_needed = !self->history->len; // If we don't have an history we want to initalize the biggest
+    guint length_before = self->history->len;
+    gboolean election_needed = !length_before; // If we don't have an history we want to initalize the biggest
     GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_ALL;
 
     g_debug ("history: add");
@@ -496,7 +505,12 @@ _g_paste_history_add (GPasteHistory *self,
         g_paste_history_private_elect_new_biggest (self);
 
     g_paste_history_private_check_memory_usage (self);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0, G_PASTE_HISTORY_SAVE_ADD, item, NULL);
+
+    /* One in and nothing out means nothing was deduped, grown over or evicted;
+     * anything else and the store has rows the history no longer has. */
+    gboolean displaced = self->history->len != length_before + 1;
+
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0, G_PASTE_HISTORY_SAVE_ADD, item, NULL, displaced);
 }
 
 /**
@@ -537,7 +551,7 @@ g_paste_history_remove_common (GPasteHistory        *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (self);
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REMOVE, NULL, uuid);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REMOVE, NULL, uuid, FALSE);
 }
 
 static void
@@ -725,7 +739,7 @@ _g_paste_history_replace (GPasteHistory *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (self);
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid, FALSE);
 }
 
 /**
@@ -880,7 +894,7 @@ g_paste_history_rename_password (GPasteHistory *self,
     if (item)
     {
         g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item));
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item), FALSE);
     }
 }
 
@@ -905,7 +919,7 @@ g_paste_history_empty (GPasteHistory *self)
     self->size = 0;
 
     g_paste_history_private_elect_new_biggest (self);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_CLEAR, NULL, NULL);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_CLEAR, NULL, NULL, FALSE);
 }
 
 /**
@@ -1050,7 +1064,7 @@ g_paste_history_on_loaded (gpointer  user_data,
     }
 
     if (save_after)
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL);
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
     else
         g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }

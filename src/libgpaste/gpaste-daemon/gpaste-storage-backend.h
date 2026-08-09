@@ -51,6 +51,12 @@ struct _GPasteStorageBackendClass
                                       const gchar          *new_passphrase);
 
     /*< protected, optional: incremental updates >*/
+    /* @history is the whole history as it now stands, for reconciling whatever
+     * rode along with the add -- a dedup, a grown line, an eviction. It is
+     * %NULL when nothing did, which is the common case: reconciliation only
+     * ever drops rows the history no longer has, so there is then nothing to
+     * do. A backend that does not implement all four of these gets the full
+     * history written out instead, and so always sees a non-%NULL one. */
     void     (*add_item)             (GPasteStorageBackend *self,
                                       const gchar          *name,
                                       GPasteItem           *item,
