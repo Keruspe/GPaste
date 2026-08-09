@@ -1,11 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
-#include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
-#include <gpaste-gtk4/gpaste-gtk-preferences-images-page.h>
-#include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 
 struct _GPasteGtkPreferencesDialog
 {
@@ -48,10 +45,10 @@ g_paste_gtk_preferences_dialog_init (GPasteGtkPreferencesDialog *self)
      * a reference, so it has to outlive them. */
     GPasteSettings *settings = priv->settings = g_paste_settings_new ();
 
-    adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_behaviour_page_new (settings)));
-    adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_history_settings_page_new (settings)));
-    adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_images_page_new (settings)));
-    adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_shortcuts_page_new (settings)));
+    g_autofree AdwPreferencesPage **pages = g_paste_gtk_preferences_pages_new (settings);
+
+    for (AdwPreferencesPage **page = pages; *page; ++page)
+        adw_preferences_dialog_add (win, *page);
 }
 
 /**

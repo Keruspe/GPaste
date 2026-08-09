@@ -1,15 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
-
-struct _GPasteGtkPreferencesHistorySettingsPage
-{
-    GPasteGtkPreferencesPage parent_instance;
-};
-
-G_PASTE_GTK_DEFINE_TYPE (PreferencesHistorySettingsPage, preferences_history_settings_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
 
 static void
 on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
@@ -63,35 +56,24 @@ update_passphrase_sensitivity (GPasteSettings *settings,
                               g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (settings)));
 }
 
-static void
-g_paste_gtk_preferences_history_settings_page_class_init (GPasteGtkPreferencesHistorySettingsPageClass *klass G_GNUC_UNUSED)
-{
-}
-
-static void
-g_paste_gtk_preferences_history_settings_page_init (GPasteGtkPreferencesHistorySettingsPage *self G_GNUC_UNUSED)
-{
-}
-
 /**
  * g_paste_gtk_preferences_history_settings_page_new:
  * @settings: a #GPasteSettings instance
  *
- * Create a new instance of #GPasteGtkPreferencesHistorySettingsPage
+ * Build the preferences page
  *
- * Returns: (nullable): a newly allocated #GPasteGtkPreferencesHistorySettingsPage
- *                      free it with g_object_unref
+ * Returns: (transfer full): a newly allocated #AdwPreferencesPage
  */
-G_PASTE_VISIBLE GtkWidget *
+AdwPreferencesPage *
 g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GPasteGtkPreferencesHistorySettingsPage *self = G_PASTE_GTK_PREFERENCES_HISTORY_SETTINGS_PAGE (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_HISTORY_SETTINGS_PAGE,
-                                                                                                                 "name", "history-settings",
-                                                                                                                 "title", _("History settings"),
-                                                                                                                 "icon-name", "preferences-other",
-                                                                                                                 NULL));
+    AdwPreferencesPage *self = ADW_PREFERENCES_PAGE (g_object_new (ADW_TYPE_PREFERENCES_PAGE,
+                                                                   "name", "history-settings",
+                                                                   "title", _("History settings"),
+                                                                   "icon-name", "preferences-other",
+                                                                   NULL));
 
     GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Resources limits"));
     g_paste_gtk_preferences_group_add_range_setting (group,
@@ -104,7 +86,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                      G_PASTE_MAX_MEMORY_USAGE_SETTING,
                                                      5, 16383, 5,
                                                      settings);
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     group = g_paste_gtk_preferences_group_new (_("Text limits"));
     g_paste_gtk_preferences_group_add_range_setting (group,
@@ -117,7 +99,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                      G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING,
                                                      1, 2147483647, 1,
                                                      settings);
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     group = g_paste_gtk_preferences_group_new (_("Display settings"));
     g_paste_gtk_preferences_group_add_range_setting (group,
@@ -125,7 +107,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                      G_PASTE_ELEMENT_SIZE_SETTING,
                                                      0, 511, 5,
                                                      settings);
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     group = g_paste_gtk_preferences_group_new (_("Storage"));
     adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
@@ -148,7 +130,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
     g_signal_connect_object (settings, "notify::" G_PASTE_STORAGE_BACKEND_SETTING,
                              G_CALLBACK (update_passphrase_sensitivity), passphrase, 0);
 
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
-    return GTK_WIDGET (self);
+    return self;
 }

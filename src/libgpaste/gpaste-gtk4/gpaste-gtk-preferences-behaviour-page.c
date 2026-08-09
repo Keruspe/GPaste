@@ -1,45 +1,27 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
-
-struct _GPasteGtkPreferencesBehaviourPage
-{
-    GPasteGtkPreferencesPage parent_instance;
-};
-
-G_PASTE_GTK_DEFINE_TYPE (PreferencesBehaviourPage, preferences_behaviour_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
-
-static void
-g_paste_gtk_preferences_behaviour_page_class_init (GPasteGtkPreferencesBehaviourPageClass *klass G_GNUC_UNUSED)
-{
-}
-
-static void
-g_paste_gtk_preferences_behaviour_page_init (GPasteGtkPreferencesBehaviourPage *self G_GNUC_UNUSED)
-{
-}
 
 /**
  * g_paste_gtk_preferences_behaviour_page_new:
  * @settings: a #GPasteSettings instance
  *
- * Create a new instance of #GPasteGtkPreferencesBehaviourPage
+ * Build the preferences page
  *
- * Returns: (nullable): a newly allocated #GPasteGtkPreferencesBehaviourPage
- *                      free it with g_object_unref
+ * Returns: (transfer full): a newly allocated #AdwPreferencesPage
  */
-G_PASTE_VISIBLE GtkWidget *
+AdwPreferencesPage *
 g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GPasteGtkPreferencesBehaviourPage *self = G_PASTE_GTK_PREFERENCES_BEHAVIOUR_PAGE (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_BEHAVIOUR_PAGE,
-                                                                                                    "name", "behaviour",
-                                                                                                    "title", _("General behaviour"),
-                                                                                                    "icon-name", "preferences-system",
-                                                                                                    NULL));
+    AdwPreferencesPage *self = ADW_PREFERENCES_PAGE (g_object_new (ADW_TYPE_PREFERENCES_PAGE,
+                                                                   "name", "behaviour",
+                                                                   "title", _("General behaviour"),
+                                                                   "icon-name", "preferences-system",
+                                                                   NULL));
 
     GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("General behaviour"));
     g_paste_gtk_preferences_group_add_boolean_setting (group,
@@ -54,7 +36,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                        _("Open the UI window centered"),
                                                        G_PASTE_OPEN_CENTERED_SETTING,
                                                        settings);
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     if (g_paste_util_has_gnome_shell ())
     {
@@ -82,7 +64,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
         adw_action_row_set_subtitle (ADW_ACTION_ROW (experimental_meta_daemon_switch),
                                      _("Experimental: run the daemon inside GNOME Shell (mutter clipboard) instead of the standalone one. Takes effect after the extension restarts"));
 
-        g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+        adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
     }
 
     group = g_paste_gtk_preferences_group_new (_("Clipboards synchronization"));
@@ -94,7 +76,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                        _("Synchronize clipboard with primary selection"),
                                                        G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING,
                                                        settings);
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     group = g_paste_gtk_preferences_group_new (_("Optional features"));
     g_paste_gtk_preferences_group_add_boolean_setting (group,
@@ -107,7 +89,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                                                            settings);
     adw_action_row_set_subtitle (ADW_ACTION_ROW (growing_lines_switch),
                                  _("When enabled, if a new clipboard entry starts with the previous one, the previous entry is replaced instead of creating a new one"));
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
-    return GTK_WIDGET (self);
+    return self;
 }

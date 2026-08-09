@@ -1,45 +1,27 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-images-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
-
-struct _GPasteGtkPreferencesImagesPage
-{
-    GPasteGtkPreferencesPage parent_instance;
-};
-
-G_PASTE_GTK_DEFINE_TYPE (PreferencesImagesPage, preferences_images_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
-
-static void
-g_paste_gtk_preferences_images_page_class_init (GPasteGtkPreferencesImagesPageClass *klass G_GNUC_UNUSED)
-{
-}
-
-static void
-g_paste_gtk_preferences_images_page_init (GPasteGtkPreferencesImagesPage *self G_GNUC_UNUSED)
-{
-}
 
 /**
  * g_paste_gtk_preferences_images_page_new:
  * @settings: a #GPasteSettings instance
  *
- * Create a new instance of #GPasteGtkPreferencesImagesPage
+ * Build the preferences page
  *
- * Returns: (nullable): a newly allocated #GPasteGtkPreferencesImagesPage
- *                      free it with g_object_unref
+ * Returns: (transfer full): a newly allocated #AdwPreferencesPage
  */
-G_PASTE_VISIBLE GtkWidget *
+AdwPreferencesPage *
 g_paste_gtk_preferences_images_page_new (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GPasteGtkPreferencesImagesPage *self = G_PASTE_GTK_PREFERENCES_IMAGES_PAGE (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_IMAGES_PAGE,
-                                                                                               "name", "images",
-                                                                                               "title", _("Images settings"),
-                                                                                               "icon-name", "image-x-generic",
-                                                                                               NULL));
+    AdwPreferencesPage *self = ADW_PREFERENCES_PAGE (g_object_new (ADW_TYPE_PREFERENCES_PAGE,
+                                                                   "name", "images",
+                                                                   "title", _("Images settings"),
+                                                                   "icon-name", "image-x-generic",
+                                                                   NULL));
 
     GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Images settings"));
     g_paste_gtk_preferences_group_add_boolean_setting (group,
@@ -55,7 +37,7 @@ g_paste_gtk_preferences_images_page_new (GPasteSettings *settings)
                                                      G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
                                                      16, 200, 10,
                                                      settings);
-    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
-    return GTK_WIDGET (self);
+    return self;
 }

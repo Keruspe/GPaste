@@ -72,31 +72,38 @@ pkg.generate(
 )
 
 
-libgpaste_gtk4_sources = [
-  'gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c',
+libgpaste_gtk4_public_sources = [
   'gpaste-gtk4/gpaste-gtk-preferences-dialog.c',
-  'gpaste-gtk4/gpaste-gtk-preferences-group.c',
-  'gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c',
-  'gpaste-gtk4/gpaste-gtk-preferences-images-page.c',
-  'gpaste-gtk4/gpaste-gtk-preferences-page.c',
-  'gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c',
   'gpaste-gtk4/gpaste-gtk-preferences-widget.c',
-  'gpaste-gtk4/gpaste-gtk-shortcut-row.c',
   'gpaste-gtk4/gpaste-gtk-util.c',
 ]
 
+libgpaste_gtk4_internal_sources = [
+  'gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c',
+  'gpaste-gtk4/gpaste-gtk-preferences-group.c',
+  'gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c',
+  'gpaste-gtk4/gpaste-gtk-preferences-images-page.c',
+  'gpaste-gtk4/gpaste-gtk-preferences-pages.c',
+  'gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c',
+  'gpaste-gtk4/gpaste-gtk-shortcut-row.c',
+]
+
+libgpaste_gtk4_sources = libgpaste_gtk4_public_sources + libgpaste_gtk4_internal_sources
+
+# Installed and introspected: the whole story a consumer gets is "open the
+# preferences" -- as a dialog, or as the widget the extension's prefs.js embeds.
 libgpaste_gtk4_headers = [
   'gpaste-gtk4/gpaste-gtk-macros.h',
-  'gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h',
   'gpaste-gtk4/gpaste-gtk-preferences-dialog.h',
-  'gpaste-gtk4/gpaste-gtk-preferences-group.h',
-  'gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h',
-  'gpaste-gtk4/gpaste-gtk-preferences-images-page.h',
-  'gpaste-gtk4/gpaste-gtk-preferences-page.h',
-  'gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h',
   'gpaste-gtk4/gpaste-gtk-preferences-widget.h',
-  'gpaste-gtk4/gpaste-gtk-shortcut-row.h',
   'gpaste-gtk4/gpaste-gtk-util.h',
+]
+
+# Compiled in, never installed: the pieces those two are built from.
+libgpaste_gtk4_internal_headers = [
+  'gpaste-gtk4/gpaste-gtk-preferences-group.h',
+  'gpaste-gtk4/gpaste-gtk-preferences-pages.h',
+  'gpaste-gtk4/gpaste-gtk-shortcut-row.h',
 ]
 
 libgpaste_gtk4_deps = [ libgpaste_internal_dep, libadwaita_dep, gtk4_dep ]
@@ -150,7 +157,7 @@ if get_option('introspection')
 
   libgpaste_gtk4_gir = gnome.generate_gir(
     libgpaste_gtk4,
-    sources: [ libgpaste_gtk4_sources, libgpaste_gtk4_headers ],
+    sources: [ libgpaste_gtk4_public_sources, libgpaste_gtk4_headers ],
     includes: [ libgpaste_gir[0], 'Adw-1', 'Gtk-4.0', 'Gdk-4.0' ],
     dependencies: [ ],
     header: 'gpaste-gtk4.h',

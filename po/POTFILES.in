@@ -63,7 +63,6 @@ src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-dialog.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c
-src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-widget.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c
