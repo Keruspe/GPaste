@@ -1,0 +1,11 @@
+# Subtract one check, keep whatever else the editor/CLI had enabled.
+#
+# bugprone-sizeof-expression fires inside GLib's g_set_object(), which asserts
+# its own type safety with
+#   G_STATIC_ASSERT (sizeof *(object_ptr) == sizeof (new_object))
+# Taking sizeof of a pointer is the whole point of that assert, but the
+# diagnostic is attributed to our call site rather than to the system header the
+# macro expands from, so there is nothing to fix at the call site and no way to
+# silence it there without a NOLINT comment on every g_set_object().
+InheritParentConfig: true
+Checks: '-bugprone-sizeof-expression'
