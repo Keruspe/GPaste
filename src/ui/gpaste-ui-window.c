@@ -227,7 +227,6 @@ save_session_state (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-    GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
 
     /* Still moving: wait another tick rather than saving mid-drag. Re-arming
      * the source is what the notifications no longer have to do. */
@@ -239,8 +238,21 @@ save_session_state (gpointer user_data)
 
     priv->save_state_id = 0;
 
-    if (app)
-        gtk_application_save (app);
+    /* FIXME: gtk_application_save() is private again as of GTK commit eabaa008d5
+     * ("application: Drop public save/restore API"): the async save/restore API
+     * did not make GTK 4.24, so the sync one was hidden rather than stabilised.
+     * Restore this call once GTK exposes save/restore again.
+     *
+     * Losing it costs less than it looks: GTK saves on its own from
+     * gtk_application_shutdown() unless the app was forgotten, and autosaves on
+     * a timer while the app is focused. What is missing until then is only the
+     * prompt save right after a resize settles.
+     *
+     * GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
+     *
+     * if (app)
+     *     gtk_application_save (app);
+     */
 
     return G_SOURCE_REMOVE;
 }
