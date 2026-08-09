@@ -28,7 +28,7 @@ struct _GPasteUiHistory
     guint64         limit;      /* how many items we currently allow on screen; grows lazily */
     guint64         available;  /* last known total size of the history */
     gboolean        loading;    /* a lazy-growth refresh is in flight */
-    guint64         refresh_generation; /* bumped per refresh; stale callbacks bail */
+    guint64         display_generation; /* bumped per refresh and per search; stale callbacks bail */
     gboolean        selection_mode; /* merge mode: rows are multi-selectable */
     GPtrArray      *selection;       /* selected uuids, in the order they were picked */
     gint32          item_height;
@@ -139,29 +139,57 @@ g_paste_ui_history_batch (GPasteUiHistory *self)
     return G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 }
 
+/* Carried by both the refresh and the search callbacks. @self is owned: the
+ * widget's only owner is the widget tree, so a window closing mid-flight would
+ * otherwise finalize it before the reply lands. @generation is what was current
+ * when the call went out — refresh and search write the same rows (indices vs.
+ * uuids), so whichever went out last wins and everything older bails. */
 typedef struct {
     GPasteUiHistory *self;
     gchar           *name;
     guint64          from_index;
     guint64          generation;
-} OnUpdateCallbackData;
+} DisplayCallbackData;
+
+static void
+display_callback_data_free (DisplayCallbackData *data)
+{
+    g_clear_object (&data->self);
+    g_free (data->name);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (DisplayCallbackData, display_callback_data_free)
+
+static DisplayCallbackData *
+display_callback_data_new (GPasteUiHistory *self,
+                           guint64          from_index)
+{
+    DisplayCallbackData *data = g_new0 (DisplayCallbackData, 1);
+
+    data->self = g_object_ref (self);
+    data->from_index = from_index;
+    data->generation = ++self->display_generation;
+
+    return data;
+}
 
 static void
 g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
                                     GAsyncResult *res,
                                     gpointer      user_data)
 {
-    g_autofree OnUpdateCallbackData *cdata = user_data;
-    g_autofree gchar *name = cdata->name;
+    g_autoptr (DisplayCallbackData) cdata = user_data;
     GPasteUiHistory *self = cdata->self;
 
     if (!self->client)
         return;
 
-    /* A later refresh superseded this one: leave self->loading set (the newer
-     * refresh clears it) and don't re-index from this stale from_index, which
-     * could leave shifted rows with wrong indices. */
-    if (cdata->generation != self->refresh_generation)
+    /* A later refresh or search superseded this one: leave self->loading set
+     * (the newer refresh clears it) and don't re-index from this stale
+     * from_index, which could leave shifted rows with wrong indices — or, for a
+     * search, overwrite the uuids it just installed. */
+    if (cdata->generation != self->display_generation)
         return;
 
     guint64 old_size = self->size;
@@ -182,7 +210,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     else
         g_paste_ui_history_show_status (self, "edit-paste-symbolic", _("Empty"));
 
-    g_paste_ui_panel_update_history_length (self->panel, name, new_size);
+    g_paste_ui_panel_update_history_length (self->panel, cdata->name, new_size);
 
     if (old_size < self->size)
     {
@@ -230,18 +258,20 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
                GAsyncResult *res,
                gpointer      user_data)
 {
-    OnUpdateCallbackData *cdata = user_data;
-    GPasteUiHistory *priv = cdata->self;
+    DisplayCallbackData *cdata = user_data;
+    GPasteUiHistory *self = cdata->self;
 
-    if (!priv->client)
+    /* Bail before the second round-trip rather than after it: a superseded
+     * refresh has nothing left to display. */
+    if (!self->client || cdata->generation != self->display_generation)
     {
-        g_free (user_data);
+        display_callback_data_free (cdata);
         return;
     }
 
-    cdata->name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+    cdata->name = g_paste_client_get_history_name_finish (self->client, res, NULL);
 
-    g_paste_client_get_history_size (priv->client, cdata->name, g_paste_ui_history_refresh_history, cdata);
+    g_paste_client_get_history_size (self->client, cdata->name, g_paste_ui_history_refresh_history, cdata);
 }
 
 static void
@@ -255,13 +285,8 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         g_paste_ui_history_search (self, self->search);
     else
     {
-        OnUpdateCallbackData *cdata = g_new (OnUpdateCallbackData, 1);
-        cdata->self = self;
-        cdata->from_index = from_index;
-        cdata->generation = ++self->refresh_generation;
-
         self->loading = TRUE;
-        g_paste_client_get_history_name (self->client, on_name_ready, cdata);
+        g_paste_client_get_history_name (self->client, on_name_ready, display_callback_data_new (self, from_index));
     }
 }
 
@@ -318,11 +343,17 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
-    g_autoptr (GPasteUiHistory) self = user_data; /* ref taken in _search */
+    g_autoptr (DisplayCallbackData) cdata = user_data;
+    GPasteUiHistory *self = cdata->self;
 
-    /* Only meaningful because the ref above kept us allocated: dispose clears
-     * the client, so a NULL one means we were disposed mid-flight. */
+    /* Only meaningful because cdata holds a ref: dispose clears the client, so a
+     * NULL one means we were disposed mid-flight. */
     if (!self->client)
+        return;
+
+    /* A newer search or refresh already owns these rows. Without this, typing
+     * "a" then "ab" leaves whichever reply happens to land last on screen. */
+    if (cdata->generation != self->display_generation)
         return;
 
     GSList *item = self->items;
@@ -374,8 +405,7 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     else
     {
         g_set_str (&self->search, search);
-        /* The callback owns this ref (see on_search_ready). */
-        g_paste_client_search (self->client, search, on_search_ready, g_object_ref (self));
+        g_paste_client_search (self->client, search, on_search_ready, display_callback_data_new (self, 0));
     }
 }
 
@@ -595,6 +625,16 @@ g_paste_ui_history_dispose (GObject *object)
     g_clear_pointer (&self->search_results, g_strfreev);
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
+
+    /* All borrowed: the panel and root window outlive us, and chaining up
+     * destroys the children. A callback that survives us checks the client
+     * above, but g_paste_ui_history_refresh_history() also reaches for these,
+     * so leave nothing behind that still looks alive. */
+    self->panel = NULL;
+    self->rootwin = NULL;
+    self->status_page = NULL;
+    self->scroll = NULL;
+    self->list_box = NULL;
 
     G_OBJECT_CLASS (g_paste_ui_history_parent_class)->dispose (object);
 }
