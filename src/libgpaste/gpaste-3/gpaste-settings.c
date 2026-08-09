@@ -58,7 +58,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint64 signals[LAST_SIGNAL] = { 0 };
+static guint signals[LAST_SIGNAL] = { 0 };
 
 /* How a setting's cached value is replaced. GSettings hands out a fresh string,
  * so the dconf path consumes it, while the public setter only borrows its

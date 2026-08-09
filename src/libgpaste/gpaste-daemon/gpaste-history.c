@@ -86,7 +86,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint64 signals[LAST_SIGNAL] = { 0 };
+static guint signals[LAST_SIGNAL] = { 0 };
 
 typedef struct
 {

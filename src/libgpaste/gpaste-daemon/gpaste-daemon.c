@@ -44,7 +44,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint64 signals[LAST_SIGNAL] = { 0 };
+static guint signals[LAST_SIGNAL] = { 0 };
 
 /* The context the free-standing method handlers work on. Declared as a local so
  * it always mirrors the daemon's current state, and named the same way at every

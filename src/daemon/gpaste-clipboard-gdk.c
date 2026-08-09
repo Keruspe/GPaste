@@ -30,7 +30,7 @@ struct _GPasteClipboardGdk
 
     GPasteClipboardContent content;
 
-    guint64                c_signals[C_LAST_SIGNAL];
+    gulong                 c_signals[C_LAST_SIGNAL];
 };
 
 static void g_paste_clipboard_gdk_provider_iface_init (GPasteClipboardProviderInterface *iface);

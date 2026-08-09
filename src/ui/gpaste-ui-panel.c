@@ -44,7 +44,7 @@ struct _GPasteUiPanel
     GtkWidget         *search_entry;
     gboolean           inhibit_switch;
 
-    guint64            c_signals[C_LAST_SIGNAL];
+    gulong             c_signals[C_LAST_SIGNAL];
 };
 
 G_PASTE_DEFINE_TYPE (UiPanel, ui_panel, GTK_TYPE_BOX)

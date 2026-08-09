@@ -38,25 +38,64 @@ struct _GPasteUiWindow
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
 
-static gboolean
-_empty (gpointer user_data)
+/* The three actions the application can be asked to perform before the window
+ * has finished connecting to the daemon. Each waits on an idle for @initialized,
+ * so it needs the window kept alive and, for two of them, an argument to carry
+ * along -- @arg is owned and freed here, and NULL for the one with none. */
+typedef struct
 {
-    gpointer *data = (gpointer *) user_data;
-    GPasteUiWindow *self = data[0];
+    GPasteUiWindow *self;
+    gchar          *arg;
+    void          (*run) (GPasteUiWindow *self,
+                          const gchar    *arg);
+} DeferredAction;
 
-    /* Keep waiting until ready, unless the window was destroyed meanwhile */
-    if (self->client && !self->initialized)
+static gboolean
+run_deferred_action (gpointer user_data)
+{
+    DeferredAction *deferred = user_data;
+    GPasteUiWindow *self = deferred->self;
+
+    /* Keep waiting until the connection attempt has concluded, unless the window
+     * was destroyed meanwhile — @banner is what dispose() clears to say so.
+     * Waiting on @client instead would drop the action on the very first idle
+     * turn: it is only assigned once g_paste_client_new() has come back, well
+     * after this runs. */
+    if (self->banner && !self->initialized)
         return G_SOURCE_CONTINUE;
 
-    g_autofree gchar *history = data[1];
-    g_free (data);
-
+    /* Concluded without a client means it failed, and the banner is saying so;
+     * there is nothing left for the action to act on. */
     if (self->client)
-        g_paste_gtk_util_empty_history (GTK_WINDOW (self), self->client, self->settings, history);
+        deferred->run (self, deferred->arg);
 
     g_object_unref (self);
+    g_free (deferred->arg);
+    g_free (deferred);
 
     return G_SOURCE_REMOVE;
+}
+
+static void
+run_when_initialized (GPasteUiWindow *self,
+                      void          (*run) (GPasteUiWindow *self, const gchar *arg),
+                      const gchar    *arg,
+                      const gchar    *source_name)
+{
+    DeferredAction *deferred = g_new (DeferredAction, 1);
+
+    deferred->self = g_object_ref (self);
+    deferred->arg = g_strdup (arg);
+    deferred->run = run;
+
+    g_source_set_name_by_id (g_idle_add (run_deferred_action, deferred), source_name);
+}
+
+static void
+do_empty_history (GPasteUiWindow *self,
+                  const gchar    *history)
+{
+    g_paste_gtk_util_empty_history (GTK_WINDOW (self), self->client, self->settings, history);
 }
 
 /**
@@ -73,35 +112,15 @@ g_paste_ui_window_empty_history (GPasteUiWindow *self,
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
-    gpointer *data = g_new (gpointer, 2);
-    data[0] = g_object_ref (self);
-    data[1] = g_strdup (history);
-
-    g_source_set_name_by_id (g_idle_add (_empty, data), "[GPaste] empty");
+    run_when_initialized (self, do_empty_history, history, "[GPaste] empty");
 }
 
-static gboolean
-_search (gpointer user_data)
+static void
+do_search (GPasteUiWindow *self,
+           const gchar    *search)
 {
-    gpointer *data = (gpointer *) user_data;
-    GPasteUiWindow *self = data[0];
-
-    /* Keep waiting until ready, unless the window was destroyed meanwhile */
-    if (self->client && !self->initialized)
-        return G_SOURCE_CONTINUE;
-
-    g_autofree gchar *search = data[1];
-    g_free (data);
-
-    if (self->client)
-    {
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (self->header)), TRUE);
-        gtk_editable_set_text (GTK_EDITABLE (self->search_entry), search);
-    }
-
-    g_object_unref (self);
-
-    return G_SOURCE_REMOVE;
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (self->header)), TRUE);
+    gtk_editable_set_text (GTK_EDITABLE (self->search_entry), search);
 }
 
 /**
@@ -118,28 +137,14 @@ g_paste_ui_window_search (GPasteUiWindow *self,
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (search, -1, NULL));
 
-    gpointer *data = g_new (gpointer, 2);
-    data[0] = g_object_ref (self);
-    data[1] = g_strdup (search);
-
-    g_source_set_name_by_id (g_idle_add (_search, data), "[GPaste] search");
+    run_when_initialized (self, do_search, search, "[GPaste] search");
 }
 
-static gboolean
-_show_prefs (gpointer user_data)
+static void
+do_show_prefs (GPasteUiWindow *self,
+               const gchar    *arg G_GNUC_UNUSED)
 {
-    GPasteUiWindow *self = user_data;
-
-    /* Keep waiting until ready, unless the window was destroyed meanwhile */
-    if (self->client && !self->initialized)
-        return G_SOURCE_CONTINUE;
-
-    if (self->client)
-        g_paste_ui_header_show_prefs (self->header);
-
-    g_object_unref (self);
-
-    return G_SOURCE_REMOVE;
+    g_paste_ui_header_show_prefs (self->header);
 }
 
 /**
@@ -153,7 +158,7 @@ g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
 
-    g_source_set_name_by_id (g_idle_add (_show_prefs, g_object_ref (self)), "[GPaste] show_prefs");
+    run_when_initialized (self, do_show_prefs, NULL, "[GPaste] show_prefs");
 }
 
 static void

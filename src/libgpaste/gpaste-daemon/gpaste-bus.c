@@ -27,7 +27,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint64 signals[LAST_SIGNAL] = { 0 };
+static guint signals[LAST_SIGNAL] = { 0 };
 
 static void
 g_paste_bus_register_object (GPasteBus       *self,

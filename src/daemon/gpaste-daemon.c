@@ -40,7 +40,7 @@ typedef struct
     GPasteDaemon    *daemon;
     GPasteBusObject *search_provider;
     GPasteBus       *bus;
-    guint64          c_signals[C_LAST_SIGNAL];
+    gulong           c_signals[C_LAST_SIGNAL];
 
     /* A passphrase change is showing its prompts. ChangePassphrase can be called
      * again at any time (the client and the preferences both expose it), and a

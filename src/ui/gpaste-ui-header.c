@@ -17,6 +17,23 @@ typedef struct
     GtkWidget       *cancel; /* leaves it */
 } GPasteUiHeaderData;
 
+/* AdwHeaderBar is G_DECLARE_FINAL_TYPE, so there is no GPasteUiHeader type to
+ * check against and no instance struct to put these in: the bar carries them as
+ * qdata instead. Which also means ADW_IS_HEADER_BAR() cannot tell *our* header
+ * bar from any other -- the qdata being there is what says so, so look for it
+ * rather than assume it. */
+static GPasteUiHeaderData *
+header_data (AdwHeaderBar *self)
+{
+    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
+
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+
+    g_return_val_if_fail (data, NULL);
+
+    return data;
+}
+
 /* A plain header GtkButton: shared icon/tooltip/valign setup plus a click
  * handler, so the toolbar's simple action buttons don't each need a subclass. */
 static GtkWidget *
@@ -100,9 +117,10 @@ on_reexec_clicked (GtkButton *button G_GNUC_UNUSED,
 void
 g_paste_ui_header_show_prefs (AdwHeaderBar *self)
 {
-    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return;
 
     gtk_widget_activate (GTK_WIDGET (data->settings));
 }
@@ -118,9 +136,10 @@ void
 g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
                                 const gchar  *subtitle)
 {
-    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return;
 
     adw_window_title_set_subtitle (data->title, subtitle);
 }
@@ -136,9 +155,10 @@ g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
 GtkToggleButton *
 g_paste_ui_header_get_search_button (AdwHeaderBar *self)
 {
-    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return NULL;
 
     return data->search;
 }
@@ -154,9 +174,10 @@ g_paste_ui_header_get_search_button (AdwHeaderBar *self)
 GtkWidget *
 g_paste_ui_header_get_merge_button (AdwHeaderBar *self)
 {
-    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return NULL;
 
     return data->merge;
 }
@@ -172,9 +193,10 @@ g_paste_ui_header_get_merge_button (AdwHeaderBar *self)
 GtkWidget *
 g_paste_ui_header_get_cancel_button (AdwHeaderBar *self)
 {
-    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return NULL;
 
     return data->cancel;
 }
@@ -191,9 +213,10 @@ void
 g_paste_ui_header_set_selection_mode (AdwHeaderBar *self,
                                       gboolean      selection_mode)
 {
-    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return;
 
     if (selection_mode)
         gtk_widget_add_css_class (GTK_WIDGET (self), "selection-mode");
@@ -218,9 +241,10 @@ void
 g_paste_ui_header_set_selection_count (AdwHeaderBar *self,
                                        guint         count)
 {
-    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+    GPasteUiHeaderData *data = header_data (self);
 
-    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    if (!data)
+        return;
     g_autofree gchar *title = g_strdup_printf (ngettext ("%u selected", "%u selected", count), count);
 
     adw_window_title_set_title (data->title, title);
