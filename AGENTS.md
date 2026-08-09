@@ -158,6 +158,11 @@ now written down once; add to the list, not to its consumers.
 | A `GPasteItem`'s kind | `GPasteItemKind` in `gpaste-3/gpaste-item-enums.h` | the item classes, both storage backends and the wire, through `g_paste_item_kind_to_string()` / `_from_string()` |
 | The D-Bus methods | `data/dbus/org.gnome.GPaste2.xml` | both halves of the wire, via gdbus-codegen |
 
+**A history is identified by its name.** Every `GPasteStorageBackendClass` vfunc
+takes one; a backend derives its own path with
+`g_paste_storage_backend_get_history_file_path()` rather than being handed one,
+so nothing has to reverse the mapping to get the name back.
+
 The shell completions and the man page are the exception: each verb completes
 its arguments differently and the man page says more than a table could carry,
 so they stay hand-written and `tests/completions` checks them against
@@ -223,7 +228,7 @@ A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/
 | `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` | **Derivable** type with a `Private` struct |
 | `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE` | Abstract base class with private data |
 
-**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types (`GPasteItem`, `GPasteStorageBackend`, `GPasteBusObject`, `GPasteUiItemSkeleton`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` and the `_g_paste_x_get_instance_private()` const shim it emits.
+**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types (`GPasteItem`, `GPasteStorageBackend`, `GPasteBusObject`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` and the `_g_paste_x_get_instance_private()` const shim it emits.
 
 ### `src/daemon/` — `gpaste-daemon` + **libgpaste-daemon**
 
@@ -273,9 +278,9 @@ The main graphical history browser. Launched via `gpaste-client ui`. Contains wi
 - `AdwSidebar` / `AdwSidebarSection` / `AdwSidebarItem` (history selector list in the panel sidebar)
 - `AdwAboutDialog` (about dialog)
 
-**Subclassing notes:** GTK4 made many widget classes final (`G_DECLARE_FINAL_TYPE`), preventing subclassing. Libadwaita re-enables subclassing for its own derivable types. Within the ui, internal widgets subclass derivable types: `GtkBox` (for `GPasteUiPanel`, `GPasteUiHistory`, `GPasteUiItemSkeleton`), `AdwApplicationWindow` (for `GPasteUiWindow`), `AdwSidebarItem` (for `GPasteUiPanelHistory` — a GObject, not a widget), etc. `GtkStack` is final in GTK4 and cannot be subclassed — use `GtkBox` with manual visibility toggling instead.
+**Subclassing notes:** GTK4 made many widget classes final (`G_DECLARE_FINAL_TYPE`), preventing subclassing. Libadwaita re-enables subclassing for its own derivable types. Within the ui, internal widgets subclass derivable types: `GtkBox` (for `GPasteUiPanel`, `GPasteUiHistory`, `GPasteUiItem`), `AdwApplicationWindow` (for `GPasteUiWindow`), `AdwSidebarItem` (for `GPasteUiPanelHistory` — a GObject, not a widget), etc. `GtkStack` is final in GTK4 and cannot be subclassed — use `GtkBox` with manual visibility toggling instead. **`AdwHeaderBar` is final too**, which is why the window's header bar is a plain one carrying its buttons as qdata rather than a `GPasteUiHeader` type: with no type of its own, `ADW_IS_HEADER_BAR()` cannot tell it from anyone else's, so its accessors check that the qdata is there instead of assuming it.
 
-**Image previews** in `GPasteUiItemSkeleton` rows are a small inline `GtkPicture` thumbnail (sized by `images-preview-size`, toggled by `images-preview`). Hovering it shows a larger detail preview via a custom `query-tooltip` (`gtk_tooltip_set_custom`), capped and aspect-preserved. The inline thumbnail is kept deliberately (glanceable, keyboard/touch-friendly); the tooltip only enlarges it on demand.
+**Image previews** in `GPasteUiItem` rows are a small inline `GtkPicture` thumbnail (sized by `images-preview-size`, toggled by `images-preview`). Hovering it shows a larger detail preview via a custom `query-tooltip` (`gtk_tooltip_set_custom`), capped and aspect-preserved. The inline thumbnail is kept deliberately (glanceable, keyboard/touch-friendly); the tooltip only enlarges it on demand.
 
 **Label widgets in list rows** use `GtkInscription` (not `GtkLabel`) for the main text display. `GtkInscription` is optimised for list-item cells and avoids overhead from markup/accessibility features not needed there. Set overflow explicitly with `gtk_inscription_set_text_overflow(GTK_INSCRIPTION_OVERFLOW_ELLIPSIZE_END)` — the default is `CLIP`. To display bold text, use `pango_parse_markup` to convert a markup string into `PangoAttrList` and pass it to `gtk_inscription_set_attributes`; call `gtk_inscription_set_attributes(NULL)` before `set_text` when switching back to plain text.
 
