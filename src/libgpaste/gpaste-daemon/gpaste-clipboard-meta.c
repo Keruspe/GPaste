@@ -635,42 +635,13 @@ g_paste_clipboard_meta_update_maybe_done (GPasteClipboardMetaUpdateData *data)
     if (--data->pending > 0)
         return;
 
-    GPasteItem *item = NULL;
-
-    if (data->produced)
-    {
-        switch (data->content_kind)
-        {
-        case CLIPBOARD_CONTENT_FILE_LIST:
-            if (data->file_list)
-                item = G_PASTE_ITEM (g_paste_uris_item_new (data->file_list));
-            break;
-        case CLIPBOARD_CONTENT_COLOR:
-            item = G_PASTE_ITEM (g_paste_color_item_new (&data->rgba));
-            break;
-        case CLIPBOARD_CONTENT_TEXT:
-            if (data->text)
-                item = G_PASTE_ITEM (g_paste_text_item_new (data->text));
-            break;
-        case CLIPBOARD_CONTENT_IMAGE:
-            if (data->texture)
-                item = G_PASTE_ITEM (g_paste_image_item_new (data->texture));
-            break;
-        case CLIPBOARD_CONTENT_IGNORED:
-        case CLIPBOARD_CONTENT_NONE:
-            break;
-        }
-    }
-
-    if (item &&
-        (data->content_kind == CLIPBOARD_CONTENT_TEXT || data->content_kind == CLIPBOARD_CONTENT_FILE_LIST))
-    {
-        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
-        {
-            if (data->special_atom[atom])
-                g_paste_item_add_special_value (item, g_steal_pointer (&data->special_atom[atom]));
-        }
-    }
+    /* Nothing produced means nothing to build, whatever the kind said. */
+    GPasteItem *item = g_paste_clipboard_content_to_item (data->produced ? data->content_kind : CLIPBOARD_CONTENT_NONE,
+                                                          data->text,
+                                                          data->texture,
+                                                          data->file_list,
+                                                          &data->rgba,
+                                                          data->special_atom);
 
     if (data->callback)
         data->callback (G_PASTE_CLIPBOARD_PROVIDER (data->self), item, data->user_data);

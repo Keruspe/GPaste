@@ -4,6 +4,10 @@
 #include <string.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
+#include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-text-item.h>
+#include <gpaste-daemon/gpaste-uris-item.h>
 
 /**
  * g_paste_clipboard_content_clear:
@@ -262,4 +266,66 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
     }
 
     return !fa && !fb;
+}
+
+/**
+ * g_paste_clipboard_content_to_item:
+ * @kind: what the read produced
+ * @text: (nullable): the text, for %CLIPBOARD_CONTENT_TEXT
+ * @texture: (nullable): the image, for %CLIPBOARD_CONTENT_IMAGE
+ * @file_list: (nullable): the files, for %CLIPBOARD_CONTENT_FILE_LIST
+ * @rgba: (nullable): the colour, for %CLIPBOARD_CONTENT_COLOR
+ * @special_atoms: (array fixed-size=4): the alternative representations
+ *
+ * Build the item a finished clipboard read describes. Both backends end their
+ * update here, which is what keeps them agreeing on what each kind produces and
+ * on which kinds carry special values.
+ *
+ * Returns: (transfer full) (nullable): the item, or %NULL when there is none
+ */
+G_PASTE_VISIBLE GPasteItem *
+g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
+                                   const gchar               *text,
+                                   GdkTexture                *texture,
+                                   GdkFileList               *file_list,
+                                   const GdkRGBA             *rgba,
+                                   GPasteBinaryData         **special_atoms)
+{
+    GPasteItem *item = NULL;
+
+    switch (kind)
+    {
+    case CLIPBOARD_CONTENT_FILE_LIST:
+        if (file_list)
+            item = G_PASTE_ITEM (g_paste_uris_item_new (file_list));
+        break;
+    case CLIPBOARD_CONTENT_COLOR:
+        if (rgba)
+            item = G_PASTE_ITEM (g_paste_color_item_new (rgba));
+        break;
+    case CLIPBOARD_CONTENT_TEXT:
+        if (text)
+            item = G_PASTE_ITEM (g_paste_text_item_new (text));
+        break;
+    case CLIPBOARD_CONTENT_IMAGE:
+        if (texture)
+            item = G_PASTE_ITEM (g_paste_image_item_new (texture));
+        break;
+    case CLIPBOARD_CONTENT_IGNORED:
+    case CLIPBOARD_CONTENT_NONE:
+        break;
+    }
+
+    /* Only these two ever come with alternative representations. */
+    if (item && special_atoms &&
+        (kind == CLIPBOARD_CONTENT_TEXT || kind == CLIPBOARD_CONTENT_FILE_LIST))
+    {
+        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        {
+            if (special_atoms[atom])
+                g_paste_item_add_special_value (item, g_steal_pointer (&special_atoms[atom]));
+        }
+    }
+
+    return item;
 }

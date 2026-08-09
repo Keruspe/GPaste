@@ -7,6 +7,9 @@
 
 #include <gpaste-3/gpaste-settings.h>
 
+#include <gpaste-daemon/gpaste-item.h>
+#include <gpaste-daemon/gpaste-special-atom.h>
+
 G_BEGIN_DECLS
 
 /* The single piece of content a clipboard provider currently holds, shared by
@@ -74,5 +77,20 @@ GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteC
 
 gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
                                                 GdkFileList *b);
+
+/* Turn a finished clipboard read into the item it describes. Only the argument
+ * matching @kind is looked at, and %NULL is answered for a kind that produced
+ * nothing -- including NONE and IGNORED, so a backend that decided not to
+ * produce anything just passes those.
+ *
+ * @special_atoms is the G_PASTE_SPECIAL_ATOM_LAST-long array of alternative
+ * representations gathered alongside; the ones that end up on the item are
+ * stolen from it, and the rest are left for the caller to release. */
+GPasteItem *g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
+                                               const gchar               *text,
+                                               GdkTexture                *texture,
+                                               GdkFileList               *file_list,
+                                               const GdkRGBA             *rgba,
+                                               GPasteBinaryData         **special_atoms);
 
 G_END_DECLS
