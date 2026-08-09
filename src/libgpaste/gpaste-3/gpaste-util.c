@@ -377,7 +377,7 @@ g_paste_util_has_gnome_shell (void)
 }
 
 /**
- * g_paste_util_get_au_result:
+ * g_paste_util_get_dbus_au_result:
  * @variant: a #GVariant
  * @len: the length of the resulting array
  *

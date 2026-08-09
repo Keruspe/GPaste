@@ -8,7 +8,8 @@
 /* Misc. macros */
 #include <gpaste-3/gpaste-macros.h>
 
-/* GDBus utils */
+/* Talking to the daemon: its error domain, where it lives on the bus, and the
+ * enums that cross the wire */
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-item-enums.h>
@@ -23,7 +24,7 @@
 #include <gpaste-3/gpaste-client.h>
 #include <gpaste-3/gpaste-client-item.h>
 
-/* GPasteUtil */
+/* Utilities */
 #include <gpaste-3/gpaste-util.h>
 
 /* GPasteScreensaverClient */

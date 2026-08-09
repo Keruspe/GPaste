@@ -267,12 +267,11 @@ gpaste_daemon_gir_headers = gpaste_daemon_public_headers
 gpaste_daemon_sources = gpaste_daemon_public_sources + gpaste_daemon_internal_sources
 gpaste_daemon_headers = gpaste_daemon_public_headers + gpaste_daemon_internal_headers
 
-# Neither libadwaita nor libgpaste-gtk4. The storage prompts were the only thing
-# that ever built a dialog and they live behind GPastePrompt now; the one
-# function this library still wanted from libgpaste-gtk4 — an image checksum,
-# pure GDK — moved to GPasteImageItem. gtk4 itself stays, for GdkTexture, GdkRGBA
-# and gtk_accelerator_parse, but the widget stack does not: gnome-shell hosts
-# this library and can initialise neither it nor Adw.
+# Neither libadwaita nor libgpaste-gtk4: nothing here builds a dialog. The
+# storage prompts are asked through GPastePrompt, which the host implements, and
+# the image checksum belongs to GPasteImageItem. gtk4 itself stays, for
+# GdkTexture, GdkRGBA and gtk_accelerator_parse, but the widget stack does not:
+# gnome-shell hosts this library and can initialise neither it nor Adw.
 gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, libgpaste_internal_dep ]
 
 # The optional features below append to the union lists, so their headers are
@@ -334,8 +333,8 @@ libgpaste_daemon = library(
   install_dir: get_option('libdir'),
   # Exports are the symbols marked G_PASTE_VISIBLE. Optional-feature symbols
   # (encryption, libsecret, the mutter clipboard) are only compiled when the
-  # feature is enabled, so they export exactly when present without the version
-  # script having to reference symbols that may be undefined.
+  # feature is enabled, so marking them is enough for them to export exactly
+  # when they exist, with no list to keep in step with the feature set.
   gnu_symbol_visibility: 'hidden',
   link_args: ['-lc'],
 )

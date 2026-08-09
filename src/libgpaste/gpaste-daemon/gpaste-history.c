@@ -606,7 +606,8 @@ g_paste_history_private_get (GPasteHistory *self,
  *
  * Get a #GPasteItem from the #GPasteHistory
  *
- * Returns: a read-only #GPasteItem
+ * Returns: (transfer none) (nullable): the #GPasteItem at @index, still owned by
+ *          the history, or %NULL when @index is past its end
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_history_get (GPasteHistory *self,
@@ -626,7 +627,8 @@ g_paste_history_get (GPasteHistory *self,
  *
  * Get a #GPasteItem from the #GPasteHistory
  *
- * Returns: a read-only #GPasteItem
+ * Returns: (transfer none) (nullable): the #GPasteItem carrying @uuid, still
+ *          owned by the history, or %NULL when no item does
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_history_get_by_uuid (GPasteHistory *self,
@@ -811,7 +813,8 @@ g_paste_history_set_password (GPasteHistory *self,
  *
  * Get the first password matching name
  *
- * Returns: (nullable): a #GPastePasswordItem or %NULL
+ * Returns: (transfer none) (nullable): the #GPastePasswordItem, still owned by
+ *          the history, or %NULL when no password carries @name
  */
 G_PASTE_VISIBLE GPastePasswordItem *
 g_paste_history_get_password (GPasteHistory *self,
@@ -1242,8 +1245,8 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 }
 
 /* One detailed "notify::<key>" handler per setting the history reacts to, rather
- * than one undetailed handler dispatching on the key: the history no longer wakes
- * up for the twenty-odd settings that mean nothing to it. */
+ * than one undetailed handler dispatching on the key, so the history is never
+ * woken for the twenty-odd settings that mean nothing to it. */
 
 static void
 g_paste_history_on_max_history_size_changed (GPasteSettings *settings G_GNUC_UNUSED,

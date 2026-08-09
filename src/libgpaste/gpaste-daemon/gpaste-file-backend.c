@@ -59,7 +59,7 @@ _g_paste_file_backend_write_password_name (GOutputStream       *stream,
 /* The XML history references images by their canonical <checksum>.png path
  * (@reference — the item's own value, or the target history's path when
  * writing under another name, e.g. a backup); writing the image data itself is
- * this backend's job (items no longer touch the disk at capture). The plain
+ * this backend's job -- items do not touch the disk at capture. The plain
  * flavor writes that file as-is; the encrypted one writes a "<checksum>.pngs"
  * sibling through the same stream converter as the history, so no pixel ever
  * reaches the disk in clear. Best effort: a failure only costs this image, not

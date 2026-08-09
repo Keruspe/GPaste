@@ -18,9 +18,9 @@ import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 
 // The gnome-shell half of the GPastePrompt contract, the St counterpart of the
 // standalone daemon's GPastePromptAdw. gnome-shell can run neither gtk_init nor
-// adw_init, which is why the storage questions used to be shelled out to the
-// gpaste-storage helper; answering them here is what lets the in-shell daemon
-// call the very same in-process code the standalone one does.
+// adw_init, so the storage questions are asked with St widgets here; that is
+// what lets the in-shell daemon call the very same in-process code the
+// standalone one does.
 //
 // Everything about *what the answers mean* stays in the C storage layer: these
 // dialogs only collect a passphrase, or a backend and two toggles, and hand

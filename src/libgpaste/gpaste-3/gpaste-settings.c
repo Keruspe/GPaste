@@ -779,8 +779,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 
         entry->from_dconf (self);
         /* Property name == GSettings key, so "notify::<key>" is the one change
-         * notification: bound widgets refresh from here, and so does anything
-         * that used to listen for a separate "changed::<key>". */
+         * notification every listener needs: bound widgets refresh from here,
+         * and so does everything else watching a setting. */
         g_object_notify (G_OBJECT (self), entry->key);
         if (entry->rebind)
             g_paste_settings_rebind (self, key);

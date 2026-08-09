@@ -735,7 +735,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
  * g_paste_ui_history_new:
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
- * @panel: the #GPasteSettingsUiPanel
+ * @panel: the #GPasteUiPanel
  * @rootwin: the root #GtkWindow
  *
  * Create a new #GPasteUiHistory for GPaste history

@@ -219,8 +219,8 @@ save_session_state (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
 
-    /* Still moving: wait another tick rather than saving mid-drag. Re-arming
-     * the source is what the notifications no longer have to do. */
+    /* Still moving: wait another tick rather than saving mid-drag: the geometry
+     * notifications only raise the flag, this source decides when to save. */
     if (self->geometry_moved_again)
     {
         self->geometry_moved_again = FALSE;

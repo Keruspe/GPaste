@@ -464,8 +464,8 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), entry);
 
     /* Re-prompt after a wrong passphrase: flag the entry. What went wrong is
-     * said in the description below, alongside rather than instead of the
-     * standing explanation — a confirmed prompt used to overwrite it. */
+     * said in the description below, alongside the standing explanation rather
+     * than in place of it. */
     if (error_message)
         gtk_widget_add_css_class (entry, "error");
 

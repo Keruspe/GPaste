@@ -191,7 +191,7 @@ g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
  * @settings: a #GPasteSettings instance (trim and min/max size policy)
  * @is_clipboard: whether the caller drives the clipboard (vs the primary selection)
  * @text: the candidate text just read from the selection
- * @out_value: (out) (transfer full): the text to act on, or %NULL when rejected
+ * @out_value: (out) (transfer full) (nullable): the text to act on, or %NULL when rejected
  *
  * Apply the shared trim/size/dedup policy to a candidate clipboard text, so both
  * backends accept and normalise text identically.

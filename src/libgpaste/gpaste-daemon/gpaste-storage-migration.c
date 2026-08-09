@@ -559,9 +559,8 @@ on_passphrase_set (GObject      *source,
                                                                                 &remember, NULL);
 
     /* Cancelled: ask again, so another backend can be picked. The state gathered
-     * so far is kept, so the second time round only asks what is still missing —
-     * which is what backing out of the passphrase prompt used to mean when it sat
-     * on top of a dialog that stayed up. */
+     * so far is kept, so the second time round only asks what is still
+     * missing. */
     if (!passphrase)
     {
         ask_migration (self);
