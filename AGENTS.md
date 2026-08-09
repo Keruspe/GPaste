@@ -62,6 +62,12 @@ test lints the GNOME Shell extension JS.
 - clang-format is not yet enforced; do not run it automatically.
 - **Braces**: Remove braces from `if`/`else if`/`else` branches whose body is a single statement on a single line. Keep braces when the body has multiple statements OR spans multiple lines (e.g. a nested if-else chain). Multi-statement macros that need to appear as a single statement must use the `do { ... } while (0)` idiom — `SWITCH_STATE` in `gpaste-file-backend.c` does this and can safely appear without surrounding braces.
 
+### GObject conventions
+
+- **No `const` on instance pointers.** Methods take `GPasteFoo *self`, never `const GPasteFoo *`, the same way GLib and GTK do — a getter is free to populate a cache, take a lock or notify. The `G_PASTE_CONST_*` shims that used to launder a `gconstpointer` through the type macros are gone; use the stock `G_PASTE_IS_FOO`, `G_PASTE_FOO`, `G_PASTE_FOO_GET_CLASS` and `g_paste_foo_get_instance_private`. `const` still belongs on plain structs and enums (`GPasteDaemonMethods`, `GPasteClipboardContent`, `GPasteStorage`, the `*Private` and `*Class` structs) where it is ordinary C const-correctness. A `GCompareFunc` or similar that hands you a `gconstpointer` casts it at the call site, as GLib's own comparison functions do.
+- **State is a property, an occurrence is a signal.** Something the object *is* (`GPasteScreensaverClient:active`, `GPasteUiHistory:selection-mode`) is a property with `notify::`; something that *happens* (`name-lost`, `reexecute-self`, `keybinding-activated`, `GPasteHistory::update`) stays a signal. Install properties with the `g_object_class_install_properties` array form and `G_PARAM_EXPLICIT_NOTIFY`, so the setter decides whether anything actually moved. Do not add a property that merely restates a signal already carrying the same value in-band.
+- **Never emit under `G_PASTE_LOCK_HISTORY`.** Handlers call back into `GPasteHistory`, and the lock is not recursive — this is why the `selected` emission is deferred until the lock is released. The same applies to `g_object_notify*`.
+
 ### Documenting errors
 
 GIR cannot express *which* domain a function throws: the format only has a boolean `throws="1"` per callable, plus `glib:error-domain` on the enumeration (which `GPasteError` carries). A `@error:` parameter line does not survive into the GIR at all — introspection drops the throws parameter — so anything a binding consumer needs to know has to be in the function's *description*, not on its `@error:` line.
