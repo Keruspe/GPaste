@@ -412,7 +412,7 @@ do_merge (GPasteUiWindow *self,
 
     /* uuids are in selection order, so the merge keeps it. */
     if (n >= 2)
-        g_paste_client_merge (self->client, "", separator, (const gchar **) uuids, n, NULL, NULL);
+        g_paste_client_merge (self->client, "", separator, (const gchar * const *) uuids, NULL, NULL);
 
     exit_selection_mode (self);
 }

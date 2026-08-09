@@ -193,7 +193,7 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
      * reads them once the call comes back. */
     data->uuids = g_strdupv ((GStrv) identifiers);
 
-    g_paste_client_get_elements (self->client, (const gchar **) data->uuids, len, on_elements_ready, data);
+    g_paste_client_get_elements (self->client, (const gchar * const *) data->uuids, on_elements_ready, data);
 
     return TRUE;
 }

@@ -94,24 +94,6 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
                   1,                               \
                   G_TYPE_##type)
 
-/*
- * Our own API takes an explicit length; the generated marshalling wants the
- * NULL-terminated array a D-Bus "as" is built from. Only the array is ours, so
- * g_autofree (not g_auto (GStrv)) is what frees it: the strings belong to the
- * caller.
- */
-static const gchar **
-g_paste_client_terminate_strv (const gchar **strv,
-                               guint64       length)
-{
-    const gchar **terminated = g_new0 (const gchar *, length + 1);
-
-    for (guint64 i = 0; i < length; ++i)
-        terminated[i] = strv[i];
-
-    return terminated;
-}
-
 /******************/
 /* Methods / Sync */
 /******************/
@@ -395,8 +377,7 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
 /**
  * g_paste_client_get_elements_sync:
  * @self: a #GPasteClient instance
- * @uuids: (array length=n_uuids): the uuids of the elements we want to get
- * @n_uuids: the number of uuids
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
  * @error: return location for a #GError, or %NULL
  *
  * Get some items from the #GPasteDaemon
@@ -404,18 +385,17 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
  * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
  */
 G_PASTE_VISIBLE GList *
-g_paste_client_get_elements_sync (GPasteClient  *self,
-                                  const gchar  **uuids,
-                                  guint64        n_uuids,
-                                  GError       **error)
+g_paste_client_get_elements_sync (GPasteClient        *self,
+                                  const gchar * const *uuids,
+                                  GError             **error)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (uuids, NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
-    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
     g_autoptr (GVariant) elements = NULL;
 
-    if (!g_paste_daemon2_call_get_elements_sync (G_PASTE_DAEMON2 (self), (const gchar * const *) terminated, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &elements, NULL /* cancellable */, error))
+    if (!g_paste_daemon2_call_get_elements_sync (G_PASTE_DAEMON2 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &elements, NULL /* cancellable */, error))
         return NULL;
 
     return g_paste_util_get_dbus_items_result (elements);
@@ -594,8 +574,7 @@ g_paste_client_list_histories_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @decoration: (nullable): the decoration to apply to each entry
  * @separator: (nullable): the separator to add between each entry
- * @uuids: (array length=n_uuids): the uuids of the elements we want to get
- * @n_uuids: the number of uuids
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
  * @error: return location for a #GError, or %NULL
  *
  * Merge some history entries
@@ -604,22 +583,20 @@ g_paste_client_list_histories_sync (GPasteClient *self,
  * result will be "foo","bar","baz"
  */
 G_PASTE_VISIBLE void
-g_paste_client_merge_sync (GPasteClient  *self,
-                           const gchar   *decoration,
-                           const gchar   *separator,
-                           const gchar  **uuids,
-                           guint64        n_uuids,
-                           GError       **error)
+g_paste_client_merge_sync (GPasteClient        *self,
+                           const gchar         *decoration,
+                           const gchar         *separator,
+                           const gchar * const *uuids,
+                           GError             **error)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (uuids);
     g_return_if_fail (!error || !(*error));
-
-    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
 
     g_paste_daemon2_call_merge_sync (G_PASTE_DAEMON2 (self),
                                      (decoration) ? decoration : "",
                                      (separator) ? separator : "",
-                                     (const gchar * const *) terminated,
+                                     uuids,
                                      G_DBUS_CALL_FLAGS_NONE,
                                      -1, /* timeout */
                                      NULL, /* cancellable */
@@ -1132,8 +1109,7 @@ g_paste_client_get_element_kind (GPasteClient       *self,
 /**
  * g_paste_client_get_elements:
  * @self: a #GPasteClient instance
- * @uuids: (array length=n_uuids): the uuids of the elements we want to get
- * @n_uuids: the number of uuids
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1141,17 +1117,15 @@ g_paste_client_get_element_kind (GPasteClient       *self,
  * Get some items from the #GPasteDaemon
  */
 G_PASTE_VISIBLE void
-g_paste_client_get_elements (GPasteClient       *self,
-                             const gchar       **uuids,
-                             guint64             n_uuids,
-                             GAsyncReadyCallback callback,
-                             gpointer            user_data)
+g_paste_client_get_elements (GPasteClient        *self,
+                             const gchar * const *uuids,
+                             GAsyncReadyCallback  callback,
+                             gpointer             user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (uuids);
 
-    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
-
-    g_paste_daemon2_call_get_elements (G_PASTE_DAEMON2 (self), (const gchar * const *) terminated, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
+    g_paste_daemon2_call_get_elements (G_PASTE_DAEMON2 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
 /**
@@ -1298,8 +1272,7 @@ g_paste_client_list_histories (GPasteClient       *self,
  * @self: a #GPasteClient instance
  * @decoration: (nullable): the decoration to apply to each entry
  * @separator: (nullable): the separator to add between each entry
- * @uuids: (array length=n_uuids): the uuids of the elements we want to get
- * @n_uuids: the number of uuids
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1310,22 +1283,20 @@ g_paste_client_list_histories (GPasteClient       *self,
  * result will be "foo","bar","baz"
  */
 G_PASTE_VISIBLE void
-g_paste_client_merge (GPasteClient       *self,
-                      const gchar        *decoration,
-                      const gchar        *separator,
-                      const gchar       **uuids,
-                      guint64             n_uuids,
-                      GAsyncReadyCallback callback,
-                      gpointer            user_data)
+g_paste_client_merge (GPasteClient        *self,
+                      const gchar         *decoration,
+                      const gchar         *separator,
+                      const gchar * const *uuids,
+                      GAsyncReadyCallback  callback,
+                      gpointer             user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_autofree const gchar **terminated = g_paste_client_terminate_strv (uuids, n_uuids);
+    g_return_if_fail (uuids);
 
     g_paste_daemon2_call_merge (G_PASTE_DAEMON2 (self),
                                 (decoration) ? decoration : "",
                                 (separator) ? separator : "",
-                                (const gchar * const *) terminated,
+                                uuids,
                                 G_DBUS_CALL_FLAGS_NONE,
                                 -1, /* timeout */
                                 NULL, /* cancellable */
