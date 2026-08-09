@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-daemon2.h>
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-util.h>
 #include <gpaste-3/gpaste-update-enums.h>
@@ -55,7 +56,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint64 signals[LAST_SIGNAL] = { 0 };
+static guint signals[LAST_SIGNAL] = { 0 };
 
 /***********/
 /* Signals */
@@ -94,9 +95,125 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
                   1,                               \
                   G_TYPE_##type)
 
-/******************/
-/* Methods / Sync */
-/******************/
+
+/*******************************/
+/* Methods                     */
+/*******************************/
+
+/*
+ * Every method the daemon exposes is reached through the same three functions:
+ * the synchronous call, the asynchronous one, and the finish that unpacks its
+ * reply. gdbus-codegen already wrote the marshalling; what is left over is the
+ * precondition checks, the flags/timeout/cancellable triple GPaste always
+ * passes the same way, and -- where there is a reply -- turning the out
+ * parameter into what the public API returns.
+ *
+ * PARAMS is the method's own parameters and ARGS the matching arguments to
+ * forward. Both are parenthesized, so the preprocessor takes each as one macro
+ * argument; ARGLIST supplies the comma joining them to @self, and disappears
+ * when the list is empty, which is what lets a method with no parameters of its
+ * own use these macros too. A finish never takes parameters of its own, so it
+ * only ever needs the name.
+ *
+ * The gtk-doc blocks stay above the invocation, the way they sit above the
+ * SETTING macros in gpaste-settings.c: g-ir-scanner matches a block to a symbol
+ * by the name on its first line, not by what follows it.
+ */
+#define ARGLIST(...) , ##__VA_ARGS__
+
+#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS)                                  \
+    G_PASTE_VISIBLE void                                                                        \
+    g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
+                                  GError      **error)                                          \
+    {                                                                                           \
+        g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
+        g_return_if_fail (!error || !(*error));                                                 \
+                                                                                                \
+        g_paste_daemon2_call_##name##_sync (G_PASTE_DAEMON2 (self) ARGLIST ARGS,                \
+                                            G_DBUS_CALL_FLAGS_NONE,                             \
+                                            -1, /* timeout */                                   \
+                                            NULL, /* cancellable */                             \
+                                            error);                                             \
+    }                                                                                           \
+    G_PASTE_VISIBLE void                                                                        \
+    g_paste_client_##name (GPasteClient       *self ARGLIST PARAMS,                             \
+                           GAsyncReadyCallback callback,                                        \
+                           gpointer            user_data)                                       \
+    {                                                                                           \
+        g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
+                                                                                                \
+        g_paste_daemon2_call_##name (G_PASTE_DAEMON2 (self) ARGLIST ARGS,                       \
+                                     G_DBUS_CALL_FLAGS_NONE,                                    \
+                                     -1, /* timeout */                                          \
+                                     NULL, /* cancellable */                                    \
+                                     callback,                                                  \
+                                     user_data);                                                \
+    }                                                                                           \
+    G_PASTE_VISIBLE void                                                                        \
+    g_paste_client_##name##_finish (GPasteClient *self,                                         \
+                                    GAsyncResult *result,                                       \
+                                    GError      **error)                                        \
+    {                                                                                           \
+        g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
+        g_return_if_fail (G_IS_ASYNC_RESULT (result));                                          \
+        g_return_if_fail (!error || !(*error));                                                 \
+                                                                                                \
+        g_paste_daemon2_call_##name##_finish (G_PASTE_DAEMON2 (self), result, error);           \
+    }
+
+/* Same, for a method that answers something: @decl declares the out parameter,
+ * @out passes it, @ret turns it into the return value and @fail is what every
+ * bail-out returns. */
+#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS)        \
+    G_PASTE_VISIBLE type                                                                        \
+    g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
+                                  GError      **error)                                          \
+    {                                                                                           \
+        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), fail);                                  \
+        g_return_val_if_fail (!error || !(*error), fail);                                       \
+                                                                                                \
+        decl;                                                                                   \
+                                                                                                \
+        if (!g_paste_daemon2_call_##name##_sync (G_PASTE_DAEMON2 (self) ARGLIST ARGS,           \
+                                                 G_DBUS_CALL_FLAGS_NONE,                        \
+                                                 -1, /* timeout */                              \
+                                                 out,                                           \
+                                                 NULL, /* cancellable */                        \
+                                                 error))                                        \
+            return fail;                                                                        \
+                                                                                                \
+        return ret;                                                                             \
+    }                                                                                           \
+    G_PASTE_VISIBLE void                                                                        \
+    g_paste_client_##name (GPasteClient       *self ARGLIST PARAMS,                             \
+                           GAsyncReadyCallback callback,                                        \
+                           gpointer            user_data)                                       \
+    {                                                                                           \
+        g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
+                                                                                                \
+        g_paste_daemon2_call_##name (G_PASTE_DAEMON2 (self) ARGLIST ARGS,                       \
+                                     G_DBUS_CALL_FLAGS_NONE,                                    \
+                                     -1, /* timeout */                                          \
+                                     NULL, /* cancellable */                                    \
+                                     callback,                                                  \
+                                     user_data);                                                \
+    }                                                                                           \
+    G_PASTE_VISIBLE type                                                                        \
+    g_paste_client_##name##_finish (GPasteClient *self,                                         \
+                                    GAsyncResult *result,                                       \
+                                    GError      **error)                                        \
+    {                                                                                           \
+        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), fail);                                  \
+        g_return_val_if_fail (G_IS_ASYNC_RESULT (result), fail);                                \
+        g_return_val_if_fail (!error || !(*error), fail);                                       \
+                                                                                                \
+        decl;                                                                                   \
+                                                                                                \
+        if (!g_paste_daemon2_call_##name##_finish (G_PASTE_DAEMON2 (self), out, result, error)) \
+            return fail;                                                                        \
+                                                                                                \
+        return ret;                                                                             \
+    }
 
 /**
  * g_paste_client_about_sync:
@@ -105,15 +222,25 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
  *
  * Display the about dialog
  */
-G_PASTE_VISIBLE void
-g_paste_client_about_sync (GPasteClient *self,
-                           GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_about_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_about:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Display the about dialog
+ */
+/**
+ * g_paste_client_about_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Display the about dialog
+ */
+G_PASTE_CLIENT_METHOD (about,
+                       (), ())
 
 /**
  * g_paste_client_add_sync:
@@ -123,16 +250,26 @@ g_paste_client_about_sync (GPasteClient *self,
  *
  * Add an item to the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_add_sync (GPasteClient *self,
-                         const gchar  *text,
-                         GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_add_sync (G_PASTE_DAEMON2 (self), text, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_add:
+ * @self: a #GPasteClient instance
+ * @text: the text to add
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Add an item to the #GPasteDaemon
+ */
+/**
+ * g_paste_client_add_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Add an item to the #GPasteDaemon
+ */
+G_PASTE_CLIENT_METHOD (add,
+                       (const gchar *text), (text))
 
 /**
  * g_paste_client_add_file_sync:
@@ -143,9 +280,7 @@ g_paste_client_add_sync (GPasteClient *self,
  * Add the file contents to the #GPasteDaemon
  */
 G_PASTE_VISIBLE void
-g_paste_client_add_file_sync (GPasteClient *self,
-                              const gchar  *file,
-                              GError      **error)
+g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **error)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
     g_return_if_fail (!error || !(*error));
@@ -162,6 +297,52 @@ g_paste_client_add_file_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_add_file:
+ * @self: a #GPasteClient instance
+ * @file: the file to add
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Add the file contents to the #GPasteDaemon
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_file (GPasteClient *self, const gchar *file, GAsyncReadyCallback callback, gpointer user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_autofree gchar *absolute_path = NULL;
+
+    if (!g_path_is_absolute (file))
+    {
+        g_autofree gchar *current_dir = g_get_current_dir ();
+        absolute_path = g_build_filename (current_dir, file, NULL);
+    }
+
+    g_paste_daemon2_call_add_file (G_PASTE_DAEMON2 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
+}
+
+/**
+ * g_paste_client_add_file_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Add the file contents to the #GPasteDaemon
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_file_finish (GPasteClient *self,
+                             GAsyncResult *result,
+                             GError      **error)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    g_paste_daemon2_call_add_file_finish (G_PASTE_DAEMON2 (self), result, error);
+}
+
+/**
  * g_paste_client_add_password_sync:
  * @self: a #GPasteClient instance
  * @name: the name to identify the password to add
@@ -170,17 +351,27 @@ g_paste_client_add_file_sync (GPasteClient *self,
  *
  * Add the password to the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_add_password_sync (GPasteClient *self,
-                                  const gchar  *name,
-                                  const gchar  *password,
-                                  GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_add_password_sync (G_PASTE_DAEMON2 (self), name, password, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_add_password:
+ * @self: a #GPasteClient instance
+ * @name: the name to identify the password to add
+ * @password: the password to add
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Add the password to the #GPasteDaemon
+ */
+/**
+ * g_paste_client_add_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Add the password to the #GPasteDaemon
+ */
+G_PASTE_CLIENT_METHOD (add_password,
+                       (const gchar *name, const gchar *password), (name, password))
 
 /**
  * g_paste_client_backup_history_sync:
@@ -191,17 +382,27 @@ g_paste_client_add_password_sync (GPasteClient *self,
  *
  * Backup the current history
  */
-G_PASTE_VISIBLE void
-g_paste_client_backup_history_sync (GPasteClient *self,
-                                    const gchar  *history,
-                                    const gchar  *backup,
-                                    GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_backup_history_sync (G_PASTE_DAEMON2 (self), history, backup, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_backup_history:
+ * @self: a #GPasteClient instance
+ * @history: the name of the history
+ * @backup: the name of the backup
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Backup the current history
+ */
+/**
+ * g_paste_client_backup_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Backup the current history
+ */
+G_PASTE_CLIENT_METHOD (backup_history,
+                       (const gchar *history, const gchar *backup), (history, backup))
 
 /**
  * g_paste_client_change_passphrase_sync:
@@ -212,15 +413,27 @@ g_paste_client_backup_history_sync (GPasteClient *self,
  * one. The daemon prompts for the passphrases itself: they never travel over the
  * bus.
  */
-G_PASTE_VISIBLE void
-g_paste_client_change_passphrase_sync (GPasteClient *self,
-                                       GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_change_passphrase_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_change_passphrase:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Change the passphrase of the encrypted history, re-encrypting it with the new
+ * one. The daemon prompts for the passphrases itself: they never travel over the
+ * bus.
+ */
+/**
+ * g_paste_client_change_passphrase_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Change the passphrase of the encrypted history
+ */
+G_PASTE_CLIENT_METHOD (change_passphrase,
+                       (), ())
 
 /**
  * g_paste_client_delete_sync:
@@ -230,16 +443,26 @@ g_paste_client_change_passphrase_sync (GPasteClient *self,
  *
  * Delete an item from the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_delete_sync (GPasteClient *self,
-                            const gchar  *uuid,
-                            GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_delete_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_delete:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to delete
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Delete an item from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_delete_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Delete an item from the #GPasteDaemon
+ */
+G_PASTE_CLIENT_METHOD (delete,
+                       (const gchar *uuid), (uuid))
 
 /**
  * g_paste_client_delete_history_sync:
@@ -249,16 +472,26 @@ g_paste_client_delete_sync (GPasteClient *self,
  *
  * Delete a history
  */
-G_PASTE_VISIBLE void
-g_paste_client_delete_history_sync (GPasteClient *self,
-                                    const gchar  *name,
-                                    GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_delete_history_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_delete_history:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to delete
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Delete a history
+ */
+/**
+ * g_paste_client_delete_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Delete a history
+ */
+G_PASTE_CLIENT_METHOD (delete_history,
+                       (const gchar *name), (name))
 
 /**
  * g_paste_client_delete_password_sync:
@@ -268,16 +501,26 @@ g_paste_client_delete_history_sync (GPasteClient *self,
  *
  * Delete the password from the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_delete_password_sync (GPasteClient *self,
-                                     const gchar  *name,
-                                     GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_delete_password_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_delete_password:
+ * @self: a #GPasteClient instance
+ * @name: the name of the password to delete
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Delete the password from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_delete_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Delete the password from the #GPasteDaemon
+ */
+G_PASTE_CLIENT_METHOD (delete_password,
+                       (const gchar *name), (name))
 
 /**
  * g_paste_client_empty_history_sync:
@@ -287,16 +530,26 @@ g_paste_client_delete_password_sync (GPasteClient *self,
  *
  * Empty the history from the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_empty_history_sync (GPasteClient *self,
-                                   const gchar  *name,
-                                   GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_empty_history_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
+/**
+ * g_paste_client_empty_history:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to empty
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Empty the history from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_empty_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Empty the history from the #GPasteDaemon
+ */
+G_PASTE_CLIENT_METHOD (empty_history,
+                       (const gchar *name), (name))
 
 /**
  * g_paste_client_get_element_sync:
@@ -308,20 +561,30 @@ g_paste_client_empty_history_sync (GPasteClient *self,
  *
  * Returns: (transfer full): a newly allocated string
  */
-G_PASTE_VISIBLE gchar *
-g_paste_client_get_element_sync (GPasteClient *self,
-                                 const gchar  *uuid,
-                                 GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autofree gchar *value = NULL;
-    if (!g_paste_daemon2_call_get_element_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &value, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_steal_pointer (&value);
-}
+/**
+ * g_paste_client_get_element:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get an item from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_get_element_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+G_PASTE_CLIENT_METHOD_RET (get_element,
+                           gchar *, NULL,
+                           g_autofree gchar *value = NULL, &value, g_steal_pointer (&value),
+                           (const gchar *uuid), (uuid))
 
 /**
  * g_paste_client_get_element_at_index_sync:
@@ -334,9 +597,7 @@ g_paste_client_get_element_sync (GPasteClient *self,
  * Returns: (transfer full): a new #GPasteClientItem
  */
 G_PASTE_VISIBLE GPasteClientItem *
-g_paste_client_get_element_at_index_sync (GPasteClient *self,
-                                          guint64       index,
-                                          GError      **error)
+g_paste_client_get_element_at_index_sync (GPasteClient *self, guint64 index, GError **error)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
@@ -344,6 +605,51 @@ g_paste_client_get_element_at_index_sync (GPasteClient *self,
     g_autofree gchar *uuid = NULL;
         g_autofree gchar *value = NULL;
     if (!g_paste_daemon2_call_get_element_at_index_sync (G_PASTE_DAEMON2 (self), index, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &uuid, &value, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_paste_client_item_new (uuid, value);
+}
+
+/**
+ * g_paste_client_get_element_at_index:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get an item from the #GPasteDaemon
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_element_at_index (GPasteClient *self, guint64 index, GAsyncReadyCallback callback, gpointer user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon2_call_get_element_at_index (G_PASTE_DAEMON2 (self), index, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
+}
+
+/**
+ * g_paste_client_get_element_at_index_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a new #GPasteClientItem
+ */
+G_PASTE_VISIBLE GPasteClientItem *
+g_paste_client_get_element_at_index_finish (GPasteClient *self,
+                             GAsyncResult *result,
+                             GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    g_autofree gchar *uuid = NULL;
+        g_autofree gchar *value = NULL;
+    if (!g_paste_daemon2_call_get_element_at_index_finish (G_PASTE_DAEMON2 (self), &uuid, &value, result, error))
         return NULL;
 
     return g_paste_client_item_new (uuid, value);
@@ -359,20 +665,30 @@ g_paste_client_get_element_at_index_sync (GPasteClient *self,
  *
  * Returns: The #GPasteItemKind
  */
-G_PASTE_VISIBLE GPasteItemKind
-g_paste_client_get_element_kind_sync (GPasteClient *self,
-                                      const gchar  *uuid,
-                                      GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), G_PASTE_ITEM_KIND_INVALID);
-    g_return_val_if_fail (!error || !(*error), G_PASTE_ITEM_KIND_INVALID);
-
-    g_autofree gchar *kind = NULL;
-    if (!g_paste_daemon2_call_get_element_kind_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &kind, NULL /* cancellable */, error))
-        return G_PASTE_ITEM_KIND_INVALID;
-
-    return g_paste_item_kind_from_string (kind);
-}
+/**
+ * g_paste_client_get_element_kind:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the kind of an item from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_get_element_kind_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get this kind of an item from the #GPasteDaemon
+ *
+ * Returns: The #GPasteItemKind
+ */
+G_PASTE_CLIENT_METHOD_RET (get_element_kind,
+                           GPasteItemKind, G_PASTE_ITEM_KIND_INVALID,
+                           g_autofree gchar *kind = NULL, &kind, g_paste_item_kind_from_string (kind),
+                           (const gchar *uuid), (uuid))
 
 /**
  * g_paste_client_get_elements_sync:
@@ -382,7 +698,27 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
  *
  * Get some items from the #GPasteDaemon
  *
- * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+/**
+ * g_paste_client_get_elements:
+ * @self: a #GPasteClient instance
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get some items from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_get_elements_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get some items from the #GPasteDaemon
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
  */
 G_PASTE_VISIBLE GList *
 g_paste_client_get_elements_sync (GPasteClient        *self,
@@ -401,721 +737,8 @@ g_paste_client_get_elements_sync (GPasteClient        *self,
     return g_paste_util_get_dbus_items_result (elements);
 }
 
-/**
- * g_paste_client_get_history_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * Get the history from the #GPasteDaemon
- *
- * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
- */
-G_PASTE_VISIBLE GList *
-g_paste_client_get_history_sync (GPasteClient *self,
-                                 GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autoptr (GVariant) history = NULL;
-    if (!g_paste_daemon2_call_get_history_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &history, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_paste_util_get_dbus_items_result (history);
-}
-
-/**
- * g_paste_client_get_history_name_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * Get the name of the history from the #GPasteDaemon
- *
- * Returns: (transfer full): a newly allocated string
- */
-G_PASTE_VISIBLE gchar *
-g_paste_client_get_history_name_sync (GPasteClient *self,
-                                      GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autofree gchar *name = NULL;
-    if (!g_paste_daemon2_call_get_history_name_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &name, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_steal_pointer (&name);
-}
-
-/**
- * g_paste_client_get_history_size_sync:
- * @self: a #GPasteClient instance
- * @name: the name of the history
- * @error: return location for a #GError, or %NULL
- *
- * Get the history size from the #GPasteDaemon
- *
- * Returns: the size of the history
- */
-G_PASTE_VISIBLE guint64
-g_paste_client_get_history_size_sync (GPasteClient *self,
-                                      const gchar  *name,
-                                      GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), 0);
-    g_return_val_if_fail (!error || !(*error), 0);
-
-    guint64 size = 0;
-    if (!g_paste_daemon2_call_get_history_size_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &size, NULL /* cancellable */, error))
-        return 0;
-
-    return size;
-}
-
-/**
- * g_paste_client_get_image_sync:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the image element we want to get
- * @error: return location for a #GError, or %NULL
- *
- * Get an image item's bytes from the #GPasteDaemon, so clients never have to
- * dereference the item's path themselves
- *
- * Returns: (transfer full): the PNG image bytes
- */
-G_PASTE_VISIBLE GBytes *
-g_paste_client_get_image_sync (GPasteClient *self,
-                               const gchar  *uuid,
-                               GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autoptr (GVariant) image = NULL;
-    if (!g_paste_daemon2_call_get_image_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &image, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_variant_get_data_as_bytes (image);
-}
-
-/**
- * g_paste_client_get_raw_element_sync:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to get
- * @error: return location for a #GError, or %NULL
- *
- * Get an item from the #GPasteDaemon
- *
- * Returns: (transfer full): a newly allocated string
- */
-G_PASTE_VISIBLE gchar *
-g_paste_client_get_raw_element_sync (GPasteClient *self,
-                                     const gchar  *uuid,
-                                     GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autofree gchar *value = NULL;
-    if (!g_paste_daemon2_call_get_raw_element_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &value, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_steal_pointer (&value);
-}
-
-/**
- * g_paste_client_get_raw_history_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * Get the history from the #GPasteDaemon
- *
- * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
- */
-G_PASTE_VISIBLE GList *
-g_paste_client_get_raw_history_sync (GPasteClient *self,
-                                     GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autoptr (GVariant) history = NULL;
-    if (!g_paste_daemon2_call_get_raw_history_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &history, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_paste_util_get_dbus_items_result (history);
-}
-
-/**
- * g_paste_client_list_histories_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * List all available hisotries
- *
- * Returns: (transfer full): a newly allocated array of string
- */
-G_PASTE_VISIBLE GStrv
-g_paste_client_list_histories_sync (GPasteClient *self,
-                                    GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_auto (GStrv) histories = NULL;
-    if (!g_paste_daemon2_call_list_histories_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &histories, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_steal_pointer (&histories);
-}
-
-/**
- * g_paste_client_merge_sync:
- * @self: a #GPasteClient instance
- * @decoration: (nullable): the decoration to apply to each entry
- * @separator: (nullable): the separator to add between each entry
- * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
- * @error: return location for a #GError, or %NULL
- *
- * Merge some history entries
- *
- * If decoration is " and separator is , and entries are foo bar baz
- * result will be "foo","bar","baz"
- */
-G_PASTE_VISIBLE void
-g_paste_client_merge_sync (GPasteClient        *self,
-                           const gchar         *decoration,
-                           const gchar         *separator,
-                           const gchar * const *uuids,
-                           GError             **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (uuids);
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_merge_sync (G_PASTE_DAEMON2 (self),
-                                     (decoration) ? decoration : "",
-                                     (separator) ? separator : "",
-                                     uuids,
-                                     G_DBUS_CALL_FLAGS_NONE,
-                                     -1, /* timeout */
-                                     NULL, /* cancellable */
-                                     error);
-}
-
-/**
- * g_paste_client_on_extension_state_changed_sync:
- * @self: a #GPasteClient instance
- * @state: the new state of the extension
- * @error: return location for a #GError, or %NULL
- *
- * Call this when the extension changes its state
- */
-G_PASTE_VISIBLE void
-g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
-                                                gboolean      state,
-                                                GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_on_extension_state_changed_sync (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_reexecute_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * Reexecute the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_reexecute_sync (GPasteClient *self,
-                               GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_reexecute_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_rename_password_sync:
- * @self: a #GPasteClient instance
- * @old_name: the name of the password to rename
- * @new_name: the new name to give it
- * @error: return location for a #GError, or %NULL
- *
- * Rename the password in the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_rename_password_sync (GPasteClient *self,
-                                     const gchar  *old_name,
-                                     const gchar  *new_name,
-                                     GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_rename_password_sync (G_PASTE_DAEMON2 (self), old_name, new_name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_replace_sync:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to replace
- * @contents: the replacement contents
- * @error: return location for a #GError, or %NULL
- *
- * Replace the contents of an item
- */
-G_PASTE_VISIBLE void
-g_paste_client_replace_sync (GPasteClient *self,
-                             const gchar  *uuid,
-                             const gchar  *contents,
-                             GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_replace_sync (G_PASTE_DAEMON2 (self), uuid, contents, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_search_sync:
- * @self: a #GPasteClient instance
- * @pattern: the pattern to look for in history
- * @error: return location for a #GError, or %NULL
- *
- * Search for items matching @pattern in history
- *
- * Returns: (transfer full): The uuids of the matching items
- */
-G_PASTE_VISIBLE GStrv
-g_paste_client_search_sync (GPasteClient *self,
-                            const gchar  *pattern,
-                            GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_auto (GStrv) results = NULL;
-    if (!g_paste_daemon2_call_search_sync (G_PASTE_DAEMON2 (self), pattern, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &results, NULL /* cancellable */, error))
-        return NULL;
-
-    return g_steal_pointer (&results);
-}
-
-/**
- * g_paste_client_select_sync:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to select
- * @error: return location for a #GError, or %NULL
- *
- * Select an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_select_sync (GPasteClient *self,
-                            const gchar  *uuid,
-                            GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_select_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_set_password_sync:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to set as password
- * @name: the name to identify the password
- * @error: return location for a #GError, or %NULL
- *
- * Set the item as password
- */
-G_PASTE_VISIBLE void
-g_paste_client_set_password_sync (GPasteClient *self,
-                                  const gchar  *uuid,
-                                  const gchar  *name,
-                                  GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_set_password_sync (G_PASTE_DAEMON2 (self), uuid, name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_show_history_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * Emit the ShowHistory signal
- */
-G_PASTE_VISIBLE void
-g_paste_client_show_history_sync (GPasteClient *self,
-                                  GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_show_history_sync (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-/**
- * g_paste_client_switch_history_sync:
- * @self: a #GPasteClient instance
- * @name: the name of the history to switch to
- * @error: return location for a #GError, or %NULL
- *
- * Switch to another history
- */
-G_PASTE_VISIBLE void
-g_paste_client_switch_history_sync (GPasteClient *self,
-                                    const gchar  *name,
-                                    GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_switch_history_sync (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_track_sync:
- * @self: a #GPasteClient instance
- * @state: the new tracking state of the #GPasteDaemon
- * @error: return location for a #GError, or %NULL
- *
- * Change the tracking state of the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_track_sync (GPasteClient *self,
-                           gboolean      state,
-                           GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_track_sync (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/**
- * g_paste_client_upload_sync:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to upload
- * @error: return location for a #GError, or %NULL
- *
- * Upload an item to a pastebin service
- */
-G_PASTE_VISIBLE void
-g_paste_client_upload_sync (GPasteClient *self,
-                            const gchar  *uuid,
-                            GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_upload_sync (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
-}
-
-/*******************/
-/* Methods / Async */
-/*******************/
-
-/**
- * g_paste_client_about:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Display the about dialog
- */
-G_PASTE_VISIBLE void
-g_paste_client_about (GPasteClient       *self,
-                      GAsyncReadyCallback callback,
-                      gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_about (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_add:
- * @self: a #GPasteClient instance
- * @text: the text to add
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Add an item to the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_add (GPasteClient       *self,
-                    const gchar        *text,
-                    GAsyncReadyCallback callback,
-                    gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_add (G_PASTE_DAEMON2 (self), text, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_add_file:
- * @self: a #GPasteClient instance
- * @file: the file to add
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Add the file contents to the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_add_file (GPasteClient       *self,
-                         const gchar        *file,
-                         GAsyncReadyCallback callback,
-                         gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_autofree gchar *absolute_path = NULL;
-
-    if (!g_path_is_absolute (file))
-    {
-        g_autofree gchar *current_dir = g_get_current_dir ();
-        absolute_path = g_build_filename (current_dir, file, NULL);
-    }
-
-    g_paste_daemon2_call_add_file (G_PASTE_DAEMON2 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_add_password:
- * @self: a #GPasteClient instance
- * @name: the name to identify the password to add
- * @password: the password to add
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Add the password to the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_add_password (GPasteClient       *self,
-                             const gchar        *name,
-                             const gchar        *password,
-                             GAsyncReadyCallback callback,
-                             gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_add_password (G_PASTE_DAEMON2 (self), name, password, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_backup_history:
- * @self: a #GPasteClient instance
- * @history: the name of the history
- * @backup: the name of the backup
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Backup the current history
- */
-G_PASTE_VISIBLE void
-g_paste_client_backup_history (GPasteClient       *self,
-                               const gchar        *history,
-                               const gchar        *backup,
-                               GAsyncReadyCallback callback,
-                               gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_backup_history (G_PASTE_DAEMON2 (self), history, backup, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_change_passphrase:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Change the passphrase of the encrypted history, re-encrypting it with the new
- * one. The daemon prompts for the passphrases itself: they never travel over the
- * bus.
- */
-G_PASTE_VISIBLE void
-g_paste_client_change_passphrase (GPasteClient       *self,
-                                  GAsyncReadyCallback callback,
-                                  gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_change_passphrase (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_delete:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to delete
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Delete an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_delete (GPasteClient       *self,
-                       const gchar        *uuid,
-                       GAsyncReadyCallback callback,
-                       gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_delete (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_delete_history:
- * @self: a #GPasteClient instance
- * @name: the name of the history to delete
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Delete a history
- */
-G_PASTE_VISIBLE void
-g_paste_client_delete_history (GPasteClient       *self,
-                               const gchar        *name,
-                               GAsyncReadyCallback callback,
-                               gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_delete_history (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_delete_password:
- * @self: a #GPasteClient instance
- * @name: the name of the password to delete
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
- *
- * Delete the password from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_delete_password (GPasteClient       *self,
-                                const gchar        *name,
-                                GAsyncReadyCallback callback,
-                                gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_delete_password (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_empty_history:
- * @self: a #GPasteClient instance
- * @name: the name of the history to empty
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Empty the history from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_empty_history (GPasteClient       *self,
-                              const gchar        *name,
-                              GAsyncReadyCallback callback,
-                              gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_empty_history (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_element:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_element (GPasteClient       *self,
-                            const gchar        *uuid,
-                            GAsyncReadyCallback callback,
-                            gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_element (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_element_at_index:
- * @self: a #GPasteClient instance
- * @index: the index of the element we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_element_at_index (GPasteClient       *self,
-                                     guint64             index,
-                                     GAsyncReadyCallback callback,
-                                     gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_element_at_index (G_PASTE_DAEMON2 (self), index, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_element_kind:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get the kind of an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_element_kind (GPasteClient       *self,
-                                 const gchar        *uuid,
-                                 GAsyncReadyCallback callback,
-                                 gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_element_kind (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_elements:
- * @self: a #GPasteClient instance
- * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get some items from the #GPasteDaemon
- */
+/* Hand-written: @uuids is the one method parameter with a precondition of its
+ * own, and it reads differently in each flavour. */
 G_PASTE_VISIBLE void
 g_paste_client_get_elements (GPasteClient        *self,
                              const gchar * const *uuids,
@@ -1128,708 +751,6 @@ g_paste_client_get_elements (GPasteClient        *self,
     g_paste_daemon2_call_get_elements (G_PASTE_DAEMON2 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
 }
 
-/**
- * g_paste_client_get_history:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get the history from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_history (GPasteClient       *self,
-                            GAsyncReadyCallback callback,
-                            gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_history (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_history_name:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get the name of the history from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_history_name (GPasteClient       *self,
-                                 GAsyncReadyCallback callback,
-                                 gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_history_name (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_history_size:
- * @self: a #GPasteClient instance
- * @name: the name of the history
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get the history isize from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_history_size (GPasteClient       *self,
-                                 const gchar        *name,
-                                 GAsyncReadyCallback callback,
-                                 gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_history_size (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_image:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the image element we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get an image item's bytes from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_image (GPasteClient       *self,
-                          const gchar        *uuid,
-                          GAsyncReadyCallback callback,
-                          gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_image (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_raw_element:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_raw_element (GPasteClient       *self,
-                                const gchar        *uuid,
-                                GAsyncReadyCallback callback,
-                                gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_raw_element (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_get_raw_history:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Get the history from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_get_raw_history (GPasteClient       *self,
-                                GAsyncReadyCallback callback,
-                                gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_get_raw_history (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_list_histories:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * List all available hisotries
- */
-G_PASTE_VISIBLE void
-g_paste_client_list_histories (GPasteClient       *self,
-                               GAsyncReadyCallback callback,
-                               gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_list_histories (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_merge:
- * @self: a #GPasteClient instance
- * @decoration: (nullable): the decoration to apply to each entry
- * @separator: (nullable): the separator to add between each entry
- * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Merge some history entries
- *
- * If decoration is " and separator is , and entries are foo bar baz
- * result will be "foo","bar","baz"
- */
-G_PASTE_VISIBLE void
-g_paste_client_merge (GPasteClient        *self,
-                      const gchar         *decoration,
-                      const gchar         *separator,
-                      const gchar * const *uuids,
-                      GAsyncReadyCallback  callback,
-                      gpointer             user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (uuids);
-
-    g_paste_daemon2_call_merge (G_PASTE_DAEMON2 (self),
-                                (decoration) ? decoration : "",
-                                (separator) ? separator : "",
-                                uuids,
-                                G_DBUS_CALL_FLAGS_NONE,
-                                -1, /* timeout */
-                                NULL, /* cancellable */
-                                callback,
-                                user_data);
-}
-
-/**
- * g_paste_client_on_extension_state_changed:
- * @self: a #GPasteClient instance
- * @state: the new state of the extension
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Call this when the extension changes its state
- */
-G_PASTE_VISIBLE void
-g_paste_client_on_extension_state_changed (GPasteClient       *self,
-                                           gboolean            state,
-                                           GAsyncReadyCallback callback,
-                                           gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_on_extension_state_changed (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_reexecute:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Reexecute the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_reexecute (GPasteClient       *self,
-                          GAsyncReadyCallback callback,
-                          gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_reexecute (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_rename_password:
- * @self: a #GPasteClient instance
- * @old_name: the old name of the password to rename
- * @new_name: the new name to give it
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
- *
- * Rename the password in the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_rename_password (GPasteClient       *self,
-                                const gchar        *old_name,
-                                const gchar        *new_name,
-                                GAsyncReadyCallback callback,
-                                gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_rename_password (G_PASTE_DAEMON2 (self), old_name, new_name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_replace:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to replace
- * @contents: the replacement contents
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
- *
- * Replace the contents of an item
- */
-G_PASTE_VISIBLE void
-g_paste_client_replace (GPasteClient       *self,
-                        const gchar        *uuid,
-                        const gchar        *contents,
-                        GAsyncReadyCallback callback,
-                        gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_replace (G_PASTE_DAEMON2 (self), uuid, contents, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_search:
- * @self: a #GPasteClient instance
- * @pattern: the pattern to look for in history
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Search for items matching @pattern in history
- */
-G_PASTE_VISIBLE void
-g_paste_client_search (GPasteClient       *self,
-                       const gchar        *pattern,
-                       GAsyncReadyCallback callback,
-                       gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_search (G_PASTE_DAEMON2 (self), pattern, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_select:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to select
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Select an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_select (GPasteClient       *self,
-                       const gchar        *uuid,
-                       GAsyncReadyCallback callback,
-                       gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_select (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_set_password:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to set as password
- * @name: the name to identify the password
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
- *
- * Set the item as password
- */
-G_PASTE_VISIBLE void
-g_paste_client_set_password (GPasteClient       *self,
-                             const gchar        *uuid,
-                             const gchar        *name,
-                             GAsyncReadyCallback callback,
-                             gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_set_password (G_PASTE_DAEMON2 (self), uuid, name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_show_history:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Emit the ShowHistory signal
- */
-G_PASTE_VISIBLE void
-g_paste_client_show_history (GPasteClient       *self,
-                             GAsyncReadyCallback callback,
-                             gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_show_history (G_PASTE_DAEMON2 (self), G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_switch_history:
- * @self: a #GPasteClient instance
- * @name: the name of the history to switch to
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable):The data to pass to @callback.
- *
- * Switch to another history
- */
-G_PASTE_VISIBLE void
-g_paste_client_switch_history (GPasteClient       *self,
-                               const gchar        *name,
-                               GAsyncReadyCallback callback,
-                               gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_switch_history (G_PASTE_DAEMON2 (self), name, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_track:
- * @self: a #GPasteClient instance
- * @state: the new tracking state of the #GPasteDaemon
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Change the tracking state of the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_track (GPasteClient *self,
-                      gboolean      state,
-                      GAsyncReadyCallback callback,
-                      gpointer             user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_track (G_PASTE_DAEMON2 (self), state, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/**
- * g_paste_client_upload:
- * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to upload
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Upload an item to a pastebin service
- */
-G_PASTE_VISIBLE void
-g_paste_client_upload (GPasteClient       *self,
-                       const gchar        *uuid,
-                       GAsyncReadyCallback callback,
-                       gpointer            user_data)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-
-    g_paste_daemon2_call_upload (G_PASTE_DAEMON2 (self), uuid, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
-}
-
-/****************************/
-/* Methods / Async - Finish */
-/****************************/
-
-/**
- * g_paste_client_about_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Display the about dialog
- */
-G_PASTE_VISIBLE void
-g_paste_client_about_finish (GPasteClient *self,
-                             GAsyncResult *result,
-                             GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_about_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_add_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Add an item to the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_add_finish (GPasteClient *self,
-                           GAsyncResult *result,
-                           GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_add_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_add_file_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Add the file contents to the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_add_file_finish (GPasteClient *self,
-                                GAsyncResult *result,
-                                GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_add_file_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_add_password_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Add the password to the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_add_password_finish (GPasteClient *self,
-                                    GAsyncResult *result,
-                                    GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_add_password_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_backup_history_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Backup the current history
- */
-G_PASTE_VISIBLE void
-g_paste_client_backup_history_finish (GPasteClient *self,
-                                      GAsyncResult *result,
-                                      GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_backup_history_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_change_passphrase_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Change the passphrase of the encrypted history
- */
-G_PASTE_VISIBLE void
-g_paste_client_change_passphrase_finish (GPasteClient *self,
-                                         GAsyncResult *result,
-                                         GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_change_passphrase_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_delete_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Delete an item from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_delete_finish (GPasteClient *self,
-                              GAsyncResult *result,
-                              GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_delete_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_delete_history_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Delete a history
- */
-G_PASTE_VISIBLE void
-g_paste_client_delete_history_finish (GPasteClient *self,
-                                      GAsyncResult *result,
-                                      GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_delete_history_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_delete_password_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Delete the password from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_delete_password_finish (GPasteClient *self,
-                                       GAsyncResult *result,
-                                       GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_delete_password_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_empty_history_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Empty the history from the #GPasteDaemon
- */
-G_PASTE_VISIBLE void
-g_paste_client_empty_history_finish (GPasteClient *self,
-                                     GAsyncResult *result,
-                                     GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
-
-    g_paste_daemon2_call_empty_history_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
-/**
- * g_paste_client_get_element_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Get an item from the #GPasteDaemon
- *
- * Returns: (transfer full): a newly allocated string
- */
-G_PASTE_VISIBLE gchar *
-g_paste_client_get_element_finish (GPasteClient *self,
-                                   GAsyncResult *result,
-                                   GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autofree gchar *value = NULL;
-    if (!g_paste_daemon2_call_get_element_finish (G_PASTE_DAEMON2 (self), &value, result, error))
-        return NULL;
-
-    return g_steal_pointer (&value);
-}
-
-/**
- * g_paste_client_get_element_at_index_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Get an item from the #GPasteDaemon
- *
- * Returns: (transfer full): a new #GPasteClientItem
- */
-G_PASTE_VISIBLE GPasteClientItem *
-g_paste_client_get_element_at_index_finish (GPasteClient *self,
-                                            GAsyncResult *result,
-                                            GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autofree gchar *uuid = NULL;
-        g_autofree gchar *value = NULL;
-    if (!g_paste_daemon2_call_get_element_at_index_finish (G_PASTE_DAEMON2 (self), &uuid, &value, result, error))
-        return NULL;
-
-    return g_paste_client_item_new (uuid, value);
-}
-
-/**
- * g_paste_client_get_element_kind_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Get this kind of an item from the #GPasteDaemon
- *
- * Returns: The #GPasteItemKind
- */
-G_PASTE_VISIBLE GPasteItemKind
-g_paste_client_get_element_kind_finish (GPasteClient *self,
-                                        GAsyncResult *result,
-                                        GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), G_PASTE_ITEM_KIND_INVALID);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), G_PASTE_ITEM_KIND_INVALID);
-    g_return_val_if_fail (!error || !(*error), G_PASTE_ITEM_KIND_INVALID);
-
-    g_autofree gchar *kind = NULL;
-    if (!g_paste_daemon2_call_get_element_kind_finish (G_PASTE_DAEMON2 (self), &kind, result, error))
-        return G_PASTE_ITEM_KIND_INVALID;
-
-    return g_paste_item_kind_from_string (kind);
-}
-
-/**
- * g_paste_client_get_elements_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Get some items from the #GPasteDaemon
- *
- * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
- */
 G_PASTE_VISIBLE GList *
 g_paste_client_get_elements_finish (GPasteClient *self,
                                     GAsyncResult *result,
@@ -1848,6 +769,24 @@ g_paste_client_get_elements_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_get_history_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the history from the #GPasteDaemon
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+/**
+ * g_paste_client_get_history:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the history from the #GPasteDaemon
+ */
+/**
  * g_paste_client_get_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -1855,24 +794,31 @@ g_paste_client_get_elements_finish (GPasteClient *self,
  *
  * Get the history from the #GPasteDaemon
  *
- * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
  */
-G_PASTE_VISIBLE GList *
-g_paste_client_get_history_finish (GPasteClient *self,
-                                   GAsyncResult *result,
-                                   GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
+G_PASTE_CLIENT_METHOD_RET (get_history,
+                           GList *, NULL,
+                           g_autoptr (GVariant) history = NULL, &history, g_paste_util_get_dbus_items_result (history),
+                           (), ())
 
-    g_autoptr (GVariant) history = NULL;
-    if (!g_paste_daemon2_call_get_history_finish (G_PASTE_DAEMON2 (self), &history, result, error))
-        return NULL;
-
-    return g_paste_util_get_dbus_items_result (history);
-}
-
+/**
+ * g_paste_client_get_history_name_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the name of the history from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+/**
+ * g_paste_client_get_history_name:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the name of the history from the #GPasteDaemon
+ */
 /**
  * g_paste_client_get_history_name_finish:
  * @self: a #GPasteClient instance
@@ -1883,22 +829,31 @@ g_paste_client_get_history_finish (GPasteClient *self,
  *
  * Returns: (transfer full): a newly allocated string
  */
-G_PASTE_VISIBLE gchar *
-g_paste_client_get_history_name_finish (GPasteClient *self,
-                                        GAsyncResult *result,
-                                        GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
+G_PASTE_CLIENT_METHOD_RET (get_history_name,
+                           gchar *, NULL,
+                           g_autofree gchar *name = NULL, &name, g_steal_pointer (&name),
+                           (), ())
 
-    g_autofree gchar *name = NULL;
-    if (!g_paste_daemon2_call_get_history_name_finish (G_PASTE_DAEMON2 (self), &name, result, error))
-        return NULL;
-
-    return g_steal_pointer (&name);
-}
-
+/**
+ * g_paste_client_get_history_size_sync:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the history size from the #GPasteDaemon
+ *
+ * Returns: the size of the history
+ */
+/**
+ * g_paste_client_get_history_size:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the history isize from the #GPasteDaemon
+ */
 /**
  * g_paste_client_get_history_size_finish:
  * @self: a #GPasteClient instance
@@ -1909,48 +864,32 @@ g_paste_client_get_history_name_finish (GPasteClient *self,
  *
  * Returns: the size of the history
  */
-G_PASTE_VISIBLE guint64
-g_paste_client_get_history_size_finish (GPasteClient *self,
-                                        GAsyncResult *result,
-                                        GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), 0);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), 0);
-    g_return_val_if_fail (!error || !(*error), 0);
-
-    guint64 size = 0;
-    if (!g_paste_daemon2_call_get_history_size_finish (G_PASTE_DAEMON2 (self), &size, result, error))
-        return 0;
-
-    return size;
-}
+G_PASTE_CLIENT_METHOD_RET (get_history_size,
+                           guint64, 0,
+                           guint64 size = 0, &size, size,
+                           (const gchar *name), (name))
 
 /**
- * g_paste_client_get_raw_element_finish:
+ * g_paste_client_get_image_sync:
  * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @uuid: the uuid of the image element we want to get
  * @error: return location for a #GError, or %NULL
  *
- * Get an item from the #GPasteDaemon
+ * Get an image item's bytes from the #GPasteDaemon, so clients never have to
+ * dereference the item's path themselves
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: (transfer full): the PNG image bytes
  */
-G_PASTE_VISIBLE gchar *
-g_paste_client_get_raw_element_finish (GPasteClient *self,
-                                       GAsyncResult *result,
-                                       GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    g_autofree gchar *value = NULL;
-    if (!g_paste_daemon2_call_get_raw_element_finish (G_PASTE_DAEMON2 (self), &value, result, error))
-        return NULL;
-
-    return g_steal_pointer (&value);
-}
-
+/**
+ * g_paste_client_get_image:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the image element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get an image item's bytes from the #GPasteDaemon
+ */
 /**
  * g_paste_client_get_image_finish:
  * @self: a #GPasteClient instance
@@ -1961,22 +900,64 @@ g_paste_client_get_raw_element_finish (GPasteClient *self,
  *
  * Returns: (transfer full): the PNG image bytes
  */
-G_PASTE_VISIBLE GBytes *
-g_paste_client_get_image_finish (GPasteClient *self,
-                                 GAsyncResult *result,
-                                 GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
+G_PASTE_CLIENT_METHOD_RET (get_image,
+                           GBytes *, NULL,
+                           g_autoptr (GVariant) image = NULL, &image, g_variant_get_data_as_bytes (image),
+                           (const gchar *uuid), (uuid))
 
-    g_autoptr (GVariant) image = NULL;
-    if (!g_paste_daemon2_call_get_image_finish (G_PASTE_DAEMON2 (self), &image, result, error))
-        return NULL;
+/**
+ * g_paste_client_get_raw_element_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to get
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+/**
+ * g_paste_client_get_raw_element:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get an item from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_get_raw_element_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+G_PASTE_CLIENT_METHOD_RET (get_raw_element,
+                           gchar *, NULL,
+                           g_autofree gchar *value = NULL, &value, g_steal_pointer (&value),
+                           (const gchar *uuid), (uuid))
 
-    return g_variant_get_data_as_bytes (image);
-}
-
+/**
+ * g_paste_client_get_raw_history_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the history from the #GPasteDaemon
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+/**
+ * g_paste_client_get_raw_history:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the history from the #GPasteDaemon
+ */
 /**
  * g_paste_client_get_raw_history_finish:
  * @self: a #GPasteClient instance
@@ -1985,48 +966,106 @@ g_paste_client_get_image_finish (GPasteClient *self,
  *
  * Get the history from the #GPasteDaemon
  *
- * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated array of string
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
  */
-G_PASTE_VISIBLE GList *
-g_paste_client_get_raw_history_finish (GPasteClient *self,
-                                       GAsyncResult *result,
-                                       GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
+G_PASTE_CLIENT_METHOD_RET (get_raw_history,
+                           GList *, NULL,
+                           g_autoptr (GVariant) history = NULL, &history, g_paste_util_get_dbus_items_result (history),
+                           (), ())
 
-    g_autoptr (GVariant) history = NULL;
-    if (!g_paste_daemon2_call_get_raw_history_finish (G_PASTE_DAEMON2 (self), &history, result, error))
-        return NULL;
-
-    return g_paste_util_get_dbus_items_result (history);
-}
-
+/**
+ * g_paste_client_list_histories_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * List all available histories
+ *
+ * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
+ */
+/**
+ * g_paste_client_list_histories:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * List all available histories
+ */
 /**
  * g_paste_client_list_histories_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @error: return location for a #GError, or %NULL
  *
- * List all available hisotries
+ * List all available histories
  *
- * Returns: (transfer full): a newly allocated array of string
+ * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
  */
-G_PASTE_VISIBLE GStrv
-g_paste_client_list_histories_finish (GPasteClient *self,
-                                      GAsyncResult *result,
-                                      GError      **error)
+G_PASTE_CLIENT_METHOD_RET (list_histories,
+                           GStrv, NULL,
+                           g_auto (GStrv) histories = NULL, &histories, g_steal_pointer (&histories),
+                           (), ())
+
+/**
+ * g_paste_client_merge_sync:
+ * @self: a #GPasteClient instance
+ * @decoration: (nullable): the decoration to apply to each entry
+ * @separator: (nullable): the separator to add between each entry
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
+ * @error: return location for a #GError, or %NULL
+ *
+ * Merge some history entries
+ *
+ * If decoration is " and separator is , and entries are foo bar baz
+ * result will be "foo","bar","baz"
+ */
+G_PASTE_VISIBLE void
+g_paste_client_merge_sync (GPasteClient *self, const gchar *decoration, const gchar *separator, const gchar * const *uuids, GError **error)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (uuids);
+    g_return_if_fail (!error || !(*error));
 
-    g_auto (GStrv) histories = NULL;
-    if (!g_paste_daemon2_call_list_histories_finish (G_PASTE_DAEMON2 (self), &histories, result, error))
-        return NULL;
+    g_paste_daemon2_call_merge_sync (G_PASTE_DAEMON2 (self),
+                                     (decoration) ? decoration : "",
+                                     (separator) ? separator : "",
+                                     uuids,
+                                     G_DBUS_CALL_FLAGS_NONE,
+                                     -1, /* timeout */
+                                     NULL, /* cancellable */
+                                     error);
+}
 
-    return g_steal_pointer (&histories);
+/**
+ * g_paste_client_merge:
+ * @self: a #GPasteClient instance
+ * @decoration: (nullable): the decoration to apply to each entry
+ * @separator: (nullable): the separator to add between each entry
+ * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Merge some history entries
+ *
+ * If decoration is " and separator is , and entries are foo bar baz
+ * result will be "foo","bar","baz"
+ */
+G_PASTE_VISIBLE void
+g_paste_client_merge (GPasteClient *self, const gchar *decoration, const gchar *separator, const gchar * const *uuids, GAsyncReadyCallback callback, gpointer user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (uuids);
+
+    g_paste_daemon2_call_merge (G_PASTE_DAEMON2 (self),
+                                (decoration) ? decoration : "",
+                                (separator) ? separator : "",
+                                uuids,
+                                G_DBUS_CALL_FLAGS_NONE,
+                                -1, /* timeout */
+                                NULL, /* cancellable */
+                                callback,
+                                user_data);
 }
 
 /**
@@ -2050,6 +1089,24 @@ g_paste_client_merge_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_on_extension_state_changed_sync:
+ * @self: a #GPasteClient instance
+ * @state: the new state of the extension
+ * @error: return location for a #GError, or %NULL
+ *
+ * Call this when the extension changes its state
+ */
+/**
+ * g_paste_client_on_extension_state_changed:
+ * @self: a #GPasteClient instance
+ * @state: the new state of the extension
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Call this when the extension changes its state
+ */
+/**
  * g_paste_client_on_extension_state_changed_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -2057,18 +1114,25 @@ g_paste_client_merge_finish (GPasteClient *self,
  *
  * Call this when the extension changes its state
  */
-G_PASTE_VISIBLE void
-g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
-                                                  GAsyncResult *result,
-                                                  GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (on_extension_state_changed,
+                       (gboolean state), (state))
 
-    g_paste_daemon2_call_on_extension_state_changed_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_reexecute_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * Reexecute the #GPasteDaemon
+ */
+/**
+ * g_paste_client_reexecute:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Reexecute the #GPasteDaemon
+ */
 /**
  * g_paste_client_reexecute_finish:
  * @self: a #GPasteClient instance
@@ -2077,18 +1141,29 @@ g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
  *
  * Reexecute the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_reexecute_finish (GPasteClient *self,
-                                 GAsyncResult *result,
-                                 GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (reexecute,
+                       (), ())
 
-    g_paste_daemon2_call_reexecute_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_rename_password_sync:
+ * @self: a #GPasteClient instance
+ * @old_name: the name of the password to rename
+ * @new_name: the new name to give it
+ * @error: return location for a #GError, or %NULL
+ *
+ * Rename the password in the #GPasteDaemon
+ */
+/**
+ * g_paste_client_rename_password:
+ * @self: a #GPasteClient instance
+ * @old_name: the old name of the password to rename
+ * @new_name: the new name to give it
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Rename the password in the #GPasteDaemon
+ */
 /**
  * g_paste_client_rename_password_finish:
  * @self: a #GPasteClient instance
@@ -2097,18 +1172,29 @@ g_paste_client_reexecute_finish (GPasteClient *self,
  *
  * Rename the password in the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_rename_password_finish (GPasteClient *self,
-                                       GAsyncResult *result,
-                                       GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (rename_password,
+                       (const gchar *old_name, const gchar *new_name), (old_name, new_name))
 
-    g_paste_daemon2_call_rename_password_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_replace_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to replace
+ * @contents: the replacement contents
+ * @error: return location for a #GError, or %NULL
+ *
+ * Replace the contents of an item
+ */
+/**
+ * g_paste_client_replace:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to replace
+ * @contents: the replacement contents
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Replace the contents of an item
+ */
 /**
  * g_paste_client_replace_finish:
  * @self: a #GPasteClient instance
@@ -2117,18 +1203,29 @@ g_paste_client_rename_password_finish (GPasteClient *self,
  *
  * Replace the contents of an item
  */
-G_PASTE_VISIBLE void
-g_paste_client_replace_finish (GPasteClient *self,
-                               GAsyncResult *result,
-                               GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (replace,
+                       (const gchar *uuid, const gchar *contents), (uuid, contents))
 
-    g_paste_daemon2_call_replace_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_search_sync:
+ * @self: a #GPasteClient instance
+ * @pattern: the pattern to look for in history
+ * @error: return location for a #GError, or %NULL
+ *
+ * Search for items matching @pattern in history
+ *
+ * Returns: (transfer full): The uuids of the matching items
+ */
+/**
+ * g_paste_client_search:
+ * @self: a #GPasteClient instance
+ * @pattern: the pattern to look for in history
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Search for items matching @pattern in history
+ */
 /**
  * g_paste_client_search_finish:
  * @self: a #GPasteClient instance
@@ -2139,22 +1236,29 @@ g_paste_client_replace_finish (GPasteClient *self,
  *
  * Returns: (transfer full): The indexes of the matching items
  */
-G_PASTE_VISIBLE GStrv
-g_paste_client_search_finish (GPasteClient *self,
-                              GAsyncResult *result,
-                              GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
+G_PASTE_CLIENT_METHOD_RET (search,
+                           GStrv, NULL,
+                           g_auto (GStrv) results = NULL, &results, g_steal_pointer (&results),
+                           (const gchar *pattern), (pattern))
 
-    g_auto (GStrv) results = NULL;
-    if (!g_paste_daemon2_call_search_finish (G_PASTE_DAEMON2 (self), &results, result, error))
-        return NULL;
-
-    return g_steal_pointer (&results);
-}
-
+/**
+ * g_paste_client_select_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to select
+ * @error: return location for a #GError, or %NULL
+ *
+ * Select an item from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_select:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to select
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Select an item from the #GPasteDaemon
+ */
 /**
  * g_paste_client_select_finish:
  * @self: a #GPasteClient instance
@@ -2163,18 +1267,29 @@ g_paste_client_search_finish (GPasteClient *self,
  *
  * Select an item from the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_select_finish (GPasteClient *self,
-                              GAsyncResult *result,
-                              GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (select,
+                       (const gchar *uuid), (uuid))
 
-    g_paste_daemon2_call_select_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_set_password_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to set as password
+ * @name: the name to identify the password
+ * @error: return location for a #GError, or %NULL
+ *
+ * Set the item as password
+ */
+/**
+ * g_paste_client_set_password:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to set as password
+ * @name: the name to identify the password
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Set the item as password
+ */
 /**
  * g_paste_client_set_password_finish:
  * @self: a #GPasteClient instance
@@ -2183,18 +1298,25 @@ g_paste_client_select_finish (GPasteClient *self,
  *
  * Set the item as password
  */
-G_PASTE_VISIBLE void
-g_paste_client_set_password_finish (GPasteClient *self,
-                                    GAsyncResult *result,
-                                    GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (set_password,
+                       (const gchar *uuid, const gchar *name), (uuid, name))
 
-    g_paste_daemon2_call_set_password_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_show_history_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * Emit the ShowHistory signal
+ */
+/**
+ * g_paste_client_show_history:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Emit the ShowHistory signal
+ */
 /**
  * g_paste_client_show_history_finish:
  * @self: a #GPasteClient instance
@@ -2203,18 +1325,27 @@ g_paste_client_set_password_finish (GPasteClient *self,
  *
  * Emit the ShowHistory signal
  */
-G_PASTE_VISIBLE void
-g_paste_client_show_history_finish (GPasteClient *self,
-                                    GAsyncResult *result,
-                                    GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (show_history,
+                       (), ())
 
-    g_paste_daemon2_call_show_history_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_switch_history_sync:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to switch to
+ * @error: return location for a #GError, or %NULL
+ *
+ * Switch to another history
+ */
+/**
+ * g_paste_client_switch_history:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to switch to
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable):The data to pass to @callback.
+ *
+ * Switch to another history
+ */
 /**
  * g_paste_client_switch_history_finish:
  * @self: a #GPasteClient instance
@@ -2223,18 +1354,27 @@ g_paste_client_show_history_finish (GPasteClient *self,
  *
  * Switch to another history
  */
-G_PASTE_VISIBLE void
-g_paste_client_switch_history_finish (GPasteClient *self,
-                                      GAsyncResult *result,
-                                      GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (switch_history,
+                       (const gchar *name), (name))
 
-    g_paste_daemon2_call_switch_history_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_track_sync:
+ * @self: a #GPasteClient instance
+ * @state: the new tracking state of the #GPasteDaemon
+ * @error: return location for a #GError, or %NULL
+ *
+ * Change the tracking state of the #GPasteDaemon
+ */
+/**
+ * g_paste_client_track:
+ * @self: a #GPasteClient instance
+ * @state: the new tracking state of the #GPasteDaemon
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Change the tracking state of the #GPasteDaemon
+ */
 /**
  * g_paste_client_track_finish:
  * @self: a #GPasteClient instance
@@ -2243,18 +1383,27 @@ g_paste_client_switch_history_finish (GPasteClient *self,
  *
  * Change the tracking state of the #GPasteDaemon
  */
-G_PASTE_VISIBLE void
-g_paste_client_track_finish (GPasteClient *self,
-                             GAsyncResult *result,
-                             GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (track,
+                       (gboolean state), (state))
 
-    g_paste_daemon2_call_track_finish (G_PASTE_DAEMON2 (self), result, error);
-}
-
+/**
+ * g_paste_client_upload_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to upload
+ * @error: return location for a #GError, or %NULL
+ *
+ * Upload an item to a pastebin service
+ */
+/**
+ * g_paste_client_upload:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to upload
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Upload an item to a pastebin service
+ */
 /**
  * g_paste_client_upload_finish:
  * @self: a #GPasteClient instance
@@ -2263,17 +1412,10 @@ g_paste_client_track_finish (GPasteClient *self,
  *
  * Upload an item to a pastebin service
  */
-G_PASTE_VISIBLE void
-g_paste_client_upload_finish (GPasteClient *self,
-                              GAsyncResult *result,
-                              GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+G_PASTE_CLIENT_METHOD (upload,
+                       (const gchar *uuid), (uuid))
 
-    g_paste_daemon2_call_upload_finish (G_PASTE_DAEMON2 (self), result, error);
-}
+#undef ARGLIST
 
 /**************/
 /* Properties */
@@ -2292,6 +1434,10 @@ g_paste_client_is_active (GPasteClient *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), FALSE);
 
+    /* Read the cached property rather than g_paste_daemon2_get_active(): that
+     * dispatches through the interface vtable, which only the generated proxy
+     * fills in, and GPasteClient implements the interface instead of deriving
+     * from it. */
     g_autoptr (GVariant) active = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), G_PASTE_DAEMON_PROP_ACTIVE);
 
     return (active) ? g_variant_get_boolean (active) : FALSE;
@@ -2310,6 +1456,8 @@ g_paste_client_get_version (GPasteClient *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
 
+    /* Same as g_paste_client_is_active(): the cached property, not the
+     * interface's own getter. */
     g_autoptr (GVariant) version = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), G_PASTE_DAEMON_PROP_VERSION);
 
     return (version) ? g_variant_dup_string (version, NULL) : NULL;
@@ -2444,6 +1592,14 @@ g_paste_client_class_init (GPasteClientClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GDBusProxyClass *proxy_class = G_DBUS_PROXY_CLASS (klass);
+
+    /* Register the error domain before any call can return one. GDBus maps a
+     * remote error name back to its domain only if it was registered by the
+     * time the reply is decoded, and this class is the only way in to the
+     * daemon, so doing it here is what makes g_error_matches (err,
+     * G_PASTE_ERROR, ...) work on the very first failure rather than the second.
+     * The daemon side registers through the same call when it throws. */
+    g_paste_error_quark ();
 
     object_class->get_property = g_paste_client_get_property;
     object_class->set_property = g_paste_client_set_property;
