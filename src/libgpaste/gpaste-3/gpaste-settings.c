@@ -36,7 +36,7 @@ struct _GPasteSettings
     gboolean   primary_to_history;
     gboolean   rich_text_support;
     gchar     *show_history;
-    guint      storage_backend;
+    GPasteStorage storage_backend;
     guint64    storage_backend_revision;
     gchar     *sync_clipboard_to_primary;
     gchar     *sync_primary_to_clipboard;
@@ -97,7 +97,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
 #define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, uint64, 0)
-#define ENUM_SETTING(name, key) TRIVIAL_SETTING (name, key, guint, enum, 0)
+#define ENUM_SETTING(name, key, type) TRIVIAL_SETTING (name, key, type, enum, 0)
 
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
                                            g_return_if_fail (value);                              \
@@ -473,7 +473,7 @@ STRING_SETTING (show_history, SHOW_HISTORY)
  *
  * Change the "storage-backend" setting
  */
-ENUM_SETTING (storage_backend, STORAGE_BACKEND)
+ENUM_SETTING (storage_backend, STORAGE_BACKEND, GPasteStorage)
 
 /**
  * g_paste_settings_get_storage_backend_revision:
@@ -795,7 +795,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
  * g_object_bind_property() rather than wiring getters/setters by hand. The
  * property accessors delegate to the typed get/set above (keeping their
  * validation), and external changes notify through the "changed" handler. */
-#define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR)             \
+#define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR, ENUM)       \
     BOOL (close_on_select,            CLOSE_ON_SELECT)              \
     BOOL (open_centered,              OPEN_CENTERED)                \
     UINT (element_size,               ELEMENT_SIZE)                 \
@@ -816,7 +816,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     BOOL (primary_to_history,         PRIMARY_TO_HISTORY)           \
     BOOL (rich_text_support,          RICH_TEXT_SUPPORT)            \
     STR  (show_history,               SHOW_HISTORY)                 \
-    UINT (storage_backend,            STORAGE_BACKEND)              \
+    ENUM (storage_backend,            STORAGE_BACKEND,              G_PASTE_TYPE_STORAGE) \
     UINT (storage_backend_revision,   STORAGE_BACKEND_REVISION)     \
     STR  (sync_clipboard_to_primary,  SYNC_CLIPBOARD_TO_PRIMARY)    \
     STR  (sync_primary_to_clipboard,  SYNC_PRIMARY_TO_CLIPBOARD)    \
@@ -830,7 +830,9 @@ enum
 {
     PROP_0,
 #define _PROP_ID(name, KEY) PROP_##name,
-    G_PASTE_SETTINGS_FOR_EACH_PROP (_PROP_ID, _PROP_ID, _PROP_ID)
+#define _PROP_ID_ENUM(name, KEY, TYPE) PROP_##name,
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_PROP_ID, _PROP_ID, _PROP_ID, _PROP_ID_ENUM)
+#undef _PROP_ID_ENUM
 #undef _PROP_ID
     /* Derived from the shell schema rather than a plain key; handled apart. */
     PROP_extension_enabled,
@@ -852,7 +854,9 @@ g_paste_settings_get_property (GObject    *object,
 #define _GET_BOOL(name, KEY) case PROP_##name: g_value_set_boolean (value, g_paste_settings_get_##name (self)); break;
 #define _GET_UINT(name, KEY) case PROP_##name: g_value_set_uint64 (value, g_paste_settings_get_##name (self)); break;
 #define _GET_STR(name, KEY)  case PROP_##name: g_value_set_string (value, g_paste_settings_get_##name (self)); break;
-    G_PASTE_SETTINGS_FOR_EACH_PROP (_GET_BOOL, _GET_UINT, _GET_STR)
+#define _GET_ENUM(name, KEY, TYPE) case PROP_##name: g_value_set_enum (value, g_paste_settings_get_##name (self)); break;
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_GET_BOOL, _GET_UINT, _GET_STR, _GET_ENUM)
+#undef _GET_ENUM
 #undef _GET_BOOL
 #undef _GET_UINT
 #undef _GET_STR
@@ -877,7 +881,9 @@ g_paste_settings_set_property (GObject      *object,
 #define _SET_BOOL(name, KEY) case PROP_##name: g_paste_settings_set_##name (self, g_value_get_boolean (value)); break;
 #define _SET_UINT(name, KEY) case PROP_##name: g_paste_settings_set_##name (self, g_value_get_uint64 (value)); break;
 #define _SET_STR(name, KEY)  case PROP_##name: g_paste_settings_set_##name (self, g_value_get_string (value)); break;
-    G_PASTE_SETTINGS_FOR_EACH_PROP (_SET_BOOL, _SET_UINT, _SET_STR)
+#define _SET_ENUM(name, KEY, TYPE) case PROP_##name: g_paste_settings_set_##name (self, g_value_get_enum (value)); break;
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_SET_BOOL, _SET_UINT, _SET_STR, _SET_ENUM)
+#undef _SET_ENUM
 #undef _SET_BOOL
 #undef _SET_UINT
 #undef _SET_STR
@@ -1016,7 +1022,9 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
 #define _INSTALL_BOOL(name, KEY) properties[PROP_##name] = g_param_spec_boolean (G_PASTE_##KEY##_SETTING, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 #define _INSTALL_UINT(name, KEY) properties[PROP_##name] = g_param_spec_uint64 (G_PASTE_##KEY##_SETTING, NULL, NULL, 0, G_MAXUINT64, 0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 #define _INSTALL_STR(name, KEY)  properties[PROP_##name] = g_param_spec_string (G_PASTE_##KEY##_SETTING, NULL, NULL, NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
-    G_PASTE_SETTINGS_FOR_EACH_PROP (_INSTALL_BOOL, _INSTALL_UINT, _INSTALL_STR)
+#define _INSTALL_ENUM(name, KEY, TYPE) properties[PROP_##name] = g_param_spec_enum (G_PASTE_##KEY##_SETTING, NULL, NULL, TYPE, 0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_INSTALL_BOOL, _INSTALL_UINT, _INSTALL_STR, _INSTALL_ENUM)
+#undef _INSTALL_ENUM
 #undef _INSTALL_BOOL
 #undef _INSTALL_UINT
 #undef _INSTALL_STR

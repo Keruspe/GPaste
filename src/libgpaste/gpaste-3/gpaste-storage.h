@@ -27,6 +27,9 @@ typedef enum {
     G_PASTE_STORAGE_DEFAULT = G_PASTE_STORAGE_FILE
 } GPasteStorage;
 
+#define G_PASTE_TYPE_STORAGE (g_paste_storage_get_type ())
+GType g_paste_storage_get_type (void);
+
 gboolean g_paste_storage_is_encrypted (GPasteStorage storage_kind);
 
 G_END_DECLS

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gpaste-3/gpaste-macros.h>
+#include <gpaste-3/gpaste-storage.h>
 
 G_BEGIN_DECLS
 
@@ -35,7 +36,7 @@ const gchar *g_paste_settings_get_pop                        (GPasteSettings *se
 gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
 gboolean     g_paste_settings_get_rich_text_support          (GPasteSettings *self);
 const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
-guint        g_paste_settings_get_storage_backend            (GPasteSettings *self);
+GPasteStorage g_paste_settings_get_storage_backend           (GPasteSettings *self);
 guint64      g_paste_settings_get_storage_backend_revision   (GPasteSettings *self);
 const gchar *g_paste_settings_get_sync_clipboard_to_primary  (GPasteSettings *self);
 const gchar *g_paste_settings_get_sync_primary_to_clipboard  (GPasteSettings *self);
@@ -87,7 +88,7 @@ void g_paste_settings_set_rich_text_support          (GPasteSettings *self,
 void g_paste_settings_set_show_history               (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_storage_backend            (GPasteSettings *self,
-                                                      guint           value);
+                                                      GPasteStorage   value);
 void g_paste_settings_set_storage_backend_revision   (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_sync_clipboard_to_primary  (GPasteSettings *self,
