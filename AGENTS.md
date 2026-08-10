@@ -108,7 +108,7 @@ The `src/gnome-shell/` extension follows upstream GNOME Shell's JS conventions, 
 
 Code conventions (also following upstream):
 - **Don't version-pin core `gi://` imports** — write `gi://GObject`, `gi://GLib`, `gi://Gio`, `gi://Pango`, `gi://Clutter`, `gi://St`. Only pin typelibs that genuinely ship multiple versions: `gi://GPaste?version=3`, `gi://GPasteDaemon?version=1`, `gi://GPasteGtk?version=4`.
-- **Manage signal lifecycles with `connectObject`/`disconnectObject`** (owner = `this`) for connections to long-lived non-actor GObjects (settings, the `GPaste.Client`), rather than tracking handler ids and disconnecting them by hand. They auto-disconnect when the owner actor is destroyed.
+- **Manage signal lifecycles with `connectObject`/`disconnectObject`** (owner = `this`) for connections to long-lived non-actor GObjects (settings, the `GPaste.Client`, the daemon runner's bus and daemon), rather than tracking handler ids and disconnecting them by hand. They auto-disconnect when the owner actor is destroyed; an owner that is *not* an actor — `GPasteDaemonRunner`, a plain class — gets no such teardown, so it must still call `disconnectObject(this)` itself (`daemon.js` does, from `_teardownBus()` and `_releaseDaemon()`).
 - **Use a standard `constructor()` (calling `super(...)`) in `GObject.registerClass` classes**, not `_init()`/`super._init()`. GJS bridges to the `_init()`-based shell/St/Clutter base classes transparently (positional args like `super(0.0, 'GPaste')` and property dicts like `super({...})` both work).
 
 Async / `Gio._promisify` conventions (these bit us — keep them):

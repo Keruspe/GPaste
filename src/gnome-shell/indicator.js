@@ -340,23 +340,40 @@ class GPasteIndicator extends Button {
             this._loadMore();
     }
 
+    // Ask the daemon how big the current history is and record it. Every path
+    // that repopulates the list bumps _reloadGeneration on entry, so a reload
+    // (or a search, or a refresh) started while we were awaiting makes this one
+    // stale: drop out rather than publish an answer about a history nobody is
+    // showing any more, and likewise once the client has gone.
+    //
+    // Returns whether the caller may carry on.
+    async _fetchAvailable() {
+        const generation = this._reloadGeneration;
+
+        const name = await this._client.get_history_name();
+        if (!this._client || generation !== this._reloadGeneration)
+            return false;
+
+        const available = await this._client.get_history_size(name);
+        if (!this._client || generation !== this._reloadGeneration)
+            return false;
+
+        this._available = available;
+        return true;
+    }
+
     async _reload() {
         if (!this._client)
             return;
 
-        const generation = ++this._reloadGeneration;
+        ++this._reloadGeneration;
 
         this._searchResults = [];
 
-        const name = await this._client.get_history_name();
-        if (!this._client || generation !== this._reloadGeneration)
-            return;
-        const available = await this._client.get_history_size(name);
-        if (!this._client || generation !== this._reloadGeneration)
+        if (!await this._fetchAvailable())
             return;
 
-        this._available = available;
-        this._rebuild(available === 0);
+        this._rebuild(this._available === 0);
     }
 
     async _runSearch() {
@@ -430,16 +447,12 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        const generation = ++this._reloadGeneration;
+        ++this._reloadGeneration;
 
-        const name = await this._client.get_history_name();
-        if (!this._client || generation !== this._reloadGeneration)
-            return;
-        const available = await this._client.get_history_size(name);
-        if (!this._client || generation !== this._reloadGeneration)
+        if (!await this._fetchAvailable())
             return;
 
-        this._available = available;
+        const available = this._available;
 
         while (this._history.length > available)
             this._history.pop().destroy();

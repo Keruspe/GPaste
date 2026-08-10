@@ -145,6 +145,15 @@ on_history_switched (GPasteClient *client G_GNUC_UNUSED,
     g_paste_ui_panel_add_history (self, history, TRUE);
 }
 
+/* The item the sidebar last pointed us at, when it is one of ours: "setup-menu"
+ * fires for every item in the sidebar, our histories among the rest, and both
+ * the menu actions and a selection change act on whatever it left here. */
+static GPasteUiPanelHistory *
+g_paste_ui_panel_get_menu_history (GPasteUiPanel *self)
+{
+    return G_PASTE_IS_UI_PANEL_HISTORY (self->menu_item) ? G_PASTE_UI_PANEL_HISTORY (self->menu_item) : NULL;
+}
+
 static void
 on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
                       guint              position G_GNUC_UNUSED,
@@ -317,12 +326,12 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                           gpointer       user_data)
 {
     GPasteUiPanel *self = user_data;
-    AdwSidebarItem *item = self->menu_item;
+    GPasteUiPanelHistory *item = g_paste_ui_panel_get_menu_history (self);
 
-    if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
+    if (!item)
         return;
 
-    const gchar *history = g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (item));
+    const gchar *history = g_paste_ui_panel_history_get_history (item);
     g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, _("Under which name do you want to backup this history?")));
     GtkWidget *entry = gtk_entry_new ();
@@ -363,12 +372,12 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                           gpointer       user_data)
 {
     GPasteUiPanel *self = user_data;
-    AdwSidebarItem *item = self->menu_item;
+    GPasteUiPanelHistory *item = g_paste_ui_panel_get_menu_history (self);
 
-    if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
+    if (!item)
         return;
 
-    const gchar *history = g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (item));
+    const gchar *history = g_paste_ui_panel_history_get_history (item);
     DeleteHistoryData *data = g_new (DeleteHistoryData, 1);
 
     data->client = g_object_ref (self->client);
@@ -384,14 +393,13 @@ on_empty_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                          gpointer       user_data)
 {
     GPasteUiPanel *self = user_data;
-    AdwSidebarItem *item = self->menu_item;
+    GPasteUiPanelHistory *item = g_paste_ui_panel_get_menu_history (self);
 
-    if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
+    if (!item)
         return;
 
-    const gchar *history = g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (item));
-
-    g_paste_gtk_util_empty_history (self->rootwin, self->client, self->settings, history);
+    g_paste_gtk_util_empty_history (self->rootwin, self->client, self->settings,
+                                    g_paste_ui_panel_history_get_history (item));
 }
 
 static void

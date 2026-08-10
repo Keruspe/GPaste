@@ -29,6 +29,10 @@ export class GPasteDaemonRunner {
         this._standDown = false;
         this._shutDown = false;
 
+        // The deferred jobs (_deferOnce) currently in flight: signal name to the
+        // id of the idle still waiting to run it, 0 once the job has started.
+        this._pending = new Map();
+
         // Resolves once the daemon has been built and registered on the bus, or
         // the runner has given up; the indicator awaits it before connecting so
         // the common path never activates the standalone daemon by accident.
@@ -48,16 +52,16 @@ export class GPasteDaemonRunner {
     _start() {
         this._bus = GPasteDaemon.Bus.new();
 
-        this._exportFailedId = this._bus.connect('export-failed', () => this._onExportFailed());
-
-        this._nameLostId = this._bus.connect('name-lost', (_bus, wasOwned) => this._onNameLost(wasOwned));
-
-        this._acquiredId = this._bus.connect('name-acquired', () => {
-            this._onNameAcquired().catch(e => {
-                console.error(e);
-                this._resolveReady();
-            });
-        });
+        this._bus.connectObject(
+            'export-failed', () => this._onExportFailed(),
+            'name-lost', (_bus, wasOwned) => this._onNameLost(wasOwned),
+            'name-acquired', () => {
+                this._onNameAcquired().catch(e => {
+                    console.error(e);
+                    this._resolveReady();
+                });
+            },
+            this);
 
         this._bus.own_name_full(true);
     }
@@ -122,19 +126,11 @@ export class GPasteDaemonRunner {
         GLib.Source.set_name_by_id(this._reconnectId, '[GPaste] bus reconnect');
     }
 
+    // The bus is not an actor, so nothing disconnects us automatically: do it by
+    // hand before dropping it. Safe to run twice (a reconnect that is shut down
+    // before it fires leaves no bus behind).
     _teardownBus() {
-        if (this._exportFailedId) {
-            this._bus.disconnect(this._exportFailedId);
-            this._exportFailedId = 0;
-        }
-        if (this._nameLostId) {
-            this._bus.disconnect(this._nameLostId);
-            this._nameLostId = 0;
-        }
-        if (this._acquiredId) {
-            this._bus.disconnect(this._acquiredId);
-            this._acquiredId = 0;
-        }
+        this._bus?.disconnectObject(this);
 
         this._releaseDaemon();
         this._bus = null;
@@ -169,11 +165,12 @@ export class GPasteDaemonRunner {
         // reload an extension's code from disk on wayland, so a plain re-exec is
         // still a no-op here; but an on-demand storage migration (the client
         // resets the backend revision before asking for a re-exec) is handled in
-        // place by reloading the daemon's storage — see _onReexecute().
-        this._reexecId = this._daemon.connect('reexecute-self', () => this._onReexecute());
-
-        // Same deal for a passphrase change — see _onChangePassphrase().
-        this._changePassphraseId = this._daemon.connect('change-passphrase', () => this._onChangePassphrase());
+        // place by reloading the daemon's storage — see _migrateInPlace(). Same
+        // deal for a passphrase change — see _changePassphraseInPlace().
+        this._daemon.connectObject(
+            'reexecute-self', () => this._deferOnce('reexecute-self', () => this._migrateInPlace()),
+            'change-passphrase', () => this._deferOnce('change-passphrase', () => this._changePassphraseInPlace()),
+            this);
 
         bus.add_object(this._daemon);
 
@@ -276,23 +273,61 @@ export class GPasteDaemonRunner {
         return new Promise(resolve => show(this._prompt, this._settings, resolve));
     }
 
-    // "reexecute-self" fires synchronously from inside the daemon's Reexecute
-    // D-Bus dispatch, which keeps using the daemon after we return; defer the
-    // work to an idle so that dispatch fully unwinds first. Coalesce re-entry.
-    _onReexecute() {
-        if (this._reexecPending)
+    // Both signals fire synchronously from inside the daemon's own D-Bus
+    // dispatch (Reexecute, ChangePassphrase), which keeps using the daemon after
+    // we return: defer @job to an idle so that dispatch fully unwinds first.
+    //
+    // Keep coalescing under @name until the whole (async) job has settled, not
+    // merely until the idle runs, so a second request arriving mid-job cannot
+    // start a concurrent one that reloads the store out from under the first.
+    _deferOnce(name, job) {
+        if (this._pending.has(name))
             return;
 
-        this._reexecPending = true;
-        GLib.Source.set_name_by_id(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            // Keep coalescing until the whole (async) migration has settled, so a
-            // second re-exec arriving mid-migration cannot start a concurrent
-            // _migrateInPlace() that reloads the store out from under the first.
-            this._migrateInPlace()
+        const id = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._pending.set(name, 0);
+            // Promise.resolve() so that a job returning early (or throwing)
+            // rather than a promise still clears @name: leaving it behind would
+            // coalesce away every later request for the rest of the session.
+            Promise.resolve().then(job)
                 .catch(e => console.error(e))
-                .finally(() => (this._reexecPending = false));
+                .finally(() => this._pending.delete(name));
             return GLib.SOURCE_REMOVE;
-        }), '[GPaste] reexecute-self');
+        });
+
+        this._pending.set(name, id);
+        GLib.Source.set_name_by_id(id, `[GPaste] ${name}`);
+    }
+
+    // Run a storage concern against the live daemon and rebuild its backend
+    // around whatever the concern settled on. Shared by the on-demand migration
+    // and the re-key, which differ only in the concern they run.
+    //
+    // Flushing happens inside our own turn on the chain, together with the
+    // concern: the flush has to cover our complete state before the store is
+    // read or rewritten, but doing it before queueing would stop the history
+    // from recording (and make every Delete over the bus fail with BUSY) for
+    // however long an unrelated concern ahead of us keeps its dialog up. Our own
+    // turn — rather than _settleStorage() — is also what stops us from joining a
+    // settle that has already read past our flush.
+    async _reloadStorageAfter(concern) {
+        if (!this._daemon || this._stopped)
+            return;
+
+        const daemon = this._daemon;
+
+        await this._serializeStorage(() => {
+            daemon.flush();
+            return concern();
+        });
+
+        if (this._stopped)
+            return;
+
+        // Reload the live daemon's backend, unless it was torn down or replaced
+        // while the helpers were running.
+        if (daemon === this._daemon)
+            daemon.reload_storage();
     }
 
     async _migrateInPlace() {
@@ -307,72 +342,13 @@ export class GPasteDaemonRunner {
         if (!GPasteDaemon.storage_migration_needed(this._settings))
             return;
 
-        // Flush before the store is read so the import covers the complete
-        // history, then run the same concern as startup (it shows the dialog,
-        // rewrites the store and bumps the revision)...
-        //
-        // Both from inside our own turn on the chain: flushing stops the history
-        // from recording (and makes every Delete over the bus fail with BUSY),
-        // so doing it before queueing would leave it that way for however long an
-        // unrelated concern's dialog stays up — and a flush that ran before a
-        // settle we merely joined would be a flush that settle had already read
-        // past. Our own turn is also why this cannot go through _settleStorage():
-        // joining a running settle is exactly what must not happen here.
-        const daemon = this._daemon;
-
-        const carryOn = await this._serializeStorage(() => {
-            daemon.flush();
-            return this._doSettleStorage();
-        });
-
-        if (!carryOn)
-            return;
-
-        // ...and reload the live daemon's backend from the now-migrated setting,
-        // unless it was torn down or replaced while the helpers were running.
-        if (daemon === this._daemon)
-            daemon.reload_storage();
+        // The same concern as startup: it shows the dialog, rewrites the store
+        // and bumps the revision.
+        await this._reloadStorageAfter(() => this._doSettleStorage());
     }
 
-    // "change-passphrase" reaches us from inside the daemon's ChangePassphrase
-    // D-Bus dispatch, so defer to an idle and coalesce exactly like
-    // _onReexecute(): a second request must not run a concurrent re-key.
-    _onChangePassphrase() {
-        if (this._changePassphrasePending)
-            return;
-
-        this._changePassphrasePending = true;
-        GLib.Source.set_name_by_id(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            this._changePassphraseInPlace()
-                .catch(e => console.error(e))
-                .finally(() => (this._changePassphrasePending = false));
-            return GLib.SOURCE_REMOVE;
-        }), '[GPaste] change-passphrase');
-    }
-
-    async _changePassphraseInPlace() {
-        if (!this._daemon || this._stopped)
-            return;
-
-        // Flush before every history on disk is rewritten, so the re-key covers
-        // our complete state rather than a stale snapshot — but from inside our
-        // own turn on the chain, so the history is not left flushed (nothing
-        // recorded, every Delete refused with BUSY) for as long as whatever is
-        // ahead of us keeps its dialog up...
-        const daemon = this._daemon;
-
-        await this._serializeStorage(() => {
-            daemon.flush();
-            return this._runStorageConcern(GPasteDaemon.storage_rekey_show);
-        });
-
-        if (this._stopped)
-            return;
-
-        // ...then rebuild the live daemon's backend around the new passphrase,
-        // unless the daemon was torn down or replaced while we were asking.
-        if (daemon === this._daemon)
-            daemon.reload_storage();
+    _changePassphraseInPlace() {
+        return this._reloadStorageAfter(() => this._runStorageConcern(GPasteDaemon.storage_rekey_show));
     }
 
     // Flush the history, release the storage lock, drop the daemon/search
@@ -380,15 +356,7 @@ export class GPasteDaemonRunner {
     // dequeues our pending re-request for it. Shared by an orderly shutdown
     // (extension disable) and standing down after a takeover.
     _releaseDaemon() {
-        if (this._reexecId) {
-            this._daemon?.disconnect(this._reexecId);
-            this._reexecId = 0;
-        }
-
-        if (this._changePassphraseId) {
-            this._daemon?.disconnect(this._changePassphraseId);
-            this._changePassphraseId = 0;
-        }
+        this._daemon?.disconnectObject(this);
 
         // Flush before releasing the lock so a successor daemon loads our final
         // state; drain happens synchronously inside flush().
@@ -438,6 +406,15 @@ export class GPasteDaemonRunner {
             GLib.Source.remove(this._reconnectId);
             this._reconnectId = 0;
         }
+
+        // Same for a deferred job whose idle has not run yet: the jobs bail out
+        // on _stopped anyway, but there is no reason to keep the extension's
+        // settings and prompt alive for another main loop turn.
+        for (const id of this._pending.values()) {
+            if (id)
+                GLib.Source.remove(id);
+        }
+        this._pending.clear();
 
         this._teardownBus();
 
