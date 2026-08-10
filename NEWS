@@ -31,6 +31,7 @@ NEW in 51.0 (UNRELEASED)
 - Verify a passphrase against every encrypted history rather than the first that opens, so a set left keyed differently by an interrupted passphrase change can no longer be loaded empty and overwritten
 - Never act on a truncated directory listing as if it were the whole thing: a passphrase change could leave part of a history keyed to the old passphrase, and a migration could delete histories it had never imported
 - Fix every GNOME Shell overview result disappearing when a single item had been evicted from the history between the search and the results being described
+- Never record "no storage" for a history directory that could not be read: an unreadable directory made the migration dialog show "none" as the current backend, offer no import, and leave that behind for the stored history
 - Say so when a passphrase change could not rewrite the histories, or when the old data a migration was told to delete is still on disk, instead of only logging it: both used to end with a dialog closing as if all was well
 - Fix the graphical tool crashing on startup, and several cases where a window closing while a D-Bus call was in flight left the reply writing into freed memory
 - Fix search results being overwritten by a history refresh that was already in flight, and older search replies winning over newer ones

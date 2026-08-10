@@ -56,9 +56,15 @@ typedef struct
 /* Work out which backend the history currently lives in by looking at the files
  * on disk, independent of the (possibly stale or unset) settings value. The
  * active history is checked first; failing that, whichever flavour has the most
- * files on disk wins, so an existing setup is still recognised. */
-static GPasteStorage
-detect_current_backend (GPasteSettings *settings)
+ * files on disk wins, so an existing setup is still recognised.
+ *
+ * The answer is @current, and %FALSE means there is none: the files could not be
+ * read at all, and @current is then left as the caller found it. "There is
+ * nothing stored" and "we could not look" are the same count and a very
+ * different answer, and what comes out of here is written to storage-backend. */
+static gboolean
+detect_current_backend (GPasteSettings *settings,
+                        GPasteStorage  *current)
 {
     /* The storing flavours in tie-break precedence order (encrypted over plain,
      * file over database), used both for the active-name lookup and the on-disk
@@ -86,7 +92,11 @@ detect_current_backend (GPasteSettings *settings)
         g_autoptr (GFile) file = g_paste_util_get_history_file (name, g_paste_storage_get_extension (flavours[i]));
 
         if (g_file_query_exists (file, NULL)) /* cancellable */
-            return flavours[i];
+        {
+            *current = flavours[i];
+
+            return TRUE;
+        }
     }
 
     /* No history under the active name: fall back to whichever flavour has the
@@ -106,11 +116,15 @@ detect_current_backend (GPasteSettings *settings)
      * fresh profile (no directory yet) is the ordinary case, and lists nothing.
      * A directory that is there but unreadable is not: the count would come out
      * zero and this would answer "nothing is stored", which the caller writes to
-     * storage-backend. */
+     * storage-backend -- so it answers nothing at all instead. */
     if (!files)
+    {
         g_warning ("Could not list the history directory to detect the current backend: %s", error->message);
 
-    for (GStrv file = files; file && *file; ++file)
+        return FALSE;
+    }
+
+    for (GStrv file = files; *file; ++file)
     {
         /* The extensions are mutually non-suffixing (".xml" never matches
          * ".xmls", ".db" never ".dbs"), so each file counts for at most one. */
@@ -134,7 +148,9 @@ detect_current_backend (GPasteSettings *settings)
             best = i;
     }
 
-    return counts[best] ? flavours[best] : G_PASTE_STORAGE_NOOP;
+    *current = counts[best] ? flavours[best] : G_PASTE_STORAGE_NOOP;
+
+    return TRUE;
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -903,10 +919,16 @@ g_paste_storage_migration_async (GPastePrompt        *prompt,
     /* Detect the backend the history currently lives in from the files on disk,
      * and apply it right away so this session keeps the right backend even if the
      * prompt is dismissed without an explicit choice (importantly, an encrypted
-     * history is not silently downgraded to "none"). */
-    GPasteStorage current = detect_current_backend (settings);
+     * history is not silently downgraded to "none").
+     *
+     * A detection that could not read the disk writes nothing: the stored setting
+     * is then the best thing we know, and overwriting it with a guess is how an
+     * encrypted history gets recorded as "no storage" and stops being offered for
+     * import. */
+    GPasteStorage current = g_paste_settings_get_storage_backend (settings);
 
-    g_paste_settings_set_storage_backend (settings, current);
+    if (detect_current_backend (settings, &current))
+        g_paste_settings_set_storage_backend (settings, current);
 
     MigrationData *self = g_new0 (MigrationData, 1);
 
