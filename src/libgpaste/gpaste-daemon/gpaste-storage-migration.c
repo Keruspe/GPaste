@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
@@ -22,8 +23,7 @@ typedef struct
 {
     GPasteSettings                *settings;
     GPastePrompt                  *prompt;
-    GPasteStorageMigrationDoneFunc done;
-    gpointer                       user_data;
+    GTask                         *task;
 
     /* The backend the history currently lives in (detected from the files on
      * disk): what we import from and clean up. */
@@ -187,13 +187,51 @@ remember_passphrase (GPasteStorageRemember  remember,
 }
 #endif
 
-/* Release the state and hand control back to the caller: the one way out of the
- * migration, whether it applied, was dismissed or never got started. */
+/* Hand a concern's outcome to whoever started it: the failure that ended it, or
+ * plain success -- a dismissal included, since what the user chose has already
+ * been applied by the time this runs. Shared by all three, which is what keeps
+ * them from disagreeing about what a %TRUE means. */
 static void
-migration_finish (MigrationData *self)
+storage_concern_return (GTask  *task,
+                        GError *error) /* (transfer full) (nullable) */
 {
-    GPasteStorageMigrationDoneFunc done = self->done;
-    gpointer done_data = self->user_data;
+    if (error)
+        g_task_return_error (task, error);
+    else
+        g_task_return_boolean (task, TRUE);
+}
+
+/* One shape for the three _finish(): the source tag is what keeps one concern's
+ * result from being read as another's. A mismatch is a wiring mistake rather
+ * than anything the user can cause, but it still comes back as a #GError --
+ * every caller prints the message it gets, so leaving @error unset would turn
+ * the diagnostic into a crash. */
+static gboolean
+storage_concern_finish (GAsyncResult  *result,
+                        gpointer       source_tag,
+                        GError       **error)
+{
+    if (!G_IS_TASK (result) || g_task_get_source_tag (G_TASK (result)) != source_tag)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT,
+                             "This is not the result of the storage concern being finished");
+
+        return FALSE;
+    }
+
+    return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+/* Release the state and hand control back to the caller: the one way out of the
+ * migration, whether it applied, was dismissed or never got started. @error is
+ * the prompt failure that ended it, if any -- a dismissal is not one, and a
+ * failure always ends the concern where it happened, so there is only ever the
+ * one to report. */
+static void
+migration_finish (MigrationData *self,
+                  GError        *error) /* (transfer full) (nullable) */
+{
+    g_autoptr (GTask) task = self->task;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_paste_passphrase_free (self->source_passphrase);
@@ -203,8 +241,7 @@ migration_finish (MigrationData *self)
     g_object_unref (self->prompt);
     g_free (self);
 
-    if (done)
-        done (done_data);
+    storage_concern_return (task, error);
 }
 
 G_PASTE_VISIBLE gboolean
@@ -467,7 +504,7 @@ apply_migration_settle (MigrationData *self,
 #endif
     }
 
-    migration_finish (self);
+    migration_finish (self, NULL);
 }
 
 static void
@@ -515,8 +552,11 @@ apply_migration (MigrationData *self)
  * Asking the process-wide global instead would be wrong: continue_apply() only
  * prompts when the global is absent *or* does not decrypt this flavour, so on a
  * dismissal a stale one is still sitting there and would read as success. */
-typedef void (*UnlockDoneFunc) (gboolean unlocked,
-                                gpointer user_data);
+/* @error is borrowed and only set when the prompt implementation failed, which
+ * is not the same as the user dismissing it (@unlocked %FALSE, @error %NULL). */
+typedef void (*UnlockDoneFunc) (gboolean  unlocked,
+                                GError   *error,
+                                gpointer  user_data);
 
 typedef struct
 {
@@ -577,7 +617,7 @@ on_unlock_reply (GObject      *source,
     g_free (prompt);
 
     if (done)
-        done (unlocked, done_data);
+        done (unlocked, prompt_error, done_data);
 }
 
 /* Shared "unlock an existing encrypted history" prompt: ask for the passphrase,
@@ -634,8 +674,16 @@ on_passphrase_set (GObject      *source,
     g_autoptr (GPastePassphrase) passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result,
                                                                                 &remember, &prompt_error);
 
+    /* A prompt that failed outright is not a question the user can answer
+     * differently: end the concern on it rather than putting the same dialog
+     * back up, which an implementation that fails reliably (a JS exception in an
+     * out-of-tree one) would otherwise do for every round of the loop below. */
     if (prompt_error)
+    {
         g_warning ("The passphrase prompt failed: %s", prompt_error->message);
+        migration_finish (self, g_steal_pointer (&prompt_error));
+        return;
+    }
 
     /* Cancelled: ask again, so another backend can be picked. The state gathered
      * so far is kept, so the second time round only asks what is still
@@ -661,10 +709,18 @@ on_passphrase_set (GObject      *source,
  * process-wide one is about to be replaced by the destination's) and carry on
  * with the next step; on dismissal (no passphrase) ask again instead. */
 static void
-on_source_unlocked (gboolean unlocked,
-                    gpointer user_data)
+on_source_unlocked (gboolean  unlocked,
+                    GError   *error,
+                    gpointer  user_data)
 {
     MigrationData *self = user_data;
+
+    /* As in on_passphrase_set(): a prompt that failed cannot be re-asked. */
+    if (error)
+    {
+        migration_finish (self, g_error_copy (error));
+        return;
+    }
 
     if (!unlocked)
     {
@@ -729,8 +785,9 @@ continue_apply (MigrationData *self)
 
 /* The migration prompt was answered. Dismissing it leaves the revision
  * untouched so it comes back on the next start: the user has to make a
- * deliberate choice, and the detected current backend (written in _show below)
- * is what this session keeps in the meantime. */
+ * deliberate choice, and the detected current backend (written by
+ * g_paste_storage_migration_async() below) is what this session keeps in the
+ * meantime. */
 static void
 on_migration_reply (GObject      *source,
                     GAsyncResult *result,
@@ -748,7 +805,7 @@ on_migration_reply (GObject      *source,
         if (prompt_error)
             g_warning ("The migration prompt failed: %s", prompt_error->message);
 
-        migration_finish (self);
+        migration_finish (self, g_steal_pointer (&prompt_error));
         return;
     }
 
@@ -779,19 +836,19 @@ ask_migration (MigrationData *self)
 }
 
 /**
- * g_paste_storage_migration_show:
+ * g_paste_storage_migration_async:
  * @prompt: the #GPastePrompt to ask through
  * @settings: a #GPasteSettings instance
- * @done: (scope async) (nullable): called once the migration settled or was dismissed
- * @user_data: data passed to @done
+ * @callback: (scope async): called once the migration settled or was dismissed
+ * @user_data: data passed to @callback
  *
  * Ask the user where GPaste should store the history, and act on the answer.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_migration_show (GPastePrompt                   *prompt,
-                                GPasteSettings                 *settings,
-                                GPasteStorageMigrationDoneFunc  done,
-                                gpointer                        user_data)
+g_paste_storage_migration_async (GPastePrompt        *prompt,
+                                 GPasteSettings      *settings,
+                                 GAsyncReadyCallback  callback,
+                                 gpointer             user_data)
 {
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
@@ -808,11 +865,36 @@ g_paste_storage_migration_show (GPastePrompt                   *prompt,
 
     self->settings = g_object_ref (settings);
     self->prompt = g_object_ref (prompt);
-    self->done = done;
-    self->user_data = user_data;
+    self->task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
     self->current = current;
 
+    /* The three concerns hand their results back through the same task type, so
+     * the tag is what keeps one from being read as another. */
+    g_task_set_source_tag (self->task, g_paste_storage_migration_async);
+
     ask_migration (self);
+}
+
+/**
+ * g_paste_storage_migration_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect the outcome of g_paste_storage_migration_async().
+ *
+ * The only failure is the #GPastePrompt implementation itself, so the domain is
+ * whichever one that reports in: the built-in prompts never fail, an
+ * out-of-tree one may raise anything (%G_PASTE_ERROR, %G_IO_ERROR,
+ * %G_DBUS_ERROR, ...). Handing in the result of another operation is
+ * %G_PASTE_ERROR.
+ *
+ * Returns: %TRUE unless the prompt implementation failed outright
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_migration_finish (GAsyncResult  *result,
+                                  GError       **error)
+{
+    return storage_concern_finish (result, g_paste_storage_migration_async, error);
 }
 
 G_PASTE_VISIBLE gboolean
@@ -841,55 +923,73 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-typedef struct
-{
-    GPasteStorageMigrationDoneFunc done;
-    gpointer                       user_data;
-} DecryptionDone;
-
 /* The caller carries on either way: an encrypted history that stayed locked
- * loads as unreadable, which the history already refuses to overwrite. */
+ * loads as unreadable, which the history already refuses to overwrite. So only
+ * a prompt that failed outright is worth reporting. */
 static void
-on_decryption_settled (gboolean unlocked G_GNUC_UNUSED,
-                       gpointer user_data)
+on_decryption_settled (gboolean  unlocked G_GNUC_UNUSED,
+                       GError   *error,
+                       gpointer  user_data)
 {
-    g_autofree DecryptionDone *self = user_data;
+    g_autoptr (GTask) task = user_data;
 
-    if (self->done)
-        self->done (self->user_data);
+    storage_concern_return (task, (error) ? g_error_copy (error) : NULL);
 }
 #endif
 
 /**
- * g_paste_storage_decryption_show:
+ * g_paste_storage_decryption_async:
  * @prompt: the #GPastePrompt to ask through
  * @settings: a #GPasteSettings instance
- * @done: (scope async) (nullable): called once the history is unlocked or the prompt dismissed
- * @user_data: data passed to @done
+ * @callback: (scope async): called once the history is unlocked or the prompt dismissed
+ * @user_data: data passed to @callback
  *
  * Unlock an already-encrypted history through a passphrase prompt.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_decryption_show (GPastePrompt                   *prompt,
-                                 GPasteSettings                 *settings,
-                                 GPasteStorageMigrationDoneFunc  done,
-                                 gpointer                        user_data)
+g_paste_storage_decryption_async (GPastePrompt        *prompt,
+                                  GPasteSettings      *settings,
+                                  GAsyncReadyCallback  callback,
+                                  gpointer             user_data)
 {
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
+    GTask *task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+
+    g_task_set_source_tag (task, g_paste_storage_decryption_async);
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    DecryptionDone *decryption = g_new0 (DecryptionDone, 1);
-
-    decryption->done = done;
-    decryption->user_data = user_data;
-
+    /* The task is the callback's user_data, and on_decryption_settled owns it. */
     unlock_prompt (prompt, settings, g_paste_settings_get_storage_backend (settings),
-                   on_decryption_settled, decryption);
+                   on_decryption_settled, task);
 #else
-    if (done)
-        done (user_data);
+    (void) settings;
+
+    g_task_return_boolean (task, TRUE);
+    g_object_unref (task);
 #endif
+}
+
+/**
+ * g_paste_storage_decryption_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect the outcome of g_paste_storage_decryption_async().
+ *
+ * As for g_paste_storage_migration_finish(): the only failure is the
+ * #GPastePrompt implementation itself, in whichever domain it reports
+ * (%G_PASTE_ERROR, %G_IO_ERROR, %G_DBUS_ERROR, ...), and handing in the result
+ * of another operation is %G_PASTE_ERROR.
+ *
+ * Returns: %TRUE unless the prompt implementation failed outright
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_decryption_finish (GAsyncResult  *result,
+                                   GError       **error)
+{
+    return storage_concern_finish (result, g_paste_storage_decryption_async, error);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -897,8 +997,7 @@ typedef struct
 {
     GPastePrompt                  *prompt;
     GPasteSettings                *settings;
-    GPasteStorageMigrationDoneFunc done;
-    gpointer                       user_data;
+    GTask                         *task;
 
     /* The encrypted flavor being re-keyed, and the passphrase it is currently
      * encrypted with once we have one that actually decrypts it (in gcr secure
@@ -912,11 +1011,12 @@ typedef struct
     GPasteStorageRemember          remember;
 } RekeyData;
 
+/* As migration_finish(): the one way out, carrying whatever ended it. */
 static void
-rekey_finish (RekeyData *self)
+rekey_finish (RekeyData *self,
+              GError    *error) /* (transfer full) (nullable) */
 {
-    GPasteStorageMigrationDoneFunc done = self->done;
-    gpointer done_data = self->user_data;
+    g_autoptr (GTask) task = self->task;
 
     g_paste_passphrase_free (self->current_passphrase);
     g_paste_passphrase_free (self->new_passphrase);
@@ -924,8 +1024,7 @@ rekey_finish (RekeyData *self)
     g_object_unref (self->prompt);
     g_free (self);
 
-    if (done)
-        done (done_data);
+    storage_concern_return (task, error);
 }
 
 /* Re-encrypt every history of the current flavor with @passphrase. Each one is
@@ -950,21 +1049,24 @@ rekey_history (RekeyData   *self,
 }
 
 static gboolean
-rekey_histories (RekeyData   *self,
-                 const gchar *passphrase)
+rekey_histories (RekeyData    *self,
+                 const gchar  *passphrase,
+                 GError      **error)
 {
     const gchar *current = g_paste_passphrase_peek (self->current_passphrase);
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
                                                                                             self->settings,
                                                                                             current);
-    g_autoptr (GError) error = NULL;
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &error);
+    g_autoptr (GError) list_error = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &list_error);
 
     /* Not "no histories" (that is an empty list): the listing itself failed, so
      * we have no idea what would be left behind. */
     if (!names)
     {
-        g_warning ("Could not list the histories to change their passphrase: %s", error->message);
+        g_propagate_prefixed_error (error, g_steal_pointer (&list_error),
+                                    "Could not list the histories to change their passphrase: ");
+
         return FALSE;
     }
 
@@ -972,8 +1074,6 @@ rekey_histories (RekeyData   *self,
     {
         if (rekey_history (self, *name, current, passphrase))
             continue;
-
-        g_warning ("Failed to change the passphrase of the history \"%s\"", *name);
 
         /* Put the ones that did move back on the passphrase they all still
          * shared a moment ago, rather than leave the set split between two — a
@@ -986,6 +1086,9 @@ rekey_histories (RekeyData   *self,
                 g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", *done);
         }
 
+        g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                     "Failed to change the passphrase of the history \"%s\"", *name);
+
         return FALSE;
     }
 
@@ -995,7 +1098,9 @@ rekey_histories (RekeyData   *self,
      * would hand out a key that opens nothing. */
     if (!*names)
     {
-        g_warning ("There is no stored history to change the passphrase of");
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND,
+                             "There is no stored history to change the passphrase of");
+
         return FALSE;
     }
 
@@ -1009,25 +1114,31 @@ rekey_work_run (GTask        *task,
                 GCancellable *cancellable G_GNUC_UNUSED)
 {
     RekeyData *self = g_task_get_task_data (task);
+    g_autoptr (GError) error = NULL;
 
-    g_task_return_boolean (task, rekey_histories (self, g_paste_passphrase_peek (self->new_passphrase)));
+    /* Unlike the import worker this one reports why: a re-key that did not
+     * happen leaves the user holding a passphrase their history does not take,
+     * which is the one outcome they have to be told about. */
+    if (rekey_histories (self, g_paste_passphrase_peek (self->new_passphrase), &error))
+        g_task_return_boolean (task, TRUE);
+    else
+        g_task_return_error (task, g_steal_pointer (&error));
 }
 
 /* Back on the main thread: only adopt the new passphrase once the data on disk
  * actually speaks it, or the daemon would reload an unreadable history — and
  * only remember it then, for the same reason. A re-key that gave up part way
  * leaves the keyring alone: it still holds the passphrase the untouched
- * histories take. */
+ * histories take, and its failure is what the caller is told about. */
 static void
 on_rekey_done (GObject      *source G_GNUC_UNUSED,
                GAsyncResult *result,
                gpointer      user_data)
 {
     RekeyData *self = user_data;
+    g_autoptr (GError) error = NULL;
 
-    /* As above: the worker returns a boolean and nothing else, and warns per
-     * history about whatever it could not re-key. */
-    if (g_task_propagate_boolean (G_TASK (result), NULL))
+    if (g_task_propagate_boolean (G_TASK (result), &error))
     {
         const gchar *cleartext = g_paste_passphrase_peek (self->new_passphrase);
 
@@ -1036,7 +1147,7 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
         remember_passphrase (self->remember, cleartext);
     }
 
-    rekey_finish (self);
+    rekey_finish (self, g_steal_pointer (&error));
 }
 
 static void
@@ -1055,12 +1166,16 @@ on_rekey_passphrase_set (GObject      *source,
                                                                                 &remember, &prompt_error);
 
     if (prompt_error)
+    {
         g_warning ("The passphrase prompt failed: %s", prompt_error->message);
+        rekey_finish (self, g_steal_pointer (&prompt_error));
+        return;
+    }
 
     /* Dismissed: nothing has been touched yet, so there is nothing to undo. */
     if (!passphrase)
     {
-        rekey_finish (self);
+        rekey_finish (self, NULL);
         return;
     }
 
@@ -1091,15 +1206,23 @@ rekey_prompt_new_passphrase (RekeyData *self)
 }
 
 static void
-on_rekey_source_unlocked (gboolean unlocked,
-                          gpointer user_data)
+on_rekey_source_unlocked (gboolean  unlocked,
+                          GError   *error,
+                          gpointer  user_data)
 {
     RekeyData *self = user_data;
+
+    /* As in the migration: a prompt that failed cannot be re-asked. */
+    if (error)
+    {
+        rekey_finish (self, g_error_copy (error));
+        return;
+    }
 
     /* Dismissed without unlocking: there is no passphrase to change. */
     if (!unlocked)
     {
-        rekey_finish (self);
+        rekey_finish (self, NULL);
         return;
     }
 
@@ -1110,29 +1233,32 @@ on_rekey_source_unlocked (gboolean unlocked,
 #endif
 
 /**
- * g_paste_storage_rekey_show:
+ * g_paste_storage_rekey_async:
  * @prompt: the #GPastePrompt to ask through
  * @settings: a #GPasteSettings instance
- * @done: (scope async) (nullable): called once the passphrase was changed, or the prompt dismissed
- * @user_data: data passed to @done
+ * @callback: (scope async): called once the passphrase was changed, or the prompt dismissed
+ * @user_data: data passed to @callback
  *
  * Change the passphrase of the encrypted history, re-encrypting everything with
  * the new one. Unlike the migration dialog this never moves the history: the
  * data stays in the backend it is in, only its key changes.
  *
  * Unlocks the history first (from this process, the keyring, or a prompt), then
- * asks for the new passphrase with a confirmation. @done is invoked immediately
- * when the history is not encrypted, so there is no passphrase to change.
- * Like the other dialogs here, the caller owns the main loop.
+ * asks for the new passphrase with a confirmation. Completes immediately when
+ * the history is not encrypted, so there is no passphrase to change.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_rekey_show (GPastePrompt                   *prompt,
-                            GPasteSettings                 *settings,
-                            GPasteStorageMigrationDoneFunc  done,
-                            gpointer                        user_data)
+g_paste_storage_rekey_async (GPastePrompt        *prompt,
+                             GPasteSettings      *settings,
+                             GAsyncReadyCallback  callback,
+                             gpointer             user_data)
 {
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+
+    GTask *task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+
+    g_task_set_source_tag (task, g_paste_storage_rekey_async);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
@@ -1143,8 +1269,7 @@ g_paste_storage_rekey_show (GPastePrompt                   *prompt,
 
         self->prompt = g_object_ref (prompt);
         self->settings = g_object_ref (settings);
-        self->done = done;
-        self->user_data = user_data;
+        self->task = task;
         self->storage_kind = storage_kind;
 
         /* The passphrase this process already holds is the common case (the
@@ -1166,8 +1291,33 @@ g_paste_storage_rekey_show (GPastePrompt                   *prompt,
     }
 
     g_warning ("The history is not encrypted: there is no passphrase to change");
+#else
+    (void) settings;
 #endif
 
-    if (done)
-        done (user_data);
+    g_task_return_boolean (task, TRUE);
+    g_object_unref (task);
+}
+
+/**
+ * g_paste_storage_rekey_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect the outcome of g_paste_storage_rekey_async().
+ *
+ * Unlike the other two concerns this one can fail on its own account: a re-key
+ * that could not rewrite the histories on disk reports %G_PASTE_ERROR, and so
+ * does handing in the result of another operation. A failing #GPastePrompt
+ * implementation reports in whichever domain it uses (%G_PASTE_ERROR,
+ * %G_IO_ERROR, %G_DBUS_ERROR, ...).
+ *
+ * Returns: %TRUE unless the histories could not be re-encrypted, or the prompt
+ *          implementation failed outright
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_rekey_finish (GAsyncResult  *result,
+                              GError       **error)
+{
+    return storage_concern_finish (result, g_paste_storage_rekey_async, error);
 }

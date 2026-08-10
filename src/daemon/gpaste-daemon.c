@@ -122,13 +122,20 @@ usr1_handler (gpointer user_data)
 }
 #endif
 
-/* The store on disk now speaks the new passphrase: rebuild the backend around it
- * (which also resumes the recording the flush below stopped) so the daemon keeps
- * persisting with the right key. */
+/* Rebuild the backend around whatever key the store on disk now speaks (which
+ * also resumes the recording the flush below stopped) so the daemon keeps
+ * persisting with the right one: the new passphrase where the re-key applied,
+ * the old one where it failed and the histories were put back. */
 static void
-on_passphrase_changed (gpointer user_data)
+on_passphrase_changed (GObject      *source G_GNUC_UNUSED,
+                       GAsyncResult *result,
+                       gpointer      user_data)
 {
     DaemonContext *ctx = user_data;
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_storage_rekey_finish (result, &error))
+        g_warning ("Could not change the passphrase: %s", error->message);
 
     ctx->changing_passphrase = FALSE;
 
@@ -146,7 +153,7 @@ do_change_passphrase (gpointer user_data)
     DaemonContext *ctx = user_data;
 
     g_paste_daemon_flush (ctx->daemon);
-    g_paste_storage_rekey_show (ctx->prompt, ctx->settings, on_passphrase_changed, ctx);
+    g_paste_storage_rekey_async (ctx->prompt, ctx->settings, on_passphrase_changed, ctx);
 
     return G_SOURCE_REMOVE;
 }
@@ -174,10 +181,8 @@ change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 /* Final step, once the name is owned, the backend choice is settled and any
  * encrypted history is unlocked: build the daemon and expose it on the bus. */
 static void
-on_storage_ready (gpointer user_data)
+on_storage_ready (DaemonContext *ctx)
 {
-    DaemonContext *ctx = user_data;
-
     /* The GDK backend is ours alone — the gnome-shell-hosted daemon drives the
      * mutter one instead — so the providers are built right here rather than
      * behind a convenience constructor in the daemon library. */
@@ -200,15 +205,43 @@ on_storage_ready (gpointer user_data)
 }
 
 static void
-on_migration_done (gpointer user_data)
+on_decryption_done (GObject      *source G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
 {
     DaemonContext *ctx = user_data;
+    g_autoptr (GError) error = NULL;
 
+    /* The history stays locked, which loads as unreadable and is never written
+     * over, so there is still a daemon to build either way. */
+    if (!g_paste_storage_decryption_finish (result, &error))
+        g_warning ("Could not unlock the encrypted history: %s", error->message);
+
+    on_storage_ready (ctx);
+}
+
+static void
+start_decryption (DaemonContext *ctx)
+{
     /* Unlock an already-encrypted history (or a no-op) before it is loaded. */
     if (g_paste_storage_decryption_needed (ctx->settings))
-        g_paste_storage_decryption_show (ctx->prompt, ctx->settings, on_storage_ready, ctx);
+        g_paste_storage_decryption_async (ctx->prompt, ctx->settings, on_decryption_done, ctx);
     else
         on_storage_ready (ctx);
+}
+
+static void
+on_migration_done (GObject      *source G_GNUC_UNUSED,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+    DaemonContext *ctx = user_data;
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_storage_migration_finish (result, &error))
+        g_warning ("The storage migration prompt failed: %s", error->message);
+
+    start_decryption (ctx);
 }
 
 /* The name is ours: only now do we run any migration / encrypted-history unlock
@@ -230,9 +263,9 @@ on_name_acquired (GPasteBus *bus G_GNUC_UNUSED,
      * the application registration, so any dialog shows right away and is
      * processed by the running main loop — no nested loop of our own. */
     if (g_paste_storage_migration_needed (ctx->settings))
-        g_paste_storage_migration_show (ctx->prompt, ctx->settings, on_migration_done, ctx);
+        g_paste_storage_migration_async (ctx->prompt, ctx->settings, on_migration_done, ctx);
     else
-        on_migration_done (ctx);
+        start_decryption (ctx);
 }
 
 /* We may well own the name, but an object we cannot export is a daemon no client

@@ -6,6 +6,27 @@ import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 
 import {GPasteShellPrompt} from './prompt.js';
 
+// The three storage concerns are ordinary GAsyncResult operations, but they are
+// static functions on the namespace rather than methods on a prototype, so
+// Gio._promisify is not usable on them: the wrapper assignment is subject to the
+// same silent no-op as a static constructor inside gnome-shell, and its body
+// starts by reading `this[originalFuncName]`, which in a strict-mode ES module
+// is a TypeError rather than a call. Both failures are quiet — the concern
+// simply never runs — so promise-wrap the raw _async/_finish pair by hand, the
+// way indicator.js does for GPaste.Client.new().
+function callStorageConcern(concernAsync, concernFinish, prompt, settings) {
+    return new Promise((resolve, reject) => {
+        concernAsync(prompt, settings, (_source, result) => {
+            try {
+                concernFinish(result);
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
+}
+
 // Runs the GPaste daemon inside gnome-shell, mirroring src/daemon/gpaste-daemon.c
 // but driving the mutter (MetaSelection) clipboard backend so the clipboard can
 // be watched from within the compositor itself. Compared to the standalone
@@ -248,8 +269,10 @@ export class GPasteDaemonRunner {
         // trusting our cached copy.
         this._settings.reload();
 
-        if (GPasteDaemon.storage_migration_needed(this._settings))
-            await this._runStorageConcern(GPasteDaemon.storage_migration_show);
+        if (GPasteDaemon.storage_migration_needed(this._settings)) {
+            await this._runStorageConcern(GPasteDaemon.storage_migration_async,
+                GPasteDaemon.storage_migration_finish);
+        }
 
         if (this._stopped)
             return false;
@@ -259,18 +282,27 @@ export class GPasteDaemonRunner {
         // which case there is nothing left to ask.
         this._settings.reload();
 
-        if (GPasteDaemon.storage_decryption_needed(this._settings))
-            await this._runStorageConcern(GPasteDaemon.storage_decryption_show);
+        if (GPasteDaemon.storage_decryption_needed(this._settings)) {
+            await this._runStorageConcern(GPasteDaemon.storage_decryption_async,
+                GPasteDaemon.storage_decryption_finish);
+        }
 
         return !this._stopped;
     }
 
-    // The _show functions are callback-based rather than GAsyncResult-based, so
-    // they cannot go through Gio._promisify; wrap them by hand. Whatever
-    // passphrase they settle on is set process-wide by the storage code itself —
-    // we are the process now, so nothing has to be handed back.
-    _runStorageConcern(show) {
-        return new Promise(resolve => show(this._prompt, this._settings, resolve));
+    // Whatever a concern settles on is set process-wide by the storage code
+    // itself — we are the process now, so nothing has to be handed back and the
+    // result is only ever "did it fail". The prompt here is ours
+    // (GPasteShellPrompt), so a rejection from one of the two prompt-only
+    // concerns means a bug on our side rather than anything the user did; the
+    // re-key can also report that it could not rewrite the histories on disk.
+    // The concern is over either way: log it and carry on to the next one.
+    async _runStorageConcern(concernAsync, concernFinish) {
+        try {
+            await callStorageConcern(concernAsync, concernFinish, this._prompt, this._settings);
+        } catch (e) {
+            logError(e, 'GPaste: storage concern failed');
+        }
     }
 
     // Both signals fire synchronously from inside the daemon's own D-Bus
@@ -348,7 +380,8 @@ export class GPasteDaemonRunner {
     }
 
     _changePassphraseInPlace() {
-        return this._reloadStorageAfter(() => this._runStorageConcern(GPasteDaemon.storage_rekey_show));
+        return this._reloadStorageAfter(() => this._runStorageConcern(GPasteDaemon.storage_rekey_async,
+            GPasteDaemon.storage_rekey_finish));
     }
 
     // Flush the history, release the storage lock, drop the daemon/search
