@@ -34,10 +34,10 @@ g_paste_noop_backend_write_history_file (GPasteStorageBackend *self G_GNUC_UNUSE
 {
 }
 
-static const gchar *
-g_paste_noop_backend_get_extension (GPasteStorageBackend *self G_GNUC_UNUSED)
+static GPasteStorage
+g_paste_noop_backend_get_kind (GPasteStorageBackend *self G_GNUC_UNUSED)
 {
-    return g_paste_storage_get_extension (G_PASTE_STORAGE_NOOP);
+    return G_PASTE_STORAGE_NOOP;
 }
 
 static void
@@ -47,7 +47,7 @@ g_paste_noop_backend_class_init (GPasteNoopBackendClass *klass)
 
     storage_class->read_history_file = g_paste_noop_backend_read_history_file;
     storage_class->write_history_file = g_paste_noop_backend_write_history_file;
-    storage_class->get_extension = g_paste_noop_backend_get_extension;
+    storage_class->get_kind = g_paste_noop_backend_get_kind;
 }
 
 static void

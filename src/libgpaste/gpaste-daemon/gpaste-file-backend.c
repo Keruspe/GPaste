@@ -71,7 +71,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
                                          GPasteImageItem   *item,
                                          const gchar       *reference)
 {
-    gboolean encrypted = (g_paste_file_backend_get_passphrase (G_PASTE_STORAGE_BACKEND ((gpointer) self)) != NULL);
+    gboolean encrypted = g_paste_storage_backend_is_encrypted (G_PASTE_STORAGE_BACKEND ((gpointer) self));
     const gchar *path = g_paste_item_get_value (G_PASTE_ITEM ((gpointer) item));
     g_autofree gchar *target = (encrypted) ? g_paste_image_item_get_encrypted_path (reference) : g_strdup (reference);
 
@@ -233,7 +233,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     GPasteFileBackend *real_self = G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
      * without the passphrase) and persists their real value, not the mask. */
-    gboolean encrypted = (g_paste_file_backend_get_passphrase (self) != NULL);
+    gboolean encrypted = g_paste_storage_backend_is_encrypted (self);
 
     g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
     g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp_path);
@@ -908,7 +908,7 @@ g_paste_file_backend_delete_history (GPasteStorageBackend  *self,
                                       const gchar          *name,
                                       GError              **error)
 {
-    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, g_paste_storage_backend_get_extension (self));
 
     g_file_delete (history_file, NULL, error);
 }
@@ -1077,13 +1077,10 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
 }
 #endif
 
-static const gchar *
-g_paste_file_backend_get_extension (GPasteStorageBackend *self)
+static GPasteStorage
+g_paste_file_backend_get_kind (GPasteStorageBackend *self)
 {
-    /* ".xmls" (s for "secret", like https vs http) for an encrypted history. */
-    return g_paste_storage_get_extension (g_paste_file_backend_get_passphrase (self)
-                                          ? G_PASTE_STORAGE_ENCRYPTED_FILE
-                                          : G_PASTE_STORAGE_FILE);
+    return g_paste_file_backend_get_passphrase (self) ? G_PASTE_STORAGE_ENCRYPTED_FILE : G_PASTE_STORAGE_FILE;
 }
 
 static GOutputStream *
@@ -1161,7 +1158,7 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 
     storage_class->read_history_file = g_paste_file_backend_read_history_file;
     storage_class->write_history_file = g_paste_file_backend_write_history_file;
-    storage_class->get_extension = g_paste_file_backend_get_extension;
+    storage_class->get_kind = g_paste_file_backend_get_kind;
     storage_class->delete_history = g_paste_file_backend_delete_history;
 
     klass->get_output_stream = g_paste_file_backend_get_output_stream;

@@ -34,7 +34,10 @@ struct _GPasteStorageBackendClass
                                 const GList          *history);
 
     /*< protected >*/
-    const gchar          *(*get_extension)  (GPasteStorageBackend *self);
+    /* Which flavour this instance is. Everything else about the flavour --
+     * the on-disk extension, whether it encrypts, whether it may keep password
+     * items -- follows from it, so this is the one thing a backend answers. */
+    GPasteStorage         (*get_kind)       (GPasteStorageBackend *self);
     void                  (*delete_history) (GPasteStorageBackend *self,
                                              const gchar          *name,
                                              GError               **error);
@@ -84,6 +87,10 @@ struct _GPasteStorageBackendClass
 };
 
 GPasteSettings *g_paste_storage_backend_get_settings (GPasteStorageBackend *self);
+
+GPasteStorage  g_paste_storage_backend_get_kind      (GPasteStorageBackend *self);
+const gchar   *g_paste_storage_backend_get_extension (GPasteStorageBackend *self);
+gboolean       g_paste_storage_backend_is_encrypted  (GPasteStorageBackend *self);
 
 gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
                                                       const gchar          *name);

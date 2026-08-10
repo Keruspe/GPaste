@@ -1561,7 +1561,7 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend  *self,
                                        const gchar           *name,
                                        GError               **error)
 {
-    const gchar *extension = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self);
+    const gchar *extension = g_paste_storage_backend_get_extension (self);
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, extension);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
@@ -1592,13 +1592,10 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend  *self,
     }
 }
 
-static const gchar *
-g_paste_sqlite_backend_get_extension (GPasteStorageBackend *self)
+static GPasteStorage
+g_paste_sqlite_backend_get_kind (GPasteStorageBackend *self)
 {
-    /* ".dbs" (s for "secret", like ".xmls") for an encrypted history. */
-    return g_paste_storage_get_extension (g_paste_sqlite_backend_get_passphrase (self)
-                                          ? G_PASTE_STORAGE_ENCRYPTED_SQLITE
-                                          : G_PASTE_STORAGE_SQLITE);
+    return g_paste_sqlite_backend_get_passphrase (self) ? G_PASTE_STORAGE_ENCRYPTED_SQLITE : G_PASTE_STORAGE_SQLITE;
 }
 
 static void
@@ -1668,7 +1665,7 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
 
     storage_class->read_history_file = g_paste_sqlite_backend_read_history_file;
     storage_class->write_history_file = g_paste_sqlite_backend_write_history_file;
-    storage_class->get_extension = g_paste_sqlite_backend_get_extension;
+    storage_class->get_kind = g_paste_sqlite_backend_get_kind;
     storage_class->delete_history = g_paste_sqlite_backend_delete_history;
 
     storage_class->add_item = g_paste_sqlite_backend_add_item;

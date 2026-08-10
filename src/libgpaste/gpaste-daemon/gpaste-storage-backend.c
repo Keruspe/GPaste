@@ -209,6 +209,55 @@ G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TY
     } while (FALSE)
 
 /**
+ * g_paste_storage_backend_get_kind:
+ * @self: a #GPasteStorageBackend instance
+ *
+ * Which storage flavour @self is.
+ *
+ * Returns: the #GPasteStorage kind
+ */
+G_PASTE_VISIBLE GPasteStorage
+g_paste_storage_backend_get_kind (GPasteStorageBackend *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), G_PASTE_STORAGE_NOOP);
+
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+
+    g_return_val_if_fail (klass->get_kind, G_PASTE_STORAGE_NOOP);
+
+    return klass->get_kind (self);
+}
+
+/**
+ * g_paste_storage_backend_get_extension:
+ * @self: a #GPasteStorageBackend instance
+ *
+ * The on-disk extension @self stores histories under.
+ *
+ * Returns: the extension (without the leading dot)
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_storage_backend_get_extension (GPasteStorageBackend *self)
+{
+    return g_paste_storage_get_extension (g_paste_storage_backend_get_kind (self));
+}
+
+/**
+ * g_paste_storage_backend_is_encrypted:
+ * @self: a #GPasteStorageBackend instance
+ *
+ * Whether @self encrypts the history on disk -- which is also what decides
+ * whether it may keep password items at all.
+ *
+ * Returns: %TRUE for the encrypted flavours
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_is_encrypted (GPasteStorageBackend *self)
+{
+    return g_paste_storage_is_encrypted (g_paste_storage_backend_get_kind (self));
+}
+
+/**
  * g_paste_storage_backend_get_history_file_path:
  * @self: a #GPasteStorageBackend instance
  * @name: the name of a history
@@ -226,7 +275,7 @@ g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), NULL);
     g_return_val_if_fail (name, NULL);
 
-    return g_paste_util_get_history_file_path (name, G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+    return g_paste_util_get_history_file_path (name, g_paste_storage_backend_get_extension (self));
 }
 
 /**
@@ -379,7 +428,7 @@ _g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend  *sel
 {
     g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-    g_autofree gchar *suffix = g_strconcat (".", G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
+    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_backend_get_extension (self), NULL);
     gsize suffix_len = strlen (suffix);
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -631,10 +680,11 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
 {
     klass->read_history_file = NULL;
     klass->write_history_file = NULL;
-    klass->get_extension = NULL;
+    klass->get_kind = NULL;
     klass->delete_history = NULL;
     klass->list_histories = NULL;
     klass->rekey = NULL;
+    klass->history_refutes_passphrase = NULL;
 
     klass->add_item = NULL;
     klass->remove_item = NULL;
@@ -649,31 +699,38 @@ g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
 {
 }
 
+/* Every storage flavour, indexed by its kind: what it is called on disk, and
+ * which class implements it. Adding a flavour is one row plus its enum value,
+ * rather than an edit in each of the switches this replaced.
+ *
+ * @get_type for an encrypted flavour is the no-storage backend on purpose: the
+ * encrypted ones are built through their own constructor below, and anything
+ * reaching here with one has already failed to key it. Keeping the history in
+ * memory is the only safe answer -- never plaintext on disk. */
+static const struct
+{
+    const gchar *extension;
+    GType      (*get_type) (void);
+} storage_flavours[G_PASTE_N_STORAGE] = {
+    [G_PASTE_STORAGE_NOOP]             = { "noop", g_paste_noop_backend_get_type },
+    [G_PASTE_STORAGE_FILE]             = { "xml",  g_paste_file_backend_get_type },
+    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", g_paste_noop_backend_get_type },
+#ifdef G_PASTE_ENABLE_SQLITE
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   g_paste_sqlite_backend_get_type },
+#else
+    /* Not built in: a plain kind may degrade to another plain kind. */
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   g_paste_file_backend_get_type },
+#endif
+    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  g_paste_noop_backend_get_type },
+};
+
 static GType
 _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
 {
-    switch (storage_kind)
-    {
-    case G_PASTE_STORAGE_FILE:
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].get_type)
         return G_PASTE_TYPE_FILE_BACKEND;
-    case G_PASTE_STORAGE_NOOP:
-        return G_PASTE_TYPE_NOOP_BACKEND;
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_SQLITE:
-        return G_PASTE_TYPE_SQLITE_BACKEND;
-#endif
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-        /* Unreachable in practice: g_paste_storage_backend_new () constructs
-         * the encrypted flavor (or downgrades to NOOP) before ever calling us.
-         * Keep the history in memory rather than silently writing
-         * would-be-encrypted data as plaintext, whatever the caller. */
-        return G_PASTE_TYPE_NOOP_BACKEND;
-    default:
-        /* G_PASTE_STORAGE_DEFAULT, and any unexpected value, map to the plain
-         * file backend; return it directly rather than recursing. */
-        return G_PASTE_TYPE_FILE_BACKEND;
-    }
+
+    return storage_flavours[storage_kind].get_type ();
 }
 
 /**
@@ -690,22 +747,10 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
 G_PASTE_VISIBLE const gchar *
 g_paste_storage_get_extension (GPasteStorage storage_kind)
 {
-    switch (storage_kind)
-    {
-    case G_PASTE_STORAGE_FILE:
-        return "xml";
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-        return "xmls";
-    case G_PASTE_STORAGE_SQLITE:
-        return "db";
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-        return "dbs";
-    case G_PASTE_STORAGE_NOOP:
-    default:
-        /* The no-storage backend keeps nothing on disk; its extension only ever
-         * feeds a listing that never matches anything. */
-        return "noop";
-    }
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].extension)
+        return storage_flavours[G_PASTE_STORAGE_NOOP].extension;
+
+    return storage_flavours[storage_kind].extension;
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
