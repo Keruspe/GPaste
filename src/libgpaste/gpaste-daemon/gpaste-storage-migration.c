@@ -139,6 +139,56 @@ detect_current_backend (GPasteSettings *settings)
     return counts[best] ? flavours[best] : G_PASTE_STORAGE_NOOP;
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* The passphrase that already opens @storage_kind, without asking anyone: the
+ * one this process holds -- the common case, since the daemon has been serving
+ * the history with it -- and failing that the one remembered in the keyring,
+ * which is applied to the process when it verifies. %NULL when neither does and
+ * the user has to be prompted.
+ *
+ * Everything that needs to unlock an existing history asks here, so they cannot
+ * disagree about that order. */
+static const gchar *
+known_passphrase_for (GPasteStorage   storage_kind,
+                      GPasteSettings *settings)
+{
+    const gchar *known = g_paste_storage_backend_get_passphrase ();
+
+    if (known && g_paste_storage_passphrase_can_decrypt (storage_kind, settings, known))
+        return known;
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+    if (g_paste_storage_keyring_apply_verified (storage_kind, settings))
+        return g_paste_storage_backend_get_passphrase ();
+#else
+    (void) settings;
+#endif
+
+    return NULL;
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Act on what the user said about remembering @cleartext. Only ever called
+ * where the passphrase has just been proven, which is what makes it safe: a
+ * wrong one is never written, and turning the switch off drops whatever was
+ * remembered before. */
+static void
+remember_passphrase (GPasteStorageRemember  remember,
+                     const gchar           *cleartext)
+{
+#ifdef G_PASTE_ENABLE_LIBSECRET
+    if (remember == G_PASTE_STORAGE_REMEMBER_YES)
+        g_paste_storage_keyring_store (cleartext);
+    else if (remember == G_PASTE_STORAGE_REMEMBER_NO)
+        g_paste_storage_keyring_clear ();
+#else
+    (void) remember;
+    (void) cleartext;
+#endif
+}
+#endif
+
 /* Release the state and hand control back to the caller: the one way out of the
  * migration, whether it applied, was dismissed or never got started. */
 static void
@@ -339,11 +389,14 @@ apply_migration_settle (MigrationData *self,
      * migration re-keys the history instead of reading the old data with the
      * new key. Both %NULL for the plain flavors, which need none. */
     const gchar *current_passphrase = NULL;
-    const gchar *chosen_passphrase = NULL;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     current_passphrase = g_paste_passphrase_peek (self->source_passphrase);
-    chosen_passphrase = g_paste_storage_backend_get_passphrase ();
+#endif
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_LIBSECRET)
+    /* Only ever read to decide what to remember, which is the one thing that
+     * needs the keyring. */
+    const gchar *chosen_passphrase = g_paste_storage_backend_get_passphrase ();
 #endif
 
     if (import && !imported)
@@ -382,10 +435,7 @@ apply_migration_settle (MigrationData *self,
          * silently discard an entry that still unlocks a history. */
         if (self->passphrase_prompted && g_paste_storage_is_encrypted (chosen))
         {
-            if (self->remember_passphrase == G_PASTE_STORAGE_REMEMBER_YES)
-                g_paste_storage_keyring_store (chosen_passphrase);
-            else if (self->remember_passphrase == G_PASTE_STORAGE_REMEMBER_NO)
-                g_paste_storage_keyring_clear ();
+            remember_passphrase (self->remember_passphrase, chosen_passphrase);
         }
         /* Leaving encryption behind for good: once the encrypted history it
          * opened is gone, a remembered passphrase is a secret kept for nothing.
@@ -485,17 +535,7 @@ on_unlock_reply (GObject      *source,
     {
         g_paste_storage_backend_set_passphrase (cleartext);
 
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        /* This is the point where the passphrase is proven, so it is the only
-         * safe place to remember it: a wrong one is never written, and turning
-         * the switch off drops whatever was remembered before. */
-        if (remember == G_PASTE_STORAGE_REMEMBER_YES)
-            g_paste_storage_keyring_store (cleartext);
-        else if (remember == G_PASTE_STORAGE_REMEMBER_NO)
-            g_paste_storage_keyring_clear ();
-#else
-        (void) remember;
-#endif
+        remember_passphrase (remember, cleartext);
     }
 
     UnlockDoneFunc done = prompt->done;
@@ -620,19 +660,15 @@ continue_apply (MigrationData *self)
     if (g_paste_storage_is_encrypted (self->current) && !self->source_passphrase &&
         (self->import || self->cleanup))
     {
-        const gchar *known = g_paste_storage_backend_get_passphrase ();
+        const gchar *known = known_passphrase_for (self->current, self->settings);
 
-        if (known && g_paste_storage_passphrase_can_decrypt (self->current, self->settings, known))
-            set_source_passphrase (self, known);
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        else if (g_paste_storage_keyring_apply_verified (self->current, self->settings))
-            set_source_passphrase (self, g_paste_storage_backend_get_passphrase ());
-#endif
-        else
+        if (!known)
         {
             unlock_prompt (self->prompt, self->settings, self->current, on_source_unlocked, self);
             return;
         }
+
+        set_source_passphrase (self, known);
     }
 
     /* Switching to encrypted storage always needs a new passphrase to store with,
@@ -949,12 +985,7 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
 
         g_paste_storage_backend_set_passphrase (cleartext);
 
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        if (self->remember == G_PASTE_STORAGE_REMEMBER_YES)
-            g_paste_storage_keyring_store (cleartext);
-        else if (self->remember == G_PASTE_STORAGE_REMEMBER_NO)
-            g_paste_storage_keyring_clear ();
-#endif
+        remember_passphrase (self->remember, cleartext);
     }
 
     rekey_finish (self);
@@ -1063,19 +1094,15 @@ g_paste_storage_rekey_show (GPastePrompt                   *prompt,
         /* The passphrase this process already holds is the common case (the
          * daemon has been serving the history with it), then the keyring, then
          * ask — the same order the migration unlocks a source with. */
-        const gchar *known = g_paste_storage_backend_get_passphrase ();
+        const gchar *known = known_passphrase_for (storage_kind, settings);
 
-        if (known && g_paste_storage_passphrase_can_decrypt (storage_kind, settings, known))
-            self->current_passphrase = g_paste_passphrase_new (known);
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        else if (g_paste_storage_keyring_apply_verified (storage_kind, settings))
-            self->current_passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
-#endif
-        else
+        if (!known)
         {
             unlock_prompt (prompt, settings, storage_kind, on_rekey_source_unlocked, self);
             return;
         }
+
+        self->current_passphrase = g_paste_passphrase_new (known);
 
         rekey_prompt_new_passphrase (self);
 
