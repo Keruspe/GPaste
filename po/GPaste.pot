@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-10 03:06+0200\n"
+"POT-Creation-Date: 2026-08-10 03:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1357,94 +1357,6 @@ msgstr ""
 msgid "Could not acquire DBus name. Is another GPaste daemon already running?"
 msgstr ""
 
-#: src/daemon/gpaste-prompt-adw.c:199 src/gnome-shell/prompt.js:228
-msgid "Storage migration"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:204 src/gnome-shell/prompt.js:271
-msgid "Apply"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:213 src/gnome-shell/prompt.js:262
-msgid "The old data will be deleted without being imported first"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:225
-msgid "Storage backend"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:239 src/gnome-shell/prompt.js:253
-msgid "Import existing data"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:240
-msgid "Copy the current history into the new backend"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:245 src/gnome-shell/prompt.js:254
-msgid "Delete old data afterwards"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:246
-msgid "Remove the previous on-disk history once done"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:251 src/gnome-shell/prompt.js:229
-msgid ""
-"Choose where GPaste should store your clipboard history. Nothing is kept on "
-"disk unless you pick a storing backend here."
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:437 src/gnome-shell/prompt.js:43
-msgid "Encrypted history"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:442 src/gnome-shell/prompt.js:87
-msgid "Set passphrase"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:442 src/gnome-shell/prompt.js:87
-msgid "Unlock"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:456 src/gnome-shell/prompt.js:51
-msgid "Passphrase"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:477 src/gnome-shell/prompt.js:52
-msgid "Confirm passphrase"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:486
-msgid "Passphrase strength"
-msgstr ""
-
-#. Built without libpwquality, so there is no rating to give. Say so
-#. * rather than leave the row out: someone choosing a passphrase should
-#. * know it is not being judged, instead of reading a silent absence as
-#. * approval.
-#: src/daemon/gpaste-prompt-adw.c:510
-msgid "Not available in this build"
-msgstr ""
-
-#. Translators: shown when choosing a new passphrase for the encrypted history
-#: src/daemon/gpaste-prompt-adw.c:521 src/gnome-shell/prompt.js:46
-msgid "If you forget this passphrase, your stored history cannot be recovered."
-msgstr ""
-
-#. Translators: shown when unlocking the encrypted history at startup
-#: src/daemon/gpaste-prompt-adw.c:522 src/gnome-shell/prompt.js:48
-msgid "Enter the passphrase to unlock your clipboard history."
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:536 src/gnome-shell/prompt.js:71
-msgid "Remember this passphrase"
-msgstr ""
-
-#: src/daemon/gpaste-prompt-adw.c:537
-msgid "Store it in the keyring so you are not asked again"
-msgstr ""
-
 #: src/gnome-shell/actions.js:32
 msgid "Graphical tool"
 msgstr ""
@@ -1466,17 +1378,6 @@ msgstr ""
 #. an unhandled rejection.
 #: src/gnome-shell/indicator.js:105
 msgid "Empty history"
-msgstr ""
-
-#: src/gnome-shell/prompt.js:92 src/gnome-shell/prompt.js:276
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:196
-#: src/ui/gpaste-ui-header.c:296 src/ui/gpaste-ui-panel.c:313
-msgid "Cancel"
-msgstr ""
-
-#: src/gnome-shell/prompt.js:139
-msgid "Passphrase strength rating is not available in this build"
 msgstr ""
 
 #: src/gnome-shell/searchItem.js:26
@@ -1634,7 +1535,96 @@ msgstr ""
 msgid "Strong"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:478
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:931
+msgid "Encrypted history"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:933
+msgid "Enter the passphrase to unlock your clipboard history."
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:935
+msgid "If you forget this passphrase, your stored history cannot be recovered."
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:937
+msgid "Unlock"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:939
+msgid "Set passphrase"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:941
+msgid "Passphrase"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:943
+msgid "Confirm passphrase"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:945
+msgid "Passphrase strength"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:947
+msgid "Passphrase strength rating is not available in this build"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:949
+msgid "Remember this passphrase"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:951
+msgid "Store it in the keyring so you are not asked again"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:953
+msgid "Storage migration"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:955
+msgid ""
+"Choose where GPaste should store your clipboard history. Nothing is kept on "
+"disk unless you pick a storing backend here."
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:957
+msgid "Apply"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:959
+msgid "Storage backend"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:961
+msgid "Import existing data"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:963
+msgid "Copy the current history into the new backend"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:965
+msgid "Delete old data afterwards"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:967
+msgid "Remove the previous on-disk history once done"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
+msgid "The old data will be deleted without being imported first"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:196
+#: src/ui/gpaste-ui-header.c:296 src/ui/gpaste-ui-panel.c:313
+msgid "Cancel"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:521
 msgid "Wrong passphrase, please try again"
 msgstr ""
 

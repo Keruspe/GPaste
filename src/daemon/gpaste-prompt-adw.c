@@ -196,12 +196,12 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     GtkWidget *window = adw_application_window_new (priv->application);
 
     self->window = GTK_WINDOW (window);
-    gtk_window_set_title (self->window, _("Storage migration"));
+    gtk_window_set_title (self->window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_TITLE));
     gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
     gtk_window_set_default_size (self->window, 480, -1);
     gtk_window_set_modal (self->window, TRUE);
 
-    GtkWidget *apply = gtk_button_new_with_label (_("Apply"));
+    GtkWidget *apply = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT));
 
     gtk_widget_add_css_class (apply, "suggested-action");
     g_signal_connect (apply, "clicked", G_CALLBACK (on_apply), self);
@@ -210,7 +210,7 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     adw_header_bar_pack_end (ADW_HEADER_BAR (header), apply);
 
-    GtkWidget *warning = adw_banner_new (_("The old data will be deleted without being imported first"));
+    GtkWidget *warning = adw_banner_new (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_WARNING));
 
     self->warning = ADW_BANNER (warning);
 
@@ -222,7 +222,7 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     GtkWidget *backend_row = adw_combo_row_new ();
 
     self->backend_row = ADW_COMBO_ROW (backend_row);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (backend_row), _("Storage backend"));
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (backend_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND));
     adw_combo_row_set_model (self->backend_row, G_LIST_MODEL (backends));
 
     adw_combo_row_set_selected (self->backend_row, index_for_backend (self, self->current));
@@ -236,20 +236,19 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     GtkWidget *import_row = adw_switch_row_new ();
 
     self->import_row = ADW_SWITCH_ROW (import_row);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (import_row), _("Import existing data"));
-    adw_action_row_set_subtitle (ADW_ACTION_ROW (import_row), _("Copy the current history into the new backend"));
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE));
 
     GtkWidget *cleanup_row = adw_switch_row_new ();
 
     self->cleanup_row = ADW_SWITCH_ROW (cleanup_row);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (cleanup_row), _("Delete old data afterwards"));
-    adw_action_row_set_subtitle (ADW_ACTION_ROW (cleanup_row), _("Remove the previous on-disk history once done"));
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE));
 
     GtkWidget *group = adw_preferences_group_new ();
 
     adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
-                                           _("Choose where GPaste should store your clipboard history. "
-                                             "Nothing is kept on disk unless you pick a storing backend here."));
+                                           g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION));
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), backend_row);
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), import_row);
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), cleanup_row);
@@ -434,12 +433,12 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     GtkWidget *window = adw_application_window_new (priv->application);
 
     self->window = GTK_WINDOW (window);
-    gtk_window_set_title (self->window, _("Encrypted history"));
+    gtk_window_set_title (self->window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE));
     gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
     gtk_window_set_default_size (self->window, 420, -1);
     gtk_window_set_modal (self->window, TRUE);
 
-    GtkWidget *ok = gtk_button_new_with_label (confirm ? _("Set passphrase") : _("Unlock"));
+    GtkWidget *ok = gtk_button_new_with_label (g_paste_prompt_text (confirm ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT));
 
     self->ok = ok;
     gtk_widget_add_css_class (ok, "suggested-action");
@@ -453,7 +452,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     GtkWidget *entry = adw_password_entry_row_new ();
 
     self->entry = GTK_EDITABLE (entry);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (entry), _("Passphrase"));
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
     g_signal_connect (entry, "changed", G_CALLBACK (on_passphrase_changed), self);
     /* Enter submits, as it does in the shell prompt: an unlock that only takes
      * the mouse is an unlock the daemon waits on for no reason. */
@@ -474,7 +473,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         GtkWidget *confirm_entry = adw_password_entry_row_new ();
 
         self->confirm_entry = GTK_EDITABLE (confirm_entry);
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (confirm_entry), _("Confirm passphrase"));
+        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (confirm_entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
         g_signal_connect (confirm_entry, "changed", G_CALLBACK (on_passphrase_changed), self);
         /* Enter submits from here too: this is the field the user finishes
          * typing in, and the shell prompt takes it in both of its entries. */
@@ -483,7 +482,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
 
         GtkWidget *strength_row = adw_action_row_new ();
 
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (strength_row), _("Passphrase strength"));
+        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (strength_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH));
 
 #ifdef G_PASTE_ENABLE_PWQUALITY
         /* Rate the new passphrase as it is typed, with the rating or
@@ -507,7 +506,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
          * rather than leave the row out: someone choosing a passphrase should
          * know it is not being judged, instead of reading a silent absence as
          * approval. */
-        adw_action_row_set_subtitle (ADW_ACTION_ROW (strength_row), _("Not available in this build"));
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (strength_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE));
         gtk_widget_set_sensitive (strength_row, FALSE);
 #endif
 
@@ -518,8 +517,8 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
      * depends on which question is being asked; an error joins it rather than
      * replacing it, and the shell backend shows both the same way. */
     const gchar *standing = confirm
-        ? _("If you forget this passphrase, your stored history cannot be recovered.")
-        : _("Enter the passphrase to unlock your clipboard history.");
+        ? g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION)
+        : g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
     g_autofree gchar *description = error_message ? g_strconcat (error_message, "\n\n", standing, NULL)
                                                   : NULL;
 
@@ -533,8 +532,8 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         gboolean starts_on;
 
         self->remember = remember;
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (remember), _("Remember this passphrase"));
-        adw_action_row_set_subtitle (ADW_ACTION_ROW (remember), _("Store it in the keyring so you are not asked again"));
+        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE));
 
         g_paste_prompt_remember_state (g_paste_prompt_request_get_remember (request),
                                        &starts_on, &self->remembered);

@@ -141,6 +141,42 @@ gboolean g_paste_prompt_migration_finish (GPastePrompt   *self,
 const GPasteStorage *g_paste_prompt_list_storage_backends (guint *n_offered);
 const gchar         *g_paste_prompt_storage_label         (GPasteStorage storage_kind);
 
+/* Every word the prompts put in front of the user. The dialogs themselves are
+ * built twice -- St inside the shell, Adwaita out of process -- because the two
+ * toolkits share no widget vocabulary; the wording has no such excuse, and had
+ * already drifted apart once. */
+typedef enum
+{
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE,
+    /* The unlock prompt asks for one passphrase; the set-a-new-one prompt asks
+     * twice and warns instead of explaining. Hence the _CONFIRM variants. */
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH,
+    G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE,
+    G_PASTE_PROMPT_TEXT_REMEMBER,
+    G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE,
+    G_PASTE_PROMPT_TEXT_MIGRATION_TITLE,
+    G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT,
+    G_PASTE_PROMPT_TEXT_STORAGE_BACKEND,
+    G_PASTE_PROMPT_TEXT_IMPORT,
+    G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE,
+    G_PASTE_PROMPT_TEXT_CLEANUP,
+    G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,
+    G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,
+    G_PASTE_PROMPT_TEXT_CANCEL,
+} GPastePromptText;
+
+#define G_PASTE_TYPE_PROMPT_TEXT (g_paste_prompt_text_get_type ())
+GType g_paste_prompt_text_get_type (void);
+
+const gchar *g_paste_prompt_text (GPastePromptText text);
+
 /* The migration prompt's live rules, shared for the same reason: "import" only
  * makes sense when moving from a backend that stored something into a different
  * one that also stores something, and there is only old data to delete once we

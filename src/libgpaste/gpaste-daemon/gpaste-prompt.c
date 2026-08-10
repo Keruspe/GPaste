@@ -875,3 +875,101 @@ g_paste_prompt_passphrase_strength (const gchar  *passphrase,
     return 0;
 #endif
 }
+
+G_PASTE_VISIBLE GType
+g_paste_prompt_text_get_type (void)
+{
+    static GType etype = 0;
+    if (!etype)
+    {
+        static const GEnumValue values[] = {
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE,                  "G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE",                  "passphrase-title" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION,            "G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION",            "passphrase-description" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION,    "G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION",    "passphrase-confirm-description" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT,                 "G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT",                 "passphrase-accept" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT,         "G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT",         "passphrase-confirm-accept" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE,                        "G_PASTE_PROMPT_TEXT_PASSPHRASE",                        "passphrase" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM,                "G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM",                "passphrase-confirm" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH,               "G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH",               "passphrase-strength" },
+            { G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE,   "G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE",   "passphrase-strength-unavailable" },
+            { G_PASTE_PROMPT_TEXT_REMEMBER,                          "G_PASTE_PROMPT_TEXT_REMEMBER",                          "remember" },
+            { G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE,                 "G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE",                 "remember-subtitle" },
+            { G_PASTE_PROMPT_TEXT_MIGRATION_TITLE,                   "G_PASTE_PROMPT_TEXT_MIGRATION_TITLE",                   "migration-title" },
+            { G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION,             "G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION",             "migration-description" },
+            { G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT,                  "G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT",                  "migration-accept" },
+            { G_PASTE_PROMPT_TEXT_STORAGE_BACKEND,                   "G_PASTE_PROMPT_TEXT_STORAGE_BACKEND",                   "storage-backend" },
+            { G_PASTE_PROMPT_TEXT_IMPORT,                            "G_PASTE_PROMPT_TEXT_IMPORT",                            "import" },
+            { G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE,                   "G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE",                   "import-subtitle" },
+            { G_PASTE_PROMPT_TEXT_CLEANUP,                           "G_PASTE_PROMPT_TEXT_CLEANUP",                           "cleanup" },
+            { G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,                  "G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE",                  "cleanup-subtitle" },
+            { G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,                   "G_PASTE_PROMPT_TEXT_CLEANUP_WARNING",                   "cleanup-warning" },
+            { G_PASTE_PROMPT_TEXT_CANCEL,                            "G_PASTE_PROMPT_TEXT_CANCEL",                            "cancel" },
+            { 0, NULL, NULL }
+        };
+        etype = g_enum_register_static (g_intern_static_string ("GPastePromptText"), values);
+        g_type_class_ref (etype);
+    }
+    return etype;
+}
+
+/**
+ * g_paste_prompt_text:
+ * @text: which piece of wording is wanted
+ *
+ * The translated words a prompt puts in front of the user. Both prompt
+ * backends read them from here, so the shell's dialog and the out-of-process
+ * one cannot say different things.
+ *
+ * Returns: read-only translated string
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_text (GPastePromptText text)
+{
+    switch (text)
+    {
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE:
+        return _("Encrypted history");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION:
+        return _("Enter the passphrase to unlock your clipboard history.");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION:
+        return _("If you forget this passphrase, your stored history cannot be recovered.");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT:
+        return _("Unlock");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT:
+        return _("Set passphrase");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE:
+        return _("Passphrase");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM:
+        return _("Confirm passphrase");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH:
+        return _("Passphrase strength");
+    case G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE:
+        return _("Passphrase strength rating is not available in this build");
+    case G_PASTE_PROMPT_TEXT_REMEMBER:
+        return _("Remember this passphrase");
+    case G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE:
+        return _("Store it in the keyring so you are not asked again");
+    case G_PASTE_PROMPT_TEXT_MIGRATION_TITLE:
+        return _("Storage migration");
+    case G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION:
+        return _("Choose where GPaste should store your clipboard history. Nothing is kept on disk unless you pick a storing backend here.");
+    case G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT:
+        return _("Apply");
+    case G_PASTE_PROMPT_TEXT_STORAGE_BACKEND:
+        return _("Storage backend");
+    case G_PASTE_PROMPT_TEXT_IMPORT:
+        return _("Import existing data");
+    case G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE:
+        return _("Copy the current history into the new backend");
+    case G_PASTE_PROMPT_TEXT_CLEANUP:
+        return _("Delete old data afterwards");
+    case G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE:
+        return _("Remove the previous on-disk history once done");
+    case G_PASTE_PROMPT_TEXT_CLEANUP_WARNING:
+        return _("The old data will be deleted without being imported first");
+    case G_PASTE_PROMPT_TEXT_CANCEL:
+        return _("Cancel");
+    default:
+        return "";
+    }
+}

@@ -7,8 +7,6 @@ import * as Dialog from 'resource:///org/gnome/shell/ui/dialog.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import * as ShellEntry from 'resource:///org/gnome/shell/ui/shellEntry.js';
 
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
@@ -40,16 +38,16 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         const errorMessage = request.get_error_message();
 
         const content = new Dialog.MessageDialogContent({
-            title: _('Encrypted history'),
+            title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_TITLE),
             description: confirm
                 // Translators: shown when choosing a new passphrase for the encrypted history
-                ? _('If you forget this passphrase, your stored history cannot be recovered.')
+                ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_DESCRIPTION)
                 // Translators: shown when unlocking the encrypted history at startup
-                : _('Enter the passphrase to unlock your clipboard history.'),
+                : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_DESCRIPTION),
         });
 
-        this._entry = this._addEntry(content, _('Passphrase'));
-        this._confirmEntry = confirm ? this._addEntry(content, _('Confirm passphrase')) : null;
+        this._entry = this._addEntry(content, GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE));
+        this._confirmEntry = confirm ? this._addEntry(content, GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM)) : null;
 
         if (confirm)
             this._addStrengthMeter(content);
@@ -68,7 +66,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
             this._remembered = canForget;
 
-            this._remember = new CheckBox.CheckBox(_('Remember this passphrase'));
+            this._remember = new CheckBox.CheckBox(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.REMEMBER));
             this._remember.checked = startsOn;
             content.add_child(this._remember);
         }
@@ -84,12 +82,12 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         this.contentLayout.add_child(content);
 
         this._okButton = this.addButton({
-            label: confirm ? _('Set passphrase') : _('Unlock'),
+            label: confirm ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_ACCEPT) : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_ACCEPT),
             action: () => this._onOk(),
             default: true,
         });
         this.addButton({
-            label: _('Cancel'),
+            label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CANCEL),
             action: () => this.close(),
             key: Clutter.KEY_Escape,
         });
@@ -136,7 +134,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         if (!GPasteDaemon.Prompt.pwquality_available()) {
             content.add_child(new St.Label({
                 style_class: 'prompt-dialog-description',
-                text: _('Passphrase strength rating is not available in this build'),
+                text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_STRENGTH_UNAVAILABLE),
             }));
             return;
         }
@@ -225,8 +223,8 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         this._chosen = this._current;
 
         const content = new Dialog.MessageDialogContent({
-            title: _('Storage migration'),
-            description: _('Choose where GPaste should store your clipboard history. Nothing is kept on disk unless you pick a storing backend here.'),
+            title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_TITLE),
+            description: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_DESCRIPTION),
         });
 
         this._backendButtons = new Map();
@@ -250,8 +248,8 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         content.add_child(backends);
 
-        this._import = new CheckBox.CheckBox(_('Import existing data'));
-        this._cleanup = new CheckBox.CheckBox(_('Delete old data afterwards'));
+        this._import = new CheckBox.CheckBox(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.IMPORT));
+        this._cleanup = new CheckBox.CheckBox(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CLEANUP));
         this._import.connect('clicked', () => this._updateState());
         this._cleanup.connect('clicked', () => this._updateState());
         content.add_child(this._import);
@@ -259,7 +257,7 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         this._warning = new St.Label({
             style_class: 'prompt-dialog-error-label',
-            text: _('The old data will be deleted without being imported first'),
+            text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CLEANUP_WARNING),
         });
         this._warning.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this._warning.clutter_text.line_wrap = true;
@@ -268,12 +266,12 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         this.contentLayout.add_child(content);
 
         this.addButton({
-            label: _('Apply'),
+            label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_ACCEPT),
             action: () => this._onApply(),
             default: true,
         });
         this.addButton({
-            label: _('Cancel'),
+            label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CANCEL),
             action: () => this.close(),
             key: Clutter.KEY_Escape,
         });
