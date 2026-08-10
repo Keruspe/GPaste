@@ -99,29 +99,27 @@ detect_current_backend (GPasteSettings *settings)
 
     g_auto (GStrv) suffixes = g_strv_builder_end (suffix_builder);
     g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
-    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
-                                                                      G_FILE_ATTRIBUTE_STANDARD_NAME,
-                                                                      G_FILE_QUERY_INFO_NONE,
-                                                                      NULL, NULL);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
 
-    if (children)
+    /* Only reached when the active history has no file of any flavour, so a
+     * fresh profile (no directory yet) is the ordinary case, and lists nothing.
+     * A directory that is there but unreadable is not: the count would come out
+     * zero and this would answer "nothing is stored", which the caller writes to
+     * storage-backend. */
+    if (!files)
+        g_warning ("Could not list the history directory to detect the current backend: %s", error->message);
+
+    for (GStrv file = files; file && *file; ++file)
     {
-        GFileInfo *info;
-
-        while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
+        /* The extensions are mutually non-suffixing (".xml" never matches
+         * ".xmls", ".db" never ".dbs"), so each file counts for at most one. */
+        for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
         {
-            g_autoptr (GFileInfo) child = info;
-            const gchar *child_name = g_file_info_get_name (child);
-
-            /* The extensions are mutually non-suffixing (".xml" never matches
-             * ".xmls", ".db" never ".dbs"), so each file counts for at most one. */
-            for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
+            if (g_str_has_suffix (*file, suffixes[i]))
             {
-                if (g_str_has_suffix (child_name, suffixes[i]))
-                {
-                    ++counts[i];
-                    break;
-                }
+                ++counts[i];
+                break;
             }
         }
     }
@@ -260,15 +258,21 @@ import_histories (GPasteSettings *settings,
      * one cannot express. */
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
     g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new_with_passphrase (chosen, settings, chosen_passphrase);
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &error);
     /* Only the plain flavors drop password items; an encrypted destination stores
      * them, so a password missing from the read-back is a genuine write failure
      * there and must not be waved through (the caller may then delete the source). */
     const gboolean chosen_stores_passwords = g_paste_storage_is_encrypted (chosen);
     gboolean ok = TRUE;
 
+    /* A source we could not even list is not an empty one: importing nothing and
+     * reporting success would let the caller delete histories still on disk. */
     if (!names)
+    {
+        g_warning ("Could not list the histories to migrate: %s", error->message);
         return FALSE;
+    }
 
     for (GStrv name = names; ok && *name; ++name)
     {
@@ -324,10 +328,26 @@ cleanup_histories (GPasteSettings *settings,
                    const gchar    *current_passphrase)
 {
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &error);
 
-    for (GStrv name = names; name && *name; ++name)
-        g_paste_storage_backend_delete_history (previous, *name, NULL);
+    /* Only ever reached once the import checked out, so failing to list here
+     * leaves the migrated-from files behind. Harmless, but say so. */
+    if (!names)
+    {
+        g_warning ("Could not list the migrated histories to clean up: %s", error->message);
+        return;
+    }
+
+    for (GStrv name = names; *name; ++name)
+    {
+        g_autoptr (GError) delete_error = NULL;
+
+        g_paste_storage_backend_delete_history (previous, *name, &delete_error);
+
+        if (delete_error)
+            g_warning ("Could not delete the migrated history \"%s\": %s", *name, delete_error->message);
+    }
 }
 
 /* What the import needs, copied so the worker touches nothing the main thread
@@ -455,6 +475,8 @@ on_import_done (GObject      *source G_GNUC_UNUSED,
                 GAsyncResult *result,
                 gpointer      user_data)
 {
+    /* The worker only ever returns a boolean (see import_work_run), never an
+     * error, so there is none to propagate. */
     apply_migration_settle (user_data, g_task_propagate_boolean (G_TASK (result), NULL));
 }
 
@@ -512,8 +534,16 @@ on_unlock_reply (GObject      *source,
 {
     UnlockPrompt *prompt = user_data;
     GPasteStorageRemember remember;
+    /* A dismissal comes back as %NULL with no error set; an error means the
+     * prompt implementation itself failed, which the built-in ones never do but
+     * an out-of-tree one (gnome-shell's) can. Both end the same way -- there is
+     * no passphrase -- so it is only worth saying which happened. */
+    g_autoptr (GError) prompt_error = NULL;
     g_autoptr (GPastePassphrase) passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result,
-                                                                                &remember, NULL);
+                                                                                &remember, &prompt_error);
+
+    if (prompt_error)
+        g_warning ("The passphrase prompt failed: %s", prompt_error->message);
 
     /* A wrong passphrase would load an empty history and let the next save
      * overwrite the real data, so never accept one that does not decrypt: ask
@@ -596,8 +626,16 @@ on_passphrase_set (GObject      *source,
 {
     MigrationData *self = user_data;
     GPasteStorageRemember remember;
+    /* A dismissal comes back as %NULL with no error set; an error means the
+     * prompt implementation itself failed, which the built-in ones never do but
+     * an out-of-tree one (gnome-shell's) can. Both end the same way -- there is
+     * no passphrase -- so it is only worth saying which happened. */
+    g_autoptr (GError) prompt_error = NULL;
     g_autoptr (GPastePassphrase) passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result,
-                                                                                &remember, NULL);
+                                                                                &remember, &prompt_error);
+
+    if (prompt_error)
+        g_warning ("The passphrase prompt failed: %s", prompt_error->message);
 
     /* Cancelled: ask again, so another backend can be picked. The state gathered
      * so far is kept, so the second time round only asks what is still
@@ -700,9 +738,16 @@ on_migration_reply (GObject      *source,
 {
     MigrationData *self = user_data;
 
+    /* As for the passphrase prompt: %FALSE is a dismissal, an error is the
+     * implementation failing. Either way there is no answer to act on. */
+    g_autoptr (GError) prompt_error = NULL;
+
     if (!g_paste_prompt_migration_finish (G_PASTE_PROMPT (source), result,
-                                          &self->chosen, &self->import, &self->cleanup, NULL))
+                                          &self->chosen, &self->import, &self->cleanup, &prompt_error))
     {
+        if (prompt_error)
+            g_warning ("The migration prompt failed: %s", prompt_error->message);
+
         migration_finish (self);
         return;
     }
@@ -912,13 +957,14 @@ rekey_histories (RekeyData   *self,
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
                                                                                             self->settings,
                                                                                             current);
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &error);
 
     /* Not "no histories" (that is an empty list): the listing itself failed, so
      * we have no idea what would be left behind. */
     if (!names)
     {
-        g_warning ("Could not list the histories to change their passphrase");
+        g_warning ("Could not list the histories to change their passphrase: %s", error->message);
         return FALSE;
     }
 
@@ -979,6 +1025,8 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
 {
     RekeyData *self = user_data;
 
+    /* As above: the worker returns a boolean and nothing else, and warns per
+     * history about whatever it could not re-key. */
     if (g_task_propagate_boolean (G_TASK (result), NULL))
     {
         const gchar *cleartext = g_paste_passphrase_peek (self->new_passphrase);
@@ -998,8 +1046,16 @@ on_rekey_passphrase_set (GObject      *source,
 {
     RekeyData *self = user_data;
     GPasteStorageRemember remember;
+    /* A dismissal comes back as %NULL with no error set; an error means the
+     * prompt implementation itself failed, which the built-in ones never do but
+     * an out-of-tree one (gnome-shell's) can. Both end the same way -- there is
+     * no passphrase -- so it is only worth saying which happened. */
+    g_autoptr (GError) prompt_error = NULL;
     g_autoptr (GPastePassphrase) passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result,
-                                                                                &remember, NULL);
+                                                                                &remember, &prompt_error);
+
+    if (prompt_error)
+        g_warning ("The passphrase prompt failed: %s", prompt_error->message);
 
     /* Dismissed: nothing has been touched yet, so there is nothing to undo. */
     if (!passphrase)

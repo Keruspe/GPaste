@@ -294,10 +294,17 @@ on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
     if (!self->client)
         return;
 
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, NULL);
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, &error);
 
-    if (name)
-        g_paste_ui_header_set_subtitle (self->header, name);
+    /* Only the header subtitle, so carry on without it -- but say why. */
+    if (!name)
+    {
+        g_warning ("Could not get the current history name: %s", error->message);
+        return;
+    }
+
+    g_paste_ui_header_set_subtitle (self->header, name);
 }
 
 static void

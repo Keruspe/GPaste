@@ -58,10 +58,16 @@ on_item_ready (GObject      *source_object,
     g_autofree gchar *uuid = data->uuid;
     g_autoptr (GtkWindow) rootwin = data->rootwin;
     GPasteClient *client = G_PASTE_CLIENT (source_object);
-    g_autofree gchar *old_item = g_paste_client_get_raw_element_finish (client, res, NULL);
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *old_item = g_paste_client_get_raw_element_finish (client, res, &error);
 
+    /* Without it there is no dialog to show, and the Edit the user asked for
+     * would simply not happen. */
     if (!old_item)
+    {
+        g_warning ("Could not read the item to edit: %s", error->message);
         return;
+    }
 
     GtkTextBuffer *buf = NULL;
     AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Edit"), old_item, &buf);

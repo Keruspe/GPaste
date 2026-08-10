@@ -126,7 +126,8 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
         return;
     }
 
-    /* steal_as_bytes requires a closed stream and the transfer leaves it open. */
+    /* steal_as_bytes requires a closed stream and the transfer leaves it open.
+     * Closing a #GMemoryOutputStream cannot fail, hence the unchecked error. */
     g_output_stream_close (ostream, NULL, NULL);
 
     g_autoptr (GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (ostream));
@@ -266,7 +267,8 @@ g_paste_clipboard_meta_source_on_serialized (GObject      *source_object G_GNUC_
         return;
     }
 
-    /* steal_as_bytes requires a closed stream and GDK leaves it open. */
+    /* steal_as_bytes requires a closed stream and GDK leaves it open. Closing a
+     * #GMemoryOutputStream cannot fail, hence the unchecked error. */
     g_output_stream_close (ostream, NULL, NULL);
 
     g_autoptr (GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (ostream));

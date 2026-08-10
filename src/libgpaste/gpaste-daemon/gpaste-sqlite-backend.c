@@ -857,6 +857,9 @@ g_paste_sqlite_backend_bind_image (sqlite3_stmt    *stmt,
     g_autofree gchar *data = NULL;
     gsize length = 0;
 
+    /* Best effort, like the file backend's own materialization: an item whose
+     * cache file has gone is stored without its image rather than not at all,
+     * and the column simply stays NULL. */
     if (g_file_get_contents (g_paste_item_get_value (G_PASTE_ITEM ((gpointer) image)), &data, &length, NULL))
         g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
 }
@@ -1588,6 +1591,9 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend  *self,
         g_autofree gchar *sidecar_path = g_strconcat (db_path, sidecars[i], NULL);
         g_autoptr (GFile) sidecar = g_file_new_for_path (sidecar_path);
 
+        /* Only present while a connection is (or was) open, so a missing one is
+         * the normal case and not worth reporting -- the database itself is the
+         * delete that counts, and it reports through @error above. */
         g_file_delete (sidecar, NULL, NULL);
     }
 }

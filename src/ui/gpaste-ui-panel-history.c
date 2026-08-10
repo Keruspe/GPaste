@@ -73,7 +73,17 @@ on_size_ready (GObject      *source_object,
      * history is deleted, which can well happen before the size comes back. */
     g_autoptr (GPasteUiPanelHistory) self = user_data;
 
-    g_paste_ui_panel_history_set_length (self, g_paste_client_get_history_size_finish (G_PASTE_CLIENT (source_object), res, NULL));
+    g_autoptr (GError) error = NULL;
+    guint64 size = g_paste_client_get_history_size_finish (G_PASTE_CLIENT (source_object), res, &error);
+
+    /* A failure reads back as 0, which would show this history as empty. */
+    if (error)
+    {
+        g_warning ("Could not get the size of history \"%s\": %s", self->history, error->message);
+        return;
+    }
+
+    g_paste_ui_panel_history_set_length (self, size);
 }
 
 static void

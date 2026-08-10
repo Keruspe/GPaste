@@ -246,7 +246,14 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!self->client) /* panel was disposed while the call was in flight */
         return;
 
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, NULL);
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, &error);
+
+    /* Not fatal -- the list is still worth showing -- but with no current name
+     * none of its rows will come out marked as the active one. */
+    if (!name)
+        g_warning ("Could not get the current history name: %s", error->message);
+
     HistoriesData *data = g_new (HistoriesData, 1);
     /* Grab the client before the steal below hands our ref to @data and leaves
      * @self NULL. */

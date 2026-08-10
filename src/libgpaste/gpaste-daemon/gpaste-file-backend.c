@@ -88,6 +88,8 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
         gchar *data = NULL;
         gsize length = 0;
 
+        /* Unreadable cache file: nothing to write. Best effort, as documented
+         * above -- it costs this one image, not the history write. */
         if (!g_file_get_contents (path, &data, &length, NULL))
             return;
 
@@ -959,6 +961,8 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend  *self,
     if (!ok)
     {
         g_warning ("Failed to re-encrypt %s: %s", path, (error) ? error->message : "it did not read back identical");
+        /* Best effort: the failure is already reported, and a leftover temporary
+         * beside the untouched original is the harmless outcome. */
         g_file_delete (tmp_file, NULL, NULL);
 
         return FALSE;
@@ -1057,7 +1061,8 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     if (!ok)
     {
         /* Nothing has moved yet, so dropping the copies puts us back exactly
-         * where we started. */
+         * where we started. Best effort: a temporary we fail to remove is
+         * clutter, and the originals are intact either way. */
         for (GStrv tmp = tmps; *tmp; ++tmp)
         {
             g_autoptr (GFile) file = g_file_new_for_path (*tmp);
