@@ -12,5 +12,5 @@ executable(
   ],
   install: true,
   dependencies: [ gpaste_daemon_internal_dep, gtk4x11_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
-  install_dir: get_option('libexecdir') / 'gpaste',
+  install_dir: pkglibexecdir_rel,
 )

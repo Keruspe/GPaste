@@ -687,7 +687,7 @@ g_paste_prompt_keyring_available (void)
  *
  * Returns: whether a passphrase is remembered
  */
-G_PASTE_VISIBLE gboolean
+static gboolean
 g_paste_prompt_keyring_has_passphrase (void)
 {
 #ifdef G_PASTE_ENABLE_LIBSECRET

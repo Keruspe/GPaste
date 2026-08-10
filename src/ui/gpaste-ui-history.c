@@ -883,22 +883,22 @@ g_paste_ui_history_new (GPasteClient   *client,
     g_return_val_if_fail (G_PASTE_IS_UI_PANEL (panel), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_HISTORY,
+    GtkWidget *widget = g_object_new (G_PASTE_TYPE_UI_HISTORY,
                                       "orientation", GTK_ORIENTATION_VERTICAL,
                                       NULL);
-    GPasteUiHistory *priv = G_PASTE_UI_HISTORY (self);
+    GPasteUiHistory *self = G_PASTE_UI_HISTORY (widget);
     GtkBox *box = GTK_BOX (self);
 
-    priv->client = g_object_ref (client);
-    priv->settings = g_object_ref (settings);
-    priv->panel = panel;
-    priv->rootwin = rootwin;
-    priv->limit = G_PASTE_UI_HISTORY_DEFAULT_BATCH;
+    self->client = g_object_ref (client);
+    self->settings = g_object_ref (settings);
+    self->panel = panel;
+    self->rootwin = rootwin;
+    self->limit = G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 
     GtkWidget *status_page = adw_status_page_new ();
-    priv->status_page = ADW_STATUS_PAGE (status_page);
-    adw_status_page_set_icon_name (priv->status_page, "edit-paste-symbolic");
-    adw_status_page_set_title (priv->status_page, _("Empty"));
+    self->status_page = ADW_STATUS_PAGE (status_page);
+    adw_status_page_set_icon_name (self->status_page, "edit-paste-symbolic");
+    adw_status_page_set_title (self->status_page, _("Empty"));
     gtk_widget_set_hexpand (status_page, TRUE);
     gtk_widget_set_vexpand (status_page, TRUE);
     gtk_box_append (box, status_page);
@@ -911,10 +911,10 @@ g_paste_ui_history_new (GPasteClient   *client,
     /* The model is installed by set_selection_mode() below, which is what picks
      * between selectable rows and plain ones. */
     GtkWidget *list_view = gtk_list_view_new (NULL, factory);
-    priv->list_view = GTK_LIST_VIEW (list_view);
+    self->list_view = GTK_LIST_VIEW (list_view);
 
     GtkWidget *scroll = gtk_scrolled_window_new ();
-    priv->scroll = GTK_SCROLLED_WINDOW (scroll);
+    self->scroll = GTK_SCROLLED_WINDOW (scroll);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
     gtk_widget_set_hexpand (scroll, TRUE);
     gtk_widget_set_vexpand (scroll, TRUE);
@@ -930,7 +930,7 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     g_signal_connect_object (list_view, "activate", G_CALLBACK (on_item_activated), self, 0);
 
-    g_paste_ui_history_set_selection_mode (priv, FALSE);
+    g_paste_ui_history_set_selection_mode (self, FALSE);
 
     g_signal_connect_object (client,
                              "update",
@@ -939,5 +939,5 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     g_paste_ui_history_on_update (client, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, self);
 
-    return self;
+    return widget;
 }

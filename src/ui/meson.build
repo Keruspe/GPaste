@@ -39,5 +39,5 @@ executable(
   sources: gpaste_ui_sources,
   install: true,
   dependencies: [ glib_dep, gtk4_dep, pango_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_ui_headers_dep ],
-  install_dir: get_option('libexecdir') / 'gpaste',
+  install_dir: pkglibexecdir_rel,
 )

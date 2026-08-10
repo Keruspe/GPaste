@@ -91,9 +91,9 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
                     const gchar  *history,
                     gpointer      user_data)
 {
-    GPasteUiPanel *priv = user_data;
+    GPasteUiPanel *self = user_data;
 
-    GList *h = history_find (priv->histories, history);
+    GList *h = history_find (self->histories, history);
 
     if (!h)
         return;
@@ -106,16 +106,16 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 
     /* The context menu may still be up on the very item we are dropping, and we
      * do not hold a reference to it. */
-    if (priv->menu_item == ADW_SIDEBAR_ITEM (h->data))
-        priv->menu_item = NULL;
+    if (self->menu_item == ADW_SIDEBAR_ITEM (h->data))
+        self->menu_item = NULL;
 
-    priv->histories = g_list_remove_link (priv->histories, h);
+    self->histories = g_list_remove_link (self->histories, h);
 
     /* Dropping an item shifts the selection, which we must not read back as the
      * user asking for a switch. */
-    priv->inhibit_switch = TRUE;
-    adw_sidebar_section_remove (priv->section, ADW_SIDEBAR_ITEM (h->data));
-    priv->inhibit_switch = FALSE;
+    self->inhibit_switch = TRUE;
+    adw_sidebar_section_remove (self->section, ADW_SIDEBAR_ITEM (h->data));
+    self->inhibit_switch = FALSE;
 
     g_list_free_1 (h);
 }
@@ -131,7 +131,7 @@ on_history_emptied (GPasteClient *client G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_add_history (GPasteUiPanel *priv,
+g_paste_ui_panel_add_history (GPasteUiPanel *self,
                               const gchar          *history,
                               gboolean              select);
 
@@ -140,9 +140,9 @@ on_history_switched (GPasteClient *client G_GNUC_UNUSED,
                      const gchar  *history,
                      gpointer      user_data)
 {
-    GPasteUiPanel *priv = user_data;
+    GPasteUiPanel *self = user_data;
 
-    g_paste_ui_panel_add_history (priv, history, TRUE);
+    g_paste_ui_panel_add_history (self, history, TRUE);
 }
 
 static void
@@ -151,12 +151,12 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
                       guint              n_items G_GNUC_UNUSED,
                       gpointer           user_data)
 {
-    GPasteUiPanel *priv = user_data;
+    GPasteUiPanel *self = user_data;
 
-    if (priv->inhibit_switch)
+    if (self->inhibit_switch)
         return;
 
-    AdwSidebarItem *item = adw_sidebar_get_selected_item (priv->sidebar);
+    AdwSidebarItem *item = adw_sidebar_get_selected_item (self->sidebar);
 
     if (!G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
@@ -165,33 +165,33 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_add_history (GPasteUiPanel *priv,
+g_paste_ui_panel_add_history (GPasteUiPanel *self,
                               const gchar          *history,
                               gboolean              select)
 {
-    GList *concurrent = history_find (priv->histories, history);
+    GList *concurrent = history_find (self->histories, history);
     GPasteUiPanelHistory *h;
 
     /* Every selection change we cause here is us following the daemon, never the
      * user picking a history, so none of them may switch anything: the sidebar
      * selects the very first item appended to it on its own, on top of the
      * explicit selection below. */
-    priv->inhibit_switch = TRUE;
+    self->inhibit_switch = TRUE;
 
     if (concurrent)
         h = concurrent->data;
     else
     {
-        h = g_paste_ui_panel_history_new (priv->client, history);
-        adw_sidebar_section_append (priv->section, ADW_SIDEBAR_ITEM (h));
+        h = g_paste_ui_panel_history_new (self->client, history);
+        adw_sidebar_section_append (self->section, ADW_SIDEBAR_ITEM (h));
 
-        priv->histories = g_list_prepend (priv->histories, h);
+        self->histories = g_list_prepend (self->histories, h);
     }
 
     if (select)
-        adw_sidebar_set_selected (priv->sidebar, adw_sidebar_item_get_index (ADW_SIDEBAR_ITEM (h)));
+        adw_sidebar_set_selected (self->sidebar, adw_sidebar_item_get_index (ADW_SIDEBAR_ITEM (h)));
 
-    priv->inhibit_switch = FALSE;
+    self->inhibit_switch = FALSE;
 }
 
 typedef struct
@@ -250,14 +250,14 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_do_switch (GPasteUiPanel *priv)
+g_paste_ui_panel_do_switch (GPasteUiPanel *self)
 {
-    const gchar *text = gtk_editable_get_text (GTK_EDITABLE (priv->switch_entry));
+    const gchar *text = gtk_editable_get_text (GTK_EDITABLE (self->switch_entry));
 
-    g_paste_client_switch_history (priv->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY, NULL, NULL);
-    gtk_editable_set_text (GTK_EDITABLE (priv->switch_entry), "");
+    g_paste_client_switch_history (self->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY, NULL, NULL);
+    gtk_editable_set_text (GTK_EDITABLE (self->switch_entry), "");
 
-    gtk_widget_grab_focus (priv->search_entry);
+    gtk_widget_grab_focus (self->search_entry);
 }
 
 static void
@@ -279,9 +279,9 @@ on_setup_menu (AdwSidebar     *sidebar G_GNUC_UNUSED,
                AdwSidebarItem *item,
                gpointer        user_data)
 {
-    GPasteUiPanel *priv = user_data;
+    GPasteUiPanel *self = user_data;
 
-    priv->menu_item = item;
+    self->menu_item = item;
 }
 
 /* Context menu action callbacks */
@@ -316,8 +316,8 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                           GVariant      *parameter G_GNUC_UNUSED,
                           gpointer       user_data)
 {
-    GPasteUiPanel *priv = user_data;
-    AdwSidebarItem *item = priv->menu_item;
+    GPasteUiPanel *self = user_data;
+    AdwSidebarItem *item = self->menu_item;
 
     if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
@@ -332,11 +332,11 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
     adw_alert_dialog_set_extra_child (dialog, entry);
 
     BackupHistoryData *data = g_new (BackupHistoryData, 1);
-    data->client = g_object_ref (priv->client);
+    data->client = g_object_ref (self->client);
     data->history = g_strdup (history);
     data->entry = GTK_EDITABLE (entry);
 
-    adw_alert_dialog_choose (dialog, GTK_WIDGET (priv->rootwin), NULL, on_backup_response, data);
+    adw_alert_dialog_choose (dialog, GTK_WIDGET (self->rootwin), NULL, on_backup_response, data);
 }
 
 typedef struct
@@ -362,8 +362,8 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                           GVariant      *parameter G_GNUC_UNUSED,
                           gpointer       user_data)
 {
-    GPasteUiPanel *priv = user_data;
-    AdwSidebarItem *item = priv->menu_item;
+    GPasteUiPanel *self = user_data;
+    AdwSidebarItem *item = self->menu_item;
 
     if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
@@ -371,11 +371,11 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
     const gchar *history = g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (item));
     DeleteHistoryData *data = g_new (DeleteHistoryData, 1);
 
-    data->client = g_object_ref (priv->client);
+    data->client = g_object_ref (self->client);
     data->history = g_strdup (history);
     /* Translators: %s is the name of the history being deleted. */
     g_autofree gchar *msg = g_strdup_printf (_("Are you sure you want to delete \"%s\"?"), history);
-    g_paste_gtk_util_confirm_dialog (priv->rootwin, _("Delete"), msg, on_delete_confirmed, data);
+    g_paste_gtk_util_confirm_dialog (self->rootwin, _("Delete"), msg, on_delete_confirmed, data);
 }
 
 static void
@@ -383,15 +383,15 @@ on_empty_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                          GVariant      *parameter G_GNUC_UNUSED,
                          gpointer       user_data)
 {
-    GPasteUiPanel *priv = user_data;
-    AdwSidebarItem *item = priv->menu_item;
+    GPasteUiPanel *self = user_data;
+    AdwSidebarItem *item = self->menu_item;
 
     if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
 
     const gchar *history = g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (item));
 
-    g_paste_gtk_util_empty_history (priv->rootwin, priv->client, priv->settings, history);
+    g_paste_gtk_util_empty_history (self->rootwin, self->client, self->settings, history);
 }
 
 static void
@@ -501,43 +501,43 @@ g_paste_ui_panel_new (GPasteClient   *client,
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
     g_return_val_if_fail (GTK_IS_SEARCH_ENTRY (search_entry), NULL);
 
-    GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_PANEL,
+    GtkWidget *widget = g_object_new (G_PASTE_TYPE_UI_PANEL,
                                       "orientation", GTK_ORIENTATION_VERTICAL,
                                       NULL);
-    GPasteUiPanel *priv = G_PASTE_UI_PANEL (self);
+    GPasteUiPanel *self = G_PASTE_UI_PANEL (widget);
 
-    priv->client = g_object_ref (client);
-    priv->settings = g_object_ref (settings);
-    priv->rootwin = rootwin;
-    priv->search_entry = GTK_WIDGET (search_entry);
+    self->client = g_object_ref (client);
+    self->settings = g_object_ref (settings);
+    self->rootwin = rootwin;
+    self->search_entry = GTK_WIDGET (search_entry);
 
     g_autoptr (GSimpleActionGroup) ag = g_simple_action_group_new ();
 
     g_autoptr (GSimpleAction) backup_action = g_simple_action_new ("backup-history", NULL);
-    g_signal_connect (backup_action, "activate", G_CALLBACK (on_backup_history_action), priv);
+    g_signal_connect (backup_action, "activate", G_CALLBACK (on_backup_history_action), self);
     g_action_map_add_action (G_ACTION_MAP (ag), G_ACTION (backup_action));
 
     g_autoptr (GSimpleAction) delete_action = g_simple_action_new ("delete-history", NULL);
-    g_signal_connect (delete_action, "activate", G_CALLBACK (on_delete_history_action), priv);
+    g_signal_connect (delete_action, "activate", G_CALLBACK (on_delete_history_action), self);
     g_action_map_add_action (G_ACTION_MAP (ag), G_ACTION (delete_action));
 
     g_autoptr (GSimpleAction) empty_action = g_simple_action_new ("empty-history", NULL);
-    g_signal_connect (empty_action, "activate", G_CALLBACK (on_empty_history_action), priv);
+    g_signal_connect (empty_action, "activate", G_CALLBACK (on_empty_history_action), self);
     g_action_map_add_action (G_ACTION_MAP (ag), G_ACTION (empty_action));
 
-    gtk_widget_insert_action_group (self, "panel", G_ACTION_GROUP (ag));
+    gtk_widget_insert_action_group (widget, "panel", G_ACTION_GROUP (ag));
 
     g_autoptr (GMenu) menu = g_menu_new ();
     g_menu_append (menu, _("Backup"), "panel.backup-history");
     g_menu_append (menu, _("Empty"), "panel.empty-history");
     g_menu_append (menu, _("Delete"), "panel.delete-history");
-    adw_sidebar_set_menu_model (priv->sidebar, G_MENU_MODEL (menu));
+    adw_sidebar_set_menu_model (self->sidebar, G_MENU_MODEL (menu));
 
-    GSignalGroup *client_signals = priv->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
+    GSignalGroup *client_signals = self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (client_signals,
                             "delete-history",
                             G_CALLBACK (on_history_deleted),
-                            priv);
+                            self);
     g_signal_group_connect (client_signals,
                             "empty-history",
                             G_CALLBACK (on_history_emptied),
@@ -545,15 +545,15 @@ g_paste_ui_panel_new (GPasteClient   *client,
     g_signal_group_connect (client_signals,
                             "switch-history",
                             G_CALLBACK (on_history_switched),
-                            priv);
+                            self);
     g_signal_group_set_target (client_signals, client);
 
-    priv->c_signals[C_SETUP_MENU] = g_signal_connect (priv->sidebar,
+    self->c_signals[C_SETUP_MENU] = g_signal_connect (self->sidebar,
                                                        "setup-menu",
                                                        G_CALLBACK (on_setup_menu),
-                                                       priv);
+                                                       self);
 
     g_paste_client_get_history_name (client, on_name_ready, g_object_ref (self));
 
-    return self;
+    return widget;
 }

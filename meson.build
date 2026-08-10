@@ -109,7 +109,10 @@ if get_option('vapi') and not get_option('introspection')
   error('GIR generation has to be enabled via -Dintrospection=true to build vala bindings!')
 endif
 
-pkglibexecdir = get_option('prefix') / get_option('libexecdir') / 'gpaste'
+# Where the helper binaries go, relative to the prefix, and the same path made
+# absolute for the compiled-in define.
+pkglibexecdir_rel = get_option('libexecdir') / 'gpaste'
+pkglibexecdir = get_option('prefix') / pkglibexecdir_rel
 
 add_project_arguments(
   '-DG_LOG_DOMAIN="GPaste"',
@@ -138,7 +141,6 @@ add_project_arguments(
 conf = configuration_data()
 
 # Used later on to configure services&gnome-shell extension
-conf.set('GETTEXT_PACKAGE', 'GPaste')
 conf.set('pkglibexecdir', pkglibexecdir)
 conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')

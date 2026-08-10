@@ -192,7 +192,6 @@ gboolean g_paste_prompt_backend_changes (GPasteStorage current,
  * the keyring is a feature-gated, non-introspected part of the daemon library,
  * and a prompt backend written in JS has no other way to ask. */
 gboolean g_paste_prompt_keyring_available      (void);
-gboolean g_paste_prompt_keyring_has_passphrase (void);
 
 /* Where the "Remember this passphrase" switch should start, and whether leaving
  * it off means anything. Both answers come from one keyring lookup, and both
