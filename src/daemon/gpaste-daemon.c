@@ -48,6 +48,15 @@ typedef struct
      * it would then fail against the histories that first one re-keyed, on top of
      * stacking a second prompt over the first. */
     gboolean         changing_passphrase;
+
+    /* The startup storage settle (migration, then encrypted-history unlock) is
+     * running. It can sit on a dialog for minutes, and the bus dropping and
+     * being re-acquired meanwhile runs on_name_acquired() again -- which
+     * ctx->daemon cannot guard against, since it is only assigned once the
+     * settle is over. A second settle would raise its own dialogs over the store
+     * the first is rewriting, then build a second daemon over the first. The
+     * gnome-shell host gates the same window with _settleStorage(). */
+    gboolean         settling;
 } DaemonContext;
 
 /* Persist the history synchronously and release the storage lock so a successor
@@ -175,7 +184,7 @@ change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
      * Argon2 key or waits on the keyring. Doing it here would stall the main
      * loop — the caller's synchronous call included, until it times out on a
      * change that is merely slow. Defer, as the gnome-shell host does. */
-    g_idle_add (do_change_passphrase, ctx);
+    g_source_set_name_by_id (g_idle_add (do_change_passphrase, ctx), "[GPaste] passphrase change");
 }
 
 /* Final step, once the name is owned, the backend choice is settled and any
@@ -183,6 +192,8 @@ change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 static void
 on_storage_ready (DaemonContext *ctx)
 {
+    ctx->settling = FALSE;
+
     /* The GDK backend is ours alone — the gnome-shell-hosted daemon drives the
      * mutter one instead — so the providers are built right here rather than
      * behind a convenience constructor in the daemon library. */
@@ -254,9 +265,13 @@ on_name_acquired (GPasteBus *bus G_GNUC_UNUSED,
 {
     DaemonContext *ctx = user_data;
 
-    /* Acquisition normally happens once; guard against a spurious re-entry. */
-    if (ctx->daemon)
+    /* Acquisition normally happens once; guard against a spurious re-entry, and
+     * against a re-acquisition landing here while the first settle is still
+     * showing its dialogs (see ctx->settling). */
+    if (ctx->daemon || ctx->settling)
         return;
+
+    ctx->settling = TRUE;
 
     /* Get the history store ready (backend choice + encrypted-history unlock)
      * before the daemon starts persisting anything. libadwaita was initialised by
