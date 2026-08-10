@@ -145,9 +145,9 @@ on_history_switched (GPasteClient *client G_GNUC_UNUSED,
     g_paste_ui_panel_add_history (self, history, TRUE);
 }
 
-/* The item the sidebar last pointed us at, when it is one of ours: "setup-menu"
- * fires for every item in the sidebar, our histories among the rest, and both
- * the menu actions and a selection change act on whatever it left here. */
+/* The item a context menu was opened on, which the menu actions all act upon:
+ * "setup-menu" hands it to us when the sidebar opens the menu, and hands us NULL
+ * again once it closes, so this is only ever set while a menu is up. */
 static GPasteUiPanelHistory *
 g_paste_ui_panel_get_menu_history (GPasteUiPanel *self)
 {
