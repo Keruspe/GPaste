@@ -99,6 +99,26 @@ value_at (GPasteHistory *history,
     return item ? g_paste_item_get_value (item) : NULL;
 }
 
+/* One millisecond of main loop: run everything pending, then let the clock move
+ * on. Every wait in this file is built out of this, so a flaky-timeout fix has
+ * one place to land. */
+static void
+pump_once (void)
+{
+    while (g_main_context_iteration (NULL, FALSE))
+        ;
+    g_usleep (1000);
+}
+
+/* Drain the main context for @ms milliseconds, letting whatever the history
+ * queued -- a save, a load, a signal -- actually run. */
+static void
+pump_for_ms (guint ms)
+{
+    for (guint i = 0; i < ms; ++i)
+        pump_once ();
+}
+
 /* Drain the main context for up to @max_ms ms, stopping early once @history
  * reaches @expected_len entries. */
 static gboolean
@@ -110,11 +130,85 @@ pump_until_length (GPasteHistory *history,
     {
         if (g_paste_history_get_length (history) == expected_len)
             return TRUE;
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
-        g_usleep (1000);
+
+        pump_once ();
     }
     return g_paste_history_get_length (history) == expected_len;
+}
+
+/* A test that provokes a warning runs its body in a child: the refusals under
+ * test warn, and with structured logging (G_LOG_USE_STRUCTURED)
+ * g_test_expect_message cannot swallow them, so the child drops warning
+ * fatality and the parent matches them on the child's stderr instead. */
+#define G_PASTE_TEST_IN_SUBPROCESS  g_log_set_always_fatal (G_LOG_LEVEL_ERROR)
+
+#define G_PASTE_TEST_TRAP_SUBPROCESS(stderr_glob)                    \
+    do {                                                             \
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT); \
+        g_test_trap_assert_passed ();                                \
+        g_test_trap_assert_stderr (stderr_glob);                     \
+    } while (FALSE)
+
+/* Read a history back through @backend.
+ *
+ * Every caller had to declare a size out-parameter no test has ever asserted
+ * on, and free the list by hand afterwards -- and the read refuses to reuse a
+ * list that is not empty, so reusing one needed a manual reset. Hand back an
+ * owned list instead and keep all three out of the tests.
+ *
+ * Whether the backend could read at all is distinct from what it read: an empty
+ * history is a perfectly good thing to read back, which is what the two
+ * wrappers below are about. */
+static GList *
+read_history_full (GPasteStorageBackend *backend,
+                   const gchar          *name,
+                   gboolean             *ok)
+{
+    GList *loaded = NULL;
+    gsize size = 0;
+    gboolean read = g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+
+    if (ok)
+        *ok = read;
+
+    return loaded;
+}
+
+static GList *
+read_history (GPasteStorageBackend *backend,
+              const gchar          *name)
+{
+    return read_history_full (backend, name, NULL);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Same, for the tests that care that the read itself worked. Only the encrypted
+ * tests do: everywhere else a failed read is the thing under test. */
+static GList *
+read_history_ok (GPasteStorageBackend *backend,
+                 const gchar          *name)
+{
+    gboolean ok = FALSE;
+    GList *loaded = read_history_full (backend, name, &ok);
+
+    g_assert_true (ok);
+
+    return loaded;
+}
+#endif
+
+/* The history is on disk but must not be read back: a newer schema, a wrong
+ * passphrase, a file we cannot decrypt. Refused means both -- the backend says
+ * so, and nothing comes out of it. */
+static void
+assert_history_refused (GPasteStorageBackend *backend,
+                        const gchar          *name)
+{
+    gboolean ok = TRUE;
+    g_autolist (GPasteItem) loaded = read_history_full (backend, name, &ok);
+
+    g_assert_false (ok);
+    g_assert_null (loaded);
 }
 
 /* A real (1x1 transparent) PNG for the image item tests. Only the SQLite ones
@@ -224,16 +318,12 @@ test_file_image_materialization (void)
     g_assert_cmpmem (materialized, materialized_len,
                      g_bytes_get_data (png, NULL), g_bytes_get_size (png));
 
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, name);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, cache_path);
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
 
@@ -299,15 +389,11 @@ test_file_image_per_history (void)
     g_assert_false (g_file_test (path_a, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (path_b, G_FILE_TEST_EXISTS));
 
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, "per-history-b", &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, "per-history-b");
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items_a, g_object_unref);
     g_list_free_full (items_b, g_object_unref);
 }
@@ -348,16 +434,12 @@ test_file_backup_owns_images (void)
     g_assert_false (g_file_test (src_path, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (dst_path, G_FILE_TEST_EXISTS));
 
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, "backup-dst", &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, "backup-dst");
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, dst_path);
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
 
@@ -772,12 +854,7 @@ test_flush_stops_recording (void)
          * reach the disk. Pump the loop so an (erroneous) async write would run. */
         g_paste_history_add (writer, g_paste_text_item_new ("dropped"));
 
-        for (guint i = 0; i < 100; ++i)
-        {
-            while (g_main_context_iteration (NULL, FALSE))
-                ;
-            g_usleep (1000);
-        }
+        pump_for_ms (100);
     }
 
     {
@@ -834,7 +911,7 @@ test_file_v1_refused_and_preserved (void)
 {
     if (g_test_subprocess ())
     {
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "file-v1";
         const gchar *contents =
@@ -853,12 +930,8 @@ test_file_v1_refused_and_preserved (void)
         {
             g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
-            GList *loaded = NULL;
-            gsize size = 0;
-
             /* Refused, not empty-but-fine. */
-            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
-            g_assert_null (loaded);
+            assert_history_refused (backend, name);
         }
 
         g_autoptr (GPasteHistory) history = make_plain_history ();
@@ -869,12 +942,7 @@ test_file_v1_refused_and_preserved (void)
         /* Recording is off for it, so a subsequent add must not reach the file. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
-        for (guint i = 0; i < 100; ++i)
-        {
-            while (g_main_context_iteration (NULL, FALSE))
-                ;
-            g_usleep (1000);
-        }
+        pump_for_ms (100);
 
         g_autofree gchar *raw = NULL;
 
@@ -883,8 +951,7 @@ test_file_v1_refused_and_preserved (void)
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, 0);
-    g_test_trap_assert_passed ();
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*History version 1.0 is no longer supported*");
 }
 
 /* A history written by a newer GPaste (an unknown <history version=>) is a read
@@ -896,8 +963,7 @@ test_file_version_guard (void)
 {
     if (g_test_subprocess ())
     {
-        /* The refusals below warn; see test_sqlite_version_guard. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "file-newer";
         const gchar *contents =
@@ -916,11 +982,7 @@ test_file_version_guard (void)
         {
             g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
-            g_assert_null (loaded);
+            assert_history_refused (backend, name);
         }
 
         g_autoptr (GPasteHistory) history = make_plain_history ();
@@ -932,12 +994,7 @@ test_file_version_guard (void)
          * would run, then check the file is byte-for-byte what we wrote. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
-        for (guint i = 0; i < 100; ++i)
-        {
-            while (g_main_context_iteration (NULL, FALSE))
-                ;
-            g_usleep (1000);
-        }
+        pump_for_ms (100);
 
         g_autofree gchar *raw = NULL;
 
@@ -980,13 +1037,11 @@ test_file_version_guard (void)
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    /* Also pins the parse location the warning carries: an encrypted history is
-     * parsed from a decrypted in-memory buffer, so the enclosing element and the
-     * byte offsets are what actually identify the offending spot. */
-    g_test_trap_assert_stderr ("*Unknown history version: 9.0 in file *file-newer.xml*"
-                               " at line *, column * (byte *), inside <history> opened at line *");
+    /* The glob also pins the parse location the warning carries: an encrypted
+     * history is parsed from a decrypted in-memory buffer, so the enclosing
+     * element and the byte offsets are what actually identify the spot. */
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Unknown history version: 9.0 in file *file-newer.xml*"
+                                  " at line *, column * (byte *), inside <history> opened at line *");
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -1036,9 +1091,7 @@ test_encrypted_roundtrip (void)
     g_assert_false (file_contains (encrypted_image_path, "IHDR"));
 
     /* Read back through the same backend. */
-    GList *loaded = NULL;
-    gsize size = 0;
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, name);
     g_assert_cmpuint (g_list_length (loaded), ==, 3);
 
     gboolean found_text = FALSE;
@@ -1075,7 +1128,6 @@ test_encrypted_roundtrip (void)
     g_assert_true (found_password);
     g_assert_true (found_image);
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
 
@@ -1090,10 +1142,7 @@ test_encrypted_explicit_passphrase (void)
 {
     if (g_test_subprocess ())
     {
-        /* The refusals below warn; g_test_expect_message cannot swallow them
-         * under structured logging, so drop warning fatality in this subprocess
-         * and let the parent match them on stderr. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "encrypted-explicit";
         const gchar *source_passphrase = "the source passphrase";
@@ -1118,14 +1167,10 @@ test_encrypted_explicit_passphrase (void)
         {
             g_autoptr (GPasteStorageBackend) backend =
                 g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, source_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_true (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, value);
 
-            g_list_free_full (loaded, g_object_unref);
         }
 
         /* ...while the process-wide one does not, and is refused rather than
@@ -1134,11 +1179,7 @@ test_encrypted_explicit_passphrase (void)
             g_autoptr (GPasteStorageBackend) backend =
                 g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings,
                                                              g_paste_storage_backend_get_passphrase ());
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
-            g_assert_null (loaded);
+            assert_history_refused (backend, name);
         }
 
         /* No passphrase at all degrades to "no storage" instead of falling back
@@ -1146,10 +1187,7 @@ test_encrypted_explicit_passphrase (void)
         {
             g_autoptr (GPasteStorageBackend) backend =
                 g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, NULL);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_null (loaded);
         }
 
@@ -1158,11 +1196,7 @@ test_encrypted_explicit_passphrase (void)
         {
             g_autoptr (GPasteStorageBackend) backend =
                 g_paste_storage_backend_new (G_PASTE_STORAGE_ENCRYPTED_FILE, settings);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
-            g_assert_null (loaded);
+            assert_history_refused (backend, name);
         }
 
         g_paste_storage_backend_set_passphrase (NULL);
@@ -1170,9 +1204,7 @@ test_encrypted_explicit_passphrase (void)
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*No passphrase for the encrypted storage backend*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*No passphrase for the encrypted storage backend*");
 }
 
 /* Changing the passphrase must re-encrypt everything the history holds, in
@@ -1187,7 +1219,7 @@ test_encrypted_rekey (void)
         /* Reading with the old passphrase afterwards warns; g_test_expect_message
          * cannot swallow that under structured logging, so drop warning fatality
          * here and let the parent match it on stderr. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "encrypted-rekey";
         const gchar *other_name = "encrypted-rekey-backup";
@@ -1229,23 +1261,16 @@ test_encrypted_rekey (void)
         /* Both histories moved, not just the first. */
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_true (g_paste_storage_backend_read_history (backend, other_name, &loaded, &size));
+            g_autolist (GPasteItem) loaded = read_history_ok (backend, other_name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, other_value);
 
-            g_list_free_full (loaded, g_object_unref);
         }
 
         /* The new passphrase reads back everything, contents included. */
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_true (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
             g_assert_cmpuint (g_list_length (loaded), ==, 3);
 
             gboolean found_password = FALSE;
@@ -1277,17 +1302,12 @@ test_encrypted_rekey (void)
             g_assert_true (found_password);
             g_assert_true (found_image);
 
-            g_list_free_full (loaded, g_object_unref);
         }
 
         /* ...and the old one is refused rather than read as empty. */
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
-            g_assert_null (loaded);
+            assert_history_refused (backend, name);
         }
 
         /* A plain history has no passphrase to change, and says so — through the
@@ -1335,13 +1355,9 @@ test_encrypted_rekey (void)
 
             {
                 g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
-                GList *loaded = NULL;
-                gsize size = 0;
-
-                g_assert_true (g_paste_storage_backend_read_history (backend, big_name, &loaded, &size));
+                g_autolist (GPasteItem) loaded = read_history_ok (backend, big_name);
                 g_assert_cmpuint (g_list_length (loaded), ==, 10);
 
-                g_list_free_full (loaded, g_object_unref);
             }
         }
 
@@ -1356,9 +1372,7 @@ test_encrypted_rekey (void)
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*not encrypted*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not encrypted*");
 }
 #endif
 
@@ -1379,13 +1393,9 @@ sqlite_wait_for_values (GPasteStorage        kind,
 
     for (guint i = 0; i < max_ms; ++i)
     {
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
+        pump_once ();
 
-        GList *loaded = NULL;
-        gsize size = 0;
-
-        g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+        g_autolist (GPasteItem) loaded = read_history (backend, name);
 
         gboolean match = (g_list_length (loaded) == expected);
         const GList *l = loaded;
@@ -1393,7 +1403,6 @@ sqlite_wait_for_values (GPasteStorage        kind,
         for (guint v = 0; match && v < expected; ++v, l = l->next)
             match = g_paste_str_equal (g_paste_item_get_value (l->data), values[v]);
 
-        g_list_free_full (loaded, g_object_unref);
 
         if (match)
             return TRUE;
@@ -1453,10 +1462,7 @@ test_sqlite_roundtrip (void)
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
     g_assert_true (g_strv_contains ((const gchar * const *) names, name));
 
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, name);
 
     /* The password entry is not persisted; everything else is, in order. */
     g_assert_cmpuint (g_list_length (loaded), ==, 4);
@@ -1506,7 +1512,6 @@ test_sqlite_roundtrip (void)
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, orig_png));
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 
     /* Deleting the history removes the database. */
@@ -1616,10 +1621,7 @@ test_sqlite_replace (void)
 
     g_paste_storage_backend_replace_item (backend, name, "e8a95b3d-33ee-4b1e-8ee3-9c22c9635b8d", usurper, NULL);
 
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, name);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 3);
     g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (loaded, 0)), ==, "front");
@@ -1634,7 +1636,6 @@ test_sqlite_replace (void)
     g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES);
     g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (svs->data), replacement_sv));
 
-    g_list_free_full (loaded, g_object_unref);
 
     /* set_password turns an item into a password: it must leave storage, not
      * linger as a stale plaintext row. */
@@ -1642,14 +1643,12 @@ test_sqlite_replace (void)
 
     g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (replacement), password, NULL);
 
-    loaded = NULL;
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) after_password = read_history (backend, name);
 
-    g_assert_cmpuint (g_list_length (loaded), ==, 2);
-    g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (loaded, 0)), ==, "front");
-    g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (loaded, 1)), ==, "back");
+    g_assert_cmpuint (g_list_length (after_password), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (after_password, 0)), ==, "front");
+    g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (after_password, 1)), ==, "back");
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
 
@@ -1751,12 +1750,8 @@ test_sqlite_migration_keeps_destination_images (void)
     /* The destination still stores the name: its images must survive... */
     g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
 
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (destination, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (destination, name);
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
-    g_list_free_full (loaded, g_object_unref);
 
     /* ...and go away with the last flavor storing it. */
     g_paste_storage_backend_delete_history (destination, name, NULL);
@@ -1802,10 +1797,7 @@ test_sqlite_image_blob (void)
     g_assert_true (file_contains (path, "IHDR"));
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, name);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
 
@@ -1825,7 +1817,6 @@ test_sqlite_image_blob (void)
     g_assert_nonnull (g_paste_image_item_get_image (image));
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_IDLE);
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
 
@@ -1888,10 +1879,7 @@ test_sqlite_version_guard (void)
 {
     if (g_test_subprocess ())
     {
-        /* The refusals below warn. With structured logging (G_LOG_USE_STRUCTURED)
-         * g_test_expect_message cannot swallow them, so drop warning fatality in
-         * this subprocess and let the parent match them on stderr instead. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "sqlite-newer";
 
@@ -1921,10 +1909,7 @@ test_sqlite_version_guard (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_null (loaded);
 
             /* A write against the newer database must not touch it. */
@@ -1942,20 +1927,14 @@ test_sqlite_version_guard (void)
         sqlite3_close (db);
 
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-        GList *loaded = NULL;
-        gsize size = 0;
-
-        g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+        g_autolist (GPasteItem) loaded = read_history (backend, name);
         g_assert_cmpuint (g_list_length (loaded), ==, 1);
         g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "precious");
-        g_list_free_full (loaded, g_object_unref);
 
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*newer GPaste*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*newer GPaste*");
 }
 #endif
 
@@ -2035,8 +2014,7 @@ test_encrypted_sqlite_absurd_kdf_params (void)
 {
     if (g_test_subprocess ())
     {
-        /* The refusals below warn; see test_sqlite_version_guard. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "sqlite-absurd-kdf";
         const gchar *passphrase = "correct horse battery staple";
@@ -2062,10 +2040,7 @@ test_encrypted_sqlite_absurd_kdf_params (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_null (loaded);
 
             /* And the refusal must not let a write clobber what is still there. */
@@ -2090,20 +2065,14 @@ test_encrypted_sqlite_absurd_kdf_params (void)
         sqlite3_close (db);
 
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
-        GList *loaded = NULL;
-        gsize size = 0;
-
-        g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+        g_autolist (GPasteItem) loaded = read_history (backend, name);
         g_assert_cmpuint (g_list_length (loaded), ==, 1);
         g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "precious");
-        g_list_free_full (loaded, g_object_unref);
 
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*Unreasonable key-derivation parameters*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Unreasonable key-derivation parameters*");
 }
 
 /* The encrypted SQLite flavor must round-trip everything the plain one does,
@@ -2163,10 +2132,7 @@ test_encrypted_sqlite_roundtrip (void)
     g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "not the passphrase"));
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, master);
-    GList *loaded = NULL;
-    gsize size = 0;
-
-    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_autolist (GPasteItem) loaded = read_history (backend, name);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 4);
 
@@ -2194,7 +2160,6 @@ test_encrypted_sqlite_roundtrip (void)
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, png));
 
-    g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
 }
 
@@ -2206,10 +2171,7 @@ test_encrypted_sqlite_wrong_passphrase (void)
 {
     if (g_test_subprocess ())
     {
-        /* The refusals below warn; g_test_expect_message cannot swallow them
-         * under structured logging, so drop warning fatality in this subprocess
-         * and let the parent match them on stderr. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "sqlite-encrypted-wrong";
 
@@ -2225,10 +2187,7 @@ test_encrypted_sqlite_wrong_passphrase (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "wrong passphrase");
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_null (loaded);
 
             GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
@@ -2239,13 +2198,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "right passphrase");
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "precious");
-            g_list_free_full (loaded, g_object_unref);
         }
 
         /* An empty encrypted history holds nothing to lose: a different
@@ -2254,19 +2209,13 @@ test_encrypted_sqlite_wrong_passphrase (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "original passphrase");
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, empty_name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, empty_name);
             g_assert_null (loaded);
         }
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "replacement passphrase");
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_paste_storage_backend_read_history (backend, empty_name, &loaded, &size);
+            g_autolist (GPasteItem) loaded = read_history (backend, empty_name);
             g_assert_null (loaded);
 
             GList *items = g_list_append (NULL, g_paste_text_item_new ("fresh start"));
@@ -2274,17 +2223,14 @@ test_encrypted_sqlite_wrong_passphrase (void)
             g_paste_storage_backend_write_history (backend, empty_name, items);
             g_list_free_full (items, g_object_unref);
 
-            g_paste_storage_backend_read_history (backend, empty_name, &loaded, &size);
-            g_assert_cmpuint (g_list_length (loaded), ==, 1);
-            g_list_free_full (loaded, g_object_unref);
+            g_autolist (GPasteItem) refilled = read_history (backend, empty_name);
+            g_assert_cmpuint (g_list_length (refilled), ==, 1);
         }
 
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*does not unlock*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*does not unlock*");
 }
 
 /* The database flavor re-keys every content column it holds — the value, the
@@ -2297,7 +2243,7 @@ test_encrypted_sqlite_rekey (void)
     {
         /* The refused read with the old passphrase warns; see the file flavor's
          * re-key test for why fatality is dropped here. */
-        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+        G_PASTE_TEST_IN_SUBPROCESS;
 
         const gchar *name = "sqlite-rekey";
         const gchar *other_name = "sqlite-rekey-backup";
@@ -2347,22 +2293,15 @@ test_encrypted_sqlite_rekey (void)
         /* Both histories moved, not just the first. */
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, new_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_true (g_paste_storage_backend_read_history (backend, other_name, &loaded, &size));
+            g_autolist (GPasteItem) loaded = read_history_ok (backend, other_name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, other_value);
 
-            g_list_free_full (loaded, g_object_unref);
         }
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, new_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_true (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
+            g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
             g_assert_cmpuint (g_list_length (loaded), ==, 3);
 
             gboolean found_text = FALSE;
@@ -2405,24 +2344,17 @@ test_encrypted_sqlite_rekey (void)
             g_assert_true (found_password);
             g_assert_true (found_image);
 
-            g_list_free_full (loaded, g_object_unref);
         }
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, old_passphrase);
-            GList *loaded = NULL;
-            gsize size = 0;
-
-            g_assert_false (g_paste_storage_backend_read_history (backend, name, &loaded, &size));
-            g_assert_null (loaded);
+            assert_history_refused (backend, name);
         }
 
         return;
     }
 
-    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-    g_test_trap_assert_passed ();
-    g_test_trap_assert_stderr ("*does not unlock*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*does not unlock*");
 }
 
 /* The incremental save path works identically through the encrypted flavor,
