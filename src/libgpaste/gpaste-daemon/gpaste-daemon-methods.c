@@ -356,7 +356,27 @@ G_PASTE_VISIBLE GStrv
 g_paste_daemon_methods_list_histories (const GPasteDaemonMethods *priv,
                                        GError                   **error)
 {
-    return g_paste_history_list (priv->history, error);
+    g_auto (GStrv) names = g_paste_history_list (priv->history, error);
+
+    if (!names)
+        return NULL;
+
+    /* The backends answer with the names on disk, which is what everything that
+     * opens those files needs, but this answer travels back over the bus as an
+     * "as", where a name that is not valid UTF-8 has no place. Such a history
+     * could not be switched to either, since that call names it the same way,
+     * so leave it out rather than hand back a name nothing can act on. */
+    g_autoptr (GStrvBuilder) histories = g_strv_builder_new ();
+
+    for (GStrv name = names; *name; ++name)
+    {
+        if (!g_utf8_validate (*name, -1, NULL))
+            continue;
+
+        g_strv_builder_add (histories, *name);
+    }
+
+    return g_strv_builder_end (histories);
 }
 
 G_PASTE_VISIBLE void

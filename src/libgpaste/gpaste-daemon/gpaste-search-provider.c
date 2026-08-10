@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-util.h>
 
@@ -123,21 +124,83 @@ append_dict_entry (GVariantBuilder *dict,
 
 typedef struct
 {
-    /* Same ownership as SearchData, plus the uuids: they name the results and
-     * are read again once the values come back. */
+    /* Same ownership as SearchData, plus the uuids: they are what the call was
+     * made with, and what the fallback picks back out of the history. */
     GPasteSearchProvider  *provider;
     GDBusMethodInvocation *invocation;
     GStrv                  uuids;
 } GetResultMetasData;
 
 static void
+append_meta (GVariantBuilder *builder,
+             const gchar     *uuid,
+             const gchar     *value)
+{
+    g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
+    g_autofree gchar *result = g_paste_util_one_line (value);
+
+    append_dict_entry (&dict, "id", uuid);
+    append_dict_entry (&dict, "name", result);
+    append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
+    append_dict_entry (&dict, "clipboardText", value);
+
+    g_variant_builder_add_value (builder, g_variant_builder_end (&dict));
+}
+
+static void
+get_result_metas_data_free (GetResultMetasData *data)
+{
+    g_object_unref (data->provider);
+    g_strfreev (data->uuids);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GetResultMetasData, get_result_metas_data_free)
+
+/* The fallback path: describe the identifiers that are still in the history and
+ * quietly drop the ones that are not. Reached when the batch below failed, which
+ * it does as a whole as soon as one uuid has gone. */
+static void
+on_history_ready (GObject      *source_object G_GNUC_UNUSED,
+                  GAsyncResult *res,
+                  gpointer      user_data)
+{
+    g_autoptr (GetResultMetasData) data = user_data;
+    GPasteSearchProvider *self = data->provider;
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
+    g_autoptr (GError) error = NULL;
+    g_autolist (GPasteClientItem) history = g_paste_client_get_history_finish (self->client, res, &error);
+
+    if (error)
+        g_warning ("GPaste get history failed: %s", error->message);
+
+    /* Indexed rather than scanned per uuid: this runs on GetResultMetas, which
+     * the shell calls on every keystroke once one identifier has gone, and a
+     * full history against a screenful of results is tens of thousands of
+     * comparisons each time. The items belong to @history throughout. */
+    g_autoptr (GHashTable) items = g_hash_table_new (g_str_hash, g_str_equal);
+
+    for (const GList *i = history; i; i = i->next)
+        g_hash_table_insert (items, (gpointer) g_paste_client_item_get_uuid (i->data), i->data);
+
+    for (GStrv uuid = data->uuids; *uuid; ++uuid)
+    {
+        GPasteClientItem *item = g_hash_table_lookup (items, *uuid);
+
+        if (item)
+            append_meta (&builder, *uuid, g_paste_client_item_get_value (item));
+    }
+
+    g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
+}
+
+static void
 on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
                    GAsyncResult *res,
                    gpointer      user_data)
 {
-    g_autofree GetResultMetasData *data = user_data;
-    g_autoptr (GPasteSearchProvider) self = data->provider;
-    g_auto (GStrv) uuids = data->uuids;
+    g_autoptr (GetResultMetasData) data = user_data;
+    GPasteSearchProvider *self = data->provider;
     /* Initialized in the declaration: a g_auto() builder that goes out of scope
      * before its init() would have g_variant_builder_clear() run on stack
      * garbage. */
@@ -145,24 +208,33 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) results = g_paste_client_get_elements_finish (self->client, res, &error);
-    if (error)
-        g_warning ("GPaste get elements failed: %s", error->message);
-    guint64 n = 0;
 
-    for (const GList *i = results; i; i = i->next, ++n)
+    /* GetElements is all-or-nothing: one uuid the history no longer holds (it was
+     * capped away between the search and this call) fails the lot with
+     * %G_PASTE_ERROR_INVALID_INDEX. Describing none of them would drop every
+     * result the shell is about to show, so fall back to picking out of the
+     * history whatever survives.
+     *
+     * Only for that one error: a daemon that has gone away, or a call that timed
+     * out, would otherwise have every GetResultMetas pull the whole history over
+     * the bus to build the very empty answer we can complete with right now. */
+    if (!results)
     {
-        GPasteClientItem *item = i->data;
-        const gchar *value = g_paste_client_item_get_value (item);
-        g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
-        g_autofree gchar *result = g_paste_util_one_line (value);
+        if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX))
+        {
+            g_paste_client_get_history (self->client, on_history_ready, g_steal_pointer (&data));
 
-        append_dict_entry (&dict, "id", uuids[n]);
-        append_dict_entry (&dict, "name", result);
-        append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
-        append_dict_entry (&dict, "clipboardText", value);
+            return;
+        }
 
-        g_variant_builder_add_value (&builder, g_variant_builder_end (&dict));
+        if (error)
+            g_warning ("GPaste get elements failed: %s", error->message);
     }
+
+    /* Each item names itself, so nothing here depends on the reply coming back
+     * in the order the uuids were asked in. */
+    for (const GList *i = results; i; i = i->next)
+        append_meta (&builder, g_paste_client_item_get_uuid (i->data), g_paste_client_item_get_value (i->data));
 
     g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
 }
@@ -189,8 +261,8 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
 
     data->provider = g_object_ref (self);
     data->invocation = invocation;
-    /* Deep-copy: the strings must outlive @identifiers, since on_elements_ready
-     * reads them once the call comes back. */
+    /* Deep-copy: the strings must outlive @identifiers, since the call reads
+     * them and the fallback matches on them once it comes back. */
     data->uuids = g_strdupv ((GStrv) identifiers);
 
     g_paste_client_get_elements (self->client, (const gchar * const *) data->uuids, on_elements_ready, data);

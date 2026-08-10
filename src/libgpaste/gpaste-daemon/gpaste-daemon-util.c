@@ -186,3 +186,91 @@ g_paste_util_ensure_history_dir_exists (void)
 
     return TRUE;
 }
+
+/**
+ * g_paste_util_list_directory:
+ * @dir: the directory to list
+ * @attribute: the name attribute to read back off each entry, either
+ *             %G_FILE_ATTRIBUTE_STANDARD_NAME or %G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME
+ * @error: return location for a #GError, or %NULL
+ *
+ * List everything @dir holds, by name.
+ *
+ * A directory that is not there at all is not a failure: nothing has been
+ * stored yet, and the answer is an empty list. Anything else is, and comes back
+ * as %NULL — never a short list. Every caller acts on what it gets (deleting,
+ * re-keying, importing, counting), so an enumeration that stopped half way must
+ * not be told apart from a complete one by whoever reads it.
+ *
+ * Errors are the enumeration's own, so they land in %G_IO_ERROR.
+ *
+ * Returns: (transfer full) (nullable): the names, or %NULL
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_util_list_directory (GFile        *dir,
+                             const gchar  *attribute,
+                             GError      **error)
+{
+    g_return_val_if_fail (G_IS_FILE (dir), NULL);
+    g_return_val_if_fail (attribute, NULL);
+
+    g_autoptr (GStrvBuilder) names = g_strv_builder_new ();
+    g_autoptr (GError) local_error = NULL;
+    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
+                                                                      attribute,
+                                                                      G_FILE_QUERY_INFO_NONE,
+                                                                      NULL, /* cancellable */
+                                                                      &local_error);
+
+    if (!children)
+    {
+        /* Nothing stored yet. */
+        if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+            return g_strv_builder_end (names);
+
+        g_propagate_error (error, g_steal_pointer (&local_error));
+
+        return NULL;
+    }
+
+    GFileInfo *info;
+
+    while ((info = g_file_enumerator_next_file (children,
+                                                NULL, /* cancellable */
+                                                &local_error)))
+    {
+        g_autoptr (GFileInfo) child = info;
+
+        /* STANDARD_NAME is a byte string and DISPLAY_NAME a UTF-8 one: each is
+         * read back with its own getter rather than through the generic
+         * get_attribute_as_string(), which escapes the bytes of the former. */
+        const gchar *name = (g_file_info_get_attribute_type (child, attribute) == G_FILE_ATTRIBUTE_TYPE_BYTE_STRING)
+            ? g_file_info_get_attribute_byte_string (child, attribute)
+            : g_file_info_get_attribute_string (child, attribute);
+
+        /* An entry the enumerator did not answer with @attribute at all. Adding
+         * it would put a %NULL in the middle of the vector, which every caller
+         * reads as the end of the listing: a short list wearing the shape of a
+         * complete one, which is the one thing this must never return. */
+        if (!name)
+        {
+            g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                         "A directory entry carries no \"%s\"", attribute);
+
+            return NULL;
+        }
+
+        g_strv_builder_add (names, name);
+    }
+
+    /* next_file() returns NULL both at the end of the listing and on a failure,
+     * so the two can only be told apart once the loop is over. */
+    if (local_error)
+    {
+        g_propagate_error (error, g_steal_pointer (&local_error));
+
+        return NULL;
+    }
+
+    return g_strv_builder_end (names);
+}

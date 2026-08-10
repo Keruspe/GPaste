@@ -356,37 +356,56 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
 
 /* A history's images live in their own directory (so histories never share,
  * nor cross-delete, image files): deleting the history deletes them with it,
- * whichever backend stored the history itself. */
-static void
-_g_paste_storage_backend_delete_history_images (const gchar *name)
+ * whichever backend stored the history itself.
+ *
+ * %FALSE, with @error set to the first thing that went wrong, when anything the
+ * sweep should have removed is still on disk. The rest is swept anyway: these
+ * are the clipboard's screenshots, so every one that can go, goes. */
+static gboolean
+_g_paste_storage_backend_delete_history_images (const gchar  *name,
+                                                GError      **error)
 {
     g_autofree gchar *images_dir_path = g_paste_image_item_get_images_dir (name);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
-    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (images_dir,
-                                                                      G_FILE_ATTRIBUTE_STANDARD_NAME,
-                                                                      G_FILE_QUERY_INFO_NONE,
-                                                                      NULL, NULL);
+    g_autoptr (GError) failure = NULL;
+    /* A history that never held an image has no directory to sweep, and comes
+     * back as an empty list. A listing that failed is not that: sweeping what it
+     * did return would leave the rest behind, so there is nothing to do here but
+     * say so. */
+    g_auto (GStrv) images = g_paste_util_list_directory (images_dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &failure);
 
-    if (children)
+    if (!images)
     {
-        GFileInfo *info;
+        g_propagate_prefixed_error (error, g_steal_pointer (&failure),
+                                    "Could not list the images of \"%s\": ", name);
 
-        while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
-        {
-            g_autoptr (GFileInfo) child_info = info;
-            g_autoptr (GFile) child = g_file_enumerator_get_child (children, child_info);
-            g_autoptr (GError) error = NULL;
-
-            if (!g_file_delete (child, NULL, &error))
-                g_warning ("Failed to delete image file: %s", error->message);
-        }
+        return FALSE;
     }
 
-    g_autoptr (GError) error = NULL;
+    for (GStrv image = images; *image; ++image)
+    {
+        g_autoptr (GFile) child = g_file_get_child (images_dir, *image);
+        g_autoptr (GError) delete_error = NULL;
 
-    if (!g_file_delete (images_dir, NULL, &error) &&
-        !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        g_warning ("Failed to delete images directory: %s", error->message);
+        if (!g_file_delete (child, NULL, &delete_error) && !failure)
+            failure = g_steal_pointer (&delete_error);
+    }
+
+    g_autoptr (GError) rmdir_error = NULL;
+
+    /* Whatever the loop left behind makes this fail too, with a less specific
+     * message: the first failure is the one that says why. */
+    if (!g_file_delete (images_dir, NULL, &rmdir_error) &&
+        !g_error_matches (rmdir_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND) &&
+        !failure)
+        failure = g_steal_pointer (&rmdir_error);
+
+    if (!failure)
+        return TRUE;
+
+    g_propagate_error (error, g_steal_pointer (&failure));
+
+    return FALSE;
 }
 
 /**
@@ -397,9 +416,11 @@ _g_paste_storage_backend_delete_history_images (const gchar *name)
  *
  * Delete a history from our storage backend
  *
- * Backends only ever propagate what unlinking their store returned, so errors
- * land in %G_IO_ERROR or %G_FILE_ERROR. The image sweep that follows is
- * best-effort and never reported here.
+ * Backends propagate what unlinking their store returned, and the image sweep
+ * that follows propagates its own, so errors land in %G_IO_ERROR or
+ * %G_FILE_ERROR. The sweep is reported because those files are the clipboard's
+ * screenshots in the plain flavours: "the history is gone" must not be answered
+ * while they are still there.
  */
 G_PASTE_VISIBLE void
 g_paste_storage_backend_delete_history (GPasteStorageBackend  *self,
@@ -415,8 +436,21 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend  *self,
     /* Only sweep the images once the name is gone from every flavor: another
      * backend may still reference them (a migration's destination, whose
      * cleanup deletes the source history under the same name). */
-    if (!_g_paste_storage_backend_history_still_stored (name))
-        _g_paste_storage_backend_delete_history_images (name);
+    if (_g_paste_storage_backend_history_still_stored (name))
+        return;
+
+    g_autoptr (GError) images_error = NULL;
+
+    if (_g_paste_storage_backend_delete_history_images (name, &images_error))
+        return;
+
+    /* Never over the store's own failure: the first thing that went wrong is
+     * what says why, and a caller that asked for no error still has to hear
+     * about images left on disk. */
+    if (error && !*error)
+        g_propagate_error (error, g_steal_pointer (&images_error));
+    else
+        g_warning ("Could not delete the images of \"%s\": %s", name, images_error->message);
 }
 
 /* The default list_histories: enumerate the history dir for files of this
@@ -426,56 +460,37 @@ static GStrv
 _g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend  *self,
                                                       GError               **error)
 {
-    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
     g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_backend_get_extension (self), NULL);
     gsize suffix_len = strlen (suffix);
-    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
-                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                                                       G_FILE_QUERY_INFO_NONE,
-                                                                       NULL,
-                                                                       error);
-    /* A missing history dir (fresh profile) is not an error: return an empty
-     * list. Check the enumerator itself, since callers may pass error == NULL. */
-    if (!histories)
-    {
-        if (error && *error)
-        {
-            if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
-                g_clear_error (error);
-            else
-                return NULL;
-        }
-        return g_strv_builder_end (history_names);
-    }
+    /* A fresh profile has no history dir and lists nothing, which is an empty
+     * list rather than a failure. A truncated listing is a failure and comes
+     * back as NULL: "no histories" is exactly the answer that makes every
+     * passphrase verify and a migration import nothing, then let its cleanup
+     * delete the originals it never read.
+     *
+     * The name on disk, not the display one: what comes out of here is handed
+     * straight back to g_paste_util_get_history_file_path() by read/delete/rekey,
+     * and the display name is a UTF-8 rendering of the bytes — a file whose name
+     * is not valid UTF-8 would come back under a name that names no file, and
+     * every one of those callers would then act on nothing while reporting that
+     * it acted. */
+    g_auto (GStrv) files = g_paste_util_list_directory (history_dir, G_FILE_ATTRIBUTE_STANDARD_NAME, error);
 
-    GFileInfo *history;
-    g_autoptr (GError) local_error = NULL;
-
-    while ((history = g_file_enumerator_next_file (histories,
-                                                   NULL,
-                                                   &local_error)))
-    {
-        g_autoptr (GFileInfo) h = history;
-        const gchar *raw_name = g_file_info_get_display_name (h);
-
-        if (g_str_has_suffix (raw_name, suffix))
-        {
-            g_autofree gchar *name = g_strdup (raw_name);
-
-            name[strlen (name) - suffix_len] = '\0';
-            g_strv_builder_take (history_names, g_steal_pointer (&name));
-        }
-    }
-
-    /* next_file() returns NULL both at the end of the listing and on a failure,
-     * so the error can only be checked once the loop is over. A truncated listing
-     * must never look like a successful one: a migration would then import (and
-     * its cleanup delete) only the histories we happened to reach. */
-    if (local_error)
-    {
-        g_propagate_error (error, g_steal_pointer (&local_error));
+    if (!files)
         return NULL;
+
+    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
+
+    for (GStrv file = files; *file; ++file)
+    {
+        if (!g_str_has_suffix (*file, suffix))
+            continue;
+
+        g_autofree gchar *name = g_strdup (*file);
+
+        name[strlen (name) - suffix_len] = '\0';
+        g_strv_builder_take (history_names, g_steal_pointer (&name));
     }
 
     return g_strv_builder_end (history_names);

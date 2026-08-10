@@ -970,7 +970,12 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend  *self,
 }
 
 /* Every file of @name that is encrypted: the history itself and the image side
- * files it references, which live in the history's own images directory. */
+ * files it references, which live in the history's own images directory.
+ *
+ * %NULL (never an incomplete list) if the directory is there but cannot be
+ * listed: the caller re-keys exactly what this returns, so a short list would
+ * leave the images it missed encrypted under the old passphrase, unreadable for
+ * good once the new one is in force. */
 static GStrv
 _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
                                        const gchar          *name)
@@ -983,25 +988,23 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
 
     g_autofree gchar *images_dir = g_paste_image_item_get_images_dir (name);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
-    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
-                                                                      G_FILE_ATTRIBUTE_STANDARD_NAME,
-                                                                      G_FILE_QUERY_INFO_NONE,
-                                                                      NULL, NULL);
+    g_autoptr (GError) error = NULL;
+    /* A history that never held an image has no directory, and lists nothing. */
+    g_auto (GStrv) images = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
 
-    if (children)
+    if (!images)
     {
-        GFileInfo *info;
+        g_warning ("Could not list the images of \"%s\": %s", name, error->message);
 
-        while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
-        {
-            g_autoptr (GFileInfo) child = info;
-            const gchar *child_name = g_file_info_get_name (child);
+        return NULL;
+    }
 
-            /* The encrypted side files only; a leftover plain ".png" holds
-             * nothing secret and has no key to change. */
-            if (g_str_has_suffix (child_name, ".pngs"))
-                g_strv_builder_take (builder, g_build_filename (images_dir, child_name, NULL));
-        }
+    for (GStrv image = images; *image; ++image)
+    {
+        /* The encrypted side files only; a leftover plain ".png" holds
+         * nothing secret and has no key to change. */
+        if (g_str_has_suffix (*image, ".pngs"))
+            g_strv_builder_take (builder, g_build_filename (images_dir, *image, NULL));
     }
 
     return g_strv_builder_end (builder);
@@ -1030,6 +1033,14 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
                                                                                   new_passphrase);
     g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (self, name);
+
+    /* Re-keying part of a history is worse than not re-keying it at all — and
+     * re-keying none of it is the same thing said of the whole: a history whose
+     * files we could not list, or could not find, must not come back as one that
+     * now speaks the new passphrase. */
+    if (!paths || !*paths)
+        return FALSE;
+
     g_autoptr (GStrvBuilder) written = g_strv_builder_new ();
     gboolean ok = TRUE;
 
