@@ -67,6 +67,14 @@
         </ul>
       </description>
     </release>
+    <release type="stable" date="2026-08-10" version="50.8">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix selecting a history in the UI sidebar doing nothing, and, when a history's context menu was open, switching to that one instead of the one clicked</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-08-02" version="50.7">
       <description>
         <p>This is a maintenance release. Changes:</p>

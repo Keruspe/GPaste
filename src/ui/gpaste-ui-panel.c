@@ -35,6 +35,9 @@ typedef struct
      * guarantee of getting the very object our handler is connected to back. */
     GtkSelectionModel *items;
     AdwSidebarSection *section;
+    /* The item a context menu was opened on, which the menu actions act upon:
+     * "setup-menu" hands it to us when the sidebar opens the menu, and hands us
+     * NULL again once it closes, so this is only ever set while a menu is up. */
     AdwSidebarItem    *menu_item;
     AdwEntryRow       *switch_entry;
     GtkButton         *jump_button;
@@ -103,8 +106,19 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
         return;
     }
 
+    /* The context menu may still be up on the very item we are dropping, and we
+     * do not hold a reference to it. */
+    if (priv->menu_item == ADW_SIDEBAR_ITEM (h->data))
+        priv->menu_item = NULL;
+
     priv->histories = g_list_remove_link (priv->histories, h);
+
+    /* Dropping an item shifts the selection, which we must not read back as the
+     * user asking for a switch. */
+    priv->inhibit_switch = TRUE;
     adw_sidebar_section_remove (priv->section, ADW_SIDEBAR_ITEM (h->data));
+    priv->inhibit_switch = FALSE;
+
     g_list_free_1 (h);
 }
 
@@ -144,9 +158,9 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
     if (priv->inhibit_switch)
         return;
 
-    AdwSidebarItem *item = priv->menu_item;
+    AdwSidebarItem *item = adw_sidebar_get_selected_item (priv->sidebar);
 
-    if (!item || !G_PASTE_IS_UI_PANEL_HISTORY (item))
+    if (!G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
 
     g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item));
@@ -160,6 +174,12 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
     GList *concurrent = history_find (priv->histories, history);
     GPasteUiPanelHistory *h;
 
+    /* Every selection change we cause here is us following the daemon, never the
+     * user picking a history, so none of them may switch anything: the sidebar
+     * selects the very first item appended to it on its own, on top of the
+     * explicit selection below. */
+    priv->inhibit_switch = TRUE;
+
     if (concurrent)
         h = concurrent->data;
     else
@@ -171,11 +191,9 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
     }
 
     if (select)
-    {
-        priv->inhibit_switch = TRUE;
         adw_sidebar_set_selected (priv->sidebar, adw_sidebar_item_get_index (ADW_SIDEBAR_ITEM (h)));
-        priv->inhibit_switch = FALSE;
-    }
+
+    priv->inhibit_switch = FALSE;
 }
 
 typedef struct

@@ -18,6 +18,11 @@ NEW in 51.0 (UNRELEASED)
 - Remember the graphical tool's window geometry across sessions
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
+NEW in 50.8 (10/08/2026)
+=============
+
+- UI: fix selecting a history in the sidebar doing nothing, and, when a history's context menu was open, switching to that one instead of the one clicked
+
 NEW in 50.7 (02/08/2026)
 =============
 
