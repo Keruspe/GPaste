@@ -374,11 +374,43 @@ g_paste_prompt_default_prompt (GPastePrompt        *self G_GNUC_UNUSED,
     g_paste_prompt_request_dismiss (request);
 }
 
+/* Said to whoever is watching the logs, which is the least a report can be. A
+ * backend that shows dialogs overrides this and shows one. */
+static void
+g_paste_prompt_default_report (GPastePrompt *self G_GNUC_UNUSED,
+                               const gchar  *title,
+                               const gchar  *message)
+{
+    g_warning ("%s: %s", title, message);
+}
+
 static void
 g_paste_prompt_default_init (GPastePromptInterface *iface)
 {
     iface->passphrase = g_paste_prompt_default_prompt;
     iface->migration = g_paste_prompt_default_prompt;
+    iface->report = g_paste_prompt_default_report;
+}
+
+/**
+ * g_paste_prompt_report:
+ * @self: a #GPastePrompt instance
+ * @title: what did not happen, in the user's words
+ * @message: why, at whatever length the failure needs
+ *
+ * Tell the user about something that did not happen. Not a question: there is
+ * no answer to wait for, and whatever went wrong has already been put back.
+ */
+G_PASTE_VISIBLE void
+g_paste_prompt_report (GPastePrompt *self,
+                       const gchar  *title,
+                       const gchar  *message)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT (self));
+    g_return_if_fail (title);
+    g_return_if_fail (message);
+
+    G_PASTE_PROMPT_GET_IFACE (self)->report (self, title, message);
 }
 
 /**
@@ -903,6 +935,12 @@ g_paste_prompt_text_get_type (void)
             { G_PASTE_PROMPT_TEXT_CLEANUP,                           "G_PASTE_PROMPT_TEXT_CLEANUP",                           "cleanup" },
             { G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,                  "G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE",                  "cleanup-subtitle" },
             { G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,                   "G_PASTE_PROMPT_TEXT_CLEANUP_WARNING",                   "cleanup-warning" },
+            { G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE,                "G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE",                "rekey-failed-title" },
+            { G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION,          "G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION",          "rekey-failed-description" },
+            { G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION,           "G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION",           "rekey-split-description" },
+            { G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE,              "G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE",              "cleanup-failed-title" },
+            { G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION,        "G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION",        "cleanup-failed-description" },
+            { G_PASTE_PROMPT_TEXT_CLOSE,                             "G_PASTE_PROMPT_TEXT_CLOSE",                             "close" },
             { G_PASTE_PROMPT_TEXT_CANCEL,                            "G_PASTE_PROMPT_TEXT_CANCEL",                            "cancel" },
             { 0, NULL, NULL }
         };
@@ -967,6 +1005,18 @@ g_paste_prompt_text (GPastePromptText text)
         return _("Remove the previous on-disk history once done");
     case G_PASTE_PROMPT_TEXT_CLEANUP_WARNING:
         return _("The old data will be deleted without being imported first");
+    case G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE:
+        return _("The passphrase was not changed");
+    case G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION:
+        return _("Your history is still encrypted with the passphrase it had before.");
+    case G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION:
+        return _("Some of your histories are now encrypted with the new passphrase while the others keep the previous one, and GPaste could not put them back. Both passphrases are needed to open them all; the system log says which is which.");
+    case G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE:
+        return _("The old data was not deleted");
+    case G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION:
+        return _("The clipboard history GPaste was told to delete after the migration is still on disk.");
+    case G_PASTE_PROMPT_TEXT_CLOSE:
+        return _("Close");
     case G_PASTE_PROMPT_TEXT_CANCEL:
         return _("Cancel");
     default:

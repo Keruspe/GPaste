@@ -563,11 +563,81 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     gtk_window_present (self->window);
 }
 
+/*
+ * The report
+ */
+
+/* Escape closes it like its close button. Nothing is answered either way — a
+ * report has no answer — so losing the window needs no teardown of its own. */
+static gboolean
+on_report_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
+                       guint                  keyval,
+                       guint                  keycode    G_GNUC_UNUSED,
+                       GdkModifierType        state      G_GNUC_UNUSED,
+                       gpointer               user_data)
+{
+    if (keyval != GDK_KEY_Escape)
+        return GDK_EVENT_PROPAGATE;
+
+    gtk_window_close (user_data);
+    return GDK_EVENT_STOP;
+}
+
+/* A window rather than an AdwAlertDialog, for the same reason the two prompts
+ * above are windows: the daemon has no window to put a dialog inside. */
+static void
+g_paste_prompt_adw_report (GPastePrompt *prompt,
+                           const gchar  *title,
+                           const gchar  *message)
+{
+    GPastePromptAdw *priv = G_PASTE_PROMPT_ADW (prompt);
+    GtkWidget *window = adw_application_window_new (priv->application);
+
+    gtk_window_set_title (GTK_WINDOW (window), title);
+    gtk_window_set_icon_name (GTK_WINDOW (window), G_PASTE_ICON_NAME);
+    gtk_window_set_default_size (GTK_WINDOW (window), 420, -1);
+    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
+
+    GtkWidget *close = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLOSE));
+
+    gtk_widget_add_css_class (close, "suggested-action");
+    g_signal_connect_swapped (close, "clicked", G_CALLBACK (gtk_window_destroy), window);
+
+    GtkWidget *header = adw_header_bar_new ();
+
+    adw_header_bar_pack_end (ADW_HEADER_BAR (header), close);
+
+    GtkWidget *status = adw_status_page_new ();
+    /* The description is Pango markup (the title is not), and @message carries a
+     * GError's text: history names the user chose and paths from the filesystem.
+     * One "&" in either makes the markup fail to parse, and the window would go
+     * up with an empty description -- a report that reports nothing. */
+    g_autofree gchar *escaped = g_markup_escape_text (message, -1);
+
+    adw_status_page_set_icon_name (ADW_STATUS_PAGE (status), "dialog-warning-symbolic");
+    adw_status_page_set_title (ADW_STATUS_PAGE (status), title);
+    adw_status_page_set_description (ADW_STATUS_PAGE (status), escaped);
+
+    GtkWidget *toolbar = adw_toolbar_view_new ();
+
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), status);
+    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
+
+    GtkEventController *key_controller = gtk_event_controller_key_new ();
+
+    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_report_key_pressed), window);
+    gtk_widget_add_controller (window, key_controller);
+
+    gtk_window_present (GTK_WINDOW (window));
+}
+
 static void
 g_paste_prompt_adw_prompt_iface_init (GPastePromptInterface *iface)
 {
     iface->passphrase = g_paste_prompt_adw_passphrase;
     iface->migration = g_paste_prompt_adw_migration;
+    iface->report = g_paste_prompt_adw_report;
 }
 
 static void

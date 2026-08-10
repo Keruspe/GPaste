@@ -335,6 +335,27 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
     }
 });
 
+// Not a question: it says what did not happen and offers one way out, so it
+// carries no request and answers nothing.
+const ReportDialog = GObject.registerClass(
+class GPasteReportDialog extends ModalDialog.ModalDialog {
+    constructor(title, message) {
+        super({styleClass: 'prompt-dialog'});
+
+        this.contentLayout.add_child(new Dialog.MessageDialogContent({
+            title,
+            description: message,
+        }));
+
+        this.addButton({
+            label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CLOSE),
+            action: () => this.close(),
+            key: Clutter.KEY_Escape,
+            default: true,
+        });
+    }
+});
+
 // ModalDialog.open() fails when it cannot take the modal grab (another system
 // modal already holds one). A dialog that never opened also never closes, so
 // nothing would ever answer the request — and the storage never settles, which
@@ -400,5 +421,26 @@ export const GPasteShellPrompt = GObject.registerClass({
             request.dismiss();
         else
             this._show(new MigrationDialog(request), request);
+    }
+
+    // There is nothing to dismiss here, so every way of not showing the dialog
+    // ends in the log rather than in an unanswered request: the report still
+    // has to reach someone.
+    vfunc_report(title, message) {
+        if (this._shutDown) {
+            console.error(`GPaste: ${title}: ${message}`);
+            return;
+        }
+
+        const dialog = new ReportDialog(title, message);
+
+        this._open.add(dialog);
+        dialog.connect('destroy', () => this._open.delete(dialog));
+
+        if (dialog.open())
+            return;
+
+        console.error(`GPaste: ${title}: ${message}`);
+        dialog.destroy();
     }
 });

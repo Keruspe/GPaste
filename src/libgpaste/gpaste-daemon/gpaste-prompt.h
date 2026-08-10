@@ -69,6 +69,12 @@ G_DECLARE_INTERFACE (GPastePrompt, g_paste_prompt, G_PASTE, PROMPT, GObject)
  * crashing — which is the safe answer everywhere: nothing is migrated, and no
  * passphrase is set, so an encrypted history stays locked rather than being
  * loaded empty and overwritten.
+ *
+ * @report is the odd one out: it takes no request and has no _finish, because it
+ * asks nothing. It tells the user that something they set in motion did not
+ * happen — a passphrase that did not change, old data that was not deleted —
+ * where a log line would leave them believing it did. Its default implementation
+ * is that log line, so a backend that skips it loses the dialog, not the report.
  */
 struct _GPastePromptInterface
 {
@@ -78,6 +84,9 @@ struct _GPastePromptInterface
                         GPastePromptRequest *request);
     void (*migration)  (GPastePrompt        *self,
                         GPastePromptRequest *request);
+    void (*report)     (GPastePrompt        *self,
+                        const gchar         *title,
+                        const gchar         *message);
 };
 
 /* What the prompt was asked. Only the getters matching the vfunc that received
@@ -135,6 +144,13 @@ gboolean g_paste_prompt_migration_finish (GPastePrompt   *self,
                                           gboolean       *cleanup,
                                           GError        **error);
 
+/* Tell the user something did not happen. Nothing comes back: this is the end of
+ * a concern, not a question, and the caller has already put everything back the
+ * way it was by the time it says so. */
+void g_paste_prompt_report (GPastePrompt *self,
+                            const gchar  *title,
+                            const gchar  *message);
+
 /* The backends the migration prompt should offer, in display order: whichever
  * flavors this build can actually construct. Shared so the feature gating and
  * the labels live here rather than in each prompt backend. */
@@ -169,6 +185,17 @@ typedef enum
     G_PASTE_PROMPT_TEXT_CLEANUP,
     G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,
     G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,
+    /* What g_paste_prompt_report() is called with: the two things that can go
+     * wrong after the user has answered and stopped watching. */
+    G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE,
+    G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION,
+    /* The re-key failed *and* could not put back what it had already moved, so
+     * the one thing the description above promises -- everything still opens
+     * with the old passphrase -- is exactly what is not true. */
+    G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE,
+    G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_CLOSE,
     G_PASTE_PROMPT_TEXT_CANCEL,
 } GPastePromptText;
 

@@ -359,32 +359,52 @@ import_histories (GPasteSettings *settings,
     return ok;
 }
 
-static void
-cleanup_histories (GPasteSettings *settings,
-                   GPasteStorage   current,
-                   const gchar    *current_passphrase)
+/* Delete what the import copied out of. %FALSE, with @error saying what first
+ * went wrong, when any of it is still there: the user asked for their old
+ * clipboard history to be deleted, and everything past this point (the revision
+ * bump included) treats the migration as done, so this is the last chance to say
+ * that part of it was not. */
+static gboolean
+cleanup_histories (GPasteSettings  *settings,
+                   GPasteStorage    current,
+                   const gchar     *current_passphrase,
+                   GError         **error)
 {
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
-    g_autoptr (GError) error = NULL;
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &error);
+    g_autoptr (GError) failure = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &failure);
 
-    /* Only ever reached once the import checked out, so failing to list here
-     * leaves the migrated-from files behind. Harmless, but say so. */
     if (!names)
     {
-        g_warning ("Could not list the migrated histories to clean up: %s", error->message);
-        return;
+        g_propagate_prefixed_error (error, g_steal_pointer (&failure),
+                                    "Could not list the migrated histories to clean up: ");
+
+        return FALSE;
     }
 
+    /* Every history that can go, goes: stopping at the first failure would leave
+     * behind data that had nothing wrong with it. */
     for (GStrv name = names; *name; ++name)
     {
         g_autoptr (GError) delete_error = NULL;
 
         g_paste_storage_backend_delete_history (previous, *name, &delete_error);
 
-        if (delete_error)
-            g_warning ("Could not delete the migrated history \"%s\": %s", *name, delete_error->message);
+        if (!delete_error)
+            continue;
+
+        g_warning ("Could not delete the migrated history \"%s\": %s", *name, delete_error->message);
+
+        if (!failure)
+            failure = g_steal_pointer (&delete_error);
     }
+
+    if (!failure)
+        return TRUE;
+
+    g_propagate_error (error, g_steal_pointer (&failure));
+
+    return FALSE;
 }
 
 /* What the import needs, copied so the worker touches nothing the main thread
@@ -477,10 +497,34 @@ apply_migration_settle (MigrationData *self,
     {
         g_paste_settings_set_storage_backend (self->settings, chosen);
 
+        /* Whether the old data is actually gone, which is not the same as having
+         * been told to delete it: the keyring decision below turns on the former. */
+        gboolean cleaned = FALSE;
+
         /* Only delete the old data once the import is confirmed, so a failed
          * import can never wipe the history it was meant to migrate. */
         if (cleanup && imported)
-            cleanup_histories (self->settings, self->current, current_passphrase);
+        {
+            g_autoptr (GError) cleanup_error = NULL;
+
+            /* Told, not retried: the revision is bumped either way, because the
+             * dialog cannot offer this again -- the backend it would come back
+             * on is the one we just moved to, and "delete the old data" is only
+             * offered for a migration that changes backend. So the user hears
+             * that their old clipboard history is still on disk, once, while
+             * they are still looking. */
+            cleaned = cleanup_histories (self->settings, self->current, current_passphrase, &cleanup_error);
+
+            if (!cleaned)
+            {
+                g_autofree gchar *message = g_strconcat (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION),
+                                                         "\n\n", cleanup_error->message, NULL);
+
+                g_paste_prompt_report (self->prompt,
+                                       g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE),
+                                       message);
+            }
+        }
 
         g_paste_settings_set_storage_backend_revision (self->settings, G_PASTE_STORAGE_BACKEND_REVISION);
 
@@ -497,9 +541,12 @@ apply_migration_settle (MigrationData *self,
         /* Leaving encryption behind for good: once the encrypted history it
          * opened is gone, a remembered passphrase is a secret kept for nothing.
          * Only once it is actually gone, though — data we kept is still locked
-         * with it, and migrating back would want it. */
+         * with it, and migrating back would want it. Which is why this asks
+         * @cleaned rather than what the user ticked: a cleanup that failed
+         * leaves those .xmls files exactly where they were, and dropping the
+         * only passphrase that opens them would finish what it could not. */
         else if (g_paste_storage_is_encrypted (self->current) && !g_paste_storage_is_encrypted (chosen) &&
-                 cleanup && imported)
+                 cleaned)
             g_paste_storage_keyring_clear ();
 #endif
     }
@@ -1009,6 +1056,13 @@ typedef struct
      * once it has — both settled before the hop, acted on after. */
     GPastePassphrase              *new_passphrase;
     GPasteStorageRemember          remember;
+
+    /* Set by the worker when a failed re-key could not be undone either, so the
+     * histories are left split across two passphrases. Written on the worker
+     * thread and read once it has completed, which the task's completion orders
+     * for us. It picks which failure the user is told about: "nothing changed"
+     * would be a lie here, and the reassuring one. */
+    gboolean                       split;
 } RekeyData;
 
 /* As migration_finish(): the one way out, carrying whatever ended it. */
@@ -1082,8 +1136,11 @@ rekey_histories (RekeyData    *self,
          * or not at all, so the failing one needs nothing undone. */
         for (GStrv done = names; done != name; ++done)
         {
-            if (!rekey_history (self, *done, passphrase, current))
-                g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", *done);
+            if (rekey_history (self, *done, passphrase, current))
+                continue;
+
+            g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", *done);
+            self->split = TRUE;
         }
 
         g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
@@ -1145,6 +1202,28 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
         g_paste_storage_backend_set_passphrase (cleartext);
 
         remember_passphrase (self->remember, cleartext);
+    }
+    else
+    {
+        /* The user typed a new passphrase, watched the dialog close, and their
+         * history still takes the old one. Nothing downstream can tell them
+         * that: the caller only gets a %FALSE it can log, and the D-Bus request
+         * that asked for the change was answered before any of this ran. The
+         * worker never fails without saying why (see rekey_work_run), so there
+         * is always a reason to show.
+         *
+         * Which of the two failures it was matters more than the reason: a
+         * re-key that could not be undone leaves histories on both passphrases,
+         * and telling that user "nothing changed" would send them off with the
+         * one passphrase that no longer opens everything. */
+        g_autofree gchar *message = g_strconcat (g_paste_prompt_text (self->split
+                                                                      ? G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION
+                                                                      : G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION),
+                                                 "\n\n", error->message, NULL);
+
+        g_paste_prompt_report (self->prompt,
+                               g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE),
+                               message);
     }
 
     rekey_finish (self, g_steal_pointer (&error));
