@@ -26,6 +26,9 @@ NEW in 51.0 (UNRELEASED)
 - API: libgpaste-gtk4 installs and introspects only the preferences dialog and the embeddable preferences widget; the groups, pages and rows they are built from are internal
 - API: drop nine exported functions nothing called (g_paste_util_get_dbus_au_result, the synchronous empty-with-confirmation and activate-ui, g_paste_ui_item_refresh, ...)
 - Fix "gpaste-client --oneline" emitting literal tabulations, which broke parsing its output on a colon
+- Fix a rejected GlobalShortcuts portal dialog being reported as success, leaving the shortcuts silently unbound
+- Refuse the key-derivation parameters an encrypted SQLite history dictates when they are past anything GPaste writes: a tampered or corrupt store could otherwise make opening it run effectively forever
+- Verify a passphrase against every encrypted history rather than the first that opens, so a set left keyed differently by an interrupted passphrase change can no longer be loaded empty and overwritten
 - Fix the graphical tool crashing on startup, and several cases where a window closing while a D-Bus call was in flight left the reply writing into freed memory
 - Fix search results being overwritten by a history refresh that was already in flight, and older search replies winning over newer ones
 - Document which GError domain each throwing function reports in
