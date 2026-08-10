@@ -345,25 +345,54 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
     GPasteKeybinder *keybinder = self->keybinder;
     GPasteHistory *history = self->history;
     GPasteClipboardsManager *clipboards_manager = self->clipboards_manager;
-    GPasteKeybinding *keybindings[] = {
-        g_paste_keybinding_new (G_PASTE_MAKE_PASSWORD_SETTING, _("Convert to Password"),
-                                g_paste_settings_get_make_password, keybinding_make_password, history),
-        g_paste_keybinding_new (G_PASTE_POP_SETTING, _("Pop from History"),
-                                g_paste_settings_get_pop, keybinding_pop, history),
-        g_paste_keybinding_new (G_PASTE_SHOW_HISTORY_SETTING, _("Show History"),
-                                g_paste_settings_get_show_history, keybinding_show_history, self),
-        g_paste_keybinding_new (G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING, _("Sync Clipboard to Primary"),
-                                g_paste_settings_get_sync_clipboard_to_primary, keybinding_sync_clipboard_to_primary, clipboards_manager),
-        g_paste_keybinding_new (G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING, _("Sync Primary to Clipboard"),
-                                g_paste_settings_get_sync_primary_to_clipboard, keybinding_sync_primary_to_clipboard, clipboards_manager),
-        g_paste_keybinding_new (G_PASTE_LAUNCH_UI_SETTING, _("Launch UI"),
-                                g_paste_settings_get_launch_ui, keybinding_launch_ui, NULL),
-        g_paste_keybinding_new (G_PASTE_UPLOAD_SETTING, _("Upload to Pastebin"),
-                                g_paste_settings_get_upload, keybinding_upload, self)
+    /* What to run for each shortcut, and what to run it on. Everything the user
+     * ever sees -- the description the shortcut UIs show, the short label the
+     * portal lists it under -- comes from the shared table instead, so a
+     * shortcut added there and forgotten here warns rather than silently doing
+     * nothing. */
+    const struct
+    {
+        const gchar           *key;
+        GPasteKeybindingGetter getter;
+        GPasteKeybindingFunc   callback;
+        gpointer               user_data;
+    } handlers[] = {
+        { G_PASTE_MAKE_PASSWORD_SETTING,             g_paste_settings_get_make_password,             keybinding_make_password,             history            },
+        { G_PASTE_POP_SETTING,                       g_paste_settings_get_pop,                       keybinding_pop,                       history            },
+        { G_PASTE_SHOW_HISTORY_SETTING,              g_paste_settings_get_show_history,              keybinding_show_history,              self               },
+        { G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING, g_paste_settings_get_sync_clipboard_to_primary, keybinding_sync_clipboard_to_primary, clipboards_manager },
+        { G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING, g_paste_settings_get_sync_primary_to_clipboard, keybinding_sync_primary_to_clipboard, clipboards_manager },
+        { G_PASTE_LAUNCH_UI_SETTING,                 g_paste_settings_get_launch_ui,                 keybinding_launch_ui,                 NULL               },
+        { G_PASTE_UPLOAD_SETTING,                    g_paste_settings_get_upload,                    keybinding_upload,                    self               },
     };
 
-    for (guint64 k = 0; k < G_N_ELEMENTS (keybindings); ++k)
-        g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
+    gsize n_shortcuts = 0;
+    const GPasteKeybindingInfo *shortcuts = g_paste_keybindings (&n_shortcuts);
+
+    for (gsize i = 0; i < n_shortcuts; ++i)
+    {
+        const GPasteKeybindingInfo *shortcut = &shortcuts[i];
+        gsize h;
+
+        for (h = 0; h < G_N_ELEMENTS (handlers); ++h)
+        {
+            if (g_paste_str_equal (handlers[h].key, shortcut->key))
+                break;
+        }
+
+        if (h == G_N_ELEMENTS (handlers))
+        {
+            g_warning ("Nothing to run for the \"%s\" keyboard shortcut", shortcut->key);
+            continue;
+        }
+
+        g_paste_keybinder_add_keybinding (keybinder,
+                                          g_paste_keybinding_new (shortcut->key,
+                                                                  _(shortcut->portal_label),
+                                                                  handlers[h].getter,
+                                                                  handlers[h].callback,
+                                                                  handlers[h].user_data));
+    }
 
     g_paste_keybinder_activate_all (keybinder);
 }

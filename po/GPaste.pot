@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 23:08+0200\n"
+"POT-Creation-Date: 2026-08-10 03:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1495,53 +1495,83 @@ msgstr ""
 #. * center's 42-gpaste.xml, so those three can no longer drift apart in wording,
 #. * order or grouping the way they had.
 #. *
-#. * The strings are N_(): the table is static, so they are marked here and
+#. * Each carries two names: the description the shortcut UIs show, and the short
+#. * label the desktop portal lists it under, where there is only room for a few
+#. * words. The strings are N_(): the table is static, so they are marked here and
 #. * translated at the point of use. The key doubles as the GSettings key and as
 #. * the GPasteSettings property name, which is what lets a consumer read the
 #. * accelerator with g_object_get() instead of a per-key getter.
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:28
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:29
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:30
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:31
 msgid "History access"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:28
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:30
 msgid "Launch the graphical tool"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:29
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:30
+msgid "Launch UI"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:31
 msgid "Display the history"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:30
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:31
+msgid "Show History"
+msgstr ""
+
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:32
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:34
 msgid "Active element manipulation"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:30
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:32
 msgid "Mark the active item as being a password"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:31
-msgid "Upload the active item to a pastebin service"
-msgstr ""
-
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:32
-msgid "Delete the active item from history"
+msgid "Convert to Password"
 msgstr ""
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
+msgid "Upload the active item to a pastebin service"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
+msgid "Upload to Pastebin"
+msgstr ""
+
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:34
+msgid "Delete the active item from history"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:34
+msgid "Pop from History"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:70
 msgid "Clipboards synchronization"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
 msgid "Sync the clipboard to the primary selection"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-keybindings.h:34
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
+msgid "Sync Clipboard to Primary"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
 msgid "Sync the primary selection to the clipboard"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
+msgid "Sync Primary to Clipboard"
 msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-color-item.c:59
@@ -1550,34 +1580,6 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:182
 msgid "Could not create history dir"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:349
-msgid "Convert to Password"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:351
-msgid "Pop from History"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:353
-msgid "Show History"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:355
-msgid "Sync Clipboard to Primary"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:357
-msgid "Sync Primary to Clipboard"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:359
-msgid "Launch UI"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-daemon.c:361
-msgid "Upload to Pastebin"
 msgstr ""
 
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.

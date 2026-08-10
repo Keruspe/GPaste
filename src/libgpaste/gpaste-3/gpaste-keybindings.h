@@ -20,18 +20,20 @@ G_BEGIN_DECLS
  * center's 42-gpaste.xml, so those three can no longer drift apart in wording,
  * order or grouping the way they had.
  *
- * The strings are N_(): the table is static, so they are marked here and
+ * Each carries two names: the description the shortcut UIs show, and the short
+ * label the desktop portal lists it under, where there is only room for a few
+ * words. The strings are N_(): the table is static, so they are marked here and
  * translated at the point of use. The key doubles as the GSettings key and as
  * the GPasteSettings property name, which is what lets a consumer read the
  * accelerator with g_object_get() instead of a per-key getter. */
-#define G_PASTE_FOR_EACH_KEYBINDING(K)                                                                                                       \
-    K (G_PASTE_LAUNCH_UI_SETTING,                  N_ ("History access"),             N_ ("Launch the graphical tool"))                      \
-    K (G_PASTE_SHOW_HISTORY_SETTING,               N_ ("History access"),             N_ ("Display the history"))                            \
-    K (G_PASTE_MAKE_PASSWORD_SETTING,              N_ ("Active element manipulation"), N_ ("Mark the active item as being a password"))      \
-    K (G_PASTE_UPLOAD_SETTING,                     N_ ("Active element manipulation"), N_ ("Upload the active item to a pastebin service"))  \
-    K (G_PASTE_POP_SETTING,                        N_ ("Active element manipulation"), N_ ("Delete the active item from history"))           \
-    K (G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING,  N_ ("Clipboards synchronization"), N_ ("Sync the clipboard to the primary selection"))    \
-    K (G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING,  N_ ("Clipboards synchronization"), N_ ("Sync the primary selection to the clipboard"))
+#define G_PASTE_FOR_EACH_KEYBINDING(K)                                                                                                                                      \
+    K (G_PASTE_LAUNCH_UI_SETTING, N_ ("History access"), N_ ("Launch the graphical tool"), N_ ("Launch UI"))                                                                \
+    K (G_PASTE_SHOW_HISTORY_SETTING, N_ ("History access"), N_ ("Display the history"), N_ ("Show History"))                                                                \
+    K (G_PASTE_MAKE_PASSWORD_SETTING, N_ ("Active element manipulation"), N_ ("Mark the active item as being a password"), N_ ("Convert to Password"))                      \
+    K (G_PASTE_UPLOAD_SETTING, N_ ("Active element manipulation"), N_ ("Upload the active item to a pastebin service"), N_ ("Upload to Pastebin"))                          \
+    K (G_PASTE_POP_SETTING, N_ ("Active element manipulation"), N_ ("Delete the active item from history"), N_ ("Pop from History"))                                        \
+    K (G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING, N_ ("Clipboards synchronization"), N_ ("Sync the clipboard to the primary selection"), N_ ("Sync Clipboard to Primary"))  \
+    K (G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING, N_ ("Clipboards synchronization"), N_ ("Sync the primary selection to the clipboard"), N_ ("Sync Primary to Clipboard"))
 
 typedef struct
 {
@@ -40,6 +42,9 @@ typedef struct
     /* Untranslated; pass through gettext at the point of use. */
     const gchar *group;
     const gchar *description;
+    /* What the desktop portal shows in its shortcut list: the same action, said
+     * in the few words that fit there. */
+    const gchar *portal_label;
 } GPasteKeybindingInfo;
 
 const GPasteKeybindingInfo *g_paste_keybindings (gsize *n_keybindings);

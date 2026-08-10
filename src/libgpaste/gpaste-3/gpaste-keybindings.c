@@ -3,7 +3,7 @@
 
 #include <gpaste-3/gpaste-keybindings.h>
 
-#define KEYBINDING(key, group, description) { key, group, description },
+#define KEYBINDING(key, group, description, portal_label) { key, group, description, portal_label },
 static const GPasteKeybindingInfo keybindings[] = {
     G_PASTE_FOR_EACH_KEYBINDING (KEYBINDING)
 };

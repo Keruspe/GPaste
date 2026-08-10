@@ -19,7 +19,8 @@ import sys
 from xml.sax.saxutils import quoteattr
 
 ENTRY = re.compile(
-    r'K \(\s*(?P<key>[A-Z0-9_]+),\s*N_ \("(?P<group>[^"]*)"\),\s*N_ \("(?P<description>[^"]*)"\)\s*\)')
+    r'K \(\s*(?P<key>[A-Z0-9_]+),\s*N_ \("(?P<group>[^"]*)"\),\s*'
+    r'N_ \("(?P<description>[^"]*)"\),\s*N_ \("[^"]*"\)\s*\)')
 SETTING = re.compile(r'#define\s+(?P<macro>[A-Z0-9_]+_SETTING)\s+"(?P<value>[^"]*)"')
 
 
