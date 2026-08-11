@@ -28,13 +28,13 @@ g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard,
                                             GPasteItem      *item,
                                             gpointer         user_data)
 {
-    GPasteClipboardsManager *priv = user_data;
+    GPasteClipboardsManager *self = user_data;
     /* The update callback owns the item it is handed (transfer full); at
      * bootstrap we only care about the selection not being empty, so whatever
      * was already in it is read and dropped rather than pushed to the history. */
     g_autoptr (GPasteItem) bootstrapped = item;
 
-    g_paste_clipboard_provider_ensure_not_empty (clipboard, priv->history);
+    g_paste_clipboard_provider_ensure_not_empty (clipboard, self->history);
 }
 
 /**
@@ -95,13 +95,13 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 }
 
 static void
-g_paste_clipboards_manager_notify_finish (GPasteClipboardsManager *priv,
+g_paste_clipboards_manager_notify_finish (GPasteClipboardsManager *self,
                                           GPasteClipboardProvider                *clipboard,
                                           GPasteItem                     *item,
                                           const gchar                    *synchronized_text,
                                           gboolean                        something_in_clipboard)
 {
-    GPasteHistory *history = priv->history;
+    GPasteHistory *history = self->history;
 
     g_debug ("clipboards-manager: notify finish");
 
@@ -115,7 +115,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManager *priv,
     {
         g_debug ("clipboards-manager: synchronizing clipboards");
 
-        for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
+        for (GSList *_clipboard = self->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
         {
             _Clipboard *_clip = _clipboard->data;
             GPasteClipboardProvider *clip = _clip->clipboard;
@@ -133,7 +133,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManager *priv,
 
 
 typedef struct {
-    GPasteClipboardsManager *priv;
+    GPasteClipboardsManager *self;
     gboolean                        track;
 } GPasteClipboardsManagerUpdateData;
 
@@ -143,14 +143,14 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
                                          gpointer         user_data)
 {
     g_autofree GPasteClipboardsManagerUpdateData *data = user_data;
-    GPasteClipboardsManager *priv = data->priv;
+    GPasteClipboardsManager *self = data->self;
 
     g_debug ("clipboards-manager: update ready");
 
     const gchar *synchronized_text = NULL;
 
     if (item && g_paste_clipboard_provider_get_text (clipboard) &&
-        g_paste_settings_get_synchronize_clipboards (priv->settings))
+        g_paste_settings_get_synchronize_clipboards (self->settings))
         synchronized_text = g_paste_clipboard_provider_get_text (clipboard);
 
     if (!data->track && item)
@@ -159,25 +159,25 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
     gboolean something_in_clipboard = !!g_paste_clipboard_provider_get_text (clipboard) ||
                                       !!g_paste_clipboard_provider_get_image_checksum (clipboard);
 
-    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
+    g_paste_clipboards_manager_notify_finish (self, clipboard, item, synchronized_text, something_in_clipboard);
 }
 
 static void
 g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
                                    gpointer         user_data)
 {
-    GPasteClipboardsManager *priv = user_data;
+    GPasteClipboardsManager *self = user_data;
 
     g_debug ("clipboards-manager: notify");
 
-    GPasteSettings *settings = priv->settings;
+    GPasteSettings *settings = self->settings;
     gboolean track = (g_paste_settings_get_track_changes (settings) &&
                           (g_paste_clipboard_provider_is_clipboard (clipboard) ||             // We're not primary
                            g_paste_settings_get_primary_to_history (settings) ||     // Or we asked that primary affects clipboard
                            g_paste_settings_get_synchronize_clipboards (settings))); // Or primary and clipboards are synchronized hence primary will affect history through clipboard
     GPasteClipboardsManagerUpdateData *data = g_new0 (GPasteClipboardsManagerUpdateData, 1);
 
-    data->priv = priv;
+    data->self = self;
     data->track = track;
 
     g_paste_clipboard_provider_update (clipboard,
@@ -262,10 +262,8 @@ on_item_selected (GPasteClipboardsManager *self,
                   GPasteItem              *item,
                   GPasteHistory           *history G_GNUC_UNUSED)
 {
-    GPasteClipboardsManager *priv = G_PASTE_CLIPBOARDS_MANAGER (self);
-
     if (!g_paste_clipboards_manager_select (self, item))
-        g_paste_history_remove (priv->history, 0);
+        g_paste_history_remove (self->history, 0);
 }
 
 static void

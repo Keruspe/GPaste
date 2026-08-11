@@ -71,25 +71,23 @@ static guint signals[LAST_SIGNAL] = { 0 };
     G_PASTE_VISIBLE type                                                                               \
     g_paste_settings_get_##name (GPasteSettings *self)                                           \
     {                                                                                                  \
-        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                           \
-        GPasteSettings *priv = self;             \
-        return priv->name;                                                                             \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                                       \
+        return self->name;                                                                             \
     }                                                                                                  \
     static void                                                                                        \
-    g_paste_settings_private_set_##name##_from_dconf (GPasteSettings *priv)                     \
+    g_paste_settings_private_set_##name##_from_dconf (GPasteSettings *self)                            \
     {                                                                                                  \
-        assign_owned (priv->name, g_settings_get_##setting_type (priv->settings,                       \
-                                                                 G_PASTE_##key##_SETTING));           \
+        assign_owned (self->name, g_settings_get_##setting_type (self->settings,                       \
+                                                                 G_PASTE_##key##_SETTING));            \
     }                                                                                                  \
     G_PASTE_VISIBLE void                                                                               \
     g_paste_settings_set_##name (GPasteSettings *self,                                                 \
                                  type            value)                                                \
     {                                                                                                  \
-        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                 \
         guards                                                                                         \
-        GPasteSettings *priv = self;                    \
-        assign_borrowed (priv->name, value);                                                           \
-        g_settings_set_##setting_type (priv->settings, G_PASTE_##key##_SETTING, value);                \
+        assign_borrowed (self->name, value);                                                           \
+        g_settings_set_##setting_type (self->settings, G_PASTE_##key##_SETTING, value);                \
     }
 
 #define TRIVIAL_SETTING(name, key, type, setting_type, fail) \
@@ -627,24 +625,24 @@ g_paste_settings_get_extension_enabled (GPasteSettings *self)
 }
 
 static inline gchar **
-g_paste_settings_private_get_enabled_extensions (GPasteSettings *priv)
+g_paste_settings_private_get_enabled_extensions (GPasteSettings *self)
 {
-    return (priv->shell_settings) ? g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
+    return (self->shell_settings) ? g_settings_get_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
 }
 
 static void
-g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettings *priv)
+g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettings *self)
 {
-    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (self);
     for (GStrv e = extensions; *e; ++e)
     {
         if (g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
         {
-            priv->extension_enabled = TRUE;
+            self->extension_enabled = TRUE;
             return;
         }
     }
-    priv->extension_enabled = FALSE;
+    self->extension_enabled = FALSE;
 }
 
 /**
@@ -721,7 +719,7 @@ g_paste_settings_rebind (GPasteSettings *self,
 typedef struct
 {
     const gchar *key;
-    void       (*from_dconf) (GPasteSettings *priv);
+    void       (*from_dconf) (GPasteSettings *self);
     gboolean     rebind; /* keybinding settings re-grab their shortcut on change */
 } GPasteSettingEntry;
 

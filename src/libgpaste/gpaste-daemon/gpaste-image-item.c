@@ -94,46 +94,46 @@ g_paste_image_item_get_png_bytes (GPasteImageItem *self)
 /* Attach the encoded PNG (transfer full) and account for the memory it keeps
  * across IDLE (unlike additional_size, which only tracks the decoded texture). */
 static void
-g_paste_image_item_take_png (GPasteItem *self,
+g_paste_image_item_take_png (GPasteItem *item,
                              GBytes     *png)
 {
-    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (item);
 
-    priv->png = png;
-    g_paste_item_add_size (self, g_bytes_get_size (png));
+    self->png = png;
+    g_paste_item_add_size (item, g_bytes_get_size (png));
 }
 
 static gboolean
-g_paste_image_item_equals (GPasteItem *self,
+g_paste_image_item_equals (GPasteItem *item,
                            GPasteItem *other)
 {
     if (!G_PASTE_IS_IMAGE_ITEM (other))
         return FALSE;
 
-    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
-    GPasteImageItem *_priv = G_PASTE_IMAGE_ITEM (other);
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (item);
+    GPasteImageItem *_other = G_PASTE_IMAGE_ITEM (other);
 
-    return g_paste_str_equal (priv->checksum, _priv->checksum);
+    return g_paste_str_equal (self->checksum, _other->checksum);
 }
 
 static void
-g_paste_image_item_set_size (GPasteItem *self)
+g_paste_image_item_set_size (GPasteItem *item)
 {
-    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
-    GdkTexture *image = priv->image;
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (item);
+    GdkTexture *image = self->image;
 
     if (image)
     {
-        if (!priv->additional_size)
+        if (!self->additional_size)
         {
-            priv->additional_size += strlen (priv->checksum) + 1 + (gsize) gdk_texture_get_width (image) * gdk_texture_get_height (image) * 4;
-            g_paste_item_add_size (self, priv->additional_size);
+            self->additional_size += strlen (self->checksum) + 1 + (gsize) gdk_texture_get_width (image) * gdk_texture_get_height (image) * 4;
+            g_paste_item_add_size (item, self->additional_size);
         }
     }
     else
     {
-        g_paste_item_remove_size (self, priv->additional_size);
-        priv->additional_size = 0;
+        g_paste_item_remove_size (item, self->additional_size);
+        self->additional_size = 0;
     }
 }
 
@@ -144,34 +144,34 @@ g_paste_image_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 }
 
 static void
-g_paste_image_item_set_state (GPasteItem     *self,
+g_paste_image_item_set_state (GPasteItem     *item,
                               GPasteItemState state)
 {
-    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (item);
 
     switch (state)
     {
     case G_PASTE_ITEM_STATE_IDLE:
         /* Drop only the heavy texture; keep the checksum so deduplication
          * keeps working against idle items already in the history. */
-        g_clear_object (&priv->image);
+        g_clear_object (&self->image);
         break;
     case G_PASTE_ITEM_STATE_ACTIVE:
-        if (!priv->image)
+        if (!self->image)
         {
             g_autoptr (GError) error = NULL;
-            priv->image = (priv->png)
-                ? gdk_texture_new_from_bytes (priv->png, &error)
-                : gdk_texture_new_from_filename (g_paste_item_get_value (self), &error);
+            self->image = (self->png)
+                ? gdk_texture_new_from_bytes (self->png, &error)
+                : gdk_texture_new_from_filename (g_paste_item_get_value (item), &error);
             if (error)
-                g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (self), error->message);
-            if (!priv->checksum)
-                priv->checksum = g_paste_image_item_compute_checksum (priv->image);
+                g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (item), error->message);
+            if (!self->checksum)
+                self->checksum = g_paste_image_item_compute_checksum (self->image);
         }
         break;
     }
 
-    g_paste_image_item_set_size (self);
+    g_paste_image_item_set_size (item);
 }
 
 static void
@@ -221,24 +221,24 @@ _g_paste_image_item_new (const gchar *path,
                          GdkTexture  *image,
                          gchar       *checksum)
 {
-    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
-    GPasteImageItem *priv = G_PASTE_IMAGE_ITEM (self);
+    GPasteItem *item = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
+    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (item);
 
-    priv->date = date;
-    priv->image = image;
-    priv->checksum = checksum; /* may be NULL, takes ownership */
+    self->date = date;
+    self->image = image;
+    self->checksum = checksum; /* may be NULL, takes ownership */
 
     if (image)
     {
-        if (!priv->checksum)
-            priv->checksum = g_paste_image_item_compute_checksum (image);
+        if (!self->checksum)
+            self->checksum = g_paste_image_item_compute_checksum (image);
     }
     else
-        g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
+        g_paste_image_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
 
-    if (!priv->image || !GDK_IS_TEXTURE (priv->image))
+    if (!self->image || !GDK_IS_TEXTURE (self->image))
     {
-        g_object_unref (self);
+        g_object_unref (item);
         return NULL;
     }
 
@@ -246,17 +246,17 @@ _g_paste_image_item_new (const gchar *path,
     g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
     /* Translators: Image item displayed in history. %d is width, %d is height, %s is the formatted date. */
     g_autofree gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
-                                                                  gdk_texture_get_width (priv->image),
-                                                                  gdk_texture_get_height (priv->image),
+                                                                  gdk_texture_get_width (self->image),
+                                                                  gdk_texture_get_height (self->image),
                                                                   formatted_date);
-    g_paste_item_set_display_string (self, g_steal_pointer (&display_string));
+    g_paste_item_set_display_string (item, g_steal_pointer (&display_string));
 
     if (image)
-        g_paste_image_item_set_size (self);
+        g_paste_image_item_set_size (item);
     else
-        g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_IDLE);
+        g_paste_image_item_set_state (item, G_PASTE_ITEM_STATE_IDLE);
 
-    return self;
+    return item;
 }
 
 /**

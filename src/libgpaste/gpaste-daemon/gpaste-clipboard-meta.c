@@ -440,22 +440,22 @@ g_paste_clipboard_meta_publish_source (GPasteClipboardMeta       *self,
 /* --- select_text --- */
 
 static void
-g_paste_clipboard_meta_private_set_text (GPasteClipboardMeta *priv,
-                                         const gchar                *text)
+g_paste_clipboard_meta_private_set_text (GPasteClipboardMeta *self,
+                                         const gchar         *text)
 {
-    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_content_set_text (&priv->content, text);
+    g_paste_clipboard_content_set_text (&self->content, text);
 }
 
 /* Same, for the callers that already own the string they hand over. */
 static void
-g_paste_clipboard_meta_private_set_text_take (GPasteClipboardMeta *priv,
-                                              gchar                      *text)
+g_paste_clipboard_meta_private_set_text_take (GPasteClipboardMeta *self,
+                                              gchar               *text)
 {
-    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_content_set_text_take (&priv->content, text);
+    g_paste_clipboard_content_set_text_take (&self->content, text);
 }
 
 static void
@@ -726,7 +726,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
                                                      gpointer      user_data)
 {
     GPasteClipboardMetaUpdateData *data = user_data;
-    GPasteClipboardMeta *priv = data->self;
+    GPasteClipboardMeta *self = data->self;
     g_auto (GValue) value = G_VALUE_INIT;
     g_autoptr (GError) error = NULL;
 
@@ -751,10 +751,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
 
-        if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))
+        if (self->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, self->content.str))
             break;
 
-        g_paste_clipboard_content_set_image_checksum_take (&priv->content, g_steal_pointer (&checksum));
+        g_paste_clipboard_content_set_image_checksum_take (&self->content, g_steal_pointer (&checksum));
 
         data->produced = TRUE;
         data->texture = g_steal_pointer (&texture);
@@ -764,10 +764,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     {
         const GdkRGBA *rgba = g_value_get_boxed (&value);
 
-        if (!rgba || (priv->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->content.rgba)))
+        if (!rgba || (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba)))
             break;
 
-        g_paste_clipboard_content_set_color (&priv->content, rgba);
+        g_paste_clipboard_content_set_color (&self->content, rgba);
 
         data->produced = TRUE;
         data->rgba = *rgba;
@@ -784,10 +784,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         /* Re-asserting the same file selection must not re-add it, mirroring the
          * GDK backend's read-path g_paste_clipboard_file_list_equal guard. */
-        if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&priv->content), file_list))
+        if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&self->content), file_list))
             break;
 
-        g_paste_clipboard_content_set_file_list (&priv->content, file_list);
+        g_paste_clipboard_content_set_file_list (&self->content, file_list);
 
         data->produced = TRUE;
         data->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);

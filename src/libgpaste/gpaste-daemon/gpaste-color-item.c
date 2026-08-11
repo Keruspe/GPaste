@@ -51,15 +51,15 @@ static GPasteItem *
 _g_paste_color_item_new (const gchar   *str,
                          const GdkRGBA *rgba)
 {
-    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_COLOR_ITEM, str);
-    GPasteColorItem *priv = G_PASTE_COLOR_ITEM (self);
+    GPasteItem *item = g_paste_item_new (G_PASTE_TYPE_COLOR_ITEM, str);
+    GPasteColorItem *self = G_PASTE_COLOR_ITEM (item);
 
-    priv->rgba = *rgba;
+    self->rgba = *rgba;
 
     g_autofree gchar *display = g_strconcat (_("[Color]"), " ", str, NULL);
-    g_paste_item_set_display_string (self, g_steal_pointer (&display));
+    g_paste_item_set_display_string (item, g_steal_pointer (&display));
 
-    return self;
+    return item;
 }
 
 /**

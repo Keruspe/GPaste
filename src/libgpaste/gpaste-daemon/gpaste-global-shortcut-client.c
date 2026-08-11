@@ -128,14 +128,14 @@ gtk_accel_to_portal_trigger (const gchar *accel)
 }
 
 static GVariant *
-build_shortcuts_variant (GPasteGlobalShortcutClient *priv)
+build_shortcuts_variant (GPasteGlobalShortcutClient *self)
 {
     g_auto (GVariantBuilder) builder;
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(sa{sv})"));
 
-    for (guint i = 0; i < priv->shortcuts->len; i++)
+    for (guint i = 0; i < self->shortcuts->len; i++)
     {
-        _Shortcut *s = g_ptr_array_index (priv->shortcuts, i);
+        _Shortcut *s = g_ptr_array_index (self->shortcuts, i);
         g_variant_builder_open (&builder, G_VARIANT_TYPE ("(sa{sv})"));
         g_variant_builder_add (&builder, "s", s->id);
         g_variant_builder_open (&builder, G_VARIANT_TYPE_VARDICT);

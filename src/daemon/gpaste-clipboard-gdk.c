@@ -59,22 +59,22 @@ g_paste_clipboard_gdk_get_text (GPasteClipboardGdk *self)
 }
 
 static void
-g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdk *priv,
-                                        const gchar               *text)
+g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdk *self,
+                                        const gchar        *text)
 {
-    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_content_set_text (&priv->content, text);
+    g_paste_clipboard_content_set_text (&self->content, text);
 }
 
 /* Same, for the callers that already own the string they hand over. */
 static void
-g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdk *priv,
-                                             gchar                     *text)
+g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdk *self,
+                                             gchar              *text)
 {
-    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_content_set_text_take (&priv->content, text);
+    g_paste_clipboard_content_set_text_take (&self->content, text);
 }
 
 static void g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
@@ -213,41 +213,41 @@ g_paste_clipboard_gdk_get_image_checksum (GPasteClipboardGdk *self)
 }
 
 static void
-g_paste_clipboard_gdk_private_set_image_checksum (GPasteClipboardGdk *priv,
-                                                  const gchar               *image_checksum)
+g_paste_clipboard_gdk_private_set_image_checksum (GPasteClipboardGdk *self,
+                                                  const gchar        *image_checksum)
 {
-    g_paste_clipboard_content_set_image_checksum (&priv->content, image_checksum);
+    g_paste_clipboard_content_set_image_checksum (&self->content, image_checksum);
 }
 
 static void
-g_paste_clipboard_gdk_private_set_color (GPasteClipboardGdk *priv,
-                                         const GdkRGBA             *rgba)
+g_paste_clipboard_gdk_private_set_color (GPasteClipboardGdk *self,
+                                         const GdkRGBA      *rgba)
 {
-    g_debug ("%s: set color", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: set color", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_content_set_color (&priv->content, rgba);
+    g_paste_clipboard_content_set_color (&self->content, rgba);
 }
 
 static void
-g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdk *priv,
-                                             GdkFileList               *file_list)
+g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdk *self,
+                                             GdkFileList        *file_list)
 {
-    g_debug ("%s: set file list", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: set file list", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_content_set_file_list (&priv->content, file_list);
+    g_paste_clipboard_content_set_file_list (&self->content, file_list);
 }
 
 static void
-g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *priv,
-                                              GdkTexture                *texture,
-                                              const gchar               *checksum)
+g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *self,
+                                              GdkTexture         *texture,
+                                              const gchar        *checksum)
 {
     g_return_if_fail (GDK_IS_TEXTURE (texture));
 
-    g_debug ("%s: select image", g_paste_clipboard_provider_target_name (priv->is_clipboard));
+    g_debug ("%s: select image", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
-    g_paste_clipboard_gdk_private_set_image_checksum (priv, checksum);
-    gdk_clipboard_set (priv->real, GDK_TYPE_TEXTURE, texture);
+    g_paste_clipboard_gdk_private_set_image_checksum (self, checksum);
+    gdk_clipboard_set (self->real, GDK_TYPE_TEXTURE, texture);
 }
 
 typedef struct {

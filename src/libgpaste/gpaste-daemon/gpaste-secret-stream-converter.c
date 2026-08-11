@@ -108,21 +108,21 @@ read_u64_le (const guint8 *data)
 
 /* Encrypt the first @len buffered bytes into a length-prefixed frame. */
 static void
-push_chunk (GPasteSecretStreamConverter *priv,
+push_chunk (GPasteSecretStreamConverter *self,
             gsize                               len,
             unsigned char                       tag)
 {
     unsigned char cipher[CHUNK_SIZE + ABYTES];
     unsigned long long clen = 0;
 
-    crypto_secretstream_xchacha20poly1305_push (&priv->state, cipher, &clen,
-                                                priv->in->data, len, NULL, 0, tag);
+    crypto_secretstream_xchacha20poly1305_push (&self->state, cipher, &clen,
+                                                self->in->data, len, NULL, 0, tag);
 
-    append_u32_le (priv->out, (guint32) clen);
-    g_byte_array_append (priv->out, cipher, clen);
+    append_u32_le (self->out, (guint32) clen);
+    g_byte_array_append (self->out, cipher, clen);
 
     if (len)
-        g_byte_array_remove_range (priv->in, 0, len);
+        g_byte_array_remove_range (self->in, 0, len);
 }
 
 /**
@@ -186,24 +186,24 @@ g_paste_crypto_derive_key (const gchar   *passphrase,
 }
 
 static gboolean
-derive_key (GPasteSecretStreamConverter *priv,
+derive_key (GPasteSecretStreamConverter *self,
             const unsigned char         *salt,
             guint64                      opslimit,
             guint64                      memlimit,
             GError                     **error)
 {
-    return g_paste_crypto_derive_key ((const gchar *) priv->passphrase, priv->passphrase_len,
+    return g_paste_crypto_derive_key ((const gchar *) self->passphrase, self->passphrase_len,
                                       salt, opslimit, memlimit,
-                                      priv->key, KEYBYTES, error);
+                                      self->key, KEYBYTES, error);
 }
 
 static gboolean
-encrypt_process (GPasteSecretStreamConverter *priv,
+encrypt_process (GPasteSecretStreamConverter *self,
                  gboolean                            flush,
                  gboolean                            at_end,
                  GError                            **error)
 {
-    if (!priv->header_done)
+    if (!self->header_done)
     {
         unsigned char salt[SALTBYTES];
         unsigned char header[HEADERBYTES];
@@ -212,51 +212,51 @@ encrypt_process (GPasteSecretStreamConverter *priv,
 
         randombytes_buf (salt, sizeof (salt));
 
-        if (!derive_key (priv, salt, opslimit, memlimit, error))
+        if (!derive_key (self, salt, opslimit, memlimit, error))
             return FALSE;
 
-        crypto_secretstream_xchacha20poly1305_init_push (&priv->state, header, priv->key);
+        crypto_secretstream_xchacha20poly1305_init_push (&self->state, header, self->key);
 
-        g_byte_array_append (priv->out, (const guint8 *) G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN);
-        g_byte_array_append (priv->out, salt, sizeof (salt));
-        append_u64_le (priv->out, opslimit);
-        append_u64_le (priv->out, memlimit);
-        g_byte_array_append (priv->out, header, sizeof (header));
+        g_byte_array_append (self->out, (const guint8 *) G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN);
+        g_byte_array_append (self->out, salt, sizeof (salt));
+        append_u64_le (self->out, opslimit);
+        append_u64_le (self->out, memlimit);
+        g_byte_array_append (self->out, header, sizeof (header));
 
-        priv->header_done = TRUE;
+        self->header_done = TRUE;
     }
 
     /* Emit full chunks while strictly more than a chunk is buffered, so the
      * trailing bytes are available to become the FINAL chunk at end. */
-    while (priv->in->len > CHUNK_SIZE)
-        push_chunk (priv, CHUNK_SIZE, TAG_MESSAGE);
+    while (self->in->len > CHUNK_SIZE)
+        push_chunk (self, CHUNK_SIZE, TAG_MESSAGE);
 
     /* On an explicit flush, also emit the buffered partial chunk so all the input
      * we were handed reaches the base stream (the GConverter flush contract); a
      * later write simply continues the stream and at_end still emits FINAL. */
-    if (flush && !at_end && priv->in->len)
-        push_chunk (priv, priv->in->len, TAG_MESSAGE);
+    if (flush && !at_end && self->in->len)
+        push_chunk (self, self->in->len, TAG_MESSAGE);
 
-    if (at_end && !priv->finished)
+    if (at_end && !self->finished)
     {
-        push_chunk (priv, priv->in->len, TAG_FINAL);
-        priv->finished = TRUE;
+        push_chunk (self, self->in->len, TAG_FINAL);
+        self->finished = TRUE;
     }
 
     return TRUE;
 }
 
 static gboolean
-decrypt_process (GPasteSecretStreamConverter *priv,
+decrypt_process (GPasteSecretStreamConverter *self,
                  gboolean                            at_end G_GNUC_UNUSED,
                  GError                            **error)
 {
-    if (!priv->header_done)
+    if (!self->header_done)
     {
-        if (priv->in->len < STREAM_HEADER_LEN)
+        if (self->in->len < STREAM_HEADER_LEN)
             return TRUE; /* need more input */
 
-        const guint8 *data = priv->in->data;
+        const guint8 *data = self->in->data;
 
         if (memcmp (data, G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN) != 0)
         {
@@ -272,23 +272,23 @@ decrypt_process (GPasteSecretStreamConverter *priv,
 
         /* derive_key() is what refuses the parameters this untrusted header asks
          * for; see g_paste_crypto_derive_key(). */
-        if (!derive_key (priv, salt, opslimit, memlimit, error))
+        if (!derive_key (self, salt, opslimit, memlimit, error))
             return FALSE;
 
-        if (crypto_secretstream_xchacha20poly1305_init_pull (&priv->state, header, priv->key) != 0)
+        if (crypto_secretstream_xchacha20poly1305_init_pull (&self->state, header, self->key) != 0)
         {
             g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
                                  "Corrupted encryption header");
             return FALSE;
         }
 
-        g_byte_array_remove_range (priv->in, 0, STREAM_HEADER_LEN);
-        priv->header_done = TRUE;
+        g_byte_array_remove_range (self->in, 0, STREAM_HEADER_LEN);
+        self->header_done = TRUE;
     }
 
-    while (!priv->finished && priv->in->len >= 4)
+    while (!self->finished && self->in->len >= 4)
     {
-        guint32 clen = read_u32_le (priv->in->data);
+        guint32 clen = read_u32_le (self->in->data);
 
         if (clen < ABYTES || clen > CHUNK_SIZE + ABYTES)
         {
@@ -297,26 +297,26 @@ decrypt_process (GPasteSecretStreamConverter *priv,
             return FALSE;
         }
 
-        if (priv->in->len < (gsize) 4 + clen)
+        if (self->in->len < (gsize) 4 + clen)
             break; /* need the rest of the frame */
 
         unsigned char plain[CHUNK_SIZE];
         unsigned long long mlen = 0;
         unsigned char tag = 0;
 
-        if (crypto_secretstream_xchacha20poly1305_pull (&priv->state, plain, &mlen, &tag,
-                                                        priv->in->data + 4, clen, NULL, 0) != 0)
+        if (crypto_secretstream_xchacha20poly1305_pull (&self->state, plain, &mlen, &tag,
+                                                        self->in->data + 4, clen, NULL, 0) != 0)
         {
             g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
                                  "Could not decrypt the stream (wrong passphrase or corrupted data)");
             return FALSE;
         }
 
-        g_byte_array_append (priv->out, plain, mlen);
-        g_byte_array_remove_range (priv->in, 0, 4 + clen);
+        g_byte_array_append (self->out, plain, mlen);
+        g_byte_array_remove_range (self->in, 0, 4 + clen);
 
         if (tag == TAG_FINAL)
-            priv->finished = TRUE;
+            self->finished = TRUE;
     }
 
     return TRUE;
@@ -333,7 +333,7 @@ g_paste_secret_stream_converter_convert (GConverter      *converter,
                                          gsize           *bytes_written,
                                          GError         **error)
 {
-    GPasteSecretStreamConverter *priv =
+    GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (converter);
     gboolean at_end = (flags & G_CONVERTER_INPUT_AT_END) != 0;
 
@@ -343,38 +343,38 @@ g_paste_secret_stream_converter_convert (GConverter      *converter,
     /* Buffer all the input we are handed, then process what we can. */
     if (inbuf_size)
     {
-        g_byte_array_append (priv->in, inbuf, inbuf_size);
+        g_byte_array_append (self->in, inbuf, inbuf_size);
         *bytes_read = inbuf_size;
     }
 
     gboolean flush = (flags & G_CONVERTER_FLUSH) != 0;
-    gboolean ok = (priv->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
-        ? encrypt_process (priv, flush, at_end, error)
-        : decrypt_process (priv, at_end, error);
+    gboolean ok = (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
+        ? encrypt_process (self, flush, at_end, error)
+        : decrypt_process (self, at_end, error);
 
     if (!ok)
         return G_CONVERTER_ERROR;
 
     /* Hand back as much produced output as fits. */
-    if (priv->out->len && outbuf_size)
+    if (self->out->len && outbuf_size)
     {
-        gsize n = MIN (priv->out->len, outbuf_size);
+        gsize n = MIN (self->out->len, outbuf_size);
 
-        memcpy (outbuf, priv->out->data, n);
-        g_byte_array_remove_range (priv->out, 0, n);
+        memcpy (outbuf, self->out->data, n);
+        g_byte_array_remove_range (self->out, 0, n);
         *bytes_written = n;
     }
 
-    if (priv->finished && !priv->out->len)
+    if (self->finished && !self->out->len)
         return G_CONVERTER_FINISHED;
 
-    if ((flags & G_CONVERTER_FLUSH) && !priv->out->len)
+    if ((flags & G_CONVERTER_FLUSH) && !self->out->len)
         return G_CONVERTER_FLUSHED;
 
     if (!*bytes_read && !*bytes_written)
     {
         /* No progress: say why so the caller does not spin. */
-        if (priv->out->len)
+        if (self->out->len)
             g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NO_SPACE,
                                  "Not enough space in the output buffer");
         else
@@ -389,15 +389,15 @@ g_paste_secret_stream_converter_convert (GConverter      *converter,
 static void
 g_paste_secret_stream_converter_reset (GConverter *converter)
 {
-    GPasteSecretStreamConverter *priv =
+    GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (converter);
 
-    priv->header_done = FALSE;
-    priv->finished = FALSE;
-    sodium_memzero (priv->key, KEYBYTES);
-    sodium_memzero (&priv->state, sizeof (priv->state));
-    g_byte_array_set_size (priv->in, 0);
-    g_byte_array_set_size (priv->out, 0);
+    self->header_done = FALSE;
+    self->finished = FALSE;
+    sodium_memzero (self->key, KEYBYTES);
+    sodium_memzero (&self->state, sizeof (self->state));
+    g_byte_array_set_size (self->in, 0);
+    g_byte_array_set_size (self->out, 0);
 }
 
 static void
@@ -410,11 +410,11 @@ g_paste_secret_stream_converter_iface_init (GConverterIface *iface)
 static void
 g_paste_secret_stream_converter_dispose (GObject *object)
 {
-    GPasteSecretStreamConverter *priv =
+    GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (object);
 
-    g_clear_pointer (&priv->in, g_byte_array_unref);
-    g_clear_pointer (&priv->out, g_byte_array_unref);
+    g_clear_pointer (&self->in, g_byte_array_unref);
+    g_clear_pointer (&self->out, g_byte_array_unref);
 
     G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->dispose (object);
 }
@@ -422,14 +422,14 @@ g_paste_secret_stream_converter_dispose (GObject *object)
 static void
 g_paste_secret_stream_converter_finalize (GObject *object)
 {
-    GPasteSecretStreamConverter *priv =
+    GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (object);
 
     /* gcr secure memory is wiped on free. */
-    gcr_secure_memory_strfree ((gchar *) priv->passphrase);
-    gcr_secure_memory_free (priv->key);
+    gcr_secure_memory_strfree ((gchar *) self->passphrase);
+    gcr_secure_memory_free (self->key);
 
-    sodium_memzero (&priv->state, sizeof (priv->state));
+    sodium_memzero (&self->state, sizeof (self->state));
 
     G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->finalize (object);
 }

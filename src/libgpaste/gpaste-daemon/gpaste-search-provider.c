@@ -307,15 +307,15 @@ g_paste_search_provider_handle_launch_search (GPasteSearchProvider  *self,
  * dropped explicitly or the object path stays exported on a connection that
  * outlives the daemon (gnome-shell's). */
 static void
-g_paste_search_provider_unregister_on_connection (GPasteBusObject *self)
+g_paste_search_provider_unregister_on_connection (GPasteBusObject *object)
 {
-    GPasteSearchProvider *priv = G_PASTE_SEARCH_PROVIDER (self);
+    GPasteSearchProvider *self = G_PASTE_SEARCH_PROVIDER (object);
 
-    if (!priv->registered)
+    if (!self->registered)
         return;
 
-    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (priv->skeleton));
-    priv->registered = FALSE;
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (self->skeleton));
+    self->registered = FALSE;
 }
 
 static void
@@ -332,13 +332,13 @@ g_paste_search_provider_dispose (GObject *object)
 }
 
 static gboolean
-g_paste_search_provider_register_on_connection (GPasteBusObject *self,
+g_paste_search_provider_register_on_connection (GPasteBusObject *object,
                                                 GDBusConnection *connection,
                                                 GError         **error)
 {
-    GPasteSearchProvider *priv = G_PASTE_SEARCH_PROVIDER (self);
+    GPasteSearchProvider *self = G_PASTE_SEARCH_PROVIDER (object);
 
-    if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (priv->skeleton),
+    if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (self->skeleton),
                                            connection,
                                            G_PASTE_SEARCH_PROVIDER_OBJECT_PATH,
                                            error))
@@ -346,7 +346,7 @@ g_paste_search_provider_register_on_connection (GPasteBusObject *self,
         return FALSE;
     }
 
-    return (priv->registered = TRUE);
+    return (self->registered = TRUE);
 }
 
 static void

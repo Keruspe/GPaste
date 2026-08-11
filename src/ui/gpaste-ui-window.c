@@ -242,25 +242,25 @@ static void
 on_search_activate (GtkSearchEntry *entry,
                     gpointer        user_data)
 {
-    GPasteUiWindow *priv = user_data;
+    GPasteUiWindow *self = user_data;
     const gchar *search = gtk_editable_get_text (GTK_EDITABLE (entry));
 
     /* These two are wired up from init(), before there is anything to search:
      * the window can be on screen with only the connection-failure banner. */
-    if (priv->history && search && *search)
-        g_paste_ui_history_select_first (priv->history);
+    if (self->history && search && *search)
+        g_paste_ui_history_select_first (self->history);
 }
 
 static void
 on_search (GtkSearchEntry *entry,
            gpointer        user_data)
 {
-    GPasteUiWindow *priv = user_data;
+    GPasteUiWindow *self = user_data;
 
-    if (!priv->history)
+    if (!self->history)
         return;
 
-    g_paste_ui_history_search (priv->history, gtk_editable_get_text (GTK_EDITABLE (entry)));
+    g_paste_ui_history_search (self->history, gtk_editable_get_text (GTK_EDITABLE (entry)));
 }
 
 static void
@@ -277,9 +277,9 @@ on_switch_history (GPasteClient *client G_GNUC_UNUSED,
                    const gchar  *history,
                    gpointer      user_data)
 {
-    GPasteUiWindow *priv = user_data;
+    GPasteUiWindow *self = user_data;
 
-    g_paste_ui_header_set_subtitle (priv->header, history);
+    g_paste_ui_header_set_subtitle (self->header, history);
 }
 
 static void

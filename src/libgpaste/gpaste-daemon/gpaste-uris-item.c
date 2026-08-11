@@ -66,22 +66,22 @@ static GPasteItem *
 _g_paste_uris_item_new (const gchar *uris_joined,
                         GdkFileList *file_list)
 {
-    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris_joined);
-    GPasteUrisItem *priv = G_PASTE_URIS_ITEM (self);
+    GPasteItem *item = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris_joined);
+    GPasteUrisItem *self = G_PASTE_URIS_ITEM (item);
 
     g_autofree gchar *display_no_home = g_paste_util_replace (uris_joined, g_get_home_dir (), "~");
     g_autofree gchar *display_flat = g_paste_util_replace (display_no_home, "\n", " ");
     g_autofree gchar *display = g_strconcat (_("[Files] "), display_flat, NULL);
-    g_paste_item_set_display_string (self, g_steal_pointer (&display));
+    g_paste_item_set_display_string (item, g_steal_pointer (&display));
 
     /* (transfer container): the container is ours, the GFiles are not. */
     g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
     guint64 n_uris = g_slist_length (files);
-    g_paste_item_add_size (self, strlen (uris_joined) + 1 + n_uris);
+    g_paste_item_add_size (item, strlen (uris_joined) + 1 + n_uris);
 
-    priv->file_list = file_list;
+    self->file_list = file_list;
 
-    return self;
+    return item;
 }
 
 /**

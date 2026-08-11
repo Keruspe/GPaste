@@ -443,11 +443,9 @@ g_paste_prompt_passphrase_async (GPastePrompt         *self,
     g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_PASSPHRASE,
                                                                           g_paste_prompt_passphrase_async,
                                                                           callback, user_data);
-    GPastePromptRequest *priv = request;
-
-    priv->confirm = confirm;
-    priv->error_message = g_strdup (error_message);
-    priv->remember = remember;
+    request->confirm = confirm;
+    request->error_message = g_strdup (error_message);
+    request->remember = remember;
 
     G_PASTE_PROMPT_GET_IFACE (self)->passphrase (self, request);
 }
@@ -535,11 +533,9 @@ g_paste_prompt_migration_async (GPastePrompt        *self,
     g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_MIGRATION,
                                                                           g_paste_prompt_migration_async,
                                                                           callback, user_data);
-    GPastePromptRequest *priv = request;
-
-    priv->offered = g_memdup2 (offered, n_offered * sizeof (GPasteStorage));
-    priv->n_offered = n_offered;
-    priv->current = current;
+    request->offered = g_memdup2 (offered, n_offered * sizeof (GPasteStorage));
+    request->n_offered = n_offered;
+    request->current = current;
 
     G_PASTE_PROMPT_GET_IFACE (self)->migration (self, request);
 }

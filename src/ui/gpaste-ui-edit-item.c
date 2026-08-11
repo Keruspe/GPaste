@@ -81,14 +81,14 @@ on_item_ready (GObject      *source_object,
 }
 
 static void
-g_paste_ui_edit_item_activate (GPasteUiItemAction *self,
+g_paste_ui_edit_item_activate (GPasteUiItemAction *action,
                                GPasteClient       *client,
                                const gchar        *uuid)
 {
     CallbackData *data = g_new (CallbackData, 1);
-    GPasteUiEditItem *priv = G_PASTE_UI_EDIT_ITEM (self);
+    GPasteUiEditItem *self = G_PASTE_UI_EDIT_ITEM (action);
 
-    data->rootwin = g_object_ref (priv->rootwin);
+    data->rootwin = g_object_ref (self->rootwin);
     data->uuid = g_strdup (uuid);
 
     g_paste_client_get_raw_element (client, uuid, on_item_ready, data);
@@ -122,10 +122,9 @@ g_paste_ui_edit_item_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_paste_ui_item_action_new (G_PASTE_TYPE_UI_EDIT_ITEM, client, "accessories-text-editor-symbolic", _("Edit"));
-    GPasteUiEditItem *priv = G_PASTE_UI_EDIT_ITEM (self);
+    GPasteUiEditItem *self = G_PASTE_UI_EDIT_ITEM (g_paste_ui_item_action_new (G_PASTE_TYPE_UI_EDIT_ITEM, client, "accessories-text-editor-symbolic", _("Edit")));
 
-    priv->rootwin = rootwin;
+    self->rootwin = rootwin;
 
-    return self;
+    return GTK_WIDGET (self);
 }

@@ -101,11 +101,10 @@ g_paste_ui_new_item_new (GtkWindow    *rootwin,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_NEW_ITEM, NULL);
-    GPasteUiNewItem *priv = G_PASTE_UI_NEW_ITEM (self);
+    GPasteUiNewItem *self = g_object_new (G_PASTE_TYPE_UI_NEW_ITEM, NULL);
 
-    priv->client = g_object_ref (client);
-    priv->rootwin = rootwin;
+    self->client = g_object_ref (client);
+    self->rootwin = rootwin;
 
-    return self;
+    return GTK_WIDGET (self);
 }

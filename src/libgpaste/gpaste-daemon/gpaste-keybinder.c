@@ -158,8 +158,8 @@ on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
                          const gchar                   *id,
                          gpointer                       user_data)
 {
-    GPasteKeybinder *priv = user_data;
-    _Keybinding *k = g_hash_table_lookup (priv->keybindings, id);
+    GPasteKeybinder *self = user_data;
+    _Keybinding *k = g_hash_table_lookup (self->keybindings, id);
 
     if (k && g_paste_keybinding_is_active (k->binding))
         g_paste_keybinding_perform (k->binding);

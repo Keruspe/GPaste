@@ -59,9 +59,7 @@ g_paste_ui_panel_history_get_history (GPasteUiPanelHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
 
-    GPasteUiPanelHistory *priv = (GPasteUiPanelHistory *) self;
-
-    return priv->history;
+    return self->history;
 }
 
 static void
