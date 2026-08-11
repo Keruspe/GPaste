@@ -784,15 +784,14 @@ g_paste_clipboard_gdk_is_empty (GPasteClipboardGdk *self)
 static void
 g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
 {
-    /* Unlike GTK3's owner-change, GdkClipboard::changed fires for local writes too.
-     * Skip them to avoid re-processing our own clipboard content. */
+    /* GdkClipboard::changed fires for our own writes too; skip them rather than
+     * re-process the content we just published. */
     if (gdk_clipboard_is_local (self->real))
         return;
 
     /* GTK4 fires changed twice per external selection event: once immediately
      * with empty formats (before TARGETS resolves) and once with the real
-     * format list after TARGETS have been fetched. Only process the latter —
-     * equivalent to GTK3 filtering out GDK_OWNER_CHANGE_DESTROY/CLOSE. */
+     * format list after TARGETS have been fetched. Only process the latter. */
     if (gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
         return;
 

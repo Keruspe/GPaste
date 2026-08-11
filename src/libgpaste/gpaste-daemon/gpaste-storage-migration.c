@@ -872,7 +872,7 @@ on_migration_reply (GObject      *source,
     }
 
     /* Both toggles are clamped into the fields rather than trusted: a prompt
-     * backend is a public, introspectable interface now, and "delete the old
+     * backend is a public, introspectable interface, and "delete the old
      * data" answered for a migration that is not moving anywhere would wipe the
      * current history with nothing imported to replace it. Our own backends grey
      * the toggles out, but that is their courtesy, not our guarantee. Clamping

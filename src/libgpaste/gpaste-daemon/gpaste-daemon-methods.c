@@ -113,11 +113,12 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
 
     GPasteSettings *settings = self->settings;
 
-    /* create a new history to do the backup without polluting the current one */
+    /* A history of its own, so the backup never disturbs the current one. */
     g_autoptr (GPasteHistory) _history = g_paste_history_new (settings);
     const gchar *old_name = g_paste_history_get_current (self->history);
 
-    /* We emit all those signals to be sure that all the guis have their histories list updated */
+    /* Each switch is announced so every UI refreshes its list of histories, the
+     * newly created backup included, and ends up back on the current one. */
     g_paste_history_load (_history, history);
     g_paste_daemon2_emit_raw_switch_history (self->skeleton, history);
     g_paste_history_save (_history, backup);

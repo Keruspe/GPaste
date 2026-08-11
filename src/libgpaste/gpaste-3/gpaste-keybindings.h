@@ -17,8 +17,8 @@ G_BEGIN_DECLS
  * This list is the one place they are written down. It feeds the shortcuts
  * dialog, the shortcuts page of the preferences, and -- through
  * tools/gen-keybindings-xml.py, which reads this very macro -- the control
- * center's 42-gpaste.xml, so those three can no longer drift apart in wording,
- * order or grouping the way they had.
+ * center's 42-gpaste.xml, so none of the three can drift apart from the others
+ * in wording, order or grouping.
  *
  * Each carries two names: the description the shortcut UIs show, and the short
  * label the desktop portal lists it under, where there is only room for a few

@@ -157,8 +157,8 @@ const gchar         *g_paste_prompt_storage_label         (GPasteStorage storage
 
 /* Every word the prompts put in front of the user. The dialogs themselves are
  * built twice -- St inside the shell, Adwaita out of process -- because the two
- * toolkits share no widget vocabulary; the wording has no such excuse, and had
- * already drifted apart once. */
+ * toolkits share no widget vocabulary; the wording has no such excuse, so it is
+ * written down once here and neither backend spells any of it out. */
 typedef enum
 {
     G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE,

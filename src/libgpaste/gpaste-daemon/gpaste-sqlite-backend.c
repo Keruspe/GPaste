@@ -35,8 +35,10 @@
  * no-ops) rather than corrupted.
  *
  * Like the plain XML backend, password items are never persisted (the file is
- * user-readable). Images stay external PNG files, the item value being their
- * path.
+ * user-readable). Images are stored as blobs in the `items.image` column, so an
+ * item read back from here needs no file on disk; the item value remains its
+ * canonical per-history cache path, which is where an image materialized by
+ * another flavor lives.
  *
  * The encrypted flavor (g_paste_sqlite_backend_new_encrypted, ".dbs" extension)
  * encrypts every content column — items.value, items.name, items.image and

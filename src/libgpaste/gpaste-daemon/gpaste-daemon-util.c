@@ -89,12 +89,14 @@ G_PASTE_VISIBLE gchar *
 g_paste_util_get_history_dir_path (void)
 {
     const gchar *user_data_dir = g_get_user_data_dir ();
-    g_autofree gchar *meson_bug_history_path = g_build_filename (user_data_dir, PACKAGE_NAME, NULL);
+    g_autofree gchar *legacy_path = g_build_filename (user_data_dir, PACKAGE_NAME, NULL);
 
-    // meson wrongfully defined PACKAGE as PACKAGE_NAME.
-    // use it if it exists, but otherwise use the correct path.
-    if (g_file_test (meson_bug_history_path, G_FILE_TEST_IS_DIR))
-        return g_steal_pointer (&meson_bug_history_path);
+    /* The history lives under PACKAGE ("gpaste"), except where a "GPaste"
+     * directory (PACKAGE_NAME) is already there: that is where GPaste built by
+     * a meson defining the two the other way round put it, and the history a
+     * user has is worth more than the spelling of its directory. */
+    if (g_file_test (legacy_path, G_FILE_TEST_IS_DIR))
+        return g_steal_pointer (&legacy_path);
 
     return g_build_filename (user_data_dir, PACKAGE, NULL);
 }

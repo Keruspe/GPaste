@@ -412,8 +412,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_auto (GStrv) results = g_paste_client_search_finish (self->client, res, NULL /* error */);
-    /* A failed search leaves this NULL, and g_strv_length() has no more patience
-     * with that than the daemon side had (c0022cf2). */
+    /* A failed search leaves this NULL, which g_strv_length() cannot take. */
     self->size = (results) ? g_strv_length (results) : 0;
 
     /* No lazy growth to stage here: the view realises only the rows on screen,

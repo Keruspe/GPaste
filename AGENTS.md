@@ -65,6 +65,7 @@ of the three needs a session bus.
 - clang-format is not yet enforced; do not run it automatically.
 - **Braces**: Remove braces from `if`/`else if`/`else` branches whose body is a single statement on a single line. Keep braces when the body has multiple statements OR spans multiple lines (e.g. a nested if-else chain). Multi-statement macros that need to appear as a single statement must use the `do { ... } while (0)` idiom — `SWITCH_STATE` in `gpaste-file-backend.c` does this and can safely appear without surrounding braces.
 - **Alignment**: a parameter list that wraps has every continuation line starting at the column of the opening parenthesis, and the parameter names line up in one column — the widest `type` plus one space plus its `*`s, since `PointerAlignment: Right` puts the stars against the name. The same holds for a run of struct members (each blank-line-separated run aligns on its own). A rename that shortens or lengthens a type is what silently leaves these behind, so re-align the whole signature or run, not just the line you touched.
+- **Comments say what the code does**, not what it once did nor why it was changed: no "used to", no "no longer", no "instead of the old", no commit hashes. The domain has a past of its own — an old file format, a stale passphrase, an item the history no longer holds — and that is fair game; the code's does not. Rationale is welcome, and most of this tree's comments are rationale, but it has to be a rationale for what is there now.
 
 ### GObject conventions
 

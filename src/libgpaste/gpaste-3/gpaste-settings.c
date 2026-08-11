@@ -102,8 +102,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
                                            ASSIGN_TAKE, ASSIGN_DUP)
 
-/* "rebind" is the only signal left; every other change notification is the
- * property one. */
+/* "rebind" is the only signal this class carries; every other change
+ * notification is the property one. */
 #define NEW_SIGNAL_DETAILED(name, arg_type)              \
     g_signal_new (name,                                  \
                   G_PASTE_TYPE_SETTINGS,                 \

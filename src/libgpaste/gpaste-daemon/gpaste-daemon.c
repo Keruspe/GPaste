@@ -734,11 +734,13 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemon            *self,
 
     gboolean active = g_paste_screensaver_client_is_active (screensaver);
 
-    /* The deactivate signal is always sent, but not the activate one */
-    /* We always do the activate action, so that the deactivate one works anyways */
+    /* Blank the selection on both transitions: nothing of the history sits in
+     * the clipboard while the screen is locked, and unlocking puts the head
+     * item back over that blank. An empty text item is always accepted, hence
+     * the unchecked return value here (unlike the one below). */
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
-        /* will always return TRUE */
+
         g_paste_clipboards_manager_select (self->clipboards_manager, item);
     }
 

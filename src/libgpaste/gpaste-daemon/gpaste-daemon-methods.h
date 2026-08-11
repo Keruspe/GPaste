@@ -16,7 +16,7 @@ G_BEGIN_DECLS
  *
  * @skeleton is the generated org.gnome.GPaste2 implementation the daemon
  * exports: handlers reach it to emit the interface's signals, which is all they
- * need the bus for — marshalling both ways is the skeleton's job now. */
+ * need the bus for — marshalling both ways is the skeleton's job. */
 typedef struct
 {
     GPasteDaemon2           *skeleton;

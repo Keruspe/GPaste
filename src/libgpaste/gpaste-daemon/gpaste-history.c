@@ -287,8 +287,8 @@ g_paste_history_update (GPasteHistory      *self,
          * snapshot. An incremental one only reconciles what rode along with an
          * add -- and reconciliation only ever deletes rows the history no longer
          * has, so with nothing displaced there is provably nothing to delete.
-         * That is the common case, and it is where the per-item ref-copy of the
-         * whole history on every single clipboard change used to happen. */
+         * That is the common case, and it is what spares a per-item ref-copy of
+         * the whole history on every single clipboard change. */
         gboolean full = !g_paste_storage_backend_is_incremental (self->backend);
         GList *snapshot = (full || (op == G_PASTE_HISTORY_SAVE_ADD && displaced))
             ? g_paste_history_snapshot (self)
@@ -328,8 +328,8 @@ g_paste_history_private_get_by_uuid (GPasteHistory *self,
  *
  * The position is looked up rather than indexed, because indexing it would cost
  * more than it saves: adding prepends, which shifts every position, so a
- * uuid->position map would have to be rewritten on every single add. This scan
- * compares pointers, where the old list walk compared uuid strings. */
+ * uuid->position map would have to be rewritten on every single add. The scan
+ * compares pointers, the item having already been found by uuid. */
 static GPasteItem *
 g_paste_history_private_get_indexed_by_uuid (GPasteHistory *self,
                                              const gchar   *uuid,
@@ -727,9 +727,9 @@ _g_paste_history_replace (GPasteHistory *self,
     self->size += g_paste_item_get_size (new);
 
     /* Swap in place: the steal hands back the array's ref (its free func does
-     * not run) so we drop it ourselves, exactly as before, and @new takes the
-     * same slot. Unlike a removal this keeps any backing file, since only the
-     * item wrapping it is being replaced. */
+     * not run) so we drop it ourselves, and @new takes the same slot. Unlike a
+     * removal this keeps any backing file, since only the item wrapping it is
+     * being replaced. */
     g_hash_table_remove (self->by_uuid, old_uuid);
     g_ptr_array_steal_index (self->history, index);
     g_object_unref (old);

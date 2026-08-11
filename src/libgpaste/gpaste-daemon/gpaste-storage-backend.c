@@ -679,7 +679,15 @@ g_paste_storage_backend_dispose (GObject *object)
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
 }
 
-/* Not a vfunc: no backend has ever had settings of its own to hand back. */
+/**
+ * g_paste_storage_backend_get_settings:
+ * @self: a #GPasteStorageBackend instance
+ *
+ * Get the #GPasteSettings @self was built with. Every backend shares the one
+ * instance the caller created, so this is a plain accessor rather than a vfunc.
+ *
+ * Returns: (transfer none): the #GPasteSettings
+ */
 G_PASTE_VISIBLE GPasteSettings *
 g_paste_storage_backend_get_settings (GPasteStorageBackend *self)
 {
@@ -716,7 +724,8 @@ g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
 
 /* Every storage flavour, indexed by its kind: what it is called on disk, and
  * which class implements it. Adding a flavour is one row plus its enum value,
- * rather than an edit in each of the switches this replaced.
+ * and every reader iterates up to %G_PASTE_N_STORAGE rather than carrying a
+ * list of its own.
  *
  * @get_type for an encrypted flavour is the no-storage backend on purpose: the
  * encrypted ones are built through their own constructor below, and anything

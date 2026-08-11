@@ -672,8 +672,8 @@ end_tag (GMarkupParseContext *context,
         /* Leave the item even when the version is unknown: staying inside it
          * would make every element that follows fail its assert — including the
          * next <item>, whose scratch reset would then be skipped, so the items
-         * of an unreadable history would bleed into each other. Nothing puts us
-         * anywhere but IN_ITEM now that no format carries text there. */
+         * of an unreadable history would bleed into each other. IN_ITEM is the
+         * only state we can be in here: no format carries text inside <item>. */
         SWITCH_STATE (IN_ITEM, IN_HISTORY);
     }
     else if (g_paste_str_equal (element_name, "value"))

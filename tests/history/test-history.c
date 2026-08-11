@@ -149,12 +149,9 @@ pump_until_length (GPasteHistory *history,
         g_test_trap_assert_stderr (stderr_glob);                     \
     } while (FALSE)
 
-/* Read a history back through @backend.
- *
- * Every caller had to declare a size out-parameter no test has ever asserted
- * on, and free the list by hand afterwards -- and the read refuses to reuse a
- * list that is not empty, so reusing one needed a manual reset. Hand back an
- * owned list instead and keep all three out of the tests.
+/* Read a history back through @backend, handing back an owned list: the size
+ * out-parameter no test asserts on, the by-hand free and the empty-list reset
+ * the read insists on all stay here rather than in every caller.
  *
  * Whether the backend could read at all is distinct from what it read: an empty
  * history is a perfectly good thing to read back, which is what the two
@@ -267,8 +264,8 @@ file_contains (const gchar *path,
     return FALSE;
 }
 
-/* Capturing an image no longer touches the disk: the item carries its encoded
- * PNG and *materializing* it is the storage backend's job. */
+/* Capturing an image touches no file: the item carries its encoded PNG, and
+ * *materializing* it is the storage backend's job. */
 static void
 test_image_capture_does_not_write (void)
 {
@@ -1937,8 +1934,8 @@ test_sqlite_version_guard (void)
  * fails partway through leaves behind, and which the migration warns about by
  * name. A passphrase that opens one of them but not the other must be refused:
  * accepting it would load the one it cannot open as empty, and that history's
- * next save would then destroy the real content. The file backend used to
- * answer on the first history that opened, so this is its regression test. */
+ * next save would then destroy the real content -- which is what answering on
+ * the first history that opens would do. */
 static void
 test_encrypted_split_keys_refuse_passphrase (void)
 {

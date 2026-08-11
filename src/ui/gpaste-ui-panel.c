@@ -431,9 +431,7 @@ g_paste_ui_panel_dispose (GObject *object)
     g_clear_object (&self->settings);
 
     /* Borrowed: the section owns every item we appended to it, so only the list
-     * spine is ours to free. Draining it by hand was a workaround for
-     * adw_sidebar_section_dispose crashing on leftover items, fixed in the
-     * libadwaita 1.10.alpha we now require. */
+     * spine is ours to free. */
     g_clear_pointer (&self->histories, g_list_free);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);

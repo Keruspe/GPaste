@@ -26,8 +26,8 @@ export default class GPasteExtension extends Extension {
         // declares the "unlock-dialog" session mode and stays enabled across the
         // lock. The panel indicator, on the other hand, must never be reachable
         // from the lock screen: it is created only in the normal "user" mode and
-        // torn down whenever we leave it. enable()/disable() are therefore no
-        // longer called on lock/unlock; the mode change is handled by _sync().
+        // torn down whenever we leave it. Locking and unlocking therefore never
+        // reach enable()/disable(); _sync() is what acts on the mode change.
         if (this._settings.get_experimental_meta_daemon())
             this._runner = new GPasteDaemonRunner(this._settings);
 

@@ -34,9 +34,9 @@ gboolean g_paste_util_ensure_history_dir_exists (void);
 
 /* Every directory listing in this library goes through here. Whether a directory
  * that is not there counts as a failure, and whether an enumeration that stopped
- * half way does, are exactly the two questions each caller used to answer for
- * itself -- and getting the second one wrong is how a migration imports half a
- * history and its cleanup deletes the rest. */
+ * half way does, are decided once here rather than at each of the four places
+ * that enumerate one -- and getting the second one wrong is how a migration
+ * imports half a history and its cleanup deletes the rest. */
 GStrv    g_paste_util_list_directory            (GFile               *dir,
                                                  const gchar         *attribute,
                                                  GError             **error);
