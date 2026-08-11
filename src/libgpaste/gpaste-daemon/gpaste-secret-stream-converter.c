@@ -66,7 +66,7 @@ struct _GPasteSecretStreamConverter
 static void g_paste_secret_stream_converter_iface_init (GConverterIface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (SecretStreamConverter, secret_stream_converter, G_TYPE_OBJECT,
-                                                G_TYPE_CONVERTER, g_paste_secret_stream_converter_iface_init)
+                                    G_TYPE_CONVERTER, g_paste_secret_stream_converter_iface_init)
 
 static void
 append_u32_le (GByteArray *array,
@@ -109,8 +109,8 @@ read_u64_le (const guint8 *data)
 /* Encrypt the first @len buffered bytes into a length-prefixed frame. */
 static void
 push_chunk (GPasteSecretStreamConverter *self,
-            gsize                               len,
-            unsigned char                       tag)
+            gsize                        len,
+            unsigned char                tag)
 {
     unsigned char cipher[CHUNK_SIZE + ABYTES];
     unsigned long long clen = 0;
@@ -152,14 +152,14 @@ push_chunk (GPasteSecretStreamConverter *self,
  * Returns: whether @key was derived
  */
 G_PASTE_VISIBLE gboolean
-g_paste_crypto_derive_key (const gchar   *passphrase,
-                           gsize          passphrase_len,
-                           const guchar  *salt,
-                           guint64        opslimit,
-                           guint64        memlimit,
-                           guchar        *key,
-                           gsize          key_len,
-                           GError       **error)
+g_paste_crypto_derive_key (const gchar  *passphrase,
+                           gsize         passphrase_len,
+                           const guchar *salt,
+                           guint64       opslimit,
+                           guint64       memlimit,
+                           guchar       *key,
+                           gsize         key_len,
+                           GError      **error)
 {
     g_return_val_if_fail (passphrase, FALSE);
     g_return_val_if_fail (salt, FALSE);
@@ -199,9 +199,9 @@ derive_key (GPasteSecretStreamConverter *self,
 
 static gboolean
 encrypt_process (GPasteSecretStreamConverter *self,
-                 gboolean                            flush,
-                 gboolean                            at_end,
-                 GError                            **error)
+                 gboolean                     flush,
+                 gboolean                     at_end,
+                 GError                     **error)
 {
     if (!self->header_done)
     {
@@ -248,8 +248,8 @@ encrypt_process (GPasteSecretStreamConverter *self,
 
 static gboolean
 decrypt_process (GPasteSecretStreamConverter *self,
-                 gboolean                            at_end G_GNUC_UNUSED,
-                 GError                            **error)
+                 gboolean                     at_end G_GNUC_UNUSED,
+                 GError                     **error)
 {
     if (!self->header_done)
     {
@@ -323,15 +323,15 @@ decrypt_process (GPasteSecretStreamConverter *self,
 }
 
 static GConverterResult
-g_paste_secret_stream_converter_convert (GConverter      *converter,
-                                         const void      *inbuf,
-                                         gsize            inbuf_size,
-                                         void            *outbuf,
-                                         gsize            outbuf_size,
-                                         GConverterFlags  flags,
-                                         gsize           *bytes_read,
-                                         gsize           *bytes_written,
-                                         GError         **error)
+g_paste_secret_stream_converter_convert (GConverter     *converter,
+                                         const void     *inbuf,
+                                         gsize           inbuf_size,
+                                         void           *outbuf,
+                                         gsize           outbuf_size,
+                                         GConverterFlags flags,
+                                         gsize          *bytes_read,
+                                         gsize          *bytes_written,
+                                         GError        **error)
 {
     GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (converter);
@@ -462,8 +462,8 @@ g_paste_secret_stream_converter_init (GPasteSecretStreamConverter *self)
  *          or %NULL if libsodium could not be initialised
  */
 G_PASTE_VISIBLE GConverter *
-g_paste_secret_stream_converter_new (GPasteSecretStreamDirection  direction,
-                                     const gchar                 *passphrase)
+g_paste_secret_stream_converter_new (GPasteSecretStreamDirection direction,
+                                     const gchar                *passphrase)
 {
     g_return_val_if_fail (passphrase && *passphrase, NULL);
 

@@ -157,8 +157,8 @@ g_paste_history_item_free (gpointer data)
  * is only being moved to the front. */
 static void
 g_paste_history_private_remove (GPasteHistory *self,
-                                guint                 index,
-                                gboolean              remove_leftovers)
+                                guint          index,
+                                gboolean       remove_leftovers)
 {
     g_return_if_fail (index < self->history->len);
 
@@ -232,7 +232,7 @@ g_paste_history_private_clear (GPasteHistory *self)
  * as the model, rebuilding the uuid index with it. */
 static void
 g_paste_history_private_set_from_list (GPasteHistory *self,
-                                       GList                *history)
+                                       GList         *history)
 {
     g_paste_history_private_clear (self);
 
@@ -269,14 +269,14 @@ g_paste_history_emit_update (GPasteHistory     *self,
  * dedup, a grown line replacing its shorter self, or an eviction. It only means
  * anything for an add on an incremental backend -- see below. */
 static void
-g_paste_history_update (GPasteHistory       *self,
-                        GPasteUpdateAction   action,
-                        GPasteUpdateTarget   target,
-                        guint64              position,
-                        GPasteHistorySaveOp  op,
-                        GPasteItem          *item,
-                        const gchar         *uuid,
-                        gboolean             displaced)
+g_paste_history_update (GPasteHistory      *self,
+                        GPasteUpdateAction  action,
+                        GPasteUpdateTarget  target,
+                        guint64             position,
+                        GPasteHistorySaveOp op,
+                        GPasteItem         *item,
+                        const gchar        *uuid,
+                        gboolean            displaced)
 {
     /* Don't persist intermediate states while an async load is replacing the
      * history (the load result triggers its own save when appropriate), nor once
@@ -533,9 +533,9 @@ g_paste_history_add (GPasteHistory *self,
 }
 
 static void
-g_paste_history_remove_common (GPasteHistory        *self,
-                               GPasteItem           *item,
-                               guint                 index)
+g_paste_history_remove_common (GPasteHistory *self,
+                               GPasteItem    *item,
+                               guint          index)
 {
     if (!item)
         return;
@@ -555,8 +555,8 @@ g_paste_history_remove_common (GPasteHistory        *self,
 }
 
 static void
-g_paste_history_remove_locked (GPasteHistory        *self,
-                               guint64               index)
+g_paste_history_remove_locked (GPasteHistory *self,
+                               guint64        index)
 {
     g_debug ("history: remove '%" G_GUINT64_FORMAT "'", index);
 
@@ -980,8 +980,8 @@ g_paste_history_resume (GPasteHistory *self)
 }
 
 static void
-g_paste_history_load_locked (GPasteHistory        *self,
-                             const gchar          *name)
+g_paste_history_load_locked (GPasteHistory *self,
+                             const gchar   *name)
 {
     g_paste_history_private_clear (self);
     self->size = 0;
@@ -1035,11 +1035,11 @@ g_paste_history_load (GPasteHistory *self,
 
 /* Install the result of an async load (driven by the saver) into the model. */
 static void
-g_paste_history_on_loaded (gpointer  user_data,
-                           GList    *history,
-                           gsize     size,
-                           gboolean  save_after,
-                           gboolean  readable)
+g_paste_history_on_loaded (gpointer user_data,
+                           GList   *history,
+                           gsize    size,
+                           gboolean save_after,
+                           gboolean readable)
 {
     GPasteHistory *self = user_data;
     G_PASTE_LOCK_HISTORY;
@@ -1131,7 +1131,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
  */
 G_PASTE_VISIBLE void
 g_paste_history_load_async (GPasteHistory *self,
-                             const gchar   *name)
+                            const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));

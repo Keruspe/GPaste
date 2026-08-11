@@ -4,7 +4,8 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
-typedef struct {
+typedef struct
+{
     GPasteGtkConfirmDialogCallback callback;
     gpointer                       user_data;
 } GPasteGtkConfirmDialogCallbackData;
@@ -84,7 +85,8 @@ g_paste_gtk_util_get_image_finish (GPasteClient *client,
     return gdk_texture_new_from_bytes (bytes, error);
 }
 
-typedef struct {
+typedef struct
+{
     GPasteClient *client;
     gchar        *history;
 } EmptyHistoryCallbackData;

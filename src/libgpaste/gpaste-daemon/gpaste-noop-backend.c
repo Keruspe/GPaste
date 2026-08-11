@@ -15,10 +15,10 @@ G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
  * history is ever listed on disk. */
 
 static gboolean
-g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self G_GNUC_UNUSED,
-                                        const gchar           *name G_GNUC_UNUSED,
-                                        GList                **history,
-                                        gsize                 *size)
+g_paste_noop_backend_read_history_file (GPasteStorageBackend *self G_GNUC_UNUSED,
+                                        const gchar          *name G_GNUC_UNUSED,
+                                        GList               **history,
+                                        gsize                *size)
 {
     *history = NULL;
     *size = 0;

@@ -98,7 +98,6 @@ g_paste_password_item_finalize (GObject *object)
     G_OBJECT_CLASS (g_paste_password_item_parent_class)->finalize (object);
 }
 
-
 static void
 g_paste_password_item_class_init (GPastePasswordItemClass *klass)
 {

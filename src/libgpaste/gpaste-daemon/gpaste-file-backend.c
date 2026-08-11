@@ -48,9 +48,9 @@ static gboolean g_paste_file_backend_load_contents (GPasteStorageBackend *self,
                                                     GError               **error);
 
 static gboolean
-_g_paste_file_backend_write_password_name (GOutputStream       *stream,
-                                           GPastePasswordItem  *item,
-                                           GError             **error)
+_g_paste_file_backend_write_password_name (GOutputStream      *stream,
+                                           GPastePasswordItem *item,
+                                           GError            **error)
 {
     g_autofree gchar *name = g_paste_util_xml_encode (g_paste_password_item_get_name (item));
 
@@ -163,9 +163,9 @@ _g_paste_file_backend_load_image_bytes (GPasteStorageBackend *self,
 }
 
 static gboolean
-_g_paste_file_backend_write_image_metadata (GOutputStream    *stream,
-                                            GPasteImageItem  *item,
-                                            GError          **error)
+_g_paste_file_backend_write_image_metadata (GOutputStream   *stream,
+                                            GPasteImageItem *item,
+                                            GError         **error)
 {
     g_autofree gchar *date_str = g_date_time_format ((GDateTime *) g_paste_image_item_get_date (item), "%s");
     const gchar *checksum = g_paste_image_item_get_checksum (item);
@@ -373,22 +373,22 @@ typedef enum
 typedef struct
 {
     GPasteStorageBackend *backend;
-    const gchar      *history_file_path;
-    GList            *history;
-    gsize             mem_size;
-    State             state;
-    GPasteItemKind    type;
-    guint64           current_size;
-    guint64           max_size;
-    gboolean          images_support;
-    gchar            *uuid;
-    gchar            *date;
-    gchar            *checksum;
-    gchar            *name;
-    gchar            *text;
-    GSList           *special_values;
-    HistoryVersion    version;
-    GPasteSpecialAtom mime;
+    const gchar          *history_file_path;
+    GList                *history;
+    gsize                 mem_size;
+    State                 state;
+    GPasteItemKind        type;
+    guint64               current_size;
+    guint64               max_size;
+    gboolean              images_support;
+    gchar                *uuid;
+    gchar                *date;
+    gchar                *checksum;
+    gchar                *name;
+    gchar                *text;
+    GSList               *special_values;
+    HistoryVersion        version;
+    GPasteSpecialAtom     mime;
 } Data;
 
 /* Where the parser currently is, for a diagnostic. An encrypted history is
@@ -751,12 +751,12 @@ static void on_error (GMarkupParseContext *context,
 /* Load the raw history document, transparently decrypting it for an encrypted
  * backend. Returns the (caller-owned) bytes through @text / @text_length. */
 static gboolean
-g_paste_file_backend_load_contents (GPasteStorageBackend  *self,
-                                    const gchar           *history_file_path,
-                                    GFile                 *history_file,
-                                    gchar                **text,
-                                    gsize                 *text_length,
-                                    GError               **error)
+g_paste_file_backend_load_contents (GPasteStorageBackend *self,
+                                    const gchar          *history_file_path,
+                                    GFile                *history_file,
+                                    gchar               **text,
+                                    gsize                *text_length,
+                                    GError              **error)
 {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     const gchar *passphrase = g_paste_file_backend_get_passphrase (self);
@@ -791,10 +791,10 @@ g_paste_file_backend_load_contents (GPasteStorageBackend  *self,
 }
 
 static gboolean
-g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
-                                        const gchar           *name,
-                                        GList                **history,
-                                        gsize                 *size)
+g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
+                                        const gchar          *name,
+                                        GList               **history,
+                                        gsize                *size)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
@@ -906,9 +906,9 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
 }
 
 static void
-g_paste_file_backend_delete_history (GPasteStorageBackend  *self,
-                                      const gchar          *name,
-                                      GError              **error)
+g_paste_file_backend_delete_history (GPasteStorageBackend *self,
+                                     const gchar          *name,
+                                     GError              **error)
 {
     g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, g_paste_storage_backend_get_extension (self));
 
@@ -922,10 +922,10 @@ g_paste_file_backend_delete_history (GPasteStorageBackend  *self,
  * back through the new key before the caller is told it worked, so a bad write
  * is caught while the original is still the only thing in place. */
 static gboolean
-_g_paste_file_backend_reencrypt_file (GPasteStorageBackend  *self,
-                                      GPasteStorageBackend  *rekeyed,
-                                      const gchar           *path,
-                                      gchar                **tmp_path)
+_g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
+                                      GPasteStorageBackend *rekeyed,
+                                      const gchar          *path,
+                                      gchar               **tmp_path)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
     g_autofree gchar *text = NULL;

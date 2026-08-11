@@ -21,7 +21,7 @@ struct _GPastePromptAdw
 static void g_paste_prompt_adw_prompt_iface_init (GPastePromptInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (PromptAdw, prompt_adw, G_TYPE_OBJECT,
-                                                G_PASTE_TYPE_PROMPT, g_paste_prompt_adw_prompt_iface_init)
+                                    G_PASTE_TYPE_PROMPT, g_paste_prompt_adw_prompt_iface_init)
 
 /*
  * The migration dialog

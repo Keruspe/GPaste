@@ -95,7 +95,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   1,                               \
                   G_TYPE_##type)
 
-
 /*******************************/
 /* Methods                     */
 /*******************************/
@@ -332,8 +331,8 @@ g_paste_client_add_file (GPasteClient *self, const gchar *file, GAsyncReadyCallb
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file_finish (GPasteClient *self,
-                             GAsyncResult *result,
-                             GError      **error)
+                                GAsyncResult *result,
+                                GError      **error)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
     g_return_if_fail (G_IS_ASYNC_RESULT (result));
@@ -640,8 +639,8 @@ g_paste_client_get_element_at_index (GPasteClient *self, guint64 index, GAsyncRe
  */
 G_PASTE_VISIBLE GPasteClientItem *
 g_paste_client_get_element_at_index_finish (GPasteClient *self,
-                             GAsyncResult *result,
-                             GError      **error)
+                                            GAsyncResult *result,
+                                            GError      **error)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
     g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);

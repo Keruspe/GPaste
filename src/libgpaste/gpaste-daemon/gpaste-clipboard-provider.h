@@ -12,7 +12,6 @@ G_BEGIN_DECLS
 G_PASTE_VISIBLE
 G_DECLARE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_PASTE, CLIPBOARD_PROVIDER, GObject)
 
-
 /**
  * GPasteClipboardProviderUpdateCallback:
  * @self: the #GPasteClipboardProvider whose content was read

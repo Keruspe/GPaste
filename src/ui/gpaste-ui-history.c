@@ -61,8 +61,8 @@ G_PASTE_DEFINE_TYPE (UiHistory, ui_history, GTK_TYPE_BOX)
 
 static void
 g_paste_ui_history_show_status (GPasteUiHistory *self,
-                                 const gchar     *icon,
-                                 const gchar     *title)
+                                const gchar     *icon,
+                                const gchar     *title)
 {
     adw_status_page_set_icon_name (self->status_page, icon);
     adw_status_page_set_title (self->status_page, title);
@@ -196,7 +196,8 @@ g_paste_ui_history_batch (GPasteUiHistory *self)
  * otherwise finalize it before the reply lands. @generation is what was current
  * when the call went out — refresh and search write the same rows (indices vs.
  * uuids), so whichever went out last wins and everything older bails. */
-typedef struct {
+typedef struct
+{
     GPasteUiHistory *self;
     gchar           *name;
     guint64          from_index;

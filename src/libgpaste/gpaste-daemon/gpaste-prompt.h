@@ -38,7 +38,6 @@ G_PASTE_FINAL_TYPE (PromptRequest, prompt_request, PROMPT_REQUEST, GObject)
 G_PASTE_VISIBLE
 G_DECLARE_INTERFACE (GPastePrompt, g_paste_prompt, G_PASTE, PROMPT, GObject)
 
-
 /**
  * GPastePromptInterface:
  * @parent_iface: the parent interface
@@ -129,7 +128,6 @@ GPastePassphrase *g_paste_prompt_passphrase_finish (GPastePrompt          *self,
                                                     GAsyncResult          *result,
                                                     GPasteStorageRemember *remember,
                                                     GError               **error);
-
 
 void     g_paste_prompt_migration_async  (GPastePrompt        *self,
                                           const GPasteStorage *offered,

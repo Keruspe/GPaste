@@ -207,9 +207,9 @@ g_paste_util_ensure_history_dir_exists (void)
  * Returns: (transfer full) (nullable): the names, or %NULL
  */
 G_PASTE_VISIBLE GStrv
-g_paste_util_list_directory (GFile        *dir,
-                             const gchar  *attribute,
-                             GError      **error)
+g_paste_util_list_directory (GFile       *dir,
+                             const gchar *attribute,
+                             GError     **error)
 {
     g_return_val_if_fail (G_IS_FILE (dir), NULL);
     g_return_val_if_fail (attribute, NULL);

@@ -6,7 +6,8 @@
 #include <getopt.h>
 #include <stdio.h>
 
-typedef struct {
+typedef struct
+{
     GPasteClient *client;
     gint          argc;
     const gchar **args;

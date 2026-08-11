@@ -200,8 +200,8 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
  * Refused outright when there is no passphrase to change, so a host never stops
  * recording and raises a dialog only to be told there was nothing to do. */
 static void
-g_paste_daemon_change_passphrase (GPasteDaemon  *self,
-                                  GError       **error)
+g_paste_daemon_change_passphrase (GPasteDaemon *self,
+                                  GError      **error)
 {
     G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (self->settings)),
                          G_PASTE_ERROR_NOT_ENCRYPTED,
@@ -483,7 +483,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 
 static gboolean
 g_paste_daemon_handle_about (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation)
+                             GDBusMethodInvocation *invocation)
 {
     g_paste_util_activate_ui ("about", NULL);
     g_paste_daemon2_complete_about (self->skeleton, invocation);
@@ -501,7 +501,7 @@ G_PASTE_DAEMON_HANDLER_ERR (backup_history, (const gchar *history, const gchar *
 
 static gboolean
 g_paste_daemon_handle_change_passphrase (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation)
+                                         GDBusMethodInvocation *invocation)
 {
     g_autoptr (GError) error = NULL;
 
@@ -524,8 +524,8 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_element,
 
 static gboolean
 g_paste_daemon_handle_get_element_at_index (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation,
-                              guint64 index)
+                                            GDBusMethodInvocation *invocation,
+                                            guint64                index)
 {
     const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
     g_autoptr (GError) error = NULL;
@@ -568,8 +568,8 @@ G_PASTE_DAEMON_HANDLER_ERR (merge, (const gchar *decoration, const gchar *separa
 
 static gboolean
 g_paste_daemon_handle_on_extension_state_changed (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation,
-                              gboolean extension_state)
+                                                  GDBusMethodInvocation *invocation,
+                                                  gboolean               extension_state)
 {
     const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
 
@@ -581,7 +581,7 @@ g_paste_daemon_handle_on_extension_state_changed (GPasteDaemon          *self,
 
 static gboolean
 g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation)
+                                 GDBusMethodInvocation *invocation)
 {
     g_paste_daemon_reexecute (self);
     g_paste_daemon2_complete_reexecute (self->skeleton, invocation);
@@ -603,7 +603,7 @@ G_PASTE_DAEMON_HANDLER_ERR (set_password, (const gchar *uuid, const gchar *name)
 
 static gboolean
 g_paste_daemon_handle_show_history (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation)
+                                    GDBusMethodInvocation *invocation)
 {
     g_autoptr (GError) error = NULL;
 
@@ -619,7 +619,7 @@ G_PASTE_DAEMON_HANDLER (track, (gboolean tracking_state), (tracking_state))
 static gboolean
 g_paste_daemon_handle_upload (GPasteDaemon          *self,
                               GDBusMethodInvocation *invocation,
-                              const gchar *uuid)
+                              const gchar           *uuid)
 {
     if (g_paste_daemon_upload (self, uuid))
         g_paste_daemon2_complete_upload (self->skeleton, invocation);
@@ -718,8 +718,8 @@ g_paste_daemon_on_history_update (GPasteDaemon      *self,
 
 static void
 g_paste_daemon_on_history_switch (GPasteDaemon *self,
-                                  const gchar         *name,
-                                  gpointer             user_data G_GNUC_UNUSED)
+                                  const gchar  *name,
+                                  gpointer      user_data G_GNUC_UNUSED)
 {
     g_paste_daemon2_emit_raw_switch_history (self->skeleton, name);
 }

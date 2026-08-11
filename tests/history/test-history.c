@@ -1170,7 +1170,6 @@ test_encrypted_explicit_passphrase (void)
             g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, value);
-
         }
 
         /* ...while the process-wide one does not, and is refused rather than
@@ -1264,7 +1263,6 @@ test_encrypted_rekey (void)
             g_autolist (GPasteItem) loaded = read_history_ok (backend, other_name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, other_value);
-
         }
 
         /* The new passphrase reads back everything, contents included. */
@@ -1301,7 +1299,6 @@ test_encrypted_rekey (void)
 
             g_assert_true (found_password);
             g_assert_true (found_image);
-
         }
 
         /* ...and the old one is refused rather than read as empty. */
@@ -1357,7 +1354,6 @@ test_encrypted_rekey (void)
                 g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, new_passphrase);
                 g_autolist (GPasteItem) loaded = read_history_ok (backend, big_name);
                 g_assert_cmpuint (g_list_length (loaded), ==, 10);
-
             }
         }
 
@@ -1402,7 +1398,6 @@ sqlite_wait_for_values (GPasteStorage        kind,
 
         for (guint v = 0; match && v < expected; ++v, l = l->next)
             match = g_paste_str_equal (g_paste_item_get_value (l->data), values[v]);
-
 
         if (match)
             return TRUE;
@@ -1635,7 +1630,6 @@ test_sqlite_replace (void)
     g_assert_cmpuint (g_slist_length ((GSList *) svs), ==, 1);
     g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES);
     g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (svs->data), replacement_sv));
-
 
     /* set_password turns an item into a password: it must leave storage, not
      * linger as a stale plaintext row. */
@@ -2296,7 +2290,6 @@ test_encrypted_sqlite_rekey (void)
             g_autolist (GPasteItem) loaded = read_history_ok (backend, other_name);
             g_assert_cmpuint (g_list_length (loaded), ==, 1);
             g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, other_value);
-
         }
 
         {
@@ -2343,7 +2336,6 @@ test_encrypted_sqlite_rekey (void)
             g_assert_true (found_text);
             g_assert_true (found_password);
             g_assert_true (found_image);
-
         }
 
         {

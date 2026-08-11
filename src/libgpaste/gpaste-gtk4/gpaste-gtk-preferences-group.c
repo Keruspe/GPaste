@@ -334,7 +334,8 @@ g_paste_gtk_preferences_group_init (GPasteGtkPreferencesGroup *self G_GNUC_UNUSE
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteGtkPreferencesGroup *
-g_paste_gtk_preferences_group_new (const gchar *title) {
+g_paste_gtk_preferences_group_new (const gchar *title)
+{
     g_return_val_if_fail (title, NULL);
 
     return G_PASTE_GTK_PREFERENCES_GROUP (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_GROUP, "title", title, NULL));

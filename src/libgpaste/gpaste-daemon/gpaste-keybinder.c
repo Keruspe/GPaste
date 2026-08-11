@@ -9,10 +9,10 @@ struct _GPasteKeybinder
 
     GHashTable               *keybindings;  /* const gchar * (borrowed from _Keybinding) → _Keybinding * */
 
-    GPasteSettings                *settings;
-    GSignalGroup                  *settings_signals;
+    GPasteSettings             *settings;
+    GSignalGroup               *settings_signals;
     GPasteGlobalShortcutClient *provider;
-    GSignalGroup                  *provider_signals;
+    GSignalGroup               *provider_signals;
 };
 
 G_PASTE_DEFINE_TYPE (Keybinder, keybinder, G_TYPE_OBJECT)
@@ -155,8 +155,8 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 
 static void
 on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
-                         const gchar                   *id,
-                         gpointer                       user_data)
+                         const gchar                *id,
+                         gpointer                    user_data)
 {
     GPasteKeybinder *self = user_data;
     _Keybinding *k = g_hash_table_lookup (self->keybindings, id);
@@ -206,7 +206,7 @@ g_paste_keybinder_init (GPasteKeybinder *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinder *
-g_paste_keybinder_new (GPasteSettings                *settings,
+g_paste_keybinder_new (GPasteSettings             *settings,
                        GPasteGlobalShortcutClient *provider)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);

@@ -178,12 +178,12 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
  * so only the most recent state ever reaches the disk.
  */
 G_PASTE_VISIBLE void
-g_paste_history_saver_record (GPasteHistorySaver  *self,
-                              GPasteHistorySaveOp  op,
-                              const gchar         *name,
-                              GPasteItem          *item,
-                              const gchar         *uuid,
-                              GList               *history)
+g_paste_history_saver_record (GPasteHistorySaver *self,
+                              GPasteHistorySaveOp op,
+                              const gchar        *name,
+                              GPasteItem         *item,
+                              const gchar        *uuid,
+                              GList              *history)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 

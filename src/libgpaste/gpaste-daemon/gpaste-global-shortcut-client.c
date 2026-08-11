@@ -421,8 +421,8 @@ close_session (GPasteGlobalShortcutClient *self)
  * Replace all currently registered shortcuts with @accels.
  */
 G_PASTE_VISIBLE void
-g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
-                                             const GPasteKeybindingAccelerator *accels)
+g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient        *self,
+                                         const GPasteKeybindingAccelerator *accels)
 {
     g_return_if_fail (G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
     g_return_if_fail (accels);
@@ -478,9 +478,9 @@ g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient *self)
 
 static void
 g_paste_global_shortcut_client_g_signal (GDBusProxy  *proxy,
-                                             const gchar *sender_name G_GNUC_UNUSED,
-                                             const gchar *signal_name,
-                                             GVariant    *parameters)
+                                         const gchar *sender_name G_GNUC_UNUSED,
+                                         const gchar *signal_name,
+                                         GVariant    *parameters)
 {
     GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (proxy);
 

@@ -36,7 +36,7 @@ struct _GPasteClipboardGdk
 static void g_paste_clipboard_gdk_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardGdk, clipboard_gdk, G_TYPE_OBJECT,
-                                                G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_gdk_provider_iface_init)
+                                    G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_gdk_provider_iface_init)
 
 typedef void (*GPasteClipboardGdkTextCallback)    (GPasteClipboardGdk *self,
                                                    const gchar        *text,
@@ -80,7 +80,8 @@ g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdk *self,
 static void g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
                                                const gchar        *text);
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardGdk            *self; /* ref'd for the duration of the read */
     GPasteClipboardGdkTextCallback callback;
     gpointer                       user_data;
@@ -250,7 +251,8 @@ g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *self,
     gdk_clipboard_set (self->real, GDK_TYPE_TEXTURE, texture);
 }
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardGdk               *self; /* ref'd for the duration of the read */
     GPasteClipboardGdkTextureCallback callback;
     gpointer                          user_data;
@@ -315,7 +317,8 @@ typedef void (*GPasteClipboardGdkRGBACallback) (GPasteClipboardGdk *self,
                                                const GdkRGBA       *rgba,
                                                gpointer             user_data);
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardGdk            *self; /* ref'd for the duration of the read */
     GPasteClipboardGdkRGBACallback callback;
     gpointer                       user_data;
@@ -387,11 +390,12 @@ typedef void (*GPasteClipboardGdkSpecialAtomCallback) (GPasteClipboardGdk *self,
                                                        GBytes             *bytes,
                                                        gpointer            user_data);
 
-typedef struct {
-    GPasteClipboardGdk                  *self; /* ref'd for the duration of the read */
-    GPasteSpecialAtom                    atom;
+typedef struct
+{
+    GPasteClipboardGdk                   *self; /* ref'd for the duration of the read */
+    GPasteSpecialAtom                     atom;
     GPasteClipboardGdkSpecialAtomCallback callback;
-    gpointer                             user_data;
+    gpointer                              user_data;
 } GPasteClipboardGdkSpecialAtomData;
 
 static void
@@ -476,7 +480,8 @@ g_paste_clipboard_gdk_fetch_special_atom (GPasteClipboardGdk                   *
                               data);
 }
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardGdk                   *self; /* ref'd for the whole update */
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;

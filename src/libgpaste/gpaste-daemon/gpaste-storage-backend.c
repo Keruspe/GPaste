@@ -292,10 +292,10 @@ g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
  *          a genuinely empty or absent history)
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
-                                      const gchar           *name,
-                                      GList                **history,
-                                      gsize                 *size)
+g_paste_storage_backend_read_history (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      GList               **history,
+                                      gsize                *size)
 {
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
@@ -362,8 +362,8 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
  * sweep should have removed is still on disk. The rest is swept anyway: these
  * are the clipboard's screenshots, so every one that can go, goes. */
 static gboolean
-_g_paste_storage_backend_delete_history_images (const gchar  *name,
-                                                GError      **error)
+_g_paste_storage_backend_delete_history_images (const gchar *name,
+                                                GError     **error)
 {
     g_autofree gchar *images_dir_path = g_paste_image_item_get_images_dir (name);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
@@ -423,9 +423,9 @@ _g_paste_storage_backend_delete_history_images (const gchar  *name,
  * while they are still there.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_delete_history (GPasteStorageBackend  *self,
-                                         const gchar          *name,
-                                         GError              **error)
+g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
+                                        const gchar          *name,
+                                        GError              **error)
 {
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
@@ -457,8 +457,8 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend  *self,
  * backend's flavour (its get_extension suffix), so e.g. plain ".xml" and
  * encrypted ".xmls" histories never get mixed up. */
 static GStrv
-_g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend  *self,
-                                                      GError               **error)
+_g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend *self,
+                                                      GError              **error)
 {
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
     g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_backend_get_extension (self), NULL);
@@ -510,8 +510,8 @@ _g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend  *sel
  * Returns: (transfer full): The list of history names
  */
 G_PASTE_VISIBLE GStrv
-g_paste_storage_backend_list_histories (GPasteStorageBackend  *self,
-                                         GError              **error)
+g_paste_storage_backend_list_histories (GPasteStorageBackend *self,
+                                        GError              **error)
 {
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);

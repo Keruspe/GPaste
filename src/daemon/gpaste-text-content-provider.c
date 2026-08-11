@@ -134,13 +134,13 @@ g_paste_text_content_provider_write_done (GObject      *source_object,
 }
 
 static void
-g_paste_text_content_provider_write_mime_type_async (GdkContentProvider  *provider,
-                                                     const gchar         *mime_type,
-                                                     GOutputStream       *stream,
-                                                     gint                 io_priority,
-                                                     GCancellable        *cancellable,
-                                                     GAsyncReadyCallback  callback,
-                                                     gpointer             user_data)
+g_paste_text_content_provider_write_mime_type_async (GdkContentProvider *provider,
+                                                     const gchar        *mime_type,
+                                                     GOutputStream      *stream,
+                                                     gint                io_priority,
+                                                     GCancellable       *cancellable,
+                                                     GAsyncReadyCallback callback,
+                                                     gpointer            user_data)
 {
     GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
     GTask *task = g_task_new (provider, cancellable, callback, user_data);

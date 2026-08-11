@@ -81,9 +81,8 @@ g_paste_ui_item_on_images_preview_changed (GPasteSettings *settings,
 
 static void
 g_paste_ui_item_set_editable (GPasteUiItem *self,
-                              gboolean              editable)
+                              gboolean      editable)
 {
-    
     self->editable = editable;
 
     gtk_widget_set_sensitive (self->edit, editable);
@@ -91,9 +90,8 @@ g_paste_ui_item_set_editable (GPasteUiItem *self,
 
 static void
 g_paste_ui_item_set_uploadable (GPasteUiItem *self,
-                                gboolean              uploadable)
+                                gboolean      uploadable)
 {
-    
     self->uploadable = uploadable;
 
     gtk_widget_set_sensitive (self->upload, uploadable);
@@ -101,7 +99,7 @@ g_paste_ui_item_set_uploadable (GPasteUiItem *self,
 
 static void
 g_paste_ui_item_set_text (GPasteUiItem *self,
-                          const gchar          *text)
+                          const gchar  *text)
 {
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
@@ -111,7 +109,7 @@ g_paste_ui_item_set_text (GPasteUiItem *self,
 
 static void
 g_paste_ui_item_set_text_bold (GPasteUiItem *self,
-                               const gchar          *text)
+                               const gchar  *text)
 {
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
@@ -133,8 +131,8 @@ action_set_uuid (gpointer data,
 
 static void
 g_paste_ui_item_apply_index_and_uuid (GPasteUiItem *self,
-                                      guint64               index,
-                                      const gchar          *uuid)
+                                      guint64       index,
+                                      const gchar  *uuid)
 {
     if (index == (guint64) -1 || index == (guint64) -2)
         gtk_label_set_text (self->index_label, "");
@@ -150,9 +148,8 @@ g_paste_ui_item_apply_index_and_uuid (GPasteUiItem *self,
 
 static void
 g_paste_ui_item_set_thumbnail (GPasteUiItem *self,
-                               GdkTexture           *texture)
+                               GdkTexture   *texture)
 {
-    
     gtk_picture_set_paintable (self->thumbnail, texture ? GDK_PAINTABLE (texture) : NULL);
     /* The cached hover preview is tied to the old paintable; drop it. */
     g_clear_object (&self->tooltip_preview);
@@ -242,7 +239,6 @@ upload_item_action (GPasteClient *client,
 {
     g_paste_client_upload (client, uuid, NULL, NULL);
 }
-
 
 /* Carried by every step of the fill chain. @self is owned: the widget's only
  * owner is the list item, so a row recycled or a window closed mid-flight would

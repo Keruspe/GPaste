@@ -59,7 +59,7 @@ struct _GPasteClipboardMeta
 static void g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT,
-                                                G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
+                                    G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
 
 static gboolean
 g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
@@ -100,7 +100,8 @@ typedef void (*GPasteClipboardMetaBytesCallback) (GPasteClipboardMeta *self,
                                                   GBytes              *bytes,
                                                   gpointer             user_data);
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardMeta             *self;
     GOutputStream                   *ostream;
     GPasteClipboardMetaBytesCallback callback;
@@ -246,7 +247,8 @@ g_paste_clipboard_meta_source_get_mimetypes (MetaSelectionSource *source)
     return g_list_reverse (ret);
 }
 
-typedef struct {
+typedef struct
+{
     GTask         *task;
     GOutputStream *ostream;
 } GPasteClipboardMetaSourceSerializeData;
@@ -321,8 +323,8 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
 
 static GInputStream *
 g_paste_clipboard_meta_source_read_finish (MetaSelectionSource *source,
-                                          GAsyncResult        *result,
-                                          GError             **error)
+                                           GAsyncResult        *result,
+                                           GError             **error)
 {
     g_return_val_if_fail (g_task_is_valid (result, source), NULL);
 
@@ -616,7 +618,8 @@ g_paste_clipboard_meta_is_empty (GPasteClipboardMeta *self)
 
 /* --- update --- */
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardMeta                  *self;
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;
@@ -827,7 +830,8 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                    data);
 }
 
-typedef struct {
+typedef struct
+{
     GPasteClipboardMetaUpdateData *data;
     GPasteSpecialAtom              atom;
 } GPasteClipboardMetaAtomCtx;

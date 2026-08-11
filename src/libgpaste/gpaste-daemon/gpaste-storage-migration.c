@@ -50,7 +50,6 @@ typedef struct
     gboolean                       passphrase_prompted;
     GPasteStorageRemember          remember_passphrase;
 #endif
-
 } MigrationData;
 
 /* Work out which backend the history currently lives in by looking at the files
@@ -188,8 +187,8 @@ known_passphrase_for (GPasteStorage   storage_kind,
  * wrong one is never written, and turning the switch off drops whatever was
  * remembered before. */
 static void
-remember_passphrase (GPasteStorageRemember  remember,
-                     const gchar           *cleartext)
+remember_passphrase (GPasteStorageRemember remember,
+                     const gchar          *cleartext)
 {
 #ifdef G_PASTE_ENABLE_LIBSECRET
     if (remember == G_PASTE_STORAGE_REMEMBER_YES)
@@ -223,9 +222,9 @@ storage_concern_return (GTask  *task,
  * every caller prints the message it gets, so leaving @error unset would turn
  * the diagnostic into a crash. */
 static gboolean
-storage_concern_finish (GAsyncResult  *result,
-                        gpointer       source_tag,
-                        GError       **error)
+storage_concern_finish (GAsyncResult *result,
+                        gpointer      source_tag,
+                        GError      **error)
 {
     if (!G_IS_TASK (result) || g_task_get_source_tag (G_TASK (result)) != source_tag)
     {
@@ -381,10 +380,10 @@ import_histories (GPasteSettings *settings,
  * bump included) treats the migration as done, so this is the last chance to say
  * that part of it was not. */
 static gboolean
-cleanup_histories (GPasteSettings  *settings,
-                   GPasteStorage    current,
-                   const gchar     *current_passphrase,
-                   GError         **error)
+cleanup_histories (GPasteSettings *settings,
+                   GPasteStorage   current,
+                   const gchar    *current_passphrase,
+                   GError        **error)
 {
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
     g_autoptr (GError) failure = NULL;
@@ -772,9 +771,9 @@ on_passphrase_set (GObject      *source,
  * process-wide one is about to be replaced by the destination's) and carry on
  * with the next step; on dismissal (no passphrase) ask again instead. */
 static void
-on_source_unlocked (gboolean  unlocked,
-                    GError   *error,
-                    gpointer  user_data)
+on_source_unlocked (gboolean unlocked,
+                    GError  *error,
+                    gpointer user_data)
 {
     MigrationData *self = user_data;
 
@@ -908,10 +907,10 @@ ask_migration (MigrationData *self)
  * Ask the user where GPaste should store the history, and act on the answer.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_migration_async (GPastePrompt        *prompt,
-                                 GPasteSettings      *settings,
-                                 GAsyncReadyCallback  callback,
-                                 gpointer             user_data)
+g_paste_storage_migration_async (GPastePrompt       *prompt,
+                                 GPasteSettings     *settings,
+                                 GAsyncReadyCallback callback,
+                                 gpointer            user_data)
 {
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
@@ -960,8 +959,8 @@ g_paste_storage_migration_async (GPastePrompt        *prompt,
  * Returns: %TRUE unless the prompt implementation failed outright
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_migration_finish (GAsyncResult  *result,
-                                  GError       **error)
+g_paste_storage_migration_finish (GAsyncResult *result,
+                                  GError      **error)
 {
     return storage_concern_finish (result, g_paste_storage_migration_async, error);
 }
@@ -996,9 +995,9 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
  * loads as unreadable, which the history already refuses to overwrite. So only
  * a prompt that failed outright is worth reporting. */
 static void
-on_decryption_settled (gboolean  unlocked G_GNUC_UNUSED,
-                       GError   *error,
-                       gpointer  user_data)
+on_decryption_settled (gboolean unlocked G_GNUC_UNUSED,
+                       GError  *error,
+                       gpointer user_data)
 {
     g_autoptr (GTask) task = user_data;
 
@@ -1016,10 +1015,10 @@ on_decryption_settled (gboolean  unlocked G_GNUC_UNUSED,
  * Unlock an already-encrypted history through a passphrase prompt.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_decryption_async (GPastePrompt        *prompt,
-                                  GPasteSettings      *settings,
-                                  GAsyncReadyCallback  callback,
-                                  gpointer             user_data)
+g_paste_storage_decryption_async (GPastePrompt       *prompt,
+                                  GPasteSettings     *settings,
+                                  GAsyncReadyCallback callback,
+                                  gpointer            user_data)
 {
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
@@ -1055,8 +1054,8 @@ g_paste_storage_decryption_async (GPastePrompt        *prompt,
  * Returns: %TRUE unless the prompt implementation failed outright
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_decryption_finish (GAsyncResult  *result,
-                                   GError       **error)
+g_paste_storage_decryption_finish (GAsyncResult *result,
+                                   GError      **error)
 {
     return storage_concern_finish (result, g_paste_storage_decryption_async, error);
 }
@@ -1125,9 +1124,9 @@ rekey_history (RekeyData   *self,
 }
 
 static gboolean
-rekey_histories (RekeyData    *self,
-                 const gchar  *passphrase,
-                 GError      **error)
+rekey_histories (RekeyData   *self,
+                 const gchar *passphrase,
+                 GError     **error)
 {
     const gchar *current = g_paste_passphrase_peek (self->current_passphrase);
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
@@ -1307,9 +1306,9 @@ rekey_prompt_new_passphrase (RekeyData *self)
 }
 
 static void
-on_rekey_source_unlocked (gboolean  unlocked,
-                          GError   *error,
-                          gpointer  user_data)
+on_rekey_source_unlocked (gboolean unlocked,
+                          GError  *error,
+                          gpointer user_data)
 {
     RekeyData *self = user_data;
 
@@ -1349,10 +1348,10 @@ on_rekey_source_unlocked (gboolean  unlocked,
  * the history is not encrypted, so there is no passphrase to change.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_rekey_async (GPastePrompt        *prompt,
-                             GPasteSettings      *settings,
-                             GAsyncReadyCallback  callback,
-                             gpointer             user_data)
+g_paste_storage_rekey_async (GPastePrompt       *prompt,
+                             GPasteSettings     *settings,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
 {
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
@@ -1417,8 +1416,8 @@ g_paste_storage_rekey_async (GPastePrompt        *prompt,
  *          implementation failed outright
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_rekey_finish (GAsyncResult  *result,
-                              GError       **error)
+g_paste_storage_rekey_finish (GAsyncResult *result,
+                              GError      **error)
 {
     return storage_concern_finish (result, g_paste_storage_rekey_async, error);
 }

@@ -10,7 +10,7 @@
  * secure memory in every build — including one without the encryption feature,
  * which cannot use it for anything but can still be handed one to carry. */
 
-G_DEFINE_BOXED_TYPE (GPastePassphrase, g_paste_passphrase,
+G_DEFINE_BOXED_TYPE (GPastePassphrase,        g_paste_passphrase,
                      g_paste_passphrase_copy, g_paste_passphrase_free)
 
 /**

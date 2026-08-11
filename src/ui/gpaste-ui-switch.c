@@ -38,7 +38,7 @@ typedef struct
 
 static void
 on_track_confirmed (gboolean confirmed,
-                    gpointer  user_data)
+                    gpointer user_data)
 {
     g_autofree SwitchTrackData *data = user_data;
     g_autoptr (GPasteClient) client = data->client;

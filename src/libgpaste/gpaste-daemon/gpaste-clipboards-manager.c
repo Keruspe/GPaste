@@ -6,7 +6,7 @@
 typedef struct
 {
     GPasteClipboardProvider *clipboard;
-    GSignalGroup    *signal_group;
+    GSignalGroup            *signal_group;
 } _Clipboard;
 
 struct _GPasteClipboardsManager
@@ -25,8 +25,8 @@ static void g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboar
 
 static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard,
-                                            GPasteItem      *item,
-                                            gpointer         user_data)
+                                            GPasteItem              *item,
+                                            gpointer                 user_data)
 {
     GPasteClipboardsManager *self = user_data;
     /* The update callback owns the item it is handed (transfer full); at
@@ -46,7 +46,7 @@ g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard,
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
-                                          GPasteClipboardProvider         *clipboard)
+                                          GPasteClipboardProvider *clipboard)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
     g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (clipboard));
@@ -96,10 +96,10 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 
 static void
 g_paste_clipboards_manager_notify_finish (GPasteClipboardsManager *self,
-                                          GPasteClipboardProvider                *clipboard,
-                                          GPasteItem                     *item,
-                                          const gchar                    *synchronized_text,
-                                          gboolean                        something_in_clipboard)
+                                          GPasteClipboardProvider *clipboard,
+                                          GPasteItem              *item,
+                                          const gchar             *synchronized_text,
+                                          gboolean                 something_in_clipboard)
 {
     GPasteHistory *history = self->history;
 
@@ -131,16 +131,16 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManager *self,
     }
 }
 
-
-typedef struct {
+typedef struct
+{
     GPasteClipboardsManager *self;
-    gboolean                        track;
+    gboolean                 track;
 } GPasteClipboardsManagerUpdateData;
 
 static void
 g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
-                                         GPasteItem      *item,
-                                         gpointer         user_data)
+                                         GPasteItem              *item,
+                                         gpointer                 user_data)
 {
     g_autofree GPasteClipboardsManagerUpdateData *data = user_data;
     GPasteClipboardsManager *self = data->self;
@@ -164,7 +164,7 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
 
 static void
 g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
-                                   gpointer         user_data)
+                                   gpointer                 user_data)
 {
     GPasteClipboardsManager *self = user_data;
 

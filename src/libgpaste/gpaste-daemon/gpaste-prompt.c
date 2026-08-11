@@ -109,11 +109,11 @@ g_paste_prompt_request_init (GPastePromptRequest *self G_GNUC_UNUSED)
 }
 
 static GPastePromptRequest *
-g_paste_prompt_request_new (GPastePrompt        *prompt,
-                            RequestKind          kind,
-                            gpointer             source_tag,
-                            GAsyncReadyCallback  callback,
-                            gpointer             user_data)
+g_paste_prompt_request_new (GPastePrompt       *prompt,
+                            RequestKind         kind,
+                            gpointer            source_tag,
+                            GAsyncReadyCallback callback,
+                            gpointer            user_data)
 {
     GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (g_object_new (G_PASTE_TYPE_PROMPT_REQUEST, NULL));
 
@@ -123,7 +123,6 @@ g_paste_prompt_request_new (GPastePrompt        *prompt,
 
     return self;
 }
-
 
 /* The source tag is set when the request is made, so it says which question was
  * asked — not which reply is being given. Only the kind can catch a backend
@@ -560,12 +559,12 @@ g_paste_prompt_migration_async (GPastePrompt        *self,
  *          which case the out parameters are left untouched
  */
 G_PASTE_VISIBLE gboolean
-g_paste_prompt_migration_finish (GPastePrompt   *self,
-                                 GAsyncResult   *result,
-                                 GPasteStorage  *chosen,
-                                 gboolean       *import,
-                                 gboolean       *cleanup,
-                                 GError        **error)
+g_paste_prompt_migration_finish (GPastePrompt  *self,
+                                 GAsyncResult  *result,
+                                 GPasteStorage *chosen,
+                                 gboolean      *import,
+                                 gboolean      *cleanup,
+                                 GError       **error)
 {
     g_return_val_if_fail (G_PASTE_IS_PROMPT (self), FALSE);
     g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
@@ -849,8 +848,8 @@ passphrase_rating (guint level)
  * Returns: the meter level, from 0 (nothing to say) to 4 (strong)
  */
 G_PASTE_VISIBLE guint
-g_paste_prompt_passphrase_strength (const gchar  *passphrase,
-                                    gchar       **hint)
+g_paste_prompt_passphrase_strength (const gchar *passphrase,
+                                    gchar      **hint)
 {
     g_return_val_if_fail (hint, 0);
 

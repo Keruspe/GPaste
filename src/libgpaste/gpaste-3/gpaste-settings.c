@@ -16,37 +16,37 @@ struct _GPasteSettings
     GSignalGroup *settings_signals;
     GSignalGroup *shell_settings_signals;
 
-    gboolean   close_on_select;
-    gboolean   open_centered;
-    guint64    element_size;
-    gboolean   empty_history_confirmation;
-    gboolean   experimental_meta_daemon;
-    gboolean   growing_lines;
-    gchar     *history_name;
-    gboolean   images_support;
-    gboolean   images_preview;
-    guint64    images_preview_size;
-    gchar     *launch_ui;
-    gchar     *make_password;
-    guint64    max_history_size;
-    guint64    max_memory_usage;
-    guint64    max_text_item_size;
-    guint64    min_text_item_size;
-    gchar     *pop;
-    gboolean   primary_to_history;
-    gboolean   rich_text_support;
-    gchar     *show_history;
+    gboolean      close_on_select;
+    gboolean      open_centered;
+    guint64       element_size;
+    gboolean      empty_history_confirmation;
+    gboolean      experimental_meta_daemon;
+    gboolean      growing_lines;
+    gchar        *history_name;
+    gboolean      images_support;
+    gboolean      images_preview;
+    guint64       images_preview_size;
+    gchar        *launch_ui;
+    gchar        *make_password;
+    guint64       max_history_size;
+    guint64       max_memory_usage;
+    guint64       max_text_item_size;
+    guint64       min_text_item_size;
+    gchar        *pop;
+    gboolean      primary_to_history;
+    gboolean      rich_text_support;
+    gchar        *show_history;
     GPasteStorage storage_backend;
-    guint64    storage_backend_revision;
-    gchar     *sync_clipboard_to_primary;
-    gchar     *sync_primary_to_clipboard;
-    gboolean   synchronize_clipboards;
-    gboolean   track_changes;
-    gboolean   track_extension_state;
-    gboolean   trim_items;
-    gchar     *upload;
+    guint64       storage_backend_revision;
+    gchar        *sync_clipboard_to_primary;
+    gchar        *sync_primary_to_clipboard;
+    gboolean      synchronize_clipboards;
+    gboolean      track_changes;
+    gboolean      track_extension_state;
+    gboolean      trim_items;
+    gchar        *upload;
 
-    gboolean   extension_enabled;
+    gboolean      extension_enabled;
 };
 
 G_PASTE_DEFINE_TYPE (Settings, settings, G_TYPE_OBJECT)
@@ -683,7 +683,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
             }
             if (found)
                 extensions[i] = extensions[i+1];
-        } 
+        }
     }
 
     self->extension_enabled = value;

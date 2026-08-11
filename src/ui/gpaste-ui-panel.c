@@ -175,8 +175,8 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
 
 static void
 g_paste_ui_panel_add_history (GPasteUiPanel *self,
-                              const gchar          *history,
-                              gboolean              select)
+                              const gchar   *history,
+                              gboolean       select)
 {
     GList *concurrent = history_find (self->histories, history);
     GPasteUiPanelHistory *h;
@@ -363,7 +363,7 @@ typedef struct
 
 static void
 on_delete_confirmed (gboolean confirmed,
-                     gpointer  user_data)
+                     gpointer user_data)
 {
     g_autofree DeleteHistoryData *data = user_data;
     g_autoptr (GPasteClient) client = data->client;

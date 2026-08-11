@@ -197,10 +197,10 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  */
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_keybinding_new (const gchar           *dconf_key,
-                         const gchar           *description,
-                         GPasteKeybindingGetter getter,
-                         GPasteKeybindingFunc   callback,
-                         gpointer               user_data)
+                        const gchar           *description,
+                        GPasteKeybindingGetter getter,
+                        GPasteKeybindingFunc   callback,
+                        gpointer               user_data)
 {
     g_return_val_if_fail (dconf_key, NULL);
     g_return_val_if_fail (getter, NULL);

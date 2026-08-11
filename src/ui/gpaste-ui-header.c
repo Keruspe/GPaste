@@ -37,11 +37,11 @@ header_data (AdwHeaderBar *self)
 /* A plain header GtkButton: shared icon/tooltip/valign setup plus a click
  * handler, so the toolbar's simple action buttons don't each need a subclass. */
 static GtkWidget *
-header_button_new (const gchar    *icon_name,
-                   const gchar    *tooltip,
-                   GCallback       clicked,
-                   gpointer        user_data,
-                   GClosureNotify  destroy)
+header_button_new (const gchar   *icon_name,
+                   const gchar   *tooltip,
+                   GCallback      clicked,
+                   gpointer       user_data,
+                   GClosureNotify destroy)
 {
     GtkWidget *button = gtk_button_new ();
 

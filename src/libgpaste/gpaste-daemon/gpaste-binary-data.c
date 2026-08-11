@@ -97,8 +97,8 @@ g_paste_binary_data_init (GPasteBinaryData *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteBinaryData *
-g_paste_binary_data_new (GPasteSpecialAtom  mime,
-                         GBytes            *bytes)
+g_paste_binary_data_new (GPasteSpecialAtom mime,
+                         GBytes           *bytes)
 {
     g_return_val_if_fail (bytes, NULL);
     g_return_val_if_fail (g_bytes_get_size (bytes) > 0, NULL);

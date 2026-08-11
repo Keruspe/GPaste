@@ -105,8 +105,8 @@ g_paste_sqlite_backend_exec (sqlite3     *db,
 /* Finish an open transaction: COMMIT when @success, ROLLBACK otherwise (also
  * rolling back when the COMMIT itself fails). Returns the effective success. */
 static gboolean
-g_paste_sqlite_backend_finish_transaction (sqlite3  *db,
-                                           gboolean  success)
+g_paste_sqlite_backend_finish_transaction (sqlite3 *db,
+                                           gboolean success)
 {
     if (!g_paste_sqlite_backend_exec (db, (success) ? "COMMIT;" : "ROLLBACK;") && success)
     {
@@ -234,12 +234,12 @@ g_paste_sqlite_backend_derive_key (const gchar  *passphrase,
  * Quietly returns FALSE when they are absent (fresh database, or no meta table
  * at all), leaving it to the caller to decide what that means. */
 static gboolean
-g_paste_sqlite_backend_load_crypto_params (sqlite3  *db,
-                                           guchar   *salt,
-                                           guint64  *opslimit,
-                                           guint64  *memlimit,
-                                           guchar  **check,
-                                           gsize    *check_length)
+g_paste_sqlite_backend_load_crypto_params (sqlite3 *db,
+                                           guchar  *salt,
+                                           guint64 *opslimit,
+                                           guint64 *memlimit,
+                                           guchar **check,
+                                           gsize   *check_length)
 {
     sqlite3_stmt *stmt = NULL;
 
@@ -1167,10 +1167,10 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
 }
 
 static gboolean
-g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
-                                          const gchar           *name,
-                                          GList                **history,
-                                          gsize                 *size)
+g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
+                                          const gchar          *name,
+                                          GList               **history,
+                                          gsize                *size)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
@@ -1560,9 +1560,9 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
 #endif /* G_PASTE_ENABLE_ENCRYPTION */
 
 static void
-g_paste_sqlite_backend_delete_history (GPasteStorageBackend  *self,
-                                       const gchar           *name,
-                                       GError               **error)
+g_paste_sqlite_backend_delete_history (GPasteStorageBackend *self,
+                                       const gchar          *name,
+                                       GError              **error)
 {
     const gchar *extension = g_paste_storage_backend_get_extension (self);
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, extension);
