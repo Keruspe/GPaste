@@ -8,17 +8,17 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-07 23:31+0200\n"
-"PO-Revision-Date: 2026-06-28 02:01+0000\n"
+"PO-Revision-Date: 2026-08-11 19:49+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
-">\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.7.dev0\n"
+"X-Generator: Weblate 2026.9.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -243,9 +243,8 @@ msgstr ""
 "Пустая строка здесь отключает эту функцию."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:169
-#, fuzzy
 msgid "Where the history is stored"
-msgstr "выводить историю с UUID"
+msgstr "Где хранится история"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:170
 msgid ""
@@ -257,7 +256,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:177
 msgid "Last processed storage backend revision"
-msgstr ""
+msgstr "Последняя обработанная версия бэкенда хранилища"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:178
 msgid ""
@@ -366,6 +365,8 @@ msgid ""
 "When disabled, the gnome-shell extension is a pure client and the standalone "
 "daemon is used instead"
 msgstr ""
+"При отключении расширение gnome-shell работает как чистый клиент, и вместо "
+"него используется автономный демон"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:9
 msgid "Marc-Antoine Perennou"
@@ -398,9 +399,8 @@ msgid "The settings UI"
 msgstr "Настройки интерфейса"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:51
-#, fuzzy
 msgid "This is a major release. Changes:"
-msgstr "Это обслуживающий выпуск. Изменения:"
+msgstr "Это крупный выпуск. Изменения:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:53
 msgid ""
@@ -431,12 +431,11 @@ msgid "Add a merge mode to combine several history items"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:58
-#, fuzzy
 msgid ""
 "Rewrite the GNOME Shell extension history as a scrollable, lazily-loaded list"
 msgstr ""
-"GNOME Shell extension модернизировано в соответствии с современными "
-"стандартами"
+"Переписана история в расширении GNOME Shell в виде постепенно загружаемого "
+"прокручиваемого списка"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:59
 msgid ""
@@ -470,7 +469,7 @@ msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
 msgid "Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10"
-msgstr ""
+msgstr "Для сборки требуются GLib 2.90, GTK 4.24 и libadwaita 1.10"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:72
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
@@ -1259,9 +1258,8 @@ msgid "pattern"
 msgstr ""
 
 #: src/client/gpaste-client.c:167
-#, fuzzy
 msgid "print the items of the history matching <pattern>"
-msgstr "выводить размер истории"
+msgstr "выводить элементы истории, соответствующие <pattern>"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:169
@@ -1421,9 +1419,8 @@ msgstr ""
 
 #. Translators: help for gpaste change-passphrase
 #: src/client/gpaste-client.c:215
-#, fuzzy
 msgid "change the passphrase of the encrypted history"
-msgstr "получить имя текущей истории"
+msgstr "изменить пароль зашифрованной истории"
 
 #. Translators: help for gpaste preferences
 #: src/client/gpaste-client.c:217
@@ -1528,14 +1525,14 @@ msgid "Successfully reexecuted the daemon\n"
 msgstr "Успешный перезапуск демона\n"
 
 #: src/client/gpaste-client.c:376
-#, fuzzy, c-format
+#, c-format
 msgid "Successfully triggered the storage migration\n"
-msgstr "Успешный перезапуск демона\n"
+msgstr "Миграция хранилища успешно запущена\n"
 
 #: src/client/gpaste-client.c:393
-#, fuzzy, c-format
+#, c-format
 msgid "Successfully triggered the passphrase change\n"
-msgstr "Успешный перезапуск демона\n"
+msgstr "Смена пароля прошла успешно\n"
 
 #: src/client/gpaste-client.c:534
 msgid "Cannot add non utf8 data as text."
@@ -1544,9 +1541,8 @@ msgstr "Невозможно добавить данные, отличные о�
 #. Reached only if both execs failed: keep this daemon running and resume
 #. * recording (g_paste_daemon_flush() stopped it above).
 #: src/daemon/gpaste-daemon.c:89
-#, fuzzy
 msgid "Failed to reexecute the daemon"
-msgstr "Успешный перезапуск демона\n"
+msgstr "Не удалось повторно запустить демона"
 
 #: src/daemon/gpaste-daemon.c:101
 msgid "Stop signal received, exiting"
@@ -1609,53 +1605,52 @@ msgid ""
 msgstr ""
 
 #: src/daemon/gpaste-prompt-adw.c:440 src/gnome-shell/prompt.js:43
-#, fuzzy
 msgid "Encrypted history"
-msgstr "Очистить историю"
+msgstr "Зашифрованная история"
 
 #: src/daemon/gpaste-prompt-adw.c:445 src/gnome-shell/prompt.js:87
 msgid "Set passphrase"
-msgstr ""
+msgstr "Установить парольную фразу"
 
 #: src/daemon/gpaste-prompt-adw.c:445 src/gnome-shell/prompt.js:87
 msgid "Unlock"
-msgstr ""
+msgstr "Разблокировать"
 
 #: src/daemon/gpaste-prompt-adw.c:459 src/gnome-shell/prompt.js:51
 msgid "Passphrase"
-msgstr ""
+msgstr "Парольная фраза"
 
 #: src/daemon/gpaste-prompt-adw.c:480 src/gnome-shell/prompt.js:52
 msgid "Confirm passphrase"
-msgstr ""
+msgstr "Подтвердить парольную фразу"
 
 #: src/daemon/gpaste-prompt-adw.c:489
 msgid "Passphrase strength"
-msgstr ""
+msgstr "Надежность парольной фразы"
 
 #. Built without libpwquality, so there is no rating to give. Say so
 #. * rather than leave the row out: someone choosing a passphrase should
 #. * know it is not being judged, instead of reading a silent absence as
 #. * approval.
 #: src/daemon/gpaste-prompt-adw.c:513
-#, fuzzy
 msgid "Not available in this build"
-msgstr "список доступных историй"
+msgstr "В этой сборке недоступно"
 
 #. Translators: shown when choosing a new passphrase for the encrypted history
 #: src/daemon/gpaste-prompt-adw.c:524 src/gnome-shell/prompt.js:46
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
+"Если вы забудете эту парольную фразу, вашу сохранённую историю восстановить "
+"будет невозможно."
 
 #. Translators: shown when unlocking the encrypted history at startup
 #: src/daemon/gpaste-prompt-adw.c:525 src/gnome-shell/prompt.js:48
-#, fuzzy
 msgid "Enter the passphrase to unlock your clipboard history."
-msgstr "получить имя текущей истории"
+msgstr "Введите парольную фразу, чтобы разблокировать историю буфера обмена."
 
 #: src/daemon/gpaste-prompt-adw.c:539 src/gnome-shell/prompt.js:71
 msgid "Remember this passphrase"
-msgstr ""
+msgstr "Запомнить эту парольную фразу"
 
 #: src/daemon/gpaste-prompt-adw.c:540
 msgid "Store it in the keyring so you are not asked again"
@@ -1711,23 +1706,23 @@ msgstr "Пароль"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:617
 msgid "Store the history in a file"
-msgstr ""
+msgstr "Сохранять историю в файл"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:619
 msgid "Store the history in an encrypted file"
-msgstr ""
+msgstr "Сохранять историю в зашифрованный файл"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:621
 msgid "Store the history in a database"
-msgstr ""
+msgstr "Сохранять историю в базу данных"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:623
 msgid "Store the history in an encrypted database"
-msgstr ""
+msgstr "Сохранять историю в зашифрованную базу данных"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:625
 msgid "Don't store anything"
-msgstr ""
+msgstr "Ничего не сохранять"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:801
 msgid "Weak"
@@ -1747,7 +1742,7 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:477
 msgid "Wrong passphrase, please try again"
-msgstr ""
+msgstr "Неверная парольная фраза, попробуйте ещё раз"
 
 #: src/libgpaste/gpaste-daemon/gpaste-uris-item.c:87
 msgid "[Files] "
@@ -1780,13 +1775,12 @@ msgid "Cancel"
 msgstr "Отмена"
 
 #: src/gnome-shell/prompt.js:139
-#, fuzzy
 msgid "Passphrase strength rating is not available in this build"
-msgstr "список доступных историй"
+msgstr "В этой сборке недоступна функция оценки надёжности парольной фразы"
 
 #: src/gnome-shell/searchItem.js:26
 msgid "Type to search…"
-msgstr ""
+msgstr "Начните печатать для поиска…"
 
 #: src/gnome-shell/stateSwitch.js:12
 msgid "Track changes"
@@ -1919,19 +1913,20 @@ msgstr "Максимальный размер элемента при отобр
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:130
 msgid "Storage"
-msgstr ""
+msgstr "Хранилище"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Choose how the history is stored on disk (plain or encrypted)."
 msgstr ""
+"Выбрать способ хранения истории на диске (в открытом или зашифрованном виде)."
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:134
 msgid "Change storage backend…"
-msgstr ""
+msgstr "Изменить бэкенд хранилища…"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:143
 msgid "Change passphrase…"
-msgstr ""
+msgstr "Изменить парольную фразу…"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:40
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:44
@@ -1948,7 +1943,7 @@ msgstr "Предпросмотр изображений"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:54
 msgid "Preview size"
-msgstr ""
+msgstr "Размер предпросмотра"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:40
 msgid "Keyboard shortcuts"
@@ -2001,11 +1996,12 @@ msgstr "Синхронизировать основное выделение с 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:215
 msgid "Press the new shortcut, Backspace to clear, Escape to cancel"
 msgstr ""
+"Нажмите новую комбинацию клавиш, Backspace для очистки, Escape для отмены"
 
 #. translators: shown in a shortcut row when no shortcut is bound
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:271
 msgid "Disabled"
-msgstr ""
+msgstr "Отключено"
 
 #. Translators: %s is the name of the history being emptied.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:128
