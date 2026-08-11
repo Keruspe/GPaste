@@ -50,19 +50,19 @@
       <description>
         <p>This is a major release. Changes:</p>
         <ul>
-          <li>Encrypt the history at rest with an optional encrypted file backend and a storage migration dialog</li>
-          <li>Add SQLite storage backends (plain and encrypted) that store the history in a per-history database</li>
-          <li>Migrate the history between storage backends on demand from the preferences or gpaste-client</li>
-          <li>Optionally run the daemon inside the GNOME Shell extension with a mutter-backed clipboard provider (experimental)</li>
+          <li>Encrypt the history at rest with an optional encrypted file backend, and remember its passphrase in the keyring</li>
+          <li>Add SQLite storage backends, plain and encrypted, that store the history in a per-history database and images as blobs</li>
+          <li>Choose where the history is stored and move it there, from a migration dialog, the preferences or gpaste-client</li>
+          <li>Change the passphrase of an encrypted history from the preferences or gpaste-client</li>
+          <li>Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter (experimental)</li>
+          <li>Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool</li>
           <li>Add a merge mode to combine several history items</li>
-          <li>Rewrite the GNOME Shell extension history as a scrollable, lazily-loaded list</li>
-          <li>Lazily load history on scroll in the graphical tool, dropping the max-displayed limit</li>
           <li>Enlarge image previews on hover via a custom tooltip</li>
           <li>Publish copied colours as text on the clipboard as well</li>
-          <li>Capture keyboard shortcuts in the preferences instead of typing them</li>
+          <li>Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu</li>
+          <li>Make the embeddable preferences widget adaptive, and remember the window geometry across sessions</li>
           <li>Raise the default retention, element and memory limits</li>
-          <li>Drop the internal X11 keybinder and the GNOME Shell keybinding client</li>
-          <li>Remember the window geometry across sessions</li>
+          <li>Drop the internal X11 keybinder and the GNOME Shell keybinding client, leaving keyboard shortcuts to the XDG portal</li>
           <li>Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10</li>
         </ul>
       </description>
