@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-11 00:09+0200\n"
-"PO-Revision-Date: 2025-07-19 18:02+0000\n"
+"PO-Revision-Date: 2026-08-15 08:51+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n % 10 != 1 || n % 100 == 11;\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 2026.9.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -39,9 +39,8 @@ msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr "Klippispjald;Stýring;Stillingar;Kjörstillingar;Uppsetning;"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "Clipboard Manager"
-msgstr "Rekja breytingar á klippispjaldi"
+msgstr "Klippispjaldstýring"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:7
@@ -49,9 +48,8 @@ msgid "Manage your clipboard history"
 msgstr "Sýslaðu með feril klippispjalds"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:16
-#, fuzzy
 msgid "Preferences"
-msgstr "Kjörstillingar GPaste"
+msgstr "Kjörstillingar"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
 #: src/gnome-shell/actions.js:37 src/ui/gpaste-ui-header.c:286
@@ -67,10 +65,12 @@ msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
+"Aukaefni þessa atriðis verður skipt út með \"…\" og nýjum línum með \" \" "
+"þegar það birtist í smáforritinu, settu 0 til að gera óvirkt."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:23
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Eru vaxandi línur greindar og þeim skipt út í ferilskráningu?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:24
 msgid ""
@@ -78,6 +78,9 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"Sjálfgefið mun það að velja fyrst \"Hér er\" og síðan \"Hér er dæmi\" búa "
+"til tvær færslur í vinnsluferlinum. Þegar þessi eiginleiki er virkjaður, "
+"verður fyrri færslunni skipt út fyrir þá seinni."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:32
 msgid "The name of the current history"
@@ -97,21 +100,23 @@ msgstr "Sjálfgefið er einungis texti vistaður"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:48
 msgid "Show image previews in the history?"
-msgstr ""
+msgstr "Birta forskoðun mynda í vinnsluferli?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "By default, we show previews of images in the history"
-msgstr ""
+msgstr "Sjálfgefið birtist forskoðun mynda í vinnsluferlinu"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Size of image previews in pixels"
-msgstr ""
+msgstr "Breidd forskoðunar mynda í mynddílum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:58
 msgid ""
 "Size of the inline image thumbnail in the history; the larger detail preview "
 "is shown on hover. Default size is 50 pixels."
 msgstr ""
+"Stærð innfelldrar smámyndar í vinnsluferlinum; stærri forskoðun birtist við "
+"yfirsvif bendils. Sjálfgefin stærð er 50 mynddílar."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:65
 msgid "Do we close the UI after selecting an item?"
@@ -138,10 +143,12 @@ msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið er það gert með því að ýta á ctrl + alt + g (\"<Ctrl><Alt>G\") "
+"Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:90
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
+msgstr "Flýtilyklar til að merkja virka atriðið sem lykilorð"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:91
 msgid ""
@@ -149,6 +156,8 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
+"Sjálfgefið er virkt atriði merkt sem lykilorð með því að ýta á ctrl + alt + "
+"s (\"<Ctrl><Alt>S\"). Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:100
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:80
@@ -174,7 +183,7 @@ msgstr "Hámarksstærð textaatriða"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:119
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
+msgstr "Hámarksstærð textaatriða. Allt utan þessara marka er hunsað."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:127
 msgid "Min text item size"
@@ -182,17 +191,19 @@ msgstr "Lágmarksstærð textaatriða"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:128
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
+msgstr "Lágmarksstærð textaatriða. Allt utan þessara marka er hunsað."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:135
 msgid "The keyboard shortcut to delete the first element in history"
-msgstr ""
+msgstr "Flýtilyklar til að eyða fyrstu einingunni í ferlinum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:136
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið er það gert með því að ýta á ctrl + alt + v (\"<Ctrl><Alt>V\") "
+"Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:144
 msgid "Does the primary selection affects history?"
@@ -201,12 +212,15 @@ msgstr "Hefur aðalval (primary - miðjuhnappur) áhrif á feril?"
 #: data/gsettings/org.gnome.GPaste.gschema.xml:145
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr ""
+"Sjálfgefið hefur einungis klippispjaldið (ctrl+c) áhrif á vinnsluferilinn."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:152
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
+"Eru vistaðar allar útgáfur valinna atriða með sniðnum texta (t.d. html) eða "
+"bara útgáfan með hreinum texta?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:153
 msgid "By default, we're saving all"
@@ -221,11 +235,12 @@ msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
+"Sjálfgefið birtist valmyndin með því að ýta á ctrl + alt + h (\"<Ctrl><Alt>"
+"H\"). Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:169
-#, fuzzy
 msgid "Where the history is stored"
-msgstr "birta ferilinn með UUID-auðkennum"
+msgstr "Þar sem ferilinn er geymdur"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:170
 msgid ""
@@ -257,6 +272,8 @@ msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið samstillist það með því að ýta á ctrl + alt + o (\"<Ctrl><Alt>P\")"
+". Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:194
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
@@ -269,6 +286,8 @@ msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið samstillist það með því að ýta á ctrl + alt + p (\"<Ctrl><Alt>P\")"
+". Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:203
 msgid "Are the primary selection and the clipboard synchronized?"
@@ -302,25 +321,31 @@ msgstr "Sjálfgefið helst staða vaktarans óbreytt"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:227
 msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
+msgstr "Eru textaatriði stytt áður en þeim er bætt í ferilskrá?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:228
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
 msgstr ""
+"Stytting þýðir að öll bil á undan og eftir eru fjarlægð. Sjálfgefið látum "
+"við þau halda sér."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:236
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
+"Flýtilyklar til að senda fyrsta atriði í ferli inn á úrklippuþjónustu "
+"(pastebin)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:237
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið er það gert með því að ýta á ctrl + alt + u (\"<Ctrl><Alt>U\"). "
+"Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:245
 msgid "Do we prompt for confirmation when emptying a history?"
@@ -351,12 +376,16 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste er kerfi til að sýsla með feril klippispjaldsins og fylgjast með og "
+"nota áður afrituð atriði með aðferðum sem auðvelt er að sérsníða."
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:20
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste gefur kost á myndrænu verkfæri til að sýsla með hlutina á einfaldan "
+"hátt."
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:27
 msgid "The main UI"
@@ -369,9 +398,8 @@ msgid "The settings UI"
 msgstr "Stillingaviðmótið"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:51
-#, fuzzy
 msgid "This is a major release. Changes:"
-msgstr "Þetta er viðhaldsuppfærsla. Helstu breytingar:"
+msgstr "Þetta er mikilvæg uppfærsla. Helstu breytingar:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:53
 msgid ""
@@ -680,10 +708,11 @@ msgid "Bump the library soversions to reflect the API/ABI changes since 45.8"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:158
-#, fuzzy
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
-msgstr "Þetta er viðhaldsuppfærsla. Helstu breytingar:"
+msgstr ""
+"Þetta er mikilvæg uppfærsla sem yfirfærir GPaste í GTK 4 og libadwaita. "
+"Helstu breytingar:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:160
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
@@ -841,19 +870,16 @@ msgid "GNOME Shell extension improvements"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:258
-#, fuzzy
 msgid "GLib >= 2.76 is now required"
-msgstr "gcr 4 er núna nauðsynlegt"
+msgstr "GLib >= 2.76 er núna nauðsynlegt"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:267
-#, fuzzy
 msgid "Support for gnome 50"
-msgstr "Stuðningur við GNOME 48"
+msgstr "Stuðningur við GNOME 50"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:268
-#, fuzzy
 msgid "Support for gnome 49"
-msgstr "Stuðningur við GNOME 48"
+msgstr "Stuðningur við GNOME 49"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
 msgid "Support for gnome 48"
@@ -1063,6 +1089,8 @@ msgstr "Virkja gnome-shell skeljarviðbótina"
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:598
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
+"Gera stuðning við myndir sjálfgefið óvirkan (er hægt að virkja aftur í "
+"kjörstillingum)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:599
 msgid "Search now includes passwords (using their names)"
@@ -1141,14 +1169,14 @@ msgid "Successfully reexecuted the daemon\n"
 msgstr "Tókst að endurkeyra vaktarann\n"
 
 #: src/client/gpaste-client.c:265
-#, fuzzy, c-format
+#, c-format
 msgid "Successfully triggered the storage migration\n"
-msgstr "Tókst að endurkeyra vaktarann\n"
+msgstr "Tókst að setja í gang yfirfærslu á geymslu\n"
 
 #: src/client/gpaste-client.c:282
-#, fuzzy, c-format
+#, c-format
 msgid "Successfully triggered the passphrase change\n"
-msgstr "Tókst að endurkeyra vaktarann\n"
+msgstr "Tókst að setja í gang breytingu á aðgangsorðum\n"
 
 #: src/client/gpaste-client.c:423
 msgid "Cannot add non utf8 data as text."
@@ -1163,9 +1191,8 @@ msgid "print the size of the history"
 msgstr "birta stærð ferilsins"
 
 #: src/client/gpaste-client.c:622
-#, fuzzy
 msgid "print the items of the history matching <pattern>"
-msgstr "birta stærð ferilsins"
+msgstr "birta þau atriði ferilsins sem samsvara <pattern>"
 
 #: src/client/gpaste-client.c:623
 msgid "get the name of the current history"
@@ -1255,12 +1282,11 @@ msgstr "endurkeyra vaktarann (eftir uppfærslu...)"
 
 #: src/client/gpaste-client.c:643
 msgid "migrate the history to a different storage backend"
-msgstr ""
+msgstr "yfirfæra ferilinn á annan geymslubakenda"
 
 #: src/client/gpaste-client.c:644
-#, fuzzy
 msgid "change the passphrase of the encrypted history"
-msgstr "sækja heiti fyrirliggjandi ferlis"
+msgstr "Breyta aðgangsorðum á dulritaða ferlinum"
 
 #: src/client/gpaste-client.c:645
 msgid "launch the configuration tool"
@@ -1368,9 +1394,8 @@ msgstr "bæta uppgefnum aðgreini milli allra atriða við sameiningu"
 #. Reached only if both execs failed: keep this daemon running and resume
 #. * recording (g_paste_daemon_flush() stopped it above).
 #: src/daemon/gpaste-daemon.c:98
-#, fuzzy
 msgid "Failed to reexecute the daemon"
-msgstr "Tókst að endurkeyra vaktarann\n"
+msgstr "Tókst að endurkeyra vaktarann"
 
 #: src/daemon/gpaste-daemon.c:110
 msgid "Stop signal received, exiting"
@@ -1419,7 +1444,7 @@ msgstr "Tæma feril"
 
 #: src/gnome-shell/searchItem.js:26
 msgid "Type to search…"
-msgstr ""
+msgstr "Skrifaðu til að leita…"
 
 #: src/gnome-shell/stateSwitch.js:12
 msgid "Track changes"
@@ -1450,16 +1475,15 @@ msgstr "Ræsa myndræna verkfærið"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:30
 msgid "Launch UI"
-msgstr ""
+msgstr "Ræsa viðmótið"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:31
 msgid "Display the history"
 msgstr "Birta ferilinn"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:31
-#, fuzzy
 msgid "Show History"
-msgstr "Aðgangur að ferli"
+msgstr "Sýna feril"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:32
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
@@ -1472,9 +1496,8 @@ msgid "Mark the active item as being a password"
 msgstr "Merkja virka atriðið sem lykilorð"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:32
-#, fuzzy
 msgid "Convert to Password"
-msgstr "endurnefna lykilorðið"
+msgstr "Umbreyta í lykilorð"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
 msgid "Upload the active item to a pastebin service"
@@ -1482,16 +1505,15 @@ msgstr "Senda virkt atriði inn á úrklippuþjónustu (pastebin)"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:33
 msgid "Upload to Pastebin"
-msgstr ""
+msgstr "Senda inn á Pastebin"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:34
 msgid "Delete the active item from history"
 msgstr "Eyða virka atriðinu úr ferlinum"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:34
-#, fuzzy
 msgid "Pop from History"
-msgstr "Aðgangur að ferli"
+msgstr "Taka úr ferli"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
@@ -1504,22 +1526,20 @@ msgid "Sync the clipboard to the primary selection"
 msgstr "Samstilla klippispjaldið við aðalval (primary - miðjuhnappur)"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
-#, fuzzy
 msgid "Sync Clipboard to Primary"
-msgstr "Samstilla klippispjaldið við aðalval (primary - miðjuhnappur)"
+msgstr "Samstilla klippispjald við aðalval (primary - miðjuhnappur)"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
 msgid "Sync the primary selection to the clipboard"
 msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjaldið"
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
-#, fuzzy
 msgid "Sync Primary to Clipboard"
-msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjaldið"
+msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjald"
 
 #: src/libgpaste/gpaste-daemon/gpaste-color-item.c:59
 msgid "[Color]"
-msgstr ""
+msgstr "[Litur]"
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:182
 msgid "Could not create history dir"
@@ -1543,83 +1563,81 @@ msgstr "Lykilorð"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:640
 msgid "Store the history in a file"
-msgstr ""
+msgstr "Geyma ferilinn í skrá"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:642
 msgid "Store the history in an encrypted file"
-msgstr ""
+msgstr "Geyma ferilinn í dulritaðri skrá"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:644
-#, fuzzy
 msgid "Store the history in a database"
-msgstr "birta ferilinn með UUID-auðkennum"
+msgstr "Geyma ferilinn í gagnagrunni"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:646
 msgid "Store the history in an encrypted database"
-msgstr ""
+msgstr "Geyma ferilinn í dulrituðum gagnagrunni"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:648
 msgid "Don't store anything"
-msgstr ""
+msgstr "Ekki geyma neitt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:824
 msgid "Weak"
-msgstr ""
+msgstr "Veikt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:826
 msgid "Fair"
-msgstr ""
+msgstr "Þokkalegt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:828
 msgid "Good"
-msgstr ""
+msgstr "Gott"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:830
 msgid "Strong"
-msgstr ""
+msgstr "Sterkt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
-#, fuzzy
 msgid "Encrypted history"
-msgstr "Tæma feril"
+msgstr "Dulritaður ferill"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
-#, fuzzy
 msgid "Enter the passphrase to unlock your clipboard history."
-msgstr "sækja heiti fyrirliggjandi ferlis"
+msgstr "Settu inn aðgangsorð til að aflæsa ferli klippispjalds."
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
+"Ef þú gleymir þessu aðgangsorðum, er ekki hægt að endurheimta geymda "
+"ferilinn þinn."
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
 msgid "Unlock"
-msgstr ""
+msgstr "Aflæsa"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
 msgid "Set passphrase"
-msgstr ""
+msgstr "Stilla aðgangsorð"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
 msgid "Passphrase"
-msgstr ""
+msgstr "Aðgangsorð"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
 msgid "Confirm passphrase"
-msgstr ""
+msgstr "Staðfestu aðgangsorð"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
 msgid "Passphrase strength"
-msgstr ""
+msgstr "Styrkur aðgangsorða"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
-#, fuzzy
 msgid "Passphrase strength rating is not available in this build"
-msgstr "birta tiltæka ferla"
+msgstr "Þessi uppsetning sýnir ekki styrk aðgangsorða"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
 msgid "Remember this passphrase"
-msgstr ""
+msgstr "Muna þessi aðgangsorð"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:989
 msgid "Store it in the keyring so you are not asked again"
@@ -1627,7 +1645,7 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
 msgid "Storage migration"
-msgstr ""
+msgstr "Yfirfærsla geymslurýmis"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
 msgid ""
@@ -1637,23 +1655,23 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:995
 msgid "Apply"
-msgstr ""
+msgstr "Virkja"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:997
 msgid "Storage backend"
-msgstr ""
+msgstr "Geymslubakendi"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:999
 msgid "Import existing data"
-msgstr ""
+msgstr "Flytja inn fyrirliggjandi gögn"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1001
 msgid "Copy the current history into the new backend"
-msgstr ""
+msgstr "Afrita fyrirliggjandi feril inn í nýja bakendann"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1003
 msgid "Delete old data afterwards"
-msgstr ""
+msgstr "Eyða eldri gögnum eftirá"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1005
 msgid "Remove the previous on-disk history once done"
@@ -1661,15 +1679,16 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1007
 msgid "The old data will be deleted without being imported first"
-msgstr ""
+msgstr "Eldri gögnum verður eytt án þess að flytja þau fyrst út"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1009
 msgid "The passphrase was not changed"
-msgstr ""
+msgstr "Aðgangsorðunum var ekki breytt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1011
 msgid "Your history is still encrypted with the passphrase it had before."
 msgstr ""
+"Ferillinn þinn er enn dulritaður með aðgangsorðunum sem hann var með áður."
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1013
 msgid ""
@@ -1680,17 +1699,19 @@ msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1015
 msgid "The old data was not deleted"
-msgstr ""
+msgstr "Eldri gögnum var ekki eytt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1017
 msgid ""
 "The clipboard history GPaste was told to delete after the migration is still "
 "on disk."
 msgstr ""
+"Ferilskrá klippispjalds sem GPaste var skipað að eyða eftir yfirfærslu er "
+"enn til staðar á diski."
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1019
 msgid "Close"
-msgstr ""
+msgstr "Loka"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1021
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
@@ -1701,7 +1722,7 @@ msgstr "Hætta við"
 
 #: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:661
 msgid "Wrong passphrase, please try again"
-msgstr ""
+msgstr "Röng aðgangsorð, reyndu aftur"
 
 #: src/libgpaste/gpaste-daemon/gpaste-uris-item.c:74
 msgid "[Files] "
@@ -1742,6 +1763,8 @@ msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
 msgstr ""
+"Þegar þetta er virkt, ræsir eða stöðvar vaktarinn sjálfkrafa vöktun á "
+"breytingum á klippispjaldinu til samræmis við stöðu GNOME Shell viðaukans"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:61
 msgid "Use the experimental in-shell daemon"
@@ -1778,13 +1801,15 @@ msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
 msgstr ""
+"Þegar þetta er virkt; ef ný færsla á klippispjaldi hefst með því sama og sú "
+"á undan, þá er fyrri færslunni skipt út í stað þess að útbúa nýja"
 
 #. A plain button that resets the key directly, like the suffix button does;
 #. * no GAction, so there is no action-muxer lookup to get wrong. Disabled
 #. * while the key is already at its default.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c:63
 msgid "Reset to default"
-msgstr ""
+msgstr "Frumstilla á sjálfgefið"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:74
 msgid "History settings"
@@ -1816,25 +1841,24 @@ msgstr "Hámarksstærð einingar við birtingu"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:112
 msgid "Storage"
-msgstr ""
+msgstr "Geymsla"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:114
 msgid "Choose how the history is stored on disk (plain or encrypted)."
-msgstr ""
+msgstr "Veldu hvernig ferillinn er geymdur (hreinn eða dulritaður)."
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:116
 msgid "Change storage backend…"
-msgstr ""
+msgstr "Skipta um geymslubakenda…"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 msgid "Change passphrase…"
-msgstr ""
+msgstr "Breyta aðgangsorðum…"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:22
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:26
-#, fuzzy
 msgid "Images settings"
-msgstr "Stillingaviðmótið"
+msgstr "Stillingar mynda"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:28
 msgid "Images support"
@@ -1842,11 +1866,11 @@ msgstr "Stuðningur við myndir"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:32
 msgid "Image previews"
-msgstr ""
+msgstr "Forskoðun mynda"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:36
 msgid "Preview size"
-msgstr ""
+msgstr "Stærð forskoðunar"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:24
 msgid "Keyboard shortcuts"
@@ -1856,17 +1880,19 @@ msgstr "Flýtileiðir á lyklaborði"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:203
 msgid "Press the new shortcut, Backspace to clear, Escape to cancel"
 msgstr ""
+"Ýttu á nýju flýtilyklasamsetninguna, Backspace til að hreinsa, Escape til að "
+"hætta við"
 
 #. translators: shown in a shortcut row when no shortcut is bound
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:257
 msgid "Disabled"
-msgstr ""
+msgstr "Óvirkt"
 
 #. Translators: %s is the name of the history being emptied.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:132
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to empty \"%s\"?"
-msgstr "Viltu örugglega tæma ferilinn?"
+msgstr "Viltu örugglega tæma \"%s\"?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:133
 #: src/ui/gpaste-ui-history.c:272 src/ui/gpaste-ui-history.c:901
@@ -1890,8 +1916,8 @@ msgstr "Viltu í alvörunni endurræsa vaktarann?"
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u valið"
+msgstr[1] "%u valin"
 
 #: src/ui/gpaste-ui-header.c:272
 msgid "GPaste Settings"
@@ -1907,12 +1933,11 @@ msgstr "Endurræsa vaktarann"
 
 #: src/ui/gpaste-ui-header.c:292
 msgid "Select items to merge"
-msgstr ""
+msgstr "Veldu atriði til að sameina"
 
 #: src/ui/gpaste-ui-history.c:425
-#, fuzzy
 msgid "No Results"
-msgstr "(Engar niðurstöður)"
+msgstr "Engar niðurstöður"
 
 #: src/ui/gpaste-ui-item.c:616
 msgid "Upload"
@@ -1925,11 +1950,11 @@ msgstr "Eyða"
 
 #: src/ui/gpaste-ui-new-item.c:51
 msgid "Add new item"
-msgstr ""
+msgstr "Bæta við nýju atriði"
 
 #: src/ui/gpaste-ui-new-item.c:82
 msgid "New item"
-msgstr ""
+msgstr "Nýtt atriði"
 
 #: src/ui/gpaste-ui-panel.c:343
 msgid "Under which name do you want to backup this history?"
@@ -1941,14 +1966,13 @@ msgstr "Öryggisafrit"
 
 #. Translators: %s is the name of the history being deleted.
 #: src/ui/gpaste-ui-panel.c:393
-#, fuzzy, c-format
+#, c-format
 msgid "Are you sure you want to delete \"%s\"?"
-msgstr "Ertu viss um að þú viljir eyða þessum ferli?"
+msgstr "Ertu viss um að þú viljir eyða \"%s\"?"
 
 #: src/ui/gpaste-ui-panel.c:470
-#, fuzzy
 msgid "Switch to history"
-msgstr "skipta í annan feril"
+msgstr "Skipta í feril"
 
 #: src/ui/gpaste-ui-panel.c:477
 msgid "Switch to"
@@ -1965,53 +1989,51 @@ msgstr "Viltu virkilega hætta að rekja breytingar á klippispjaldi?"
 #. translators: separators inserted between the merged items
 #: src/ui/gpaste-ui-window.c:406
 msgid "New line"
-msgstr ""
+msgstr "Ný lína"
 
 #: src/ui/gpaste-ui-window.c:407
 msgid "Space"
-msgstr ""
+msgstr "Bil"
 
 #: src/ui/gpaste-ui-window.c:408
 msgid "Comma"
-msgstr ""
+msgstr "Komma"
 
 #: src/ui/gpaste-ui-window.c:409
 msgid "Tabulation"
-msgstr ""
+msgstr "Dálklyklar"
 
 #: src/ui/gpaste-ui-window.c:417
 msgid "Custom separator"
-msgstr ""
+msgstr "Sérsniðinn aðgreinir"
 
 #: src/ui/gpaste-ui-window.c:422
 msgid "Merge with this separator"
-msgstr ""
+msgstr "Sameina við þennan aðgreini"
 
 #: src/ui/gpaste-ui-window.c:433
 msgid "Merge"
-msgstr ""
+msgstr "Sameina"
 
 #: src/ui/gpaste-ui-window.c:485
 msgid "Quit"
-msgstr ""
+msgstr "Hætta"
 
 #: src/ui/gpaste-ui-window.c:546 src/ui/gpaste-ui-window.c:547
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Ekki tókst að tengjast GPaste-vaktaranum"
 
 #: src/ui/gpaste-ui-window.c:588
-#, fuzzy
 msgid "Histories"
-msgstr "Aðgangur að ferli"
+msgstr "Ferlar"
 
 #: src/ui/gpaste-ui-window.c:589
-#, fuzzy
 msgid "History"
-msgstr "Aðgangur að ferli"
+msgstr "Ferill"
 
 #: src/ui/gpaste-ui.c:47
 msgid "Clipboard management system"
-msgstr ""
+msgstr "Klippispjaldsstjórnunarkerfi"
 
 #~ msgid "name"
 #~ msgstr "heiti"
