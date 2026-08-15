@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-11 00:09+0200\n"
-"PO-Revision-Date: 2026-08-15 08:51+0000\n"
+"PO-Revision-Date: 2026-08-16 14:51+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -863,11 +863,11 @@ msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:256
 msgid "Daemon improvements"
-msgstr ""
+msgstr "Endurbætur á vaktara (daemon)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:257
 msgid "GNOME Shell extension improvements"
-msgstr ""
+msgstr "Endurbætur á GNOME Shell Extension skeljarviðbót"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:258
 msgid "GLib >= 2.76 is now required"
@@ -1403,7 +1403,7 @@ msgstr "Tók við stopp-merki, hætti núna"
 
 #: src/daemon/gpaste-daemon.c:295
 msgid "Could not export our objects on the session bus, exiting"
-msgstr ""
+msgstr "Gat ekki flutt út hlutina okkar á seturásinni, hættir"
 
 #. A takeover (typically the gnome-shell extension, or `gpaste-daemon
 #. * --replace`): flush the history and release the lock so the successor
@@ -1411,13 +1411,13 @@ msgstr ""
 #. * unit does not land in the failed state.
 #: src/daemon/gpaste-daemon.c:315
 msgid "Replaced by another GPaste daemon, exiting"
-msgstr ""
+msgstr "Skipt út með öðrum GPaste-vaktara, hættir"
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
 #: src/daemon/gpaste-daemon.c:323
 msgid "Could not acquire DBus name. Is another GPaste daemon already running?"
-msgstr ""
+msgstr "Gat ekki fengið DBus-nafn. Er annar GPaste-vaktari þegar í gangi?"
 
 #: src/gnome-shell/actions.js:32
 msgid "Graphical tool"
@@ -1641,7 +1641,7 @@ msgstr "Muna þessi aðgangsorð"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:989
 msgid "Store it in the keyring so you are not asked again"
-msgstr ""
+msgstr "Geyma það í lyklastjóranum svo ekki verði spurt aftur"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
 msgid "Storage migration"
@@ -1652,6 +1652,8 @@ msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
 "disk unless you pick a storing backend here."
 msgstr ""
+"Veldu hvar GPaste ætti að geyma klippispjaldsferilinn þinn. Ekkert verður "
+"haft á diski nema þú veljir geymslubakenda hér."
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:995
 msgid "Apply"
@@ -1675,7 +1677,7 @@ msgstr "Eyða eldri gögnum eftirá"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1005
 msgid "Remove the previous on-disk history once done"
-msgstr ""
+msgstr "Fjarlægja fyrri feril af diski um leið og þessu er lokið"
 
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1007
 msgid "The old data will be deleted without being imported first"
@@ -1768,7 +1770,7 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:61
 msgid "Use the experimental in-shell daemon"
-msgstr ""
+msgstr "Nota innan-skeljar-vaktara (in-shell daemon) á tilraunastigi"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:65
 msgid ""
