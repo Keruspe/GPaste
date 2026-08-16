@@ -3,7 +3,7 @@ NEW in 51.0 (UNRELEASED)
 
 - Encrypt the history at rest: an optional encrypted file backend (libsodium secretstream) keeps the history, the images it references and its password entries unreadable without a passphrase, which libsecret can remember for you
 - Add SQLite storage backends, plain and encrypted, that persist the history incrementally in a per-history database and keep images as blobs rather than as files on disk
-- Choose where the history is stored, and move it there: a migration dialog on upgrade, or on demand from the preferences and "gpaste-client migrate", with the daemon flushing, migrating and reloading the backend itself rather than racing whoever asked
+- Choose where the history is stored, and move it there: a migration dialog on upgrade, or on demand from the preferences and "gpaste-client migrate", with the daemon flushing, migrating and reloading the backend itself rather than racing whoever asked -- and a "Keep as is" button for those who want none of it, which changes nothing and does not ask again, where closing the window asks once more on the next start
 - Change the passphrase of an encrypted history from the preferences or with "gpaste-client change-passphrase"
 - Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter rather than as an X11 client (experimental and opt-in, with a clean bus-name handover to and from the standalone daemon)
 - Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool: they fill the window at runtime and load more as you scroll, so max-displayed-history-size is gone

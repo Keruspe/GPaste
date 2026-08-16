@@ -32,6 +32,7 @@ typedef struct
     GPastePromptRequest *request;
 
     GtkWindow           *window;
+    GtkWidget           *apply;
     AdwComboRow         *backend_row;
     AdwSwitchRow        *import_row;
     AdwSwitchRow        *cleanup_row;
@@ -95,12 +96,35 @@ index_for_backend (MigrationDialog *self,
     return 0;
 }
 
+/* Whether the backend in use is one this build can construct, hence one the
+ * combo lists. It is not, for a history stored by a flavour built out of this
+ * copy of GPaste (an .xmls or a .db opened by a build without encryption or
+ * sqlite): the dialog then has nothing to preselect and nothing to keep, and
+ * says so by offering neither. */
+static gboolean
+current_is_offered (MigrationDialog *self)
+{
+    for (guint i = 0; i < self->n_backends; ++i)
+    {
+        if (self->backends[i] == self->current)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static void
 update_state (MigrationDialog *self)
 {
-    GPasteStorage chosen = backend_for_index (self, adw_combo_row_get_selected (self->backend_row));
-    gboolean backend_changes = g_paste_prompt_backend_changes (self->current, chosen);
-    gboolean import_possible = g_paste_prompt_can_import (self->current, chosen);
+    guint selected = adw_combo_row_get_selected (self->backend_row);
+    gboolean chosen_anything = (selected < self->n_backends);
+    GPasteStorage chosen = backend_for_index (self, selected);
+    gboolean backend_changes = chosen_anything && g_paste_prompt_backend_changes (self->current, chosen);
+    gboolean import_possible = chosen_anything && g_paste_prompt_can_import (self->current, chosen);
+
+    /* Nothing picked yet, which only the no-preselection case above can mean:
+     * there is no answer to apply until the user names a backend. */
+    gtk_widget_set_sensitive (self->apply, chosen_anything);
 
     gtk_widget_set_sensitive (GTK_WIDGET (self->import_row), import_possible);
     if (!import_possible)
@@ -164,6 +188,22 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
     gtk_window_destroy (self->window);
 }
 
+/* "Nothing changes, and stop asking": the backend in use, no import, no
+ * cleanup. A reply rather than the dismissal it sits next to, which is the whole
+ * point -- a dismissal leaves the revision alone and the dialog comes back on
+ * the next start. Deliberately answers with the *current* backend rather than
+ * whatever the combo is showing: this button undoes the fiddling too. */
+static void
+on_keep (GtkButton *button G_GNUC_UNUSED,
+         gpointer   user_data)
+{
+    MigrationDialog *self = user_data;
+
+    g_paste_prompt_request_reply_migration (self->request, self->current, FALSE, FALSE);
+
+    gtk_window_destroy (self->window);
+}
+
 /* Escape closes the dialog like its close button; the teardown above is what
  * turns that into a dismissal. */
 static gboolean
@@ -200,12 +240,28 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     gtk_window_set_default_size (self->window, 480, -1);
     gtk_window_set_modal (self->window, TRUE);
 
-    GtkWidget *apply = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT));
+    GtkWidget *apply = self->apply = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT));
 
     gtk_widget_add_css_class (apply, "suggested-action");
     g_signal_connect (apply, "clicked", G_CALLBACK (on_apply), self);
 
     GtkWidget *header = adw_header_bar_new ();
+
+    /* Only when there is something to keep: the button answers with the backend
+     * in use, and one this build cannot construct is not an answer the reply
+     * would accept -- it would be turned into the very dismissal the button
+     * exists to avoid. Offering nothing there is the honest version of that. */
+    if (current_is_offered (self))
+    {
+        GtkWidget *keep = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP));
+
+        g_signal_connect (keep, "clicked", G_CALLBACK (on_keep), self);
+
+        /* Where a cancel button would sit, because that is where someone who
+         * wants out of this dialog looks -- and getting out without losing the
+         * history to a backend they never chose is what they want. */
+        adw_header_bar_pack_start (ADW_HEADER_BAR (header), keep);
+    }
 
     adw_header_bar_pack_end (ADW_HEADER_BAR (header), apply);
 
@@ -224,7 +280,12 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (backend_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND));
     adw_combo_row_set_model (self->backend_row, G_LIST_MODEL (backends));
 
-    adw_combo_row_set_selected (self->backend_row, index_for_backend (self, self->current));
+    /* No preselection when the backend in use is not on the list: picking one
+     * for the user would have the dialog claim a backend they never chose, and
+     * the first row is as wrong a claim as any. Nothing is selected until they
+     * say so, and Apply stays insensitive until they do. */
+    adw_combo_row_set_selected (self->backend_row,
+                                (current_is_offered (self)) ? index_for_backend (self, self->current) : GTK_INVALID_LIST_POSITION);
 
     g_autoptr (GtkListItemFactory) factory = gtk_signal_list_item_factory_new ();
 

@@ -177,6 +177,12 @@ typedef enum
     G_PASTE_PROMPT_TEXT_MIGRATION_TITLE,
     G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION,
     G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT,
+    /* Answers the question with "nothing changes": the backend stays the one in
+     * use, the data where it is, and the dialog does not come back. Which the
+     * dialog could already express -- pick the current backend, leave both
+     * switches off, Apply -- but only for someone who had worked out that the
+     * question is asked once and dismissing it only defers it. */
+    G_PASTE_PROMPT_TEXT_MIGRATION_KEEP,
     G_PASTE_PROMPT_TEXT_STORAGE_BACKEND,
     G_PASTE_PROMPT_TEXT_IMPORT,
     G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE,

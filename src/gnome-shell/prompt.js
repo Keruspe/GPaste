@@ -220,7 +220,11 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         this._current = request.get_current();
         this._offered = request.get_offered();
-        this._chosen = this._current;
+        // null until the user picks one, whenever the backend in use is not on
+        // the list: a history stored by a flavour this build cannot construct
+        // (an .xmls or a .db without encryption or sqlite). Preselecting one for
+        // them would have the dialog claim a backend they never chose.
+        this._chosen = this._offered.includes(this._current) ? this._current : null;
 
         const content = new Dialog.MessageDialogContent({
             title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_TITLE),
@@ -265,11 +269,21 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         this.contentLayout.add_child(content);
 
-        this.addButton({
+        this._apply = this.addButton({
             label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_ACCEPT),
             action: () => this._onApply(),
             default: true,
         });
+        // Only when there is something to keep: the button answers with the
+        // backend in use, and one that is not on offer is not an answer the
+        // reply accepts — it would become the very dismissal the button exists
+        // to avoid.
+        if (this._chosen !== null) {
+            this.addButton({
+                label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_KEEP),
+                action: () => this._onKeep(),
+            });
+        }
         this.addButton({
             label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CANCEL),
             action: () => this.close(),
@@ -307,8 +321,13 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
     // storing backends, and there is only old data to delete once we actually
     // leave one that stored something.
     _updateState() {
-        const canImport = GPasteDaemon.Prompt.can_import(this._current, this._chosen);
-        const backendChanges = GPasteDaemon.Prompt.backend_changes(this._current, this._chosen);
+        const chosenAnything = this._chosen !== null;
+        const canImport = chosenAnything && GPasteDaemon.Prompt.can_import(this._current, this._chosen);
+        const backendChanges = chosenAnything && GPasteDaemon.Prompt.backend_changes(this._current, this._chosen);
+
+        // Nothing picked yet: there is no answer to apply until the user names
+        // a backend.
+        this._setReactive(this._apply, chosenAnything);
 
         this._setSensitive(this._import, canImport);
         this._setSensitive(this._cleanup, backendChanges);
@@ -321,14 +340,37 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         if (!sensitive)
             check.checked = false;
 
-        check.reactive = check.can_focus = sensitive;
-        check.opacity = sensitive ? 255 : 128;
+        this._setReactive(check, sensitive);
+    }
+
+    _setReactive(actor, sensitive) {
+        actor.reactive = actor.can_focus = sensitive;
+        actor.opacity = sensitive ? 255 : 128;
     }
 
     _onApply() {
+        // Nothing to apply, and Enter reaches this even with the button greyed
+        // out: it is the dialog's default action, which is a key binding rather
+        // than the button's own reactivity.
+        if (this._chosen === null)
+            return;
+
         if (!this._answered) {
             this._answered = true;
             this._request.reply_migration(this._chosen, this._import.checked, this._cleanup.checked);
+        }
+
+        this.close();
+    }
+
+    // "Nothing changes, and stop asking", which Cancel next to it does not do:
+    // dismissing leaves the revision alone and the dialog comes back on the next
+    // start. Answers with the current backend rather than what is ticked, so it
+    // undoes the fiddling too.
+    _onKeep() {
+        if (!this._answered) {
+            this._answered = true;
+            this._request.reply_migration(this._current, false, false);
         }
 
         this.close();

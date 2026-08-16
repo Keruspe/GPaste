@@ -924,6 +924,7 @@ g_paste_prompt_text_get_type (void)
             { G_PASTE_PROMPT_TEXT_MIGRATION_TITLE,                   "G_PASTE_PROMPT_TEXT_MIGRATION_TITLE",                   "migration-title" },
             { G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION,             "G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION",             "migration-description" },
             { G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT,                  "G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT",                  "migration-accept" },
+            { G_PASTE_PROMPT_TEXT_MIGRATION_KEEP,                    "G_PASTE_PROMPT_TEXT_MIGRATION_KEEP",                    "migration-keep" },
             { G_PASTE_PROMPT_TEXT_STORAGE_BACKEND,                   "G_PASTE_PROMPT_TEXT_STORAGE_BACKEND",                   "storage-backend" },
             { G_PASTE_PROMPT_TEXT_IMPORT,                            "G_PASTE_PROMPT_TEXT_IMPORT",                            "import" },
             { G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE,                   "G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE",                   "import-subtitle" },
@@ -985,9 +986,14 @@ g_paste_prompt_text (GPastePromptText text)
     case G_PASTE_PROMPT_TEXT_MIGRATION_TITLE:
         return _("Storage migration");
     case G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION:
-        return _("Choose where GPaste should store your clipboard history. Nothing is kept on disk unless you pick a storing backend here.");
+        /* Translators: the quoted words are the label of the button below, so
+         * the two have to say the same thing. */
+        return _("Choose where GPaste should store your clipboard history. Nothing is kept on disk unless you pick a storing backend here. “Keep as is” changes nothing and settles the question for good; closing this window asks it again next time.");
     case G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT:
         return _("Apply");
+    case G_PASTE_PROMPT_TEXT_MIGRATION_KEEP:
+        /* Translators: this label is quoted in the description above. */
+        return _("Keep as is");
     case G_PASTE_PROMPT_TEXT_STORAGE_BACKEND:
         return _("Storage backend");
     case G_PASTE_PROMPT_TEXT_IMPORT:
