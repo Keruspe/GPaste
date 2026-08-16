@@ -78,6 +78,22 @@ g_paste_ui_history_show_list (GPasteUiHistory *self)
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), TRUE);
 }
 
+/* Take the initial focus the first time the list makes it on screen. Left alone,
+ * GTK hands it to the first focusable widget it can find, which is the sidebar's
+ * "Switch to history" entry: an editable, so it would swallow everything typed
+ * at the window instead of letting it through to the search bar. A widget can
+ * only take the focus once it is mapped, which is what this waits for -- and it
+ * disconnects itself, so a later refresh can never pull the focus out of
+ * whatever the user is busy with. */
+static void
+on_list_view_mapped (GtkWidget *list_view,
+                     gpointer   user_data G_GNUC_UNUSED)
+{
+    g_signal_handlers_disconnect_by_func (list_view, on_list_view_mapped, NULL);
+
+    gtk_widget_grab_focus (list_view);
+}
+
 /* In merge mode a plain click should toggle that one row, where the list view
  * would otherwise replace the whole selection, so claim the press before its own
  * gesture runs. The gesture lives on the row widget, which its #GtkListItem owns
@@ -1004,6 +1020,7 @@ g_paste_ui_history_new (GPasteClient   *client,
     g_signal_connect_object (scroll, "edge-reached", G_CALLBACK (g_paste_ui_history_on_edge_reached), self, 0);
 
     g_signal_connect_object (list_view, "activate", G_CALLBACK (on_item_activated), self, 0);
+    g_signal_connect (list_view, "map", G_CALLBACK (on_list_view_mapped), NULL);
 
     g_paste_ui_history_set_selection_mode (self, FALSE);
 
