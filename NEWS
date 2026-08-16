@@ -11,6 +11,7 @@ NEW in 51.0 (UNRELEASED)
 - Pin items as favourites: neither the history size limit nor the memory one may evict a pinned item, so the history grows past its cap rather than let one go, and the graphical tool, the extension and "gpaste-client --favourites" can list only those
 - Enlarge image previews on hover via a custom tooltip
 - Show a colour item's colour as a swatch in the graphical tool, the way an image item shows a thumbnail
+- Show image thumbnails and colour swatches in the GNOME Shell menu too, the thumbnails following the same images-preview settings as the graphical tool's
 - Publish copied colours as text on the clipboard as well, so they paste into plain text fields too
 - Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu
 - Make the embeddable preferences widget adaptive, and remember the graphical tool's window geometry across sessions

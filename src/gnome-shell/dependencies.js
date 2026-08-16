@@ -18,3 +18,7 @@ Gio._promisify(GPaste.Client.prototype, 'get_history_size', 'get_history_size_fi
 Gio._promisify(GPaste.Client.prototype, 'search', 'search_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_item_at_index', 'get_item_at_index_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_item', 'get_item_finish');
+// What an item's kind promises but its value does not carry: the image bytes,
+// which would dwarf every listing if they rode along with it. A colour needs no
+// call -- it is the item's value.
+Gio._promisify(GPaste.Client.prototype, 'get_image', 'get_image_finish');

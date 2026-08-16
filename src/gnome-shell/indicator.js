@@ -61,7 +61,11 @@ class GPasteIndicator extends Button {
         this._searchItem.connect('text-changed', this._reloadCurrent.bind(this));
         this._searchItem.connect('favourites-changed', this._reloadCurrent.bind(this));
 
-        this._settings.connectObject('notify::element-size', this._resetElementSize.bind(this), this);
+        this._settings.connectObject(
+            'notify::element-size', this._resetElementSize.bind(this),
+            'notify::images-preview', this._resetImagesPreview.bind(this),
+            'notify::images-preview-size', this._resetImagesPreview.bind(this),
+            this);
         this._resetElementSize();
 
         this._setup().catch(console.error);
@@ -258,8 +262,20 @@ class GPasteIndicator extends Button {
         });
     }
 
+    _resetImagesPreview() {
+        const enabled = this._settings.get_images_preview();
+        const size = this._settings.get_images_preview_size();
+
+        this._history.forEach(i => {
+            i.setImagesPreview(enabled, size);
+        });
+    }
+
     _createRow(elementSize, slotIndex, index, uuid = null) {
         const item = new GPasteItem(this._client, elementSize, slotIndex, index, uuid);
+        // Before the row's own fetch can land: the constructor only starts it,
+        // so the settings are in place by the time there is a kind to act on.
+        item.setImagesPreview(this._settings.get_images_preview(), this._settings.get_images_preview_size());
         // The rows live in a section that is not part of the menu's item tree
         // (it is nested in the scroll view), so close the menu on activation
         // ourselves rather than relying on the usual menu-item plumbing.

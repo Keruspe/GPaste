@@ -4,6 +4,7 @@
 import {PopupMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
@@ -11,6 +12,19 @@ import St from 'gi://St';
 
 import {GPasteDeleteButton} from './deleteButton.js';
 import {GPasteFavouriteButton} from './favouriteButton.js';
+
+// Side of a colour swatch, in pixels. A constant, unlike an image thumbnail:
+// images-preview-size sizes images, and turning image previews off must not take
+// the colours with it — the same rule the graphical tool follows.
+const SWATCH_SIZE = 16;
+// The grey the swatch is outlined in, so a colour close to the menu behind it is
+// still a visible swatch rather than a hole. Spelled out, where the graphical
+// tool's swatch gets the same line from Adwaita's .frame: that class is GTK's,
+// the shell stylesheet defines nothing like it, and St's CSS has neither
+// currentColor nor color-mix() to rebuild it with. Mid-grey rather than the
+// theme's foreground because it has to hold up against both, and a swatch is
+// drawn before the actor has a theme node to ask.
+const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
 
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
@@ -25,6 +39,10 @@ class GPasteItem extends PopupMenuItem {
         this._index = -1;
         this._uuid = null;
         this._generation = 0;
+        // The image preview has a generation of its own: a settings change asks
+        // for a new one without the row being refilled, so the row's would not
+        // move and both fetches would think themselves current.
+        this._previewGeneration = 0;
         // The full (untruncated) text currently set on the label. Compared
         // against in _setValue to skip redundant set_text() calls; we can't use
         // label.get_text() for that because max_length truncates what the label
@@ -37,6 +55,19 @@ class GPasteItem extends PopupMenuItem {
             });
             this._indexLabelVisible = false;
         }
+
+        // What the row shows of itself beyond its text: a thumbnail for an image,
+        // a swatch for a colour, nothing for anything else. One slot, since an
+        // item is never both, and an empty St.Bin takes no room — added before
+        // the buttons so it sits between the text and them.
+        this._previewBin = new St.Bin({y_align: Clutter.ActorAlign.CENTER});
+        this.add_child(this._previewBin);
+
+        // What the row last displayed, so a settings change knows whether it has
+        // anything to redo.
+        this._kind = null;
+        this._imagesPreview = false;
+        this._imagesPreviewSize = 0;
 
         this._favouriteItem = new GPasteFavouriteButton(client, this._uuid);
         this.add_child(this._favouriteItem);
@@ -56,10 +87,11 @@ class GPasteItem extends PopupMenuItem {
     }
 
     destroy() {
-        // Discard any in-flight setIndex()/setUuid() fetch: bumping the
-        // generation makes its post-await guard bail out instead of touching
-        // this now-finalized actor.
+        // Discard any in-flight setIndex()/setUuid() fetch, and any preview
+        // fetch with it: bumping the generations makes their post-await guards
+        // bail out instead of touching this now-finalized actor.
         this._generation++;
+        this._previewGeneration++;
         super.destroy();
     }
 
@@ -168,6 +200,12 @@ class GPasteItem extends PopupMenuItem {
             this.show();
         }
 
+        // The undecorated value: what the swatch needs, and what the label above
+        // is drawn *from* rather than what it shows.
+        this._value = value;
+        this._kind = kind;
+        this._updatePreview();
+
         this._favouriteItem.setUuid(this._uuid);
         this._favouriteItem.setFavourite(favourite);
         this._deleteItem.setUuid(this._uuid);
@@ -175,6 +213,82 @@ class GPasteItem extends PopupMenuItem {
 
     setTextSize(size) {
         this.label.clutter_text.max_length = size;
+    }
+
+    // The two image-preview settings, pushed by the indicator rather than
+    // watched here: one subscription for the whole menu instead of one per row.
+    // Only images are affected — a colour swatch is neither an image nor sized
+    // like one.
+    setImagesPreview(enabled, size) {
+        if (enabled === this._imagesPreview && size === this._imagesPreviewSize)
+            return;
+
+        this._imagesPreview = enabled;
+        this._imagesPreviewSize = size;
+
+        if (this._kind === GPaste.ItemKind.IMAGE)
+            this._updatePreview();
+    }
+
+    // Drop whatever the row was showing and show what it should show now. Only
+    // the image costs a call -- its bytes would dwarf every listing if they rode
+    // along with the item -- and that one is guarded like the row's own fetch,
+    // by a generation of its own: a recycled row must not be painted with the
+    // item it used to hold, nor a resized one with the size it asked for before.
+    // A colour needs no call at all: it is the item's value.
+    _updatePreview() {
+        // Whatever was being fetched was for the row as it stood a moment ago:
+        // another item, or the same image at another size. Bumped here rather
+        // than in _showImage so that a row that has just stopped being an image
+        // discards the fetch too, having no _showImage of its own to bump it.
+        const generation = ++this._previewGeneration;
+
+        this._previewBin.child = null;
+
+        if (!this._uuid)
+            return;
+
+        if (this._kind === GPaste.ItemKind.IMAGE && this._imagesPreview)
+            this._showImage(generation).catch(console.error);
+        else if (this._kind === GPaste.ItemKind.COLOR)
+            this._showColor();
+    }
+
+    async _showImage(generation) {
+        const size = Math.max(this._imagesPreviewSize, 10);
+        const bytes = await this._client.get_image(this._uuid);
+
+        if (generation !== this._previewGeneration)
+            return;
+
+        // St loads a GLoadableIcon through GdkPixbuf, scaled into the requested
+        // size with its aspect ratio kept, so the bytes need no decoding here.
+        // Uncached, since a GBytesIcon has no string form to key a cache on:
+        // one decode each time a row is filled, which is what a few image rows
+        // cost and the reason this stays a small thumbnail.
+        this._previewBin.child = new St.Icon({
+            gicon: Gio.BytesIcon.new(bytes),
+            icon_size: size,
+            style: 'margin-left: 6px;',
+        });
+    }
+
+    _showColor() {
+        const color = this._value;
+
+        // The item's value is its colour: no round trip to make. It reached a
+        // colour item only because gdk_rgba_parse() accepted it, so it is a
+        // colour and not arbitrary text; this checks the shape all the same,
+        // because what it goes into is a stylesheet and a value off the
+        // clipboard has no business ending a declaration early.
+        if (!color || !/^[a-zA-Z0-9#(),.%\s]+$/.test(color))
+            return;
+
+        this._previewBin.child = new St.Widget({
+            style: `background-color: ${color}; border: 1px solid ${SWATCH_BORDER}; border-radius: 4px; margin-left: 6px;`,
+            width: SWATCH_SIZE,
+            height: SWATCH_SIZE,
+        });
     }
 
     activate(event) {
