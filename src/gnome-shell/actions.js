@@ -36,7 +36,7 @@ class GPasteActions extends PopupBaseMenuItem {
         box.add_child(emptyHistoryItem);
         box.add_child(new GPasteActionButton('dialog-information-symbolic', _('About'), () => {
             menu.itemActivated();
-            client.about(null);
+            client.show_about(null);
         }));
         this.add_child(box);
 

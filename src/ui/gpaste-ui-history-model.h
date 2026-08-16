@@ -27,13 +27,15 @@ GPasteUiHistoryItem *g_paste_ui_history_model_peek (GPasteUiHistoryModel *self,
 
 gboolean g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
                                             guint64               size);
-void g_paste_ui_history_model_set_search   (GPasteUiHistoryModel *self,
+void g_paste_ui_history_model_set_uuids    (GPasteUiHistoryModel *self,
                                             const gchar * const  *uuids);
 void g_paste_ui_history_model_invalidate   (GPasteUiHistoryModel *self,
                                             guint64               position,
                                             guint64               n_items);
 void g_paste_ui_history_model_item_replaced (GPasteUiHistoryModel *self,
                                              guint64               position);
+void g_paste_ui_history_model_item_replaced_by_uuid (GPasteUiHistoryModel *self,
+                                                     const gchar          *uuid);
 
 GPasteUiHistoryModel *g_paste_ui_history_model_new (void);
 

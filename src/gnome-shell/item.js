@@ -74,8 +74,17 @@ class GPasteItem extends PopupMenuItem {
         this._indexLabelVisible = state;
     }
 
+    get uuid() {
+        return this._uuid;
+    }
+
     refresh() {
-        this.setIndex(this._index).catch(console.error);
+        // A row is addressed the way it was filled: -2 marks one that came from
+        // a uuid (a search), where its index means nothing.
+        if (this._index === -2)
+            this.setUuid(this._uuid).catch(console.error);
+        else
+            this.setIndex(this._index).catch(console.error);
     }
 
     async setIndex(index) {
@@ -85,7 +94,7 @@ class GPasteItem extends PopupMenuItem {
         if (index === -1) {
             this._setValue(null);
         } else {
-            const item = await this._client.get_element_at_index(index);
+            const item = await this._client.get_item_at_index(index);
             if (generation !== this._generation)
                 return;
             this._uuid = item.get_uuid();
@@ -101,10 +110,10 @@ class GPasteItem extends PopupMenuItem {
         if (uuid == null) {
             this._setValue(null);
         } else {
-            const value = await this._client.get_element(uuid);
+            const item = await this._client.get_item(uuid);
             if (generation !== this._generation)
                 return;
-            this._setValue(value);
+            this._setValue(item.get_value());
         }
     }
 
@@ -154,7 +163,7 @@ class GPasteItem extends PopupMenuItem {
         if (symbol === Clutter.KEY_BackSpace || symbol === Clutter.KEY_Delete) {
             // Nothing to delete until the row's fetch has landed (see activate).
             if (this._uuid)
-                this._client.delete(this._uuid, null);
+                this._client.delete_item(this._uuid, null);
             return Clutter.EVENT_STOP;
         }
         // Chain up so PopupBaseMenuItem keeps handling arrow-key focus

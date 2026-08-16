@@ -27,6 +27,6 @@ class GPasteDeleteButton extends St.Button {
         // starts with no uuid; ignore a click landing in that window rather than
         // letting GJS throw on the null argument.
         if (this._uuid)
-            this._client.delete(this._uuid, null);
+            this._client.delete_item(this._uuid, null);
     }
 });

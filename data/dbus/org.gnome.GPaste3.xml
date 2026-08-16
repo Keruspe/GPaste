@@ -6,7 +6,7 @@
 
   The interface the GPaste daemon exports on /org/gnome/GPaste, and the single
   source of truth for both sides of it: gdbus-codegen turns this file into the
-  GPasteDaemon2 GInterface, the proxy GPasteClient derives from, and the skeleton
+  GPasteDaemon3 GInterface, the proxy GPasteClient derives from, and the skeleton
   GPasteDaemon exports.
 
   Also installed to $datadir/dbus-1/interfaces so that anything speaking to the
@@ -14,23 +14,26 @@
 -->
 <node>
   <!--
-    org.gnome.GPaste2:
+    org.gnome.GPaste3:
     @short_description: The GPaste daemon
 
-    The "2" is the interface version, not a second daemon: it is what the C name
-    below keeps, so that the generated g_paste_daemon2_* symbols never collide
+    The "3" is the interface version, not a third daemon: it is what the C name
+    below keeps, so that the generated g_paste_daemon3_* symbols never collide
     with the g_paste_daemon_* ones of the GPasteDaemon object that implements it.
+
+    An item travels as (uuid, value, kind): everything a client needs to draw a
+    row, in one reply. @kind is the GPasteItemKind value, the numeric one rather
+    than its nick, which is now the storage backends' business alone.
+
+    @value is the one string an item has here, the one a user is shown. There
+    used to be a second, "raw" flavour of every getter, answering what a script
+    might want instead: the uri list behind "[Files] ~/a", or the cache path
+    behind "[Image, 800 x 600 (...)]". For plain text, which is nearly all of a
+    history, the two were the same string, and neither was ever a password's
+    real value. GetImage is where an image's bytes come from.
   -->
-  <interface name="org.gnome.GPaste2">
-    <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon2"/>
-
-    <!-- Show the about dialog -->
-    <method name="About"/>
-
-    <!-- Add a text item to the history -->
-    <method name="Add">
-      <arg type="s" direction="in" name="text"/>
-    </method>
+  <interface name="org.gnome.GPaste3">
+    <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon3"/>
 
     <!-- Add the contents of a file to the history -->
     <method name="AddFile">
@@ -43,6 +46,11 @@
       <arg type="s" direction="in" name="password"/>
     </method>
 
+    <!-- Add a text item to the history -->
+    <method name="AddText">
+      <arg type="s" direction="in" name="text"/>
+    </method>
+
     <!-- Backup a history under another name -->
     <method name="BackupHistory">
       <arg type="s" direction="in" name="history"/>
@@ -52,14 +60,14 @@
     <!-- Re-encrypt the history with a new passphrase, prompted for by the daemon -->
     <method name="ChangePassphrase"/>
 
-    <!-- Delete one item from the history -->
-    <method name="Delete">
-      <arg type="s" direction="in" name="uuid"/>
-    </method>
-
     <!-- Delete a whole history -->
     <method name="DeleteHistory">
       <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!-- Delete one item from the history -->
+    <method name="DeleteItem">
+      <arg type="s" direction="in" name="uuid"/>
     </method>
 
     <!-- Delete a password item, by name -->
@@ -72,39 +80,9 @@
       <arg type="s" direction="in" name="name"/>
     </method>
 
-    <!-- The displayable value of one item -->
-    <method name="GetElement">
-      <arg type="s" direction="in"  name="uuid"/>
-      <arg type="s" direction="out" name="value"/>
-    </method>
-
-    <!-- The item at a given position, as a (uuid, value) pair -->
-    <method name="GetElementAtIndex">
-      <arg type="t" direction="in"  name="index"/>
-      <arg type="s" direction="out" name="uuid"/>
-      <arg type="s" direction="out" name="value"/>
-    </method>
-
-    <!-- The kind of one item, as a GPasteItemKind nick -->
-    <method name="GetElementKind">
-      <arg type="s" direction="in"  name="uuid"/>
-      <arg type="s" direction="out" name="kind"/>
-    </method>
-
-    <!-- The (uuid, value) pairs for the given uuids -->
-    <method name="GetElements">
-      <arg type="as"    direction="in"  name="uuids"/>
-      <arg type="a(ss)" direction="out" name="elements"/>
-    </method>
-
-    <!-- The whole history, as (uuid, value) pairs -->
+    <!-- The whole history -->
     <method name="GetHistory">
-      <arg type="a(ss)" direction="out" name="history"/>
-    </method>
-
-    <!-- The name of the history currently in use -->
-    <method name="GetHistoryName">
-      <arg type="s" direction="out" name="name"/>
+      <arg type="a(ssu)" direction="out" name="history"/>
     </method>
 
     <!-- How many items a given history holds -->
@@ -116,6 +94,10 @@
     <!--
       The raw image data of an image item.
 
+      Kept out of the item struct on purpose: a PNG on every row of every
+      history listing would dwarf everything else. A client knows from the
+      item's kind whether to ask.
+
       ForceGVariant is load-bearing: the default mapping for "ay" is a C
       bytestring, which stops at the first NUL and would truncate every PNG.
     -->
@@ -126,15 +108,22 @@
       </arg>
     </method>
 
-    <!-- The value of one item, untruncated and unformatted -->
-    <method name="GetRawElement">
-      <arg type="s" direction="in"  name="uuid"/>
-      <arg type="s" direction="out" name="value"/>
+    <!-- One item, by uuid -->
+    <method name="GetItem">
+      <arg type="s"      direction="in"  name="uuid"/>
+      <arg type="(ssu)" direction="out" name="item"/>
     </method>
 
-    <!-- The whole history, with raw values -->
-    <method name="GetRawHistory">
-      <arg type="a(ss)" direction="out" name="history"/>
+    <!-- The item at a given position -->
+    <method name="GetItemAtIndex">
+      <arg type="t"      direction="in"  name="index"/>
+      <arg type="(ssu)" direction="out" name="item"/>
+    </method>
+
+    <!-- The items for the given uuids -->
+    <method name="GetItems">
+      <arg type="as"      direction="in"  name="uuids"/>
+      <arg type="a(ssu)" direction="out" name="items"/>
     </method>
 
     <!-- The names of every known history -->
@@ -149,11 +138,6 @@
       <arg type="as" direction="in" name="uuids"/>
     </method>
 
-    <!-- Tell the daemon whether the gnome-shell extension is running -->
-    <method name="OnExtensionStateChanged">
-      <arg type="b" direction="in" name="extension_state"/>
-    </method>
-
     <!-- Have the daemon exec a fresh copy of itself -->
     <method name="Reexecute"/>
 
@@ -163,21 +147,36 @@
       <arg type="s" direction="in" name="new_name"/>
     </method>
 
+    <!--
+      Tell the daemon whether the gnome-shell extension is running.
+
+      A report, not an order: what to do about it is the daemon's
+      "track-extension-state" policy, and a client does not second-guess it.
+    -->
+    <method name="ReportExtensionState">
+      <arg type="b" direction="in" name="active"/>
+    </method>
+
     <!-- Replace the contents of one item -->
     <method name="Replace">
       <arg type="s" direction="in" name="uuid"/>
       <arg type="s" direction="in" name="contents"/>
     </method>
 
-    <!-- The uuids of the items matching a query -->
+    <!-- The items matching a query -->
     <method name="Search">
-      <arg type="s"  direction="in"  name="query"/>
-      <arg type="as" direction="out" name="results"/>
+      <arg type="s"       direction="in"  name="query"/>
+      <arg type="a(ssu)" direction="out" name="results"/>
     </method>
 
     <!-- Make one item the current selection -->
     <method name="Select">
       <arg type="s" direction="in" name="uuid"/>
+    </method>
+
+    <!-- Start or stop tracking clipboard changes; reads back as the Active property -->
+    <method name="SetActive">
+      <arg type="b" direction="in" name="active"/>
     </method>
 
     <!-- Turn one item into a password item -->
@@ -186,17 +185,15 @@
       <arg type="s" direction="in" name="name"/>
     </method>
 
+    <!-- Show the about dialog -->
+    <method name="ShowAbout"/>
+
     <!-- Ask for the history to be displayed -->
     <method name="ShowHistory"/>
 
-    <!-- Switch to another history -->
+    <!-- Switch to another history; the History property carries the outcome -->
     <method name="SwitchHistory">
       <arg type="s" direction="in" name="name"/>
-    </method>
-
-    <!-- Start or stop tracking clipboard changes -->
-    <method name="Track">
-      <arg type="b" direction="in" name="tracking_state"/>
     </method>
 
     <!-- Upload one item to a pastebin service -->
@@ -209,8 +206,8 @@
       GObject signal on the proxy. GPasteClient re-emits each one under its
       public name: that keeps the public signal free to carry a richer payload
       (Update hands out GPasteUpdateAction/GPasteUpdateTarget enums rather than
-      their nicks) and keeps the whole public surface declared on GPasteClient
-      itself, where the GIR and the VAPI can see it.
+      their numeric values) and keeps the whole public surface declared on
+      GPasteClient itself, where the GIR and the VAPI can see it.
     -->
 
     <!-- A history was deleted -->
@@ -225,27 +222,43 @@
       <arg type="s" name="history"/>
     </signal>
 
+    <!--
+      The set of histories changed, so anything listing them should ask again.
+
+      Distinct from switching: a backup creates a history without making it the
+      current one, which no change of the History property can express.
+    -->
+    <signal name="HistoriesChanged">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawHistoriesChanged"/>
+    </signal>
+
     <!-- The history should be displayed -->
     <signal name="ShowHistory">
       <annotation name="org.gtk.GDBus.C.Name" value="RawShowHistory"/>
     </signal>
 
-    <!-- Another history is now in use -->
-    <signal name="SwitchHistory">
-      <annotation name="org.gtk.GDBus.C.Name" value="RawSwitchHistory"/>
-      <arg type="s" name="history"/>
-    </signal>
+    <!--
+      Something changed in the history.
 
-    <!-- Something changed in the history: @action and @target are enum nicks -->
+      @action and @target are GPasteUpdateAction and GPasteUpdateTarget values.
+      @uuid names the item @target == ITEM refers to and @index says where it
+      sat; a view listing something other than positions (a search, the
+      favourites) can only act on the former. Both are empty/zero for
+      @target == ALL.
+    -->
     <signal name="Update">
       <annotation name="org.gtk.GDBus.C.Name" value="RawUpdate"/>
-      <arg type="s" name="action"/>
-      <arg type="s" name="target"/>
+      <arg type="u" name="action"/>
+      <arg type="u" name="target"/>
+      <arg type="s" name="uuid"/>
       <arg type="t" name="index"/>
     </signal>
 
     <!-- Whether the daemon is tracking clipboard changes -->
     <property name="Active" type="b" access="read"/>
+
+    <!-- The name of the history currently in use -->
+    <property name="History" type="s" access="read"/>
 
     <!-- The version of the running daemon -->
     <property name="Version" type="s" access="read"/>

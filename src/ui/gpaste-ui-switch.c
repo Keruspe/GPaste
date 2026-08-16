@@ -44,7 +44,7 @@ on_track_confirmed (gboolean confirmed,
     g_autoptr (GPasteClient) client = data->client;
 
     if (confirmed)
-        g_paste_client_track (client, data->track, NULL, NULL);
+        g_paste_client_set_active (client, data->track, NULL, NULL);
 }
 
 static void
@@ -69,7 +69,7 @@ on_gesture_pressed (GtkGestureClick *gesture,
         g_paste_gtk_util_confirm_dialog (data->topwin, _("Stop"), _("Do you really want to stop tracking clipboard changes?"), on_track_confirmed, track_data);
     }
     else
-        g_paste_client_track (data->client, track, NULL, NULL);
+        g_paste_client_set_active (data->client, track, NULL, NULL);
 }
 
 /**

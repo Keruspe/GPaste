@@ -162,8 +162,9 @@ g_paste_ui_history_unbind_item (GtkListItemFactory *factory G_GNUC_UNUSED,
     g_paste_ui_item_set_index (G_PASTE_UI_ITEM (widget), (guint64) -1);
 }
 
-static void g_paste_ui_history_refresh (GPasteUiHistory *self,
-                                        guint64          from_index);
+static void g_paste_ui_history_run_search (GPasteUiHistory *self);
+static void g_paste_ui_history_refresh    (GPasteUiHistory *self,
+                                           guint64          from_index);
 
 /* One batch is a viewport's worth of items: enough to fill the visible area so
  * the list always has something to scroll to while more history remains. Until
@@ -287,42 +288,6 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
-on_name_ready (GObject      *source_object G_GNUC_UNUSED,
-               GAsyncResult *res,
-               gpointer      user_data)
-{
-    DisplayCallbackData *cdata = user_data;
-    GPasteUiHistory *self = cdata->self;
-
-    /* Bail before the second round-trip rather than after it: a superseded
-     * refresh has nothing left to display. */
-    if (!self->client || cdata->generation != self->display_generation)
-    {
-        display_callback_data_free (cdata);
-        return;
-    }
-
-    g_autoptr (GError) error = NULL;
-
-    cdata->name = g_paste_client_get_history_name_finish (self->client, res, &error);
-
-    /* No name, no history to size: the daemon went away mid-refresh (a re-exec
-     * after an upgrade is the usual way). Passing the %NULL on would build the
-     * next call as g_variant_new ("(s)", NULL). */
-    if (!cdata->name)
-    {
-        g_warning ("Could not get the history name: %s", error->message);
-        /* This refresh is still the current one (checked above), so it owns the
-         * flag: leaving it set would wedge lazy growth for good. */
-        self->loading = FALSE;
-        display_callback_data_free (cdata);
-        return;
-    }
-
-    g_paste_client_get_history_size (self->client, cdata->name, g_paste_ui_history_refresh_history, cdata);
-}
-
-static void
 g_paste_ui_history_refresh (GPasteUiHistory *self,
                             guint64          from_index)
 {
@@ -330,12 +295,44 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         return;
 
     if (self->search)
-        g_paste_ui_history_search (self, self->search);
-    else
     {
-        self->loading = TRUE;
-        g_paste_client_get_history_name (self->client, on_name_ready, display_callback_data_new (self, from_index));
+        g_paste_ui_history_run_search (self);
+        return;
     }
+
+    /* The history's name is a cached property, so sizing it is the only call --
+     * but that cache is emptied whenever the daemon leaves the bus, which a
+     * re-exec on upgrade does, and the %NULL it then answers must not be passed
+     * on: the size call would build it as g_variant_new ("(s)", NULL). Keep
+     * showing what is there; the daemon announces itself once it is back, and
+     * that refresh finds the name again. */
+    g_autofree gchar *name = g_paste_client_get_history_name (self->client);
+
+    if (!name)
+    {
+        /* Still a refresh, so whatever was in flight is superseded by it and
+         * must not land: bumping the generation is what display_callback_data_new()
+         * would have done, and the only part of it that still applies. Without
+         * it a search reply from before this call would pass the staleness check
+         * and install its rows into a view that has moved on.
+         *
+         * And nothing is in flight for us either, however the superseded call
+         * ends -- it bails on that generation check without clearing the flag it
+         * set. Left standing it would wedge lazy growth for good, the list
+         * refusing to load another row however far it is scrolled. */
+        ++self->display_generation;
+        self->loading = FALSE;
+
+        return;
+    }
+
+    self->loading = TRUE;
+
+    DisplayCallbackData *cdata = display_callback_data_new (self, from_index);
+
+    cdata->name = g_steal_pointer (&name);
+
+    g_paste_client_get_history_size (self->client, cdata->name, g_paste_ui_history_refresh_history, cdata);
 }
 
 static gboolean
@@ -411,18 +408,32 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     if (cdata->generation != self->display_generation)
         return;
 
-    g_auto (GStrv) results = g_paste_client_search_finish (self->client, res, NULL /* error */);
-    /* A failed search leaves this NULL, which g_strv_length() cannot take. */
-    self->size = (results) ? g_strv_length (results) : 0;
+    g_autolist (GPasteClientItem) items = g_paste_client_search_finish (self->client, res, NULL /* error */);
+    g_autoptr (GStrvBuilder) uuids = g_strv_builder_new ();
+
+    for (const GList *i = items; i; i = i->next)
+        g_strv_builder_add (uuids, g_paste_client_item_get_uuid (i->data));
+
+    g_auto (GStrv) results = g_strv_builder_end (uuids);
+
+    self->size = g_strv_length (results);
 
     /* No lazy growth to stage here: the view realises only the rows on screen,
      * so every match can be listed and each fetches its own content on demand. */
-    g_paste_ui_history_model_set_search (self->model, (const gchar * const *) results);
+    g_paste_ui_history_model_set_uuids (self->model, (const gchar * const *) results);
 
     if (self->size)
         g_paste_ui_history_show_list (self);
     else
         g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"));
+}
+
+/* A search lists rows by uuid rather than by position: the daemon answers with
+ * the matching items themselves, so nothing has to be fetched per row. */
+static void
+g_paste_ui_history_run_search (GPasteUiHistory *self)
+{
+    g_paste_client_search (self->client, self->search, on_search_ready, display_callback_data_new (self, 0));
 }
 
 /**
@@ -442,15 +453,11 @@ g_paste_ui_history_search (GPasteUiHistory *self,
         return;
 
     if (g_paste_str_equal (search, ""))
-    {
         g_clear_pointer (&self->search, g_free);
-        g_paste_ui_history_refresh (self, 0);
-    }
     else
-    {
         g_set_str (&self->search, search);
-        g_paste_client_search (self->client, search, on_search_ready, display_callback_data_new (self, 0));
-    }
+
+    g_paste_ui_history_refresh (self, 0);
 }
 
 static void
@@ -474,7 +481,7 @@ on_activate_element_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_finish (self->client, res, &error);
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_finish (self->client, res, &error);
 
     /* The activation simply does not happen otherwise, which is worth a word:
      * the user pressed a row and nothing at all moved. */
@@ -512,7 +519,7 @@ g_paste_ui_history_activate_position (GPasteUiHistory *self,
     if (uuid)
         g_paste_ui_history_select_uuid (self, uuid);
     else
-        g_paste_client_get_element_at_index (self->client, position, on_activate_element_ready, g_object_ref (self));
+        g_paste_client_get_item_at_index (self->client, position, on_activate_element_ready, g_object_ref (self));
 
     return TRUE;
 }
@@ -563,6 +570,7 @@ static void
 g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               GPasteUpdateAction action,
                               GPasteUpdateTarget target,
+                              const gchar       *uuid,
                               guint64            position,
                               gpointer           user_data)
 {
@@ -577,15 +585,18 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
     case G_PASTE_UPDATE_TARGET_ALL:
         refresh = TRUE;
         break;
-    case G_PASTE_UPDATE_TARGET_POSITION:
+    case G_PASTE_UPDATE_TARGET_ITEM:
         switch (action)
         {
         case G_PASTE_UPDATE_ACTION_REPLACE:
-            /* Positions mean history indices, which the search view does not
-             * list; and lazy loading means the changed one may be past the rows
-             * we hold at all (a password renamed deep in the history, say). The
-             * model shrugs off both: it only reports what it has. */
-            if (!self->search)
+            /* A search lists uuids, so it finds the row by the one the update
+             * carries; a positional one is at @position, which lazy loading may
+             * put past the rows we hold at all (a password renamed deep in the
+             * history, say). The model shrugs off both: it only reports what it
+             * has. */
+            if (self->search)
+                g_paste_ui_history_model_item_replaced_by_uuid (self->model, uuid);
+            else
                 g_paste_ui_history_model_item_replaced (self->model, position);
             break;
         case G_PASTE_UPDATE_ACTION_REMOVE:
@@ -937,7 +948,7 @@ g_paste_ui_history_new (GPasteClient   *client,
                              G_CALLBACK (g_paste_ui_history_on_update),
                              self, 0);
 
-    g_paste_ui_history_on_update (client, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, self);
+    g_paste_ui_history_on_update (client, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0, self);
 
     return widget;
 }

@@ -13,8 +13,8 @@ gi.require('St', Config.LIBMUTTER_API_VERSION);
 
 // GPaste.Client.new is handled manually in indicator.js: Gio._promisify cannot
 // replace a static constructor on the class object inside gnome-shell.
-Gio._promisify(GPaste.Client.prototype, 'get_history_name', 'get_history_name_finish');
+Gio._promisify(GPaste.Client.prototype, 'get_history', 'get_history_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_history_size', 'get_history_size_finish');
 Gio._promisify(GPaste.Client.prototype, 'search', 'search_finish');
-Gio._promisify(GPaste.Client.prototype, 'get_element_at_index', 'get_element_at_index_finish');
-Gio._promisify(GPaste.Client.prototype, 'get_element', 'get_element_finish');
+Gio._promisify(GPaste.Client.prototype, 'get_item_at_index', 'get_item_at_index_finish');
+Gio._promisify(GPaste.Client.prototype, 'get_item', 'get_item_finish');

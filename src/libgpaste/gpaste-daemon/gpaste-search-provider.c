@@ -18,6 +18,16 @@ struct _GPasteSearchProvider
     gboolean                    registered;
 
     GPasteClient               *client;
+
+    /* uuid -> value, for the results of the last search we answered. The shell
+     * asks for the metas of identifiers it has just been handed, so this is
+     * nearly always the very set that reply carried, and describing them from
+     * here is what keeps GetResultMetas from asking for the same strings a
+     * second time. Replaced wholesale by each search, and emptied by any update
+     * to the history, so what is answered from here was true as of the last
+     * thing that happened to it; a uuid it does not hold falls back to
+     * GetItems. */
+    GHashTable                 *last_results;
 };
 
 G_PASTE_DEFINE_TYPE (SearchProvider, search_provider, G_PASTE_TYPE_BUS_OBJECT)
@@ -47,14 +57,30 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autofree SearchData *data = user_data;
     g_autoptr (GPasteSearchProvider) self = data->provider;
     g_autoptr (GError) error = NULL;
-    g_auto (GStrv) results = g_paste_client_search_finish (self->client, res, &error);
+    g_autolist (GPasteClientItem) results = g_paste_client_search_finish (self->client, res, &error);
 
     if (error)
         g_warning ("GPaste search failed: %s", error->message);
 
-    const gchar *empty[] = { NULL };
+    /* The shell's interface takes identifiers and asks for their metas
+     * separately -- ours is the only interface where that split is imposed
+     * rather than chosen -- so the values this reply carries are kept here
+     * rather than asked for again a moment later. */
+    g_autoptr (GStrvBuilder) ids = g_strv_builder_new ();
 
-    data->complete (self->skeleton, data->invocation, (results) ? (const gchar * const *) results : empty);
+    g_hash_table_remove_all (self->last_results);
+
+    for (const GList *i = results; i; i = i->next)
+    {
+        const gchar *uuid = g_paste_client_item_get_uuid (i->data);
+
+        g_strv_builder_add (ids, uuid);
+        g_hash_table_insert (self->last_results, g_strdup (uuid), g_strdup (g_paste_client_item_get_value (i->data)));
+    }
+
+    g_auto (GStrv) identifiers = g_strv_builder_end (ids);
+
+    data->complete (self->skeleton, data->invocation, (const gchar * const *) identifiers);
 }
 
 /* @terms is how the shell splits what was typed; GPaste searches the whole
@@ -195,9 +221,9 @@ on_history_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
-on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
-                   GAsyncResult *res,
-                   gpointer      user_data)
+on_items_ready (GObject      *source_object G_GNUC_UNUSED,
+                GAsyncResult *res,
+                gpointer      user_data)
 {
     g_autoptr (GetResultMetasData) data = user_data;
     GPasteSearchProvider *self = data->provider;
@@ -207,9 +233,9 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
 
     g_autoptr (GError) error = NULL;
-    g_autolist (GPasteClientItem) results = g_paste_client_get_elements_finish (self->client, res, &error);
+    g_autolist (GPasteClientItem) results = g_paste_client_get_items_finish (self->client, res, &error);
 
-    /* GetElements is all-or-nothing: one uuid the history no longer holds (it was
+    /* GetItems is all-or-nothing: one uuid the history no longer holds (it was
      * capped away between the search and this call) fails the lot with
      * %G_PASTE_ERROR_INVALID_INDEX. Describing none of them would drop every
      * result the shell is about to show, so fall back to picking out of the
@@ -228,7 +254,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         }
 
         if (error)
-            g_warning ("GPaste get elements failed: %s", error->message);
+            g_warning ("GPaste get items failed: %s", error->message);
     }
 
     /* Each item names itself, so nothing here depends on the reply coming back
@@ -237,6 +263,20 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         append_meta (&builder, g_paste_client_item_get_uuid (i->data), g_paste_client_item_get_value (i->data));
 
     g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
+}
+
+/* Whether every one of @identifiers came out of the search we last answered. */
+static gboolean
+g_paste_search_provider_metas_are_known (GPasteSearchProvider *self,
+                                         const gchar * const  *identifiers)
+{
+    for (const gchar * const *uuid = identifiers; *uuid; ++uuid)
+    {
+        if (!g_hash_table_contains (self->last_results, *uuid))
+            return FALSE;
+    }
+
+    return TRUE;
 }
 
 static gboolean
@@ -257,6 +297,23 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
         return TRUE;
     }
 
+    /* The identifiers are the ones the last search answered with, so their
+     * values are already here: describe them without a round trip at all, and
+     * without the daemon marshalling the same strings a second time. All or
+     * nothing -- one identifier from an older search, and the batch below is
+     * both cheaper than a call per uuid and fresher than what is kept here. */
+    if (g_paste_search_provider_metas_are_known (self, identifiers))
+    {
+        g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
+
+        for (const gchar * const *uuid = identifiers; *uuid; ++uuid)
+            append_meta (&builder, *uuid, g_hash_table_lookup (self->last_results, *uuid));
+
+        g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, invocation, g_variant_builder_end (&builder));
+
+        return TRUE;
+    }
+
     GetResultMetasData *data = g_new (GetResultMetasData, 1);
 
     data->provider = g_object_ref (self);
@@ -265,7 +322,7 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
      * them and the fallback matches on them once it comes back. */
     data->uuids = g_strdupv ((GStrv) identifiers);
 
-    g_paste_client_get_elements (self->client, (const gchar * const *) data->uuids, on_elements_ready, data);
+    g_paste_client_get_items (self->client, (const gchar * const *) data->uuids, on_items_ready, data);
 
     return TRUE;
 }
@@ -327,6 +384,7 @@ g_paste_search_provider_dispose (GObject *object)
 
     g_clear_object (&self->skeleton);
     g_clear_object (&self->client);
+    g_clear_pointer (&self->last_results, g_hash_table_unref);
 
     G_OBJECT_CLASS (g_paste_search_provider_parent_class)->dispose (object);
 }
@@ -357,6 +415,15 @@ g_paste_search_provider_class_init (GPasteSearchProviderClass *klass)
     G_PASTE_BUS_OBJECT_CLASS (klass)->unregister_on_connection = g_paste_search_provider_unregister_on_connection;
 }
 
+/* Swapped, so @self leads: the payload of the "update" signal says nothing this
+ * needs -- any change at all is a reason to stop answering from the values the
+ * last search handed us. */
+static void
+g_paste_search_provider_forget_results (GPasteSearchProvider *self)
+{
+    g_hash_table_remove_all (self->last_results);
+}
+
 static void
 on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
@@ -370,6 +437,14 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     self->client = g_paste_client_new_finish (res, &error);
 
+    /* Anything at all changing in the history is enough to drop the kept
+     * values: they are a snapshot of one reply, and an item edited, renamed or
+     * turned into a password since would otherwise be described with the string
+     * it used to have. Dropping them costs one GetItems on the next
+     * GetResultMetas, which is what the path did every time before. */
+    if (self->client)
+        g_signal_connect_object (self->client, "update", G_CALLBACK (g_paste_search_provider_forget_results), self, G_CONNECT_SWAPPED);
+
     /* Never abort here: this provider is also built inside gnome-shell, where
      * g_error() would take the whole compositor down over a transient D-Bus
      * failure. Without a client every search simply answers empty. */
@@ -381,6 +456,7 @@ static void
 g_paste_search_provider_init (GPasteSearchProvider *self)
 {
     self->skeleton = G_PASTE_SHELL_SEARCH_PROVIDER2 (g_paste_shell_search_provider2_skeleton_new ());
+    self->last_results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
     /* Swapped, so @self leads each handler. */
     g_signal_connect_swapped (self->skeleton, "handle-get-initial-result-set",

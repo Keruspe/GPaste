@@ -272,39 +272,23 @@ on_banner_quit (AdwBanner *banner G_GNUC_UNUSED,
     g_application_quit (G_APPLICATION (gtk_window_get_application (GTK_WINDOW (self))));
 }
 
+/* Which history is in use is a property, so the subtitle follows its notify
+ * rather than a signal, and the initial value is simply read off the proxy's
+ * cache -- no call, nothing in flight for dispose to race. */
 static void
-on_switch_history (GPasteClient *client G_GNUC_UNUSED,
-                   const gchar  *history,
-                   gpointer      user_data)
+on_history_changed (GPasteClient *client,
+                    GParamSpec   *pspec G_GNUC_UNUSED,
+                    gpointer      user_data)
 {
     GPasteUiWindow *self = user_data;
+    g_autofree gchar *history = g_paste_client_get_history_name (client);
+
+    /* A daemon leaving the bus empties that cache rather than changing it, and
+     * the subtitle takes a string: keep the name we were showing. */
+    if (!history)
+        return;
 
     g_paste_ui_header_set_subtitle (self->header, history);
-}
-
-static void
-on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
-                         GAsyncResult *res,
-                         gpointer      user_data)
-{
-    g_autoptr (GPasteUiWindow) self = user_data; /* ref taken at the call site */
-
-    /* Only meaningful because of that ref: dispose clears the client, so a NULL
-     * one means the window went away while this was in flight. */
-    if (!self->client)
-        return;
-
-    g_autoptr (GError) error = NULL;
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, &error);
-
-    /* Only the header subtitle, so carry on without it -- but say why. */
-    if (!name)
-    {
-        g_warning ("Could not get the current history name: %s", error->message);
-        return;
-    }
-
-    g_paste_ui_header_set_subtitle (self->header, name);
 }
 
 static void
@@ -515,7 +499,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     g_signal_group_set_target (search_signals, entry);
 
     self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
-    g_signal_group_connect (self->client_signals, "switch-history", G_CALLBACK (on_switch_history), self);
+    g_signal_group_connect (self->client_signals, "notify::history", G_CALLBACK (on_history_changed), self);
 
     add_shortcuts (self);
 
@@ -606,8 +590,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_signal_group_set_target (self->client_signals, self->client);
 
-    /* The callback owns this ref (see on_initial_history_name). */
-    g_paste_client_get_history_name (self->client, on_initial_history_name, g_object_ref (self));
+    on_history_changed (self->client, NULL, self);
 
     self->initialized = TRUE;
     gtk_window_present (win);

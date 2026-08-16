@@ -252,6 +252,7 @@ static void
 g_paste_history_emit_update (GPasteHistory     *self,
                              GPasteUpdateAction action,
                              GPasteUpdateTarget target,
+                             const gchar       *uuid,
                              guint64            position)
 {
     g_debug ("history: update");
@@ -261,6 +262,7 @@ g_paste_history_emit_update (GPasteHistory     *self,
                    0, /* detail */
                    action,
                    target,
+                   (uuid) ?: "",
                    position,
                    NULL);
 }
@@ -297,7 +299,17 @@ g_paste_history_update (GPasteHistory      *self,
         g_paste_history_saver_record (self->saver, op, self->name, item, uuid, snapshot);
     }
 
-    g_paste_history_emit_update (self, action, target, position);
+    /* The item the change is about: whichever one it left behind, or the uuid
+     * alone when it left none (a removal). Neither rides along with an ALL,
+     * which is about the history and not about any one item of it: the
+     * interface says both are empty there, and a client that reads the uuid
+     * whenever it is non-empty would otherwise act on an item the update was
+     * never about. The saver still gets @item -- what it persists and what the
+     * signal is about are two different questions. */
+    if (target == G_PASTE_UPDATE_TARGET_ALL)
+        g_paste_history_emit_update (self, action, target, NULL, 0);
+    else
+        g_paste_history_emit_update (self, action, target, (item) ? g_paste_item_get_uuid (item) : uuid, position);
 }
 
 static void
@@ -428,7 +440,6 @@ _g_paste_history_add (GPasteHistory *self,
 
     guint length_before = self->history->len;
     gboolean election_needed = !length_before; // If we don't have an history we want to initalize the biggest
-    GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_ALL;
 
     g_debug ("history: add");
 
@@ -443,7 +454,6 @@ _g_paste_history_add (GPasteHistory *self,
         {
             if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (old_first)))
                 election_needed = TRUE;
-            target = G_PASTE_UPDATE_TARGET_POSITION;
             /* old_first is a distinct object replaced by the grown item; free it
              * (its shared backing file, if any, is kept). */
             g_autoptr (GPasteItem) dropped = old_first;
@@ -510,7 +520,12 @@ _g_paste_history_add (GPasteHistory *self,
      * anything else and the store has rows the history no longer has. */
     gboolean displaced = self->history->len != length_before + 1;
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0, G_PASTE_HISTORY_SAVE_ADD, item, NULL, displaced);
+    /* TARGET_ALL whichever path got here. An ordinary add shifts every position
+     * along; a grown line is a new item, with a uuid of its own, standing where
+     * the one it grew from stood -- and one uuid cannot say both which item went
+     * and which arrived, the same reason _g_paste_history_replace () reports
+     * ALL. A view keyed on the old one would go on showing it. */
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_ADD, item, NULL, displaced);
 }
 
 /**
@@ -551,7 +566,7 @@ g_paste_history_remove_common (GPasteHistory *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (self);
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REMOVE, NULL, uuid, FALSE);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REMOVE, NULL, uuid, FALSE);
 }
 
 static void
@@ -739,7 +754,10 @@ _g_paste_history_replace (GPasteHistory *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (self);
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid, FALSE);
+    /* TARGET_ALL, not TARGET_ITEM: @new is a different item with a uuid of its
+     * own, so one uuid cannot say both which one went and which one arrived. A
+     * view keyed on the old one would go on showing it. */
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid, FALSE);
 }
 
 /**
@@ -894,7 +912,7 @@ g_paste_history_rename_password (GPasteHistory *self,
     if (item)
     {
         g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item), FALSE);
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item), FALSE);
     }
 }
 
@@ -1066,7 +1084,7 @@ g_paste_history_on_loaded (gpointer user_data,
     if (save_after)
         g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
     else
-        g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
+        g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, NULL, 0);
 }
 
 /**
@@ -1380,7 +1398,8 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
      * @history: the object on which the signal was emitted
      * @action: the kind of update
      * @target: the items which need updating
-     * @index: the index of the item, when the target is POSITION
+     * @uuid: the item the update is about, when the target is ITEM; "" otherwise
+     * @index: where that item sits, when the target is ITEM
      *
      * The "update" signal is emitted whenever anything changed
      * in the history (something was added, removed, selected, replaced...).
@@ -1393,9 +1412,10 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                     NULL, /* accumulator data */
                                     g_cclosure_marshal_generic,
                                     G_TYPE_NONE,
-                                    3, /* number of params */
+                                    4, /* number of params */
                                     G_PASTE_TYPE_UPDATE_ACTION,
                                     G_PASTE_TYPE_UPDATE_TARGET,
+                                    G_TYPE_STRING,
                                     G_TYPE_UINT64);
 }
 

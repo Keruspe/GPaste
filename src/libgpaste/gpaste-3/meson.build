@@ -1,9 +1,9 @@
-# The generated binding for org.gnome.GPaste2. It lives here, in the lowest
+# The generated binding for org.gnome.GPaste3. It lives here, in the lowest
 # library, because both sides need it and a GType may only be registered once in
 # a process — gnome-shell loads libgpaste and libgpaste-daemon at the same time:
 #
-#   - GPasteDaemon2 is the interface GPasteClient implements, in this library;
-#   - GPasteDaemon2Skeleton is what GPasteDaemon exports, in libgpaste-daemon,
+#   - GPasteDaemon3 is the interface GPasteClient implements, in this library;
+#   - GPasteDaemon3Skeleton is what GPasteDaemon exports, in libgpaste-daemon,
 #     which links this one.
 #
 # That second consumer is why the symbols have to be decorated: libgpaste is
@@ -15,7 +15,7 @@
 # This meson.build exists only so the output lands in gpaste-3/, keeping the
 # <gpaste-3/...> include style the rest of the tree uses.
 libgpaste_gdbus_sources = gnome.gdbus_codegen(
-  'gpaste-daemon2',
+  'gpaste-daemon3',
   sources: gpaste_dbus_interface_xml,
   interface_prefix: 'org.gnome.',
   namespace: 'G',

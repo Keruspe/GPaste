@@ -230,7 +230,7 @@ static void
 delete_item_action (GPasteClient *client,
                     const gchar  *uuid)
 {
-    g_paste_client_delete (client, uuid, NULL, NULL);
+    g_paste_client_delete_item (client, uuid, NULL, NULL);
 }
 
 static void
@@ -348,44 +348,27 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
-                               GAsyncResult *res,
-                               gpointer      user_data)
+_g_paste_ui_item_ready (GPasteUiItem     *self,
+                        GPasteClientItem *item)
 {
-    g_autoptr (AsyncCallbackData) data = user_data;
-    GPasteUiItem *self = data->self;
+    const gchar *txt = g_paste_client_item_get_value (item);
 
-    if (!g_paste_ui_item_still_wants (self, data))
+    if (!txt)
         return;
 
-    g_autoptr (GError) error = NULL;
-    GPasteItemKind kind = g_paste_client_get_element_kind_finish (self->client, res, &error);
+    GPasteItemKind kind = g_paste_client_item_get_kind (item);
+    g_autofree gchar *oneline = g_paste_util_one_line (txt);
 
-    if (error)
-        return;
+    g_paste_ui_item_apply_index_and_uuid (self, self->index, self->uuid);
 
-    GPasteUiItem *sk = self;
-
-    g_paste_ui_item_set_editable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
-    g_paste_ui_item_set_uploadable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
+    /* The kind arrives with the item, so only an image still costs a call. */
+    g_paste_ui_item_set_editable (self, kind == G_PASTE_ITEM_KIND_TEXT);
+    g_paste_ui_item_set_uploadable (self, kind == G_PASTE_ITEM_KIND_TEXT);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
         g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
     else
-        g_paste_ui_item_set_thumbnail (sk, NULL);
-}
-
-static void
-_g_paste_ui_item_ready (GPasteUiItem *self,
-                        const gchar  *txt)
-{
-    if (!txt)
-        return;
-
-    g_autofree gchar *oneline = g_paste_util_one_line (txt);
-
-    g_paste_ui_item_apply_index_and_uuid (self, self->index, self->uuid);
-    g_paste_client_get_element_kind (self->client, self->uuid, g_paste_ui_item_on_kind_ready, async_callback_data_new (self));
+        g_paste_ui_item_set_thumbnail (self, NULL);
 
     if (!self->index)
         g_paste_ui_item_set_text_bold (self, oneline);
@@ -393,8 +376,10 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
         g_paste_ui_item_set_text (self, oneline);
 }
 
+/* A search row knows its uuid and a positional one its index, so the two paths
+ * differ only in which call they make; both come back with the same item. */
 static void
-g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
+g_paste_ui_item_on_uuid_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
@@ -405,18 +390,18 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *txt = g_paste_client_get_element_finish (self->client, res, &error);
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_finish (self->client, res, &error);
 
-    if (!txt || error)
+    if (!item || error)
         return;
 
-    _g_paste_ui_item_ready (self, txt);
+    _g_paste_ui_item_ready (self, item);
 }
 
 static void
-g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
-                               GAsyncResult *res,
-                               gpointer      user_data)
+g_paste_ui_item_on_index_ready (GObject      *source_object G_GNUC_UNUSED,
+                                GAsyncResult *res,
+                                gpointer      user_data)
 {
     g_autoptr (AsyncCallbackData) data = user_data;
     GPasteUiItem *self = data->self;
@@ -425,14 +410,14 @@ g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClientItem) txt = g_paste_client_get_element_at_index_finish (self->client, res, &error);
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_finish (self->client, res, &error);
 
-    if (!txt || error)
+    if (!item || error)
         return;
 
-    g_set_str (&self->uuid, g_paste_client_item_get_uuid (txt));
+    g_set_str (&self->uuid, g_paste_client_item_get_uuid (item));
 
-    _g_paste_ui_item_ready (self, g_paste_client_item_get_value (txt));
+    _g_paste_ui_item_ready (self, item);
 }
 
 static void
@@ -441,9 +426,9 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     if (self->fake_index)
-        g_paste_client_get_element (self->client, self->uuid, g_paste_ui_item_on_text_ready, async_callback_data_new (self));
+        g_paste_client_get_item (self->client, self->uuid, g_paste_ui_item_on_uuid_ready, async_callback_data_new (self));
     else
-        g_paste_client_get_element_at_index (self->client, self->index, g_paste_ui_item_on_item_ready, async_callback_data_new (self));
+        g_paste_client_get_item_at_index (self->client, self->index, g_paste_ui_item_on_index_ready, async_callback_data_new (self));
 }
 
 static void

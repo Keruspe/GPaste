@@ -136,13 +136,33 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
                               gboolean              select);
 
 static void
-on_history_switched (GPasteClient *client G_GNUC_UNUSED,
-                     const gchar  *history,
-                     gpointer      user_data)
+on_history_changed (GPasteClient *client,
+                    GParamSpec   *pspec G_GNUC_UNUSED,
+                    gpointer      user_data)
+{
+    GPasteUiPanel *self = user_data;
+    g_autofree gchar *history = g_paste_client_get_history_name (client);
+
+    /* The property is cleared, not merely changed, when the daemon leaves the
+     * bus: nothing to select then, and nothing to add under no name at all. */
+    if (!history)
+        return;
+
+    g_paste_ui_panel_add_history (self, history, TRUE);
+}
+
+static void g_paste_ui_panel_refresh (GPasteUiPanel *self);
+
+/* A backup creates a history without switching to it, so the list has to be
+ * rebuilt from a signal of its own -- the property cannot report a history that
+ * appeared beside the current one. */
+static void
+on_histories_changed (GPasteClient *client G_GNUC_UNUSED,
+                      gpointer      user_data)
 {
     GPasteUiPanel *self = user_data;
 
-    g_paste_ui_panel_add_history (self, history, TRUE);
+    g_paste_ui_panel_refresh (self);
 }
 
 /* The item a context menu was opened on, which the menu actions all act upon:
@@ -236,33 +256,29 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
         g_paste_ui_panel_add_history (self, *h, g_paste_str_equal (*h, current));
 }
 
+/* Rebuild the list. The current history's name comes off the proxy's cached
+ * property, so only the listing itself is a call. */
 static void
-on_name_ready (GObject      *source_object G_GNUC_UNUSED,
-               GAsyncResult *res,
-               gpointer      user_data)
+g_paste_ui_panel_refresh (GPasteUiPanel *self)
 {
-    g_autoptr (GPasteUiPanel) self = user_data;
-
-    if (!self->client) /* panel was disposed while the call was in flight */
+    /* The list is what the daemon answers, so a disposed panel has nothing to
+     * rebuild it from -- and nothing to draw it on either. Reached from a signal
+     * as well as from the constructor, where dispose's order (the handlers go
+     * before the client does) is the only thing that would say otherwise. */
+    if (!self->client)
         return;
 
-    g_autoptr (GError) error = NULL;
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (self->client, res, &error);
+    HistoriesData *data = g_new (HistoriesData, 1);
+
+    data->self = g_object_ref (self);
+    data->name = g_paste_client_get_history_name (self->client);
 
     /* Not fatal -- the list is still worth showing -- but with no current name
      * none of its rows will come out marked as the active one. */
-    if (!name)
-        g_warning ("Could not get the current history name: %s", error->message);
+    if (!data->name)
+        g_warning ("Could not get the current history name.");
 
-    HistoriesData *data = g_new (HistoriesData, 1);
-    /* Grab the client before the steal below hands our ref to @data and leaves
-     * @self NULL. */
-    GPasteClient *client = self->client;
-
-    data->self = g_steal_pointer (&self);
-    data->name = g_steal_pointer (&name);
-
-    g_paste_client_list_histories (client, on_histories_ready, data);
+    g_paste_client_list_histories (self->client, on_histories_ready, data);
 }
 
 static void
@@ -556,8 +572,12 @@ g_paste_ui_panel_new (GPasteClient   *client,
                             G_CALLBACK (on_history_emptied),
                             self);
     g_signal_group_connect (client_signals,
-                            "switch-history",
-                            G_CALLBACK (on_history_switched),
+                            "notify::history",
+                            G_CALLBACK (on_history_changed),
+                            self);
+    g_signal_group_connect (client_signals,
+                            "histories-changed",
+                            G_CALLBACK (on_histories_changed),
                             self);
     g_signal_group_set_target (client_signals, client);
 
@@ -566,7 +586,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
                                                        G_CALLBACK (on_setup_menu),
                                                        self);
 
-    g_paste_client_get_history_name (client, on_name_ready, g_object_ref (self));
+    g_paste_ui_panel_refresh (self);
 
     return widget;
 }

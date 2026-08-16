@@ -20,9 +20,13 @@ typedef enum {
 #define G_PASTE_TYPE_UPDATE_ACTION (g_paste_update_action_get_type ())
 GType g_paste_update_action_get_type (void);
 
+/* What an update is about. %G_PASTE_UPDATE_TARGET_ITEM names one item, by the
+ * uuid the signal carries -- a position alone would say nothing to a view
+ * listing something other than positions, which is what a search or the
+ * favourites is. */
 typedef enum {
     G_PASTE_UPDATE_TARGET_ALL = 1,
-    G_PASTE_UPDATE_TARGET_POSITION,
+    G_PASTE_UPDATE_TARGET_ITEM,
     G_PASTE_UPDATE_TARGET_INVALID = 0
 } GPasteUpdateTarget;
 

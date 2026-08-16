@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <getopt.h>
@@ -190,9 +191,7 @@ static gint
 g_paste_history (Context *ctx,
                  GError **error)
 {
-    g_autolist (GPasteClientItem) history = (ctx->raw) ?
-        g_paste_client_get_raw_history_sync (ctx->client, error) :
-        g_paste_client_get_history_sync (ctx->client, error);
+    g_autolist (GPasteClientItem) history = g_paste_client_get_history_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -213,7 +212,7 @@ static gint
 g_paste_about (Context *ctx,
                GError **error)
 {
-    g_paste_client_about_sync (ctx->client, error);
+    g_paste_client_show_about_sync (ctx->client, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -296,11 +295,29 @@ g_paste_daemon_version (Context *ctx,
     return EXIT_SUCCESS;
 }
 
+/* The history a command acts on when none was named on the command line. It
+ * comes off the proxy's cached property, which is empty until the daemon has
+ * answered for it and again once it leaves the bus -- and a %NULL name must not
+ * travel on to a call that expects one, where it would be built as
+ * g_variant_new ("(s)", NULL). Reading it used to be a call of its own, so this
+ * is the error that call would have raised. */
+static gchar *
+current_history (Context  *ctx,
+                 GError  **error)
+{
+    gchar *name = g_paste_client_get_history_name (ctx->client);
+
+    if (!name)
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "Couldn't get the name of the current history.");
+
+    return name;
+}
+
 static gint
 g_paste_empty (Context *ctx,
                GError **error)
 {
-    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : current_history (ctx, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -314,7 +331,7 @@ static gint
 g_paste_get_history (Context *ctx,
                      GError **error)
 {
-    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = current_history (ctx, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -328,7 +345,7 @@ static gint
 g_paste_history_size (Context *ctx,
                       GError **error)
 {
-    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : current_history (ctx, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -362,7 +379,10 @@ static gint
 g_paste_delete_history (Context *ctx,
                         GError **error)
 {
-    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : current_history (ctx, error);
+
+    if (*error)
+        return EXIT_FAILURE;
 
     g_paste_client_delete_history_sync (ctx->client, name, error);
 
@@ -389,7 +409,7 @@ static gint
 g_paste_start (Context *ctx,
                GError **error)
 {
-    g_paste_client_track_sync (ctx->client, TRUE, error);
+    g_paste_client_set_active_sync (ctx->client, TRUE, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -398,7 +418,7 @@ static gint
 g_paste_stop (Context *ctx,
               GError **error)
 {
-    g_paste_client_track_sync (ctx->client, FALSE, error);
+    g_paste_client_set_active_sync (ctx->client, FALSE, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -425,7 +445,7 @@ g_paste_add (Context *ctx,
         return EXIT_FAILURE;
     }
 
-    g_paste_client_add_sync (ctx->client, data, error);
+    g_paste_client_add_text_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -445,11 +465,11 @@ g_paste_add_password (Context *ctx,
 }
 
 static gint
-g_paste_backup_history (Context *ctx   G_GNUC_UNUSED,
-                        GError **error G_GNUC_UNUSED)
+g_paste_backup_history (Context *ctx,
+                        GError **error)
 {
     guint64 index = 0;
-    g_autofree gchar *name = (ctx->argc > 1) ? g_strdup (ctx->args[index++]) : g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = (ctx->argc > 1) ? g_strdup (ctx->args[index++]) : current_history (ctx, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -463,7 +483,7 @@ static gint
 g_paste_delete (Context *ctx,
                 GError **error)
 {
-    g_paste_client_delete_sync (ctx->client, ctx->uuid, error);
+    g_paste_client_delete_item_sync (ctx->client, ctx->uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -490,12 +510,12 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autofree gchar *value = ((ctx->raw) ? g_paste_client_get_raw_element_sync : g_paste_client_get_element_sync) (ctx->client, ctx->uuid, error);
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_sync (ctx->client, ctx->uuid, error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s", value);
+    printf ("%s", g_paste_client_item_get_value (item));
 
     return EXIT_SUCCESS;
 }
@@ -518,12 +538,11 @@ static gint
 g_paste_search (Context *ctx,
                 GError **error)
 {
-    g_auto (GStrv) results = g_paste_client_search_sync (ctx->client, ctx->args[0], error);
+    g_autolist (GPasteClientItem) items = g_paste_client_search_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    g_autolist (GPasteClientItem) items = g_paste_client_get_elements_sync (ctx->client, (const gchar * const *) results, error);
     guint index = 0;
 
     for (const GList *i = items; i; i = i->next)
@@ -786,7 +805,7 @@ main (gint argc, gchar *argv[])
          * it, and every verb that could use the uuid needs a client anyway. */
         if (ctx.client && ctx.use_index && ctx.argc > 0)
         {
-            g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
+            g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
 
             if (!error)
                 ctx.uuid = uuid = g_strdup (g_paste_client_item_get_uuid (item));

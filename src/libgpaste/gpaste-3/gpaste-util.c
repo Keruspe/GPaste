@@ -256,22 +256,31 @@ g_paste_util_has_gnome_shell (void)
     return !!schema;
 }
 
-/* Turn a "(ss)" GVariant into an item. */
-static GPasteClientItem *
+/**
+ * g_paste_util_get_dbus_item_result:
+ * @variant: a #GVariant
+ *
+ * Get an item out of the %G_PASTE_ITEM_VARIANT_STRING #GVariant the daemon
+ * answers every single-item method with
+ *
+ * Returns: (transfer full): The item
+ */
+G_PASTE_VISIBLE GPasteClientItem *
 g_paste_util_get_dbus_item_result (GVariant *variant)
 {
     const gchar *uuid, *value;
+    guint32 kind;
 
-    g_variant_get (variant, "(ss)", &uuid, &value);
+    g_variant_get (variant, G_PASTE_ITEM_VARIANT_STRING, &uuid, &value, &kind);
 
-    return g_paste_client_item_new (uuid, value);
+    return g_paste_client_item_new (uuid, value, kind);
 }
 
 /**
  * g_paste_util_get_dbus_items_result:
  * @variant: a #GVariant
  *
- * Get the "a(ss)" GVariant as a list of items
+ * Get the %G_PASTE_ITEMS_VARIANT_STRING #GVariant as a list of items
  *
  * Returns: (element-type GPasteClientItem) (transfer full): The items
  */

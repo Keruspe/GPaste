@@ -76,7 +76,7 @@ _gpaste_client_options()
             printf '%s' "${common} --oneline -o --raw -r --reverse -e --zero -z --use-index -i"
             ;;
         get|g)
-            printf '%s' "${common} --raw -r --use-index -i"
+            printf '%s' "${common} --use-index -i"
             ;;
         select|set|s|delete|del|d|remove|rm|replace|upload|u|set-password|sp)
             printf '%s' "${common} --use-index -i"

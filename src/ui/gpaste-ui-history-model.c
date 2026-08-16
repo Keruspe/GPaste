@@ -106,7 +106,7 @@ struct _GPasteUiHistoryModel
     GObject    parent_instance;
 
     GPtrArray *items;
-    gboolean   search; /* the rows are search results rather than history positions */
+    gboolean   by_uuid; /* the rows are named (a search, the favourites) rather than history positions */
 };
 
 static void g_paste_ui_history_model_list_model_iface_init (GListModelInterface *iface);
@@ -207,10 +207,10 @@ g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
 
     guint old_len = self->items->len;
 
-    /* Coming back from a search, every row changes role rather than position. */
-    if (self->search)
+    /* Coming back from a named view, every row changes role rather than position. */
+    if (self->by_uuid)
     {
-        self->search = FALSE;
+        self->by_uuid = FALSE;
         g_paste_ui_history_model_reset (self, size, NULL);
         return TRUE;
     }
@@ -236,19 +236,20 @@ g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
 }
 
 /**
- * g_paste_ui_history_model_set_search:
+ * g_paste_ui_history_model_set_uuids:
  * @self: a #GPasteUiHistoryModel
- * @uuids: (array zero-terminated=1) (nullable): the matching uuids
+ * @uuids: (array zero-terminated=1) (nullable): the uuids to list
  *
- * Switch to a search view listing @uuids.
+ * Switch to a uuid-driven view listing @uuids, which is what both a search and
+ * the favourites filter show: rows named rather than counted.
  */
 void
-g_paste_ui_history_model_set_search (GPasteUiHistoryModel *self,
+g_paste_ui_history_model_set_uuids (GPasteUiHistoryModel *self,
                                      const gchar * const  *uuids)
 {
     g_return_if_fail (G_PASTE_IS_UI_HISTORY_MODEL (self));
 
-    self->search = TRUE;
+    self->by_uuid = TRUE;
 
     g_paste_ui_history_model_reset (self, (uuids) ? g_strv_length ((GStrv) uuids) : 0, uuids);
 }
@@ -305,6 +306,36 @@ g_paste_ui_history_model_item_replaced (GPasteUiHistoryModel *self,
                                         guint64               position)
 {
     g_paste_ui_history_model_invalidate (self, position, 1);
+}
+
+/**
+ * g_paste_ui_history_model_item_replaced_by_uuid:
+ * @self: a #GPasteUiHistoryModel
+ * @uuid: the uuid of the item that changed
+ *
+ * Report that the row showing @uuid no longer shows the same thing.
+ *
+ * The counterpart of g_paste_ui_history_model_item_replaced() for a uuid-driven
+ * view, where a position means nothing. A uuid this view does not list is not an
+ * error: an update is broadcast to every client whatever each is showing.
+ */
+void
+g_paste_ui_history_model_item_replaced_by_uuid (GPasteUiHistoryModel *self,
+                                                const gchar          *uuid)
+{
+    g_return_if_fail (G_PASTE_IS_UI_HISTORY_MODEL (self));
+
+    if (!uuid || !*uuid)
+        return;
+
+    for (guint i = 0; i < self->items->len; ++i)
+    {
+        if (g_paste_str_equal (g_paste_ui_history_item_get_uuid (g_ptr_array_index (self->items, i)), uuid))
+        {
+            g_paste_ui_history_model_invalidate (self, i, 1);
+            return;
+        }
+    }
 }
 
 static void

@@ -29,7 +29,7 @@ g_paste_update_target_get_type (void)
     {
         static const GEnumValue values[] = {
             { G_PASTE_UPDATE_TARGET_ALL,      "G_PASTE_UPDATE_TARGET_ALL",      "ALL"      },
-            { G_PASTE_UPDATE_TARGET_POSITION, "G_PASTE_UPDATE_TARGET_POSITION", "POSITION" },
+            { G_PASTE_UPDATE_TARGET_ITEM,     "G_PASTE_UPDATE_TARGET_ITEM",     "ITEM"     },
             { G_PASTE_UPDATE_TARGET_INVALID,  NULL,                             NULL       }
         };
         etype = g_enum_register_static (g_intern_static_string ("GPasteUpdateTarget"), values);

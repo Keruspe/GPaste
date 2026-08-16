@@ -50,10 +50,10 @@ libgpaste = library(
 libgpaste_internal_dep = declare_dependency(
   link_with: libgpaste,
   include_directories: include_directories('.'),
-  # Carries the generated gpaste-3/gpaste-daemon2.h to everything that links
+  # Carries the generated gpaste-3/gpaste-daemon3.h to everything that links
   # this library, so no dependent can start compiling before it exists. Only the
-  # header: handing over the whole codegen output would compile gpaste-daemon2.c
-  # into every dependent too, and each copy registers the GPasteDaemon2 GType.
+  # header: handing over the whole codegen output would compile gpaste-daemon3.c
+  # into every dependent too, and each copy registers the GPasteDaemon3 GType.
   sources: libgpaste_gdbus_sources[1],
 )
 

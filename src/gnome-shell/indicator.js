@@ -58,7 +58,7 @@ class GPasteIndicator extends Button {
         this.menu.addMenuItem(this._dummyHistoryItem);
 
         this._searchItem = new GPasteSearchItem();
-        this._searchItem.connect('text-changed', this._onNewSearch.bind(this));
+        this._searchItem.connect('text-changed', this._reloadCurrent.bind(this));
 
         this._settings.connectObject('notify::element-size', this._resetElementSize.bind(this), this);
         this._resetElementSize();
@@ -104,9 +104,13 @@ class GPasteIndicator extends Button {
         // an unhandled rejection.
         this._emptyHistoryItem = new GPasteActionButton('edit-clear-all-symbolic', _('Empty history'), () => {
             this.menu.itemActivated();
-            this._client.get_history_name()
-                .then(name => GPaste.util_empty_with_confirmation(this._client, this._settings, name))
-                .catch(console.error);
+
+            // No name, no history to empty: the property is cached off the
+            // daemon, and reads back null while it is away.
+            const history = this._client.get_history_name();
+
+            if (history)
+                GPaste.util_empty_with_confirmation(this._client, this._settings, history);
         });
         this._switch = new GPasteStateSwitch(this._client);
 
@@ -239,10 +243,6 @@ class GPasteIndicator extends Button {
         return this._hasSearch() ? this._searchResults.length : this._available;
     }
 
-    _onNewSearch() {
-        this._reloadCurrent();
-    }
-
     _resetElementSize() {
         const size = this._settings.get_element_size();
         this._searchItem.resetSize(size / 2 + 3);
@@ -350,11 +350,15 @@ class GPasteIndicator extends Button {
     async _fetchAvailable() {
         const generation = this._reloadGeneration;
 
-        const name = await this._client.get_history_name();
-        if (!this._client || generation !== this._reloadGeneration)
+        // The history's name is a cached property, so sizing it is the only
+        // call -- but the cache is empty while the daemon is off the bus, and
+        // sizing a history named null is no question to ask.
+        const history = this._client.get_history_name();
+
+        if (!history)
             return false;
 
-        const available = await this._client.get_history_size(name);
+        const available = await this._client.get_history_size(history);
         if (!this._client || generation !== this._reloadGeneration)
             return false;
 
@@ -376,6 +380,9 @@ class GPasteIndicator extends Button {
         this._rebuild(this._available === 0);
     }
 
+    // The daemon answers with the matching items themselves, so a row needs no
+    // fetch of its own; only their uuids are kept, which is what a row is
+    // addressed by.
     async _runSearch() {
         if (!this._client)
             return;
@@ -383,12 +390,12 @@ class GPasteIndicator extends Button {
         const generation = ++this._reloadGeneration;
         const search = this._searchItem.text.toLowerCase();
 
-        const results = await this._client.search(search);
+        const items = await this._client.search(search);
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
-        this._searchResults = results;
-        this._rebuild(results.length === 0);
+        this._searchResults = items.map(item => item.get_uuid());
+        this._rebuild(this._searchResults.length === 0);
     }
 
     // Reconcile the materialised rows with the current content (history or
@@ -464,10 +471,20 @@ class GPasteIndicator extends Button {
         this._maybeLoadMore();
     }
 
-    _update(client, action, target, position) {
-        // While searching, the visible rows map to search results rather than
-        // history positions, so re-run the search instead.
+    _update(client, action, target, uuid, position) {
+        // A search maps its rows to uuids rather than to history positions, so a
+        // position says nothing to it. One item changing in place is still worth
+        // catching by uuid; anything else means re-running the search.
         if (this._hasSearch()) {
+            if (target === GPaste.UpdateTarget.ITEM && action === GPaste.UpdateAction.REPLACE) {
+                const row = this._history.find(i => i.uuid === uuid);
+
+                if (row) {
+                    row.refresh();
+                    return;
+                }
+            }
+
             this._runSearch().catch(console.error);
             return;
         }
@@ -476,7 +493,7 @@ class GPasteIndicator extends Button {
         case GPaste.UpdateTarget.ALL:
             this._refresh(0).catch(console.error);
             break;
-        case GPaste.UpdateTarget.POSITION:
+        case GPaste.UpdateTarget.ITEM:
             switch (action) {
             case GPaste.UpdateAction.REPLACE:
                 this._history[position]?.refresh();
@@ -520,15 +537,15 @@ class GPasteIndicator extends Button {
 
     _onStateChanged(state) {
         if (this._client)
-            this._client.on_extension_state_changed(state, null);
+            this._client.report_extension_state(state, null);
     }
 
     _onOpenStateChanged(menu, state) {
         if (state) {
             // reset() clears any leftover search text; when there was some, that
-            // synchronously fires 'text-changed' → _onNewSearch → _reloadCurrent,
-            // so only reload explicitly when the search was already empty, to
-            // avoid a redundant round-trip on every open.
+            // synchronously fires 'text-changed', which is bound straight to
+            // _reloadCurrent, so only reload explicitly when the search was
+            // already empty, to avoid a redundant round-trip on every open.
             const hadSearch = this._hasSearch();
             this._searchItem.reset();
             if (!hadSearch)

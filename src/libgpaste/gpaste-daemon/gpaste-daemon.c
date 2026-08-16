@@ -20,7 +20,7 @@ struct _GPasteDaemon
 {
     GPasteBusObject parent_instance;
 
-    GPasteDaemon2           *skeleton;
+    GPasteDaemon3           *skeleton;
     gboolean                 registered;
 
     GPasteHistory           *history;
@@ -61,16 +61,16 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /* DBus Signals */
 /****************/
 
+/* The enums travel as their own values: the nicks are the storage backends'
+ * spelling of an enum, and nothing on the wire has to share it. */
 static void
 g_paste_daemon_update (GPasteDaemon      *self,
                        GPasteUpdateAction action,
                        GPasteUpdateTarget target,
+                       const gchar       *uuid,
                        guint64            position)
 {
-    g_paste_daemon2_emit_raw_update (self->skeleton,
-                                     g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action)->value_nick,
-                                     g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), target)->value_nick,
-                                     position);
+    g_paste_daemon3_emit_raw_update (self->skeleton, action, target, uuid, position);
 }
 
 /**
@@ -90,7 +90,7 @@ g_paste_daemon_show_history (GPasteDaemon *self,
 {
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
-    g_paste_daemon2_emit_raw_show_history (self->skeleton);
+    g_paste_daemon3_emit_raw_show_history (self->skeleton);
 }
 
 /**
@@ -150,7 +150,7 @@ g_paste_daemon_reload_storage (GPasteDaemon *self)
  * @self: (transfer none): the #GPasteDaemon
  * @state: whether the gnome-shell extension is there
  *
- * Same as the OnExtensionStateChanged D-Bus method, for a host that runs the
+ * Same as the ReportExtensionState D-Bus method, for a host that runs the
  * daemon in its own process: the gnome-shell extension being disabled is also
  * what tears its daemon down, so the D-Bus call it would otherwise make is
  * dispatched — if at all — against a name it has already released. Applied
@@ -175,7 +175,7 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
                          GParamSpec     *pspec G_GNUC_UNUSED,
                          GPasteSettings *settings)
 {
-    g_paste_daemon2_set_active (self->skeleton, g_paste_settings_get_track_changes (settings));
+    g_paste_daemon3_set_active (self->skeleton, g_paste_settings_get_track_changes (settings));
 }
 
 /********************/
@@ -414,7 +414,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
  *
  * A handler's signature is not checked against the vfunc it is connected to, so
  * concentrating them here is also what keeps that hazard in four places rather
- * than thirty-three: compare these against struct _GPasteDaemon2Iface by hand
+ * than thirty-three: compare these against struct _GPasteDaemon3Iface by hand
  * when a method changes. */
 #define ARGLIST(...) , ##__VA_ARGS__
 
@@ -439,7 +439,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
         const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
                                                                                       \
         g_paste_daemon_methods_##name (&methods ARGLIST ARGS);                        \
-        g_paste_daemon2_complete_##name (self->skeleton, invocation);                 \
+        g_paste_daemon3_complete_##name (self->skeleton, invocation);                 \
                                                                                       \
         return TRUE;                                                                  \
     }
@@ -453,7 +453,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
                                                                                       \
         g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);                \
                                                                                       \
-        G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_##name (self->skeleton, invocation)); \
+        G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_##name (self->skeleton, invocation)); \
     }
 
 /* Answers something, cannot fail. */
@@ -462,7 +462,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
     {                                                                                 \
         const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
                                                                                       \
-        g_paste_daemon2_complete_##name (self->skeleton,                              \
+        g_paste_daemon3_complete_##name (self->skeleton,                              \
                                          invocation,                                  \
                                          g_paste_daemon_methods_##name (&methods ARGLIST ARGS)); \
                                                                                       \
@@ -478,22 +478,12 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
         g_autoptr (GError) error = NULL;                                              \
         decl = g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);         \
                                                                                       \
-        G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_##name (self->skeleton, invocation, value)); \
+        G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_##name (self->skeleton, invocation, value)); \
     }
 
-static gboolean
-g_paste_daemon_handle_about (GPasteDaemon          *self,
-                             GDBusMethodInvocation *invocation)
-{
-    g_paste_util_activate_ui ("about", NULL);
-    g_paste_daemon2_complete_about (self->skeleton, invocation);
-
-    return TRUE;
-}
-
-G_PASTE_DAEMON_HANDLER_ERR (add, (const gchar *text), (text))
-
 G_PASTE_DAEMON_HANDLER_ERR (add_file, (const gchar *file), (file))
+
+G_PASTE_DAEMON_HANDLER_ERR (add_text, (const gchar *text), (text))
 
 G_PASTE_DAEMON_HANDLER_ERR (add_password, (const gchar *name, const gchar *password), (name, password))
 
@@ -507,10 +497,10 @@ g_paste_daemon_handle_change_passphrase (GPasteDaemon          *self,
 
     g_paste_daemon_change_passphrase (self, &error);
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_change_passphrase (self->skeleton, invocation));
+    G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_change_passphrase (self->skeleton, invocation));
 }
 
-G_PASTE_DAEMON_HANDLER_ERR (delete, (const gchar *uuid), (uuid))
+G_PASTE_DAEMON_HANDLER_ERR (delete_item, (const gchar *uuid), (uuid))
 
 G_PASTE_DAEMON_HANDLER_ERR (delete_history, (const gchar *name), (name))
 
@@ -518,35 +508,7 @@ G_PASTE_DAEMON_HANDLER_ERR (delete_password, (const gchar *name), (name))
 
 G_PASTE_DAEMON_HANDLER (empty_history, (const gchar *name), (name))
 
-G_PASTE_DAEMON_HANDLER_RET_ERR (get_element,
-                                const gchar *value, value,
-                                (const gchar *uuid), (uuid))
-
-static gboolean
-g_paste_daemon_handle_get_element_at_index (GPasteDaemon          *self,
-                                            GDBusMethodInvocation *invocation,
-                                            guint64                index)
-{
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) error = NULL;
-    const gchar *uuid = NULL, *value = NULL;
-
-    g_paste_daemon_methods_get_element_at_index (&methods, index, &uuid, &value, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_get_element_at_index (self->skeleton, invocation, uuid, value));
-}
-
-G_PASTE_DAEMON_HANDLER_RET_ERR (get_element_kind,
-                                const gchar *kind, kind,
-                                (const gchar *uuid), (uuid))
-
-G_PASTE_DAEMON_HANDLER_RET_ERR (get_elements,
-                                GVariant *elements, elements,
-                                (const gchar * const *uuids), (uuids))
-
 G_PASTE_DAEMON_HANDLER_RET (get_history, (), ())
-
-G_PASTE_DAEMON_HANDLER_RET (get_history_name, (), ())
 
 G_PASTE_DAEMON_HANDLER_RET (get_history_size, (const gchar *name), (name))
 
@@ -554,11 +516,17 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_image,
                                 GVariant *image, image,
                                 (const gchar *uuid), (uuid))
 
-G_PASTE_DAEMON_HANDLER_RET_ERR (get_raw_element,
-                                const gchar *value, value,
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_item,
+                                GVariant *item, item,
                                 (const gchar *uuid), (uuid))
 
-G_PASTE_DAEMON_HANDLER_RET (get_raw_history, (), ())
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_item_at_index,
+                                GVariant *item, item,
+                                (guint64 index), (index))
+
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_items,
+                                GVariant *items, items,
+                                (const gchar * const *uuids), (uuids))
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
                                 g_auto (GStrv) histories, (const gchar * const *) histories,
@@ -567,14 +535,14 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
 G_PASTE_DAEMON_HANDLER_ERR (merge, (const gchar *decoration, const gchar *separator, const gchar * const *uuids), (decoration, separator, uuids))
 
 static gboolean
-g_paste_daemon_handle_on_extension_state_changed (GPasteDaemon          *self,
-                                                  GDBusMethodInvocation *invocation,
-                                                  gboolean               extension_state)
+g_paste_daemon_handle_report_extension_state (GPasteDaemon          *self,
+                                              GDBusMethodInvocation *invocation,
+                                              gboolean               active)
 {
     const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
 
-    g_paste_daemon_methods_extension_state_changed (&methods, extension_state);
-    g_paste_daemon2_complete_on_extension_state_changed (self->skeleton, invocation);
+    g_paste_daemon_methods_extension_state_changed (&methods, active);
+    g_paste_daemon3_complete_report_extension_state (self->skeleton, invocation);
 
     return TRUE;
 }
@@ -584,7 +552,7 @@ g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
                                  GDBusMethodInvocation *invocation)
 {
     g_paste_daemon_reexecute (self);
-    g_paste_daemon2_complete_reexecute (self->skeleton, invocation);
+    g_paste_daemon3_complete_reexecute (self->skeleton, invocation);
 
     return TRUE;
 }
@@ -594,12 +562,24 @@ G_PASTE_DAEMON_HANDLER_ERR (rename_password, (const gchar *old_name, const gchar
 G_PASTE_DAEMON_HANDLER_ERR (replace, (const gchar *uuid, const gchar *contents), (uuid, contents))
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (search,
-                                g_auto (GStrv) results, (const gchar * const *) results,
+                                GVariant *results, results,
                                 (const gchar *query), (query))
 
 G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 
+G_PASTE_DAEMON_HANDLER (set_active, (gboolean active), (active))
+
 G_PASTE_DAEMON_HANDLER_ERR (set_password, (const gchar *uuid, const gchar *name), (uuid, name))
+
+static gboolean
+g_paste_daemon_handle_show_about (GPasteDaemon          *self,
+                                  GDBusMethodInvocation *invocation)
+{
+    g_paste_util_activate_ui ("about", NULL);
+    g_paste_daemon3_complete_show_about (self->skeleton, invocation);
+
+    return TRUE;
+}
 
 static gboolean
 g_paste_daemon_handle_show_history (GPasteDaemon          *self,
@@ -609,12 +589,10 @@ g_paste_daemon_handle_show_history (GPasteDaemon          *self,
 
     g_paste_daemon_show_history (self, &error);
 
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon2_complete_show_history (self->skeleton, invocation));
+    G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_show_history (self->skeleton, invocation));
 }
 
 G_PASTE_DAEMON_HANDLER_ERR (switch_history, (const gchar *name), (name))
-
-G_PASTE_DAEMON_HANDLER (track, (gboolean tracking_state), (tracking_state))
 
 static gboolean
 g_paste_daemon_handle_upload (GPasteDaemon          *self,
@@ -622,7 +600,7 @@ g_paste_daemon_handle_upload (GPasteDaemon          *self,
                               const gchar           *uuid)
 {
     if (g_paste_daemon_upload (self, uuid))
-        g_paste_daemon2_complete_upload (self->skeleton, invocation);
+        g_paste_daemon3_complete_upload (self->skeleton, invocation);
     else
     {
         g_dbus_method_invocation_return_error_literal (invocation,
@@ -647,38 +625,34 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         const gchar *signal_name;
         GCallback    handler;
     } handlers[] = {
-        { "handle-about",                       G_CALLBACK (g_paste_daemon_handle_about)                       },
-        { "handle-add",                         G_CALLBACK (g_paste_daemon_handle_add)                         },
         { "handle-add-file",                    G_CALLBACK (g_paste_daemon_handle_add_file)                    },
         { "handle-add-password",                G_CALLBACK (g_paste_daemon_handle_add_password)                },
+        { "handle-add-text",                    G_CALLBACK (g_paste_daemon_handle_add_text)                    },
         { "handle-backup-history",              G_CALLBACK (g_paste_daemon_handle_backup_history)              },
         { "handle-change-passphrase",           G_CALLBACK (g_paste_daemon_handle_change_passphrase)           },
-        { "handle-delete",                      G_CALLBACK (g_paste_daemon_handle_delete)                      },
         { "handle-delete-history",              G_CALLBACK (g_paste_daemon_handle_delete_history)              },
+        { "handle-delete-item",                 G_CALLBACK (g_paste_daemon_handle_delete_item)                 },
         { "handle-delete-password",             G_CALLBACK (g_paste_daemon_handle_delete_password)             },
         { "handle-empty-history",               G_CALLBACK (g_paste_daemon_handle_empty_history)               },
-        { "handle-get-element",                 G_CALLBACK (g_paste_daemon_handle_get_element)                 },
-        { "handle-get-element-at-index",        G_CALLBACK (g_paste_daemon_handle_get_element_at_index)        },
-        { "handle-get-element-kind",            G_CALLBACK (g_paste_daemon_handle_get_element_kind)            },
-        { "handle-get-elements",                G_CALLBACK (g_paste_daemon_handle_get_elements)                },
         { "handle-get-history",                 G_CALLBACK (g_paste_daemon_handle_get_history)                 },
-        { "handle-get-history-name",            G_CALLBACK (g_paste_daemon_handle_get_history_name)            },
         { "handle-get-history-size",            G_CALLBACK (g_paste_daemon_handle_get_history_size)            },
         { "handle-get-image",                   G_CALLBACK (g_paste_daemon_handle_get_image)                   },
-        { "handle-get-raw-element",             G_CALLBACK (g_paste_daemon_handle_get_raw_element)             },
-        { "handle-get-raw-history",             G_CALLBACK (g_paste_daemon_handle_get_raw_history)             },
+        { "handle-get-item",                    G_CALLBACK (g_paste_daemon_handle_get_item)                    },
+        { "handle-get-item-at-index",           G_CALLBACK (g_paste_daemon_handle_get_item_at_index)           },
+        { "handle-get-items",                   G_CALLBACK (g_paste_daemon_handle_get_items)                   },
         { "handle-list-histories",              G_CALLBACK (g_paste_daemon_handle_list_histories)              },
         { "handle-merge",                       G_CALLBACK (g_paste_daemon_handle_merge)                       },
-        { "handle-on-extension-state-changed",  G_CALLBACK (g_paste_daemon_handle_on_extension_state_changed)  },
         { "handle-reexecute",                   G_CALLBACK (g_paste_daemon_handle_reexecute)                   },
         { "handle-rename-password",             G_CALLBACK (g_paste_daemon_handle_rename_password)             },
         { "handle-replace",                     G_CALLBACK (g_paste_daemon_handle_replace)                     },
+        { "handle-report-extension-state",      G_CALLBACK (g_paste_daemon_handle_report_extension_state)      },
         { "handle-search",                      G_CALLBACK (g_paste_daemon_handle_search)                      },
         { "handle-select",                      G_CALLBACK (g_paste_daemon_handle_select)                      },
+        { "handle-set-active",                  G_CALLBACK (g_paste_daemon_handle_set_active)                  },
         { "handle-set-password",                G_CALLBACK (g_paste_daemon_handle_set_password)                },
+        { "handle-show-about",                  G_CALLBACK (g_paste_daemon_handle_show_about)                  },
         { "handle-show-history",                G_CALLBACK (g_paste_daemon_handle_show_history)                },
         { "handle-switch-history",              G_CALLBACK (g_paste_daemon_handle_switch_history)              },
-        { "handle-track",                       G_CALLBACK (g_paste_daemon_handle_track)                       },
         { "handle-upload",                      G_CALLBACK (g_paste_daemon_handle_upload)                      },
     };
 
@@ -710,18 +684,21 @@ static void
 g_paste_daemon_on_history_update (GPasteDaemon      *self,
                                   GPasteUpdateAction action,
                                   GPasteUpdateTarget target,
+                                  const gchar       *uuid,
                                   guint64            position,
                                   gpointer           user_data G_GNUC_UNUSED)
 {
-    g_paste_daemon_update (self, action, target, position);
+    g_paste_daemon_update (self, action, target, uuid, position);
 }
 
+/* Which history is in use is state, so it is a property: the skeleton turns the
+ * assignment into the PropertiesChanged a client listens for. */
 static void
 g_paste_daemon_on_history_switch (GPasteDaemon *self,
                                   const gchar  *name,
                                   gpointer      user_data G_GNUC_UNUSED)
 {
-    g_paste_daemon2_emit_raw_switch_history (self->skeleton, name);
+    g_paste_daemon3_set_history (self->skeleton, name);
 }
 
 static void
@@ -761,7 +738,7 @@ _g_paste_daemon_changed (gpointer data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (data);
 
-    g_paste_daemon_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
+    g_paste_daemon_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0);
 }
 
 /* One-shot startup nudge: owns a ref (taken at the call site) so the daemon
@@ -818,6 +795,14 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
      * read FALSE until the user toggled tracking. Here rather than in init() so
      * it is the state as of the moment the interface goes on the bus. */
     g_paste_daemon_tracking (daemon, NULL, daemon->settings);
+
+    /* And "History" likewise, for the same reason one level down: the property
+     * is written from the "switch" signal, which loading the history at startup
+     * does not emit -- only a later change of history does. Unseeded it would
+     * read "", and a client that sized or emptied "the current history" would
+     * name a history called "" instead. The setting is where the daemon's own
+     * history took its name from (g_paste_history_load_async (history, NULL)). */
+    g_paste_daemon3_set_history (daemon->skeleton, g_paste_settings_get_history_name (daemon->settings));
 
     daemon->registered = TRUE;
 
@@ -914,8 +899,8 @@ g_paste_daemon_init (GPasteDaemon *self)
      * the skeleton. "Version" never changes, so it is set once here; "Active"
      * follows the track-changes setting, and is seeded from it when the
      * interface is exported (see g_paste_daemon_tracking()). */
-    self->skeleton = G_PASTE_DAEMON2 (g_paste_daemon2_skeleton_new ());
-    g_paste_daemon2_set_version (self->skeleton, VERSION);
+    self->skeleton = G_PASTE_DAEMON3 (g_paste_daemon3_skeleton_new ());
+    g_paste_daemon3_set_version (self->skeleton, VERSION);
 
     g_paste_daemon_connect_handlers (self);
 

@@ -8,6 +8,30 @@
 
 #include <string.h>
 
+/* The one shape an item takes on the wire, and the one value it carries: the
+ * string a user is shown. */
+static GVariant *
+g_paste_daemon_methods_item_variant (GPasteItem *item)
+{
+    return g_variant_new (G_PASTE_ITEM_VARIANT_STRING,
+                          g_paste_item_get_uuid (item),
+                          g_paste_item_get_display_string (item),
+                          (guint32) g_paste_item_get_kind (item));
+}
+
+/* The same for a whole array of them, which is every listing the daemon
+ * answers: the history and a search. */
+static GVariant *
+g_paste_daemon_methods_items_variant (const GPtrArray *items)
+{
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
+
+    for (guint i = 0; i < items->len; ++i)
+        g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (g_ptr_array_index (items, i)));
+
+    return g_variant_builder_end (&builder);
+}
+
 static void
 g_paste_daemon_methods_do_add_item (const GPasteDaemonMethods *self,
                                     GPasteItem                *item)
@@ -48,8 +72,8 @@ g_paste_daemon_methods_do_add (const GPasteDaemonMethods *self,
 }
 
 G_PASTE_VISIBLE void
-g_paste_daemon_methods_add (const GPasteDaemonMethods *self,
-                            const gchar               *text,
+g_paste_daemon_methods_add_text (const GPasteDaemonMethods *self,
+                                 const gchar               *text,
                             GError                   **error)
 {
     g_paste_daemon_methods_do_add (self, text, (text) ? strlen (text) : 0, error);
@@ -113,22 +137,21 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
 
     GPasteSettings *settings = self->settings;
 
-    /* A history of its own, so the backup never disturbs the current one. */
+    /* A history of its own, so the backup never disturbs the current one: the
+     * current history is not switched away from, and no UI has to be told it
+     * was. What did change is the set of histories, which has a signal of its
+     * own precisely because a new one appearing is not a switch. */
     g_autoptr (GPasteHistory) _history = g_paste_history_new (settings);
-    const gchar *old_name = g_paste_history_get_current (self->history);
 
-    /* Each switch is announced so every UI refreshes its list of histories, the
-     * newly created backup included, and ends up back on the current one. */
     g_paste_history_load (_history, history);
-    g_paste_daemon2_emit_raw_switch_history (self->skeleton, history);
     g_paste_history_save (_history, backup);
-    g_paste_daemon2_emit_raw_switch_history (self->skeleton, backup);
-    g_paste_daemon2_emit_raw_switch_history (self->skeleton, old_name);
+
+    g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
 }
 
 G_PASTE_VISIBLE void
-g_paste_daemon_methods_delete (const GPasteDaemonMethods *self,
-                               const gchar               *uuid,
+g_paste_daemon_methods_delete_item (const GPasteDaemonMethods *self,
+                                    const gchar               *uuid,
                                GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (g_paste_history_remove_by_uuid (self->history, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
@@ -149,7 +172,7 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
     if (!g_paste_history_delete (history, name, error))
         return;
 
-    g_paste_daemon2_emit_raw_delete_history (self->skeleton, name);
+    g_paste_daemon3_emit_raw_delete_history (self->skeleton, name);
 
     if (g_paste_str_equal (name, g_paste_history_get_current (self->history)))
         g_paste_history_switch (history, G_PASTE_DEFAULT_HISTORY);
@@ -178,75 +201,52 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
         g_paste_history_save (history, name);
     }
 
-    g_paste_daemon2_emit_raw_empty_history (self->skeleton, name);
+    g_paste_daemon3_emit_raw_empty_history (self->skeleton, name);
 }
 
-G_PASTE_VISIBLE const gchar *
-g_paste_daemon_methods_get_element (const GPasteDaemonMethods *self,
-                                    const gchar               *uuid,
-                                    GError                   **error)
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_get_item (const GPasteDaemonMethods *self,
+                                 const gchar               *uuid,
+                                 GError                   **error)
 {
     GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
 
-    return g_paste_item_get_display_string (item);
-}
-
-G_PASTE_VISIBLE gboolean
-g_paste_daemon_methods_get_element_at_index (const GPasteDaemonMethods *self,
-                                             guint64                    index,
-                                             const gchar              **uuid,
-                                             const gchar              **value,
-                                             GError                   **error)
-{
-    GPasteHistory *history = self->history;
-
-    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), G_PASTE_ERROR_INVALID_INDEX, "invalid index received", FALSE);
-
-    GPasteItem *item = g_paste_history_get (history, index);
-
-    G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no value for this index", FALSE);
-
-    *uuid = g_paste_item_get_uuid (item);
-    *value = g_paste_item_get_display_string (item);
-
-    return TRUE;
-}
-
-G_PASTE_VISIBLE const gchar *
-g_paste_daemon_methods_get_element_kind (const GPasteDaemonMethods *self,
-                                         const gchar               *uuid,
-                                         GError                   **error)
-{
-    GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
-
-    G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no item for this index", NULL);
-
-    return g_paste_item_kind_to_string (g_paste_item_get_kind (item));
+    return g_paste_daemon_methods_item_variant (item);
 }
 
 G_PASTE_VISIBLE GVariant *
-g_paste_daemon_methods_get_elements (const GPasteDaemonMethods *self,
-                                     const gchar * const       *uuids,
-                                     GError                   **error)
+g_paste_daemon_methods_get_item_at_index (const GPasteDaemonMethods *self,
+                                          guint64                    index,
+                                          GError                   **error)
 {
     GPasteHistory *history = self->history;
-    GVariantBuilder builder;
 
-    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
+    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), G_PASTE_ERROR_INVALID_INDEX, "invalid index received", NULL);
+
+    GPasteItem *item = g_paste_history_get (history, index);
+
+    G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no value for this index", NULL);
+
+    return g_paste_daemon_methods_item_variant (item);
+}
+
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_get_items (const GPasteDaemonMethods *self,
+                                  const gchar * const       *uuids,
+                                  GError                   **error)
+{
+    GPasteHistory *history = self->history;
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
 
     for (gsize i = 0; uuids && uuids[i]; ++i)
     {
         GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
 
-        if (!item)
-        {
-            g_variant_builder_clear (&builder);
-            G_PASTE_DBUS_ASSERT_FULL (FALSE, G_PASTE_ERROR_INVALID_INDEX, "received no value for this index", NULL);
-        }
+        G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_INVALID_INDEX, "received no value for this index", NULL);
 
-        g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
+        g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (item));
     }
 
     return g_variant_builder_end (&builder);
@@ -255,25 +255,7 @@ g_paste_daemon_methods_get_elements (const GPasteDaemonMethods *self,
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_get_history (const GPasteDaemonMethods *self)
 {
-    const GPtrArray *history = g_paste_history_get_history (self->history);
-    GVariantBuilder builder;
-
-    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
-
-    for (guint i = 0; i < history->len; ++i)
-    {
-        GPasteItem *item = g_ptr_array_index (history, i);
-
-        g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
-    }
-
-    return g_variant_builder_end (&builder);
-}
-
-G_PASTE_VISIBLE const gchar *
-g_paste_daemon_methods_get_history_name (const GPasteDaemonMethods *self)
-{
-    return g_paste_history_get_current (self->history);
+    return g_paste_daemon_methods_items_variant (g_paste_history_get_history (self->history));
 }
 
 G_PASTE_VISIBLE guint64
@@ -321,36 +303,6 @@ g_paste_daemon_methods_get_image (const GPasteDaemonMethods *self,
     }
 
     return g_variant_new_from_bytes (G_VARIANT_TYPE ("ay"), bytes, TRUE);
-}
-
-G_PASTE_VISIBLE const gchar *
-g_paste_daemon_methods_get_raw_element (const GPasteDaemonMethods *self,
-                                        const gchar               *uuid,
-                                        GError                   **error)
-{
-    GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
-
-    G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
-
-    return g_paste_item_get_value (item);
-}
-
-G_PASTE_VISIBLE GVariant *
-g_paste_daemon_methods_get_raw_history (const GPasteDaemonMethods *self)
-{
-    const GPtrArray *history = g_paste_history_get_history (self->history);
-    GVariantBuilder builder;
-
-    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
-
-    for (guint i = 0; i < history->len; ++i)
-    {
-        GPasteItem *item = g_ptr_array_index (history, i);
-
-        g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_value (item));
-    }
-
-    return g_variant_builder_end (&builder);
 }
 
 G_PASTE_VISIBLE GStrv
@@ -411,10 +363,10 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
 }
 
 G_PASTE_VISIBLE void
-g_paste_daemon_methods_track (const GPasteDaemonMethods *self,
-                              gboolean                   tracking_state)
+g_paste_daemon_methods_set_active (const GPasteDaemonMethods *self,
+                                   gboolean                   active)
 {
-    g_paste_settings_set_track_changes (self->settings, tracking_state);
+    g_paste_settings_set_track_changes (self->settings, active);
 }
 
 /* The policy itself, in one place: whether the extension coming or going should
@@ -440,16 +392,32 @@ g_paste_daemon_methods_rename_password (const GPasteDaemonMethods *self,
     g_paste_history_rename_password (self->history, old_name, new_name);
 }
 
-G_PASTE_VISIBLE GStrv
+/* The matches themselves, not their uuids: a caller wanting to show them would
+ * only have to ask for every one of them straight back. */
+G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
                                const gchar               *query,
                                GError                   **error)
 {
-    GStrv results = g_paste_history_search (self->history, query);
+    GPasteHistory *history = self->history;
+    g_auto (GStrv) results = g_paste_history_search (history, query);
 
     G_PASTE_DBUS_ASSERT_FULL (results, G_PASTE_ERROR_FAILED, "Error while performing search", NULL);
 
-    return results;
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
+
+    for (GStrv uuid = results; *uuid; ++uuid)
+    {
+        GPasteItem *item = g_paste_history_get_by_uuid (history, *uuid);
+
+        /* The search read the very history we are reading, under the same lock,
+         * so a uuid it returned is still there. Skipped rather than asserted
+         * on: a missing match is nothing for the caller to act on. */
+        if (item)
+            g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (item));
+    }
+
+    return g_variant_builder_end (&builder);
 }
 
 G_PASTE_VISIBLE void

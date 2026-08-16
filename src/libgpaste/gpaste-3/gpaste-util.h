@@ -24,7 +24,8 @@ gchar   *g_paste_util_one_line          (const gchar *text);
 
 gboolean g_paste_util_has_gnome_shell (void);
 
-GList *g_paste_util_get_dbus_items_result (GVariant *variant);
+GPasteClientItem *g_paste_util_get_dbus_item_result  (GVariant *variant);
+GList            *g_paste_util_get_dbus_items_result (GVariant *variant);
 
 void g_paste_util_write_pid_file (const gchar *component);
 GPid g_paste_util_read_pid_file  (const gchar *component);

@@ -59,15 +59,17 @@ on_item_ready (GObject      *source_object,
     g_autoptr (GtkWindow) rootwin = data->rootwin;
     GPasteClient *client = G_PASTE_CLIENT (source_object);
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *old_item = g_paste_client_get_raw_element_finish (client, res, &error);
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_finish (client, res, &error);
 
     /* Without it there is no dialog to show, and the Edit the user asked for
      * would simply not happen. */
-    if (!old_item)
+    if (!item)
     {
         g_warning ("Could not read the item to edit: %s", error->message);
         return;
     }
+
+    const gchar *old_item = g_paste_client_item_get_value (item);
 
     GtkTextBuffer *buf = NULL;
     AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Edit"), old_item, &buf);
@@ -91,7 +93,9 @@ g_paste_ui_edit_item_activate (GPasteUiItemAction *action,
     data->rootwin = g_object_ref (self->rootwin);
     data->uuid = g_strdup (uuid);
 
-    g_paste_client_get_raw_element (client, uuid, on_item_ready, data);
+    /* The plain getter: Edit is only sensitive for a text item, whose display
+     * string is its value. */
+    g_paste_client_get_item (client, uuid, on_item_ready, data);
 }
 
 static void

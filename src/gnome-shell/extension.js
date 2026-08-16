@@ -67,7 +67,7 @@ export default class GPasteExtension extends Extension {
     //
     // Whether that should stop the clipboard from being tracked is the daemon's
     // call, not ours: "track-extension-state" means "stop tracking when the
-    // extension does", and OnExtensionStateChanged is where it is applied.
+    // extension does", and ReportExtensionState is where it is applied.
     // Writing "track-changes" from here would be us second-guessing a key the
     // daemon owns, on a policy it already implements.
     //
@@ -80,8 +80,8 @@ export default class GPasteExtension extends Extension {
         Gio.DBus.session.call(
             'org.gnome.GPaste',
             '/org/gnome/GPaste',
-            'org.gnome.GPaste2',
-            'OnExtensionStateChanged',
+            'org.gnome.GPaste3',
+            'ReportExtensionState',
             new GLib.Variant('(b)', [false]),
             null,
             Gio.DBusCallFlags.DO_NOT_AUTO_START,

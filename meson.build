@@ -150,7 +150,7 @@ gpaste_po_dir = meson.current_source_dir() / 'po'
 # The daemon's D-Bus interface, declared here because src/ is configured before
 # data/: gdbus-codegen turns it into both sides of the wire under src/libgpaste,
 # and data/dbus installs it.
-gpaste_dbus_interface_xml = files('data/dbus/org.gnome.GPaste2.xml')
+gpaste_dbus_interface_xml = files('data/dbus/org.gnome.GPaste3.xml')
 
 subdir('man')
 subdir('po')

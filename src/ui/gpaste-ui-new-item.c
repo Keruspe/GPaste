@@ -39,7 +39,7 @@ on_new_item_response (GObject      *dialog   G_GNUC_UNUSED,
         gtk_text_buffer_get_bounds (buffer, &start, &end);
         g_autofree gchar *txt = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
         if (txt && *txt)
-            g_paste_client_add (client, txt, NULL, NULL);
+            g_paste_client_add_text (client, txt, NULL, NULL);
     }
 }
 
