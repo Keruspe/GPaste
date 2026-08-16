@@ -115,6 +115,15 @@ g_paste_ui_window_empty_history (GPasteUiWindow *self,
     run_when_initialized (self, do_empty_history, history, "[GPaste] empty");
 }
 
+/* Connected swapped, so the button is the emitter and its state is read back
+ * from it rather than carried by the signal. */
+static void
+on_favourites_toggled (GPasteUiWindow  *self,
+                       GtkToggleButton *button)
+{
+    g_paste_ui_history_set_favourites (self->history, gtk_toggle_button_get_active (button));
+}
+
 static void
 do_search (GPasteUiWindow *self,
            const gchar    *search)
@@ -587,6 +596,9 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     g_object_bind_property (g_paste_ui_header_get_search_button (self->header), "active",
                             self->search_bar, "search-mode-enabled",
                             G_BINDING_BIDIRECTIONAL);
+
+    g_signal_connect_swapped (g_paste_ui_header_get_favourites_button (self->header), "toggled",
+                              G_CALLBACK (on_favourites_toggled), self);
 
     g_signal_group_set_target (self->client_signals, self->client);
 

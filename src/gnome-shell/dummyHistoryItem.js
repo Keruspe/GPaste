@@ -22,4 +22,12 @@ class GPasteDummyHistoryItem extends PopupMenuItem {
         this.label.text = _('(No result)');
         this.show();
     }
+
+    // Distinct from the above: nothing pinned is not a search that matched
+    // nothing, and telling a user their search came up empty when they never
+    // searched leaves them with no idea what to do about it.
+    showNoPinned() {
+        this.label.text = _('(No pinned items)');
+        this.show();
+    }
 });

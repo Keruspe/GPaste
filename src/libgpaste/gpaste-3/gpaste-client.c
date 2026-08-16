@@ -697,6 +697,39 @@ g_paste_client_get_items_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_get_favourites_sync:
+ * @self: a #GPasteClient instance
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the pinned items from the #GPasteDaemon
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+/**
+ * g_paste_client_get_favourites:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the pinned items from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_get_favourites_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the pinned items from the #GPasteDaemon
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+G_PASTE_CLIENT_METHOD_RET (get_favourites,
+                           GList *, NULL,
+                           g_autoptr (GVariant) favourites = NULL, &favourites, g_paste_util_get_dbus_items_result (favourites),
+                           (), ())
+
+/**
  * g_paste_client_get_history_sync:
  * @self: a #GPasteClient instance
  * @error: return location for a #GError, or %NULL
@@ -1096,6 +1129,40 @@ G_PASTE_CLIENT_METHOD_RET (search,
  */
 G_PASTE_CLIENT_METHOD (select,
                        (const gchar *uuid), (uuid))
+
+/**
+ * g_paste_client_set_favourite_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the item to pin, or to let go of
+ * @favourite: whether the item should be pinned
+ * @error: return location for a #GError, or %NULL
+ *
+ * Pin an item, exempting it from the history's size and memory caps, or let it
+ * go again
+ */
+/**
+ * g_paste_client_set_favourite:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the item to pin, or to let go of
+ * @favourite: whether the item should be pinned
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Pin an item, exempting it from the history's size and memory caps, or let it
+ * go again
+ */
+/**
+ * g_paste_client_set_favourite_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Pin an item, exempting it from the history's size and memory caps, or let it
+ * go again
+ */
+G_PASTE_CLIENT_METHOD (set_favourite,
+                       (const gchar *uuid, gboolean favourite), (uuid, favourite))
 
 /**
  * g_paste_client_set_password_sync:

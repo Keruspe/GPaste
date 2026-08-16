@@ -95,6 +95,18 @@ You will end up with "foo","bar","baz" in your clipboard
 Delete the item matching <uuid> from the history
 .br
 .TP
+.B gpaste-client favourite <uuid>
+Pin the item matching <uuid>. A pinned item is never dropped automatically: neither
+the history size limit nor the memory one may evict it, so the history grows past
+its cap rather than let one go. Emptying or deleting the history, or deleting the
+item by uuid, still drops it.
+.br
+.TP
+.B gpaste-client unfavourite <uuid>
+Unpin the item matching <uuid>, putting it back under both caps. It may be evicted
+straight away, if that is what was keeping the history over one of them.
+.br
+.TP
 .B gpaste-client file <path>
 Put the content of the file at <path> into the clipboard
 .br
@@ -161,6 +173,10 @@ Make the applet or extension display the history
 
 .SH "OPTIONS"
 
+.TP
+.B --favourites
+Only display the pinned items, when listing the history or a search
+.br
 .TP
 .B --use-index
 Use the item index instead of its uuid

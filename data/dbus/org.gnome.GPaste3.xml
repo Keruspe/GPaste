@@ -21,9 +21,9 @@
     below keeps, so that the generated g_paste_daemon3_* symbols never collide
     with the g_paste_daemon_* ones of the GPasteDaemon object that implements it.
 
-    An item travels as (uuid, value, kind): everything a client needs to draw a
-    row, in one reply. @kind is the GPasteItemKind value, the numeric one rather
-    than its nick, which is now the storage backends' business alone.
+    An item travels as (uuid, value, kind, favourite): everything a client needs
+    to draw a row, in one reply. @kind is the GPasteItemKind value, the numeric
+    one rather than its nick, which is now the storage backends' business alone.
 
     @value is the one string an item has here, the one a user is shown. There
     used to be a second, "raw" flavour of every getter, answering what a script
@@ -80,9 +80,23 @@
       <arg type="s" direction="in" name="name"/>
     </method>
 
+    <!--
+      The pinned items, and only those.
+
+      A listing of its own rather than a flag to sift GetHistory by: the daemon
+      is where the flag lives, and a view showing a handful of pinned rows out
+      of a history thousands long has no business pulling the thousands across
+      the bus to throw nearly all of them away. A client wanting the pinned
+      matches of a search still filters those itself, the matches being the
+      narrow set already.
+    -->
+    <method name="GetFavourites">
+      <arg type="a(ssub)" direction="out" name="favourites"/>
+    </method>
+
     <!-- The whole history -->
     <method name="GetHistory">
-      <arg type="a(ssu)" direction="out" name="history"/>
+      <arg type="a(ssub)" direction="out" name="history"/>
     </method>
 
     <!-- How many items a given history holds -->
@@ -111,19 +125,19 @@
     <!-- One item, by uuid -->
     <method name="GetItem">
       <arg type="s"      direction="in"  name="uuid"/>
-      <arg type="(ssu)" direction="out" name="item"/>
+      <arg type="(ssub)" direction="out" name="item"/>
     </method>
 
     <!-- The item at a given position -->
     <method name="GetItemAtIndex">
       <arg type="t"      direction="in"  name="index"/>
-      <arg type="(ssu)" direction="out" name="item"/>
+      <arg type="(ssub)" direction="out" name="item"/>
     </method>
 
     <!-- The items for the given uuids -->
     <method name="GetItems">
       <arg type="as"      direction="in"  name="uuids"/>
-      <arg type="a(ssu)" direction="out" name="items"/>
+      <arg type="a(ssub)" direction="out" name="items"/>
     </method>
 
     <!-- The names of every known history -->
@@ -166,7 +180,7 @@
     <!-- The items matching a query -->
     <method name="Search">
       <arg type="s"       direction="in"  name="query"/>
-      <arg type="a(ssu)" direction="out" name="results"/>
+      <arg type="a(ssub)" direction="out" name="results"/>
     </method>
 
     <!-- Make one item the current selection -->
@@ -177,6 +191,18 @@
     <!-- Start or stop tracking clipboard changes; reads back as the Active property -->
     <method name="SetActive">
       <arg type="b" direction="in" name="active"/>
+    </method>
+
+    <!--
+      Pin an item, or let it go again.
+
+      A favourite is never dropped by an automatic policy: neither the history
+      size limit nor the memory one may evict it. Emptying or deleting its
+      history, or deleting it by uuid, still does.
+    -->
+    <method name="SetFavourite">
+      <arg type="s" direction="in" name="uuid"/>
+      <arg type="b" direction="in" name="favourite"/>
     </method>
 
     <!-- Turn one item into a password item -->

@@ -16,7 +16,8 @@ g_paste_daemon_methods_item_variant (GPasteItem *item)
     return g_variant_new (G_PASTE_ITEM_VARIANT_STRING,
                           g_paste_item_get_uuid (item),
                           g_paste_item_get_display_string (item),
-                          (guint32) g_paste_item_get_kind (item));
+                          (guint32) g_paste_item_get_kind (item),
+                          g_paste_item_is_favourite (item));
 }
 
 /* The same for a whole array of them, which is every listing the daemon
@@ -252,6 +253,26 @@ g_paste_daemon_methods_get_items (const GPasteDaemonMethods *self,
     return g_variant_builder_end (&builder);
 }
 
+/* The pinned items alone. Sifting the history is the daemon's job here rather
+ * than each client's: the flag lives on this side, and a favourites view is
+ * typically a handful of rows out of a history that is not. */
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_get_favourites (const GPasteDaemonMethods *self)
+{
+    const GPtrArray *items = g_paste_history_get_history (self->history);
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
+
+    for (guint i = 0; i < items->len; ++i)
+    {
+        GPasteItem *item = g_ptr_array_index (items, i);
+
+        if (g_paste_item_is_favourite (item))
+            g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (item));
+    }
+
+    return g_variant_builder_end (&builder);
+}
+
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_get_history (const GPasteDaemonMethods *self)
 {
@@ -418,6 +439,15 @@ g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
     }
 
     return g_variant_builder_end (&builder);
+}
+
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_set_favourite (const GPasteDaemonMethods *self,
+                                      const gchar               *uuid,
+                                      gboolean                   favourite,
+                                      GError                   **error)
+{
+    G_PASTE_DBUS_ASSERT (g_paste_history_set_favourite (self->history, uuid, favourite), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
 }
 
 G_PASTE_VISIBLE void

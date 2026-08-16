@@ -53,7 +53,7 @@
  * metadata leak of row count/kind/rank/date/checksum for incremental
  * (non-rewriting) updates. */
 
-#define G_PASTE_SQLITE_SCHEMA_VERSION 1
+#define G_PASTE_SQLITE_SCHEMA_VERSION 2
 
 /* Far beyond any reachable rank (one increment per add/select), but cheap to
  * guard against: past this, ranks are compacted back to 1..N on open. */
@@ -594,7 +594,8 @@ g_paste_sqlite_backend_create_schema (sqlite3 *db)
         "    date     INTEGER,"          /* Image: unix seconds */
         "    checksum TEXT,"             /* Image: hex sha256 */
         "    name     TEXT,"             /* Password: reserved for an encrypted variant */
-        "    image    BLOB"              /* Image: the encoded PNG */
+        "    image    BLOB,"             /* Image: the encoded PNG */
+        "    favourite INTEGER NOT NULL DEFAULT 0" /* pinned: exempt from both caps */
         ");"
         "CREATE UNIQUE INDEX IF NOT EXISTS items_rank ON items (rank DESC);"
         "CREATE TABLE IF NOT EXISTS special_values ("
@@ -607,18 +608,22 @@ g_paste_sqlite_backend_create_schema (sqlite3 *db)
 }
 
 /* Upgrade a database created by an older GPaste (its user_version is @from) to
- * the current schema. There is nothing to migrate yet — the schema has only
- * ever had one version — but the mechanism is here for the first change that
- * needs it: add a `case @from` per historical version, each falling through to
- * the next so any old database upgrades stepwise. */
+ * the current schema. One `case @from` per historical version, each falling
+ * through to the next so any old database upgrades stepwise. */
 static gboolean
 g_paste_sqlite_backend_migrate_schema (sqlite3 *db,
                                        gint64   from)
 {
     switch (from)
     {
+    case 1:
+        /* Favourites. The default is what makes this a pure addition: every
+         * item an older GPaste stored comes back unpinned, which is what it
+         * was. */
+        if (!g_paste_sqlite_backend_exec (db, "ALTER TABLE items ADD COLUMN favourite INTEGER NOT NULL DEFAULT 0;"))
+            return FALSE;
+        G_GNUC_FALLTHROUGH;
     default:
-        (void) db;
         return TRUE;
     }
 }
@@ -892,7 +897,8 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3      *db,
 
 /* Bind an item's content columns: uuid, kind and value at the fixed positions
  * 1-3, then the image (date, checksum, image blob) or password (name) columns
- * starting at @meta_base. The INSERT and UPDATE statements share this layout and
+ * starting at @meta_base, with the favourite flag closing the group at
+ * @meta_base + 4. The INSERT and UPDATE statements share this layout and
  * differ only by @meta_base — the INSERT carries an extra rank column between the
  * value and the meta group, so it binds at base 5 while the UPDATE binds at 4.
  * Keeping the two in one place stops their column indices drifting apart. */
@@ -906,6 +912,9 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
     /* The nick is a static string owned by the enum class, hence SQLITE_STATIC. */
     sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (g_paste_item_get_kind (item)), -1, SQLITE_STATIC);
     g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
+    /* Every kind has one, so it is bound outside the per-kind branches below.
+     * Plaintext like rank and date: the read has to order and filter on it. */
+    sqlite3_bind_int (stmt, meta_base + 4, g_paste_item_is_favourite (item));
 
     if (G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -922,8 +931,8 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
 }
 
 /* Insert @item with @rank, or move the already-stored item with the same uuid
- * to @rank (its value never changes, only its position). Special values are
- * rewritten from the item either way. */
+ * to @rank (its value never changes, only its position and whether it is
+ * pinned). Special values are rewritten from the item either way. */
 static gboolean
 g_paste_sqlite_backend_upsert_item (sqlite3      *db,
                                     const guchar *key,
@@ -933,8 +942,8 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db,
-                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-                            "ON CONFLICT (uuid) DO UPDATE SET rank = excluded.rank "
+                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image, favourite) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                            "ON CONFLICT (uuid) DO UPDATE SET rank = excluded.rank, favourite = excluded.favourite "
                             "RETURNING id;",
                             -1, &stmt, NULL) != SQLITE_OK)
     {
@@ -1193,7 +1202,15 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
     sqlite3_stmt *stmt = NULL;
 
-    if (sqlite3_prepare_v2 (db, "SELECT id, uuid, kind, value, date, checksum, name, image FROM items ORDER BY rank DESC LIMIT ?;", -1, &stmt, NULL) != SQLITE_OK)
+    /* The LIMIT applies to the items the size cap can actually evict: a
+     * favourite is read back however deep it has sunk, or the next save would
+     * destroy the very thing pinning it was meant to protect. */
+    if (sqlite3_prepare_v2 (db,
+                            "SELECT id, uuid, kind, value, date, checksum, name, image, favourite FROM items "
+                            "WHERE favourite = 1 "
+                            "   OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?) "
+                            "ORDER BY rank DESC;",
+                            -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare history query: %s", sqlite3_errmsg (db));
         return FALSE;
@@ -1228,6 +1245,8 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
         if (uuid && g_uuid_string_is_valid (uuid))
             g_paste_item_set_uuid (item, uuid);
+
+        g_paste_item_set_favourite (item, sqlite3_column_int (stmt, 8));
 
         g_paste_sqlite_backend_read_special_values (sv_stmt, atom_class, key, sqlite3_column_int64 (stmt, 0), item);
 
@@ -1421,7 +1440,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     sqlite3_stmt *stmt = NULL;
     gboolean success = (sqlite3_prepare_v2 (db,
-                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ?, image = ? WHERE uuid = ? "
+                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ?, image = ?, favourite = ? WHERE uuid = ? "
                                             "RETURNING id;",
                                             -1, &stmt, NULL) == SQLITE_OK);
 
@@ -1432,9 +1451,9 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
         return;
     }
 
-    /* uuid, kind, value at 1-3, the meta group at base 4, then old uuid at 8. */
+    /* uuid, kind, value at 1-3, the meta group at base 4, then old uuid at 9. */
     g_paste_sqlite_backend_bind_item (stmt, key, item, 4);
-    sqlite3_bind_text (stmt, 8, old_uuid, -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 9, old_uuid, -1, SQLITE_STATIC);
 
     /* No row means the replaced item was never persisted (e.g. renaming a
      * password): nothing to update. */

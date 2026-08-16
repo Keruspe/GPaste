@@ -20,6 +20,9 @@ explains what clipboard managers are for.
   preferences or with `gpaste-client migrate`.
 - **Passwords**: mark an item as a password to have it shown as a name instead
   of its contents, and excluded from the plain-text history.
+- **Favourites**: pin an item and the history never drops it on its own — the
+  size and memory limits give way instead. Filter the list down to the pinned
+  items from the UI, the extension or `gpaste-client --favourites`.
 - **Search, merge and edit** items from the UI, the extension or the CLI.
 - **GNOME Shell integration** through a native extension, with an optional
   experimental mode that runs the daemon inside the Shell itself.

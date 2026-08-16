@@ -56,6 +56,8 @@ GPasteClientItem *g_paste_client_get_item_sync          (GPasteClient  *self,
 GList   *g_paste_client_get_items_sync               (GPasteClient  *self,
                                                          const gchar * const *uuids,
                                                          GError       **error);
+GList   *g_paste_client_get_favourites_sync             (GPasteClient  *self,
+                                                         GError       **error);
 GList   *g_paste_client_get_history_sync                (GPasteClient  *self,
                                                          GError       **error);
 guint64  g_paste_client_get_history_size_sync           (GPasteClient  *self,
@@ -89,6 +91,10 @@ GList   *g_paste_client_search_sync                     (GPasteClient  *self,
                                                          GError       **error);
 void     g_paste_client_select_sync                     (GPasteClient  *self,
                                                          const gchar   *uuid,
+                                                         GError       **error);
+void     g_paste_client_set_favourite_sync              (GPasteClient  *self,
+                                                         const gchar   *uuid,
+                                                         gboolean       favourite,
                                                          GError       **error);
 void     g_paste_client_set_password_sync               (GPasteClient  *self,
                                                          const gchar   *uuid,
@@ -165,6 +171,9 @@ void g_paste_client_get_items               (GPasteClient       *self,
                                                 const gchar * const *uuids,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_get_favourites             (GPasteClient       *self,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_get_history                (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -208,6 +217,11 @@ void g_paste_client_search                     (GPasteClient       *self,
                                                 gpointer            user_data);
 void g_paste_client_select                     (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_set_favourite              (GPasteClient       *self,
+                                                const gchar        *uuid,
+                                                gboolean            favourite,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_set_password               (GPasteClient       *self,
@@ -271,6 +285,9 @@ GPasteClientItem *g_paste_client_get_item_finish          (GPasteClient *self,
 GList   *g_paste_client_get_items_finish               (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
+GList   *g_paste_client_get_favourites_finish             (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
 GList   *g_paste_client_get_history_finish                (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
@@ -302,6 +319,9 @@ GList   *g_paste_client_search_finish                     (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_select_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_set_favourite_finish              (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_set_password_finish               (GPasteClient *self,

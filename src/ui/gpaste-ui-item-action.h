@@ -25,7 +25,11 @@ struct _GPasteUiItemActionClass
 };
 
 typedef void (*GPasteUiItemActionFunc) (GPasteClient *client,
-                                        const gchar  *uuid);
+                                        const gchar  *uuid,
+                                        gpointer      user_data);
+
+void g_paste_ui_item_action_set_icon_name (GPasteUiItemAction *self,
+                                           const gchar        *icon_name);
 
 void g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
                                       const gchar        *uuid);
@@ -37,7 +41,8 @@ GtkWidget *g_paste_ui_item_action_new (GType         type,
 GtkWidget *g_paste_ui_item_action_new_simple (GPasteClient          *client,
                                               const gchar           *icon_name,
                                               const gchar           *tooltip,
-                                              GPasteUiItemActionFunc activate);
+                                              GPasteUiItemActionFunc activate,
+                                              gpointer               user_data);
 
 G_END_DECLS
 

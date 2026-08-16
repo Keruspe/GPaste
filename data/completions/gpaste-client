@@ -73,12 +73,12 @@ _gpaste_client_options()
             printf '%s' "${common} --version -v --oneline -o --raw -r --reverse -e --zero -z --use-index -i"
             ;;
         history|h|search)
-            printf '%s' "${common} --oneline -o --raw -r --reverse -e --zero -z --use-index -i"
+            printf '%s' "${common} --oneline -o --raw -r --reverse -e --zero -z --use-index -i --favourites -f"
             ;;
         get|g)
             printf '%s' "${common} --use-index -i"
             ;;
-        select|set|s|delete|del|d|remove|rm|replace|upload|u|set-password|sp)
+        select|set|s|delete|del|d|remove|rm|replace|upload|u|set-password|sp|favourite|fav|unfavourite|unfav)
             printf '%s' "${common} --use-index -i"
             ;;
         merge|m)
@@ -140,11 +140,11 @@ _gpaste-client()
         # offer the short forms too.
         local verbs="a about add add-password ap backup-history bh change-passphrase d
                      daemon daemon-reexec daemon-version del delete delete-history
-                     delete-password dh dp dr dv e empty f file g get get-history gh h
-                     help history history-size hs lh list-histories m merge migrate p
-                     preferences q quit remove rename-password replace rm rp s search
-                     select set set-password settings sh show-history sp start stop
-                     switch-history u ui upload v version"
+                     delete-password dh dp dr dv e empty f fav favourite file g get
+                     get-history gh h help history history-size hs lh list-histories m
+                     merge migrate p preferences q quit remove rename-password replace rm
+                     rp s search select set set-password settings sh show-history sp
+                     start stop switch-history u ui unfav unfavourite upload v version"
 
         COMPREPLY=($(compgen -W "${verbs}" -- "${cur}"))
         return
@@ -167,7 +167,7 @@ _gpaste-client()
             COMPREPLY=($(compgen -f -- "${cur}"))
             compopt -o filenames 2>/dev/null
             ;;
-        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|set-password|sp)
+        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|set-password|sp|favourite|fav|unfavourite|unfav)
             ((argpos == 0)) && COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))
             ;;
         merge|m)

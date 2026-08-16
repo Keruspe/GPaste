@@ -16,6 +16,7 @@ typedef struct
     const gchar  *uuid;
     gboolean      help;
     gboolean      version;
+    gboolean      favourites;
     gboolean      oneline;
     gboolean      raw;
     gboolean      reverse;
@@ -36,6 +37,7 @@ parse_cmdline (int     *argc,
 {
     struct option long_options[] = {
         { "decoration", required_argument, NULL,  'd'  },
+        { "favourites", no_argument,       NULL,  'f'  },
         { "help",       no_argument,       NULL,  'h'  },
         { "oneline",    no_argument,       NULL,  'o'  },
         { "raw",        no_argument,       NULL,  'r'  },
@@ -48,12 +50,15 @@ parse_cmdline (int     *argc,
     };
     gint64 c;
 
-    while ((c = getopt_long(*argc, *argv, "d:hores:ivz", long_options, NULL)) != -1)
+    while ((c = getopt_long(*argc, *argv, "d:fhores:ivz", long_options, NULL)) != -1)
     {
         switch (c)
         {
         case 'd':
             ctx->decoration = optarg;
+            break;
+        case 'f':
+            ctx->favourites = TRUE;
             break;
         case 'h':
             ctx->help = TRUE;
@@ -191,6 +196,11 @@ static gint
 g_paste_history (Context *ctx,
                  GError **error)
 {
+    /* The whole history even under --favourites, where GetFavourites would
+     * answer the pinned items alone: what this prints beside each row is where
+     * it sits in the history, which only a listing of the history knows. The
+     * graphical front ends have no such number to print and do ask for the
+     * short listing. */
     g_autolist (GPasteClientItem) history = g_paste_client_get_history_sync (ctx->client, error);
 
     if (*error)
@@ -201,8 +211,16 @@ g_paste_history (Context *ctx,
     for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = ctx->reverse ? i->prev : i->next)
     {
         GPasteClientItem *item = i->data;
+        /* Counted over every item, printed or not: what --use-index prints has
+         * to be the number --use-index takes back, and a filtered listing that
+         * renumbered its rows would name a different item on the way in. */
+        guint position = index++;
+
+        if (ctx->favourites && !g_paste_client_item_is_favourite (item))
+            continue;
+
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-        print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
+        print_history_line (line, position, g_paste_client_item_get_uuid (item), ctx);
     }
 
     return EXIT_SUCCESS;
@@ -489,6 +507,24 @@ g_paste_delete (Context *ctx,
 }
 
 static gint
+g_paste_favourite (Context *ctx,
+                   GError **error)
+{
+    g_paste_client_set_favourite_sync (ctx->client, ctx->uuid, TRUE, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint
+g_paste_unfavourite (Context *ctx,
+                     GError **error)
+{
+    g_paste_client_set_favourite_sync (ctx->client, ctx->uuid, FALSE, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint
 g_paste_delete_password (Context *ctx,
                          GError **error)
 {
@@ -543,11 +579,20 @@ g_paste_search (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
+    /* The rank of the line among the ones printed, not a place in the history:
+     * Search answers the matching items, and where each of them sits is what
+     * only a listing of the history knows. Which is why this one does renumber
+     * under --favourites where the history listing deliberately does not — it
+     * is numbering its own output, not naming items. */
     guint index = 0;
 
     for (const GList *i = items; i; i = i->next)
     {
         GPasteClientItem *item = i->data;
+
+        if (ctx->favourites && !g_paste_client_item_is_favourite (item))
+            continue;
+
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
         print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }
@@ -654,6 +699,8 @@ static const Command commands[] = {
         { 4, "merge",             "m",               G_MAXINT, TRUE,  "<uuid> … <uuid>",       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
         { 3, "set-password",      "sp",              0,        TRUE,  "<uuid> <name>",         N_ ("set the item <uuid> from the history as a password named <name>"),                         g_paste_set_password },
         { 2, "delete",            "d del rm remove", 0,        TRUE,  "<uuid>",                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
+        { 2, "favourite",         "fav",             0,        TRUE,  "<uuid>",                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
+        { 2, "unfavourite",       "unfav",           0,        TRUE,  "<uuid>",                N_ ("unpin item <uuid>, letting the history drop it again"),                                     g_paste_unfavourite },
         { 2, "delete-password",   "dp",              0,        TRUE,  "<name>",                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
         { 2, "file",              "f",               0,        TRUE,  "<path>",                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
         { 1, "empty",             "e",               1,        TRUE,  NULL,                    N_ ("empty the history"),                                                                       g_paste_empty },
@@ -727,6 +774,8 @@ show_help (void)
     printf ("\n");
     printf (_("Convenience options:"));
     printf ("\n");
+    /* Translators: help for --favourites */
+    printf ("  --favourites: %s\n", _("only display the pinned items"));
     /* Translators: help for --use-index */
     printf ("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
 
@@ -784,7 +833,11 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     g_autoptr (GError) error = NULL;
-    Context ctx = { NULL, 0, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    /* Every field starts empty, and says so once: a positional list has to be
+     * recounted against the struct each time a member is added, and miscounting
+     * it seeds a neighbouring flag instead — every field being a gboolean or a
+     * pointer, nothing would say so. */
+    Context ctx = { 0 };
     gint status = EXIT_SUCCESS;
 
     if (parse_cmdline (&argc, &argv, &ctx))

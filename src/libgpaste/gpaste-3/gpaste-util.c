@@ -270,10 +270,11 @@ g_paste_util_get_dbus_item_result (GVariant *variant)
 {
     const gchar *uuid, *value;
     guint32 kind;
+    gboolean favourite;
 
-    g_variant_get (variant, G_PASTE_ITEM_VARIANT_STRING, &uuid, &value, &kind);
+    g_variant_get (variant, G_PASTE_ITEM_VARIANT_STRING, &uuid, &value, &kind, &favourite);
 
-    return g_paste_client_item_new (uuid, value, kind);
+    return g_paste_client_item_new (uuid, value, kind, favourite);
 }
 
 /**

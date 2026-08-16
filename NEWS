@@ -8,6 +8,7 @@ NEW in 51.0 (UNRELEASED)
 - Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter rather than as an X11 client (experimental and opt-in, with a clean bus-name handover to and from the standalone daemon)
 - Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool: they fill the window at runtime and load more as you scroll, so max-displayed-history-size is gone
 - Add a merge mode to combine several history items
+- Pin items as favourites: neither the history size limit nor the memory one may evict a pinned item, so the history grows past its cap rather than let one go, and the graphical tool, the extension and "gpaste-client --favourites" can list only those
 - Enlarge image previews on hover via a custom tooltip
 - Publish copied colours as text on the clipboard as well, so they paste into plain text fields too
 - Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu

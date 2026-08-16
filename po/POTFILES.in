@@ -8,6 +8,7 @@ src/daemon/gpaste-daemon.c
 src/daemon/gpaste-prompt-adw.c
 src/gnome-shell/actions.js
 src/gnome-shell/deleteButton.js
+src/gnome-shell/favouriteButton.js
 src/gnome-shell/dummyHistoryItem.js
 src/gnome-shell/extension.js
 src/gnome-shell/indicator.js

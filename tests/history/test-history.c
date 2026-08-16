@@ -73,15 +73,15 @@ make_history (GPasteSettings **out_settings,
 }
 
 /* Like make_history but without forcing a name into GSettings (which would emit
- * a deferred "changed" and reload), so the round-trip test can drive the name
- * itself through load()/load_async(). */
+ * a deferred "changed" and reload), so the round-trip tests can drive the name
+ * themselves through load()/load_async(). */
 static GPasteHistory *
-make_plain_history (void)
+make_plain_history_capped (guint64 max_history_size)
 {
     GPasteSettings *settings = g_paste_settings_new ();
 
     g_paste_settings_set_growing_lines (settings, FALSE);
-    g_paste_settings_set_max_history_size (settings, 100);
+    g_paste_settings_set_max_history_size (settings, max_history_size);
     g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
 
     GPasteHistory *history = g_paste_history_new (settings);
@@ -89,6 +89,12 @@ make_plain_history (void)
     g_object_unref (settings);
 
     return history;
+}
+
+static GPasteHistory *
+make_plain_history (void)
+{
+    return make_plain_history_capped (100);
 }
 
 static const gchar *
@@ -740,6 +746,331 @@ test_memory_eviction_evicts_repeatedly (void)
     /* And the history still works afterwards. */
     g_paste_history_add (history, g_paste_text_item_new ("after"));
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "after");
+}
+
+/* A uuid the tests can hand back to the history: the model owns the string, so
+ * copy it before whatever is about to shuffle the items around. */
+static gchar *
+dup_uuid_at (GPasteHistory *history,
+             guint64        index)
+{
+    GPasteItem *item = g_paste_history_get (history, index);
+
+    g_assert_nonnull (item);
+
+    return g_strdup (g_paste_item_get_uuid (item));
+}
+
+/* The size cap still fires at max, but it takes the last *non-favourite*: a
+ * pinned item sitting at the very bottom outlives everything added over it,
+ * while the ordinary items around it keep rotating out. */
+static void
+test_favourite_survives_size_cap (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_text_item_new ("pinned"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+    for (guint i = 0; i < 10; ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("item-%u", i);
+        g_paste_history_add (history, g_paste_text_item_new (text));
+    }
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 5);
+    g_assert_cmpstr (value_at (history, 0), ==, "item-9");
+    /* Pushed to the bottom by everything newer, and still there. */
+    g_assert_cmpstr (value_at (history, 4), ==, "pinned");
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuid));
+}
+
+/* Un-pinning puts the item back under the cap. Over budget with nothing else to
+ * drop, the cap has been waiting for exactly one candidate. */
+static void
+test_unfavourite_makes_evictable (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+    g_autofree gchar *oldest = NULL;
+
+    /* Every one pinned, so the cap has no candidate at all and the history sits
+     * above it (see test_all_favourites_grow_past_cap). */
+    for (guint i = 0; i < 7; ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("item-%u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (text));
+
+        g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+        g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+        if (!i)
+            oldest = g_steal_pointer (&uuid);
+    }
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 7);
+
+    /* Still %TRUE: the item is gone because being evictable is what the caller
+     * just asked for. */
+    g_assert_true (g_paste_history_set_favourite (history, oldest, FALSE));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 6);
+    g_assert_null (g_paste_history_get_by_uuid (history, oldest));
+}
+
+/* Nothing but favourites means nothing the cap may drop, so the history grows
+ * past it rather than let one go. */
+static void
+test_all_favourites_grow_past_cap (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    for (guint i = 0; i < 8; ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("item-%u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (text));
+
+        g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+        g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+    }
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 8);
+}
+
+/* The memory cap evicts the biggest item it *may* evict, and a favourite is
+ * never one -- so the election has to skip it and take the runner-up. */
+static void
+test_favourite_survives_memory_cap (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 100);
+
+    /* Biggest first, so it is the one the election would otherwise pick; it
+     * ends up deepest, well away from the untracked active slot. */
+    g_autofree gchar *huge = g_strnfill (4 * 1024 * 1024, 'x');
+
+    g_paste_history_add (history, g_paste_text_item_new (huge));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+    g_autofree gchar *big = g_strnfill (1024 * 1024, 'y');
+
+    for (guint i = 0; i < 8; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("%u%s", i, big);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+    }
+
+    /* ~12 MiB against 5: the cap evicts until it fits, and every eviction has
+     * to pass over the 4 MiB favourite. */
+    g_paste_settings_set_max_memory_usage (settings, 5);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), <, 9);
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuid));
+
+    /* Un-pinning hands the cap the biggest candidate it has ever had. */
+    g_assert_true (g_paste_history_set_favourite (history, uuid, FALSE));
+    g_assert_null (g_paste_history_get_by_uuid (history, uuid));
+}
+
+/* The flag has to survive a save/load round trip, or pinning would only last
+ * as long as the daemon does. */
+static void
+test_favourite_roundtrip (void)
+{
+    const gchar *name = "favourite-roundtrip";
+
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history ();
+        g_paste_history_load (writer, name);
+
+        g_paste_history_add (writer, g_paste_text_item_new ("pinned"));
+        g_paste_history_add (writer, g_paste_text_item_new ("plain"));
+
+        g_autofree gchar *uuid = dup_uuid_at (writer, 1);
+
+        g_assert_true (g_paste_history_set_favourite (writer, uuid, TRUE));
+
+        g_paste_history_flush (writer);
+    }
+
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history ();
+        g_paste_history_load_async (reader, name);
+
+        g_assert_true (pump_until_length (reader, 2, 5000));
+        g_assert_false (g_paste_item_is_favourite (g_paste_history_get (reader, 0)));
+        g_assert_true (g_paste_item_is_favourite (g_paste_history_get (reader, 1)));
+    }
+}
+
+/* Replacing an item swaps in an object built from the new contents, and the pin
+ * belongs to the entry rather than to that object: editing what a pinned item
+ * says, or turning it into a password, is not the user letting go of it. */
+static void
+test_favourite_survives_replace (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_text_item_new ("before"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+    g_paste_history_replace (history, uuid, "after");
+
+    g_assert_cmpstr (value_at (history, 0), ==, "after");
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+
+    g_autofree gchar *replaced = dup_uuid_at (history, 0);
+
+    g_paste_history_set_password (history, replaced, "secret");
+
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+}
+
+/* A line that grows as it is typed replaces the entry it grew out of, and a
+ * duplicate coming back drops the older copy for the new one. Either way what
+ * arrives takes a pinned entry's place, so it takes the pin too -- otherwise a
+ * pinned item could be un-pinned by nothing more than retyping it. */
+static void
+test_favourite_survives_growing_line (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_settings_set_growing_lines (settings, TRUE);
+
+    g_paste_history_add (history, g_paste_text_item_new ("gro"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+    g_paste_history_add (history, g_paste_text_item_new ("growing"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (value_at (history, 0), ==, "growing");
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+}
+
+static void
+test_favourite_survives_dedup (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_text_item_new ("pinned"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+    g_paste_history_add (history, g_paste_text_item_new ("other"));
+    /* The same text again: the older copy goes, the new one leads. */
+    g_paste_history_add (history, g_paste_text_item_new ("pinned"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (value_at (history, 0), ==, "pinned");
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+}
+
+/* A history stored with more items than the cap now allows -- max-history-size
+ * lowered between sessions -- is trimmed as it is read rather than on the next
+ * clipboard change. The backends deliberately read a favourite back whatever it
+ * costs, counting only what their cap could evict, so what comes off disk can
+ * sit over the cap once the favourites are counted; the caps count them, and the
+ * two have to agree on what the history holds. Left to the next change, the rows
+ * over the cap would show until it came and then vanish all at once.
+ */
+static void
+test_load_applies_the_caps (void)
+{
+    const gchar *name = "load-capped";
+
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history_capped (100);
+        g_paste_history_load (writer, name);
+
+        for (guint i = 0; i < 8; ++i)
+        {
+            g_autofree gchar *text = g_strdup_printf ("item-%u", i);
+            g_paste_history_add (writer, g_paste_text_item_new (text));
+        }
+
+        /* The oldest, so it sits well past the cap the reader will apply. */
+        g_autofree gchar *uuid = dup_uuid_at (writer, 7);
+
+        g_assert_true (g_paste_history_set_favourite (writer, uuid, TRUE));
+
+        g_paste_history_flush (writer);
+    }
+
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history_capped (5);
+
+        g_paste_history_load_async (reader, name);
+
+        /* The read admits 5 non-favourites plus the pinned one, six in all; the
+         * cap then takes the last item it may, leaving five counting the pin. */
+        g_assert_true (pump_until_length (reader, 5, 5000));
+        g_assert_cmpstr (value_at (reader, 0), ==, "item-7");
+        g_assert_cmpstr (value_at (reader, 4), ==, "item-0");
+        g_assert_true (g_paste_item_is_favourite (g_paste_history_get (reader, 4)));
+    }
+}
+
+/* A flushed history is a handed-over one: persistence is off, so a trim could
+ * not be saved -- and it would delete the images the successor daemon's own
+ * store still points at. A switch landing inside that window loads whatever is
+ * on disk and leaves it alone.
+ */
+static void
+test_load_leaves_a_flushed_history_alone (void)
+{
+    const gchar *name = "load-flushed";
+
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history_capped (100);
+        g_paste_history_load (writer, name);
+
+        for (guint i = 0; i < 8; ++i)
+        {
+            g_autofree gchar *text = g_strdup_printf ("item-%u", i);
+            g_paste_history_add (writer, g_paste_text_item_new (text));
+        }
+
+        g_autofree gchar *uuid = dup_uuid_at (writer, 7);
+
+        g_assert_true (g_paste_history_set_favourite (writer, uuid, TRUE));
+
+        g_paste_history_flush (writer);
+    }
+
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history_capped (5);
+
+        g_paste_history_flush (reader);
+        g_paste_history_load_async (reader, name);
+
+        /* Six: the five non-favourites the read admits plus the pinned one, with
+         * the cap that would have taken it to five deliberately not applied. */
+        g_assert_true (pump_until_length (reader, 6, 5000));
+        g_assert_true (g_paste_item_is_favourite (g_paste_history_get (reader, 5)));
+    }
 }
 
 static void
@@ -1664,6 +1995,77 @@ sqlite_raw_count (const gchar *path,
     return count;
 }
 
+/* The schema's version 2 added the favourite column, and migrate_schema is what
+ * carries a database written by an older GPaste across. Nothing else exercises
+ * that path: every database the other tests touch is created at the current
+ * version, so build a v1 one by hand and prove both halves — the column
+ * appears, and the rows that were already there survive it. */
+static void
+test_sqlite_schema_migration (void)
+{
+    const gchar *name = "sqlite-schema-migration";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    /* Version 1, verbatim: no favourite column, and user_version says so. */
+    {
+        sqlite3 *db = NULL;
+
+        g_assert_cmpint (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db,
+                                       "CREATE TABLE items ("
+                                       "    id       INTEGER PRIMARY KEY,"
+                                       "    uuid     TEXT    NOT NULL UNIQUE,"
+                                       "    kind     TEXT    NOT NULL,"
+                                       "    value    TEXT    NOT NULL,"
+                                       "    rank     INTEGER NOT NULL,"
+                                       "    date     INTEGER,"
+                                       "    checksum TEXT,"
+                                       "    name     TEXT,"
+                                       "    image    BLOB"
+                                       ");"
+                                       "CREATE UNIQUE INDEX items_rank ON items (rank DESC);"
+                                       "CREATE TABLE special_values ("
+                                       "    item_id  INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,"
+                                       "    position INTEGER NOT NULL,"
+                                       "    mime     TEXT    NOT NULL,"
+                                       "    data     BLOB    NOT NULL,"
+                                       "    PRIMARY KEY (item_id, position)"
+                                       ");"
+                                       "INSERT INTO items (uuid, kind, value, rank) VALUES"
+                                       " ('11111111-1111-4111-8111-111111111111', 'Text', 'older', 1);"
+                                       "PRAGMA user_version = 1;",
+                                       NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+    }
+
+    /* Opening it is what migrates it. */
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        GList *history = NULL;
+        gsize size = 0;
+
+        g_assert_true (g_paste_storage_backend_read_history (backend, name, &history, &size));
+        g_assert_cmpuint (g_list_length (history), ==, 1);
+
+        GPasteItem *item = history->data;
+
+        g_assert_cmpstr (g_paste_item_get_value (item), ==, "older");
+        /* Everything an older GPaste stored comes back unpinned, which is what
+         * it was: that is what the column default is for. */
+        g_assert_false (g_paste_item_is_favourite (item));
+        g_assert_cmpstr (g_paste_item_get_uuid (item), ==, "11111111-1111-4111-8111-111111111111");
+
+        g_list_free_full (history, g_object_unref);
+    }
+
+    g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), ==, 2);
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name = 'favourite';"), ==, 1);
+}
+
 /* remove_item relies on the FK cascade to clean an item's special values, and
  * foreign_keys is a per-connection pragma that fails silent: prove it is
  * actually ON for the backend's connection instead of leaking orphaned blobs. */
@@ -2415,6 +2817,16 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/get_by_uuid", test_get_by_uuid);
     g_test_add_func ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
     g_test_add_func ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
+    g_test_add_func ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
+    g_test_add_func ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
+    g_test_add_func ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);
+    g_test_add_func ("/history/favourite_survives_memory_cap", test_favourite_survives_memory_cap);
+    g_test_add_func ("/history/favourite_roundtrip", test_favourite_roundtrip);
+    g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
+    g_test_add_func ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
+    g_test_add_func ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
+    g_test_add_func ("/history/load_applies_the_caps", test_load_applies_the_caps);
+    g_test_add_func ("/history/load_leaves_a_flushed_history_alone", test_load_leaves_a_flushed_history_alone);
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
     g_test_add_func ("/history/empty", test_empty);
     g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);
@@ -2438,6 +2850,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
+    g_test_add_func ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_sqlite_absurd_kdf_params", test_encrypted_sqlite_absurd_kdf_params);
     g_test_add_func ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);

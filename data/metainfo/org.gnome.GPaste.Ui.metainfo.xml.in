@@ -57,7 +57,8 @@
           <li>Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter (experimental)</li>
           <li>Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool</li>
           <li>Add a merge mode to combine several history items</li>
-          <li>Bump the DBus interface to org.gnome.GPaste3, renaming Element to Item and carrying each item's kind with it</li>
+          <li>Pin items as favourites, which the size and memory limits never drop, and filter the history down to them</li>
+          <li>Bump the DBus interface to org.gnome.GPaste3, renaming Element to Item and carrying each item's kind and favourite state with it</li>
           <li>Enlarge image previews on hover via a custom tooltip</li>
           <li>Publish copied colours as text on the clipboard as well</li>
           <li>Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu</li>

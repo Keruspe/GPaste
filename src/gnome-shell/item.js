@@ -10,6 +10,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {GPasteDeleteButton} from './deleteButton.js';
+import {GPasteFavouriteButton} from './favouriteButton.js';
 
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
@@ -36,6 +37,9 @@ class GPasteItem extends PopupMenuItem {
             });
             this._indexLabelVisible = false;
         }
+
+        this._favouriteItem = new GPasteFavouriteButton(client, this._uuid);
+        this.add_child(this._favouriteItem);
 
         this._deleteItem = new GPasteDeleteButton(client, this._uuid);
         this.add_child(this._deleteItem);
@@ -80,7 +84,7 @@ class GPasteItem extends PopupMenuItem {
 
     refresh() {
         // A row is addressed the way it was filled: -2 marks one that came from
-        // a uuid (a search), where its index means nothing.
+        // a uuid (a search, the favourites), where its index means nothing.
         if (this._index === -2)
             this.setUuid(this._uuid).catch(console.error);
         else
@@ -94,11 +98,21 @@ class GPasteItem extends PopupMenuItem {
         if (index === -1) {
             this._setValue(null);
         } else {
+            // A recycled row goes on showing the item it held until the fetch
+            // lands, but it is no longer that item, so it stops answering for
+            // it now rather than when the reply comes: activating the row — or
+            // clicking its star or its bin — in that window would otherwise act
+            // on the item the row used to show, the star flipping the pin the
+            // wrong way, since the flag it reads is that item's too. Disarmed,
+            // not aimed elsewhere.
+            this._uuid = null;
+            this._disarmActions();
+
             const item = await this._client.get_item_at_index(index);
             if (generation !== this._generation)
                 return;
             this._uuid = item.get_uuid();
-            this._setValue(item.get_value());
+            this._setValue(item.get_value(), item.is_favourite());
         }
     }
 
@@ -106,6 +120,9 @@ class GPasteItem extends PopupMenuItem {
         const generation = ++this._generation;
         this._index = -2;
         this._uuid = uuid;
+        // The row's own uuid is known here, but the star reads the pin flag on
+        // top of it and that only arrives with the item (see setIndex).
+        this._disarmActions();
 
         if (uuid == null) {
             this._setValue(null);
@@ -113,11 +130,17 @@ class GPasteItem extends PopupMenuItem {
             const item = await this._client.get_item(uuid);
             if (generation !== this._generation)
                 return;
-            this._setValue(item.get_value());
+            this._setValue(item.get_value(), item.is_favourite());
         }
     }
 
-    _setValue(value) {
+    // Both actions are addressed by uuid, and a button with none is inert.
+    _disarmActions() {
+        this._favouriteItem.setUuid(null);
+        this._deleteItem.setUuid(null);
+    }
+
+    _setValue(value, favourite = false) {
         this.label.set_style(this._index === 0 ? 'font-weight: bold;' : null);
 
         if (this._index === -1) {
@@ -135,6 +158,8 @@ class GPasteItem extends PopupMenuItem {
             this.show();
         }
 
+        this._favouriteItem.setUuid(this._uuid);
+        this._favouriteItem.setFavourite(favourite);
         this._deleteItem.setUuid(this._uuid);
     }
 

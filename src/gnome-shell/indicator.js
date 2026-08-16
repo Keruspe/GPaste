@@ -49,7 +49,7 @@ class GPasteIndicator extends Button {
         // user scrolls (lazy loading), so St does not have to lay out thousands
         // of actors it cannot recycle.
         this._history = [];
-        this._searchResults = [];
+        this._filteredUuids = [];
         this._available = 0;
         this._loading = false;
         this._reloadGeneration = 0;
@@ -59,6 +59,7 @@ class GPasteIndicator extends Button {
 
         this._searchItem = new GPasteSearchItem();
         this._searchItem.connect('text-changed', this._reloadCurrent.bind(this));
+        this._searchItem.connect('favourites-changed', this._reloadCurrent.bind(this));
 
         this._settings.connectObject('notify::element-size', this._resetElementSize.bind(this), this);
         this._resetElementSize();
@@ -239,8 +240,14 @@ class GPasteIndicator extends Button {
         return this._searchItem.text.length > 0;
     }
 
+    // Both filters list rows by uuid rather than by history position, so they
+    // share every path that cares about which of the two the list is showing.
+    _isFiltered() {
+        return this._hasSearch() || this._searchItem.favourites;
+    }
+
     _totalSize() {
-        return this._hasSearch() ? this._searchResults.length : this._available;
+        return this._isFiltered() ? this._filteredUuids.length : this._available;
     }
 
     _resetElementSize() {
@@ -293,12 +300,12 @@ class GPasteIndicator extends Button {
 
         try {
             const elementSize = this._settings.get_element_size();
-            const searching = this._hasSearch();
+            const filtered = this._isFiltered();
             const start = this._history.length;
             const end = Math.min(this._totalSize(), start + this._fillBatch());
 
             for (let i = start; i < end; ++i)
-                this._createRow(elementSize, i, searching ? -1 : i, searching ? this._searchResults[i] : null);
+                this._createRow(elementSize, i, filtered ? -1 : i, filtered ? this._filteredUuids[i] : null);
         } finally {
             // Never leave _loading stuck true on a throw, or lazy loading wedges
             // for the rest of the session.
@@ -372,7 +379,7 @@ class GPasteIndicator extends Button {
 
         ++this._reloadGeneration;
 
-        this._searchResults = [];
+        this._filteredUuids = [];
 
         if (!await this._fetchAvailable())
             return;
@@ -380,22 +387,26 @@ class GPasteIndicator extends Button {
         this._rebuild(this._available === 0);
     }
 
-    // The daemon answers with the matching items themselves, so a row needs no
-    // fetch of its own; only their uuids are kept, which is what a row is
-    // addressed by.
-    async _runSearch() {
+    // A search asks the daemon to match; the favourites filter asks it for the
+    // pinned items; with both on, only the matches are left to sift, and those
+    // are the narrow set already.
+    async _runFilter() {
         if (!this._client)
             return;
 
         const generation = ++this._reloadGeneration;
         const search = this._searchItem.text.toLowerCase();
 
-        const items = await this._client.search(search);
+        const items = this._hasSearch()
+            ? await this._client.search(search)
+            : await this._client.get_favourites();
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
-        this._searchResults = items.map(item => item.get_uuid());
-        this._rebuild(this._searchResults.length === 0);
+        this._filteredUuids = items
+            .filter(item => !this._hasSearch() || !this._searchItem.favourites || item.is_favourite())
+            .map(item => item.get_uuid());
+        this._rebuild(this._filteredUuids.length === 0);
     }
 
     // Reconcile the materialised rows with the current content (history or
@@ -410,7 +421,7 @@ class GPasteIndicator extends Button {
         this._loading = true;
 
         try {
-            const searching = this._hasSearch();
+            const filtered = this._isFiltered();
             const total = this._totalSize();
             const elementSize = this._settings.get_element_size();
 
@@ -423,14 +434,14 @@ class GPasteIndicator extends Button {
                 this._history.pop().destroy();
 
             for (let i = 0; i < this._history.length; ++i) {
-                if (searching)
-                    this._history[i].setUuid(this._searchResults[i]).catch(console.error);
+                if (filtered)
+                    this._history[i].setUuid(this._filteredUuids[i]).catch(console.error);
                 else
                     this._history[i].setIndex(i).catch(console.error);
             }
 
             for (let i = this._history.length; i < target; ++i)
-                this._createRow(elementSize, i, searching ? -1 : i, searching ? this._searchResults[i] : null);
+                this._createRow(elementSize, i, filtered ? -1 : i, filtered ? this._filteredUuids[i] : null);
         } finally {
             this._loading = false;
         }
@@ -440,8 +451,8 @@ class GPasteIndicator extends Button {
     }
 
     _reloadCurrent() {
-        if (this._hasSearch())
-            this._runSearch().catch(console.error);
+        if (this._isFiltered())
+            this._runFilter().catch(console.error);
         else
             this._reload().catch(console.error);
     }
@@ -472,11 +483,15 @@ class GPasteIndicator extends Button {
     }
 
     _update(client, action, target, uuid, position) {
-        // A search maps its rows to uuids rather than to history positions, so a
-        // position says nothing to it. One item changing in place is still worth
-        // catching by uuid; anything else means re-running the search.
-        if (this._hasSearch()) {
-            if (target === GPaste.UpdateTarget.ITEM && action === GPaste.UpdateAction.REPLACE) {
+        // A filtered list maps its rows to uuids rather than to history
+        // positions, so a position says nothing to it. One item changing in
+        // place is still worth catching by uuid; anything else means re-running
+        // the filter. Not in a pinned-only list, though: what just changed there
+        // may be the very flag that puts a row in it, and the update names the
+        // item rather than what became of its flag, so it asks again.
+        if (this._isFiltered()) {
+            if (!this._searchItem.favourites &&
+                target === GPaste.UpdateTarget.ITEM && action === GPaste.UpdateAction.REPLACE) {
                 const row = this._history.find(i => i.uuid === uuid);
 
                 if (row) {
@@ -485,7 +500,7 @@ class GPasteIndicator extends Button {
                 }
             }
 
-            this._runSearch().catch(console.error);
+            this._runFilter().catch(console.error);
             return;
         }
 
@@ -515,6 +530,10 @@ class GPasteIndicator extends Button {
             this._dummyHistoryItem.showNoResult();
             this._emptyHistoryItem.hide();
             this._searchItem.show();
+        } else if (this._searchItem.favourites) {
+            this._dummyHistoryItem.showNoPinned();
+            this._emptyHistoryItem.hide();
+            this._searchItem.show();
         } else {
             this._dummyHistoryItem.showEmpty();
             this._emptyHistoryItem.hide();
@@ -542,14 +561,12 @@ class GPasteIndicator extends Button {
 
     _onOpenStateChanged(menu, state) {
         if (state) {
-            // reset() clears any leftover search text; when there was some, that
-            // synchronously fires 'text-changed', which is bound straight to
-            // _reloadCurrent, so only reload explicitly when the search was
-            // already empty, to avoid a redundant round-trip on every open.
-            const hadSearch = this._hasSearch();
+            // The menu opens on the history, so both filters go; reset() drops
+            // them without announcing either, which is what leaves this one
+            // reload to cover the pair rather than one round trip per filter
+            // that happened to be on.
             this._searchItem.reset();
-            if (!hadSearch)
-                this._reloadCurrent();
+            this._reloadCurrent();
             GLib.Source.set_name_by_id(GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, this._selectSearch.bind(this)), '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);

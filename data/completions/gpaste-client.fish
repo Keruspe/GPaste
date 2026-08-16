@@ -65,6 +65,7 @@ complete -c gpaste-client -f
 # Options. getopt_long permutes, so they are accepted anywhere on the line.
 complete -c gpaste-client -s h -l help       -d 'Display the help'
 complete -c gpaste-client -s v -l version    -d 'Display the version'
+complete -c gpaste-client -s f -l favourites -d 'Only display the pinned items'
 complete -c gpaste-client -s i -l use-index  -d 'Use the index of the item instead of its UUID'
 complete -c gpaste-client -s o -l oneline    -d 'Display each item on one line'
 complete -c gpaste-client -s r -l raw        -d 'Display the raw item, without its UUID'
@@ -93,6 +94,7 @@ __gpaste_subcommand delete del d remove rm             'Delete an element of the
 __gpaste_subcommand delete-history dh                  'Delete a history'
 __gpaste_subcommand delete-password dp                 'Delete a password'
 __gpaste_subcommand empty e                            'Empty the history'
+__gpaste_subcommand favourite fav                      'Pin an item so the history never drops it automatically'
 __gpaste_subcommand file f                             'Put the content of a file into the clipboard'
 __gpaste_subcommand get g                              'Display an element of the history'
 __gpaste_subcommand get-history gh                     'Get the name of the current history'
@@ -113,6 +115,7 @@ __gpaste_subcommand start daemon d                     'Start tracking clipboard
 __gpaste_subcommand stop quit q                        'Stop tracking clipboard changes'
 __gpaste_subcommand switch-history sh                  'Switch to another history'
 __gpaste_subcommand ui                                 'Launch the graphical tool'
+__gpaste_subcommand unfavourite unfav                  'Unpin an item, letting the history drop it again'
 __gpaste_subcommand upload u                           'Upload an item to a pastebin service'
 __gpaste_subcommand version v                          'Display the version'
 
@@ -123,5 +126,5 @@ complete -c gpaste-client -n '__fish_seen_subcommand_from empty e history-size h
 
 complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
 
-complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace set-password sp merge m' \
+complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace set-password sp merge m favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'

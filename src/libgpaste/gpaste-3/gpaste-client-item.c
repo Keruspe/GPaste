@@ -10,6 +10,7 @@ struct _GPasteClientItem
     gchar         *uuid;
     gchar         *value;
     GPasteItemKind kind;
+    gboolean       favourite;
 };
 
 G_PASTE_DEFINE_TYPE (ClientItem, client_item, G_TYPE_OBJECT)
@@ -56,6 +57,21 @@ g_paste_client_item_get_kind (GPasteClientItem *self)
     return self->kind;
 }
 
+/**
+ * g_paste_client_item_is_favourite:
+ * @self: a #GPasteClientItem instance
+ *
+ * Returns whether the item is pinned, and so exempt from the history's
+ * automatic eviction policies
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_client_item_is_favourite (GPasteClientItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), FALSE);
+
+    return self->favourite;
+}
+
 static void
 g_paste_client_item_finalize (GObject *object)
 {
@@ -83,6 +99,7 @@ g_paste_client_item_init (GPasteClientItem *self G_GNUC_UNUSED)
  * @uuid: the uuid of the item
  * @value: the value of the item
  * @kind: the kind of the item
+ * @favourite: whether the item is pinned
  *
  * Create a new instance of #GPasteClientItem
  *
@@ -92,7 +109,8 @@ g_paste_client_item_init (GPasteClientItem *self G_GNUC_UNUSED)
 G_PASTE_VISIBLE GPasteClientItem *
 g_paste_client_item_new (const gchar   *uuid,
                          const gchar   *value,
-                         GPasteItemKind kind)
+                         GPasteItemKind kind,
+                         gboolean       favourite)
 {
     g_return_val_if_fail (g_uuid_string_is_valid (uuid), NULL);
     g_return_val_if_fail (g_utf8_validate (value, -1, NULL), NULL);
@@ -102,6 +120,7 @@ g_paste_client_item_new (const gchar   *uuid,
     self->uuid = g_strdup (uuid);
     self->value = g_strdup (value);
     self->kind = kind;
+    self->favourite = favourite;
 
     return self;
 }

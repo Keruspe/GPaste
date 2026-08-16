@@ -36,6 +36,7 @@ struct _GPasteUiHistory
     gint32          item_height;
 
     gchar          *search;
+    gboolean        favourites; /* show only the pinned items */
 };
 
 enum
@@ -162,9 +163,9 @@ g_paste_ui_history_unbind_item (GtkListItemFactory *factory G_GNUC_UNUSED,
     g_paste_ui_item_set_index (G_PASTE_UI_ITEM (widget), (guint64) -1);
 }
 
-static void g_paste_ui_history_run_search (GPasteUiHistory *self);
-static void g_paste_ui_history_refresh    (GPasteUiHistory *self,
-                                           guint64          from_index);
+static void g_paste_ui_history_filter  (GPasteUiHistory *self);
+static void g_paste_ui_history_refresh (GPasteUiHistory *self,
+                                        guint64          from_index);
 
 /* One batch is a viewport's worth of items: enough to fill the visible area so
  * the list always has something to scroll to while more history remains. Until
@@ -192,17 +193,23 @@ g_paste_ui_history_batch (GPasteUiHistory *self)
     return G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 }
 
-/* Carried by both the refresh and the search callbacks. @self is owned: the
+/* Carried by both the refresh and the filter callbacks. @self is owned: the
  * widget's only owner is the widget tree, so a window closing mid-flight would
  * otherwise finalize it before the reply lands. @generation is what was current
- * when the call went out — refresh and search write the same rows (indices vs.
- * uuids), so whichever went out last wins and everything older bails. */
+ * when the call went out — refresh and filter write the same rows (indices vs.
+ * uuids), so whichever went out last wins and everything older bails.
+ *
+ * @searched records which of the two calls the filter made, because the reply
+ * has to be finished as the call it was: reading self->search back at reply
+ * time would ask a Search result for its favourites the moment the search is
+ * cleared while one is in flight. */
 typedef struct
 {
     GPasteUiHistory *self;
     gchar           *name;
     guint64          from_index;
     guint64          generation;
+    gboolean         searched;
 } DisplayCallbackData;
 
 static void
@@ -239,10 +246,11 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (!self->client)
         return;
 
-    /* A later refresh or search superseded this one: leave self->loading set
-     * (the newer refresh clears it) and don't re-index from this stale
-     * from_index, which could leave shifted rows with wrong indices — or, for a
-     * search, overwrite the uuids it just installed. */
+    /* A later refresh or filter superseded this one: leave self->loading to
+     * whichever did (a refresh clears it on its own reply, a filter as it goes
+     * out) and don't re-index from this stale from_index, which could leave
+     * shifted rows with wrong indices — or, for a filtered view, overwrite the
+     * uuids it just installed. */
     if (cdata->generation != self->display_generation)
         return;
 
@@ -294,9 +302,10 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
     if (!self->client)
         return;
 
-    if (self->search)
+    /* Both filters list uuids rather than positions, so they share a path. */
+    if (self->search || self->favourites)
     {
-        g_paste_ui_history_run_search (self);
+        g_paste_ui_history_filter (self);
         return;
     }
 
@@ -340,7 +349,7 @@ g_paste_ui_history_can_grow (GPasteUiHistory *self)
 {
     /* size is MIN (available, limit), so there is more to load iff the history
      * holds more items than our current display limit. */
-    return self->client && !self->search && !self->loading && self->available > self->limit;
+    return self->client && !self->search && !self->favourites && !self->loading && self->available > self->limit;
 }
 
 static void
@@ -390,8 +399,10 @@ g_paste_ui_history_on_edge_reached (GtkScrolledWindow *scroll G_GNUC_UNUSED,
         g_paste_ui_history_grow (self);
 }
 
+/* The reply to whichever call g_paste_ui_history_filter made: both answer the
+ * same list of items, so only the filtering left to do here differs. */
 static void
-on_search_ready (GObject      *source_object G_GNUC_UNUSED,
+on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
@@ -408,11 +419,20 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     if (cdata->generation != self->display_generation)
         return;
 
-    g_autolist (GPasteClientItem) items = g_paste_client_search_finish (self->client, res, NULL /* error */);
+    g_autolist (GPasteClientItem) items = (cdata->searched)
+        ? g_paste_client_search_finish (self->client, res, NULL /* error */)
+        : g_paste_client_get_favourites_finish (self->client, res, NULL /* error */);
     g_autoptr (GStrvBuilder) uuids = g_strv_builder_new ();
 
     for (const GList *i = items; i; i = i->next)
+    {
+        /* Only the matches of a search need sifting here: the favourites on
+         * their own were asked for as such and arrive pinned. */
+        if (self->favourites && cdata->searched && !g_paste_client_item_is_favourite (i->data))
+            continue;
+
         g_strv_builder_add (uuids, g_paste_client_item_get_uuid (i->data));
+    }
 
     g_auto (GStrv) results = g_strv_builder_end (uuids);
 
@@ -424,16 +444,31 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (self->size)
         g_paste_ui_history_show_list (self);
-    else
+    else if (cdata->searched)
         g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"));
+    else
+        g_paste_ui_history_show_status (self, "non-starred-symbolic", _("No Pinned Items"));
 }
 
-/* A search lists rows by uuid rather than by position: the daemon answers with
- * the matching items themselves, so nothing has to be fetched per row. */
+/* List by uuid rather than by position: a search asks the daemon to match, the
+ * favourites filter asks it for the pinned items, and with both on the matches
+ * are sifted for the flag they carry. */
 static void
-g_paste_ui_history_run_search (GPasteUiHistory *self)
+g_paste_ui_history_filter (GPasteUiHistory *self)
 {
-    g_paste_client_search (self->client, self->search, on_search_ready, display_callback_data_new (self, 0));
+    DisplayCallbackData *cdata = display_callback_data_new (self, 0);
+
+    /* This supersedes any positional refresh in flight, and that one now bails
+     * before clearing the flag it set. Nothing here grows lazily, so taking the
+     * flag down is the whole of the handover. */
+    self->loading = FALSE;
+
+    cdata->searched = (self->search != NULL);
+
+    if (cdata->searched)
+        g_paste_client_search (self->client, self->search, on_filter_ready, cdata);
+    else
+        g_paste_client_get_favourites (self->client, on_filter_ready, cdata);
 }
 
 /**
@@ -456,6 +491,27 @@ g_paste_ui_history_search (GPasteUiHistory *self,
         g_clear_pointer (&self->search, g_free);
     else
         g_set_str (&self->search, search);
+
+    g_paste_ui_history_refresh (self, 0);
+}
+
+/**
+ * g_paste_ui_history_set_favourites:
+ * @self: a #GPasteUiHistory instance
+ * @favourites: whether to list only the pinned items
+ *
+ * Show only the pinned items, or the whole history again
+ */
+void
+g_paste_ui_history_set_favourites (GPasteUiHistory *self,
+                                   gboolean         favourites)
+{
+    g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
+
+    if (self->favourites == favourites)
+        return;
+
+    self->favourites = favourites;
 
     g_paste_ui_history_refresh (self, 0);
 }
@@ -589,12 +645,20 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
         switch (action)
         {
         case G_PASTE_UPDATE_ACTION_REPLACE:
-            /* A search lists uuids, so it finds the row by the one the update
-             * carries; a positional one is at @position, which lazy loading may
-             * put past the rows we hold at all (a password renamed deep in the
-             * history, say). The model shrugs off both: it only reports what it
-             * has. */
-            if (self->search)
+            /* A named view lists uuids, so it finds the row by the one the
+             * update carries; a positional one is at @position, which lazy
+             * loading may put past the rows we hold at all (a password renamed
+             * deep in the history, say). The model shrugs off both: it only
+             * reports what it has.
+             *
+             * The favourites view is the exception, and pinning is the very
+             * change that reaches it: whether a row still belongs in a list of
+             * pinned items is exactly what just changed, and the update says
+             * which item, not what became of its flag. So it asks again --
+             * cheaply, the daemon answering the pinned items alone. */
+            if (self->favourites)
+                refresh = TRUE;
+            else if (self->search)
                 g_paste_ui_history_model_item_replaced_by_uuid (self->model, uuid);
             else
                 g_paste_ui_history_model_item_replaced (self->model, position);

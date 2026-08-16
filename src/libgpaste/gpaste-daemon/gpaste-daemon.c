@@ -508,6 +508,8 @@ G_PASTE_DAEMON_HANDLER_ERR (delete_password, (const gchar *name), (name))
 
 G_PASTE_DAEMON_HANDLER (empty_history, (const gchar *name), (name))
 
+G_PASTE_DAEMON_HANDLER_RET (get_favourites, (), ())
+
 G_PASTE_DAEMON_HANDLER_RET (get_history, (), ())
 
 G_PASTE_DAEMON_HANDLER_RET (get_history_size, (const gchar *name), (name))
@@ -568,6 +570,8 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (search,
 G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 
 G_PASTE_DAEMON_HANDLER (set_active, (gboolean active), (active))
+
+G_PASTE_DAEMON_HANDLER_ERR (set_favourite, (const gchar *uuid, gboolean favourite), (uuid, favourite))
 
 G_PASTE_DAEMON_HANDLER_ERR (set_password, (const gchar *uuid, const gchar *name), (uuid, name))
 
@@ -634,6 +638,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-delete-item",                 G_CALLBACK (g_paste_daemon_handle_delete_item)                 },
         { "handle-delete-password",             G_CALLBACK (g_paste_daemon_handle_delete_password)             },
         { "handle-empty-history",               G_CALLBACK (g_paste_daemon_handle_empty_history)               },
+        { "handle-get-favourites",              G_CALLBACK (g_paste_daemon_handle_get_favourites)              },
         { "handle-get-history",                 G_CALLBACK (g_paste_daemon_handle_get_history)                 },
         { "handle-get-history-size",            G_CALLBACK (g_paste_daemon_handle_get_history_size)            },
         { "handle-get-image",                   G_CALLBACK (g_paste_daemon_handle_get_image)                   },
@@ -649,6 +654,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-search",                      G_CALLBACK (g_paste_daemon_handle_search)                      },
         { "handle-select",                      G_CALLBACK (g_paste_daemon_handle_select)                      },
         { "handle-set-active",                  G_CALLBACK (g_paste_daemon_handle_set_active)                  },
+        { "handle-set-favourite",               G_CALLBACK (g_paste_daemon_handle_set_favourite)               },
         { "handle-set-password",                G_CALLBACK (g_paste_daemon_handle_set_password)                },
         { "handle-show-about",                  G_CALLBACK (g_paste_daemon_handle_show_about)                  },
         { "handle-show-history",                G_CALLBACK (g_paste_daemon_handle_show_history)                },

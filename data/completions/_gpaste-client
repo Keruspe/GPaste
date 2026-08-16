@@ -82,6 +82,7 @@ _gpaste-client_subcommands() {
         {delete-history,dh}:"Delete a history"
         {delete-password,dp}:"Delete a password"
         {empty,e}:"Empty the history"
+        {favourite,fav}:"Pin an item so the history never drops it automatically"
         {file,f}:"Put the content of a file into the clipboard"
         {get,g}:"Display an element of the history"
         {get-history,gh}:"Get the name of the current history"
@@ -100,6 +101,7 @@ _gpaste-client_subcommands() {
         show-history:"Make the applet or extension display the history"
         {start,daemon,d}:"Start tracking clipboard changes"
         {stop,quit,q}:"Stop tracking clipboard changes"
+        {unfavourite,unfav}:"Unpin an item, letting the history drop it again"
         {switch-history,sh}:"Switch to another history"
         ui:"Launch the graphical tool"
         {upload,u}:"Upload an item to a pastebin service"
@@ -131,7 +133,7 @@ _gpaste-client_arguments() {
             _arguments -s : \
                 '*:file:_files'
             ;;
-        (get|g|select|set|s|delete|del|d|remove|rm|upload|u)
+        (get|g|select|set|s|delete|del|d|remove|rm|upload|u|favourite|fav|unfavourite|unfav)
             _arguments -s : \
                 "1:item:${item}"
             ;;
@@ -179,6 +181,7 @@ _gpaste-client() {
     _arguments -s -C : \
         '(-h --help)'{-h,--help}'[Display the help.]' \
         '(-v --version)'{-v,--version}'[Display the version.]' \
+        '(-f --favourites)'{-f,--favourites}'[Only display the pinned items.]' \
         '(-i --use-index)'{-i,--use-index}'[Use the index of the item instead of its UUID.]' \
         '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]' \
         '(-r --raw)'{-r,--raw}'[Display the raw item, without its UUID.]' \

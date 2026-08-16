@@ -10,6 +10,7 @@ typedef struct
     gchar                 *uuid;
 
     GPasteUiItemActionFunc activate_func; /* set for simple, subclass-less actions */
+    gpointer               activate_data; /* borrowed; the row owning us outlives us */
 } GPasteUiItemActionPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItemAction, ui_item_action, GTK_TYPE_BUTTON)
@@ -32,6 +33,26 @@ g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
     g_set_str (&priv->uuid, uuid);
 }
 
+/**
+ * g_paste_ui_item_action_set_icon_name:
+ * @self: a #GPasteUiItemAction instance
+ * @icon_name: the name of the icon to show
+ *
+ * Change the icon the action shows.
+ *
+ * For an action whose icon says what state the item is in rather than what the
+ * button does — the favourite star, filled or not — so it does not need a
+ * subclass just to reach the #GtkImage this one already owns.
+ */
+void
+g_paste_ui_item_action_set_icon_name (GPasteUiItemAction *self,
+                                      const gchar        *icon_name)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_ACTION (self));
+
+    gtk_image_set_from_icon_name (GTK_IMAGE (gtk_button_get_child (GTK_BUTTON (self))), icon_name);
+}
+
 static void
 g_paste_ui_item_action_real_activate (GPasteUiItemAction *self,
                                       GPasteClient       *client,
@@ -41,7 +62,7 @@ g_paste_ui_item_action_real_activate (GPasteUiItemAction *self,
 
     /* Default for subclass-less actions created via _new_simple. */
     if (priv->activate_func)
-        priv->activate_func (client, uuid);
+        priv->activate_func (client, uuid, priv->activate_data);
 }
 
 static void
@@ -123,7 +144,9 @@ g_paste_ui_item_action_new (GType         type,
  * @client: a #GPasteClient
  * @icon_name: the name of the icon to use
  * @tooltip: the tooltip to display
- * @activate: (scope notified): the action to run on the tracked item when clicked
+ * @activate: (scope forever): the action to run on the tracked item when clicked
+ * @user_data: (nullable): data to hand @activate, borrowed — the row owning the
+ *             action outlives it
  *
  * Create a #GPasteUiItemAction that runs @activate when clicked, without
  * needing a dedicated subclass.
@@ -135,7 +158,8 @@ GtkWidget *
 g_paste_ui_item_action_new_simple (GPasteClient          *client,
                                    const gchar           *icon_name,
                                    const gchar           *tooltip,
-                                   GPasteUiItemActionFunc activate)
+                                   GPasteUiItemActionFunc activate,
+                                   gpointer               user_data)
 {
     g_return_val_if_fail (activate, NULL);
 
@@ -143,6 +167,7 @@ g_paste_ui_item_action_new_simple (GPasteClient          *client,
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (self));
 
     priv->activate_func = activate;
+    priv->activate_data = user_data;
 
     return self;
 }

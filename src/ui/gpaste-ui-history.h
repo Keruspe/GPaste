@@ -13,6 +13,8 @@ G_PASTE_FINAL_TYPE (UiHistory, ui_history, UI_HISTORY, GtkBox)
 
 void g_paste_ui_history_search (GPasteUiHistory *self,
                                 const gchar     *search);
+void g_paste_ui_history_set_favourites (GPasteUiHistory *self,
+                                        gboolean         favourites);
 
 gboolean g_paste_ui_history_select_first (GPasteUiHistory *self);
 gboolean g_paste_ui_history_activate_index (GPasteUiHistory *self,

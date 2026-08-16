@@ -30,6 +30,9 @@ gboolean          g_paste_history_select             (GPasteHistory *self,
 void              g_paste_history_replace            (GPasteHistory *self,
                                                       const gchar   *uuid,
                                                       const gchar   *contents);
+gboolean          g_paste_history_set_favourite      (GPasteHistory *self,
+                                                      const gchar   *uuid,
+                                                      gboolean       favourite);
 void                      g_paste_history_set_password    (GPasteHistory *self,
                                                            const gchar   *uuid,
                                                            const gchar   *name);

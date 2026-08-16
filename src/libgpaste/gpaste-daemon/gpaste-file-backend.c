@@ -295,6 +295,9 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
             !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, &error) ||
             (G_PASTE_IS_PASSWORD_ITEM (item) && !_g_paste_file_backend_write_password_name (stream, G_PASTE_PASSWORD_ITEM (item), &error)) ||
             (G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, G_PASTE_IMAGE_ITEM (item), &error)) ||
+            /* Written only when set, so an ordinary history's file is unchanged
+             * by the attribute's existence. */
+            (g_paste_item_is_favourite (item) && !g_output_stream_write_all (stream, "\" favourite=\"true", 17, NULL, NULL /* cancellable */, &error)) ||
             !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, &error) ||
@@ -381,6 +384,7 @@ typedef struct
     guint64               current_size;
     guint64               max_size;
     gboolean              images_support;
+    gboolean              favourite;
     gchar                *uuid;
     gchar                *date;
     gchar                *checksum;
@@ -504,6 +508,7 @@ start_tag (GMarkupParseContext *context,
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
         data->type = G_PASTE_ITEM_KIND_INVALID;
+        data->favourite = FALSE;
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->checksum, g_free);
@@ -553,6 +558,8 @@ start_tag (GMarkupParseContext *context,
                 }
                 data->name = g_strdup (*v);
             }
+            else if (g_paste_str_equal (*a, "favourite"))
+                data->favourite = g_paste_str_equal (*v, "true");
             else
                 WARN_AT ("Unknown item attribute: %s", *a);
         }
@@ -633,8 +640,14 @@ add_item (Data *data)
             data->uuid = g_uuid_string_random ();
 
         g_paste_item_set_uuid (item, data->uuid);
+        g_paste_item_set_favourite (item, data->favourite);
         data->history = g_list_append (data->history, item);
-        ++data->current_size;
+
+        /* Only the items the cap can actually evict are counted against it: a
+         * favourite is read back whatever it costs, or one that had sunk past
+         * the cap would be lost on the very next save. */
+        if (!data->favourite)
+            ++data->current_size;
     }
 
     for (GSList *d = data->special_values; d; d = d->next)
@@ -666,8 +679,10 @@ end_tag (GMarkupParseContext *context,
     else if (g_paste_str_equal (element_name, "item"))
     {
         /* An unknown (or missing) version collects neither the item's value nor
-         * its special values (see on_text), so there is nothing to restore. */
-        if (data->version != HISTORY_INVALID && data->current_size < data->max_size)
+         * its special values (see on_text), so there is nothing to restore.
+         * A favourite is always taken: the cap does not apply to it, and
+         * current_size counts only the items it does apply to. */
+        if (data->version != HISTORY_INVALID && (data->favourite || data->current_size < data->max_size))
             add_item (data);
         /* Leave the item even when the version is unknown: staying inside it
          * would make every element that follows fail its assert — including the
@@ -821,6 +836,7 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),
+            FALSE, /* favourite: set per item from its "favourite" attribute */
             NULL, /* uuid */
             NULL, /* date */
             NULL, /* checksum */

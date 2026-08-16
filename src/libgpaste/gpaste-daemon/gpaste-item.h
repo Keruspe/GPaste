@@ -41,7 +41,11 @@ const gchar  *g_paste_item_get_display_string (GPasteItem *self);
 gboolean      g_paste_item_equals             (GPasteItem *self,
                                                GPasteItem *other);
 GPasteItemKind g_paste_item_get_kind          (GPasteItem *self);
+gboolean      g_paste_item_is_favourite       (GPasteItem *self);
 guint64       g_paste_item_get_size           (GPasteItem *self);
+
+void g_paste_item_set_favourite (GPasteItem *self,
+                                 gboolean    favourite);
 
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);

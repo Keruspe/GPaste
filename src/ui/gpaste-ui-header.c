@@ -11,6 +11,7 @@
 typedef struct
 {
     GtkButton       *settings;
+    GtkToggleButton *favourites;
     GtkToggleButton *search;
     AdwWindowTitle  *title;
     GtkWidget       *merge;  /* enters merge selection mode */
@@ -145,6 +146,25 @@ g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
 }
 
 /**
+ * g_paste_ui_header_get_favourites_button:
+ * @self: the #AdwHeaderBar
+ *
+ * Get the button filtering the list down to the pinned items
+ *
+ * Returns: (transfer none): the #GtkToggleButton for the favourites filter
+ */
+GtkToggleButton *
+g_paste_ui_header_get_favourites_button (AdwHeaderBar *self)
+{
+    GPasteUiHeaderData *data = header_data (self);
+
+    if (!data)
+        return NULL;
+
+    return data->favourites;
+}
+
+/**
  * g_paste_ui_header_get_search_button:
  * @self: the header bar
  *
@@ -275,6 +295,11 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     gtk_widget_set_tooltip_text (search, _("Search"));
     gtk_widget_set_valign (search, GTK_ALIGN_CENTER);
     gtk_button_set_child (GTK_BUTTON (search), gtk_image_new_from_icon_name ("edit-find-symbolic"));
+    GtkWidget *favourites = gtk_toggle_button_new ();
+
+    gtk_widget_set_tooltip_text (favourites, _("Show only pinned items"));
+    gtk_widget_set_valign (favourites, GTK_ALIGN_CENTER);
+    gtk_button_set_child (GTK_BUTTON (favourites), gtk_image_new_from_icon_name ("starred-symbolic"));
     GtkWidget *title = adw_window_title_new (PACKAGE_NAME, NULL);
 
     gtk_widget_add_css_class (settings, "flat");
@@ -299,6 +324,7 @@ g_paste_ui_header_new (GtkWindow    *topwin,
 
     GPasteUiHeaderData *data = g_new0 (GPasteUiHeaderData, 1);
     data->settings = GTK_BUTTON (settings);
+    data->favourites = GTK_TOGGLE_BUTTON (favourites);
     data->search = GTK_TOGGLE_BUTTON (search);
     data->title = ADW_WINDOW_TITLE (title);
     data->merge = merge;
@@ -314,6 +340,7 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     adw_header_bar_pack_end (bar, g_paste_ui_new_item_new (topwin, client));
     adw_header_bar_pack_end (bar, settings);
     adw_header_bar_pack_end (bar, search);
+    adw_header_bar_pack_end (bar, favourites);
     adw_header_bar_pack_end (bar, merge);
 
     return self;

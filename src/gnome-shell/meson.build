@@ -6,6 +6,7 @@ shell_extension_files = [
   'dependencies.js',
   'dummyHistoryItem.js',
   'extension.js',
+  'favouriteButton.js',
   'indicator.js',
   'item.js',
   'prefs.js',

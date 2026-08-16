@@ -10,11 +10,12 @@
 
 typedef struct
 {
-    gchar  *uuid;
-    gchar  *value;
-    GSList *special_values;
-    gchar  *display_string;
-    guint64 size;
+    gchar   *uuid;
+    gchar   *value;
+    GSList  *special_values;
+    gchar   *display_string;
+    guint64  size;
+    gboolean favourite;
 } GPasteItemPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (Item, item, G_TYPE_OBJECT)
@@ -152,6 +153,48 @@ g_paste_item_get_kind (GPasteItem *self)
     g_return_val_if_fail (klass->get_kind, G_PASTE_ITEM_KIND_INVALID);
 
     return klass->get_kind (self);
+}
+
+/**
+ * g_paste_item_is_favourite:
+ * @self: a #GPasteItem instance
+ *
+ * Whether the item is pinned, and so exempt from the history's automatic
+ * eviction policies
+ *
+ * Returns: %TRUE if the item is a favourite
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_item_is_favourite (GPasteItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
+
+    const GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    return priv->favourite;
+}
+
+/**
+ * g_paste_item_set_favourite:
+ * @self: a #GPasteItem instance
+ * @favourite: whether to pin the item
+ *
+ * Pin the item, or let it go again.
+ *
+ * This only records the flag. Everything that follows from it — re-electing the
+ * biggest item, re-running the size and memory caps, persisting the change — is
+ * #GPasteHistory's business, so go through g_paste_history_set_favourite() for
+ * an item that is in a history.
+ */
+G_PASTE_VISIBLE void
+g_paste_item_set_favourite (GPasteItem *self,
+                            gboolean    favourite)
+{
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    priv->favourite = favourite;
 }
 
 /**

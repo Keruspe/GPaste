@@ -127,10 +127,17 @@ g_paste_history_private_elect_new_biggest (GPasteHistory *self)
     self->biggest_uuid = NULL;
     self->biggest_size = 0;
 
-    /* From 1: the first (active) item is never tracked. */
+    /* From 1: the first (active) item is never tracked. Favourites are never
+     * tracked either: this elects what the memory cap may evict, and evicting a
+     * favourite is precisely what being one rules out. With nothing electable
+     * biggest_uuid stays %NULL, which is what stops the cap's loop. */
     for (guint i = 1; i < self->history->len; ++i)
     {
         GPasteItem *item = g_ptr_array_index (self->history, i);
+
+        if (g_paste_item_is_favourite (item))
+            continue;
+
         guint64 size = g_paste_item_get_size (item);
 
         if (size > self->biggest_size)
@@ -292,7 +299,7 @@ g_paste_history_update (GPasteHistory      *self,
          * That is the common case, and it is what spares a per-item ref-copy of
          * the whole history on every single clipboard change. */
         gboolean full = !g_paste_storage_backend_is_incremental (self->backend);
-        GList *snapshot = (full || (op == G_PASTE_HISTORY_SAVE_ADD && displaced))
+        GList *snapshot = (full || op == G_PASTE_HISTORY_SAVE_FULL || (op == G_PASTE_HISTORY_SAVE_ADD && displaced))
             ? g_paste_history_snapshot (self)
             : NULL;
 
@@ -389,9 +396,45 @@ g_paste_history_private_check_size (GPasteHistory *self)
     guint64 max_history_size = g_paste_settings_get_max_history_size (self->settings);
 
     /* Truncate from the tail: private_remove already does the size bookkeeping,
-     * the uuid index and the leftover backing files. */
-    while (self->history->len > max_history_size)
-        g_paste_history_private_remove (self, self->history->len - 1, TRUE);
+     * the uuid index and the leftover backing files.
+     *
+     * Favourites are skipped rather than dropped, so this walks the tail once
+     * instead of always taking the last item. A history holding nothing else
+     * therefore grows past max_history_size, which is the whole point of
+     * pinning: the cap gives way, not the item.
+     *
+     * Down to 1, never 0: the first item is the one just added or selected, and
+     * a history whose every other entry is pinned would otherwise evict it on
+     * the spot -- the clipboard would stop keeping anything at all. The memory
+     * cap leaves that slot alone for the same reason. */
+    gboolean dropped_biggest = FALSE;
+
+    for (guint i = self->history->len; --i > 0 && self->history->len > max_history_size; )
+    {
+        GPasteItem *item = g_ptr_array_index (self->history, i);
+
+        if (g_paste_item_is_favourite (item))
+            continue;
+
+        /* Dropped the moment the elected item is the one going, not once the
+         * loop is over: biggest_uuid borrows that item's own string, and the
+         * removal below frees it, so every later iteration would be comparing
+         * against freed memory. */
+        if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (item)))
+        {
+            self->biggest_uuid = NULL;
+            self->biggest_size = 0;
+            dropped_biggest = TRUE;
+        }
+
+        g_paste_history_private_remove (self, i, TRUE);
+    }
+
+    /* Left to the end: the runner-up can only be named once the loop has taken
+     * everything it is going to take. The memory cap re-elects after each of its
+     * own evictions instead, because each one decides what it evicts next. */
+    if (dropped_biggest)
+        g_paste_history_private_elect_new_biggest (self);
 }
 
 /* A line grows as it is typed or selected, which only plain text and uri lists
@@ -454,6 +497,11 @@ _g_paste_history_add (GPasteHistory *self,
         {
             if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (old_first)))
                 election_needed = TRUE;
+            /* The grown line is the same line the user pinned, only longer, so
+             * it inherits the pin: dropping it here would quietly make what a
+             * user asked to keep evictable again, one keystroke at a time. */
+            if (g_paste_item_is_favourite (old_first))
+                g_paste_item_set_favourite (item, TRUE);
             /* old_first is a distinct object replaced by the grown item; free it
              * (its shared backing file, if any, is kept). */
             g_autoptr (GPasteItem) dropped = old_first;
@@ -469,7 +517,9 @@ _g_paste_history_add (GPasteHistory *self,
 
             self->size += size;
 
-            if (size >= self->biggest_size)
+            /* It just stopped being the untracked active item, so it becomes a
+             * candidate -- unless it is a favourite, which is never one. */
+            if (size >= self->biggest_size && !g_paste_item_is_favourite (old_first))
             {
                 self->biggest_uuid = g_paste_item_get_uuid (old_first);
                 self->biggest_size = size;
@@ -484,6 +534,11 @@ _g_paste_history_add (GPasteHistory *self,
                 {
                     if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (entry)))
                         election_needed = TRUE;
+                    /* Same as above: what arrives takes the place of a pinned
+                     * entry, so it takes its pin with it. On select the two are
+                     * one object and this says nothing new. */
+                    if (g_paste_item_is_favourite (entry))
+                        g_paste_item_set_favourite (item, TRUE);
                     /* On add, @entry is a distinct duplicate to free (its shared
                      * backing file is kept). On select, @entry IS @item being moved
                      * to the front, so its ref must be left alone. */
@@ -509,11 +564,14 @@ _g_paste_history_add (GPasteHistory *self,
     g_paste_history_activate_first (self, FALSE);
     self->size += g_paste_item_get_size (item);
 
-    g_paste_history_private_check_size (self);
-
+    /* Before the caps, not after: whatever was displaced above has already been
+     * freed, and biggest_uuid borrows its string from the item it names, so an
+     * election left until later would leave check_size () comparing against
+     * memory that is gone. */
     if (election_needed)
         g_paste_history_private_elect_new_biggest (self);
 
+    g_paste_history_private_check_size (self);
     g_paste_history_private_check_memory_usage (self);
 
     /* One in and nothing out means nothing was deduped, grown over or evicted;
@@ -738,6 +796,12 @@ _g_paste_history_replace (GPasteHistory *self,
     g_autofree gchar *old_uuid = g_strdup (g_paste_item_get_uuid (old));
     gboolean was_biggest = g_paste_str_equal (self->biggest_uuid, old_uuid);
 
+    /* The pin belongs to the entry, not to the object holding its contents:
+     * editing a pinned item, or turning one into a password, changes what it
+     * says and nothing about the user having asked to keep it. Carried over
+     * before the election below, which is the one thing the flag steers. */
+    g_paste_item_set_favourite (new, g_paste_item_is_favourite (old));
+
     self->size -= g_paste_item_get_size (old);
     self->size += g_paste_item_get_size (new);
 
@@ -791,6 +855,86 @@ g_paste_history_replace (GPasteHistory *self,
 
     if (!index)
         g_paste_history_selected (self, new);
+}
+
+/**
+ * g_paste_history_set_favourite:
+ * @self: a #GPasteHistory instance
+ * @uuid: the uuid of the #GPasteItem to pin, or to let go of
+ * @favourite: whether the item should be pinned
+ *
+ * Pin an item, exempting it from the size and memory caps, or let it go again.
+ *
+ * Un-pinning puts the item back under both caps at once, so it may well be the
+ * very call that evicts it — this returns %TRUE all the same: the item is gone
+ * because the caller asked for it to be evictable.
+ *
+ * Returns: %FALSE when @uuid matches no item, %TRUE otherwise
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_set_favourite (GPasteHistory *self,
+                               const gchar   *uuid,
+                               gboolean       favourite)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+
+    G_PASTE_LOCK_HISTORY;
+    guint index;
+    GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
+
+    if (!item)
+        return FALSE;
+
+    if (g_paste_item_is_favourite (item) == favourite)
+        return TRUE;
+
+    g_debug ("history: set favourite '%s'", uuid);
+
+    /* Our own copy: un-pinning can evict the very item we are holding. */
+    g_autofree gchar *item_uuid = g_strdup (uuid);
+    guint length_before = self->history->len;
+
+    g_paste_item_set_favourite (item, favourite);
+
+    if (favourite)
+    {
+        /* The pool of eviction candidates lost this item. Only a full election
+         * can name the runner-up, and only when it was the one elected. */
+        if (g_paste_str_equal (self->biggest_uuid, item_uuid))
+            g_paste_history_private_elect_new_biggest (self);
+    }
+    else
+    {
+        /* The pool gained it, so nothing has to be re-elected: one comparison
+         * places it, the same way _g_paste_history_add places an item leaving
+         * the active slot. Index 0 stays untracked, as ever. */
+        guint64 size = g_paste_item_get_size (item);
+
+        if (index && size >= self->biggest_size)
+        {
+            self->biggest_uuid = g_paste_item_get_uuid (item);
+            self->biggest_size = size;
+        }
+
+        /* Both caps may have been giving way to this item for a while. */
+        g_paste_history_private_check_size (self);
+        g_paste_history_private_check_memory_usage (self);
+    }
+
+    if (self->history->len != length_before)
+    {
+        /* Evictions rode along. A replace carries no snapshot for an incremental
+         * backend to reconcile against — unlike an add, which is the one
+         * operation that expects to displace anything — so rewrite the history
+         * outright rather than leave those rows behind. Rare: it takes a history
+         * this item was holding over one of its caps. @item may be among the
+         * evicted, hence neither it nor @index is touched from here on. */
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+    }
+    else
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, item_uuid, FALSE);
+
+    return TRUE;
 }
 
 static GPasteItem *
@@ -997,6 +1141,13 @@ g_paste_history_resume (GPasteHistory *self)
     self->stopped = FALSE;
 }
 
+/* Read a history in, synchronously, and install it as the model.
+ *
+ * No cap is applied to what comes back, unlike the load g_paste_history_on_loaded ()
+ * installs: this one reads a history the daemon is not keeping -- another one, to
+ * size it or to copy it -- and nothing saves what it read, so a trim would free
+ * the backing files of the items it dropped and leave a store still pointing at
+ * them. What is on disk is what is answered. */
 static void
 g_paste_history_load_locked (GPasteHistory *self,
                              const gchar   *name)
@@ -1079,6 +1230,32 @@ g_paste_history_on_loaded (gpointer user_data,
     {
         g_warning ("Could not read the history back; it will not be overwritten");
         save_after = FALSE;
+    }
+    /* Both caps, applied to what was just read. A backend reads a favourite back
+     * whatever it costs -- it counts only the items its cap could evict, or one
+     * that had sunk past the cap would be dropped on load and destroyed by the
+     * next save -- so what arrives here can hold more than max-history-size once
+     * the favourites are counted, which is how the caps count. Applying them now
+     * is what keeps the two answers the same: left to the next clipboard change,
+     * the rows over the cap would sit there until it came and then vanish all at
+     * once.
+     *
+     * An eviction frees the backing files of what it drops, so the store must
+     * not be left referencing them: whatever the load asked for, a trim is
+     * saved. Which is also why a history that is unreadable or flushed is left
+     * alone: neither can be saved (the first must never be written over, the
+     * second belongs to a successor daemon now), so a trim there would delete
+     * the images a store still points at. A switch can land right inside that
+     * flushed window -- see g_paste_history_history_name_changed (). */
+    else if (!self->stopped)
+    {
+        guint length_before = self->history->len;
+
+        g_paste_history_private_check_size (self);
+        g_paste_history_private_check_memory_usage (self);
+
+        if (self->history->len != length_before)
+            save_after = TRUE;
     }
 
     if (save_after)

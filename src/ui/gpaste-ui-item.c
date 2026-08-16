@@ -18,6 +18,7 @@ struct _GPasteUiItem
 
     GSList         *actions;
     GtkWidget      *edit;
+    GtkWidget      *favourite;
     GtkWidget      *upload;
 
     GtkWidget      *hbox;
@@ -28,6 +29,7 @@ struct _GPasteUiItem
     GtkWidget      *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
     gboolean        editable;
     gboolean        uploadable;
+    gboolean        favourited;
 
     GPasteClient   *client;
     GPasteSettings *settings;
@@ -95,6 +97,19 @@ g_paste_ui_item_set_uploadable (GPasteUiItem *self,
     self->uploadable = uploadable;
 
     gtk_widget_set_sensitive (self->upload, uploadable);
+}
+
+/* The star says what the item is, not what the button does, so its icon is the
+ * state and clicking it asks for the other one. */
+static void
+g_paste_ui_item_set_favourited (GPasteUiItem *self,
+                                gboolean      favourited)
+{
+    self->favourited = favourited;
+
+    g_paste_ui_item_action_set_icon_name (G_PASTE_UI_ITEM_ACTION (self->favourite),
+                                          (favourited) ? "starred-symbolic" : "non-starred-symbolic");
+    gtk_widget_set_tooltip_text (self->favourite, (favourited) ? _("Unpin") : _("Pin"));
 }
 
 static void
@@ -228,16 +243,31 @@ add_action (gpointer data,
 
 static void
 delete_item_action (GPasteClient *client,
-                    const gchar  *uuid)
+                    const gchar  *uuid,
+                    gpointer      user_data G_GNUC_UNUSED)
 {
     g_paste_client_delete_item (client, uuid, NULL, NULL);
 }
 
 static void
 upload_item_action (GPasteClient *client,
-                    const gchar  *uuid)
+                    const gchar  *uuid,
+                    gpointer      user_data G_GNUC_UNUSED)
 {
     g_paste_client_upload (client, uuid, NULL, NULL);
+}
+
+/* The star asks for the state it is not showing; the daemon's answer comes back
+ * as an update, which refills the row and so repaints the icon. Nothing is set
+ * here, so a refused call simply leaves the star as it was. */
+static void
+favourite_item_action (GPasteClient *client,
+                       const gchar  *uuid,
+                       gpointer      user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    g_paste_client_set_favourite (client, uuid, !self->favourited, NULL, NULL);
 }
 
 /* Carried by every step of the fill chain. @self is owned: the widget's only
@@ -364,6 +394,7 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     /* The kind arrives with the item, so only an image still costs a call. */
     g_paste_ui_item_set_editable (self, kind == G_PASTE_ITEM_KIND_TEXT);
     g_paste_ui_item_set_uploadable (self, kind == G_PASTE_ITEM_KIND_TEXT);
+    g_paste_ui_item_set_favourited (self, g_paste_client_item_is_favourite (item));
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
         g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
@@ -444,11 +475,23 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
     /* The list view shows exactly the rows the model holds, so an unbound one is
      * simply not on screen — there is nothing to hide. Drop its uuid, though: a
      * recycled row must not be activatable — or, in merge mode, pickable — as
-     * the item it used to display. */
+     * the item it used to display.
+     *
+     * Its buttons hold a copy of that uuid each, and only the reply to the next
+     * item's own fetch re-points them, so they are cleared here too — a click
+     * landing in that window would otherwise delete, upload or unpin the item
+     * the row used to show. The star reads @favourited on top of its uuid, and
+     * a stale flag would flip the pin the wrong way, so it is reset with them:
+     * whatever the next item turns out to be, the row is drawing nothing about
+     * it yet. A cleared action is inert, not merely aimed elsewhere. */
     if (index != (guint64) -1)
         g_paste_ui_item_reset_text (self);
     else
+    {
         g_clear_pointer (&self->uuid, g_free);
+        g_paste_ui_item_apply_index_and_uuid (self, index, NULL);
+        g_paste_ui_item_set_favourited (self, FALSE);
+    }
 }
 
 /**
@@ -594,17 +637,20 @@ g_paste_ui_item_new (GPasteClient   *client,
     self->rootwin = rootwin;
 
     GtkWidget *edit = g_paste_ui_edit_item_new (client, rootwin);
-    GtkWidget *upload = g_paste_ui_item_action_new_simple (client, "document-send-symbolic", _("Upload"), upload_item_action);
-    GtkWidget *delete = g_paste_ui_item_action_new_simple (client, "edit-delete-symbolic", _("Delete"), delete_item_action);
+    GtkWidget *favourite = g_paste_ui_item_action_new_simple (client, "non-starred-symbolic", _("Pin"), favourite_item_action, self);
+    GtkWidget *upload = g_paste_ui_item_action_new_simple (client, "document-send-symbolic", _("Upload"), upload_item_action, NULL);
+    GtkWidget *delete = g_paste_ui_item_action_new_simple (client, "edit-delete-symbolic", _("Delete"), delete_item_action, NULL);
 
     self->edit = edit;
+    self->favourite = favourite;
     self->upload = upload;
 
     self->actions = g_slist_prepend (self->actions, edit);
+    self->actions = g_slist_prepend (self->actions, favourite);
     self->actions = g_slist_prepend (self->actions, upload);
     self->actions = g_slist_prepend (self->actions, delete);
 
-    /* Reverse so that pack_end order (edit|upload|delete) is preserved with append */
+    /* Reverse so that pack_end order (edit|favourite|upload|delete) is preserved with append */
     g_autoptr (GSList) actions_reversed = g_slist_reverse (g_slist_copy (self->actions));
     g_slist_foreach (actions_reversed, add_action, GTK_BOX (self->hbox));
 

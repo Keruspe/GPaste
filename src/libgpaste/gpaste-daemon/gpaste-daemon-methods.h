@@ -75,6 +75,7 @@ void      g_paste_daemon_methods_delete_password            (const GPasteDaemonM
                                                              GError                   **error);
 void      g_paste_daemon_methods_empty_history              (const GPasteDaemonMethods *self,
                                                              const gchar               *name);
+GVariant *g_paste_daemon_methods_get_favourites             (const GPasteDaemonMethods *self);
 GVariant *g_paste_daemon_methods_get_history                (const GPasteDaemonMethods *self);
 guint64   g_paste_daemon_methods_get_history_size           (const GPasteDaemonMethods *self,
                                                              const gchar               *name);
@@ -110,6 +111,10 @@ void      g_paste_daemon_methods_select                     (const GPasteDaemonM
 void      g_paste_daemon_methods_replace                    (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              const gchar               *contents,
+                                                             GError                   **error);
+void      g_paste_daemon_methods_set_favourite              (const GPasteDaemonMethods *self,
+                                                             const gchar               *uuid,
+                                                             gboolean                   favourite,
                                                              GError                   **error);
 void      g_paste_daemon_methods_set_password               (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
