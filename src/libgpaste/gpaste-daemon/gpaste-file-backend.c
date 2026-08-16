@@ -750,9 +750,10 @@ on_text (GMarkupParseContext *context,
     }
 }
 
-static void on_error (GMarkupParseContext *context,
-                      GError              *error,
-                      gpointer             user_data)
+static void
+on_error (GMarkupParseContext *context,
+          GError              *error,
+          gpointer             user_data)
 {
     const Data *data = user_data;
 

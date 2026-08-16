@@ -12,15 +12,15 @@
 
 G_BEGIN_DECLS
 
-void     g_paste_util_spawn             (const gchar *app);
-gboolean g_paste_util_spawn_sync        (const gchar *app,
-                                         GError     **error);
-void     g_paste_util_activate_ui       (const gchar *action,
-                                         GVariant    *arg);
+void     g_paste_util_spawn                   (const gchar *app);
+gboolean g_paste_util_spawn_sync              (const gchar *app,
+                                               GError     **error);
+void     g_paste_util_activate_ui             (const gchar *action,
+                                               GVariant    *arg);
 void     g_paste_util_empty_with_confirmation (GPasteClient   *client,
                                                GPasteSettings *settings,
                                                const gchar    *history);
-gchar   *g_paste_util_one_line          (const gchar *text);
+gchar   *g_paste_util_one_line                (const gchar *text);
 
 gboolean g_paste_util_has_gnome_shell (void);
 

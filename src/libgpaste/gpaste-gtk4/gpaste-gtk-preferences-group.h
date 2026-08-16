@@ -11,25 +11,25 @@ G_BEGIN_DECLS
 
 G_PASTE_GTK_FINAL_TYPE (PreferencesGroup, preferences_group, PREFERENCES_GROUP, AdwPreferencesGroup)
 
-AdwSwitchRow *g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *self,
-                                                                 const gchar               *label,
-                                                                 const gchar               *key,
-                                                                 GPasteSettings            *settings);
-AdwSpinRow *g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self,
-                                                             const gchar               *label,
-                                                             const gchar               *key,
-                                                             gdouble                    min,
-                                                             gdouble                    max,
-                                                             gdouble                    step,
-                                                             GPasteSettings            *settings);
-AdwEntryRow *g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
-                                                             const gchar               *label,
-                                                             const gchar               *key,
-                                                             GPasteSettings            *settings);
-GtkWidget *g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferencesGroup *self,
-                                                               const gchar               *label,
-                                                               const gchar               *key,
-                                                               GPasteSettings            *settings);
+AdwSwitchRow *g_paste_gtk_preferences_group_add_boolean_setting  (GPasteGtkPreferencesGroup *self,
+                                                                  const gchar               *label,
+                                                                  const gchar               *key,
+                                                                  GPasteSettings            *settings);
+AdwSpinRow   *g_paste_gtk_preferences_group_add_range_setting    (GPasteGtkPreferencesGroup *self,
+                                                                  const gchar               *label,
+                                                                  const gchar               *key,
+                                                                  gdouble                    min,
+                                                                  gdouble                    max,
+                                                                  gdouble                    step,
+                                                                  GPasteSettings            *settings);
+AdwEntryRow  *g_paste_gtk_preferences_group_add_text_setting     (GPasteGtkPreferencesGroup *self,
+                                                                  const gchar               *label,
+                                                                  const gchar               *key,
+                                                                  GPasteSettings            *settings);
+GtkWidget    *g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferencesGroup *self,
+                                                                  const gchar               *label,
+                                                                  const gchar               *key,
+                                                                  GPasteSettings            *settings);
 
 AdwButtonRow *g_paste_gtk_preferences_group_add_button (GPasteGtkPreferencesGroup *self,
                                                         const gchar               *label,

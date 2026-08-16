@@ -50,7 +50,7 @@ parse_cmdline (int     *argc,
     };
     gint64 c;
 
-    while ((c = getopt_long(*argc, *argv, "d:fhores:ivz", long_options, NULL)) != -1)
+    while ((c = getopt_long (*argc, *argv, "d:fhores:ivz", long_options, NULL)) != -1)
     {
         switch (c)
         {
@@ -354,7 +354,7 @@ g_paste_get_history (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf("%s\n", name);
+    printf ("%s\n", name);
 
     return EXIT_SUCCESS;
 }
@@ -457,7 +457,7 @@ g_paste_add (Context *ctx,
     if (!data)
         return -1;
 
-    if (!g_utf8_validate(data, -1, NULL))
+    if (!g_utf8_validate (data, -1, NULL))
     {
         g_critical (_("Cannot add non utf8 data as text."));
         return EXIT_FAILURE;

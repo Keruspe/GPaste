@@ -68,70 +68,70 @@ struct _GPasteClipboardProviderInterface
  * the instance cast macro G_PASTE_CLIPBOARD_<UC>. Expand once, after those
  * methods are defined.
  */
-#define G_PASTE_CLIPBOARD_PROVIDER_DEFINE_VFUNCS(lc, UC)                                                  \
-    static gboolean                                                                                       \
-    provider_is_clipboard (GPasteClipboardProvider *self)                                           \
+#define G_PASTE_CLIPBOARD_PROVIDER_DEFINE_VFUNCS(lc, UC)                                                   \
+    static gboolean                                                                                        \
+    provider_is_clipboard (GPasteClipboardProvider *self)                                                  \
     {                                                                                                      \
-        return g_paste_clipboard_##lc##_is_clipboard (G_PASTE_CLIPBOARD_##UC ((gpointer) self));          \
+        return g_paste_clipboard_##lc##_is_clipboard (G_PASTE_CLIPBOARD_##UC ((gpointer) self));           \
     }                                                                                                      \
-    static const gchar *                                                                                  \
-    provider_get_text (GPasteClipboardProvider *self)                                               \
+    static const gchar *                                                                                   \
+    provider_get_text (GPasteClipboardProvider *self)                                                      \
     {                                                                                                      \
-        return g_paste_clipboard_##lc##_get_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self));              \
+        return g_paste_clipboard_##lc##_get_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self));               \
     }                                                                                                      \
-    static const gchar *                                                                                  \
-    provider_get_image_checksum (GPasteClipboardProvider *self)                                     \
+    static const gchar *                                                                                   \
+    provider_get_image_checksum (GPasteClipboardProvider *self)                                            \
     {                                                                                                      \
-        return g_paste_clipboard_##lc##_get_image_checksum (G_PASTE_CLIPBOARD_##UC ((gpointer) self));    \
+        return g_paste_clipboard_##lc##_get_image_checksum (G_PASTE_CLIPBOARD_##UC ((gpointer) self));     \
     }                                                                                                      \
-    static gboolean                                                                                       \
-    provider_is_empty (GPasteClipboardProvider *self)                                               \
+    static gboolean                                                                                        \
+    provider_is_empty (GPasteClipboardProvider *self)                                                      \
     {                                                                                                      \
-        return g_paste_clipboard_##lc##_is_empty (G_PASTE_CLIPBOARD_##UC ((gpointer) self));              \
+        return g_paste_clipboard_##lc##_is_empty (G_PASTE_CLIPBOARD_##UC ((gpointer) self));               \
     }                                                                                                      \
-    static void                                                                                           \
-    provider_update (GPasteClipboardProvider              *self,                                          \
-                     GPasteClipboardProviderUpdateCallback callback,                                      \
-                     gpointer                              user_data)                                     \
+    static void                                                                                            \
+    provider_update (GPasteClipboardProvider              *self,                                           \
+                     GPasteClipboardProviderUpdateCallback callback,                                       \
+                     gpointer                              user_data)                                      \
     {                                                                                                      \
-        g_paste_clipboard_##lc##_update (G_PASTE_CLIPBOARD_##UC ((gpointer) self), callback, user_data);  \
+        g_paste_clipboard_##lc##_update (G_PASTE_CLIPBOARD_##UC ((gpointer) self), callback, user_data);   \
     }                                                                                                      \
-    static void                                                                                           \
-    provider_select_text (GPasteClipboardProvider *self,                                                  \
-                          const gchar             *text)                                                  \
+    static void                                                                                            \
+    provider_select_text (GPasteClipboardProvider *self,                                                   \
+                          const gchar             *text)                                                   \
     {                                                                                                      \
-        g_paste_clipboard_##lc##_select_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self), text);            \
+        g_paste_clipboard_##lc##_select_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self), text);             \
     }                                                                                                      \
-    static void                                                                                           \
-    provider_sync_text (GPasteClipboardProvider *self,                                              \
-                        GPasteClipboardProvider *other)                                             \
+    static void                                                                                            \
+    provider_sync_text (GPasteClipboardProvider *self,                                                     \
+                        GPasteClipboardProvider *other)                                                    \
     {                                                                                                      \
-        g_paste_clipboard_##lc##_sync_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self),                     \
-                                            G_PASTE_CLIPBOARD_##UC ((gpointer) other));                   \
+        g_paste_clipboard_##lc##_sync_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self),                      \
+                                            G_PASTE_CLIPBOARD_##UC ((gpointer) other));                    \
     }                                                                                                      \
-    static gboolean                                                                                       \
-    provider_select_item (GPasteClipboardProvider *self,                                                  \
-                          GPasteItem              *item)                                                  \
+    static gboolean                                                                                        \
+    provider_select_item (GPasteClipboardProvider *self,                                                   \
+                          GPasteItem              *item)                                                   \
     {                                                                                                      \
-        return g_paste_clipboard_##lc##_select_item (G_PASTE_CLIPBOARD_##UC ((gpointer) self), item);     \
+        return g_paste_clipboard_##lc##_select_item (G_PASTE_CLIPBOARD_##UC ((gpointer) self), item);      \
     }                                                                                                      \
-    static void                                                                                           \
-    provider_store (GPasteClipboardProvider *self)                                                        \
+    static void                                                                                            \
+    provider_store (GPasteClipboardProvider *self)                                                         \
     {                                                                                                      \
-        g_paste_clipboard_##lc##_store (G_PASTE_CLIPBOARD_##UC ((gpointer) self));                        \
+        g_paste_clipboard_##lc##_store (G_PASTE_CLIPBOARD_##UC ((gpointer) self));                         \
     }                                                                                                      \
-    static void                                                                                           \
-    g_paste_clipboard_##lc##_provider_iface_init (GPasteClipboardProviderInterface *iface)                \
+    static void                                                                                            \
+    g_paste_clipboard_##lc##_provider_iface_init (GPasteClipboardProviderInterface *iface)                 \
     {                                                                                                      \
-        iface->is_clipboard = provider_is_clipboard;                                                      \
-        iface->get_text = provider_get_text;                                                              \
-        iface->get_image_checksum = provider_get_image_checksum;                                          \
-        iface->is_empty = provider_is_empty;                                                              \
-        iface->update = provider_update;                                                                  \
-        iface->select_text = provider_select_text;                                                        \
-        iface->sync_text = provider_sync_text;                                                            \
-        iface->select_item = provider_select_item;                                                        \
-        iface->store = provider_store;                                                                    \
+        iface->is_clipboard = provider_is_clipboard;                                                       \
+        iface->get_text = provider_get_text;                                                               \
+        iface->get_image_checksum = provider_get_image_checksum;                                           \
+        iface->is_empty = provider_is_empty;                                                               \
+        iface->update = provider_update;                                                                   \
+        iface->select_text = provider_select_text;                                                         \
+        iface->sync_text = provider_sync_text;                                                             \
+        iface->select_item = provider_select_item;                                                         \
+        iface->store = provider_store;                                                                     \
     }
 
 gboolean      g_paste_clipboard_provider_is_clipboard       (GPasteClipboardProvider *self);

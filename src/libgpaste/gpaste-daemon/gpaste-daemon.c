@@ -49,7 +49,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /* The context the free-standing method handlers work on. Declared as a local so
  * it always mirrors the daemon's current state, and named the same way at every
  * call site so the handlers below read as one shape. */
-#define G_PASTE_DAEMON_METHODS(self)   \
+#define G_PASTE_DAEMON_METHODS(self)    \
     {                                   \
         (self)->skeleton,               \
         (self)->history,                \
@@ -418,13 +418,13 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
  * when a method changes. */
 #define ARGLIST(...) , ##__VA_ARGS__
 
-#define G_PASTE_DAEMON_ANSWER(complete_call)                                          \
-    do {                                                                              \
-        if (error)                                                                    \
+#define G_PASTE_DAEMON_ANSWER(complete_call)                                            \
+    do {                                                                                \
+        if (error)                                                                      \
             g_dbus_method_invocation_take_error (invocation, g_steal_pointer (&error)); \
-        else                                                                          \
-            complete_call;                                                            \
-        return TRUE;                                                                  \
+        else                                                                            \
+            complete_call;                                                              \
+        return TRUE;                                                                    \
     } while (FALSE)
 
 #define G_PASTE_DAEMON_HANDLER_HEAD(name, PARAMS)                                     \
@@ -445,39 +445,39 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
     }
 
 /* Answers nothing, may fail. */
-#define G_PASTE_DAEMON_HANDLER_ERR(name, PARAMS, ARGS)                                \
-    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
-    {                                                                                 \
-        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
-        g_autoptr (GError) error = NULL;                                              \
-                                                                                      \
-        g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);                \
-                                                                                      \
+#define G_PASTE_DAEMON_HANDLER_ERR(name, PARAMS, ARGS)                                        \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                                \
+    {                                                                                         \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);                    \
+        g_autoptr (GError) error = NULL;                                                      \
+                                                                                              \
+        g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);                        \
+                                                                                              \
         G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_##name (self->skeleton, invocation)); \
     }
 
 /* Answers something, cannot fail. */
-#define G_PASTE_DAEMON_HANDLER_RET(name, PARAMS, ARGS)                                \
-    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
-    {                                                                                 \
-        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
-                                                                                      \
-        g_paste_daemon3_complete_##name (self->skeleton,                              \
-                                         invocation,                                  \
+#define G_PASTE_DAEMON_HANDLER_RET(name, PARAMS, ARGS)                                           \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                                   \
+    {                                                                                            \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);                       \
+                                                                                                 \
+        g_paste_daemon3_complete_##name (self->skeleton,                                         \
+                                         invocation,                                             \
                                          g_paste_daemon_methods_##name (&methods ARGLIST ARGS)); \
-                                                                                      \
-        return TRUE;                                                                  \
+                                                                                                 \
+        return TRUE;                                                                             \
     }
 
 /* Answers something, may fail: @decl declares what the method hands back and
  * @value is what the completion sends. */
-#define G_PASTE_DAEMON_HANDLER_RET_ERR(name, decl, value, PARAMS, ARGS)               \
-    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
-    {                                                                                 \
-        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
-        g_autoptr (GError) error = NULL;                                              \
-        decl = g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);         \
-                                                                                      \
+#define G_PASTE_DAEMON_HANDLER_RET_ERR(name, decl, value, PARAMS, ARGS)                              \
+    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                                       \
+    {                                                                                                \
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);                           \
+        g_autoptr (GError) error = NULL;                                                             \
+        decl = g_paste_daemon_methods_##name (&methods ARGLIST ARGS, &error);                        \
+                                                                                                     \
         G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_##name (self->skeleton, invocation, value)); \
     }
 

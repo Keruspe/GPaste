@@ -20,9 +20,9 @@ G_PASTE_FINAL_TYPE (Client, client, CLIENT, GDBusProxy)
 /* Methods /  Sync */
 /*******************/
 
-void     g_paste_client_show_about_sync                      (GPasteClient  *self,
+void     g_paste_client_show_about_sync                 (GPasteClient  *self,
                                                          GError       **error);
-void     g_paste_client_add_text_sync                        (GPasteClient  *self,
+void     g_paste_client_add_text_sync                   (GPasteClient  *self,
                                                          const gchar   *text,
                                                          GError       **error);
 void     g_paste_client_add_file_sync                   (GPasteClient  *self,
@@ -38,7 +38,7 @@ void     g_paste_client_backup_history_sync             (GPasteClient  *self,
                                                          GError       **error);
 void     g_paste_client_change_passphrase_sync          (GPasteClient  *self,
                                                          GError       **error);
-void     g_paste_client_delete_item_sync                     (GPasteClient  *self,
+void     g_paste_client_delete_item_sync                (GPasteClient  *self,
                                                          const gchar   *uuid,
                                                          GError       **error);
 void     g_paste_client_delete_history_sync             (GPasteClient  *self,
@@ -53,7 +53,7 @@ void     g_paste_client_empty_history_sync              (GPasteClient  *self,
 GPasteClientItem *g_paste_client_get_item_sync          (GPasteClient  *self,
                                                          const gchar   *uuid,
                                                          GError       **error);
-GList   *g_paste_client_get_items_sync               (GPasteClient  *self,
+GList   *g_paste_client_get_items_sync                  (GPasteClient  *self,
                                                          const gchar * const *uuids,
                                                          GError       **error);
 GList   *g_paste_client_get_favourites_sync             (GPasteClient  *self,
@@ -73,7 +73,7 @@ void     g_paste_client_merge_sync                      (GPasteClient  *self,
                                                          const gchar   *separator,
                                                          const gchar * const *uuids,
                                                          GError       **error);
-void     g_paste_client_report_extension_state_sync (GPasteClient  *self,
+void     g_paste_client_report_extension_state_sync     (GPasteClient  *self,
                                                          gboolean       state,
                                                          GError       **error);
 void     g_paste_client_reexecute_sync                  (GPasteClient  *self,
@@ -105,7 +105,7 @@ void     g_paste_client_show_history_sync               (GPasteClient  *self,
 void     g_paste_client_switch_history_sync             (GPasteClient  *self,
                                                          const gchar   *name,
                                                          GError       **error);
-void     g_paste_client_set_active_sync                      (GPasteClient  *self,
+void     g_paste_client_set_active_sync                 (GPasteClient  *self,
                                                          gboolean       state,
                                                          GError       **error);
 void     g_paste_client_upload_sync                     (GPasteClient  *self,
@@ -113,16 +113,16 @@ void     g_paste_client_upload_sync                     (GPasteClient  *self,
                                                          GError       **error);
 
 GPasteClientItem *g_paste_client_get_item_at_index_sync (GPasteClient  *self,
-                                                            guint64        index,
-                                                            GError       **error);
+                                                         guint64        index,
+                                                         GError       **error);
 /*******************/
 /* Methods / Async */
 /*******************/
 
-void g_paste_client_show_about                      (GPasteClient       *self,
+void g_paste_client_show_about                 (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_add_text                        (GPasteClient       *self,
+void g_paste_client_add_text                   (GPasteClient       *self,
                                                 const gchar        *text,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -143,7 +143,7 @@ void g_paste_client_backup_history             (GPasteClient       *self,
 void g_paste_client_change_passphrase          (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_delete_item                     (GPasteClient       *self,
+void g_paste_client_delete_item                (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -159,15 +159,15 @@ void g_paste_client_empty_history              (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_get_item                (GPasteClient       *self,
+void g_paste_client_get_item                   (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_get_item_at_index       (GPasteClient       *self,
+void g_paste_client_get_item_at_index          (GPasteClient       *self,
                                                 guint64             index,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_get_items               (GPasteClient       *self,
+void g_paste_client_get_items                  (GPasteClient       *self,
                                                 const gchar * const *uuids,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -194,7 +194,7 @@ void g_paste_client_merge                      (GPasteClient       *self,
                                                 const gchar * const *uuids,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_report_extension_state (GPasteClient       *self,
+void g_paste_client_report_extension_state     (GPasteClient       *self,
                                                 gboolean            state,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -236,7 +236,7 @@ void g_paste_client_switch_history             (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_set_active                      (GPasteClient       *self,
+void g_paste_client_set_active                 (GPasteClient       *self,
                                                 gboolean            state,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -249,10 +249,10 @@ void g_paste_client_upload                     (GPasteClient       *self,
 /* Methods / Async - Finish */
 /****************************/
 
-void     g_paste_client_show_about_finish                      (GPasteClient *self,
+void     g_paste_client_show_about_finish                 (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-void     g_paste_client_add_text_finish                        (GPasteClient *self,
+void     g_paste_client_add_text_finish                   (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_add_file_finish                   (GPasteClient *self,
@@ -267,7 +267,7 @@ void     g_paste_client_backup_history_finish             (GPasteClient *self,
 void     g_paste_client_change_passphrase_finish          (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-void     g_paste_client_delete_item_finish                     (GPasteClient *self,
+void     g_paste_client_delete_item_finish                (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_delete_history_finish             (GPasteClient *self,
@@ -282,7 +282,7 @@ void     g_paste_client_empty_history_finish              (GPasteClient *self,
 GPasteClientItem *g_paste_client_get_item_finish          (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-GList   *g_paste_client_get_items_finish               (GPasteClient *self,
+GList   *g_paste_client_get_items_finish                  (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 GList   *g_paste_client_get_favourites_finish             (GPasteClient *self,
@@ -303,7 +303,7 @@ GStrv    g_paste_client_list_histories_finish             (GPasteClient *self,
 void     g_paste_client_merge_finish                      (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-void     g_paste_client_report_extension_state_finish (GPasteClient *self,
+void     g_paste_client_report_extension_state_finish     (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_reexecute_finish                  (GPasteClient *self,
@@ -333,7 +333,7 @@ void     g_paste_client_show_history_finish               (GPasteClient *self,
 void     g_paste_client_switch_history_finish             (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-void     g_paste_client_set_active_finish                      (GPasteClient *self,
+void     g_paste_client_set_active_finish                 (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_upload_finish                     (GPasteClient *self,
@@ -341,8 +341,8 @@ void     g_paste_client_upload_finish                     (GPasteClient *self,
                                                            GError      **error);
 
 GPasteClientItem *g_paste_client_get_item_at_index_finish (GPasteClient *self,
-                                                              GAsyncResult *result,
-                                                              GError      **error);
+                                                           GAsyncResult *result,
+                                                           GError      **error);
 
 /**************/
 /* Properties */

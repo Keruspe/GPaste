@@ -17,14 +17,14 @@
 /* Takes the history lock for the rest of the scope */
 #define G_PASTE_DO_LOCK_HISTORY                 \
     g_debug ("%s: Locking history", G_STRFUNC); \
-    g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&self->lock)
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&self->lock)
 
 /* Same, and emits the pending SELECTED signal, if any, once the lock has been
  * released again: the guard is declared before the locker so that its cleanup
  * runs after the unlock.
  */
 #define G_PASTE_LOCK_HISTORY                                                              \
-    g_auto(GPasteHistorySelectionScope) selection_scope = { .self = self }; \
+    g_auto (GPasteHistorySelectionScope) selection_scope = { .self = self };              \
     G_PASTE_DO_LOCK_HISTORY
 
 struct _GPasteHistory

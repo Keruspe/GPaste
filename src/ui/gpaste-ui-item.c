@@ -153,7 +153,7 @@ g_paste_ui_item_apply_index_and_uuid (GPasteUiItem *self,
         gtk_label_set_text (self->index_label, "");
     else
     {
-        g_autofree gchar *_index = g_strdup_printf("%" G_GUINT64_FORMAT, index);
+        g_autofree gchar *_index = g_strdup_printf ("%" G_GUINT64_FORMAT, index);
 
         gtk_label_set_text (self->index_label, _index);
     }

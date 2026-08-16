@@ -245,7 +245,7 @@ g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
  */
 void
 g_paste_ui_history_model_set_uuids (GPasteUiHistoryModel *self,
-                                     const gchar * const  *uuids)
+                                    const gchar * const  *uuids)
 {
     g_return_if_fail (G_PASTE_IS_UI_HISTORY_MODEL (self));
 

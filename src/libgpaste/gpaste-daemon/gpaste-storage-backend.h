@@ -99,17 +99,17 @@ gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
                                                const gchar          *name,
                                                GList                **history,
                                                gsize                *size);
-void g_paste_storage_backend_write_history (GPasteStorageBackend *self,
-                                            const gchar          *name,
-                                            const GList          *history);
-void g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
-                                             const gchar          *name,
-                                             GError               **error);
-GStrv g_paste_storage_backend_list_histories (GPasteStorageBackend *self,
-                                              GError               **error);
-gboolean g_paste_storage_backend_rekey (GPasteStorageBackend *self,
-                                        const gchar          *name,
-                                        const gchar          *new_passphrase);
+void g_paste_storage_backend_write_history    (GPasteStorageBackend *self,
+                                               const gchar          *name,
+                                               const GList          *history);
+void g_paste_storage_backend_delete_history   (GPasteStorageBackend *self,
+                                               const gchar          *name,
+                                               GError               **error);
+GStrv g_paste_storage_backend_list_histories  (GPasteStorageBackend *self,
+                                               GError               **error);
+gboolean g_paste_storage_backend_rekey        (GPasteStorageBackend *self,
+                                               const gchar          *name,
+                                               const gchar          *new_passphrase);
 
 void     g_paste_storage_backend_add_item             (GPasteStorageBackend *self,
                                                        const gchar          *name,

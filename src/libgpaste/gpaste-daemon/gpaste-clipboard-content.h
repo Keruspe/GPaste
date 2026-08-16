@@ -47,18 +47,18 @@ const gchar *g_paste_clipboard_content_get_text           (const GPasteClipboard
 const gchar *g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *content);
 GdkFileList *g_paste_clipboard_content_get_file_list      (const GPasteClipboardContent *content);
 
-void         g_paste_clipboard_content_set_text           (GPasteClipboardContent       *content,
-                                                          const gchar                  *text);
-void         g_paste_clipboard_content_set_text_take      (GPasteClipboardContent       *content,
-                                                          gchar                        *text);
-void         g_paste_clipboard_content_set_image_checksum (GPasteClipboardContent       *content,
-                                                          const gchar                  *checksum);
-void         g_paste_clipboard_content_set_image_checksum_take (GPasteClipboardContent  *content,
-                                                                gchar                   *checksum);
-void         g_paste_clipboard_content_set_color          (GPasteClipboardContent       *content,
-                                                          const GdkRGBA                *rgba);
-void         g_paste_clipboard_content_set_file_list      (GPasteClipboardContent       *content,
-                                                          GdkFileList                  *file_list);
+void g_paste_clipboard_content_set_text                (GPasteClipboardContent *content,
+                                                        const gchar            *text);
+void g_paste_clipboard_content_set_text_take           (GPasteClipboardContent *content,
+                                                        gchar                  *text);
+void g_paste_clipboard_content_set_image_checksum      (GPasteClipboardContent *content,
+                                                        const gchar            *checksum);
+void g_paste_clipboard_content_set_image_checksum_take (GPasteClipboardContent *content,
+                                                        gchar                  *checksum);
+void g_paste_clipboard_content_set_color               (GPasteClipboardContent *content,
+                                                        const GdkRGBA          *rgba);
+void g_paste_clipboard_content_set_file_list           (GPasteClipboardContent *content,
+                                                        GdkFileList            *file_list);
 
 /* What a backend should do with a candidate clipboard text, as decided by
  * g_paste_clipboard_content_classify_text() from the trim/size/dedup policy. */

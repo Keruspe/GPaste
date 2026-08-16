@@ -198,14 +198,14 @@ G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TY
 
 /* A backend that can update the stored history in place does; one that cannot
  * has the whole thing written out again. */
-#define G_PASTE_STORAGE_BACKEND_UPDATE(vfunc, ...)                                  \
-    do {                                                                            \
+#define G_PASTE_STORAGE_BACKEND_UPDATE(vfunc, ...)                                         \
+    do {                                                                                   \
         const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self); \
-                                                                                    \
-        if (klass->vfunc)                                                           \
-            klass->vfunc (self, name, ##__VA_ARGS__);                               \
-        else                                                                        \
-            g_paste_storage_backend_write_history (self, name, history);            \
+                                                                                           \
+        if (klass->vfunc)                                                                  \
+            klass->vfunc (self, name, ##__VA_ARGS__);                                      \
+        else                                                                               \
+            g_paste_storage_backend_write_history (self, name, history);                   \
     } while (FALSE)
 
 /**

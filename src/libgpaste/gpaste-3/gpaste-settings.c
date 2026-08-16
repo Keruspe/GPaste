@@ -69,7 +69,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define SETTING(name, key, type, setting_type, fail, guards, assign_owned, assign_borrowed)            \
     G_PASTE_VISIBLE type                                                                               \
-    g_paste_settings_get_##name (GPasteSettings *self)                                           \
+    g_paste_settings_get_##name (GPasteSettings *self)                                                 \
     {                                                                                                  \
         g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                                       \
         return self->name;                                                                             \
@@ -793,35 +793,35 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
  * g_object_bind_property() rather than wiring getters/setters by hand. The
  * property accessors delegate to the typed get/set above (keeping their
  * validation), and external changes notify through the "changed" handler. */
-#define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR, ENUM)       \
-    BOOL (close_on_select,            CLOSE_ON_SELECT)              \
-    BOOL (open_centered,              OPEN_CENTERED)                \
-    UINT (element_size,               ELEMENT_SIZE)                 \
-    BOOL (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)   \
-    BOOL (experimental_meta_daemon,   EXPERIMENTAL_META_DAEMON)     \
-    BOOL (growing_lines,              GROWING_LINES)                \
-    STR  (history_name,               HISTORY_NAME)                 \
-    BOOL (images_support,             IMAGES_SUPPORT)               \
-    BOOL (images_preview,             IMAGES_PREVIEW)               \
-    UINT (images_preview_size,        IMAGES_PREVIEW_SIZE)          \
-    STR  (launch_ui,                  LAUNCH_UI)                    \
-    STR  (make_password,              MAKE_PASSWORD)                \
-    UINT (max_history_size,           MAX_HISTORY_SIZE)             \
-    UINT (max_memory_usage,           MAX_MEMORY_USAGE)             \
-    UINT (max_text_item_size,         MAX_TEXT_ITEM_SIZE)           \
-    UINT (min_text_item_size,         MIN_TEXT_ITEM_SIZE)           \
-    STR  (pop,                        POP)                          \
-    BOOL (primary_to_history,         PRIMARY_TO_HISTORY)           \
-    BOOL (rich_text_support,          RICH_TEXT_SUPPORT)            \
-    STR  (show_history,               SHOW_HISTORY)                 \
+#define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR, ENUM)                             \
+    BOOL (close_on_select,            CLOSE_ON_SELECT)                                    \
+    BOOL (open_centered,              OPEN_CENTERED)                                      \
+    UINT (element_size,               ELEMENT_SIZE)                                       \
+    BOOL (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)                         \
+    BOOL (experimental_meta_daemon,   EXPERIMENTAL_META_DAEMON)                           \
+    BOOL (growing_lines,              GROWING_LINES)                                      \
+    STR  (history_name,               HISTORY_NAME)                                       \
+    BOOL (images_support,             IMAGES_SUPPORT)                                     \
+    BOOL (images_preview,             IMAGES_PREVIEW)                                     \
+    UINT (images_preview_size,        IMAGES_PREVIEW_SIZE)                                \
+    STR  (launch_ui,                  LAUNCH_UI)                                          \
+    STR  (make_password,              MAKE_PASSWORD)                                      \
+    UINT (max_history_size,           MAX_HISTORY_SIZE)                                   \
+    UINT (max_memory_usage,           MAX_MEMORY_USAGE)                                   \
+    UINT (max_text_item_size,         MAX_TEXT_ITEM_SIZE)                                 \
+    UINT (min_text_item_size,         MIN_TEXT_ITEM_SIZE)                                 \
+    STR  (pop,                        POP)                                                \
+    BOOL (primary_to_history,         PRIMARY_TO_HISTORY)                                 \
+    BOOL (rich_text_support,          RICH_TEXT_SUPPORT)                                  \
+    STR  (show_history,               SHOW_HISTORY)                                       \
     ENUM (storage_backend,            STORAGE_BACKEND,              G_PASTE_TYPE_STORAGE) \
-    UINT (storage_backend_revision,   STORAGE_BACKEND_REVISION)     \
-    STR  (sync_clipboard_to_primary,  SYNC_CLIPBOARD_TO_PRIMARY)    \
-    STR  (sync_primary_to_clipboard,  SYNC_PRIMARY_TO_CLIPBOARD)    \
-    BOOL (synchronize_clipboards,     SYNCHRONIZE_CLIPBOARDS)       \
-    BOOL (track_changes,              TRACK_CHANGES)                \
-    BOOL (track_extension_state,      TRACK_EXTENSION_STATE)        \
-    BOOL (trim_items,                 TRIM_ITEMS)                   \
+    UINT (storage_backend_revision,   STORAGE_BACKEND_REVISION)                           \
+    STR  (sync_clipboard_to_primary,  SYNC_CLIPBOARD_TO_PRIMARY)                          \
+    STR  (sync_primary_to_clipboard,  SYNC_PRIMARY_TO_CLIPBOARD)                          \
+    BOOL (synchronize_clipboards,     SYNCHRONIZE_CLIPBOARDS)                             \
+    BOOL (track_changes,              TRACK_CHANGES)                                      \
+    BOOL (track_extension_state,      TRACK_EXTENSION_STATE)                              \
+    BOOL (trim_items,                 TRIM_ITEMS)                                         \
     STR  (upload,                     UPLOAD)
 
 enum

@@ -75,7 +75,7 @@ g_paste_daemon_methods_do_add (const GPasteDaemonMethods *self,
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_add_text (const GPasteDaemonMethods *self,
                                  const gchar               *text,
-                            GError                   **error)
+                                 GError                   **error)
 {
     g_paste_daemon_methods_do_add (self, text, (text) ? strlen (text) : 0, error);
 }
@@ -153,7 +153,7 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_delete_item (const GPasteDaemonMethods *self,
                                     const gchar               *uuid,
-                               GError                   **error)
+                                    GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (g_paste_history_remove_by_uuid (self->history, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
 }

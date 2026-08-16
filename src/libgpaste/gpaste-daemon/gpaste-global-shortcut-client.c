@@ -23,21 +23,21 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED "Activated"
 
-#define G_PASTE_GLOBAL_SHORTCUT_INTERFACE                                                            \
+#define G_PASTE_GLOBAL_SHORTCUT_INTERFACE                                                                \
     "<node>"                                                                                             \
-        "<interface name='" G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME "'>"                              \
-            "<method name='" G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION "'>"                             \
+        "<interface name='" G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME "'>"                                  \
+            "<method name='" G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION "'>"                                 \
                 "<arg type='a{sv}'   direction='in'  name='options' />"                                  \
                 "<arg type='o'       direction='out' name='handle'  />"                                  \
             "</method>"                                                                                  \
-            "<method name='" G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS "'>"                             \
+            "<method name='" G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS "'>"                                 \
                 "<arg type='o'         direction='in'  name='session_handle' />"                         \
                 "<arg type='a(sa{sv})' direction='in'  name='shortcuts'      />"                         \
                 "<arg type='s'         direction='in'  name='parent_window'  />"                         \
                 "<arg type='a{sv}'     direction='in'  name='options'        />"                         \
                 "<arg type='o'         direction='out' name='handle'         />"                         \
             "</method>"                                                                                  \
-            "<signal name='" G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED "'>"                              \
+            "<signal name='" G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED "'>"                                  \
                 "<arg type='o'     name='session_handle' />"                                             \
                 "<arg type='s'     name='shortcut_id'   />"                                              \
                 "<arg type='t'     name='timestamp'     />"                                              \

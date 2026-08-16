@@ -121,7 +121,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
  */
 #define ARGLIST(...) , ##__VA_ARGS__
 
-#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS)                                  \
+#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS)                                               \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
@@ -164,7 +164,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
  * bail-out returns. */
-#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS)        \
+#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS)               \
     G_PASTE_VISIBLE type                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
