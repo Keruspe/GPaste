@@ -1210,17 +1210,17 @@ msgstr "更改密码名称"
 
 #: src/client/gpaste-client.c:631
 msgid "get the item <uuid> from the history"
-msgstr "通过uuid从记录获取项"
+msgstr "通过 <uuid> 从记录获取项"
 
 #: src/client/gpaste-client.c:632
 msgid "set the item <uuid> from the history to the clipboard"
-msgstr "通过uuid将项从记录放置到剪切板"
+msgstr "通过 <uuid> 将项从记录放置到剪切板"
 
 #: src/client/gpaste-client.c:633
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
-msgstr "通过uuid和内容替换记录中的项"
+msgstr "通过 <uuid> 和内容替换记录中的项"
 
 #: src/client/gpaste-client.c:634
 msgid ""
@@ -1230,19 +1230,19 @@ msgstr "合并与历史记录中的 UUID 匹配的项，并将结果放在剪贴
 
 #: src/client/gpaste-client.c:635
 msgid "set the item <uuid> from the history as a password named <name>"
-msgstr "通过uuid来设置记录中的密码名称"
+msgstr "通过 <uuid> 来设置记录中的密码名称 <name>"
 
 #: src/client/gpaste-client.c:636
 msgid "delete item <uuid> from the history"
-msgstr "通过uuid删除记录中的项"
+msgstr "通过 <uuid> 删除记录中的项"
 
 #: src/client/gpaste-client.c:637
 msgid "delete the password <name> from the history"
-msgstr "删除记录中的密码名称"
+msgstr "删除记录中的密码 <name>"
 
 #: src/client/gpaste-client.c:638
 msgid "put the content of the file at <path> into the clipboard"
-msgstr "将路径的文件内容放置到剪切板"
+msgstr "将 <path> 的文件内容放置到剪切板"
 
 #: src/client/gpaste-client.c:639
 msgid "empty the history"

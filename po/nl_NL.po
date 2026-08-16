@@ -1391,7 +1391,7 @@ msgstr "tussen elk item een NUL-teken gebruiken i.p.v. een nieuwe regel"
 #: src/client/gpaste-client.c:726
 #, c-format
 msgid "Merge options:"
-msgstr "Samenvoegingsopties"
+msgstr "Samenvoegingsopties:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
@@ -1850,11 +1850,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:93
 msgid "Min text item length"
-msgstr "Minimale tekstitemlengte:"
+msgstr "Minimale tekstitemlengte"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:98
 msgid "Max text item length"
-msgstr "Maximale tekstitemlengte:"
+msgstr "Maximale tekstitemlengte"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:104
 #, fuzzy

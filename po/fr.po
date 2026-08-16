@@ -1293,7 +1293,7 @@ msgstr "supprime le mot de passe nommé <nom> de l'historique"
 
 #: src/client/gpaste-client.c:638
 msgid "put the content of the file at <path> into the clipboard"
-msgstr "place le contenu du fichier situé à ce chemin dans le presse-papier"
+msgstr "place le contenu du fichier situé à <path> dans le presse-papier"
 
 #: src/client/gpaste-client.c:639
 msgid "empty the history"
