@@ -279,7 +279,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (self->size)
         g_paste_ui_history_show_list (self);
     else
-        g_paste_ui_history_show_status (self, "edit-paste-symbolic", _("Empty"));
+        g_paste_ui_history_show_status (self, "edit-paste-symbolic", C_("the history holds nothing", "Empty"));
 
     g_paste_ui_panel_update_history_length (self->panel, cdata->name, new_size);
 
@@ -973,7 +973,7 @@ g_paste_ui_history_new (GPasteClient   *client,
     GtkWidget *status_page = adw_status_page_new ();
     self->status_page = ADW_STATUS_PAGE (status_page);
     adw_status_page_set_icon_name (self->status_page, "edit-paste-symbolic");
-    adw_status_page_set_title (self->status_page, _("Empty"));
+    adw_status_page_set_title (self->status_page, C_("the history holds nothing", "Empty"));
     gtk_widget_set_hexpand (status_page, TRUE);
     gtk_widget_set_vexpand (status_page, TRUE);
     gtk_box_append (box, status_page);

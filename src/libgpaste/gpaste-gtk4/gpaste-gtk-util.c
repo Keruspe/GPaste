@@ -132,7 +132,7 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
 
         /* Translators: %s is the name of the history being emptied. */
         g_autofree gchar *msg = g_strdup_printf (_("Do you really want to empty \"%s\"?"), history);
-        g_paste_gtk_util_confirm_dialog (parent_window, _("Empty"), msg, empty_history_callback, data);
+        g_paste_gtk_util_confirm_dialog (parent_window, C_("verb", "Empty"), msg, empty_history_callback, data);
     }
     else
         g_paste_client_empty_history (client, history, NULL, NULL);

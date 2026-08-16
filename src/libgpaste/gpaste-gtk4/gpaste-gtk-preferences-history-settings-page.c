@@ -75,7 +75,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                                    "icon-name", "preferences-other",
                                                                    NULL));
 
-    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Resources limits"));
+    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Resource limits"));
     g_paste_gtk_preferences_group_add_range_setting (group,
                                                      _("Max history size"),
                                                      G_PASTE_MAX_HISTORY_SIZE_SETTING,

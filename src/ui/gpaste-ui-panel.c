@@ -558,7 +558,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
 
     g_autoptr (GMenu) menu = g_menu_new ();
     g_menu_append (menu, _("Backup"), "panel.backup-history");
-    g_menu_append (menu, _("Empty"), "panel.empty-history");
+    g_menu_append (menu, C_("verb", "Empty"), "panel.empty-history");
     g_menu_append (menu, _("Delete"), "panel.delete-history");
     adw_sidebar_set_menu_model (self->sidebar, G_MENU_MODEL (menu));
 

@@ -789,7 +789,7 @@ show_help (void)
     /* Translators: help for --reverse */
     printf ("  --reverse: %s\n", _("display the items in reverse order"));
     /* Translators: help for --zero */
-    printf ("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
+    printf ("  --zero: %s\n", _("use a NUL character instead of a new line between each item"));
 
     printf ("\n");
     printf (_("Merge options:"));

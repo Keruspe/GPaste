@@ -71,7 +71,7 @@ _g_paste_uris_item_new (const gchar *uris_joined,
 
     g_autofree gchar *display_no_home = g_paste_util_replace (uris_joined, g_get_home_dir (), "~");
     g_autofree gchar *display_flat = g_paste_util_replace (display_no_home, "\n", " ");
-    g_autofree gchar *display = g_strconcat (_("[Files] "), display_flat, NULL);
+    g_autofree gchar *display = g_strconcat (_("[Files]"), " ", display_flat, NULL);
     g_paste_item_set_display_string (item, g_steal_pointer (&display));
 
     /* (transfer container): the container is ours, the GFiles are not. */

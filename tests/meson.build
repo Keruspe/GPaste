@@ -5,3 +5,4 @@ test_history_env.set('GSETTINGS_SCHEMA_DIR', meson.project_build_root() / 'data'
 
 subdir('completions')
 subdir('history')
+subdir('i18n')

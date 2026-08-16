@@ -338,7 +338,11 @@ Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings
 
 ### `po/`
 
-Translations managed via Weblate. Add new strings to the relevant `.c` source with `_()` / `N_()` and update `po/POTFILES.in` if adding a new file.
+Translations managed via Weblate. Add new strings to the relevant `.c` source with `_()` / `N_()` and update `po/POTFILES.in` if adding a new file — the `potfiles` test (`tests/i18n/test-potfiles.py`) fails when the two drift apart, in either direction: a source carrying a string it does not list, or an entry whose strings have all moved away. Both matter, one because xgettext silently skips what it is not given and nobody notices until a dialog comes out untranslated, the other because a list nobody prunes stops describing anything.
+
+- **A translatable string carries no whitespace of its own**, and nothing is glued onto one: write `g_strconcat (_("[Files]"), " ", rest, NULL)`, never `_("[Files] ")`. A trailing space inside a msgid is invisible in every translation tool there is, and `nl_NL` duly dropped it — the one that had it is the one that broke.
+- **One msgid means one thing.** `_("Empty")` was both the button that empties a history and the page saying one is empty; languages that need two words got one. Disambiguate with `C_("verb", "Empty")` rather than rewording around it — the context is in the catalog, so translators see the distinction the code makes.
+- **The GSettings schema carries `gettext-domain="GPaste"`** on its `<schemalist>`. Its summaries and descriptions are extracted whether or not it does (they are in `POTFILES.in`, and xgettext knows the schema through GLib's ITS rules), but nothing looks the translations up without it: for a long time every one of those 58 strings was translated and then shown in English by dconf-editor and GNOME Settings alike.
 
 ## Key dependencies
 
