@@ -1,4 +1,5 @@
 gpaste_ui_sources = [
+  'gpaste-ui-color-swatch.c',
   'gpaste-ui-edit-item.c',
   'gpaste-ui-header.c',
   'gpaste-ui-history-model.c',
@@ -15,6 +16,7 @@ gpaste_ui_sources = [
 ]
 
 gpaste_ui_headers = [
+  'gpaste-ui-color-swatch.h',
   'gpaste-ui-edit-item.h',
   'gpaste-ui-header.h',
   'gpaste-ui-history-model.h',

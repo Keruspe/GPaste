@@ -6,6 +6,7 @@
 
 #include <gpaste-3/gpaste-gsettings-keys.h>
 
+#include <gpaste-ui-color-swatch.h>
 #include <gpaste-ui-edit-item.h>
 #include <gpaste-ui-item-action.h>
 #include <gpaste-ui-item.h>
@@ -26,6 +27,7 @@ struct _GPasteUiItem
     GtkLabel       *index_label;
     GtkInscription *label;
     GtkPicture     *thumbnail;
+    GtkWidget      *swatch;          /* colour items: what the value looks like */
     GtkWidget      *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
     gboolean        editable;
     gboolean        uploadable;
@@ -371,6 +373,9 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!texture)
     {
         g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
+        /* Rather than leave the row showing an image that is not the one it is
+         * now bound to. */
+        g_paste_ui_item_set_thumbnail (self, NULL);
         return;
     }
 
@@ -400,6 +405,12 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
         g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
     else
         g_paste_ui_item_set_thumbnail (self, NULL);
+
+    /* A colour needs no call of its own: the item's value is its colour, the
+     * "[Color]" a user reads in front of it being ours to add rather than the
+     * daemon's. The swatch hides itself for anything GDK cannot read back. */
+    g_paste_ui_color_swatch_set_color (self->swatch,
+                                       (kind == G_PASTE_ITEM_KIND_COLOR) ? g_paste_client_item_get_value (item) : NULL);
 
     if (!self->index)
         g_paste_ui_item_set_text_bold (self, oneline);
@@ -483,7 +494,14 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
      * the row used to show. The star reads @favourited on top of its uuid, and
      * a stale flag would flip the pin the wrong way, so it is reset with them:
      * whatever the next item turns out to be, the row is drawing nothing about
-     * it yet. A cleared action is inert, not merely aimed elsewhere. */
+     * it yet. A cleared action is inert, not merely aimed elsewhere.
+     *
+     * What the row draws for itself goes with them, swatch and thumbnail alike:
+     * a thumbnail is two round trips away (the item, then its bytes) and the
+     * widget is handed straight to the next row, so the next image would be
+     * shown as the previous one for that whole while — and for good, should the
+     * call fail. A colour arrives with its item, but the row is drawing nothing
+     * about that item yet either. */
     if (index != (guint64) -1)
         g_paste_ui_item_reset_text (self);
     else
@@ -491,6 +509,8 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
         g_clear_pointer (&self->uuid, g_free);
         g_paste_ui_item_apply_index_and_uuid (self, index, NULL);
         g_paste_ui_item_set_favourited (self, FALSE);
+        g_paste_ui_color_swatch_set_color (self->swatch, NULL);
+        g_paste_ui_item_set_thumbnail (self, NULL);
     }
 }
 
@@ -599,11 +619,16 @@ g_paste_ui_item_init (GPasteUiItem *self)
     gtk_widget_set_has_tooltip (thumbnail, TRUE);
     g_signal_connect (thumbnail, "query-tooltip", G_CALLBACK (g_paste_ui_item_on_thumbnail_query_tooltip), self);
 
+    /* An item is either an image or a colour, never both, so the two previews
+     * share the one slot at the end of the row. */
+    GtkWidget *swatch = self->swatch = g_paste_ui_color_swatch_new ();
+
     GtkWidget *thumbnail_container = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand (thumbnail_container, FALSE);
     gtk_widget_set_halign (thumbnail_container, GTK_ALIGN_CENTER);
 
     gtk_box_append (GTK_BOX (thumbnail_container), thumbnail);
+    gtk_box_append (GTK_BOX (thumbnail_container), swatch);
     gtk_box_append (GTK_BOX (hbox), thumbnail_container);
 }
 
