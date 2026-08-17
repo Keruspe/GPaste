@@ -206,15 +206,19 @@ g_paste_history (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
+    guint length = g_list_length (history);
     guint index = 0;
 
     for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = ctx->reverse ? i->prev : i->next)
     {
         GPasteClientItem *item = i->data;
-        /* Counted over every item, printed or not: what --use-index prints has
-         * to be the number --use-index takes back, and a filtered listing that
-         * renumbered its rows would name a different item on the way in. */
-        guint position = index++;
+        /* Where the item sits in the history, which is what --use-index takes
+         * back: counted over every item, printed or not (a filtered listing
+         * that renumbered its rows would name a different item on the way in),
+         * and from the far end when the walk runs backwards. */
+        guint position = (ctx->reverse) ? length - 1 - index : index;
+
+        ++index;
 
         if (ctx->favourites && !g_paste_client_item_is_favourite (item))
             continue;
