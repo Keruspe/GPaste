@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-11 00:09+0200\n"
+"POT-Creation-Date: 2026-08-18 19:12+0200\n"
 "PO-Revision-Date: 2023-05-23 22:50+0000\n"
 "Last-Translator: 이야기 <iyagicom@gmail.com>\n"
 "Language-Team: Korean <https://hosted.weblate.org/projects/gpaste/gpaste/ko/"
@@ -52,7 +52,7 @@ msgid "Preferences"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
-#: src/gnome-shell/actions.js:37 src/ui/gpaste-ui-header.c:286
+#: src/gnome-shell/actions.js:37 src/ui/gpaste-ui-header.c:311
 msgid "About"
 msgstr ""
 
@@ -62,19 +62,18 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:16
 msgid ""
-"The extra stuff of that element will be replaced by \"…\", and newlines by "
-"\" \" when displaying from the applet, 0 to disable."
+"Anything past that length is replaced by \"…\" when an element is shown in "
+"the history, and newlines and tabs are shown as spaces. 0 disables the limit."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:23
-msgid "Do we detect and replace growing lines in history?"
+msgid "Detect and replace growing lines"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:24
 msgid ""
-"By default, selecting \"Here is\", then \"Here is an example\" will create "
-"two entries in the history. With this feature enabled, the first one will be "
-"replaced by the second one."
+"Copying \"Here is\", then \"Here is an example\", leaves two entries in the "
+"history. With this enabled, the second replaces the first instead."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:32
@@ -86,19 +85,19 @@ msgid "The default name is \"history\""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
-msgid "Do we save the images copied to history, or only text?"
+msgid "Save copied images to the history"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
-msgid "By default, we're saving only text"
+msgid "Enabled by default: images are kept alongside text."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:48
-msgid "Show image previews in the history?"
+msgid "Show image previews in the history"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
-msgid "By default, we show previews of images in the history"
+msgid "Enabled by default: an image item shows a thumbnail of itself."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
@@ -112,20 +111,22 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:65
-msgid "Do we close the UI after selecting an item?"
+msgid "Close the UI after selecting an item"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:66
-msgid "By default, we close it"
+#: data/gsettings/org.gnome.GPaste.gschema.xml:207
+msgid "Enabled by default."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:73
-msgid "Do we open the UI window centered?"
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:36
+msgid "Open the UI window centered"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:74
 #, fuzzy
-msgid "By default, we open it where the mouse cursor is"
+msgid "Disabled by default: the window opens where the mouse cursor is."
 msgstr "마우스 포인터가 있는 GPaste UI 까기"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:81
@@ -133,203 +134,165 @@ msgid "The keyboard shortcut to launch the graphical interface"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:82
-msgid ""
-"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
-"string here disables this functionnality."
+#: data/gsettings/org.gnome.GPaste.gschema.xml:90
+#: data/gsettings/org.gnome.GPaste.gschema.xml:134
+#: data/gsettings/org.gnome.GPaste.gschema.xml:159
+#: data/gsettings/org.gnome.GPaste.gschema.xml:183
+#: data/gsettings/org.gnome.GPaste.gschema.xml:191
+#: data/gsettings/org.gnome.GPaste.gschema.xml:233
+msgid "An empty string disables this shortcut."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:90
+#: data/gsettings/org.gnome.GPaste.gschema.xml:89
 msgid "The keyboard shortcut to mark the active item as being a password"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:91
-msgid ""
-"By default, hitting ctrl + alt + s will mark the active item as being a "
-"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
-"functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:100
+#: data/gsettings/org.gnome.GPaste.gschema.xml:98
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:80
 msgid "Max history size"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:101
+#: data/gsettings/org.gnome.GPaste.gschema.xml:99
 msgid "Maximum number of items in history"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:109
+#: data/gsettings/org.gnome.GPaste.gschema.xml:107
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:85
 msgid "Max memory usage (MB)"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:110
+#: data/gsettings/org.gnome.GPaste.gschema.xml:108
 msgid "Maximum amount of memory used to store contents"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:118
+#: data/gsettings/org.gnome.GPaste.gschema.xml:116
 msgid "Max text item size"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:119
+#: data/gsettings/org.gnome.GPaste.gschema.xml:117
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:127
+#: data/gsettings/org.gnome.GPaste.gschema.xml:125
 msgid "Min text item size"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:128
+#: data/gsettings/org.gnome.GPaste.gschema.xml:126
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:135
+#: data/gsettings/org.gnome.GPaste.gschema.xml:133
 msgid "The keyboard shortcut to delete the first element in history"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:136
+#: data/gsettings/org.gnome.GPaste.gschema.xml:141
+msgid "Let the primary selection affect the history"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:142
+msgid "Disabled by default: only the clipboard (ctrl+c) affects the history."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:149
+msgid "Save every flavour of copied rich text"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:150
 msgid ""
-"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
-"string here disables this functionnality."
+"Enabled by default. When disabled, only the plain text of a rich text "
+"selection (HTML and the like) is kept."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:144
-msgid "Does the primary selection affects history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:145
-msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:152
-msgid ""
-"Do we save all versions of selected rich text (e.g. html) or just the plain "
-"text version?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:153
-msgid "By default, we're saving all"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:160
+#: data/gsettings/org.gnome.GPaste.gschema.xml:158
 msgid "The keyboard shortcut to display the menu"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:161
-msgid ""
-"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
-"empty string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:169
+#: data/gsettings/org.gnome.GPaste.gschema.xml:166
 msgid "Where the history is stored"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:170
+#: data/gsettings/org.gnome.GPaste.gschema.xml:167
 msgid ""
-"The storage backend used to persist the history: \"file\" keeps the current "
-"on-disk history, \"sqlite\" stores it in a per-history database (with an "
-"\"encrypted-sqlite\" flavor), \"none\" stores nothing. The migration dialog "
-"lets the user pick."
+"The storage backend used to persist the history: \"file\" keeps it in an on-"
+"disk file, \"sqlite\" in a per-history database (with \"encrypted-file\" and "
+"\"encrypted-sqlite\" flavours), \"none\" keeps nothing."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:177
+#: data/gsettings/org.gnome.GPaste.gschema.xml:174
 msgid "Last processed storage backend revision"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:178
+#: data/gsettings/org.gnome.GPaste.gschema.xml:175
 msgid ""
-"Internal: the storage-backend revision the daemon last migrated to. When it "
-"differs from the daemon's current revision, the storage migration dialog is "
-"shown on startup."
+"Set by the daemon, not meant to be edited. When it falls behind the daemon's "
+"own revision, the storage migration is offered again on startup."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:185
+#: data/gsettings/org.gnome.GPaste.gschema.xml:182
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:186
-msgid ""
-"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:194
+#: data/gsettings/org.gnome.GPaste.gschema.xml:190
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:195
+#: data/gsettings/org.gnome.GPaste.gschema.xml:198
+msgid "Keep the primary selection and the clipboard in sync"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:199
 msgid ""
-"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
-"string here disables this functionnality."
+"Disabled by default: the primary selection and the clipboard are independent."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:203
-msgid "Are the primary selection and the clipboard synchronized?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml:206
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:28
+#: src/ui/gpaste-ui-switch.c:94
+msgid "Track clipboard changes"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:204
-msgid "By default, the primary selection and the clipboard are independent."
+#: data/gsettings/org.gnome.GPaste.gschema.xml:214
+msgid "Match the daemon state to the GNOME Shell extension's"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:211
-msgid "Do we track the clipboard changes?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:212
-msgid "By default, we're tracking those changes."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:219
+#: data/gsettings/org.gnome.GPaste.gschema.xml:215
 msgid ""
-"Do we sync the daemon state with the gnome-shell extension's one? (disable "
-"the daemon when disabling the extension)"
+"When enabled, disabling the extension stops the daemon tracking as well. "
+"Disabled by default: the daemon state is left alone."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:220
-msgid "By default, the daemon state keeps unchanged"
+#: data/gsettings/org.gnome.GPaste.gschema.xml:223
+msgid "Trim text items before adding them to the history"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:227
-msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:228
+#: data/gsettings/org.gnome.GPaste.gschema.xml:224
 msgid ""
-"Trimming means removing all trailing and ending spaces. By default, we're "
-"letting them as-is."
+"Trimming removes the leading and trailing whitespace. Disabled by default: "
+"items are stored just as they were copied."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:236
+#: data/gsettings/org.gnome.GPaste.gschema.xml:232
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:237
+#: data/gsettings/org.gnome.GPaste.gschema.xml:240
+msgid "Ask for confirmation before emptying a history"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:241
+msgid "Enabled by default, because emptying a history cannot be undone."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:248
+msgid "Run the experimental in-shell (mutter) daemon"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:249
 msgid ""
-"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:245
-msgid "Do we prompt for confirmation when emptying a history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:246
-msgid "By default, we do as it's a destructive action"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:253
-msgid ""
-"Do we run the experimental in-shell (mutter) daemon from the gnome-shell "
-"extension?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml:254
-msgid ""
-"When disabled, the gnome-shell extension is a pure client and the standalone "
-"daemon is used instead"
+"Disabled by default: the GNOME Shell extension is a pure client and the "
+"standalone daemon does the work."
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:9
@@ -367,995 +330,1027 @@ msgstr "이것은 돌보기하기 릴리스입니다. 바낀 것:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:53
 msgid ""
-"Encrypt the history at rest with an optional encrypted file backend and a "
-"storage migration dialog"
+"Encrypt the history at rest with an optional encrypted file backend, and "
+"remember its passphrase in the keyring"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:54
 msgid ""
-"Add SQLite storage backends (plain and encrypted) that store the history in "
-"a per-history database"
+"Add SQLite storage backends, plain and encrypted, that store the history in "
+"a per-history database and images as blobs"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:55
 msgid ""
-"Migrate the history between storage backends on demand from the preferences "
-"or gpaste-client"
+"Choose where the history is stored and move it there, from a migration "
+"dialog, the preferences or gpaste-client"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:56
 msgid ""
-"Optionally run the daemon inside the GNOME Shell extension with a mutter-"
-"backed clipboard provider (experimental)"
+"Change the passphrase of an encrypted history from the preferences or gpaste-"
+"client"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:57
-msgid "Add a merge mode to combine several history items"
+msgid ""
+"Optionally run the daemon inside the GNOME Shell extension, watching the "
+"clipboard through mutter (experimental)"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:58
 msgid ""
-"Rewrite the GNOME Shell extension history as a scrollable, lazily-loaded list"
+"Rewrite the history as a scrollable, lazily-loaded list in both the GNOME "
+"Shell extension and the graphical tool"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:59
-msgid ""
-"Lazily load history on scroll in the graphical tool, dropping the max-"
-"displayed limit"
+msgid "Add a merge mode to combine several history items"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:60
-msgid "Enlarge image previews on hover via a custom tooltip"
+msgid ""
+"Pin items as favourites, which the size and memory limits never drop, and "
+"filter the history down to them"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:61
-msgid "Publish copied colours as text on the clipboard as well"
+msgid ""
+"Bump the DBus interface to org.gnome.GPaste3, renaming Element to Item and "
+"carrying each item's kind and favourite state with it"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
-msgid "Capture keyboard shortcuts in the preferences instead of typing them"
+msgid "Enlarge image previews on hover via a custom tooltip"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:63
-msgid "Raise the default retention, element and memory limits"
+msgid "Publish copied colours as text on the clipboard as well"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
-msgid "Drop the internal X11 keybinder and the GNOME Shell keybinding client"
+msgid ""
+"Capture keyboard shortcuts in the preferences instead of typing them, and "
+"reset any preference from a right-click menu"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:65
-msgid "Remember the window geometry across sessions"
+msgid ""
+"Make the embeddable preferences widget adaptive, and remember the window "
+"geometry across sessions"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
+msgid "Raise the default retention, element and memory limits"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:67
+msgid ""
+"Drop the internal X11 keybinder and the GNOME Shell keybinding client, "
+"leaving keyboard shortcuts to the XDG portal"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:68
 msgid "Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:72
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:102
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:110
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:118
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:127
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:136
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:147
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:174
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:193
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:201
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:210
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:222
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:232
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:252
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:265
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:275
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:284
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:293
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:312
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:329
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:337
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:345
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:363
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:371
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:379
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:387
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:395
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:419
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:427
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:435
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:443
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:451
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:459
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:467
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:475
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:484
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:493
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:511
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:519
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:527
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:535
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:553
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:561
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:570
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:579
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:588
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:596
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:617
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:625
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:633
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:641
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:649
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:665
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:673
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:681
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:689
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:705
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:74
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:120
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:129
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:138
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:149
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:176
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:195
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:203
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:212
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:224
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:234
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:254
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:267
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:286
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:295
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:314
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:331
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:339
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:347
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:365
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:373
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:381
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:389
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:397
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:421
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:429
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:437
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:445
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:453
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:461
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:469
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:477
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:486
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:495
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:513
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:521
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:529
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:537
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:555
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:563
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:572
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:581
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:590
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:598
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:619
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:627
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:635
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:643
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:651
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:667
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:675
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:683
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:691
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:707
 msgid "This is a maintenance release. Changes:"
 msgstr "이것은 돌보기하기 릴리스입니다. 바낀 것:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:74
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:76
 msgid ""
 "Fix selecting a history in the UI sidebar doing nothing, and, when a "
 "history's context menu was open, switching to that one instead of the one "
 "clicked"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:84
 msgid ""
 "Fix the daemon deadlocking against itself when copying, most often on larger "
 "items (text selections are now served by a dedicated content provider "
 "instead of being serialized by GTK)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:85
 msgid ""
 "text/plain is now served as UTF-8, where GTK's serializer encoded it as "
 "ASCII and replaced anything else with '?'"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:84
-msgid "Fix a deadlock when selecting an item that turns out to be invalid"
-msgstr ""
-
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:85
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:176
-msgid ""
-"Fix the daemon crashing when searching from the GNOME Shell overview with a "
-"term containing an unbalanced bracket or parenthesis"
-msgstr ""
-
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:86
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:177
-msgid ""
-"Fix the history file being destroyed when it had been written by a newer "
-"version of GPaste"
+msgid "Fix a deadlock when selecting an item that turns out to be invalid"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:87
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:178
 msgid ""
-"Fix items being lost or garbled when loading a history containing an item "
-"with an empty value"
+"Fix the daemon crashing when searching from the GNOME Shell overview with a "
+"term containing an unbalanced bracket or parenthesis"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:88
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:179
 msgid ""
-"Fix every client crashing, GNOME Shell included, on the first update sent by "
-"a newer daemon after \"gpaste-client daemon-reexec\""
+"Fix the history file being destroyed when it had been written by a newer "
+"version of GPaste"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:89
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:180
 msgid ""
-"Fix the daemon aborting, instead of disabling search, when it cannot connect "
-"to its own D-Bus proxy"
+"Fix items being lost or garbled when loading a history containing an item "
+"with an empty value"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:90
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:181
 msgid ""
-"Fix \"gpaste-client help\", \"version\", \"ui\" and \"preferences\" failing "
-"when no daemon is reachable"
+"Fix every client crashing, GNOME Shell included, on the first update sent by "
+"a newer daemon after \"gpaste-client daemon-reexec\""
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:91
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:182
 msgid ""
-"Fix \"gpaste-client file\" crashing on a file that is neither text nor a "
-"loadable image"
+"Fix the daemon aborting, instead of disabling search, when it cannot connect "
+"to its own D-Bus proxy"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:92
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:183
 msgid ""
-"Fix a critical on every keystroke when the GTK UI search term is not a valid "
-"regular expression"
+"Fix \"gpaste-client help\", \"version\", \"ui\" and \"preferences\" failing "
+"when no daemon is reachable"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:93
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:184
 msgid ""
-"Fix acting on history rows before their content has been loaded, in both the "
-"GTK UI and the GNOME Shell extension"
+"Fix \"gpaste-client file\" crashing on a file that is neither text nor a "
+"loadable image"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:94
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:185
 msgid ""
-"Fix a second \"gpaste-ui\" or \"gpaste-preferences\" invocation failing "
-"instead of presenting the running window"
+"Fix a critical on every keystroke when the GTK UI search term is not a valid "
+"regular expression"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:95
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:186
 msgid ""
-"Fix several memory leaks and a use-after-free in the GTK UI history panel"
+"Fix acting on history rows before their content has been loaded, in both the "
+"GTK UI and the GNOME Shell extension"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:96
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:187
 msgid ""
+"Fix a second \"gpaste-ui\" or \"gpaste-preferences\" invocation failing "
+"instead of presenting the running window"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:97
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:188
+msgid ""
+"Fix several memory leaks and a use-after-free in the GTK UI history panel"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:98
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:189
+msgid ""
 "Fix the \"empty history\" helpers reporting success when the operation had "
 "failed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:106
 msgid ""
 "Fix the active history item overriding the clipboard when copying an image "
 "while images support is disabled (such content is now left untouched in the "
 "clipboard, while still not being added to the history)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:195
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:114
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:197
 msgid ""
 "Fix the daemon failing to restart with \"gpaste-client daemon-reexec\" (the "
 "re-exec path was missing the gpaste libexec subdirectory)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:120
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
 msgid ""
 "GNOME Shell extension: fix history items gradually disappearing from the menu"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:121
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:123
 msgid ""
 "UI: fix keyboard input so Escape and Enter no longer swallow text meant for "
 "the search or history switch entries, and type-to-search works right after "
 "startup"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:129
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:131
 msgid "GNOME Shell extension: fix keyboard navigation in the history menu"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:130
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:132
 msgid "GNOME Shell extension: give every action button the same width"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:138
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:203
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:140
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:205
 msgid "GNOME Shell extension: restore keyboard navigation of history items"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:139
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:141
 msgid ""
 "GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:140
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:142
 msgid "Build: require GTK 4.18"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:141
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:204
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:206
 msgid "Fix a typo in the French translation"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:149
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:151
 msgid "Fix building without the GNOME Shell extension (-Dgnome-shell=false)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:150
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:152
 msgid ""
 "Restore GTK deprecation version-gating and drop the unused build-time gjs "
 "dependency"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:151
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:153
 msgid "Target GNOME Shell 50 in the extension"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:152
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:154
 msgid "Bump the library soversions to reflect the API/ABI changes since 45.8"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:158
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:160
 #, fuzzy
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
 msgstr "이것은 돌보기하기 릴리스입니다. 바낀 것:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:160
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:162
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:161
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
 msgid "Show image thumbnails in the history, with configurable preview size"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:162
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:164
 msgid ""
 "Support global keyboard shortcuts on Wayland through the XDG GlobalShortcuts "
 "portal"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
 msgid "Recognise copied colours as dedicated colour items"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:164
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:166
 msgid ""
 "Give keybindings human-readable descriptions and install a daemon desktop "
 "file"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:167
 msgid "Fix images sometimes being repeatedly re-added to the history"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:166
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:213
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:168
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:215
 msgid ""
 "Fix keyboard shortcuts not triggering when NumLock and CapsLock are both "
 "active"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:167
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:169
 msgid ""
 "Fix several crashes (search provider, UI lifetime, GNOME Shell extension) "
 "and memory leaks"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:168
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:170
 msgid "Modernise the GNOME Shell extension to current conventions"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:212
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:214
 msgid "Fix use-after-free crash in the GNOME Shell search provider"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:214
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:216
 msgid ""
 "Fix memory leaks when re-copying history items and when rebinding shortcuts"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:215
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:217
 msgid "Fix potential crash when enforcing a very small history size"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:216
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:218
 msgid "Build: ship the GSettings schema as a static file"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:224
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:226
 msgid ""
 "GNOME Shell extension now retries the daemon connection before giving up"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:225
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:227
 msgid "Fix test crash when GrabAccelerators is not allowed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:226
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:228
 msgid "Build: simplify gsettings compilation for tests"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:234
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:236
 msgid "Fix GC crash and signal leak when disabling the GNOME Shell extension"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:235
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:237
 msgid "GNOME Shell extension now handles daemon connection failure gracefully"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:236
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:238
 msgid "Fix crash when a history item has no value yet"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:237
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:239
 msgid "Fix image files not being deleted when history items are removed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:238
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:240
 msgid "Fix image files stored in wrong directory"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:239
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:241
 msgid "Fix keyboard focus being stolen by history items on hover"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:240
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:242
 msgid ""
 "Fix key events incorrectly forwarded to search when another entry has focus"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:241
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:243
 msgid "Fix signal loop when updating shortcut entries from settings"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:242
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:244
 msgid "Fix default history item count not reset after history deletion"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:243
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:245
 msgid "Enforce minimum window size to prevent unresizable state"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:244
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:246
 msgid "Add descriptive tooltips for settings entries"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:245
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:247
 msgid "Build: explicitly link libgpaste libraries against libc"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:246
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:259
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:269
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:278
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:287
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:296
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:306
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:357
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:399
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:413
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:248
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:261
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:271
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:280
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:289
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:298
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:308
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:359
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:401
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:415
 msgid "Translations updates"
 msgstr "변역 판올림"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:254
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:256
 msgid ""
 "Fix infinite Pango assertion loop that could fill disk when clipboard "
 "content contained tab characters"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:255
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:257
 msgid "Various bug fixes and memory management improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:256
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:258
 msgid "Daemon improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:257
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:259
 msgid "GNOME Shell extension improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:258
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:260
 #, fuzzy
 msgid "GLib >= 2.76 is now required"
 msgstr "이제 gcr 4가 있어야 한다."
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:267
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:269
 #, fuzzy
 msgid "Support for gnome 50"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:268
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:270
 #, fuzzy
 msgid "Support for gnome 49"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:279
 #, fuzzy
 msgid "Support for gnome 48"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:286
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:288
 #, fuzzy
 msgid "Support for gnome 47"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:295
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:297
 #, fuzzy
 msgid "Support for gnome 46"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:302
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:304
 #, fuzzy
 msgid "Stable release for GNOME 45. Changes:"
 msgstr "GNOME 44의 첫 번째 릴리스. 바낀 사항:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:304
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:306
 #, fuzzy
 msgid "Port to gnome 45"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:305
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:307
 msgid "Add setting to open ui window centered"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:314
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:331
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:365
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:421
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:316
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:333
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:367
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:423
 msgid "Fix a bug leading to history with only one item"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:320
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:322
 msgid "First release for GNOME 44. Changes:"
 msgstr "GNOME 44의 첫 번째 릴리스. 바낀 사항:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:322
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:324
 msgid "gcr 4 is now required"
 msgstr "이제 gcr 4가 있어야 한다."
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:323
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:325
 msgid "Port to gnome 44"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:339
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:373
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:429
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:341
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:375
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:431
 msgid "Avoid crash under heavy memory load"
 msgstr "심한 메모리 로드 시 박치기 없애기"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:347
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:381
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:437
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:513
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:349
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:383
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:439
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:515
 msgid "Respect --use-index when displaying history"
 msgstr "기록을 볼 때 --use-index를 쓴다"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:353
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:355
 msgid "First release for GNOME 43. Changes:"
 msgstr "GNOME 43의 첫 번째 릴리스. 바낀 것:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:355
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:357
 msgid "Port to GNOME 43"
 msgstr "그놈 43로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:356
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:358
 msgid "Internal preparation for gtk4 port"
 msgstr "gtk4 포트에 대한 안쪽 준비"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:389
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:445
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:521
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:391
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:447
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:523
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr "마우스 포인터가 있는 GPaste UI 까기"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:397
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:399
 msgid "Fixes to the new preferences tool"
 msgstr "새로운 환경 설정 도구 바꾸기"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:398
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:400
 msgid "Style fixes"
 msgstr "스타일 고치기"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:405
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:407
 msgid "First release for GNOME 42. Changes:"
 msgstr "GNOME 42의 첫 번째 릴리스. 바낀 것:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:407
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:409
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr "전에 libgpaste는 gtk 종속성이 없는 새로운 최소 libgpaste-2로 바끼었다"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:408
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:410
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr "유틸리티 및 설정 UI를 위한 새로운 libgpaste-gtk3"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:409
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:411
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr "유틸리티 및 기본 설정 UI를 위한 새로운 libgpaste-gtk4"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:410
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:412
 msgid "New gtk4 based gpaste-preferences utility"
 msgstr "새로운 gtk4 기반 gpaste-preferences 유틸리티"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:411
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:413
 msgid "Autotools are no longer supported"
 msgstr "Autotools는 더 이상 도와주지 않는다"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:412
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:414
 msgid "Extension updated for gnome-shell 42"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:453
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:455
 msgid "fix the storage path for meson builds"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:461
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:463
 msgid "fix some race conditions in history handling"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:469
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:471
 msgid "better fix crash when there is no history yet"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:477
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:479
 msgid "fix crash when there is no history yet"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:478
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:487
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:496
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:505
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:529
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:480
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:489
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:498
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:507
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:531
 #, fuzzy
 msgid "translations update"
 msgstr "변역 판올림"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:486
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:488
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:495
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:497
 msgid "Fix keybindings for wayland"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:502
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:504
 #, fuzzy
 msgid "First release for GNOME 41. Changes:"
 msgstr "GNOME 44의 첫 번째 릴리스. 바낀 사항:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:504
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:506
 #, fuzzy
 msgid "port to gnome-shell 41"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:537
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:539
 msgid "fix a crash in memory usage checking"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:544
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:546
 #, fuzzy
 msgid "First release for GNOME 40. Changes:"
 msgstr "GNOME 44의 첫 번째 릴리스. 바낀 사항:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:546
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:548
 #, fuzzy
 msgid "port to gnome-shell 40"
 msgstr "그놈 44로 Port"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:547
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:549
 msgid "placeholder for gnome-shell prefs"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:555
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:619
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:557
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:621
 msgid "fix X11 keybinder outside of GNOME"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:563
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:565
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:564
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:566
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:572
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:574
 msgid "fix the make-password keybinding"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:573
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:582
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:575
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:584
 msgid "updated translations"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:581
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:583
 msgid "gnome-shell extension warning fixes"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:590
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:627
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:592
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:629
 msgid "gnome-shell extension cosmetic updates"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:598
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:600
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:599
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:601
 msgid "Search now includes passwords (using their names)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:600
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:602
 msgid "systemd integration enhancements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:606
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:608
 #, fuzzy
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "GNOME 43의 첫 번째 릴리스. 바낀 것:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:608
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:610
 msgid "Drop the Tracking DBus signal"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:609
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:611
 msgid "Switch to uuids to identify items"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:610
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:612
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:611
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:613
 msgid "Update to gnome-shell 3.38.0"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:635
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:667
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:709
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:637
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:669
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:711
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:643
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:675
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:708
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:645
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:677
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:710
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:651
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:683
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:653
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:685
 msgid "Fix keybinding grab with gnome-shell"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:657
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:659
 #, fuzzy
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "GNOME 43의 첫 번째 릴리스. 바낀 것:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:659
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:661
 msgid "Update to gnome-shell 3.36.0"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:691
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:707
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:693
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:709
 msgid "Compatibility with recent appstream-glib"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:697
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:699
 #, fuzzy
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "GNOME 44의 첫 번째 릴리스. 바낀 사항:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:699
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:701
 msgid "Update to gnome-shell 3.34.0"
 msgstr ""
 
-#: src/client/gpaste-client.c:140
-msgid "Couldn't spawn"
-msgstr ""
-
-#: src/client/gpaste-client.c:251
+#. Translators: %s is the program GPaste tried to start, then the reason it could not.
+#: src/client/gpaste-client.c:148
 #, c-format
-msgid "Successfully reexecuted the daemon\n"
+msgid "Couldn't spawn %s: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:265
-#, c-format
-msgid "Successfully triggered the storage migration\n"
+#: src/client/gpaste-client.c:274
+msgid "Successfully re-executed the daemon"
 msgstr ""
 
-#: src/client/gpaste-client.c:282
-#, c-format
-msgid "Successfully triggered the passphrase change\n"
+#: src/client/gpaste-client.c:288
+msgid "Successfully triggered the storage migration"
 msgstr ""
 
-#: src/client/gpaste-client.c:423
-msgid "Cannot add non utf8 data as text."
+#: src/client/gpaste-client.c:305
+msgid "Successfully triggered the passphrase change"
 msgstr ""
 
-#: src/client/gpaste-client.c:620
+#: src/client/gpaste-client.c:467
+msgid "Cannot add non-UTF-8 data as text."
+msgstr ""
+
+#: src/client/gpaste-client.c:690
 msgid "print the history with UUIDs"
 msgstr ""
 
-#: src/client/gpaste-client.c:621
+#: src/client/gpaste-client.c:691
 msgid "print the size of the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:622
+#: src/client/gpaste-client.c:692
 msgid "print the items of the history matching <pattern>"
 msgstr ""
 
-#: src/client/gpaste-client.c:623
+#: src/client/gpaste-client.c:693
 msgid "get the name of the current history"
 msgstr ""
 
-#: src/client/gpaste-client.c:624
-msgid "backup current history"
+#: src/client/gpaste-client.c:694
+msgid "back up the current history"
 msgstr ""
 
-#: src/client/gpaste-client.c:625
+#: src/client/gpaste-client.c:695
 msgid "switch to another history"
 msgstr ""
 
-#: src/client/gpaste-client.c:626
+#: src/client/gpaste-client.c:696
 msgid "delete a history"
 msgstr ""
 
-#: src/client/gpaste-client.c:627
+#: src/client/gpaste-client.c:697
 msgid "list available histories"
 msgstr ""
 
-#: src/client/gpaste-client.c:628
+#: src/client/gpaste-client.c:698
 msgid "set text to clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:629
-msgid "add the name - password couple to the clipboard"
+#: src/client/gpaste-client.c:699
+msgid "add the <name> / <password> pair to the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:630
+#: src/client/gpaste-client.c:700
 msgid "rename the password"
 msgstr ""
 
-#: src/client/gpaste-client.c:631
+#: src/client/gpaste-client.c:701
 msgid "get the item <uuid> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:632
+#: src/client/gpaste-client.c:702
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:633
+#: src/client/gpaste-client.c:703
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr ""
 
-#: src/client/gpaste-client.c:634
+#: src/client/gpaste-client.c:704
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:635
+#: src/client/gpaste-client.c:705
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr ""
 
-#: src/client/gpaste-client.c:636
+#: src/client/gpaste-client.c:706
 msgid "delete item <uuid> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:637
+#: src/client/gpaste-client.c:707
+msgid "pin item <uuid> so the history never drops it automatically"
+msgstr ""
+
+#: src/client/gpaste-client.c:708
+msgid "unpin item <uuid>, letting the history drop it again"
+msgstr ""
+
+#: src/client/gpaste-client.c:709
 msgid "delete the password <name> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:638
+#: src/client/gpaste-client.c:710
 msgid "put the content of the file at <path> into the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:639
+#: src/client/gpaste-client.c:711
 msgid "empty the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:640
+#: src/client/gpaste-client.c:712
 msgid "start tracking clipboard changes"
 msgstr ""
 
-#: src/client/gpaste-client.c:641
+#: src/client/gpaste-client.c:713
 msgid "stop tracking clipboard changes"
 msgstr ""
 
-#: src/client/gpaste-client.c:642
-msgid "reexecute the daemon (after upgrading...)"
+#: src/client/gpaste-client.c:714
+msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr ""
 
-#: src/client/gpaste-client.c:643
+#: src/client/gpaste-client.c:715
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:644
+#: src/client/gpaste-client.c:716
 msgid "change the passphrase of the encrypted history"
 msgstr ""
 
-#: src/client/gpaste-client.c:645
+#: src/client/gpaste-client.c:717
 msgid "launch the configuration tool"
 msgstr ""
 
-#: src/client/gpaste-client.c:646
+#: src/client/gpaste-client.c:718
 msgid "launch the graphical tool"
 msgstr ""
 
-#: src/client/gpaste-client.c:647
-msgid "make the applet or extension display the history"
+#: src/client/gpaste-client.c:719
+msgid "make the GNOME Shell extension display the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:648
+#: src/client/gpaste-client.c:720
 msgid "upload the item <uuid> to a pastebin service"
 msgstr ""
 
-#: src/client/gpaste-client.c:649
+#: src/client/gpaste-client.c:721
 msgid "display the version"
 msgstr ""
 
-#: src/client/gpaste-client.c:650
+#: src/client/gpaste-client.c:722
 msgid "display the daemon version"
 msgstr ""
 
-#: src/client/gpaste-client.c:651
+#: src/client/gpaste-client.c:723
 msgid "display this help"
 msgstr ""
 
-#: src/client/gpaste-client.c:652
+#: src/client/gpaste-client.c:724
 msgid "display the about dialog"
 msgstr ""
 
-#: src/client/gpaste-client.c:685
+#: src/client/gpaste-client.c:757
 #, c-format
 msgid "Usage:\n"
 msgstr ""
 
 #. Not a verb: the item comes in on stdin.
-#: src/client/gpaste-client.c:705
-msgid "whatever"
+#. Translators: the metavariable standing for any command the user pipes into GPaste.
+#: src/client/gpaste-client.c:778
+msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:705
-msgid "set the output of whatever to clipboard"
+#: src/client/gpaste-client.c:778
+msgid "copy the output of <command> to the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:708
+#: src/client/gpaste-client.c:781
 #, c-format
 msgid "Convenience options:"
 msgstr ""
 
+#. Translators: help for --favourites
+#: src/client/gpaste-client.c:784
+msgid "only display the pinned items"
+msgstr ""
+
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:711
+#: src/client/gpaste-client.c:786
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
-#: src/client/gpaste-client.c:714
+#: src/client/gpaste-client.c:789
 #, c-format
 msgid "Display options:"
 msgstr ""
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:717
+#: src/client/gpaste-client.c:792
 msgid "display each item on only one line"
 msgstr ""
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:719
+#: src/client/gpaste-client.c:794
 msgid "display each item raw (without line numbers)"
 msgstr ""
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:721
+#: src/client/gpaste-client.c:796
 msgid "display the items in reverse order"
 msgstr ""
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:723
-msgid "use a NUL character instead of a new line betweean each item"
+#: src/client/gpaste-client.c:798
+msgid "use a NUL character instead of a new line between each item"
 msgstr ""
 
-#: src/client/gpaste-client.c:726
+#: src/client/gpaste-client.c:801
 #, c-format
 msgid "Merge options:"
 msgstr ""
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:729 src/client/gpaste-client.c:731
+#: src/client/gpaste-client.c:804 src/client/gpaste-client.c:806
 msgid "string"
 msgstr ""
 
-#: src/client/gpaste-client.c:729
+#: src/client/gpaste-client.c:804
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 
-#: src/client/gpaste-client.c:731
+#: src/client/gpaste-client.c:806
 msgid "add the given separator between each item when merging"
 msgstr ""
 
@@ -1384,7 +1379,8 @@ msgstr ""
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
 #: src/daemon/gpaste-daemon.c:323
-msgid "Could not acquire DBus name. Is another GPaste daemon already running?"
+msgid ""
+"Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr ""
 
 #: src/gnome-shell/actions.js:32
@@ -1400,17 +1396,21 @@ msgid "(Empty)"
 msgstr ""
 
 #: src/gnome-shell/dummyHistoryItem.js:22
-msgid "(No result)"
+msgid "(No results)"
+msgstr ""
+
+#: src/gnome-shell/dummyHistoryItem.js:30
+msgid "(No pinned items)"
 msgstr ""
 
 #. The button drops what the action returns, so this promise is nobody's
 #. to await: catch here, or a daemon that goes away mid-call surfaces as
 #. an unhandled rejection.
-#: src/gnome-shell/indicator.js:105
+#: src/gnome-shell/indicator.js:110
 msgid "Empty history"
 msgstr ""
 
-#: src/gnome-shell/searchItem.js:26
+#: src/gnome-shell/searchItem.js:27
 msgid "Type to search…"
 msgstr ""
 
@@ -1423,8 +1423,8 @@ msgstr ""
 #. * This list is the one place they are written down. It feeds the shortcuts
 #. * dialog, the shortcuts page of the preferences, and -- through
 #. * tools/gen-keybindings-xml.py, which reads this very macro -- the control
-#. * center's 42-gpaste.xml, so those three can no longer drift apart in wording,
-#. * order or grouping the way they had.
+#. * center's 42-gpaste.xml, so none of the three can drift apart from the others
+#. * in wording, order or grouping.
 #. *
 #. * Each carries two names: the description the shortcut UIs show, and the short
 #. * label the desktop portal lists it under, where there is only room for a few
@@ -1486,7 +1486,7 @@ msgstr ""
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:36
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:70
-msgid "Clipboards synchronization"
+msgid "Clipboard synchronization"
 msgstr ""
 
 #: src/libgpaste/gpaste-3/gpaste-keybindings.h:35
@@ -1505,191 +1505,205 @@ msgstr ""
 msgid "Sync Primary to Clipboard"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-color-item.c:59
-msgid "[Color]"
+#: src/libgpaste/gpaste-3/gpaste-util.c:323
+msgid "Image"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:182
+#: src/libgpaste/gpaste-3/gpaste-util.c:325
+msgid "Color"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:330
+msgid "Files"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:335
+msgid "Password"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:184
 msgid "Could not create history dir"
 msgstr ""
 
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
-#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:246
+#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:281
 msgid "%m/%d/%y %T"
 msgstr ""
 
-#. Translators: Image item displayed in history. %d is width, %d is height, %s is the formatted date.
-#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:248
+#. Translators: an image item's dimensions and capture date, shown in history
+#. * behind a "[Image, ...]" the drawing client puts around it. %1$d is the
+#. * width, %2$d the height, %3$s the formatted date; reorder them freely.
+#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:285
 #, c-format
-msgid "[Image, %d x %d (%s)]"
+msgid "%1$d × %2$d (%3$s)"
 msgstr ""
 
-#. This is the prefix displayed in history to identify a password
-#: src/libgpaste/gpaste-daemon/gpaste-password-item.c:58
-msgid "Password"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:640
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:635
 msgid "Store the history in a file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:642
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:637
 msgid "Store the history in an encrypted file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:644
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:639
 msgid "Store the history in a database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:646
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:641
 msgid "Store the history in an encrypted database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:648
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:643
 msgid "Don't store anything"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:824
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:819
 msgid "Weak"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:826
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:821
 msgid "Fair"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:828
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:823
 msgid "Good"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:830
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:825
 msgid "Strong"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:965
 msgid "Encrypted history"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:967
 #, fuzzy
 msgid "Enter the passphrase to unlock your clipboard history."
 msgstr "지난글 돌보기"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
 msgid "Unlock"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
 msgid "Set passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
 msgid "Passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
 msgid "Confirm passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
 msgid "Passphrase strength"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
 msgid "Passphrase strength rating is not available in this build"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
 msgid "Remember this passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:989
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
 msgid "Store it in the keyring so you are not asked again"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
 msgid "Storage migration"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
+#. Translators: the quoted words are the label of the button below, so
+#. * the two have to say the same thing.
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
 msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
-"disk unless you pick a storing backend here."
+"disk unless you pick a storing backend here. “Keep as is” changes nothing "
+"and settles the question for good; closing this window asks it again next "
+"time."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:995
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
 msgid "Apply"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:997
+#. Translators: this label is quoted in the description above.
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:996
+msgid "Keep as is"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:998
 msgid "Storage backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:999
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1000
 msgid "Import existing data"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1001
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1002
 msgid "Copy the current history into the new backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1003
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1004
 msgid "Delete old data afterwards"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1005
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1006
 msgid "Remove the previous on-disk history once done"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1007
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1008
 msgid "The old data will be deleted without being imported first"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1009
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1010
 msgid "The passphrase was not changed"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1011
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1012
 msgid "Your history is still encrypted with the passphrase it had before."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1013
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1014
 msgid ""
 "Some of your histories are now encrypted with the new passphrase while the "
 "others keep the previous one, and GPaste could not put them back. Both "
 "passphrases are needed to open them all; the system log says which is which."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1015
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1016
 msgid "The old data was not deleted"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1017
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1018
 msgid ""
 "The clipboard history GPaste was told to delete after the migration is still "
 "on disk."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1019
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1020
 msgid "Close"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1021
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:196
-#: src/ui/gpaste-ui-header.c:296 src/ui/gpaste-ui-panel.c:347
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1022
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:52
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:198
+#: src/ui/gpaste-ui-header.c:321 src/ui/gpaste-ui-panel.c:363
 msgid "Cancel"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:661
+#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:655
 msgid "Wrong passphrase, please try again"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-uris-item.c:74
-msgid "[Files] "
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:38
@@ -1701,25 +1715,16 @@ msgstr ""
 msgid "General behaviour"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:28
-#: src/ui/gpaste-ui-switch.c:94
-msgid "Track clipboard changes"
-msgstr ""
-
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:32
 msgid "Close UI on select"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:36
-msgid "Open the UI window centered"
-msgstr ""
-
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:48
-msgid "Enable the gnome-shell extension"
+msgid "Enable the GNOME Shell extension"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:54
-msgid "Sync the daemon state with the extension's one"
+msgid "Match the daemon state to the extension's"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:58
@@ -1776,7 +1781,7 @@ msgid "History settings"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:78
-msgid "Resources limits"
+msgid "Resource limits"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:91
@@ -1818,11 +1823,11 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:22
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:26
 #, fuzzy
-msgid "Images settings"
+msgid "Image settings"
 msgstr "셋팅 UI"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:28
-msgid "Images support"
+msgid "Image support"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:32
@@ -1848,61 +1853,81 @@ msgid "Disabled"
 msgstr ""
 
 #. Translators: %s is the name of the history being emptied.
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:132
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:134
 #, c-format
 msgid "Do you really want to empty \"%s\"?"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:133
-#: src/ui/gpaste-ui-history.c:272 src/ui/gpaste-ui-history.c:901
-#: src/ui/gpaste-ui-panel.c:547
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:135 src/ui/gpaste-ui-panel.c:561
+msgctxt "verb"
 msgid "Empty"
 msgstr ""
 
-#: src/ui/gpaste-ui-edit-item.c:73 src/ui/gpaste-ui-edit-item.c:125
+#: src/ui/gpaste-ui-edit-item.c:75 src/ui/gpaste-ui-edit-item.c:129
 msgid "Edit"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:105
+#: src/ui/gpaste-ui-header.c:106
 msgid "Restart"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:106
+#: src/ui/gpaste-ui-header.c:107
 msgid "Do you really want to restart the daemon?"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:248
+#: src/ui/gpaste-ui-header.c:268
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
 msgstr[0] ""
 
-#: src/ui/gpaste-ui-header.c:272
+#: src/ui/gpaste-ui-header.c:292
 msgid "GPaste Settings"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:275
+#: src/ui/gpaste-ui-header.c:295
 msgid "Search"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:288
+#: src/ui/gpaste-ui-header.c:300
+msgid "Show only pinned items"
+msgstr ""
+
+#: src/ui/gpaste-ui-header.c:313
 msgid "Restart the daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:292
+#: src/ui/gpaste-ui-header.c:317
 msgid "Select items to merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:425
+#: src/ui/gpaste-ui-history.c:298 src/ui/gpaste-ui-history.c:992
+msgctxt "the history holds nothing"
+msgid "Empty"
+msgstr ""
+
+#: src/ui/gpaste-ui-history.c:464
 msgid "No Results"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:616
+#: src/ui/gpaste-ui-history.c:466
+msgid "No Pinned Items"
+msgstr ""
+
+#: src/ui/gpaste-ui-item.c:114
+msgid "Unpin"
+msgstr ""
+
+#: src/ui/gpaste-ui-item.c:114 src/ui/gpaste-ui-item.c:665
+msgid "Pin"
+msgstr ""
+
+#: src/ui/gpaste-ui-item.c:666
 msgid "Upload"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:617 src/ui/gpaste-ui-panel.c:394
-#: src/ui/gpaste-ui-panel.c:548
+#: src/ui/gpaste-ui-item.c:667 src/ui/gpaste-ui-panel.c:410
+#: src/ui/gpaste-ui-panel.c:562
 msgid "Delete"
 msgstr ""
 
@@ -1914,25 +1939,25 @@ msgstr ""
 msgid "New item"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:343
-msgid "Under which name do you want to backup this history?"
+#: src/ui/gpaste-ui-panel.c:359
+msgid "Under which name do you want to back up this history?"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:347 src/ui/gpaste-ui-panel.c:546
+#: src/ui/gpaste-ui-panel.c:363 src/ui/gpaste-ui-panel.c:560
 msgid "Backup"
 msgstr ""
 
 #. Translators: %s is the name of the history being deleted.
-#: src/ui/gpaste-ui-panel.c:393
+#: src/ui/gpaste-ui-panel.c:409
 #, c-format
 msgid "Are you sure you want to delete \"%s\"?"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:470
+#: src/ui/gpaste-ui-panel.c:484
 msgid "Switch to history"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:477
+#: src/ui/gpaste-ui-panel.c:491
 msgid "Switch to"
 msgstr ""
 
@@ -1945,47 +1970,47 @@ msgid "Do you really want to stop tracking clipboard changes?"
 msgstr ""
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:406
+#: src/ui/gpaste-ui-window.c:399
 msgid "New line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:407
+#: src/ui/gpaste-ui-window.c:400
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:408
+#: src/ui/gpaste-ui-window.c:401
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:409
-msgid "Tabulation"
+#: src/ui/gpaste-ui-window.c:402
+msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:417
+#: src/ui/gpaste-ui-window.c:410
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:422
+#: src/ui/gpaste-ui-window.c:415
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:433
+#: src/ui/gpaste-ui-window.c:426
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:485
+#: src/ui/gpaste-ui-window.c:478
 msgid "Quit"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:546 src/ui/gpaste-ui-window.c:547
+#: src/ui/gpaste-ui-window.c:539 src/ui/gpaste-ui-window.c:540
 msgid "Couldn't connect to GPaste daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:588
+#: src/ui/gpaste-ui-window.c:581
 msgid "Histories"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:589
+#: src/ui/gpaste-ui-window.c:582
 msgid "History"
 msgstr ""
 
