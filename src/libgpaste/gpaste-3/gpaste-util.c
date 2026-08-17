@@ -268,7 +268,12 @@ g_paste_util_has_gnome_shell (void)
 G_PASTE_VISIBLE GPasteClientItem *
 g_paste_util_get_dbus_item_result (GVariant *variant)
 {
-    const gchar *uuid, *value;
+    /* Owned, not borrowed: the format string is the one the daemon *builds*
+     * these variants with, so it spells "s" rather than the "&s" that would
+     * point into the variant, and g_variant_get hands back a copy of each
+     * string for the caller to free. */
+    g_autofree gchar *uuid = NULL;
+    g_autofree gchar *value = NULL;
     guint32 kind;
     gboolean favourite;
 
