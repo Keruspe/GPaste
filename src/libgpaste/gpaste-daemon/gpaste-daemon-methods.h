@@ -91,6 +91,9 @@ GVariant *g_paste_daemon_methods_get_item_at_index          (const GPasteDaemonM
 GVariant *g_paste_daemon_methods_get_items                  (const GPasteDaemonMethods *self,
                                                              const gchar * const       *uuids,
                                                              GError                   **error);
+GStrv     g_paste_daemon_methods_get_uris                   (const GPasteDaemonMethods *self,
+                                                             const gchar               *uuid,
+                                                             GError                   **error);
 GStrv     g_paste_daemon_methods_list_histories             (const GPasteDaemonMethods *self,
                                                              GError                   **error);
 void      g_paste_daemon_methods_merge                      (const GPasteDaemonMethods *self,

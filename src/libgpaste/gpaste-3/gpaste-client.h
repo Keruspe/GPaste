@@ -66,6 +66,9 @@ guint64  g_paste_client_get_history_size_sync           (GPasteClient  *self,
 GBytes  *g_paste_client_get_image_sync                  (GPasteClient  *self,
                                                          const gchar   *uuid,
                                                          GError       **error);
+GStrv    g_paste_client_get_uris_sync                   (GPasteClient  *self,
+                                                         const gchar   *uuid,
+                                                         GError       **error);
 GStrv    g_paste_client_list_histories_sync             (GPasteClient  *self,
                                                          GError       **error);
 void     g_paste_client_merge_sync                      (GPasteClient  *self,
@@ -185,6 +188,10 @@ void g_paste_client_get_image                  (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_get_uris                   (GPasteClient       *self,
+                                                const gchar        *uuid,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_list_histories             (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -295,6 +302,9 @@ guint64  g_paste_client_get_history_size_finish           (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 GBytes  *g_paste_client_get_image_finish                  (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+GStrv    g_paste_client_get_uris_finish                   (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 GStrv    g_paste_client_list_histories_finish             (GPasteClient *self,

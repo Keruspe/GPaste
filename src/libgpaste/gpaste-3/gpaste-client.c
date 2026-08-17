@@ -834,6 +834,42 @@ G_PASTE_CLIENT_METHOD_RET (get_image,
                            (const gchar *uuid), (uuid))
 
 /**
+ * g_paste_client_get_uris_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the uris item we want the uris of
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the uris a uris item holds from the #GPasteDaemon, the item's own value
+ * being the decorated string a user is shown rather than the uris themselves
+ *
+ * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
+ */
+/**
+ * g_paste_client_get_uris:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the uris item we want the uris of
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the uris a uris item holds from the #GPasteDaemon
+ */
+/**
+ * g_paste_client_get_uris_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get the uris a uris item holds from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
+ */
+G_PASTE_CLIENT_METHOD_RET (get_uris,
+                           GStrv, NULL,
+                           g_auto (GStrv) uris = NULL, &uris, g_steal_pointer (&uris),
+                           (const gchar *uuid), (uuid))
+
+/**
  * g_paste_client_list_histories_sync:
  * @self: a #GPasteClient instance
  * @error: return location for a #GError, or %NULL

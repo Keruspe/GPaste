@@ -30,7 +30,8 @@
     might want instead: the uri list behind "[Files] ~/a", or the cache path
     behind "[Image, 800 x 600 (...)]". For plain text, which is nearly all of a
     history, the two were the same string, and neither was ever a password's
-    real value. GetImage is where an image's bytes come from.
+    real value. GetImage is where an image's bytes come from and GetUris the uris
+    a files item holds.
   -->
   <interface name="org.gnome.GPaste3">
     <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon3"/>
@@ -138,6 +139,27 @@
     <method name="GetItems">
       <arg type="as"      direction="in"  name="uuids"/>
       <arg type="a(ssub)" direction="out" name="items"/>
+    </method>
+
+    <!--
+      The uris a files item holds.
+
+      The last of the three, and the one whose @value hides the most: a files
+      item displays as "[Files]" in front of its uris with the home directory
+      shortened and the newlines between them turned into spaces, so what it
+      shows can no longer be read back. The separator is now a space, which a
+      filename may itself contain; the shortening happened inside the uri; and
+      the prefix is translated. Any scheme travels here, not just file:, since
+      that is what a client copying from a remote mount put on the clipboard.
+
+      Nothing in this tree calls it: the two front ends draw a files item from
+      the value they already hold, and neither acts on the files. It is here for
+      the consumers that do, since this interface is what GPaste offers anyone
+      scripting it rather than merely what its own clients happen to need.
+    -->
+    <method name="GetUris">
+      <arg type="s"  direction="in"  name="uuid"/>
+      <arg type="as" direction="out" name="uris"/>
     </method>
 
     <!-- The names of every known history -->

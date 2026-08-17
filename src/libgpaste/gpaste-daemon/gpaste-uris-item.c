@@ -31,6 +31,35 @@ g_paste_uris_item_get_file_list (GPasteUrisItem *self)
     return self->file_list;
 }
 
+/**
+ * g_paste_uris_item_get_uris:
+ * @self: a #GPasteUrisItem instance
+ *
+ * Get the uris contained in the #GPasteUrisItem, one per file.
+ *
+ * Read off the #GdkFileList rather than split back out of the item's value: the
+ * two say the same thing today (one is built from the other), but the files are
+ * what the item holds and the string is only how it is written down. Any scheme
+ * can appear here, not just file:, so a caller wanting a path of its own has to
+ * ask #GFile for one and be told there is none.
+ *
+ * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_uris_item_get_uris (GPasteUrisItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), NULL);
+
+    /* (transfer container): the container is ours, the GFiles are not. */
+    g_autoptr (GSList) files = gdk_file_list_get_files (self->file_list);
+    g_autoptr (GStrvBuilder) uris = g_strv_builder_new ();
+
+    for (const GSList *f = files; f; f = f->next)
+        g_strv_builder_take (uris, g_file_get_uri (G_FILE (f->data)));
+
+    return g_strv_builder_end (uris);
+}
+
 static GPasteItemKind
 g_paste_uris_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 {

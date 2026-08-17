@@ -530,6 +530,10 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_items,
                                 GVariant *items, items,
                                 (const gchar * const *uuids), (uuids))
 
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_uris,
+                                g_auto (GStrv) uris, (const gchar * const *) uris,
+                                (const gchar *uuid), (uuid))
+
 G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
                                 g_auto (GStrv) histories, (const gchar * const *) histories,
                                 (), ())
@@ -645,6 +649,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-get-item",                    G_CALLBACK (g_paste_daemon_handle_get_item)                    },
         { "handle-get-item-at-index",           G_CALLBACK (g_paste_daemon_handle_get_item_at_index)           },
         { "handle-get-items",                   G_CALLBACK (g_paste_daemon_handle_get_items)                   },
+        { "handle-get-uris",                    G_CALLBACK (g_paste_daemon_handle_get_uris)                    },
         { "handle-list-histories",              G_CALLBACK (g_paste_daemon_handle_list_histories)              },
         { "handle-merge",                       G_CALLBACK (g_paste_daemon_handle_merge)                       },
         { "handle-reexecute",                   G_CALLBACK (g_paste_daemon_handle_reexecute)                   },

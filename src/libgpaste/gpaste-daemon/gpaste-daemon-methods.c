@@ -5,6 +5,7 @@
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-text-item.h>
+#include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <string.h>
 
@@ -324,6 +325,19 @@ g_paste_daemon_methods_get_image (const GPasteDaemonMethods *self,
     }
 
     return g_variant_new_from_bytes (G_VARIANT_TYPE ("ay"), bytes, TRUE);
+}
+
+G_PASTE_VISIBLE GStrv
+g_paste_daemon_methods_get_uris (const GPasteDaemonMethods *self,
+                                 const gchar               *uuid,
+                                 GError                   **error)
+{
+    GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
+
+    G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_URIS_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "Provided uuid doesn't match a uris item.", NULL);
+
+    return g_paste_uris_item_get_uris (G_PASTE_URIS_ITEM (item));
 }
 
 G_PASTE_VISIBLE GStrv

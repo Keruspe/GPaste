@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
+#include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <string.h>
 
@@ -1071,6 +1072,27 @@ test_load_leaves_a_flushed_history_alone (void)
         g_assert_true (pump_until_length (reader, 6, 5000));
         g_assert_true (g_paste_item_is_favourite (g_paste_history_get (reader, 5)));
     }
+}
+
+/* What a uris item holds, in the terms GetUris answers in. Any scheme reaches
+ * one -- what makes a uris item is GDK deserialising the clipboard offer into a
+ * GdkFileList, and text/uri-list carries smb:// and trash:// as happily as
+ * file:// -- so the reply is uris rather than paths, which g_file_get_path()
+ * could not have given for the last two.
+ */
+static void
+test_uris_item_answers_its_uris (void)
+{
+    g_autoptr (GPasteItem) item = g_paste_uris_item_new_from_str ("file:///tmp/a\nsmb://server/share/b\ntrash:///c");
+
+    g_assert_nonnull (item);
+
+    g_auto (GStrv) uris = g_paste_uris_item_get_uris (G_PASTE_URIS_ITEM (item));
+
+    g_assert_cmpuint (g_strv_length (uris), ==, 3);
+    g_assert_cmpstr (uris[0], ==, "file:///tmp/a");
+    g_assert_cmpstr (uris[1], ==, "smb://server/share/b");
+    g_assert_cmpstr (uris[2], ==, "trash:///c");
 }
 
 static void
@@ -2825,6 +2847,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
     g_test_add_func ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
     g_test_add_func ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
+    g_test_add_func ("/history/uris_item_answers_its_uris", test_uris_item_answers_its_uris);
     g_test_add_func ("/history/load_applies_the_caps", test_load_applies_the_caps);
     g_test_add_func ("/history/load_leaves_a_flushed_history_alone", test_load_leaves_a_flushed_history_alone);
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
