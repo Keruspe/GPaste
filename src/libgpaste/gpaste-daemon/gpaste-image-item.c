@@ -244,8 +244,10 @@ _g_paste_image_item_new (const gchar *path,
 
     /* Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention. */
     g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
-    /* Translators: Image item displayed in history. %d is width, %d is height, %s is the formatted date. */
-    g_autofree gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
+    /* Translators: an image item's dimensions and capture date, shown in history
+     * behind a "[Image, ...]" the drawing client puts around it. %d is width,
+     * %d is height, %s is the formatted date. */
+    g_autofree gchar *display_string = g_strdup_printf (_("%d x %d (%s)"),
                                                                   gdk_texture_get_width (self->image),
                                                                   gdk_texture_get_height (self->image),
                                                                   formatted_date);

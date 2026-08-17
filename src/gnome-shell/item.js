@@ -112,7 +112,7 @@ class GPasteItem extends PopupMenuItem {
             if (generation !== this._generation)
                 return;
             this._uuid = item.get_uuid();
-            this._setValue(item.get_value(), item.is_favourite());
+            this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
         }
     }
 
@@ -130,7 +130,7 @@ class GPasteItem extends PopupMenuItem {
             const item = await this._client.get_item(uuid);
             if (generation !== this._generation)
                 return;
-            this._setValue(item.get_value(), item.is_favourite());
+            this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
         }
     }
 
@@ -140,7 +140,7 @@ class GPasteItem extends PopupMenuItem {
         this._deleteItem.setUuid(null);
     }
 
-    _setValue(value, favourite = false) {
+    _setValue(value, favourite = false, kind = null) {
         this.label.set_style(this._index === 0 ? 'font-weight: bold;' : null);
 
         if (this._index === -1) {
@@ -149,7 +149,17 @@ class GPasteItem extends PopupMenuItem {
             this.label.clutter_text.set_text(this._displayedText);
             this.hide();
         } else {
-            const text = GPaste.util_one_line(value ?? '');
+            // The decoration a kind calls for, composed by libgpaste rather
+            // than spelled a second time here: it translates the bare words
+            // through the GPaste domain -- the very domain this extension
+            // declares -- and it runs in this process, so they come out in the
+            // shell's own locale rather than the daemon's. A row still waiting
+            // for its item has neither a value nor a kind to hand it, and
+            // ItemKind has no introspected member for "none" to pass in place
+            // of the one it lacks.
+            const text = value == null
+                ? ''
+                : GPaste.util_one_line(GPaste.util_display_string(value, kind));
             if (text !== this._displayedText) {
                 this._displayedText = text;
                 this.label.clutter_text.set_text(text);

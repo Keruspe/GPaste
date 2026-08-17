@@ -21,6 +21,8 @@ void     g_paste_util_empty_with_confirmation (GPasteClient   *client,
                                                GPasteSettings *settings,
                                                const gchar    *history);
 gchar   *g_paste_util_one_line                (const gchar *text);
+gchar   *g_paste_util_display_string          (const gchar   *value,
+                                               GPasteItemKind kind);
 
 gboolean g_paste_util_has_gnome_shell (void);
 

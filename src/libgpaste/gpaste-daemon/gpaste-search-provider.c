@@ -19,13 +19,14 @@ struct _GPasteSearchProvider
 
     GPasteClient               *client;
 
-    /* uuid -> value, for the results of the last search we answered. The shell
-     * asks for the metas of identifiers it has just been handed, so this is
-     * nearly always the very set that reply carried, and describing them from
-     * here is what keeps GetResultMetas from asking for the same strings a
-     * second time. Replaced wholesale by each search, and emptied by any update
-     * to the history, so what is answered from here was true as of the last
-     * thing that happened to it; a uuid it does not hold falls back to
+    /* uuid -> #GPasteClientItem, for the results of the last search we answered.
+     * The shell asks for the metas of identifiers it has just been handed, so
+     * this is nearly always the very set that reply carried, and describing them
+     * from here is what keeps GetResultMetas from asking for the same items a
+     * second time. The items rather than their values: what a result is called
+     * depends on its kind too. Replaced wholesale by each search, and emptied by
+     * any update to the history, so what is answered from here was true as of
+     * the last thing that happened to it; a uuid it does not hold falls back to
      * GetItems. */
     GHashTable                 *last_results;
 };
@@ -75,7 +76,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
         const gchar *uuid = g_paste_client_item_get_uuid (i->data);
 
         g_strv_builder_add (ids, uuid);
-        g_hash_table_insert (self->last_results, g_strdup (uuid), g_strdup (g_paste_client_item_get_value (i->data)));
+        g_hash_table_insert (self->last_results, g_strdup (uuid), g_object_ref (i->data));
     }
 
     g_auto (GStrv) identifiers = g_strv_builder_end (ids);
@@ -157,15 +158,19 @@ typedef struct
     GStrv                  uuids;
 } GetResultMetasData;
 
+/* What the shell shows of a result, and what it puts on the clipboard if the
+ * user copies one: the first is the decorated string every client draws, so a
+ * search result names its kind the way the menu's row does; the second is the
+ * item's own value, which is what pasting it has to give. */
 static void
-append_meta (GVariantBuilder *builder,
-             const gchar     *uuid,
-             const gchar     *value)
+append_meta (GVariantBuilder  *builder,
+             GPasteClientItem *item)
 {
     g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
-    g_autofree gchar *result = g_paste_util_one_line (value);
+    const gchar *value = g_paste_client_item_get_value (item);
+    g_autofree gchar *result = g_paste_util_one_line (g_paste_client_item_get_display_string (item));
 
-    append_dict_entry (&dict, "id", uuid);
+    append_dict_entry (&dict, "id", g_paste_client_item_get_uuid (item));
     append_dict_entry (&dict, "name", result);
     append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
     append_dict_entry (&dict, "clipboardText", value);
@@ -214,7 +219,7 @@ on_history_ready (GObject      *source_object G_GNUC_UNUSED,
         GPasteClientItem *item = g_hash_table_lookup (items, *uuid);
 
         if (item)
-            append_meta (&builder, *uuid, g_paste_client_item_get_value (item));
+            append_meta (&builder, item);
     }
 
     g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
@@ -260,7 +265,7 @@ on_items_ready (GObject      *source_object G_GNUC_UNUSED,
     /* Each item names itself, so nothing here depends on the reply coming back
      * in the order the uuids were asked in. */
     for (const GList *i = results; i; i = i->next)
-        append_meta (&builder, g_paste_client_item_get_uuid (i->data), g_paste_client_item_get_value (i->data));
+        append_meta (&builder, i->data);
 
     g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
 }
@@ -297,17 +302,17 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
         return TRUE;
     }
 
-    /* The identifiers are the ones the last search answered with, so their
-     * values are already here: describe them without a round trip at all, and
-     * without the daemon marshalling the same strings a second time. All or
-     * nothing -- one identifier from an older search, and the batch below is
-     * both cheaper than a call per uuid and fresher than what is kept here. */
+    /* The identifiers are the ones the last search answered with, so the items
+     * are already here: describe them without a round trip at all, and without
+     * the daemon marshalling the same strings a second time. All or nothing --
+     * one identifier from an older search, and the batch below is both cheaper
+     * than a call per uuid and fresher than what is kept here. */
     if (g_paste_search_provider_metas_are_known (self, identifiers))
     {
         g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
 
         for (const gchar * const *uuid = identifiers; *uuid; ++uuid)
-            append_meta (&builder, *uuid, g_hash_table_lookup (self->last_results, *uuid));
+            append_meta (&builder, g_hash_table_lookup (self->last_results, *uuid));
 
         g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, invocation, g_variant_builder_end (&builder));
 
@@ -456,7 +461,7 @@ static void
 g_paste_search_provider_init (GPasteSearchProvider *self)
 {
     self->skeleton = G_PASTE_SHELL_SEARCH_PROVIDER2 (g_paste_shell_search_provider2_skeleton_new ());
-    self->last_results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    self->last_results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
 
     /* Swapped, so @self leads each handler. */
     g_signal_connect_swapped (self->skeleton, "handle-get-initial-result-set",

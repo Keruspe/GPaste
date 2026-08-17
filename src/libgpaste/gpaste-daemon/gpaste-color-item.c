@@ -56,8 +56,10 @@ _g_paste_color_item_new (const gchar   *str,
 
     self->rgba = *rgba;
 
-    g_autofree gchar *display = g_strconcat (_("[Color]"), " ", str, NULL);
-    g_paste_item_set_display_string (item, g_steal_pointer (&display));
+    /* No display string at all: what a colour item shows is its value, and the
+     * "[Color]" a user reads in front of it is the drawing client's to add, in
+     * the drawing client's language. g_paste_item_get_display_string () falls
+     * back to the value, so there is nothing to set here. */
 
     return item;
 }

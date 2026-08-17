@@ -98,10 +98,12 @@ _g_paste_uris_item_new (const gchar *uris_joined,
     GPasteItem *item = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris_joined);
     GPasteUrisItem *self = G_PASTE_URIS_ITEM (item);
 
-    g_autofree gchar *display_no_home = g_paste_util_replace (uris_joined, g_get_home_dir (), "~");
-    g_autofree gchar *display_flat = g_paste_util_replace (display_no_home, "\n", " ");
-    g_autofree gchar *display = g_strconcat (_("[Files]"), " ", display_flat, NULL);
-    g_paste_item_set_display_string (item, g_steal_pointer (&display));
+    /* No display string: a uris item is its uris, and every bit of turning those
+     * into a line a user reads -- dropping the file: scheme, shortening $HOME to
+     * "~", putting them on one line, saying "[Files]" in front -- belongs to
+     * whichever client draws the row. Left here, the shortening ran over the uri
+     * rather than over a path and spelled a home file "file://~/a".
+     * g_paste_item_get_display_string () falls back to the value. */
 
     /* (transfer container): the container is ours, the GFiles are not. */
     g_autoptr (GSList) files = gdk_file_list_get_files (file_list);

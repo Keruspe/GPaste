@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-client-item.h>
+#include <gpaste-3/gpaste-util.h>
 
 struct _GPasteClientItem
 {
@@ -11,6 +12,10 @@ struct _GPasteClientItem
     gchar         *value;
     GPasteItemKind kind;
     gboolean       favourite;
+
+    /* Composed on demand from @kind and @value, then kept: a row is redrawn far
+     * more often than an item is built. */
+    gchar         *display_string;
 };
 
 G_PASTE_DEFINE_TYPE (ClientItem, client_item, G_TYPE_OBJECT)
@@ -41,6 +46,27 @@ g_paste_client_item_get_value (GPasteClientItem *self)
     g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), NULL);
 
     return self->value;
+}
+
+/**
+ * g_paste_client_item_get_display_string:
+ * @self: a #GPasteClientItem instance
+ *
+ * Get the string to draw for this item: its value, with the decoration its kind
+ * calls for around it, as g_paste_util_display_string () composes it. Kept once
+ * composed, since a row is redrawn far more often than an item is built.
+ *
+ * Returns: read-only display string, owned by the item
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_client_item_get_display_string (GPasteClientItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), NULL);
+
+    if (!self->display_string)
+        self->display_string = g_paste_util_display_string (self->value, self->kind);
+
+    return self->display_string;
 }
 
 /**
@@ -79,6 +105,7 @@ g_paste_client_item_finalize (GObject *object)
 
     g_free (self->uuid);
     g_free (self->value);
+    g_free (self->display_string);
 
     G_OBJECT_CLASS (g_paste_client_item_parent_class)->finalize (object);
 }

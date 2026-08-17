@@ -31,7 +31,7 @@
     behind "[Image, 800 x 600 (...)]". For plain text, which is nearly all of a
     history, the two were the same string, and neither was ever a password's
     real value. GetImage is where an image's bytes come from and GetUris the uris
-    a files item holds.
+    a files item holds; a colour item's colour is simply its value.
   -->
   <interface name="org.gnome.GPaste3">
     <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon3"/>
@@ -144,13 +144,13 @@
     <!--
       The uris a files item holds.
 
-      The last of the three, and the one whose @value hides the most: a files
-      item displays as "[Files]" in front of its uris with the home directory
-      shortened and the newlines between them turned into spaces, so what it
-      shows can no longer be read back. The separator is now a space, which a
-      filename may itself contain; the shortening happened inside the uri; and
-      the prefix is translated. Any scheme travels here, not just file:, since
-      that is what a client copying from a remote mount put on the clipboard.
+      A files item's @value is these same uris joined by newlines, which is
+      unambiguous to split (a uri percent-encodes what would otherwise be a
+      separator), so this exists for the shape of the answer rather than to
+      recover anything: an array is what a client acting on the files wants,
+      where @value is the one string an item travels with. Any scheme travels
+      here, not just file:, since that is what a client copying from a remote
+      mount put on the clipboard.
 
       Nothing in this tree calls it: the two front ends draw a files item from
       the value they already hold, and neither acts on the files. It is here for

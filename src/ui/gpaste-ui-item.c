@@ -381,7 +381,7 @@ static void
 _g_paste_ui_item_ready (GPasteUiItem     *self,
                         GPasteClientItem *item)
 {
-    const gchar *txt = g_paste_client_item_get_value (item);
+    const gchar *txt = g_paste_client_item_get_display_string (item);
 
     if (!txt)
         return;

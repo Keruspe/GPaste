@@ -839,8 +839,9 @@ G_PASTE_CLIENT_METHOD_RET (get_image,
  * @uuid: the uuid of the uris item we want the uris of
  * @error: return location for a #GError, or %NULL
  *
- * Get the uris a uris item holds from the #GPasteDaemon, the item's own value
- * being the decorated string a user is shown rather than the uris themselves
+ * Get the uris a uris item holds from the #GPasteDaemon, as the array a client
+ * acting on the files wants rather than the one newline-joined string the item's
+ * own value is
  *
  * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
  */

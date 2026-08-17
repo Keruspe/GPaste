@@ -11,14 +11,12 @@ src/gnome-shell/indicator.js
 src/gnome-shell/searchItem.js
 src/gnome-shell/stateSwitch.js
 src/libgpaste/gpaste-3/gpaste-keybindings.h
-src/libgpaste/gpaste-daemon/gpaste-color-item.c
+src/libgpaste/gpaste-3/gpaste-util.c
 src/libgpaste/gpaste-daemon/gpaste-daemon-util.c
 src/libgpaste/gpaste-daemon/gpaste-daemon.c
 src/libgpaste/gpaste-daemon/gpaste-image-item.c
-src/libgpaste/gpaste-daemon/gpaste-password-item.c
 src/libgpaste/gpaste-daemon/gpaste-prompt.c
 src/libgpaste/gpaste-daemon/gpaste-storage-migration.c
-src/libgpaste/gpaste-daemon/gpaste-uris-item.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c

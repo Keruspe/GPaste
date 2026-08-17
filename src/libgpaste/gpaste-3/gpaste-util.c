@@ -4,6 +4,8 @@
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 
+#include <string.h>
+
 /* Copied from glib's gio/gapplication-tool.c */
 static GVariant *
 app_get_platform_data (void)
@@ -234,6 +236,108 @@ g_paste_util_one_line (const gchar *text)
     g_return_val_if_fail (text, NULL);
 
     return g_strdelimit (g_strdup (text), "\n\r\t", ' ');
+}
+
+/* The uris a files item holds, as a line to read rather than a list to act on:
+ * a local file shown as its path with $HOME written "~", anything else as the
+ * uri it is. Percent-decoded, so a file named "a b" reads as one.
+ *
+ * Done here rather than in the daemon because it is presentation, and because
+ * the daemon got it wrong when it did it: a blind substitution over the uri
+ * spelled a home file "file://~/a". */
+static gchar *
+g_paste_util_uris_display_string (const gchar *value)
+{
+    g_auto (GStrv) uris = g_strsplit (value, "\n", -1);
+    g_autoptr (GString) shown = g_string_new (NULL);
+    const gchar *home = g_get_home_dir ();
+    gsize home_len = (home) ? strlen (home) : 0;
+
+    for (GStrv u = uris; *u; ++u)
+    {
+        const gchar *uri = *u;
+
+        /* A value ending in a newline splits into a trailing empty piece, which
+         * is no uri and would only hang a separator off the end of the line. */
+        if (!*uri)
+            continue;
+
+        if (shown->len)
+            g_string_append_c (shown, ' ');
+
+        if (!g_str_has_prefix (uri, "file://"))
+        {
+            g_string_append (shown, uri);
+            continue;
+        }
+
+        const gchar *escaped = uri + strlen ("file://");
+        g_autofree gchar *path = g_uri_unescape_string (escaped, NULL);
+        const gchar *p = (path) ? path : escaped;
+
+        /* Only a whole leading component, so /home/joe never shortens /home/joey. */
+        if (home_len && g_str_has_prefix (p, home) && (!p[home_len] || p[home_len] == '/'))
+            g_string_append_printf (shown, "~%s", p + home_len);
+        else
+            g_string_append (shown, p);
+    }
+
+    return g_string_free_and_steal (g_steal_pointer (&shown));
+}
+
+/**
+ * g_paste_util_display_string:
+ * @value: the value of an item
+ * @kind: the kind of that item
+ *
+ * Compose what a client draws for an item: its @value, with the decoration its
+ * @kind calls for around it.
+ *
+ * Composed by whoever draws the item rather than sent by the daemon so that it
+ * comes out in *that* process's language: the daemon has a locale of its own,
+ * and the gnome-shell extension a whole catalogue of its own; a client handed a
+ * finished string could neither re-translate it nor read the value back out of
+ * it, which is what used to make a second round trip the only way to recover an
+ * item's contents. Here rather than on #GPasteClientItem so that everything
+ * drawing an item shares the one implementation: the item caches what this
+ * returns, the search provider describes its results with it, and the
+ * gnome-shell extension calls it through introspection instead of keeping a
+ * second copy of it in JavaScript.
+ *
+ * Only the words are translated. The brackets around them are punctuation, not
+ * language, so they are spelled here.
+ *
+ * Returns: the newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_util_display_string (const gchar   *value,
+                             GPasteItemKind kind)
+{
+    g_return_val_if_fail (value, NULL);
+
+    switch (kind)
+    {
+    /* The one whose payload belongs inside the brackets: it reads as a
+     * description of the image rather than as a name in front of one. */
+    case G_PASTE_ITEM_KIND_IMAGE:
+        return g_strdup_printf ("[%s, %s]", _("Image"), value);
+    case G_PASTE_ITEM_KIND_COLOR:
+        return g_strdup_printf ("[%s] %s", _("Color"), value);
+    case G_PASTE_ITEM_KIND_URIS:
+    {
+        g_autofree gchar *uris = g_paste_util_uris_display_string (value);
+
+        return g_strdup_printf ("[%s] %s", _("Files"), uris);
+    }
+    /* The value here is the password's *name*: the daemon masks the password
+     * itself and never sends it. */
+    case G_PASTE_ITEM_KIND_PASSWORD:
+        return g_strdup_printf ("[%s] %s", _("Password"), value);
+    /* Text wears nothing, and a kind we do not know is shown as it arrived
+     * rather than mislabelled. */
+    default:
+        return g_strdup (value);
+    }
 }
 
 /**

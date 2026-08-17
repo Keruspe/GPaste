@@ -54,9 +54,10 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     g_paste_item_add_size (item, strlen (name));
     g_set_str (&self->name, name);
 
-    // This is the prefix displayed in history to identify a password
-    g_autofree gchar *full_display_string = g_strdup_printf ("[%s] %s", _("Password"), name);
-    g_paste_item_set_display_string (item, g_steal_pointer (&full_display_string));
+    /* The name alone, never the password: it is what get_value () masks as
+     * "******" and what get_real_value () holds. The "[Password]" a user reads in
+     * front of it is the drawing client's to add. */
+    g_paste_item_set_display_string (item, g_strdup (name));
 }
 
 static const gchar *
