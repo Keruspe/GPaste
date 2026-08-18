@@ -1100,7 +1100,7 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
     g_autofree gchar *history_path = g_paste_storage_backend_get_history_file_path (self, name);
 
     if (g_file_test (history_path, G_FILE_TEST_EXISTS))
-        g_strv_builder_add (builder, history_path);
+        g_strv_builder_take (builder, g_steal_pointer (&history_path));
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
