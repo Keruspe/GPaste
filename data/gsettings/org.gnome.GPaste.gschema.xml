@@ -20,10 +20,10 @@
 
     <key name="growing-lines" type="b">
       <default>false</default>
-      <summary>Do we detect and replace growing lines in history?</summary>
+      <summary>Detect and replace growing lines</summary>
       <description>
-        By default, selecting "Here is", then "Here is an example" will create two entries in the history.
-        With this feature enabled, the first one will be replaced by the second one.
+        Copying "Here is", then "Here is an example", leaves two entries in the history.
+        With this enabled, the second replaces the first instead.
       </description>
     </key>
 
@@ -37,17 +37,17 @@
 
     <key name="images-support" type="b">
       <default>true</default>
-      <summary>Do we save the images copied to history?</summary>
+      <summary>Save copied images to the history</summary>
       <description>
-        By default, we're saving images too
+        Enabled by default: images are kept alongside text.
       </description>
     </key>
 
     <key name="images-preview" type="b">
       <default>true</default>
-      <summary>Show image previews in the history?</summary>
+      <summary>Show image previews in the history</summary>
       <description>
-        By default, we show previews of images in the history
+        Enabled by default: an image item shows a thumbnail of itself.
       </description>
     </key>
 
@@ -62,17 +62,17 @@
 
     <key name="close-on-select" type="b">
       <default>true</default>
-      <summary>Do we close the UI after selecting an item?</summary>
+      <summary>Close the UI after selecting an item</summary>
       <description>
-        By default, we close it
+        Enabled by default.
       </description>
     </key>
 
     <key name="open-centered" type="b">
       <default>false</default>
-      <summary>Do we open the UI window centered?</summary>
+      <summary>Open the UI window centered</summary>
       <description>
-        By default, we open it where the mouse cursor is
+        Disabled by default: the window opens where the mouse cursor is.
       </description>
     </key>
 
@@ -141,17 +141,18 @@
 
     <key name="primary-to-history" type="b">
       <default>false</default>
-      <summary>Does the primary selection affect history?</summary>
+      <summary>Let the primary selection affect the history</summary>
       <description>
-        By default, only clipboard (ctrl+c) affects history.
+        Disabled by default: only the clipboard (ctrl+c) affects the history.
       </description>
     </key>
 
     <key name="rich-text-support" type="b">
       <default>true</default>
-      <summary>Do we save all versions of selected rich text (e.g. html) or just the plain text version?</summary>
+      <summary>Save every flavour of copied rich text</summary>
       <description>
-        By default, we're saving all
+        Enabled by default. When disabled, only the plain text of a rich text
+        selection (HTML and the like) is kept.
       </description>
     </key>
 
@@ -168,7 +169,7 @@
       <default>'file'</default>
       <summary>Where the history is stored</summary>
       <description>
-        The storage backend used to persist the history: "file" keeps the current on-disk history, "sqlite" stores it in a per-history database (with an "encrypted-sqlite" flavor), "none" stores nothing. The migration dialog lets the user pick.
+        The storage backend used to persist the history: "file" keeps it in an on-disk file, "sqlite" in a per-history database (with "encrypted-file" and "encrypted-sqlite" flavours), "none" keeps nothing.
       </description>
     </key>
 
@@ -176,7 +177,7 @@
       <default>0</default>
       <summary>Last processed storage backend revision</summary>
       <description>
-        Internal: the storage-backend revision the daemon last migrated to. When it differs from the daemon's current revision, the storage migration dialog is shown on startup.
+        Set by the daemon, not meant to be edited. When it falls behind the daemon's own revision, the storage migration is offered again on startup.
       </description>
     </key>
 
@@ -200,34 +201,35 @@
 
     <key name="synchronize-clipboards" type="b">
       <default>false</default>
-      <summary>Are the primary selection and the clipboard synchronized?</summary>
+      <summary>Keep the primary selection and the clipboard in sync</summary>
       <description>
-        By default, the primary selection and the clipboard are independent.
+        Disabled by default: the primary selection and the clipboard are independent.
       </description>
     </key>
 
     <key name="track-changes" type="b">
       <default>true</default>
-      <summary>Do we track the clipboard changes?</summary>
+      <summary>Track clipboard changes</summary>
       <description>
-        By default, we're tracking those changes.
+        Enabled by default.
       </description>
     </key>
 
     <key name="track-extension-state" type="b">
       <default>false</default>
-      <summary>Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)</summary>
+      <summary>Match the daemon state to the GNOME Shell extension's</summary>
       <description>
-        By default, the daemon state keeps unchanged
+        When enabled, disabling the extension stops the daemon tracking as well.
+        Disabled by default: the daemon state is left alone.
       </description>
     </key>
 
     <key name="trim-items" type="b">
       <default>false</default>
-      <summary>Do we trim the textual items before adding them to history?</summary>
+      <summary>Trim text items before adding them to the history</summary>
       <description>
         Trimming removes the leading and trailing whitespace.
-        By default, items are stored just as they were copied.
+        Disabled by default: items are stored just as they were copied.
       </description>
     </key>
 
@@ -242,17 +244,17 @@
 
     <key name="empty-history-confirmation" type="b">
       <default>true</default>
-      <summary>Do we prompt for confirmation when emptying a history?</summary>
+      <summary>Ask for confirmation before emptying a history</summary>
       <description>
-        By default, we do as it's a destructive action
+        Enabled by default, because emptying a history cannot be undone.
       </description>
     </key>
 
     <key name="experimental-meta-daemon" type="b">
       <default>false</default>
-      <summary>Do we run the experimental in-shell (mutter) daemon from the gnome-shell extension?</summary>
+      <summary>Run the experimental in-shell (mutter) daemon</summary>
       <description>
-        When disabled, the gnome-shell extension is a pure client and the standalone daemon is used instead
+        Disabled by default: the GNOME Shell extension is a pure client and the standalone daemon does the work.
       </description>
     </key>
 
