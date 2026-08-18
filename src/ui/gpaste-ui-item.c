@@ -62,6 +62,26 @@ g_paste_ui_item_set_text_size (GPasteSettings *settings,
     gtk_inscription_set_nat_chars (self->label, size);
 }
 
+/* Keep a colour's preview proportional to a single line of this row's text.
+ * Measure the label rather than the row: the swatch participates in the row's
+ * allocation, so measuring that would make its own size feed back into it. */
+static void
+g_paste_ui_item_update_swatch_size (GPasteUiItem *self)
+{
+    gint minimum;
+    gint natural;
+
+    gtk_widget_measure (GTK_WIDGET (self->label),
+                        GTK_ORIENTATION_VERTICAL,
+                        -1,
+                        &minimum,
+                        &natural,
+                        NULL,
+                        NULL);
+    g_paste_ui_color_swatch_set_size (self->swatch,
+                                      CLAMP ((natural + 7) / 4 * 4, 16, 32));
+}
+
 static void
 g_paste_ui_item_on_images_preview_changed (GPasteSettings *settings,
                                            GParamSpec     *pspec G_GNUC_UNUSED,
@@ -411,6 +431,7 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
      * daemon's. The swatch hides itself for anything GDK cannot read back. */
     g_paste_ui_color_swatch_set_color (self->swatch,
                                        (kind == G_PASTE_ITEM_KIND_COLOR) ? g_paste_client_item_get_value (item) : NULL);
+    g_paste_ui_item_update_swatch_size (self);
 
     if (!self->index)
         g_paste_ui_item_set_text_bold (self, oneline);
@@ -622,6 +643,7 @@ g_paste_ui_item_init (GPasteUiItem *self)
     /* An item is either an image or a colour, never both, so the two previews
      * share the one slot at the end of the row. */
     GtkWidget *swatch = self->swatch = g_paste_ui_color_swatch_new ();
+    g_paste_ui_item_update_swatch_size (self);
 
     GtkWidget *thumbnail_container = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand (thumbnail_container, FALSE);

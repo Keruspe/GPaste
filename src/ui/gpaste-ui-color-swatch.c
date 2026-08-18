@@ -22,11 +22,6 @@
  * the theme by hand.
  */
 
-/* Side of the swatch, in pixels. A constant, not images-preview-size: that
- * setting sizes image thumbnails, and turning image previews off must not take
- * the colours with it. */
-#define G_PASTE_UI_COLOR_SWATCH_SIZE 24
-
 /**
  * g_paste_ui_color_swatch_set_color:
  * @self: the #GtkPicture g_paste_ui_color_swatch_new() made
@@ -71,6 +66,22 @@ g_paste_ui_color_swatch_set_color (GtkWidget   *self,
 }
 
 /**
+ * g_paste_ui_color_swatch_set_size:
+ * @self: the #GtkPicture g_paste_ui_color_swatch_new() made
+ * @size: the side of the swatch, in logical pixels
+ *
+ * Set the swatch's side independently of image preview settings.
+ */
+void
+g_paste_ui_color_swatch_set_size (GtkWidget *self,
+                                  gint       size)
+{
+    g_return_if_fail (GTK_IS_PICTURE (self));
+
+    gtk_widget_set_size_request (self, size, size);
+}
+
+/**
  * g_paste_ui_color_swatch_new:
  *
  * Create the swatch a colour item is shown with, hidden until it is given a
@@ -86,7 +97,6 @@ g_paste_ui_color_swatch_new (void)
 
     /* One pixel stretched over the whole widget, rather than fitted into it. */
     gtk_picture_set_content_fit (GTK_PICTURE (self), GTK_CONTENT_FIT_FILL);
-    gtk_widget_set_size_request (self, G_PASTE_UI_COLOR_SWATCH_SIZE, G_PASTE_UI_COLOR_SWATCH_SIZE);
     gtk_widget_set_halign (self, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (self, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class (self, "frame");

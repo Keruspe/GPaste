@@ -13,10 +13,6 @@ import St from 'gi://St';
 import {GPasteDeleteButton} from './deleteButton.js';
 import {GPasteFavouriteButton} from './favouriteButton.js';
 
-// Side of a colour swatch, in pixels. A constant, unlike an image thumbnail:
-// images-preview-size sizes images, and turning image previews off must not take
-// the colours with it — the same rule the graphical tool follows.
-const SWATCH_SIZE = 16;
 // The grey the swatch is outlined in, so a colour close to the menu behind it is
 // still a visible swatch rather than a hole. Spelled out, where the graphical
 // tool's swatch gets the same line from Adwaita's .frame: that class is GTK's,
@@ -273,6 +269,16 @@ class GPasteItem extends PopupMenuItem {
         });
     }
 
+    _getSwatchSize() {
+        // Measure text, not the menu row: this preview takes part in the row's
+        // allocation, so measuring the row would make the result feed back into
+        // its own size. The padding gives the framed colour the weight of an
+        // icon, while the bounds keep it a compact list decoration.
+        const [, natural] = this.label.get_preferred_height(-1);
+
+        return Math.min(32, Math.max(16, Math.ceil((natural + 4) / 4) * 4));
+    }
+
     _showColor() {
         const color = this._value;
 
@@ -284,10 +290,12 @@ class GPasteItem extends PopupMenuItem {
         if (!color || !/^[a-zA-Z0-9#(),.%\s]+$/.test(color))
             return;
 
+        const size = this._getSwatchSize();
+
         this._previewBin.child = new St.Widget({
             style: `background-color: ${color}; border: 1px solid ${SWATCH_BORDER}; border-radius: 4px; margin-left: 6px;`,
-            width: SWATCH_SIZE,
-            height: SWATCH_SIZE,
+            width: size,
+            height: size,
         });
     }
 

@@ -10,6 +10,9 @@ G_BEGIN_DECLS
 gboolean g_paste_ui_color_swatch_set_color (GtkWidget   *self,
                                             const gchar *color);
 
+void g_paste_ui_color_swatch_set_size (GtkWidget *self,
+                                       gint       size);
+
 GtkWidget *g_paste_ui_color_swatch_new (void);
 
 G_END_DECLS
