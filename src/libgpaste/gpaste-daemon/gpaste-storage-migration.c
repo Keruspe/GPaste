@@ -6,7 +6,6 @@
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
-#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
@@ -267,23 +266,19 @@ g_paste_storage_migration_needed (GPasteSettings *settings)
     return g_paste_settings_get_storage_backend_revision (settings) != G_PASTE_STORAGE_BACKEND_REVISION;
 }
 
-/* Whether @written faithfully reproduces @source: same kind, and same content
- * — an image's identity is its checksum (its value is a per-backend cache
- * path), everything else compares by real value. This deliberately differs from
- * g_paste_item_equals(): that dedup predicate ignores the kind and treats two
- * distinct passwords as never equal, whereas migration must confirm a password's
- * real value round-tripped (an encrypted backend persists it) — so it is not a
- * drop-in replacement here. */
+/* Whether @written faithfully reproduces @source: same kind, same content. The
+ * real value carries that for every kind, an image's being its checksum, which
+ * is the same string whichever backend the bytes came back from. This
+ * deliberately differs from g_paste_item_equals(): that dedup predicate ignores
+ * the kind and treats two distinct passwords as never equal, whereas migration
+ * must confirm a password's real value round-tripped (an encrypted backend
+ * persists it) — so it is not a drop-in replacement here. */
 static gboolean
 imported_item_matches (GPasteItem *source,
                        GPasteItem *written)
 {
     if (g_paste_item_get_kind (source) != g_paste_item_get_kind (written))
         return FALSE;
-
-    if (G_PASTE_IS_IMAGE_ITEM (source))
-        return g_paste_str_equal (g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (source)),
-                                  g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (written)));
 
     return g_paste_str_equal (g_paste_item_get_real_value (source), g_paste_item_get_real_value (written));
 }

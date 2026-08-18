@@ -7,7 +7,6 @@
 
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
-#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
@@ -148,13 +147,20 @@ g_paste_history_private_elect_new_biggest (GPasteHistory *self)
     }
 }
 
+/* The item goes, and with it whatever the storage backend materialized outside
+ * its own store for it -- an image's cache file, for the flavours that keep
+ * one. Which of them did is the backend's own business: a database blob has
+ * nothing here to clean up. */
 static void
-g_paste_history_item_free (gpointer data)
+g_paste_history_item_free (GPasteHistory *self,
+                           gpointer       data)
 {
     g_autoptr (GPasteItem) item = data;
 
-    if (G_PASTE_IS_IMAGE_ITEM (item))
-        g_paste_image_item_delete_files (g_paste_item_get_value (item));
+    /* A history that has not been named yet was never persisted, so no backend
+     * has written anything for this item to begin with. */
+    if (self->name)
+        g_paste_storage_backend_drop_item_data (self->backend, self->name, item);
 }
 
 /* Drop the item at @index from the model. The array's ref is *stolen* rather
@@ -178,7 +184,7 @@ g_paste_history_private_remove (GPasteHistory *self,
     g_ptr_array_steal_index (self->history, index);
 
     if (remove_leftovers)
-        g_paste_history_item_free (item);
+        g_paste_history_item_free (self, item);
 }
 
 static void
@@ -549,13 +555,6 @@ _g_paste_history_add (GPasteHistory *self,
             }
         }
     }
-
-    /* An image's canonical cache path is per history, so the same image copied
-     * in several histories never shares (and never cross-deletes) a file:
-     * anchor it under ours before it gets persisted. A select re-anchors to
-     * the same path, and loaded items keep the path they were stored with. */
-    if (G_PASTE_IS_IMAGE_ITEM (item) && new_selection)
-        g_paste_image_item_set_history (G_PASTE_IMAGE_ITEM (item), self->name);
 
     g_ptr_array_insert (self->history, 0, item);
     g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);

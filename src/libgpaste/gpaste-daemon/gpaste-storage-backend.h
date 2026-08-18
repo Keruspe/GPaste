@@ -64,6 +64,17 @@ struct _GPasteStorageBackendClass
                                       const gchar          *name,
                                       const gchar          *new_passphrase);
 
+    /*< protected, optional: data materialized outside the store >*/
+    /* Drop whatever this backend wrote for @item beyond the history itself --
+     * an image's cache file, and so far nothing else. Only a backend that puts
+     * an item's data beside its store rather than inside it has any: a database
+     * blob goes when its row does. Called once the history has dropped the
+     * item for good, so a backend keeping everything in one place implements
+     * nothing here. */
+    void     (*drop_item_data)       (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      GPasteItem           *item);
+
     /*< protected, optional: incremental updates >*/
     /* @history is the whole history as it now stands, for reconciling whatever
      * rode along with the add -- a dedup, a grown line, an eviction. It is
@@ -127,6 +138,9 @@ void     g_paste_storage_backend_replace_item         (GPasteStorageBackend *sel
 void     g_paste_storage_backend_clear_history        (GPasteStorageBackend *self,
                                                        const gchar          *name,
                                                        const GList          *history);
+void     g_paste_storage_backend_drop_item_data       (GPasteStorageBackend *self,
+                                                       const gchar          *name,
+                                                       GPasteItem           *item);
 
 gboolean g_paste_storage_backend_is_incremental       (GPasteStorageBackend *self);
 

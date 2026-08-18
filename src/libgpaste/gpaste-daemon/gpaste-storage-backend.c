@@ -5,7 +5,6 @@
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
-#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -365,7 +364,7 @@ static gboolean
 _g_paste_storage_backend_delete_history_images (const gchar *name,
                                                 GError     **error)
 {
-    g_autofree gchar *images_dir_path = g_paste_image_item_get_images_dir (name);
+    g_autofree gchar *images_dir_path = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
     g_autoptr (GError) failure = NULL;
     /* A history that never held an image has no directory to sweep, and comes
@@ -644,6 +643,31 @@ g_paste_storage_backend_clear_history (GPasteStorageBackend *self,
     g_return_if_fail (name);
 
     G_PASTE_STORAGE_BACKEND_UPDATE (clear_history);
+}
+
+/**
+ * g_paste_storage_backend_drop_item_data:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history the item was dropped from
+ * @item: (transfer none): the #GPasteItem being dropped for good
+ *
+ * Drop the data this backend materialized for @item outside its own store --
+ * an image's cache file today, nothing else. A backend that keeps an item's
+ * data inside its store has none of this to do, and does nothing.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_drop_item_data (GPasteStorageBackend *self,
+                                        const gchar          *name,
+                                        GPasteItem           *item)
+{
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
+    g_return_if_fail (G_PASTE_IS_ITEM (item));
+
+    GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+
+    if (klass->drop_item_data)
+        klass->drop_item_data (self, name, item);
 }
 
 /**

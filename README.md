@@ -11,8 +11,9 @@ explains what clipboard managers are for.
 
 - **Persistent history** across sessions, with several named histories you can
   switch between, back up and delete independently.
-- **Everything you copy**: plain text, rich text and HTML, images (kept as
-  files and de-duplicated by checksum), URIs and colours.
+- **Everything you copy**: plain text, rich text and HTML, images (de-duplicated
+  by checksum, kept as files or as database blobs depending on the storage
+  backend), URIs and colours.
 - **Encryption at rest** — an optional libsodium-backed history, with the
   passphrase optionally kept in the keyring.
 - **Pluggable storage**: an XML file, a per-history SQLite database that

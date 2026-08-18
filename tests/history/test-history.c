@@ -290,7 +290,8 @@ test_image_capture_does_not_write (void)
 }
 
 /* The plain file backend materializes an image's cache file from the item
- * bytes when writing its XML, and reads it back by path. */
+ * bytes when writing its XML, and reads it back by path -- the item itself
+ * knowing only its checksum until a backend hands it a file. */
 static void
 test_file_image_materialization (void)
 {
@@ -302,11 +303,18 @@ test_file_image_materialization (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (4, 5, 6);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
-    const gchar *cache_path = g_paste_item_get_value (items->data);
+    /* Captured, not persisted: its value says which image it is, and no file
+     * holds it yet. */
+    const gchar *checksum = g_paste_image_item_get_checksum (items->data);
+
+    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, checksum);
+    g_assert_null (g_paste_image_item_get_cache_path (items->data));
+
+    g_autofree gchar *cache_path = g_paste_file_backend_image_path (name, checksum);
 
     g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
 
@@ -326,19 +334,21 @@ test_file_image_materialization (void)
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
-    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, cache_path);
+    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, checksum);
+    /* Read back off that file, and it says so. */
+    g_assert_cmpstr (g_paste_image_item_get_cache_path (loaded->data), ==, cache_path);
 
     g_list_free_full (items, g_object_unref);
 }
 
-/* The history re-anchors a captured image under its own images directory
- * before it is persisted. */
+/* A captured image names no file: its value is its checksum, and where its
+ * bytes end up is the storage backend's to decide when it persists them. */
 static void
-test_history_anchors_image (void)
+test_history_image_names_no_file (void)
 {
     g_autoptr (GPasteHistory) history = make_plain_history ();
 
-    g_paste_history_load (history, "anchor-test");
+    g_paste_history_load (history, "capture-test");
 
     g_autoptr (GBytes) png = test_png_bytes_colored (13, 14, 15);
     g_autoptr (GError) error = NULL;
@@ -349,11 +359,11 @@ test_history_anchors_image (void)
     g_paste_history_add (history, g_paste_image_item_new (texture));
 
     GPasteItem *item = g_paste_history_get (history, 0);
-    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
-    g_autofree gchar *expected_dir = g_build_filename (history_dir, "images", "anchor-test", NULL);
-    g_autofree gchar *dir = g_path_get_dirname (g_paste_item_get_value (item));
+    const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item));
 
-    g_assert_cmpstr (dir, ==, expected_dir);
+    g_assert_nonnull (checksum);
+    g_assert_cmpstr (g_paste_item_get_value (item), ==, checksum);
+    g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (item)));
 }
 
 /* The same image copied in two histories gets one file each: evicting or
@@ -367,15 +377,18 @@ test_file_image_per_history (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (16, 17, 18);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes ("per-history-a", png, date, NULL));
-    GList *items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes ("per-history-b", png, date, NULL));
+    GList *items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    GList *items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items_a->data);
     g_assert_nonnull (items_b->data);
 
-    const gchar *path_a = g_paste_item_get_value (items_a->data);
-    const gchar *path_b = g_paste_item_get_value (items_b->data);
+    g_autofree gchar *path_a = g_paste_file_backend_image_path ("per-history-a",
+                                                                g_paste_image_item_get_checksum (items_a->data));
+    g_autofree gchar *path_b = g_paste_file_backend_image_path ("per-history-b",
+                                                                g_paste_image_item_get_checksum (items_b->data));
 
+    /* The same pixels in two histories: one file each. */
     g_assert_cmpstr (path_a, !=, path_b);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
@@ -414,7 +427,7 @@ test_file_backup_owns_images (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (19, 20, 21);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes ("backup-src", png, date, NULL));
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -424,11 +437,11 @@ test_file_backup_owns_images (void)
     /* What g_paste_history_save does for BackupHistory: same items, new name. */
     g_paste_storage_backend_write_history (backend, "backup-dst", items);
 
-    /* The backup got its own copy; the item still belongs to the source. */
-    const gchar *src_path = g_paste_item_get_value (items->data);
-    g_autofree gchar *dst_path = g_paste_image_item_get_path_for_history (G_PASTE_IMAGE_ITEM (items->data), "backup-dst");
+    /* The backup got its own copy, under its own name. */
+    const gchar *checksum = g_paste_image_item_get_checksum (items->data);
+    g_autofree gchar *src_path = g_paste_file_backend_image_path ("backup-src", checksum);
+    g_autofree gchar *dst_path = g_paste_file_backend_image_path ("backup-dst", checksum);
 
-    g_assert_true (g_strstr_len (src_path, -1, "backup-src") != NULL);
     g_assert_true (g_file_test (src_path, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (dst_path, G_FILE_TEST_EXISTS));
 
@@ -442,10 +455,101 @@ test_file_backup_owns_images (void)
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
-    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, dst_path);
+    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, checksum);
+    /* Read out of the backup's own copy, not the source's. */
+    g_assert_cmpstr (g_paste_image_item_get_cache_path (loaded->data), ==, dst_path);
 
     g_list_free_full (items, g_object_unref);
 }
+
+/* Dropping an image from a history takes the file the backend materialized for
+ * it: whoever wrote it is the one that deletes it, which for the file flavours
+ * is the cache file under the history's own images directory. */
+static void
+test_file_eviction_deletes_image (void)
+{
+    const gchar *name = "evict-image";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (25, 26, 27);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+    g_assert_nonnull (items->data);
+
+    g_autofree gchar *image_path = g_paste_file_backend_image_path (name,
+                                                                    g_paste_image_item_get_checksum (items->data));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, name);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    g_paste_history_remove (history, 0);
+
+    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+/* The same eviction against a database: the image was never a file, so nothing
+ * goes looking for one -- the item carries no cache path, and the backend that
+ * stored it as a blob has nothing beside its store to clean up. */
+static void
+test_sqlite_eviction_deletes_no_image (void)
+{
+    const gchar *name = "sqlite-evict-image";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (28, 29, 30);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+    g_assert_nonnull (items->data);
+
+    g_autofree gchar *image_path = g_paste_file_backend_image_path (name,
+                                                                    g_paste_image_item_get_checksum (items->data));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    /* Storing it wrote no file, here or anywhere. */
+    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, name);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (g_paste_history_get (history, 0))));
+
+    g_paste_history_remove (history, 0);
+
+    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+}
+#endif
 
 /* GPasteClipboardContent is a tagged union, so clearing it has to leave the
  * union readable and not just mark it dead: the set_*_take() helpers assign
@@ -1414,7 +1518,7 @@ test_encrypted_roundtrip (void)
     GList *items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
-    items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+    items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_paste_settings_set_images_support (settings, TRUE);
     g_paste_storage_backend_write_history (backend, name, items);
@@ -1433,8 +1537,9 @@ test_encrypted_roundtrip (void)
 
     /* The image was materialized as an encrypted ".pngs" side file: the
      * referenced plaintext path stays absent and no PNG marker is in clear. */
-    const gchar *cache_path = g_paste_item_get_value (g_list_nth_data (items, 2));
-    g_autofree gchar *encrypted_image_path = g_strconcat (cache_path, "s", NULL);
+    g_autofree gchar *cache_path = g_paste_file_backend_image_path (name,
+                                                                    g_paste_image_item_get_checksum (g_list_nth_data (items, 2)));
+    g_autofree gchar *encrypted_image_path = g_paste_file_backend_encrypted_path (cache_path);
 
     g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (encrypted_image_path, G_FILE_TEST_EXISTS));
@@ -1590,7 +1695,7 @@ test_encrypted_rekey (void)
 
             items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
             items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
-            items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+            items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
             g_list_free_full (items, g_object_unref);
@@ -2145,7 +2250,7 @@ test_sqlite_migration_keeps_destination_images (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (22, 23, 24);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -2156,7 +2261,8 @@ test_sqlite_migration_keeps_destination_images (void)
     g_paste_storage_backend_write_history (source, name, items);
     g_paste_storage_backend_write_history (destination, name, items);
 
-    const gchar *image_path = g_paste_item_get_value (items->data);
+    g_autofree gchar *image_path = g_paste_file_backend_image_path (name,
+                                                                    g_paste_image_item_get_checksum (items->data));
 
     g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
 
@@ -2189,13 +2295,16 @@ test_sqlite_image_blob (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (10, 11, 12);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
-    /* The bytes-built item never touches the disk: its canonical cache file
-     * does not exist. */
-    const gchar *cache_path = g_paste_item_get_value (items->data);
+    /* The bytes-built item never touches the disk: it names no file at all, and
+     * the one the file backend would have written for it does not exist. */
+    g_assert_null (g_paste_image_item_get_cache_path (items->data));
+
+    g_autofree gchar *cache_path = g_paste_file_backend_image_path (name,
+                                                                    g_paste_image_item_get_checksum (items->data));
 
     g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
 
@@ -2227,7 +2336,8 @@ test_sqlite_image_blob (void)
                      ==, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (items->data)));
 
     /* The texture rebuilds from the bytes, with no file anywhere. */
-    g_assert_false (g_file_test (g_paste_item_get_value (read), G_FILE_TEST_EXISTS));
+    g_assert_null (g_paste_image_item_get_cache_path (image));
+    g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_ACTIVE);
     g_assert_nonnull (g_paste_image_item_get_image (image));
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_IDLE);
@@ -2517,7 +2627,7 @@ test_encrypted_sqlite_roundtrip (void)
     items = g_list_append (items, text);
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(0,255,0)"));
-    items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+    items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, master);
@@ -2687,7 +2797,7 @@ test_encrypted_sqlite_rekey (void)
 
             items = g_list_append (items, text);
             items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
-            items = g_list_append (items, g_paste_image_item_new_from_bytes (name, png, date, NULL));
+            items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
             g_list_free_full (items, g_object_unref);
@@ -2825,9 +2935,10 @@ main (int argc, char *argv[])
 
     g_test_add_func ("/history/image_capture_does_not_write", test_image_capture_does_not_write);
     g_test_add_func ("/history/file_image_materialization", test_file_image_materialization);
-    g_test_add_func ("/history/history_anchors_image", test_history_anchors_image);
+    g_test_add_func ("/history/history_image_names_no_file", test_history_image_names_no_file);
     g_test_add_func ("/history/file_image_per_history", test_file_image_per_history);
     g_test_add_func ("/history/file_backup_owns_images", test_file_backup_owns_images);
+    g_test_add_func ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
     g_test_add_func ("/history/content_kind_transitions", test_content_kind_transitions);
     g_test_add_func ("/history/same_display_string_keeps_size", test_same_display_string_keeps_size);
     g_test_add_func ("/history/add_get_length", test_add_get_length);
@@ -2871,6 +2982,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
     g_test_add_func ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
     g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
+    g_test_add_func ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
     g_test_add_func ("/history/sqlite_schema_migration", test_sqlite_schema_migration);

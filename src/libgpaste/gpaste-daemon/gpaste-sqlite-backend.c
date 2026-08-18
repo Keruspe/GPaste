@@ -5,6 +5,7 @@
 
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
+#include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
@@ -841,9 +842,9 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
 }
 
 /* Bind an image item's PNG for the `image` blob column: from the bytes the
- * item carries, falling back to reading its on-disk cache file for a path-based
- * item that carries none (e.g. imported from the file backend). No bytes
- * anywhere leaves the column NULL. */
+ * item carries, falling back to the file it was read from for an item that
+ * carries none (e.g. imported from the file backend). No bytes anywhere leaves
+ * the column NULL. */
 static void
 g_paste_sqlite_backend_bind_image (sqlite3_stmt    *stmt,
                                    gint             position,
@@ -861,13 +862,14 @@ g_paste_sqlite_backend_bind_image (sqlite3_stmt    *stmt,
         return;
     }
 
+    const gchar *cache_path = g_paste_image_item_get_cache_path (image);
     g_autofree gchar *data = NULL;
     gsize length = 0;
 
     /* Best effort, like the file backend's own materialization: an item whose
-     * cache file has gone is stored without its image rather than not at all,
-     * and the column simply stays NULL. */
-    if (g_file_get_contents (g_paste_item_get_value (G_PASTE_ITEM ((gpointer) image)), &data, &length, NULL))
+     * cache file has gone -- or that never had one -- is stored without its
+     * image rather than not at all, and the column simply stays NULL. */
+    if (cache_path && g_file_get_contents (cache_path, &data, &length, NULL))
         g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
 }
 
@@ -1105,7 +1107,6 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
 
 static GPasteItem *
 g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
-                                  const gchar  *history_name,
                                   const guchar *key,
                                   gboolean      images_support)
 {
@@ -1140,9 +1141,11 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
             g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 4));
             const gchar *checksum = (const gchar *) sqlite3_column_text (stmt, 5);
 
-            /* The stored blob is the source of truth; the path-based fallback
-             * only covers a row whose image could not be materialized (a file
-             * import whose cache file had already gone). */
+            /* The stored blob is the source of truth, and an item built from
+             * one holds no file: nothing on disk backs a row. The path-based
+             * fallback only covers a row whose image was never turned into a
+             * blob (a file import whose cache file had already gone), and whose
+             * value is therefore still the path it was imported with. */
             if (sqlite3_column_type (stmt, 7) != SQLITE_NULL)
             {
                 gsize length = 0;
@@ -1152,7 +1155,7 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
                 {
                     g_autoptr (GBytes) png = g_bytes_new_take (data, length);
 
-                    return g_paste_image_item_new_from_bytes (history_name, png, date, checksum);
+                    return g_paste_image_item_new_from_bytes (png, date, checksum);
                 }
 
                 g_warning ("sqlite: failed to decrypt an image; falling back to its cache file");
@@ -1161,10 +1164,12 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
             return g_paste_image_item_new_from_file (value, date, checksum);
         }
 
-        /* Images are disabled (or the row carries no date): drop any leftover
-         * materialized image — both the plain cache file and its encrypted side
-         * file — via the shared helper, as the file backend does. */
-        g_paste_image_item_delete_files (value);
+        /* Images are disabled (or the row carries no date): drop whatever an
+         * older, file-backed life left on disk. Only such a row names a file at
+         * all — one written here stores its image as a blob and its value as
+         * the checksum, which is nobody's path. */
+        if (g_path_is_absolute (value))
+            g_paste_file_backend_delete_image (value);
 
         return NULL;
     }
@@ -1236,7 +1241,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
     while (sqlite3_step (stmt) == SQLITE_ROW)
     {
-        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, name, key, images_support);
+        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support);
 
         if (!item)
             continue;

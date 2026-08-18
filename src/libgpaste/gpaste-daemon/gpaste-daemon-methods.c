@@ -304,21 +304,25 @@ g_paste_daemon_methods_get_image (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
     G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_IMAGE_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "Provided uuid doesn't match an image item.", NULL);
 
-    /* Hand the bytes over so clients never dereference the item's path
-     * themselves: how and where the image is stored stays the daemon's
-     * business. The item carries its PNG when it came from a blob-storing
-     * backend (or a fresh capture); older path-based items read their file. */
-    GBytes *png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
+    /* Hand the bytes over so clients never go looking for a file themselves:
+     * how and where the image is stored stays the daemon's business. The item
+     * carries its PNG when it came from a blob-storing backend (or a fresh
+     * capture); one read off a cache file reads that file. */
+    GPasteImageItem *image = G_PASTE_IMAGE_ITEM (item);
+    GBytes *png = g_paste_image_item_get_png_bytes (image);
     g_autoptr (GBytes) bytes = NULL;
 
     if (png)
         bytes = g_bytes_ref (png);
     else
     {
+        const gchar *cache_path = g_paste_image_item_get_cache_path (image);
         gchar *data = NULL;
         gsize length = 0;
 
-        if (!g_file_get_contents (g_paste_item_get_value (item), &data, &length, error))
+        G_PASTE_DBUS_ASSERT_FULL (cache_path, G_PASTE_ERROR_FAILED, "This item's image is nowhere to be read from.", NULL);
+
+        if (!g_file_get_contents (cache_path, &data, &length, error))
             return NULL;
 
         bytes = g_bytes_new_take (data, length);
