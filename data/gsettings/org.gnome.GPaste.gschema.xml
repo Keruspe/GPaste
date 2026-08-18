@@ -80,8 +80,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;G'</default>
       <summary>The keyboard shortcut to launch the graphical interface</summary>
       <description>
-        By default, hitting ctrl + alt + g does that ("&lt;Ctrl&gt;&lt;Alt&gt;G").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
@@ -89,8 +88,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;S'</default>
       <summary>The keyboard shortcut to mark the active item as being a password</summary>
       <description>
-        By default, hitting ctrl + alt + s will mark the active item as being a password ("&lt;Ctrl&gt;&lt;Alt&gt;S").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
@@ -134,8 +132,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
       <summary>The keyboard shortcut to delete the first element in history</summary>
       <description>
-        By default, hitting ctrl + alt + v does that ("&lt;Ctrl&gt;&lt;Alt&gt;V").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
@@ -160,8 +157,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
       <summary>The keyboard shortcut to display the menu</summary>
       <description>
-        By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
@@ -185,8 +181,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;O'</default>
       <summary>The keyboard shortcut to sync the clipboard to the primary selection</summary>
       <description>
-        By default, hitting ctrl + alt + o syncs them ("&lt;Ctrl&gt;&lt;Alt&gt;O").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
@@ -194,8 +189,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;P'</default>
       <summary>The keyboard shortcut to sync the primary selection to the clipboard</summary>
       <description>
-        By default, hitting ctrl + alt + p syncs them ("&lt;Ctrl&gt;&lt;Alt&gt;P").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
@@ -237,8 +231,7 @@
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;U'</default>
       <summary>The keyboard shortcut to upload the first element in history to a pastebin service</summary>
       <description>
-        By default, hitting ctrl + alt + u does that ("&lt;Ctrl&gt;&lt;Alt&gt;U").
-        An empty string here disables this functionality.
+        An empty string disables this shortcut.
       </description>
     </key>
 
