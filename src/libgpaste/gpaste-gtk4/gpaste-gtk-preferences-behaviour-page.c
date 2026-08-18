@@ -40,12 +40,12 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
 
     if (g_paste_util_has_gnome_shell ())
     {
-        group = g_paste_gtk_preferences_group_new ("GNOME shell");
+        group = g_paste_gtk_preferences_group_new ("GNOME Shell");
 
         /* "extension-enabled" is derived from the shell schema, not a plain key,
          * so it has no default to reset to: bind it without a reset suffix. */
         AdwSwitchRow *extension_enabled_switch = ADW_SWITCH_ROW (adw_switch_row_new ());
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (extension_enabled_switch), _("Enable the gnome-shell extension"));
+        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (extension_enabled_switch), _("Enable the GNOME Shell extension"));
         g_object_bind_property (settings, G_PASTE_EXTENSION_ENABLED_SETTING, extension_enabled_switch, "active",
                                 G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), GTK_WIDGET (extension_enabled_switch));
