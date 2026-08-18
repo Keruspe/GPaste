@@ -443,6 +443,30 @@ g_paste_history_private_check_size (GPasteHistory *self)
         g_paste_history_private_elect_new_biggest (self);
 }
 
+/* Both caps, applied when a cap itself moves rather than the history under it.
+ * The same trim g_paste_history_on_loaded () performs, saved for the same
+ * reason: an eviction frees the backing files of what it drops, so a store left
+ * pointing at them is a history that cannot be read back -- and every client
+ * would go on showing rows the daemon no longer has until the next clipboard
+ * change came to redraw them. Which is also why a flushed or unreadable history
+ * is left alone: neither can be saved (the first belongs to a successor daemon
+ * now, the second must never be written over), so a trim there would delete the
+ * images a store still points at. */
+static void
+g_paste_history_private_trim (GPasteHistory *self)
+{
+    if (self->stopped || self->unreadable)
+        return;
+
+    guint length_before = self->history->len;
+
+    g_paste_history_private_check_size (self);
+    g_paste_history_private_check_memory_usage (self);
+
+    if (self->history->len != length_before)
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+}
+
 /* A line grows as it is typed or selected, which only plain text and uri lists
  * do. An image has no meaningful prefix, and a password is never merged into
  * its neighbour. */
@@ -1463,26 +1487,17 @@ g_paste_history_history_name_changed (GPasteHistory *self)
  * than one undetailed handler dispatching on the key, so the history is never
  * woken for the twenty-odd settings that mean nothing to it. */
 
+/* Either cap: both are answered by applying both, since a trim is what the
+ * history owes each of them at all times. */
 static void
-g_paste_history_on_max_history_size_changed (GPasteSettings *settings G_GNUC_UNUSED,
-                                             GParamSpec     *pspec G_GNUC_UNUSED,
-                                             gpointer        user_data)
+g_paste_history_on_cap_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                                GParamSpec     *pspec G_GNUC_UNUSED,
+                                gpointer        user_data)
 {
     GPasteHistory *self = user_data;
     G_PASTE_LOCK_HISTORY;
 
-    g_paste_history_private_check_size (self);
-}
-
-static void
-g_paste_history_on_max_memory_usage_changed (GPasteSettings *settings G_GNUC_UNUSED,
-                                             GParamSpec     *pspec G_GNUC_UNUSED,
-                                             gpointer        user_data)
-{
-    GPasteHistory *self = user_data;
-    G_PASTE_LOCK_HISTORY;
-
-    g_paste_history_private_check_memory_usage (self);
+    g_paste_history_private_trim (self);
 }
 
 static void
@@ -1742,9 +1757,9 @@ g_paste_history_new (GPasteSettings *settings)
      * the size and memory limits below do. */
     GSignalGroup *settings_signals = self->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals, "notify::" G_PASTE_MAX_HISTORY_SIZE_SETTING,
-                            G_CALLBACK (g_paste_history_on_max_history_size_changed), self);
+                            G_CALLBACK (g_paste_history_on_cap_changed), self);
     g_signal_group_connect (settings_signals, "notify::" G_PASTE_MAX_MEMORY_USAGE_SETTING,
-                            G_CALLBACK (g_paste_history_on_max_memory_usage_changed), self);
+                            G_CALLBACK (g_paste_history_on_cap_changed), self);
     g_signal_group_connect (settings_signals, "notify::" G_PASTE_HISTORY_NAME_SETTING,
                             G_CALLBACK (g_paste_history_on_history_name_changed), self);
     g_signal_group_set_target (settings_signals, settings);

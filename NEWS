@@ -31,6 +31,7 @@ NEW in 51.0 (UNRELEASED)
 - Fix every GNOME Shell overview result disappearing when a single item had been evicted from the history between the search and the results being described
 - Fix the graphical tool crashing on startup, showing a search's results over a newer one's, and letting a D-Bus reply write into a window that had been closed while the call was in flight
 - Fix the graphical tool opening with the keyboard focus in the sidebar's "Switch to history" entry, which swallowed what you typed instead of letting it start a search: the history list takes the focus as it appears
+- Fix lowering the history size or memory limit dropping items without saving or announcing it, which left every open client showing rows the daemon no longer had, and a stored history referencing image files it had just deleted
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
 NEW in 50.8 (10/08/2026)
