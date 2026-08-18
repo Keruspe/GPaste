@@ -280,12 +280,12 @@ _g_paste_image_item_new (const gchar *cache_path,
     /* Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention. */
     g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
     /* Translators: an image item's dimensions and capture date, shown in history
-     * behind a "[Image, ...]" the drawing client puts around it. %d is width,
-     * %d is height, %s is the formatted date. */
-    g_autofree gchar *display_string = g_strdup_printf (_("%d x %d (%s)"),
-                                                                  gdk_texture_get_width (self->image),
-                                                                  gdk_texture_get_height (self->image),
-                                                                  formatted_date);
+     * behind a "[Image, ...]" the drawing client puts around it. %1$d is the
+     * width, %2$d the height, %3$s the formatted date; reorder them freely. */
+    g_autofree gchar *display_string = g_strdup_printf (_("%1$d × %2$d (%3$s)"),
+                                                        gdk_texture_get_width (self->image),
+                                                        gdk_texture_get_height (self->image),
+                                                        formatted_date);
     g_paste_item_set_display_string (item, g_steal_pointer (&display_string));
 
     if (image)

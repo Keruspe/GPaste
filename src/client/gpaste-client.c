@@ -144,7 +144,8 @@ spawn (const gchar *app)
 
     if (!g_paste_util_spawn_sync (app, &error))
     {
-        g_critical ("%s %s: %s", _("Couldn't spawn"), app, error->message);
+        /* Translators: %s is the program GPaste tried to start, then the reason it could not. */
+        g_critical (_("Couldn't spawn %s: %s"), app, error->message);
         return EXIT_FAILURE;
     }
 
@@ -270,7 +271,7 @@ g_paste_daemon_reexec (Context *ctx,
     if (!reexec_fallback (g_paste_util_reexecute_daemon (ctx->client, error), error))
         return EXIT_FAILURE;
 
-    printf (_("Successfully reexecuted the daemon\n"));
+    printf ("%s\n", _("Successfully re-executed the daemon"));
 
     return EXIT_SUCCESS;
 }
@@ -284,7 +285,7 @@ g_paste_migrate (Context *ctx,
     if (!reexec_fallback (g_paste_util_trigger_storage_migration (ctx->client, error), error))
         return EXIT_FAILURE;
 
-    printf (_("Successfully triggered the storage migration\n"));
+    printf ("%s\n", _("Successfully triggered the storage migration"));
 
     return EXIT_SUCCESS;
 }
@@ -301,7 +302,7 @@ g_paste_change_passphrase (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf (_("Successfully triggered the passphrase change\n"));
+    printf ("%s\n", _("Successfully triggered the passphrase change"));
 
     return EXIT_SUCCESS;
 }
@@ -773,7 +774,8 @@ show_help (void)
     }
 
     /* Not a verb: the item comes in on stdin. */
-    printf ("  %s | %s: %s\n", _("whatever"), progname, _("set the output of whatever to clipboard"));
+    /* Translators: the metavariable standing for any command the user pipes into GPaste. */
+    printf ("  %s | %s: %s\n", _("<command>"), progname, _("copy the output of <command> to the clipboard"));
 
     printf ("\n");
     printf (_("Convenience options:"));
