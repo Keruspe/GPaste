@@ -98,7 +98,7 @@ _gpaste-client_subcommands() {
         {select,set,s}:"Select an element of the history"
         {set-password,sp}:"Mark an item as being a password"
         {settings,preferences,p}:"Launch the configuration tool"
-        show-history:"Make the applet or extension display the history"
+        show-history:"Make the GNOME Shell extension display the history"
         {start,daemon,d}:"Start tracking clipboard changes"
         {stop,quit,q}:"Stop tracking clipboard changes"
         {unfavourite,unfav}:"Unpin an item, letting the history drop it again"

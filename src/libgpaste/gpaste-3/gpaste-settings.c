@@ -569,7 +569,7 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
 /**
  * g_paste_settings_set_track_extension_state:
  * @self: a #GPasteSettings instance
- * @value: whether to stop tracking or not the clipboard changes when an applet exits
+ * @value: whether to stop tracking or not the clipboard changes when the GNOME Shell extension is disabled
  *
  * Change the "track-extension-state" setting
  */

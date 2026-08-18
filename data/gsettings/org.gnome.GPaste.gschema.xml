@@ -14,7 +14,7 @@
       <default>80</default>
       <summary>Max size of an element when displaying it</summary>
       <description>
-        The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
+        Anything past that length is replaced by "…" when an element is shown in the history, and newlines and tabs are shown as spaces. 0 disables the limit.
       </description>
     </key>
 
@@ -226,8 +226,8 @@
       <default>false</default>
       <summary>Do we trim the textual items before adding them to history?</summary>
       <description>
-        Trimming means removing all trailing and ending spaces.
-        By default, we're letting them as-is.
+        Trimming removes the leading and trailing whitespace.
+        By default, items are stored just as they were copied.
       </description>
     </key>
 
