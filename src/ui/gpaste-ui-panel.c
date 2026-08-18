@@ -356,7 +356,7 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
 
     const gchar *history = g_paste_ui_panel_history_get_history (item);
     g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
-    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, _("Under which name do you want to backup this history?")));
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, _("Under which name do you want to back up this history?")));
     GtkWidget *entry = gtk_entry_new ();
 
     gtk_editable_set_text (GTK_EDITABLE (entry), default_name);

@@ -19,13 +19,13 @@ g_paste_gtk_preferences_images_page_new (GPasteSettings *settings)
 
     AdwPreferencesPage *self = ADW_PREFERENCES_PAGE (g_object_new (ADW_TYPE_PREFERENCES_PAGE,
                                                                    "name", "images",
-                                                                   "title", _("Images settings"),
+                                                                   "title", _("Image settings"),
                                                                    "icon-name", "image-x-generic",
                                                                    NULL));
 
-    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Images settings"));
+    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Image settings"));
     g_paste_gtk_preferences_group_add_boolean_setting (group,
-                                                       _("Images support"),
+                                                       _("Image support"),
                                                        G_PASTE_IMAGES_SUPPORT_SETTING,
                                                        settings);
     g_paste_gtk_preferences_group_add_boolean_setting (group,

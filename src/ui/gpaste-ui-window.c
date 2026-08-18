@@ -399,7 +399,7 @@ build_merge_bar (GPasteUiWindow *self)
     add_separator_choice (GTK_BOX (box), self, _("New line"), "\n");
     add_separator_choice (GTK_BOX (box), self, _("Space"), " ");
     add_separator_choice (GTK_BOX (box), self, _("Comma"), ", ");
-    add_separator_choice (GTK_BOX (box), self, _("Tabulation"), "\t");
+    add_separator_choice (GTK_BOX (box), self, _("Tab"), "\t");
 
     gtk_box_append (GTK_BOX (box), gtk_separator_new (GTK_ORIENTATION_HORIZONTAL));
 

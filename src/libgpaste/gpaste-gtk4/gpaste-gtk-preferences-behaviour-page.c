@@ -51,7 +51,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), GTK_WIDGET (extension_enabled_switch));
 
         AdwSwitchRow *track_extension_state_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
-                                                                                                       _("Sync the daemon state with the extension's one"),
+                                                                                                       _("Match the daemon state to the extension's"),
                                                                                                        G_PASTE_TRACK_EXTENSION_STATE_SETTING,
                                                                                                        settings);
         adw_action_row_set_subtitle (ADW_ACTION_ROW (track_extension_state_switch),
@@ -67,7 +67,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
         adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
     }
 
-    group = g_paste_gtk_preferences_group_new (_("Clipboards synchronization"));
+    group = g_paste_gtk_preferences_group_new (_("Clipboard synchronization"));
     g_paste_gtk_preferences_group_add_boolean_setting (group,
                                                        _("Primary selection affects history"),
                                                        G_PASTE_PRIMARY_TO_HISTORY_SETTING,

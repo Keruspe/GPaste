@@ -73,10 +73,10 @@ _gpaste-client_subcommands() {
     subcommands=(
         about:"Display the about dialog"
         {add,a}:"Set text to clipboard"
-        {add-password,ap}:"Add a name - password couple to the clipboard"
-        {backup-history,bh}:"Backup current history"
+        {add-password,ap}:"Add a name / password pair to the clipboard"
+        {backup-history,bh}:"Back up the current history"
         change-passphrase:"Change the passphrase of the encrypted history"
-        {daemon-reexec,dr}:"Reexecute the daemon"
+        {daemon-reexec,dr}:"Re-execute the daemon"
         {daemon-version,dv}:"Display the daemon version"
         {delete,del,d,remove,rm}:"Delete an element of the history"
         {delete-history,dh}:"Delete a history"

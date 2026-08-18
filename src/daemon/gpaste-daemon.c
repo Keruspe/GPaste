@@ -320,7 +320,7 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
 
     /* Never acquired: another owner holds the name and refused replacement (an
      * older daemon predating ALLOW_REPLACEMENT). This is a startup failure. */
-    fprintf (stderr, "%s\n", _("Could not acquire DBus name. Is another GPaste daemon already running?"));
+    fprintf (stderr, "%s\n", _("Could not acquire the D-Bus name. Is another GPaste daemon already running?"));
     g_application_quit (ctx->gapp);
     exit (EXIT_FAILURE);
 }

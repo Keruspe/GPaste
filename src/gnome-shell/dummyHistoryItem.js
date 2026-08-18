@@ -19,7 +19,7 @@ class GPasteDummyHistoryItem extends PopupMenuItem {
     }
 
     showNoResult() {
-        this.label.text = _('(No result)');
+        this.label.text = _('(No results)');
         this.show();
     }
 

@@ -463,7 +463,7 @@ g_paste_add (Context *ctx,
 
     if (!g_utf8_validate (data, -1, NULL))
     {
-        g_critical (_("Cannot add non utf8 data as text."));
+        g_critical (_("Cannot add non-UTF-8 data as text."));
         return EXIT_FAILURE;
     }
 
@@ -690,12 +690,12 @@ static const Command commands[] = {
         { 1, "history-size",      "hs",              1,        TRUE,  NULL,                    N_ ("print the size of the history"),                                                           g_paste_history_size },
         { 2, "search",            NULL,              0,        TRUE,  "<pattern>",             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
         { 1, "get-history",       "gh",              0,        TRUE,  NULL,                    N_ ("get the name of the current history"),                                                     g_paste_get_history },
-        { 2, "backup-history",    "bh",              1,        TRUE,  "<name>",                N_ ("backup current history"),                                                                  g_paste_backup_history },
+        { 2, "backup-history",    "bh",              1,        TRUE,  "<name>",                N_ ("back up the current history"),                                                             g_paste_backup_history },
         { 2, "switch-history",    "sh",              0,        TRUE,  "<name>",                N_ ("switch to another history"),                                                               g_paste_switch_history },
         { 1, "delete-history",    "dh",              1,        TRUE,  "<name>",                N_ ("delete a history"),                                                                        g_paste_delete_history },
         { 1, "list-histories",    "lh",              0,        TRUE,  NULL,                    N_ ("list available histories"),                                                                g_paste_list_histories },
         { 1, "add",               "a",               1,        TRUE,  "<text>",                N_ ("set text to clipboard"),                                                                   g_paste_add },
-        { 2, "add-password",      "ap",              1,        TRUE,  "<name> <password>",     N_ ("add the name - password couple to the clipboard"),                                         g_paste_add_password },
+        { 2, "add-password",      "ap",              1,        TRUE,  "<name> <password>",     N_ ("add the <name> / <password> pair to the clipboard"),                                       g_paste_add_password },
         { 3, "rename-password",   "rp",              0,        TRUE,  "<old name> <new name>", N_ ("rename the password"),                                                                     g_paste_rename_password },
         { 2, "get",               "g",               0,        TRUE,  "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
         { 2, "select",            "s set",           0,        TRUE,  "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
@@ -710,7 +710,7 @@ static const Command commands[] = {
         { 1, "empty",             "e",               1,        TRUE,  NULL,                    N_ ("empty the history"),                                                                       g_paste_empty },
         { 1, "start",             "d daemon",        0,        TRUE,  NULL,                    N_ ("start tracking clipboard changes"),                                                        g_paste_start },
         { 1, "stop",              "q quit",          0,        TRUE,  NULL,                    N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
-        { 1, "daemon-reexec",     "dr",              0,        TRUE,  NULL,                    N_ ("reexecute the daemon (after upgrading...)"),                                               g_paste_daemon_reexec },
+        { 1, "daemon-reexec",     "dr",              0,        TRUE,  NULL,                    N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
         { 1, "migrate",           NULL,              0,        TRUE,  NULL,                    N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
         { 1, "change-passphrase", NULL,              0,        TRUE,  NULL,                    N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
         { 1, "preferences",       "p settings",      0,        FALSE, NULL,                    N_ ("launch the configuration tool"),                                                           g_paste_preferences },
