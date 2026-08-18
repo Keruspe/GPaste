@@ -145,7 +145,7 @@ g_paste_file_backend_delete_image (const gchar *path)
 
         if (!g_file_delete (image, NULL, &error) &&
             !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            g_warning ("Failed to delete image file: %s", error->message);
+            g_warning ("Failed to delete image file: %s", (error) ? error->message : "unknown error");
     }
 }
 
