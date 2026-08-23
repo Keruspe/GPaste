@@ -42,8 +42,7 @@
   </screenshots>
   <url type="bugtracker">https://github.com/Keruspe/GPaste/issues</url>
   <url type="donation">https://paypal.me/keruspe/</url>
-  <url type="help">https://github.com/Keruspe/GPaste/issues</url>
-  <url type="translate">https://github.com/Keruspe/GPaste</url>
+  <url type="translate">https://hosted.weblate.org/projects/gpaste/</url>
   <translation type="gettext">GPaste</translation>
   <releases>
     <release type="stable" date="UNRELEASED" version="51.0">

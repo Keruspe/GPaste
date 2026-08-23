@@ -3,13 +3,14 @@ Type=Application
 Name=GPaste
 GenericName=Clipboard Manager
 Comment=Manage your clipboard history
-Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
+Keywords=Clipboard;Copy;Paste;History;Manager;
 Icon=edit-paste
 Exec=@pkglibexecdir@/gpaste-ui
 DBusActivatable=true
 Terminal=false
-Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
+Categories=GTK;GNOME;Utility;
 StartupNotify=true
+SingleMainWindow=true
 Actions=prefs;about;
 
 [Desktop Action prefs]
