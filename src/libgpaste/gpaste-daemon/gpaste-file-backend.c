@@ -52,7 +52,15 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
                                            GPastePasswordItem *item,
                                            GError            **error)
 {
-    g_autofree gchar *name = g_paste_util_xml_encode (g_paste_password_item_get_name (item));
+    /* An attribute value, not a CDATA payload: g_paste_util_xml_encode() escapes
+     * "&" and ">", which is what keeps a "]]>" out of a CDATA section, and
+     * leaves the quote that delimits an attribute alone. A password name is
+     * whatever MakePassword was handed, so a quote in one closed the attribute
+     * early -- forging the ones that follow, or breaking the document outright
+     * so the whole history stopped being readable. g_markup_escape_text() is
+     * the attribute's escaping, and the entities it writes are the ones
+     * GMarkup gives back on read. */
+    g_autofree gchar *name = g_markup_escape_text (g_paste_password_item_get_name (item), -1);
 
     return g_output_stream_write_all (stream, "\" name=\"", 8, NULL, NULL /* cancellable */, error) &&
            g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error);

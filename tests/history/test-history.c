@@ -2942,6 +2942,47 @@ test_history_name_refuses_a_path (void)
     g_assert_false (g_paste_util_history_name_is_valid (NULL));
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A password name is whatever MakePassword was handed, and it is written as an
+ * XML attribute value. A quote in one closed the attribute early: the entries
+ * that followed were forged out of the rest of the name, or the document simply
+ * stopped parsing and the whole history read back as unreadable. Only the
+ * encrypted flavour persists passwords, so that is where this is pinned. */
+static void
+test_encrypted_password_name_is_escaped (void)
+{
+    const gchar *name = "encrypted-password-name";
+    const gchar *secret = "s3cr3t-passw0rd";
+    /* Every character that means something in an attribute, plus the CDATA
+     * terminator the value escaping is there for. */
+    const gchar *pw_name = "a \" quote & <tag> ' and ]]> too";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
+
+    GList *items = NULL;
+
+    items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+    items = g_list_append (items, g_paste_text_item_new ("the entry after it"));
+
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_list_free_full (items, g_object_unref);
+
+    /* Both entries come back -- the document parsed -- and the name is the one
+     * that went in, not a truncated or re-escaped version of it. */
+    g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 2);
+
+    GPasteItem *password = loaded->data;
+
+    g_assert_cmpint (g_paste_item_get_kind (password), ==, G_PASTE_ITEM_KIND_PASSWORD);
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (password)), ==, pw_name);
+    g_assert_cmpstr (g_paste_item_get_real_value (password), ==, secret);
+    g_assert_cmpstr (g_paste_item_get_real_value (loaded->next->data), ==, "the entry after it");
+}
+#endif
+
 int
 main (int argc, char *argv[])
 {
@@ -2998,6 +3039,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
     g_test_add_func ("/history/encrypted_rekey", test_encrypted_rekey);
     g_test_add_func ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);
+    g_test_add_func ("/history/encrypted_password_name_is_escaped", test_encrypted_password_name_is_escaped);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history/sqlite_roundtrip", test_sqlite_roundtrip);
