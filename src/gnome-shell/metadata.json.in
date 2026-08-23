@@ -3,7 +3,8 @@
     "session-modes": [ "user", "unlock-dialog" ],
     "uuid": "GPaste@gnome-shell-extensions.gnome.org",
     "name": "GPaste",
-    "version": "@version@",
+    "version": @extension_version@,
+    "version-name": "@version@",
     "description": "Clipboard management system",
     "url": "https://github.com/Keruspe/GPaste",
     "gettext-domain": "@gettext_domain@"

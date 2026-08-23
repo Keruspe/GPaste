@@ -6,7 +6,9 @@ data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in
 src/client/gpaste-client.c
 src/daemon/gpaste-daemon.c
 src/gnome-shell/actions.js
+src/gnome-shell/deleteButton.js
 src/gnome-shell/dummyHistoryItem.js
+src/gnome-shell/favouriteButton.js
 src/gnome-shell/indicator.js
 src/gnome-shell/searchItem.js
 src/gnome-shell/stateSwitch.js

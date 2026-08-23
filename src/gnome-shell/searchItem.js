@@ -51,6 +51,7 @@ export const GPasteSearchItem = GObject.registerClass({
             }),
             toggle_mode: true,
             can_focus: true,
+            accessible_name: _('Show Only Pinned Items'),
         });
         this._favouritesButton.connect('notify::checked', () => {
             this._favourites = this._favouritesButton.checked;

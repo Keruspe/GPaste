@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -13,6 +15,8 @@ class GPasteDeleteButton extends St.Button {
             icon_name: 'edit-delete-symbolic',
             style_class: 'popup-menu-icon',
         });
+        // An icon names the button for the eye and for nothing else.
+        this.accessible_name = _('Delete');
 
         this._client = client;
         this.setUuid(uuid);

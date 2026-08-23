@@ -100,6 +100,10 @@ class GPasteIndicator extends Button {
     async _setup() {
         this._client = await this._connect();
         if (this._destroyed || !this._client) {
+            // Out of retries: the placeholder has been saying "Loading…" all
+            // this while, and now there is something to report.
+            if (!this._destroyed)
+                this._dummyHistoryItem.showDisconnected();
             this._client = null;
             return;
         }
@@ -561,7 +565,7 @@ class GPasteIndicator extends Button {
     }
 
     _toggle(c, state) {
-        this._switch.toggle(state);
+        this._switch.syncState(state);
     }
 
     _selectSearch() {

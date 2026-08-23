@@ -8,18 +8,26 @@ import GObject from 'gi://GObject';
 
 export const GPasteDummyHistoryItem = GObject.registerClass(
 class GPasteDummyHistoryItem extends PopupMenuItem {
+    // The menu can be opened while the client is still being connected -- with
+    // retries, that is a few seconds after login -- so it opens saying it is
+    // busy, not that it failed. Only _connect() giving up says that.
     constructor() {
-        super(_("(Couldn't connect to GPaste daemon)"));
+        super(_('Loading…'));
         this.setSensitive(false);
     }
 
+    showDisconnected() {
+        this.label.text = _('GPaste daemon not running');
+        this.show();
+    }
+
     showEmpty() {
-        this.label.text = _('(Empty)');
+        this.label.text = _('No Items');
         this.show();
     }
 
     showNoResult() {
-        this.label.text = _('(No results)');
+        this.label.text = _('No Results');
         this.show();
     }
 
@@ -27,7 +35,7 @@ class GPasteDummyHistoryItem extends PopupMenuItem {
     // nothing, and telling a user their search came up empty when they never
     // searched leaves them with no idea what to do about it.
     showNoPinned() {
-        this.label.text = _('(No pinned items)');
+        this.label.text = _('No Pinned Items');
         this.show();
     }
 });

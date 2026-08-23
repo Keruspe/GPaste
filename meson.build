@@ -143,6 +143,16 @@ conf = configuration_data()
 # Used later on to configure services&gnome-shell extension
 conf.set('pkglibexecdir', pkglibexecdir)
 conf.set('version', meson.project_version())
+# extensions.gnome.org wants an integer it can compare, and refuses a re-upload
+# of one it already has: the major alone would make 51.0 and 51.1 the same
+# number, so no point release in a series could be published as an update. The
+# string it shows the user is "version-name".
+version_parts = meson.project_version().split('.')
+extension_version = version_parts[0].to_int() * 100
+if version_parts.length() > 1
+  extension_version += version_parts[1].to_int()
+endif
+conf.set('extension_version', extension_version)
 conf.set('gettext_domain', 'GPaste')
 
 gpaste_po_dir = meson.current_source_dir() / 'po'
