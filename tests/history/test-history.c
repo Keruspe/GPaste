@@ -6,6 +6,7 @@
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
+#include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -14,14 +15,6 @@
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <string.h>
-
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-#include <gpaste-3/gpaste-util.h>
-
-#include <gpaste-daemon/gpaste-file-backend.h>
-#include <gpaste-daemon/gpaste-password-item.h>
-#include <string.h>
-#endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-3/gpaste-util.h>
