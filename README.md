@@ -134,6 +134,18 @@ meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 
 All of them are configurable in the preferences.
 
+Inside the graphical tool, which has a few of its own:
+
+| Shortcut | Action |
+|---|---|
+| <kbd>Ctrl</kbd>+<kbd>F</kbd> | Search the history |
+| <kbd>Ctrl</kbd>+<kbd>N</kbd> | Add a new item |
+| <kbd>Ctrl</kbd>+<kbd>0</kbd>…<kbd>9</kbd> | Paste the item at that index |
+| <kbd>Ctrl</kbd>+<kbd>,</kbd> | Show the preferences |
+| <kbd>Ctrl</kbd>+<kbd>?</kbd> | Show the keyboard shortcuts |
+| <kbd>Ctrl</kbd>+<kbd>W</kbd> or <kbd>Esc</kbd> | Close the window |
+| <kbd>Menu</kbd> or <kbd>Shift</kbd>+<kbd>F10</kbd> | Open the selected item's menu |
+
 ### Command line
 
 ```bash
