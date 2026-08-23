@@ -36,6 +36,9 @@ void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
 
 void     g_paste_gtk_util_show_window      (GApplication *application);
 
+void     g_paste_gtk_util_toast            (GtkWidget   *origin,
+                                            const gchar *message);
+
 /* @text is what the user wrote, or %NULL if they cancelled. */
 typedef void (*GPasteGtkTextDialogCallback) (const gchar *text,
                                              gpointer     user_data);

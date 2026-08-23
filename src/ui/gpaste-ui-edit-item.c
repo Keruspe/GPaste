@@ -60,8 +60,7 @@ on_item_ready (GObject      *source_object,
          * well produce. */
         g_warning ("Could not read the item to edit: %s", (error) ? error->message : "the daemon answered with no usable item");
 
-        if (G_PASTE_IS_UI_WINDOW (rootwin))
-            g_paste_ui_window_toast (G_PASTE_UI_WINDOW (rootwin), _("Could not read the item to edit"));
+        g_paste_gtk_util_toast (GTK_WIDGET (rootwin), _("Could not read the item to edit"));
 
         return;
     }

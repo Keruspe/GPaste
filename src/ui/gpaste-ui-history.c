@@ -4,6 +4,8 @@
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
+#include <gpaste-gtk4/gpaste-gtk-util.h>
+
 #include <adwaita.h>
 
 #include <gpaste-ui-history.h>
@@ -72,18 +74,6 @@ g_paste_ui_history_show_status (GPasteUiHistory *self,
     adw_status_page_set_description (self->status_page, description);
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), TRUE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
-}
-
-/* A failure the user set off deserves more than a line on a console nobody is
- * reading. */
-static void
-g_paste_ui_history_toast (GPasteUiHistory *self,
-                          const gchar     *message)
-{
-    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
-
-    if (G_PASTE_IS_UI_WINDOW (root))
-        g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root), message);
 }
 
 static void
@@ -610,7 +600,7 @@ on_activate_element_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!item)
     {
         g_warning ("Could not get the item to activate: %s", (error) ? error->message : "the daemon answered with no usable item");
-        g_paste_ui_history_toast (self, _("Could not select the item"));
+        g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not select the item"));
         return;
     }
 
@@ -934,7 +924,7 @@ g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
                 if (error)
                 {
                     g_warning ("Could not read the history to resolve the selection: %s", error->message);
-                    g_paste_ui_history_toast (self, _("Could not read the history"));
+                    g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not read the history"));
                     return NULL;
                 }
             }

@@ -99,11 +99,73 @@ g_paste_gtk_util_get_image_finish (GPasteClient *client,
     return gdk_texture_new_from_bytes (bytes, error);
 }
 
+/**
+ * g_paste_gtk_util_toast:
+ * @origin: the #GtkWidget the message is about
+ * @message: what to say
+ *
+ * Say something to the user, in the window @origin is in.
+ *
+ * Quiet when there is nowhere to say it: our application windows wrap their
+ * content in an #AdwToastOverlay, the daemon's prompt windows do not, and a
+ * widget torn down while a reply was in flight is in no window at all. Failing
+ * quietly is right in each case — a prompt has no history list for an empty to
+ * have failed on.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_toast (GtkWidget   *origin,
+                        const gchar *message)
+{
+    g_return_if_fail (GTK_IS_WIDGET (origin));
+
+    GtkRoot *root = gtk_widget_get_root (origin);
+
+    if (!ADW_IS_APPLICATION_WINDOW (root))
+        return;
+
+    GtkWidget *content = adw_application_window_get_content (ADW_APPLICATION_WINDOW (root));
+
+    if (ADW_IS_TOAST_OVERLAY (content))
+        adw_toast_overlay_add_toast (ADW_TOAST_OVERLAY (content), adw_toast_new (message));
+}
+
 typedef struct
 {
     GPasteClient *client;
     gchar        *history;
+    GtkWindow    *parent; /* borrowed: it outlives the dialog it put up */
 } EmptyHistoryCallbackData;
+
+static void
+on_history_emptied (GObject      *source_object,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    g_autoptr (GtkWindow) parent = user_data;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_client_empty_history_finish (G_PASTE_CLIENT (source_object), result, &error);
+
+    if (!error)
+        return;
+
+    g_warning ("Could not empty the history: %s", error->message);
+
+    /* empty_history() takes a parent it is allowed not to have -- a menu item is
+     * a GObject, not a widget in a window -- and the toast helper asks for a
+     * widget. Nowhere to say it is the quiet case it already documents. */
+    if (parent)
+        g_paste_gtk_util_toast (GTK_WIDGET (parent), _("Could not empty the history"));
+}
+
+static void
+empty_history (GPasteClient *client,
+               const gchar  *history,
+               GtkWindow    *parent)
+{
+    g_paste_client_empty_history (client, history, on_history_emptied,
+                                  (parent) ? g_object_ref (parent) : NULL);
+}
 
 static void
 empty_history_callback (gboolean confirmed,
@@ -114,7 +176,7 @@ empty_history_callback (gboolean confirmed,
     g_autofree gchar *history = data->history;
 
     if (confirmed)
-        g_paste_client_empty_history (client, history, NULL, NULL);
+        empty_history (client, history, data->parent);
 }
 
 /**
@@ -143,6 +205,7 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
 
         data->client = g_object_ref (client);
         data->history = g_strdup (history);
+        data->parent = parent_window;
 
         /* Translators: %s is the name of the history being emptied. */
         g_autofree gchar *heading = g_strdup_printf (_("Empty \u201c%s\u201d?"), history);
@@ -155,7 +218,7 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
                                          data);
     }
     else
-        g_paste_client_empty_history (client, history, NULL, NULL);
+        empty_history (client, history, parent_window);
 }
 
 /**

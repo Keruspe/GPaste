@@ -314,18 +314,14 @@ on_upload_address_copied (GObject      *source_object,
     g_autoptr (GPasteUiItem) self = user_data;
     g_autoptr (GError) error = NULL;
     g_autofree gchar *uuid = g_paste_client_add_text_finish (G_PASTE_CLIENT (source_object), res, &error);
-    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
 
     if (!uuid)
         g_warning ("Could not copy the address of the uploaded item: %s",
                    (error) ? error->message : "the daemon kept nothing");
 
-    if (!G_PASTE_IS_UI_WINDOW (root))
-        return;
-
-    g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root),
-                             (uuid) ? _("The item was uploaded, and its address copied")
-                                    : _("The item was uploaded, but its address could not be copied"));
+    g_paste_gtk_util_toast (GTK_WIDGET (self),
+                            (uuid) ? _("The item was uploaded, and its address copied")
+                                   : _("The item was uploaded, but its address could not be copied"));
 }
 
 /* Upload answers the url it made and adds nothing itself, so the url is this
@@ -343,14 +339,11 @@ on_upload_done (GObject      *source_object,
     GPasteClient *client = G_PASTE_CLIENT (source_object);
     g_autoptr (GError) error = NULL;
     g_autofree gchar *url = g_paste_client_upload_finish (client, res, &error);
-    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
 
     if (!url)
     {
         g_warning ("Could not upload the item: %s", (error) ? error->message : "the daemon answered with no url");
-
-        if (G_PASTE_IS_UI_WINDOW (root))
-            g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root), _("Could not upload the item"));
+        g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not upload the item"));
 
         return;
     }
@@ -575,11 +568,7 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!texture)
     {
         g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
-
-        GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
-
-        if (G_PASTE_IS_UI_WINDOW (root))
-            g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root), _("Could not load an image preview"));
+        g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not load an image preview"));
 
         /* Rather than leave the row showing an image that is not the one it is
          * now bound to. */

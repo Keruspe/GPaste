@@ -22,9 +22,6 @@ typedef gchar *(*GPasteUiStringFinish) (GPasteClient *client,
                                         GAsyncResult *result,
                                         GError      **error);
 
-void g_paste_ui_window_toast (GPasteUiWindow *self,
-                              const gchar    *message);
-
 /* Report a failed call to the user rather than to a console nobody is reading.
  * Pair the matching _cb with what _report_* returns:
  *

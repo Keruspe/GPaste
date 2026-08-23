@@ -96,26 +96,6 @@ run_when_initialized (GPasteUiWindow *self,
     g_source_set_name_by_id (g_idle_add (run_deferred_action, deferred), source_name);
 }
 
-/**
- * g_paste_ui_window_toast:
- * @self: the #GPasteUiWindow
- * @message: what to say
- *
- * Say something to the user, in the window they are looking at.
- */
-void
-g_paste_ui_window_toast (GPasteUiWindow *self,
-                         const gchar    *message)
-{
-    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
-
-    /* Disposed mid-flight: the overlay went with the widget tree. */
-    if (!self->toast_overlay)
-        return;
-
-    adw_toast_overlay_add_toast (self->toast_overlay, adw_toast_new (message));
-}
-
 /* @window is owned, so a call outliving nothing in particular still has
  * somewhere to report to; @message is a translated literal and is not. */
 typedef struct
@@ -152,7 +132,7 @@ report_done (GPasteUiReport *report,
         g_warning ("%s: %s", report->message, error->message);
 
         if (report->window)
-            g_paste_ui_window_toast (report->window, report->message);
+            g_paste_gtk_util_toast (GTK_WIDGET (report->window), report->message);
     }
 
     g_clear_object (&report->window);
@@ -1038,7 +1018,7 @@ g_paste_ui_window_new (GtkApplication *app)
     GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_WINDOW,
                                       "application", app,
                                       "resizable",   TRUE,
-                                      "title",       PACKAGE_STRING,
+                                      "title",       PACKAGE_NAME,
                                       "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
 
