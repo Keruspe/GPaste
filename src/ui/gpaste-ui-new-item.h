@@ -9,12 +9,7 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_NEW_ITEM (g_paste_ui_new_item_get_type ())
-
-G_PASTE_FINAL_TYPE (UiNewItem, ui_new_item, UI_NEW_ITEM, GtkButton)
-
-GtkWidget *g_paste_ui_new_item_new (GtkWindow    *rootwin,
-                                    GPasteClient *client);
+void g_paste_ui_new_item_show (GPasteClient *client,
+                               GtkWindow    *rootwin);
 
 G_END_DECLS
-

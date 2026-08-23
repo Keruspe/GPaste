@@ -10,7 +10,6 @@ gpaste_ui_sources = [
   'gpaste-ui-panel-history.c',
   'gpaste-ui-panel.c',
   'gpaste-ui-shortcuts-window.c',
-  'gpaste-ui-switch.c',
   'gpaste-ui-window.c',
   'gpaste-ui.c',
 ]
@@ -27,7 +26,6 @@ gpaste_ui_headers = [
   'gpaste-ui-panel-history.h',
   'gpaste-ui-panel.h',
   'gpaste-ui-shortcuts-window.h',
-  'gpaste-ui-switch.h',
   'gpaste-ui-window.h',
 ]
 

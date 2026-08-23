@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-new-item.h>
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
@@ -29,6 +31,9 @@ struct _GPasteUiWindow
     GtkWidget       *merge_entry; /* custom separator */
 
     AdwDialog       *shortcuts;
+    /* Weak: the dialog belongs to whatever is presenting it, and we only keep
+     * it to raise the one already up rather than stack a second. */
+    AdwDialog       *preferences;
 
     GSignalGroup    *search_signals;
     GSignalGroup    *client_signals;
@@ -153,7 +158,14 @@ static void
 do_show_prefs (GPasteUiWindow *self,
                const gchar    *arg G_GNUC_UNUSED)
 {
-    g_paste_ui_header_show_prefs (self->header);
+    g_action_group_activate_action (G_ACTION_GROUP (self), "preferences", NULL);
+}
+
+static void
+do_show_about (GPasteUiWindow *self,
+               const gchar    *arg G_GNUC_UNUSED)
+{
+    g_action_group_activate_action (G_ACTION_GROUP (self), "about", NULL);
 }
 
 /**
@@ -170,6 +182,20 @@ g_paste_ui_window_show_prefs (GPasteUiWindow *self)
     run_when_initialized (self, do_show_prefs, NULL, "[GPaste] show_prefs");
 }
 
+/**
+ * g_paste_ui_window_show_about:
+ * @self: the #GPasteUiWindow
+ *
+ * Show the about dialog
+ */
+void
+g_paste_ui_window_show_about (GPasteUiWindow *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
+
+    run_when_initialized (self, do_show_about, NULL, "[GPaste] show_about");
+}
+
 static void
 on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
                       GVariant      *parameter G_GNUC_UNUSED,
@@ -178,6 +204,183 @@ on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiWindow *self = user_data;
 
     adw_dialog_present (self->shortcuts, GTK_WIDGET (self));
+}
+
+static void
+on_new_item (GSimpleAction *action    G_GNUC_UNUSED,
+             GVariant      *parameter G_GNUC_UNUSED,
+             gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    g_paste_ui_new_item_show (self->client, GTK_WINDOW (self));
+}
+
+static void
+on_toggle_search (GSimpleAction *action    G_GNUC_UNUSED,
+                  GVariant      *parameter G_GNUC_UNUSED,
+                  gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GtkToggleButton *button = g_paste_ui_header_get_search_button (self->header);
+
+    gtk_toggle_button_set_active (button, !gtk_toggle_button_get_active (button));
+}
+
+static void
+on_preferences (GSimpleAction *action    G_GNUC_UNUSED,
+                GVariant      *parameter G_GNUC_UNUSED,
+                gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    /* Presenting the one already up raises it; building a second would stack
+     * two dialogs saying the same thing. */
+    if (!self->preferences)
+    {
+        self->preferences = g_paste_gtk_preferences_dialog_new (NULL);
+        g_object_add_weak_pointer (G_OBJECT (self->preferences), (gpointer *) &self->preferences);
+    }
+
+    adw_dialog_present (self->preferences, GTK_WIDGET (self));
+}
+
+static void
+on_reexec_confirmed (gboolean confirmed,
+                     gpointer user_data)
+{
+    g_autoptr (GPasteClient) client = user_data;
+
+    if (confirmed)
+        g_paste_client_reexecute (client, NULL, NULL);
+}
+
+static void
+on_restart_daemon (GSimpleAction *action    G_GNUC_UNUSED,
+                   GVariant      *parameter G_GNUC_UNUSED,
+                   gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    g_paste_gtk_util_confirm_dialog (GTK_WINDOW (self),
+                                     _("Restart"),
+                                     _("Do you really want to restart the daemon?"),
+                                     on_reexec_confirmed,
+                                     g_object_ref (self->client));
+}
+
+static void
+on_track_confirmed (gboolean confirmed,
+                    gpointer user_data)
+{
+    g_autoptr (GPasteClient) client = user_data;
+
+    if (confirmed)
+        g_paste_client_set_active (client, FALSE, NULL, NULL);
+}
+
+static void
+on_track_changes (GSimpleAction *action,
+                  GVariant      *parameter G_GNUC_UNUSED,
+                  gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+    g_autoptr (GVariant) state = g_action_get_state (G_ACTION (action));
+
+    if (g_variant_get_boolean (state))
+    {
+        g_paste_gtk_util_confirm_dialog (GTK_WINDOW (self),
+                                         _("Stop"),
+                                         _("Do you really want to stop tracking clipboard changes?"),
+                                         on_track_confirmed,
+                                         g_object_ref (self->client));
+    }
+    else
+    {
+        g_paste_client_set_active (self->client, TRUE, NULL, NULL);
+    }
+}
+
+static void
+on_tracking_changed (GPasteClient *client G_GNUC_UNUSED,
+                     gboolean      state,
+                     gpointer      user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GAction *action = g_action_map_lookup_action (G_ACTION_MAP (self), "track-changes");
+
+    if (action)
+        g_simple_action_set_state (G_SIMPLE_ACTION (action), g_variant_new_boolean (state));
+}
+
+static void
+on_about (GSimpleAction *action    G_GNUC_UNUSED,
+          GVariant      *parameter G_GNUC_UNUSED,
+          gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+    const gchar *authors[] = {
+        "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
+        NULL
+    };
+
+    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
+
+    adw_about_dialog_set_application_name (dialog, PACKAGE_NAME);
+    adw_about_dialog_set_version (dialog, PACKAGE_VERSION);
+    adw_about_dialog_set_application_icon (dialog, G_PASTE_ICON_NAME);
+    adw_about_dialog_set_license_type (dialog, GTK_LICENSE_BSD);
+    adw_about_dialog_set_developers (dialog, authors);
+    adw_about_dialog_set_copyright (dialog, "Copyright (c) 2010-2026, Marc-Antoine Perennou");
+    adw_about_dialog_set_comments (dialog, _("Clipboard management system"));
+    adw_about_dialog_set_website (dialog, "https://www.imagination-land.org/tags/GPaste.html");
+    adw_about_dialog_set_issue_url (dialog, "https://github.com/Keruspe/GPaste/issues");
+    adw_about_dialog_set_support_url (dialog, "https://github.com/Keruspe/GPaste/issues");
+    /* Translators: put your names here, one per line, and they show up in the
+     * about dialog's credits. */
+    adw_about_dialog_set_translator_credits (dialog, _("translator-credits"));
+
+    adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (self));
+}
+
+/* Every control in the header drives one of these, so the window owns the state
+ * and the header owns only how it is shown -- which is what lets the rare,
+ * app-level ones live in a menu rather than as an icon apiece. */
+static void
+add_window_actions (GPasteUiWindow *self)
+{
+    static const GActionEntry entries[] = {
+        { "about",          on_about,          NULL, NULL,    NULL, { 0 } },
+        { "new-item",       on_new_item,       NULL, NULL,    NULL, { 0 } },
+        { "preferences",    on_preferences,    NULL, NULL,    NULL, { 0 } },
+        { "restart-daemon", on_restart_daemon, NULL, NULL,    NULL, { 0 } },
+        { "toggle-search",  on_toggle_search,  NULL, NULL,    NULL, { 0 } },
+        { "track-changes",  on_track_changes,  NULL, "false", NULL, { 0 } },
+    };
+
+    g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
+
+    g_autoptr (GSimpleAction) show_shortcuts = g_simple_action_new ("show-help-overlay", NULL);
+    g_signal_connect_object (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), self, 0);
+    g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (show_shortcuts));
+
+    on_tracking_changed (self->client, g_paste_client_is_active (self->client), self);
+
+    GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
+
+    struct { const gchar *action; const gchar *accel; } accels[] = {
+        { "win.show-help-overlay", "<primary>question" },
+        { "win.toggle-search",     "<primary>f" },
+        { "win.new-item",          "<primary>n" },
+        { "win.preferences",       "<primary>comma" },
+        { "window.close",          "<primary>w" },
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (accels); ++i)
+    {
+        gtk_application_set_accels_for_action (app, accels[i].action,
+                                               (const char *[]) { accels[i].accel, NULL });
+    }
 }
 
 static void exit_selection_mode (GPasteUiWindow *self);
@@ -306,6 +509,9 @@ exit_selection_mode (GPasteUiWindow *self)
     g_paste_ui_history_set_selection_mode (self->history, FALSE);
     g_paste_ui_header_set_selection_mode (self->header, FALSE);
     gtk_action_bar_set_revealed (self->merge_bar, FALSE);
+
+    if (self->search_bar)
+        gtk_search_bar_set_key_capture_widget (self->search_bar, GTK_WIDGET (self));
 }
 
 static void
@@ -318,6 +524,12 @@ on_enter_selection_mode (GtkButton *button G_GNUC_UNUSED,
     g_paste_ui_header_set_selection_mode (self->header, TRUE);
     g_paste_ui_header_set_selection_count (self->header, 0);
     gtk_action_bar_set_revealed (self->merge_bar, TRUE);
+
+    /* Typing is how the search bar opens itself, and the header just took the
+     * toggle that would close it again off the bar: while items are being
+     * picked, keys belong to the list. */
+    if (self->search_bar)
+        gtk_search_bar_set_key_capture_widget (self->search_bar, NULL);
 }
 
 static void
@@ -446,6 +658,9 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
     g_clear_object (&self->shortcuts);
+    /* Registered on the dialog, pointing at a field of ours: left in place it
+     * would have GObject write into freed memory should the dialog outlive us. */
+    g_clear_weak_pointer (&self->preferences);
 
     /* Chaining up unparents (and frees) every widget below, so drop the one
      * anything still in flight tests to know the window is gone. */
@@ -509,6 +724,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (self->client_signals, "notify::history", G_CALLBACK (on_history_changed), self);
+    g_signal_group_connect (self->client_signals, "tracking", G_CALLBACK (on_tracking_changed), self);
 
     add_shortcuts (self);
 
@@ -550,7 +766,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GPasteSettings *settings = self->settings;
-    GtkWidget *header = g_paste_ui_header_new (win, client);
+    GtkWidget *header = g_paste_ui_header_new ();
     GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, self->search_entry);
     GtkWidget *history = g_paste_ui_history_new (client, settings, G_PASTE_UI_PANEL (panel), win);
 
@@ -560,13 +776,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     self->shortcuts = g_object_ref_sink (ADW_DIALOG (g_paste_ui_shortcuts_window_new (settings)));
 
-    g_autoptr (GSimpleAction) show_shortcuts = g_simple_action_new ("show-help-overlay", NULL);
-    g_signal_connect_object (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), user_data, 0);
-    g_action_map_add_action (G_ACTION_MAP (user_data), G_ACTION (show_shortcuts));
-
-    gtk_application_set_accels_for_action (GTK_APPLICATION (gtk_window_get_application (win)),
-                                           "win.show-help-overlay",
-                                           (const char *[]) { "<primary>question", NULL });
+    add_window_actions (self);
 
     adw_toolbar_view_add_top_bar (self->toolbar_view, header);
     adw_toolbar_view_add_bottom_bar (self->toolbar_view, build_merge_bar (user_data));

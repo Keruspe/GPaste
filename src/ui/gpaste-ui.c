@@ -20,44 +20,12 @@ prefs_activated (GSimpleAction *action    G_GNUC_UNUSED,
     g_paste_ui_window_show_prefs (get_ui_window (user_data));
 }
 
-static gboolean
-show_about_dialog (gpointer user_data)
-{
-    GtkWidget *widget = user_data;
-
-    if (!GTK_IS_WIDGET (widget))
-        return G_SOURCE_REMOVE;
-
-    if (!gtk_widget_get_realized (widget))
-        return G_SOURCE_CONTINUE;
-
-    const gchar *authors[] = {
-        "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
-        NULL
-    };
-
-    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
-
-    adw_about_dialog_set_application_name (dialog, PACKAGE_NAME);
-    adw_about_dialog_set_version (dialog, PACKAGE_VERSION);
-    adw_about_dialog_set_application_icon (dialog, G_PASTE_ICON_NAME);
-    adw_about_dialog_set_license_type (dialog, GTK_LICENSE_BSD);
-    adw_about_dialog_set_developers (dialog, authors);
-    adw_about_dialog_set_copyright (dialog, "Copyright (c) 2010-2026, Marc-Antoine Perennou");
-    adw_about_dialog_set_comments (dialog, _("Clipboard management system"));
-    adw_about_dialog_set_website (dialog, "http://www.imagination-land.org/tags/GPaste.html");
-
-    adw_dialog_present (ADW_DIALOG (dialog), widget);
-
-    return G_SOURCE_REMOVE;
-}
-
 static void
 about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_source_set_name_by_id (g_idle_add (show_about_dialog, gtk_application_get_windows (GTK_APPLICATION (user_data))->data), "[GPaste] about_dialog");
+    g_paste_ui_window_show_about (get_ui_window (user_data));
 }
 
 static void

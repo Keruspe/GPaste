@@ -1,19 +1,17 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
-#include <gpaste-gtk4/gpaste-gtk-util.h>
+#include <gpaste-3/gpaste-macros.h>
 
 #include <gpaste-ui-header.h>
-#include <gpaste-ui-new-item.h>
-#include <gpaste-ui-switch.h>
 
 typedef struct
 {
-    GtkButton       *settings;
     GtkToggleButton *favourites;
     GtkToggleButton *search;
     AdwWindowTitle  *title;
+    GtkWidget       *new_item;
+    GtkWidget       *menu;
     GtkWidget       *merge;  /* enters merge selection mode */
     GtkWidget       *cancel; /* leaves it */
 } GPasteUiHeaderData;
@@ -35,95 +33,76 @@ header_data (AdwHeaderBar *self)
     return data;
 }
 
-/* A plain header GtkButton: shared icon/tooltip/valign setup plus a click
- * handler, so the toolbar's simple action buttons don't each need a subclass. */
-static GtkWidget *
-header_button_new (const gchar   *icon_name,
-                   const gchar   *tooltip,
-                   GCallback      clicked,
-                   gpointer       user_data,
-                   GClosureNotify destroy)
+/* An icon-only button names itself with its tooltip and nothing else, which
+ * leaves it nameless to a screen reader: GTK feeds a tooltip in as the
+ * accessible *description*, and the label it would take a name from is the
+ * icon. So say it twice, once for each. */
+static void
+set_icon_button_label (GtkWidget   *button,
+                       const gchar *label)
 {
-    GtkWidget *button = gtk_button_new ();
+    gtk_widget_set_tooltip_text (button, label);
+    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+}
 
-    gtk_widget_set_tooltip_text (button, tooltip);
+/* A plain header button: shared icon/label/valign setup, so the toolbar's
+ * simple actions don't each need spelling out. */
+static GtkWidget *
+header_button_new (const gchar *icon_name,
+                   const gchar *label,
+                   const gchar *action_name)
+{
+    GtkWidget *button = gtk_button_new_from_icon_name (icon_name);
+
+    set_icon_button_label (button, label);
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
-    gtk_button_set_child (GTK_BUTTON (button), gtk_image_new_from_icon_name (icon_name));
-    g_signal_connect_data (button, "clicked", clicked, user_data, destroy, 0);
+    gtk_actionable_set_action_name (GTK_ACTIONABLE (button), action_name);
 
     return button;
 }
 
-static void
-on_about_clicked (GtkButton *button G_GNUC_UNUSED,
-                  gpointer   user_data)
+static GtkWidget *
+header_toggle_new (const gchar *icon_name,
+                   const gchar *label)
 {
-    g_action_group_activate_action (G_ACTION_GROUP (user_data), "about", NULL);
+    GtkWidget *button = gtk_toggle_button_new ();
+
+    set_icon_button_label (button, label);
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+    gtk_button_set_child (GTK_BUTTON (button), gtk_image_new_from_icon_name (icon_name));
+
+    return button;
 }
 
-static void
-on_settings_clicked (GtkButton *button,
-                     gpointer   user_data G_GNUC_UNUSED)
+/* Everything the window as a whole can be asked to do, in one menu at the end of
+ * the header rather than as an icon apiece: they are app-level and rare, where
+ * the buttons left beside them all act on the history being shown. */
+static GtkWidget *
+header_menu_new (void)
 {
-    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (button));
-    AdwDialog *dialog = g_paste_gtk_preferences_dialog_new (NULL);
+    g_autoptr (GMenu) menu = g_menu_new ();
 
-    adw_dialog_present (dialog, GTK_WIDGET (root));
-}
+    /* Stateful and boolean, so it comes out as a check item. */
+    g_menu_append (menu, _("Track Clipboard Changes"), "win.track-changes");
 
-typedef struct
-{
-    GPasteClient *client;
-    GtkWindow    *topwin; /* not ref'd: outlives the header */
-} ReexecData;
+    g_autoptr (GMenu) daemon_section = g_menu_new ();
+    g_menu_append (daemon_section, _("Restart Daemon"), "win.restart-daemon");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (daemon_section));
 
-static void
-reexec_data_free (gpointer  data,
-                  GClosure *closure G_GNUC_UNUSED)
-{
-    g_autofree ReexecData *reexec = data;
+    g_autoptr (GMenu) app_section = g_menu_new ();
+    g_menu_append (app_section, _("Preferences"), "win.preferences");
+    g_menu_append (app_section, _("Keyboard Shortcuts"), "win.show-help-overlay");
+    g_menu_append (app_section, _("About GPaste"), "win.about");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (app_section));
 
-    g_object_unref (reexec->client);
-}
+    GtkWidget *button = gtk_menu_button_new ();
 
-static void
-on_reexec_confirmed (gboolean confirmed,
-                     gpointer user_data)
-{
-    g_autoptr (GPasteClient) client = user_data;
+    gtk_menu_button_set_icon_name (GTK_MENU_BUTTON (button), "open-menu-symbolic");
+    gtk_menu_button_set_menu_model (GTK_MENU_BUTTON (button), G_MENU_MODEL (menu));
+    set_icon_button_label (button, _("Main Menu"));
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
 
-    if (confirmed)
-        g_paste_client_reexecute (client, NULL, NULL);
-}
-
-static void
-on_reexec_clicked (GtkButton *button G_GNUC_UNUSED,
-                   gpointer   user_data)
-{
-    const ReexecData *reexec = user_data;
-
-    g_paste_gtk_util_confirm_dialog (reexec->topwin,
-                                     _("Restart"),
-                                     _("Do you really want to restart the daemon?"),
-                                     on_reexec_confirmed,
-                                     g_object_ref (reexec->client));
-}
-
-/**
- * g_paste_ui_header_show_prefs:
- * @self: the header bar
- *
- * Show the prefs pane
- */
-void
-g_paste_ui_header_show_prefs (AdwHeaderBar *self)
-{
-    GPasteUiHeaderData *data = header_data (self);
-
-    if (!data)
-        return;
-
-    gtk_widget_activate (GTK_WIDGET (data->settings));
+    return button;
 }
 
 /**
@@ -226,8 +205,9 @@ g_paste_ui_header_get_cancel_button (AdwHeaderBar *self)
  * @self: the header bar
  * @selection_mode: whether merge selection mode is active
  *
- * Switch the header between its normal look and the selection-mode look (accent
- * styling, the merge button replaced by a cancel button).
+ * Switch the header between its normal look and the selection-mode look: the
+ * controls that act on the history give way to Cancel, and the title says how
+ * many items are picked.
  */
 void
 g_paste_ui_header_set_selection_mode (AdwHeaderBar *self,
@@ -238,14 +218,25 @@ g_paste_ui_header_set_selection_mode (AdwHeaderBar *self,
     if (!data)
         return;
 
-    if (selection_mode)
-        gtk_widget_add_css_class (GTK_WIDGET (self), "selection-mode");
+    if (!selection_mode)
+        adw_window_title_set_title (data->title, PACKAGE_NAME);
     else
     {
-        gtk_widget_remove_css_class (GTK_WIDGET (self), "selection-mode");
-        adw_window_title_set_title (data->title, PACKAGE_NAME);
+        /* Both toggles are about to leave the bar, and a filter left on would
+         * keep narrowing the rows being picked from with nothing on screen left
+         * to turn it off. */
+        gtk_toggle_button_set_active (data->search, FALSE);
+        gtk_toggle_button_set_active (data->favourites, FALSE);
     }
 
+    /* What the mode looks like is what is left in the bar: everything that does
+     * not belong to picking items goes, which is how GNOME says "you are in a
+     * mode" without a style class. (There is none to reach for anyway --
+     * libadwaita defines .selection-mode for check buttons alone.) */
+    gtk_widget_set_visible (data->new_item, !selection_mode);
+    gtk_widget_set_visible (GTK_WIDGET (data->search), !selection_mode);
+    gtk_widget_set_visible (GTK_WIDGET (data->favourites), !selection_mode);
+    gtk_widget_set_visible (data->menu, !selection_mode);
     gtk_widget_set_visible (data->merge, !selection_mode);
     gtk_widget_set_visible (data->cancel, selection_mode);
 }
@@ -272,76 +263,49 @@ g_paste_ui_header_set_selection_count (AdwHeaderBar *self,
 
 /**
  * g_paste_ui_header_new:
- * @topwin: the main #GtkWindow
- * @client: a #GPasteClient instance
  *
- * Create a new #AdwHeaderBar configured for GPaste
+ * Create a new #AdwHeaderBar configured for GPaste. Every control it carries
+ * drives a "win." action, so the window owns the state and the header owns only
+ * how it is shown.
  *
  * Returns: a newly allocated #AdwHeaderBar
  *          free it with g_object_unref
  */
 GtkWidget *
-g_paste_ui_header_new (GtkWindow    *topwin,
-                       GPasteClient *client)
+g_paste_ui_header_new (void)
 {
-    g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-
     GtkWidget *self = adw_header_bar_new ();
     AdwHeaderBar *bar = ADW_HEADER_BAR (self);
-    GtkWidget *settings = header_button_new ("preferences-system-symbolic", _("GPaste Settings"), G_CALLBACK (on_settings_clicked), NULL, NULL);
-    GtkWidget *search = gtk_toggle_button_new ();
 
-    gtk_widget_set_tooltip_text (search, _("Search"));
-    gtk_widget_set_valign (search, GTK_ALIGN_CENTER);
-    gtk_button_set_child (GTK_BUTTON (search), gtk_image_new_from_icon_name ("edit-find-symbolic"));
-    GtkWidget *favourites = gtk_toggle_button_new ();
-
-    gtk_widget_set_tooltip_text (favourites, _("Show only pinned items"));
-    gtk_widget_set_valign (favourites, GTK_ALIGN_CENTER);
-    gtk_button_set_child (GTK_BUTTON (favourites), gtk_image_new_from_icon_name ("starred-symbolic"));
+    GtkWidget *new_item = header_button_new ("document-new-symbolic", _("New Item"), "win.new-item");
+    GtkWidget *search = header_toggle_new ("edit-find-symbolic", _("Search"));
+    GtkWidget *favourites = header_toggle_new ("starred-symbolic", _("Show Only Pinned Items"));
+    GtkWidget *merge = header_button_new ("edit-select-all-symbolic", _("Select Items to Merge"), NULL);
+    GtkWidget *menu = header_menu_new ();
     GtkWidget *title = adw_window_title_new (PACKAGE_NAME, NULL);
-
-    gtk_widget_add_css_class (settings, "flat");
-
-    ReexecData *reexec_data = g_new (ReexecData, 1);
-    reexec_data->client = g_object_ref (client);
-    reexec_data->topwin = topwin;
-
-    GtkWidget *about = header_button_new ("dialog-information-symbolic", _("About"),
-                                          G_CALLBACK (on_about_clicked), gtk_window_get_application (topwin), NULL);
-    GtkWidget *reexec = header_button_new ("view-refresh-symbolic", _("Restart the daemon"),
-                                           G_CALLBACK (on_reexec_clicked), reexec_data, reexec_data_free);
-
-    GtkWidget *merge = gtk_button_new ();
-    gtk_widget_set_tooltip_text (merge, _("Select items to merge"));
-    gtk_widget_set_valign (merge, GTK_ALIGN_CENTER);
-    gtk_button_set_child (GTK_BUTTON (merge), gtk_image_new_from_icon_name ("edit-select-all-symbolic"));
 
     GtkWidget *cancel = gtk_button_new_with_label (_("Cancel"));
     gtk_widget_set_valign (cancel, GTK_ALIGN_CENTER);
     gtk_widget_set_visible (cancel, FALSE);
 
     GPasteUiHeaderData *data = g_new0 (GPasteUiHeaderData, 1);
-    data->settings = GTK_BUTTON (settings);
     data->favourites = GTK_TOGGLE_BUTTON (favourites);
     data->search = GTK_TOGGLE_BUTTON (search);
     data->title = ADW_WINDOW_TITLE (title);
+    data->new_item = new_item;
+    data->menu = menu;
     data->merge = merge;
     data->cancel = cancel;
 
     g_object_set_data_full (G_OBJECT (self), "header-data", data, g_free);
 
     adw_header_bar_set_title_widget (bar, title);
-    adw_header_bar_pack_start (bar, g_paste_ui_switch_new (topwin, client));
-    adw_header_bar_pack_start (bar, reexec);
+    adw_header_bar_pack_start (bar, new_item);
     adw_header_bar_pack_start (bar, cancel);
-    adw_header_bar_pack_end (bar, about);
-    adw_header_bar_pack_end (bar, g_paste_ui_new_item_new (topwin, client));
-    adw_header_bar_pack_end (bar, settings);
-    adw_header_bar_pack_end (bar, search);
-    adw_header_bar_pack_end (bar, favourites);
+    adw_header_bar_pack_end (bar, menu);
     adw_header_bar_pack_end (bar, merge);
+    adw_header_bar_pack_end (bar, favourites);
+    adw_header_bar_pack_end (bar, search);
 
     return self;
 }

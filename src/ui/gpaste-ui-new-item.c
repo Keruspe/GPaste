@@ -5,17 +5,6 @@
 
 #include <gpaste-ui-new-item.h>
 
-struct _GPasteUiNewItem
-{
-    GtkButton parent_instance;
-
-    GPasteClient *client;
-
-    GtkWindow    *rootwin;
-};
-
-G_PASTE_DEFINE_TYPE (UiNewItem, ui_new_item, GTK_TYPE_BUTTON)
-
 typedef struct
 {
     GPasteClient  *client;
@@ -43,68 +32,26 @@ on_new_item_response (GObject      *dialog   G_GNUC_UNUSED,
     }
 }
 
-static void
-g_paste_ui_new_item_clicked (GtkButton *button)
+/**
+ * g_paste_ui_new_item_show:
+ * @client: a #GPasteClient
+ * @rootwin: the root #GtkWindow
+ *
+ * Ask the user for the text of a new item, and add it
+ */
+void
+g_paste_ui_new_item_show (GPasteClient *client,
+                          GtkWindow    *rootwin)
 {
-    GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (button);
+    g_return_if_fail (G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (GTK_IS_WINDOW (rootwin));
+
     GtkTextBuffer *buf = NULL;
-    AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Add new item"), NULL, &buf);
+    AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Add New Item"), NULL, &buf);
 
     NewItemDialogData *data = g_new (NewItemDialogData, 1);
-    data->client = g_object_ref (self->client);
+    data->client = g_object_ref (client);
     data->buffer = g_object_ref (buf);
 
-    adw_alert_dialog_choose (dialog, GTK_WIDGET (self->rootwin), NULL, on_new_item_response, data);
-}
-
-static void
-g_paste_ui_new_item_dispose (GObject *object)
-{
-    GPasteUiNewItem *self = G_PASTE_UI_NEW_ITEM (object);
-
-    g_clear_object (&self->client);
-
-    G_OBJECT_CLASS (g_paste_ui_new_item_parent_class)->dispose (object);
-}
-
-static void
-g_paste_ui_new_item_class_init (GPasteUiNewItemClass *klass)
-{
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_new_item_dispose;
-    GTK_BUTTON_CLASS (klass)->clicked = g_paste_ui_new_item_clicked;
-}
-
-static void
-g_paste_ui_new_item_init (GPasteUiNewItem *self)
-{
-    GtkWidget *widget = GTK_WIDGET (self);
-
-    gtk_widget_set_tooltip_text (widget, _("New item"));
-    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
-    gtk_button_set_child (GTK_BUTTON (self), gtk_image_new_from_icon_name ("document-new-symbolic"));
-}
-
-/**
- * g_paste_ui_new_item_new:
- * @rootwin: the root #GtkWindow
- * @client: a #GPasteClient
- *
- * Create a new instance of #GPasteUiNewItem
- *
- * Returns: a newly allocated #GPasteUiNewItem
- *          free it with g_object_unref
- */
-GtkWidget *
-g_paste_ui_new_item_new (GtkWindow    *rootwin,
-                         GPasteClient *client)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
-
-    GPasteUiNewItem *self = g_object_new (G_PASTE_TYPE_UI_NEW_ITEM, NULL);
-
-    self->client = g_object_ref (client);
-    self->rootwin = rootwin;
-
-    return GTK_WIDGET (self);
+    adw_alert_dialog_choose (dialog, GTK_WIDGET (rootwin), NULL, on_new_item_response, data);
 }

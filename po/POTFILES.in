@@ -32,6 +32,4 @@ src/ui/gpaste-ui-item.c
 src/ui/gpaste-ui-new-item.c
 src/ui/gpaste-ui-panel.c
 src/ui/gpaste-ui-shortcuts-window.c
-src/ui/gpaste-ui-switch.c
 src/ui/gpaste-ui-window.c
-src/ui/gpaste-ui.c
