@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <glib/gstdio.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
@@ -2983,6 +2984,42 @@ test_encrypted_password_name_is_escaped (void)
 }
 #endif
 
+/* The history directory holds the clipboard -- passwords under the encrypted
+ * flavour, and the screenshots the plain one writes unencrypted -- so it is the
+ * owner's alone, and so is the images directory under it. */
+static void
+test_history_dir_is_private (void)
+{
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    GStatBuf st;
+
+    g_assert_cmpint (g_stat (dir, &st), ==, 0);
+    g_assert_cmpuint (st.st_mode & 0777, ==, 0700);
+
+    /* The images directory is created on demand, by writing a history that has
+     * an image in it. */
+    const gchar *name = "private-dir";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GBytes) png = test_png_bytes_colored (1, 2, 3);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_list_free_full (items, g_object_unref);
+
+    g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
+
+    g_assert_cmpint (g_stat (images_dir, &st), ==, 0);
+    g_assert_cmpuint (st.st_mode & 0777, ==, 0700);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -3034,6 +3071,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     g_test_add_func ("/history/file_version_guard", test_file_version_guard);
     g_test_add_func ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
+    g_test_add_func ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);

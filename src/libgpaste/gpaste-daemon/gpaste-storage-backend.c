@@ -108,10 +108,10 @@ g_paste_storage_backend_lock (void)
         g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
     }
 
+    if (!g_paste_util_ensure_history_dir_exists ())
+        return;
+
     g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
-
-    g_mkdir_with_parents (dir, 0700);
-
     g_autofree gchar *path = g_build_filename (dir, "lock", NULL);
     gint fd = open (path, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
 

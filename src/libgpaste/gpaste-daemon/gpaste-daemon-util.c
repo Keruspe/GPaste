@@ -3,6 +3,9 @@
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
 
+#include <glib/gstdio.h>
+
+#include <errno.h>
 #include <string.h>
 
 /**
@@ -201,19 +204,40 @@ g_paste_util_get_history_file (const gchar *name,
 G_PASTE_VISIBLE gboolean
 g_paste_util_ensure_history_dir_exists (void)
 {
-    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
+    g_autofree gchar *history_dir_path = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *parent_path = g_path_get_dirname (history_dir_path);
 
-    if (!g_file_query_exists (history_dir,
-                              NULL)) /* cancellable */
+    /* The ancestors are 0755: restricting ~/.local and ~/.local/share on a fresh
+     * account is not this function's call to make. Only the leaf is ours, and it
+     * is created below with the mode it has to keep. */
+    if (g_mkdir_with_parents (parent_path, 0755) < 0)
     {
-        g_autoptr (GError) error = NULL;
+        g_critical ("%s: %s", _("Could not create history dir"), g_strerror (errno));
+        return FALSE;
+    }
 
-        g_file_make_directory_with_parents (history_dir,
-                                            NULL, /* cancellable */
-                                            &error);
-        if (error)
+    /* This directory holds the clipboard in the clear -- every text item of the
+     * plain flavours, and the screenshots every flavour materializes beside them
+     * -- and the files in it are written through the umask, which is a mode
+     * anyone with an account on the machine can read. So it is created private
+     * rather than created and then restricted: a directory that is readable for
+     * even the moment between the two calls is one another user can open and
+     * hold open, and a later chmod takes no such descriptor back. */
+    if (g_mkdir (history_dir_path, 0700) < 0)
+    {
+        if (errno != EEXIST)
         {
-            g_critical ("%s: %s", _("Could not create history dir"), error->message);
+            g_critical ("%s: %s", _("Could not create history dir"), g_strerror (errno));
+            return FALSE;
+        }
+
+        /* Found rather than created, and the directory of an installation that
+         * predates this was made 0755, so the mode is set on what was already
+         * there. Failing to restrict it fails the call: the history is about to
+         * be written into it. */
+        if (g_chmod (history_dir_path, 0700) < 0)
+        {
+            g_critical ("Could not restrict the history dir to its owner: %s", g_strerror (errno));
             return FALSE;
         }
     }

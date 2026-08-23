@@ -12,6 +12,10 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
+#include <glib/gstdio.h>
+
+#include <errno.h>
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 #define GCR_API_SUBJECT_TO_CHANGE
 #include <gcr/gcr.h>
@@ -201,17 +205,15 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     }
 
     g_autofree gchar *images_dir = g_path_get_dirname (target);
-    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
     g_autoptr (GError) error = NULL;
 
-    if (!g_file_make_directory_with_parents (dir, NULL, &error) &&
-        !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+    /* 0700 like the history directory above it: what lands here is the
+     * clipboard's screenshots, and the plain flavour writes them unencrypted. */
+    if (g_mkdir_with_parents (images_dir, 0700) < 0)
     {
-        g_warning ("Failed to create images directory: %s", error->message);
+        g_warning ("Failed to create images directory: %s", g_strerror (errno));
         return;
     }
-
-    g_clear_error (&error);
 
     /* get_output_stream wraps the file with the encryption converter exactly
      * when this backend has a passphrase, matching the target chosen above. */
