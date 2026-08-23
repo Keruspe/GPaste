@@ -126,7 +126,7 @@ export default class GPasteExtension extends Extension {
         // ready, so re-check before actually adding the indicator.
         if (!this._indicatorWanted || Main.panel.statusArea.gpaste)
             return;
-        Main.panel.addToStatusArea('gpaste', new GPasteIndicator());
+        Main.panel.addToStatusArea('gpaste', new GPasteIndicator(this));
     }
 
     // @extensionDisabled distinguishes the extension going away from the

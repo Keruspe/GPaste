@@ -3,13 +3,11 @@
 
 import './dependencies.js';
 
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {Button} from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import {PopupMenuSection, PopupSeparatorMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {PopupMenuSection} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -17,8 +15,7 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import GPaste from 'gi://GPaste?version=3';
 
-import {GPasteActionButton} from './actionButton.js';
-import {GPasteActions} from './actions.js';
+import {addGPasteFooter} from './actions.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
 import {GPasteItem} from './item.js';
 import {GPasteSearchItem} from './searchItem.js';
@@ -31,8 +28,10 @@ class GPasteIndicator extends Button {
     // known); _maybeLoadMore() then tops the list up to fill the viewport.
     static _DEFAULT_BATCH = 20;
 
-    constructor() {
+    constructor(extension) {
         super(0.0, 'GPaste');
+
+        this._extension = extension;
 
         this._statusIcon = new St.BoxLayout({style_class: 'panel-status-menu-box'});
         this._statusIcon.add_child(new St.Icon({
@@ -108,19 +107,6 @@ class GPasteIndicator extends Button {
             return;
         }
 
-        // The button drops what the action returns, so this promise is nobody's
-        // to await: catch here, or a daemon that goes away mid-call surfaces as
-        // an unhandled rejection.
-        this._emptyHistoryItem = new GPasteActionButton('edit-clear-all-symbolic', _('Empty history'), () => {
-            this.menu.itemActivated();
-
-            // No name, no history to empty: the property is cached off the
-            // daemon, and reads back null while it is away.
-            const history = this._client.get_history_name();
-
-            if (history)
-                GPaste.util_empty_with_confirmation(this._client, this._settings, history);
-        });
         this._switch = new GPasteStateSwitch(this._client);
 
         // Header, inserted before the dummy placeholder added in the constructor.
@@ -140,9 +126,8 @@ class GPasteIndicator extends Button {
         // it against the dummy row and the footer separator.
         this._scrollView.update_fade_effect(new Clutter.Margin({top: 16, bottom: 16}));
 
-        this.menu.addMenuItem(new PopupSeparatorMenuItem());
-        this._actions = new GPasteActions(this.menu, this._emptyHistoryItem);
-        this.menu.addMenuItem(this._actions);
+        this._footer = addGPasteFooter(this.menu, this._extension, this._client, this._settings);
+        this._emptyHistoryItem = this._footer.empty;
 
         const dummyIndex = this.menu.box.get_children().indexOf(this._dummyHistoryItem);
         this.menu.box.insert_child_at_index(this._scrollView, dummyIndex + 1);
@@ -593,38 +578,30 @@ class GPasteIndicator extends Button {
         super._onOpenStateChanged(menu, state);
     }
 
+    // The footer items walk among themselves now that they are menu items, but
+    // the history above them is not in the menu's item tree -- its rows live in
+    // a section nested in the scroll view -- so Up from the first of them has
+    // nothing there to land on. Bridge that one step.
     _onMenuKeyPress(actor, event) {
         if (this._switch && this._switch.active)
             return super._onMenuKeyPress(actor, event);
 
-        const symbol = event.get_key_symbol();
+        if (event.get_key_symbol() !== Clutter.KEY_Up)
+            return Clutter.EVENT_PROPAGATE;
 
-        // The action buttons sit side by side inside a non-reactive row, so the
-        // key event never bubbles through their container; the menu actor
-        // (reactive) is where it surfaces, so drive their navigation from here.
-        // Left/Right move between the actions and Up returns to the last history
-        // item; the action buttons are plain St.Buttons and don't drive that
-        // focus navigation themselves.
         const focus = global.stage.get_key_focus();
-        if (this._actions && focus && this._actions.contains(focus)) {
-            if (symbol === Clutter.KEY_Left || symbol === Clutter.KEY_Right) {
-                const direction = symbol === Clutter.KEY_Left
-                    ? St.DirectionType.LEFT
-                    : St.DirectionType.RIGHT;
-                this._actions.navigate_focus(focus, direction, false);
-                return Clutter.EVENT_STOP;
-            }
 
-            if (symbol === Clutter.KEY_Up) {
-                const last = this._lastHistoryItem();
-                if (last) {
-                    last.grab_key_focus();
-                    return Clutter.EVENT_STOP;
-                }
-            }
-        }
+        if (!this._footer || !focus || !this._footer.open.contains(focus))
+            return Clutter.EVENT_PROPAGATE;
 
-        return Clutter.EVENT_PROPAGATE;
+        const last = this._lastHistoryItem();
+
+        if (!last)
+            return Clutter.EVENT_PROPAGATE;
+
+        last.grab_key_focus();
+
+        return Clutter.EVENT_STOP;
     }
 
     _lastHistoryItem() {

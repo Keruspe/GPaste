@@ -9,7 +9,6 @@ src/gnome-shell/actions.js
 src/gnome-shell/deleteButton.js
 src/gnome-shell/dummyHistoryItem.js
 src/gnome-shell/favouriteButton.js
-src/gnome-shell/indicator.js
 src/gnome-shell/searchItem.js
 src/gnome-shell/stateSwitch.js
 src/libgpaste/gpaste-3/gpaste-keybindings.h
