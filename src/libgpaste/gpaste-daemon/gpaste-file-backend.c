@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-item.h>
+#include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
@@ -17,19 +18,16 @@
 #include <errno.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-#define GCR_API_SUBJECT_TO_CHANGE
-#include <gcr/gcr.h>
-
 #include <gpaste-daemon/gpaste-secret-stream-converter.h>
 #endif
 
 typedef struct
 {
-    /* When set (in gcr secure memory), the history is encrypted on disk: the
-     * file streams are wrapped with a secretstream converter, the ".xmls"
-     * extension is used, and password entries are persisted (encrypted) rather
-     * than skipped. NULL means a plain ".xml" history. */
-    gchar *passphrase;
+    /* When set, the history is encrypted on disk: the file streams are wrapped
+     * with a secretstream converter, the ".xmls" extension is used, and password
+     * entries are persisted (encrypted) rather than skipped. NULL means a plain
+     * ".xml" history. */
+    GPastePassphrase *passphrase;
 } GPasteFileBackendPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
@@ -41,7 +39,7 @@ g_paste_file_backend_get_passphrase (GPasteStorageBackend *self)
 {
     const GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
 
-    return priv->passphrase;
+    return g_paste_passphrase_peek (priv->passphrase);
 }
 
 static gboolean g_paste_file_backend_load_contents (GPasteStorageBackend *self,
@@ -1367,7 +1365,8 @@ g_paste_file_backend_get_output_stream (GPasteFileBackend *self G_GNUC_UNUSED,
 
     if (priv->passphrase)
     {
-        g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_ENCRYPT, priv->passphrase);
+        g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_ENCRYPT,
+                                                                                g_paste_passphrase_peek (priv->passphrase));
         GOutputStream *encrypted = g_converter_output_stream_new (stream, converter);
 
         /* The converter stream now owns the file stream (and flushes the FINAL
@@ -1386,7 +1385,7 @@ g_paste_file_backend_finalize (GObject *object)
 {
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
 
-    gcr_secure_memory_strfree (priv->passphrase);
+    g_paste_passphrase_free (priv->passphrase);
 
     G_OBJECT_CLASS (g_paste_file_backend_parent_class)->finalize (object);
 }
@@ -1489,7 +1488,7 @@ g_paste_file_backend_new_encrypted (GPasteSettings *settings,
     GPasteStorageBackend *self = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
 
-    priv->passphrase = gcr_secure_memory_strdup (passphrase);
+    priv->passphrase = g_paste_passphrase_new (passphrase);
 
     return self;
 }

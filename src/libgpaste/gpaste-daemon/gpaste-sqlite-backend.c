@@ -7,6 +7,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -72,12 +73,12 @@ struct _GPasteSqliteBackend
     GMutex   lock;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* When set (in gcr secure memory), the content columns are encrypted, the
-     * ".dbs" extension is used, and password entries are persisted rather than
-     * skipped. The key is salt-dependent, hence derived per database and cached
-     * (also in gcr secure memory) alongside the connection. */
-    gchar  *passphrase;
-    guchar *key;
+    /* When set, the content columns are encrypted, the ".dbs" extension is used,
+     * and password entries are persisted rather than skipped. The key is
+     * salt-dependent, hence derived per database and cached (in gcr secure
+     * memory) alongside the connection. */
+    GPastePassphrase *passphrase;
+    guchar           *key;
 #endif
 };
 
@@ -156,7 +157,7 @@ g_paste_sqlite_backend_query_int64 (sqlite3     *db,
 static const gchar *
 g_paste_sqlite_backend_get_passphrase (GPasteStorageBackend *self)
 {
-    return G_PASTE_SQLITE_BACKEND (self)->passphrase;
+    return g_paste_passphrase_peek (G_PASTE_SQLITE_BACKEND (self)->passphrase);
 }
 
 /* The derived content key of the currently open database, or NULL for the
@@ -703,7 +704,7 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
         guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
         gboolean wrong_passphrase = FALSE;
 
-        if (!g_paste_sqlite_backend_setup_crypto (db, backend->passphrase, key, &wrong_passphrase))
+        if (!g_paste_sqlite_backend_setup_crypto (db, g_paste_passphrase_peek (backend->passphrase), key, &wrong_passphrase))
         {
             if (wrong_passphrase)
                 g_warning ("sqlite: the passphrase does not unlock “%s”; not touching it", db_path);
@@ -1751,7 +1752,7 @@ g_paste_sqlite_backend_finalize (GObject *object)
     g_mutex_clear (&self->lock);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_clear_pointer (&self->key, gcr_secure_memory_free);
-    gcr_secure_memory_strfree (self->passphrase);
+    g_paste_passphrase_free (self->passphrase);
 #endif
 
     G_OBJECT_CLASS (g_paste_sqlite_backend_parent_class)->finalize (object);
@@ -1864,7 +1865,7 @@ g_paste_sqlite_backend_new_encrypted (GPasteSettings *settings,
     GPasteStorageBackend *self = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
 
-    backend->passphrase = gcr_secure_memory_strdup (passphrase);
+    backend->passphrase = g_paste_passphrase_new (passphrase);
 
     return self;
 }

@@ -23,29 +23,13 @@
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-#define GCR_API_SUBJECT_TO_CHANGE
-#include <gcr/gcr.h>
+#include <gpaste-daemon/gpaste-passphrase.h>
 
 /* The daemon's single master passphrase for the encrypted backend, obtained
  * once at startup (prompt or keyring). Kept process-wide in gcr secure memory
  * so every history the daemon builds resolves the encrypted backend without
  * threading the secret through every constructor. */
-static gchar *g_paste_storage_passphrase = NULL;
-
-/* Copy a passphrase into gcr secure (non-pageable) memory. NULL for a NULL or
- * empty one; free it with g_paste_storage_passphrase_free(). */
-static gchar *
-g_paste_storage_passphrase_dup (const gchar *passphrase)
-{
-    return (passphrase && *passphrase) ? gcr_secure_memory_strdup (passphrase) : NULL;
-}
-
-/* Wipe and release a passphrase copy. */
-static void
-g_paste_storage_passphrase_free (gchar *passphrase)
-{
-    gcr_secure_memory_strfree (passphrase);
-}
+static GPastePassphrase *g_paste_storage_passphrase = NULL;
 
 /**
  * g_paste_storage_backend_set_passphrase:
@@ -56,8 +40,8 @@ g_paste_storage_passphrase_free (gchar *passphrase)
 G_PASTE_VISIBLE void
 g_paste_storage_backend_set_passphrase (const gchar *passphrase)
 {
-    g_paste_storage_passphrase_free (g_paste_storage_passphrase);
-    g_paste_storage_passphrase = g_paste_storage_passphrase_dup (passphrase);
+    g_paste_passphrase_free (g_paste_storage_passphrase);
+    g_paste_storage_passphrase = g_paste_passphrase_new (passphrase);
 }
 
 /**
@@ -69,7 +53,7 @@ g_paste_storage_backend_set_passphrase (const gchar *passphrase)
 G_PASTE_VISIBLE const gchar *
 g_paste_storage_backend_get_passphrase (void)
 {
-    return g_paste_storage_passphrase;
+    return g_paste_passphrase_peek (g_paste_storage_passphrase);
 }
 #endif
 
