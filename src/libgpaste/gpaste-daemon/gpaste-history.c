@@ -5,6 +5,7 @@
 #include <gpaste-3/gpaste-update-enums.h>
 #include <gpaste-3/gpaste-util.h>
 
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
@@ -1135,6 +1136,31 @@ g_paste_history_empty (GPasteHistory *self)
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_CLEAR, NULL, NULL, FALSE);
 }
 
+/* The name a history is about to be loaded or saved under: the one given, or
+ * the configured one. GSettings is writable by anything the user runs, so the
+ * configured name is no more trusted than a name off the bus -- and a name that
+ * is a path names a history file outside the history directory. Fall back to the
+ * default rather than refuse to have a history at all: a setting somebody
+ * mangled should not cost the user their clipboard. */
+static const gchar *
+g_paste_history_resolve_name (GPasteHistory *self,
+                              const gchar   *name)
+{
+    if (!name)
+        name = g_paste_settings_get_history_name (self->settings);
+
+    if (g_paste_util_history_name_is_valid (name))
+        return name;
+
+    /* @name is what a NULL setting resolved to, so it can still be NULL here,
+     * and printf ("%s", NULL) is undefined -- it is glibc that prints
+     * "(null)", not C. */
+    g_warning ("“%s” does not name a history; using “%s” instead",
+               (name) ?: "(none)", G_PASTE_DEFAULT_HISTORY);
+
+    return G_PASTE_DEFAULT_HISTORY;
+}
+
 /**
  * g_paste_history_save:
  * @self: a #GPasteHistory instance
@@ -1152,7 +1178,13 @@ g_paste_history_save (GPasteHistory *self,
 
     g_autolist (GPasteItem) snapshot = g_paste_history_snapshot (self);
 
-    g_paste_storage_backend_write_history (self->backend, (name) ? name : self->name, snapshot);
+    /* Resolved the same way a load is: an unchecked name reaches
+     * g_paste_util_get_history_file_path (), which answers %NULL for one that is
+     * a path -- and a save that builds no path writes nothing at all, where a
+     * load would have fallen back to the default. */
+    g_paste_storage_backend_write_history (self->backend,
+                                           g_paste_history_resolve_name (self, (name) ? name : self->name),
+                                           snapshot);
 }
 
 /**
@@ -1206,7 +1238,7 @@ g_paste_history_load_locked (GPasteHistory *self,
     g_paste_history_private_clear (self);
     self->size = 0;
 
-    g_set_str (&self->name, (name) ? name : g_paste_settings_get_history_name (self->settings));
+    g_set_str (&self->name, g_paste_history_resolve_name (self, name));
 
     /* A history that is on disk but unreadable (wrong passphrase, corrupt or
      * truncated file, I/O error) must not be persisted over: stop recording so
@@ -1384,7 +1416,7 @@ g_paste_history_load_async (GPasteHistory *self,
 
     G_PASTE_LOCK_HISTORY;
 
-    const gchar *resolved = (name) ? name : g_paste_settings_get_history_name (self->settings);
+    const gchar *resolved = g_paste_history_resolve_name (self, name);
 
     if (self->name && g_paste_str_equal (resolved, self->name) && !g_paste_history_saver_is_loading (self->saver))
         return;
@@ -1413,7 +1445,7 @@ g_paste_history_switch (GPasteHistory *self,
                         const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (name);
+    g_return_if_fail (g_paste_util_history_name_is_valid (name));
     g_return_if_fail (g_utf8_validate (name, -1, NULL));
 
     g_paste_settings_set_history_name (self->settings, name);
@@ -1494,7 +1526,7 @@ g_paste_history_delete (GPasteHistory *self,
 static void
 g_paste_history_history_name_changed (GPasteHistory *self)
 {
-    g_set_str (&self->name, g_paste_settings_get_history_name (self->settings));
+    g_set_str (&self->name, g_paste_history_resolve_name (self, NULL));
 
     g_debug ("history: name changed to '%s'", self->name);
 

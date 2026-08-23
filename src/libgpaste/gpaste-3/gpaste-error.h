@@ -14,7 +14,8 @@ G_BEGIN_DECLS
 /**
  * GPasteError:
  * @G_PASTE_ERROR_FAILED: something went wrong and nothing more specific fits
- * @G_PASTE_ERROR_INVALID_ARGUMENT: a required argument was empty or missing
+ * @G_PASTE_ERROR_INVALID_ARGUMENT: a required argument was empty, missing, or
+ *                                   not something the method can act on
  * @G_PASTE_ERROR_NOT_FOUND: no item, password or history goes by that name/uuid
  * @G_PASTE_ERROR_INVALID_INDEX: the index is past the end of the history
  * @G_PASTE_ERROR_WRONG_ITEM_KIND: the item exists but is not of a kind this

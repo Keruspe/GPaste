@@ -72,7 +72,10 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
 G_PASTE_VISIBLE gchar *
 g_paste_file_backend_images_dir (const gchar *history_name)
 {
-    g_return_val_if_fail (history_name, NULL);
+    /* The name is a path component here just as it is in the history file's own
+     * name: one that traverses out would have the images sweep delete the
+     * contents of whichever directory it landed in. */
+    g_return_val_if_fail (g_paste_util_history_name_is_valid (history_name), NULL);
 
     g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
 

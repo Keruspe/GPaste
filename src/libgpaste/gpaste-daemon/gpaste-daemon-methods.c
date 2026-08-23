@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-daemon/gpaste-daemon-methods.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
@@ -9,6 +10,16 @@
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <string.h>
+
+/* A history is stored in a file its name goes straight into, and in an images
+ * directory of the same name, so a name that is a path names something outside
+ * the history directory: a backup writes its file there, and a delete sweeps
+ * every file of the directory it landed in. Checked here, at the bus, where a
+ * caller still gets an error instead of the path builders' critical. */
+#define G_PASTE_DBUS_ASSERT_HISTORY_NAME(name)                                    \
+    G_PASTE_DBUS_ASSERT (g_paste_util_history_name_is_valid (name),               \
+                         G_PASTE_ERROR_INVALID_ARGUMENT,                          \
+                         "a history is named, not a path")
 
 /* The one shape an item takes on the wire, and the one value it carries: the
  * string a user is shown. */
@@ -232,6 +243,8 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
 {
     G_PASTE_DBUS_ASSERT (history && *history, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to backup");
     G_PASTE_DBUS_ASSERT (backup && *backup, G_PASTE_ERROR_INVALID_ARGUMENT, "no name to back the history up under");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (history);
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (backup);
 
     /* Refused rather than overwritten: a backup quietly destroying an older one
      * of the same name is a loss noticed far too late to undo. A store we cannot
@@ -280,6 +293,7 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
                                        GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to delete");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
 
     GPasteHistory *history = self->history;
 
@@ -315,6 +329,7 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
                                       GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to empty");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
 
     /* Emptying a history there is none of writes one, empty: that is the set of
      * histories growing, which anything listing them has to hear about. Asked
@@ -674,6 +689,7 @@ g_paste_daemon_methods_switch_history (const GPasteDaemonMethods *self,
                                        GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to switch to");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
 
     /* Switching to a name no history goes by creates it: that is how a new
      * history comes into being, there being no CreateHistory of its own, and it

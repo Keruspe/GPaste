@@ -2920,6 +2920,28 @@ test_encrypted_sqlite_incremental (void)
 }
 #endif
 
+/* A history name goes straight into the file the history is stored in and into
+ * the images directory it owns, so one carrying a path component names
+ * something outside the history directory: the file is written wherever the
+ * traversal lands, and deleting that history sweeps whatever is there. Names
+ * arrive from the bus, so this has to be a refusal. */
+static void
+test_history_name_refuses_a_path (void)
+{
+    g_assert_true (g_paste_util_history_name_is_valid ("history"));
+    g_assert_true (g_paste_util_history_name_is_valid ("a name with spaces"));
+    g_assert_true (g_paste_util_history_name_is_valid ("..dots-but-not-a-traversal"));
+
+    g_assert_false (g_paste_util_history_name_is_valid ("../escape"));
+    g_assert_false (g_paste_util_history_name_is_valid ("sub/history"));
+    g_assert_false (g_paste_util_history_name_is_valid ("/absolute"));
+    g_assert_false (g_paste_util_history_name_is_valid ("trailing/"));
+    g_assert_false (g_paste_util_history_name_is_valid ("."));
+    g_assert_false (g_paste_util_history_name_is_valid (".."));
+    g_assert_false (g_paste_util_history_name_is_valid (""));
+    g_assert_false (g_paste_util_history_name_is_valid (NULL));
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -2970,6 +2992,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/delete_refused_after_flush", test_delete_refused_after_flush);
     g_test_add_func ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     g_test_add_func ("/history/file_version_guard", test_file_version_guard);
+    g_test_add_func ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
