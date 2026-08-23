@@ -24,6 +24,8 @@ void      g_paste_ui_item_set_index (GPasteUiItem *self,
 void      g_paste_ui_item_set_uuid (GPasteUiItem *self,
                                     const gchar  *uuid);
 
+void      g_paste_ui_item_popup_menu (GPasteUiItem *self);
+
 GtkWidget *g_paste_ui_item_new (GPasteClient   *client,
                                 GPasteSettings *settings,
                                 GtkWindow      *rootwin,

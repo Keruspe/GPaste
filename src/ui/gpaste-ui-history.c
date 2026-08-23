@@ -137,6 +137,11 @@ g_paste_ui_history_setup_item (GtkListItemFactory *factory G_GNUC_UNUSED,
     GtkWidget *item = g_paste_ui_item_new (self->client, self->settings, self->rootwin, (guint64) -1);
     GtkGesture *gesture = gtk_gesture_click_new ();
 
+    /* A row's own actions have no business being offered while the list is
+     * picking items to merge. Bound at setup, so it covers the rows built later
+     * as well as the ones recycled since. */
+    g_object_bind_property (self, "selection-mode", item, "selection-mode", G_BINDING_SYNC_CREATE);
+
     gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_CAPTURE);
     g_object_set_data (G_OBJECT (gesture), "gpaste-list-item", list_item);
     g_signal_connect_object (gesture, "pressed", G_CALLBACK (on_row_pressed), self, 0);
@@ -611,6 +616,61 @@ g_paste_ui_history_activate_position (GPasteUiHistory *self,
     return TRUE;
 }
 
+/* The row's context menu is where its actions all are, so the keyboard needs a
+ * way in. The shortcut cannot live on the row: what takes the focus is the
+ * GtkListItem above it, so a local controller there would never see the key.
+ * The list view does, and its focused child is the list item whose only child
+ * is the row. */
+static gboolean
+on_context_menu (GtkWidget *widget,
+                 GVariant  *args G_GNUC_UNUSED,
+                 gpointer   user_data G_GNUC_UNUSED)
+{
+    GtkWidget *list_item = gtk_widget_get_focus_child (widget);
+
+    if (!list_item)
+        return FALSE;
+
+    GtkWidget *row = gtk_widget_get_first_child (list_item);
+
+    if (!G_PASTE_IS_UI_ITEM (row))
+        return FALSE;
+
+    g_paste_ui_item_popup_menu (G_PASTE_UI_ITEM (row));
+
+    return TRUE;
+}
+
+/* The two keys a list is expected to answer a context menu to. */
+static const struct
+{
+    guint           keyval;
+    GdkModifierType modifiers;
+} context_menu_keys[] = {
+    { GDK_KEY_Menu, 0             },
+    { GDK_KEY_F10,  GDK_SHIFT_MASK },
+};
+
+static void
+add_context_menu_shortcuts (GtkWidget *list_view)
+{
+    GtkEventController *shortcuts = gtk_shortcut_controller_new ();
+
+    gtk_shortcut_controller_set_scope (GTK_SHORTCUT_CONTROLLER (shortcuts), GTK_SHORTCUT_SCOPE_LOCAL);
+
+    for (gsize i = 0; i < G_N_ELEMENTS (context_menu_keys); ++i)
+    {
+        GtkShortcutTrigger *trigger = gtk_keyval_trigger_new (context_menu_keys[i].keyval,
+                                                              context_menu_keys[i].modifiers);
+
+        gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (shortcuts),
+                                              gtk_shortcut_new (trigger,
+                                                                gtk_callback_action_new (on_context_menu, NULL, NULL)));
+    }
+
+    gtk_widget_add_controller (list_view, shortcuts);
+}
+
 static void
 on_item_activated (GtkListView *list_view G_GNUC_UNUSED,
                    guint        position,
@@ -1033,6 +1093,8 @@ g_paste_ui_history_new (GPasteClient   *client,
     GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scroll));
     g_signal_connect_object (vadjustment, "changed", G_CALLBACK (g_paste_ui_history_on_adjustment_changed), self, 0);
     g_signal_connect_object (scroll, "edge-reached", G_CALLBACK (g_paste_ui_history_on_edge_reached), self, 0);
+
+    add_context_menu_shortcuts (list_view);
 
     g_signal_connect_object (list_view, "activate", G_CALLBACK (on_item_activated), self, 0);
     g_signal_connect (list_view, "map", G_CALLBACK (on_list_view_mapped), NULL);

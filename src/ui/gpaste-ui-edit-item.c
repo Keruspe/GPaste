@@ -5,15 +5,6 @@
 
 #include <gpaste-ui-edit-item.h>
 
-struct _GPasteUiEditItem
-{
-    GPasteUiItemAction parent_instance;
-
-    GtkWindow *rootwin;
-};
-
-G_PASTE_DEFINE_TYPE (UiEditItem, ui_edit_item, G_PASTE_TYPE_UI_ITEM_ACTION)
-
 typedef struct
 {
     GtkWindow *rootwin;
@@ -82,53 +73,29 @@ on_item_ready (GObject      *source_object,
     adw_alert_dialog_choose (dialog, GTK_WIDGET (rootwin), NULL, on_edit_response, dialog_data);
 }
 
-static void
-g_paste_ui_edit_item_activate (GPasteUiItemAction *action,
-                               GPasteClient       *client,
-                               const gchar        *uuid)
-{
-    CallbackData *data = g_new (CallbackData, 1);
-    GPasteUiEditItem *self = G_PASTE_UI_EDIT_ITEM (action);
-
-    data->rootwin = g_object_ref (self->rootwin);
-    data->uuid = g_strdup (uuid);
-
-    /* The plain getter: Edit is only sensitive for a text item, whose display
-     * string is its value. */
-    g_paste_client_get_item (client, uuid, on_item_ready, data);
-}
-
-static void
-g_paste_ui_edit_item_class_init (GPasteUiEditItemClass *klass)
-{
-    G_PASTE_UI_ITEM_ACTION_CLASS (klass)->activate = g_paste_ui_edit_item_activate;
-}
-
-static void
-g_paste_ui_edit_item_init (GPasteUiEditItem *self G_GNUC_UNUSED)
-{
-}
-
 /**
- * g_paste_ui_edit_item_new:
+ * g_paste_ui_edit_item_show:
  * @client: a #GPasteClient
  * @rootwin: the root #GtkWindow
+ * @uuid: the uuid of the item to edit
  *
- * Create a new instance of #GPasteUiEditItem
- *
- * Returns: a newly allocated #GPasteUiEditItem
- *          free it with g_object_unref
+ * Read an item back and offer its text for editing
  */
-GtkWidget *
-g_paste_ui_edit_item_new (GPasteClient *client,
-                          GtkWindow    *rootwin)
+void
+g_paste_ui_edit_item_show (GPasteClient *client,
+                           GtkWindow    *rootwin,
+                           const gchar  *uuid)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
+    g_return_if_fail (G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (GTK_IS_WINDOW (rootwin));
+    g_return_if_fail (uuid);
 
-    GPasteUiEditItem *self = G_PASTE_UI_EDIT_ITEM (g_paste_ui_item_action_new (G_PASTE_TYPE_UI_EDIT_ITEM, client, "accessories-text-editor-symbolic", _("Edit")));
+    CallbackData *data = g_new (CallbackData, 1);
 
-    self->rootwin = rootwin;
+    data->rootwin = g_object_ref (rootwin);
+    data->uuid = g_strdup (uuid);
 
-    return GTK_WIDGET (self);
+    /* The plain getter: Edit is only offered for a text item, whose display
+     * string is its value. */
+    g_paste_client_get_item (client, uuid, on_item_ready, data);
 }

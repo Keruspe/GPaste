@@ -8,7 +8,6 @@
 
 #include <gpaste-ui-color-swatch.h>
 #include <gpaste-ui-edit-item.h>
-#include <gpaste-ui-item-action.h>
 #include <gpaste-ui-item.h>
 
 struct _GPasteUiItem
@@ -17,10 +16,14 @@ struct _GPasteUiItem
 
     GSignalGroup   *settings_signals;
 
-    GSList         *actions;
-    GtkWidget      *edit;
-    GtkWidget      *favourite;
-    GtkWidget      *upload;
+    /* Everything this row can be asked to do, under the "item." prefix. The
+     * inline buttons and the context menu both go through them, so there is one
+     * implementation of each action and one place that says whether the row can
+     * currently perform it. */
+    GSimpleActionGroup *actions;
+    GtkWidget      *favourite;       /* the star: shown while pinned, or on hover */
+    GtkWidget      *remove;          /* shown on hover */
+    GtkWidget      *menu;            /* the context menu, parented to the row */
 
     GtkWidget      *hbox;
 
@@ -32,6 +35,8 @@ struct _GPasteUiItem
     gboolean        editable;
     gboolean        uploadable;
     gboolean        favourited;
+    gboolean        hovered;
+    gboolean        selection_mode;
 
     GPasteClient   *client;
     GPasteSettings *settings;
@@ -47,6 +52,16 @@ struct _GPasteUiItem
      * the widget has since been rebound to. */
     guint64         generation;
 };
+
+enum
+{
+    PROP_0,
+    PROP_SELECTION_MODE,
+
+    N_PROPERTIES
+};
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL };
 
 G_PASTE_DEFINE_TYPE (UiItem, ui_item, GTK_TYPE_BOX)
 
@@ -103,13 +118,48 @@ g_paste_ui_item_on_images_preview_changed (GPasteSettings *settings,
     gtk_widget_set_visible (GTK_WIDGET (self->thumbnail), has_image && g_paste_settings_get_images_preview (settings));
 }
 
+static GSimpleAction *
+item_action (GPasteUiItem *self,
+             const gchar  *name)
+{
+    return G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (self->actions), name));
+}
+
+/* A row is on screen before the item it stands for has been fetched, and a
+ * recycled one is no longer the item it is still showing, so what it can do
+ * follows the uuid it currently answers for: with none, every action is
+ * disabled, which leaves the buttons insensitive and the menu items greyed
+ * rather than aimed at whatever the row used to hold. */
+static void
+g_paste_ui_item_update_actions (GPasteUiItem *self)
+{
+    gboolean armed = (self->uuid != NULL);
+
+    g_simple_action_set_enabled (item_action (self, "edit"), armed && self->editable);
+    g_simple_action_set_enabled (item_action (self, "upload"), armed && self->uploadable);
+    g_simple_action_set_enabled (item_action (self, "pin"), armed);
+    g_simple_action_set_enabled (item_action (self, "delete"), armed);
+}
+
+/* Four buttons on every row read as a stack of button bars, so only the two
+ * frequent ones are inline and they wait to be asked for. The star is the
+ * exception: on a pinned item it is not a button but a badge, and a badge that
+ * only appears under the pointer says nothing. Everything a row can do is in
+ * its context menu, which is also the whole of the keyboard path. */
+static void
+g_paste_ui_item_update_actions_visibility (GPasteUiItem *self)
+{
+    gboolean revealed = self->hovered && !self->selection_mode;
+
+    gtk_widget_set_visible (self->favourite, revealed || (self->favourited && !self->selection_mode));
+    gtk_widget_set_visible (self->remove, revealed);
+}
+
 static void
 g_paste_ui_item_set_editable (GPasteUiItem *self,
                               gboolean      editable)
 {
     self->editable = editable;
-
-    gtk_widget_set_sensitive (self->edit, editable);
 }
 
 static void
@@ -117,8 +167,6 @@ g_paste_ui_item_set_uploadable (GPasteUiItem *self,
                                 gboolean      uploadable)
 {
     self->uploadable = uploadable;
-
-    gtk_widget_set_sensitive (self->upload, uploadable);
 }
 
 /* The star says what the item is, not what the button does, so its icon is the
@@ -129,9 +177,11 @@ g_paste_ui_item_set_favourited (GPasteUiItem *self,
 {
     self->favourited = favourited;
 
-    g_paste_ui_item_action_set_icon_name (G_PASTE_UI_ITEM_ACTION (self->favourite),
-                                          (favourited) ? "starred-symbolic" : "non-starred-symbolic");
+    gtk_button_set_icon_name (GTK_BUTTON (self->favourite),
+                              (favourited) ? "starred-symbolic" : "non-starred-symbolic");
     gtk_widget_set_tooltip_text (self->favourite, (favourited) ? _("Unpin") : _("Pin"));
+    g_simple_action_set_state (item_action (self, "pin"), g_variant_new_boolean (favourited));
+    g_paste_ui_item_update_actions_visibility (self);
 }
 
 static void
@@ -157,19 +207,8 @@ g_paste_ui_item_set_text_bold (GPasteUiItem *self,
 }
 
 static void
-action_set_uuid (gpointer data,
-                 gpointer user_data)
-{
-    GPasteUiItemAction *a = data;
-    const gchar *uuid = user_data;
-
-    g_paste_ui_item_action_set_uuid (a, uuid);
-}
-
-static void
-g_paste_ui_item_apply_index_and_uuid (GPasteUiItem *self,
-                                      guint64       index,
-                                      const gchar  *uuid)
+g_paste_ui_item_apply_index (GPasteUiItem *self,
+                             guint64       index)
 {
     if (index == (guint64) -1 || index == (guint64) -2)
         gtk_label_set_text (self->index_label, "");
@@ -179,8 +218,6 @@ g_paste_ui_item_apply_index_and_uuid (GPasteUiItem *self,
 
         gtk_label_set_text (self->index_label, _index);
     }
-
-    g_slist_foreach (self->actions, action_set_uuid, (gpointer) uuid);
 }
 
 static void
@@ -252,44 +289,123 @@ g_paste_ui_item_on_thumbnail_query_tooltip (GtkWidget  *widget,
     return TRUE;
 }
 
-static void
-add_action (gpointer data,
-            gpointer user_data)
-{
-    GtkWidget *w = data;
-    GtkBox *b = user_data;
-
-    gtk_widget_set_halign (w, GTK_ALIGN_START);
-    gtk_box_append (b, w);
-}
+/* The actions themselves. Each is disabled without a uuid (see
+ * g_paste_ui_item_update_actions), so none has to check for one. */
 
 static void
-delete_item_action (GPasteClient *client,
-                    const gchar  *uuid,
-                    gpointer      user_data G_GNUC_UNUSED)
-{
-    g_paste_client_delete_item (client, uuid, NULL, NULL);
-}
-
-static void
-upload_item_action (GPasteClient *client,
-                    const gchar  *uuid,
-                    gpointer      user_data G_GNUC_UNUSED)
-{
-    g_paste_client_upload (client, uuid, NULL, NULL);
-}
-
-/* The star asks for the state it is not showing; the daemon's answer comes back
- * as an update, which refills the row and so repaints the icon. Nothing is set
- * here, so a refused call simply leaves the star as it was. */
-static void
-favourite_item_action (GPasteClient *client,
-                       const gchar  *uuid,
-                       gpointer      user_data)
+on_edit (GSimpleAction *action    G_GNUC_UNUSED,
+         GVariant      *parameter G_GNUC_UNUSED,
+         gpointer       user_data)
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_client_set_favourite (client, uuid, !self->favourited, NULL, NULL);
+    g_paste_ui_edit_item_show (self->client, self->rootwin, self->uuid);
+}
+
+static void
+on_upload (GSimpleAction *action    G_GNUC_UNUSED,
+           GVariant      *parameter G_GNUC_UNUSED,
+           gpointer       user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    g_paste_client_upload (self->client, self->uuid, NULL, NULL);
+}
+
+static void
+on_delete (GSimpleAction *action    G_GNUC_UNUSED,
+           GVariant      *parameter G_GNUC_UNUSED,
+           gpointer       user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    g_paste_client_delete_item (self->client, self->uuid, NULL, NULL);
+}
+
+/* Asks the daemon for the state the star is not showing; the answer comes back
+ * as an update, which refills the row and so repaints it. Nothing is set here,
+ * so a refused call simply leaves the star as it was. */
+static void
+on_pin (GSimpleAction *action    G_GNUC_UNUSED,
+        GVariant      *parameter G_GNUC_UNUSED,
+        gpointer       user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    g_paste_client_set_favourite (self->client, self->uuid, !self->favourited, NULL, NULL);
+}
+
+/**
+ * g_paste_ui_item_popup_menu:
+ * @self: a #GPasteUiItem instance
+ *
+ * Open the row's context menu, centred on the row -- the keyboard's way in,
+ * where the pointer has the row's own gesture.
+ */
+void
+g_paste_ui_item_popup_menu (GPasteUiItem *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
+
+    if (!self->uuid || self->selection_mode)
+        return;
+
+    gtk_popover_set_pointing_to (GTK_POPOVER (self->menu), NULL);
+    gtk_popover_popup (GTK_POPOVER (self->menu));
+}
+
+static void
+on_secondary_click (GtkGestureClick *gesture,
+                    gint             n_press G_GNUC_UNUSED,
+                    gdouble          x,
+                    gdouble          y,
+                    gpointer         user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    if (!self->uuid || self->selection_mode)
+        return;
+
+    gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    gtk_popover_set_pointing_to (GTK_POPOVER (self->menu), &(GdkRectangle) { (gint) x, (gint) y, 1, 1 });
+    gtk_popover_popup (GTK_POPOVER (self->menu));
+}
+
+static void
+on_long_press (GtkGestureLongPress *gesture G_GNUC_UNUSED,
+               gdouble              x,
+               gdouble              y,
+               gpointer             user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    if (!self->uuid || self->selection_mode)
+        return;
+
+    gtk_popover_set_pointing_to (GTK_POPOVER (self->menu), &(GdkRectangle) { (gint) x, (gint) y, 1, 1 });
+    gtk_popover_popup (GTK_POPOVER (self->menu));
+}
+
+static void
+on_enter (GtkEventControllerMotion *controller G_GNUC_UNUSED,
+          gdouble                   x          G_GNUC_UNUSED,
+          gdouble                   y          G_GNUC_UNUSED,
+          gpointer                  user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    self->hovered = TRUE;
+    g_paste_ui_item_update_actions_visibility (self);
+}
+
+static void
+on_leave (GtkEventControllerMotion *controller G_GNUC_UNUSED,
+          gpointer                  user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    self->hovered = FALSE;
+    g_paste_ui_item_update_actions_visibility (self);
 }
 
 /* Carried by every step of the fill chain. @self is owned: the widget's only
@@ -414,12 +530,13 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     GPasteItemKind kind = g_paste_client_item_get_kind (item);
     g_autofree gchar *oneline = g_paste_util_one_line (txt);
 
-    g_paste_ui_item_apply_index_and_uuid (self, self->index, self->uuid);
+    g_paste_ui_item_apply_index (self, self->index);
 
     /* The kind arrives with the item, so only an image still costs a call. */
     g_paste_ui_item_set_editable (self, kind == G_PASTE_ITEM_KIND_TEXT);
     g_paste_ui_item_set_uploadable (self, kind == G_PASTE_ITEM_KIND_TEXT);
     g_paste_ui_item_set_favourited (self, g_paste_client_item_is_favourite (item));
+    g_paste_ui_item_update_actions (self);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
         g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
@@ -507,15 +624,11 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
     /* The list view shows exactly the rows the model holds, so an unbound one is
      * simply not on screen — there is nothing to hide. Drop its uuid, though: a
      * recycled row must not be activatable — or, in merge mode, pickable — as
-     * the item it used to display.
-     *
-     * Its buttons hold a copy of that uuid each, and only the reply to the next
-     * item's own fetch re-points them, so they are cleared here too — a click
-     * landing in that window would otherwise delete, upload or unpin the item
-     * the row used to show. The star reads @favourited on top of its uuid, and
-     * a stale flag would flip the pin the wrong way, so it is reset with them:
-     * whatever the next item turns out to be, the row is drawing nothing about
-     * it yet. A cleared action is inert, not merely aimed elsewhere.
+     * the item it used to display, and every action it offers is disabled with
+     * it, since what a row can do is asked of the uuid it answers for. The star
+     * reads @favourited on top of that, and a stale flag would flip the pin the
+     * wrong way, so it is reset too: whatever the next item turns out to be, the
+     * row is drawing nothing about it yet.
      *
      * What the row draws for itself goes with them, swatch and thumbnail alike:
      * a thumbnail is two round trips away (the item, then its bytes) and the
@@ -528,8 +641,9 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
     else
     {
         g_clear_pointer (&self->uuid, g_free);
-        g_paste_ui_item_apply_index_and_uuid (self, index, NULL);
+        g_paste_ui_item_apply_index (self, index);
         g_paste_ui_item_set_favourited (self, FALSE);
+        g_paste_ui_item_update_actions (self);
         g_paste_ui_color_swatch_set_color (self->swatch, NULL);
         g_paste_ui_item_set_thumbnail (self, NULL);
     }
@@ -577,8 +691,12 @@ g_paste_ui_item_dispose (GObject *object)
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
     g_clear_object (&self->settings_signals);
+    g_clear_object (&self->actions);
     g_clear_object (&self->tooltip_preview);
-    g_clear_pointer (&self->actions, g_slist_free);
+
+    /* A popover is a child of the widget it points at, and chaining up does not
+     * take it with the box's own children. */
+    g_clear_pointer (&self->menu, gtk_widget_unparent);
 
     g_clear_pointer (&self->uuid, g_free);
 
@@ -586,9 +704,84 @@ g_paste_ui_item_dispose (GObject *object)
 }
 
 static void
+g_paste_ui_item_get_property (GObject    *object,
+                              guint       prop_id,
+                              GValue     *value,
+                              GParamSpec *pspec)
+{
+    GPasteUiItem *self = G_PASTE_UI_ITEM (object);
+
+    switch (prop_id)
+    {
+    case PROP_SELECTION_MODE:
+        g_value_set_boolean (value, self->selection_mode);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
+g_paste_ui_item_set_property (GObject      *object,
+                              guint         prop_id,
+                              const GValue *value,
+                              GParamSpec   *pspec)
+{
+    GPasteUiItem *self = G_PASTE_UI_ITEM (object);
+
+    switch (prop_id)
+    {
+    case PROP_SELECTION_MODE:
+        self->selection_mode = g_value_get_boolean (value);
+        g_paste_ui_item_update_actions_visibility (self);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
 g_paste_ui_item_class_init (GPasteUiItemClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_item_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_ui_item_dispose;
+    object_class->get_property = g_paste_ui_item_get_property;
+    object_class->set_property = g_paste_ui_item_set_property;
+
+    /**
+     * GPasteUiItem:selection-mode:
+     *
+     * Whether the list is picking items to merge, in which case the row's own
+     * actions have no business being offered: a click there is claimed by the
+     * list's picking gesture before the button ever sees it.
+     *
+     * Bound from #GPasteUiHistory:selection-mode when the row is built, which is
+     * what covers rows created later and rows recycled since.
+     */
+    properties[PROP_SELECTION_MODE] = g_param_spec_boolean ("selection-mode", NULL, NULL, FALSE,
+                                                            G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+    g_object_class_install_properties (object_class, N_PROPERTIES, properties);
+}
+
+/* A row button: flat, so the list does not read as a stack of button bars, and
+ * named for a screen reader, which an icon cannot name it for. */
+static GtkWidget *
+row_button_new (const gchar *icon_name,
+                const gchar *label,
+                const gchar *action_name)
+{
+    GtkWidget *button = gtk_button_new_from_icon_name (icon_name);
+
+    gtk_widget_set_tooltip_text (button, label);
+    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+    gtk_widget_add_css_class (button, "flat");
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+    gtk_widget_set_visible (button, FALSE);
+    gtk_actionable_set_action_name (GTK_ACTIONABLE (button), action_name);
+
+    return button;
 }
 
 static void
@@ -607,7 +800,10 @@ g_paste_ui_item_init (GPasteUiItem *self)
     gtk_widget_set_margin_end (index_label, 6);
     gtk_widget_set_margin_top (index_label, 6);
     gtk_widget_set_margin_bottom (index_label, 6);
-    gtk_widget_set_sensitive (index_label, FALSE);
+    /* Dimmed, not insensitive: an insensitive label is one the theme greys and
+     * the accessibility tree drops, and this one is neither disabled nor
+     * unreadable -- it is simply not the row's point. */
+    gtk_widget_add_css_class (index_label, "dim-label");
     gtk_label_set_xalign (self->index_label, 1.0);
     gtk_label_set_width_chars (self->index_label, 3);
     gtk_label_set_max_width_chars (self->index_label, 3);
@@ -652,6 +848,11 @@ g_paste_ui_item_init (GPasteUiItem *self)
     gtk_box_append (GTK_BOX (thumbnail_container), thumbnail);
     gtk_box_append (GTK_BOX (thumbnail_container), swatch);
     gtk_box_append (GTK_BOX (hbox), thumbnail_container);
+
+    self->favourite = row_button_new ("non-starred-symbolic", _("Pin"), "item.pin");
+    self->remove = row_button_new ("edit-delete-symbolic", _("Delete"), "item.delete");
+    gtk_box_append (GTK_BOX (hbox), self->favourite);
+    gtk_box_append (GTK_BOX (hbox), self->remove);
 }
 
 /**
@@ -683,23 +884,51 @@ g_paste_ui_item_new (GPasteClient   *client,
     self->settings = g_object_ref (settings);
     self->rootwin = rootwin;
 
-    GtkWidget *edit = g_paste_ui_edit_item_new (client, rootwin);
-    GtkWidget *favourite = g_paste_ui_item_action_new_simple (client, "non-starred-symbolic", _("Pin"), favourite_item_action, self);
-    GtkWidget *upload = g_paste_ui_item_action_new_simple (client, "document-send-symbolic", _("Upload"), upload_item_action, NULL);
-    GtkWidget *delete = g_paste_ui_item_action_new_simple (client, "edit-delete-symbolic", _("Delete"), delete_item_action, NULL);
+    static const GActionEntry entries[] = {
+        { "delete", on_delete, NULL, NULL,    NULL, { 0 } },
+        { "edit",   on_edit,   NULL, NULL,    NULL, { 0 } },
+        { "pin",    on_pin,    NULL, "false", NULL, { 0 } },
+        { "upload", on_upload, NULL, NULL,    NULL, { 0 } },
+    };
 
-    self->edit = edit;
-    self->favourite = favourite;
-    self->upload = upload;
+    self->actions = g_simple_action_group_new ();
+    g_action_map_add_action_entries (G_ACTION_MAP (self->actions), entries, G_N_ELEMENTS (entries), self);
+    gtk_widget_insert_action_group (widget, "item", G_ACTION_GROUP (self->actions));
+    g_paste_ui_item_update_actions (self);
 
-    self->actions = g_slist_prepend (self->actions, edit);
-    self->actions = g_slist_prepend (self->actions, favourite);
-    self->actions = g_slist_prepend (self->actions, upload);
-    self->actions = g_slist_prepend (self->actions, delete);
+    /* Everything the row can do, for the pointer that has no button to press
+     * and the keyboard that has no button to reach. */
+    g_autoptr (GMenu) menu = g_menu_new ();
 
-    /* Reverse so that pack_end order (edit|favourite|upload|delete) is preserved with append */
-    g_autoptr (GSList) actions_reversed = g_slist_reverse (g_slist_copy (self->actions));
-    g_slist_foreach (actions_reversed, add_action, GTK_BOX (self->hbox));
+    g_autoptr (GMenu) edit_section = g_menu_new ();
+    g_menu_append (edit_section, _("Edit…"), "item.edit");
+    g_menu_append (edit_section, _("Upload"), "item.upload");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (edit_section));
+
+    g_autoptr (GMenu) item_section = g_menu_new ();
+    g_menu_append (item_section, _("Pinned"), "item.pin");
+    g_menu_append (item_section, _("Delete"), "item.delete");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (item_section));
+
+    self->menu = gtk_popover_menu_new_from_model (G_MENU_MODEL (menu));
+    gtk_popover_set_has_arrow (GTK_POPOVER (self->menu), FALSE);
+    gtk_widget_set_halign (self->menu, GTK_ALIGN_START);
+    gtk_widget_set_parent (self->menu, widget);
+
+    GtkGesture *secondary = gtk_gesture_click_new ();
+    gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (secondary), GDK_BUTTON_SECONDARY);
+    g_signal_connect (secondary, "pressed", G_CALLBACK (on_secondary_click), self);
+    gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (secondary));
+
+    GtkGesture *long_press = gtk_gesture_long_press_new ();
+    gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (long_press), TRUE);
+    g_signal_connect (long_press, "pressed", G_CALLBACK (on_long_press), self);
+    gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (long_press));
+
+    GtkEventController *motion = gtk_event_controller_motion_new ();
+    g_signal_connect (motion, "enter", G_CALLBACK (on_enter), self);
+    g_signal_connect (motion, "leave", G_CALLBACK (on_leave), self);
+    gtk_widget_add_controller (widget, motion);
 
     GSignalGroup *settings_signals = self->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals,
