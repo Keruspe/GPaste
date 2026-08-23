@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-ui-panel-history.h>
+#include <gpaste-ui-window.h>
 
 struct _GPasteUiPanelHistory
 {
@@ -17,15 +18,22 @@ G_PASTE_DEFINE_TYPE (UiPanelHistory, ui_panel_history, ADW_TYPE_SIDEBAR_ITEM)
 /**
  * g_paste_ui_panel_history_activate:
  * @self: a #GPasteUiPanelHistory instance
+ * @origin: a widget in the window to report a failure through -- an
+ *          #AdwSidebarItem is a #GObject, so this one has none of its own
  *
  * Switch to this history
  */
 void
-g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
+g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self,
+                                   GtkWidget            *origin)
 {
     g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
+    g_return_if_fail (GTK_IS_WIDGET (origin));
 
-    g_paste_client_switch_history (self->client, self->history, NULL, NULL);
+    g_paste_client_switch_history (self->client, self->history,
+                                   g_paste_ui_report_void_cb,
+                                   g_paste_ui_report_void (origin, g_paste_client_switch_history_finish,
+                                                           _("Could not switch history")));
 }
 
 /**

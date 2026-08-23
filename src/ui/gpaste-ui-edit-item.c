@@ -4,6 +4,7 @@
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-edit-item.h>
+#include <gpaste-ui-window.h>
 
 typedef struct
 {
@@ -16,6 +17,7 @@ typedef struct
     GPasteClient  *client;
     gchar         *uuid;
     GtkTextBuffer *buffer;
+    GtkWindow     *rootwin;
 } EditItemDialogData;
 
 static void
@@ -27,6 +29,7 @@ on_edit_response (GObject      *dialog,
     g_autoptr (GPasteClient) client = data->client;
     g_autofree gchar *uuid = data->uuid;
     g_autoptr (GtkTextBuffer) buffer = data->buffer;
+    g_autoptr (GtkWindow) rootwin = data->rootwin;
     const gchar *response = adw_alert_dialog_choose_finish (ADW_ALERT_DIALOG (dialog), result);
 
     if (g_strcmp0 (response, "confirm") == 0)
@@ -36,7 +39,12 @@ on_edit_response (GObject      *dialog,
         gtk_text_buffer_get_bounds (buffer, &start, &end);
         g_autofree gchar *txt = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
         if (txt && *txt)
-            g_paste_client_replace (client, uuid, txt, NULL, NULL);
+        {
+            g_paste_client_replace (client, uuid, txt,
+                                    g_paste_ui_report_string_cb,
+                                    g_paste_ui_report_string (GTK_WIDGET (rootwin), g_paste_client_replace_finish,
+                                                              _("Could not save the edited item")));
+        }
     }
 }
 
@@ -56,7 +64,14 @@ on_item_ready (GObject      *source_object,
      * would simply not happen. */
     if (!item)
     {
-        g_warning ("Could not read the item to edit: %s", error->message);
+        /* A reply that parsed into no item sets no error: the uuid or the value
+         * did not survive validation, which a daemon of another version can
+         * well produce. */
+        g_warning ("Could not read the item to edit: %s", (error) ? error->message : "the daemon answered with no usable item");
+
+        if (G_PASTE_IS_UI_WINDOW (rootwin))
+            g_paste_ui_window_toast (G_PASTE_UI_WINDOW (rootwin), _("Could not read the item to edit"));
+
         return;
     }
 
@@ -69,6 +84,7 @@ on_item_ready (GObject      *source_object,
     dialog_data->client = g_object_ref (client);
     dialog_data->uuid = g_strdup (uuid);
     dialog_data->buffer = g_object_ref (buf);
+    dialog_data->rootwin = g_object_ref (rootwin);
 
     adw_alert_dialog_choose (dialog, GTK_WIDGET (rootwin), NULL, on_edit_response, dialog_data);
 }

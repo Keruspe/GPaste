@@ -9,6 +9,7 @@
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-history-model.h>
 #include <gpaste-ui-item.h>
+#include <gpaste-ui-window.h>
 
 struct _GPasteUiHistory
 {
@@ -69,6 +70,18 @@ g_paste_ui_history_show_status (GPasteUiHistory *self,
     adw_status_page_set_title (self->status_page, title);
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), TRUE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
+}
+
+/* A failure the user set off deserves more than a line on a console nobody is
+ * reading. */
+static void
+g_paste_ui_history_toast (GPasteUiHistory *self,
+                          const gchar     *message)
+{
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
+
+    if (G_PASTE_IS_UI_WINDOW (root))
+        g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root), message);
 }
 
 static void
@@ -556,7 +569,10 @@ static void
 g_paste_ui_history_select_uuid (GPasteUiHistory *self,
                                 const gchar     *uuid)
 {
-    g_paste_client_select (self->client, uuid, NULL, NULL);
+    g_paste_client_select (self->client, uuid,
+                           g_paste_ui_report_void_cb,
+                           g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
+                                                   _("Could not select the item")));
 
     if (g_paste_settings_get_close_on_select (self->settings))
         gtk_window_close (self->rootwin); /* Exit the application */
@@ -579,7 +595,8 @@ on_activate_element_ready (GObject      *source_object G_GNUC_UNUSED,
      * the user pressed a row and nothing at all moved. */
     if (!item)
     {
-        g_warning ("Could not get the item to activate: %s", error->message);
+        g_warning ("Could not get the item to activate: %s", (error) ? error->message : "the daemon answered with no usable item");
+        g_paste_ui_history_toast (self, _("Could not select the item"));
         return;
     }
 
@@ -903,6 +920,7 @@ g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
                 if (error)
                 {
                     g_warning ("Could not read the history to resolve the selection: %s", error->message);
+                    g_paste_ui_history_toast (self, _("Could not read the history"));
                     return NULL;
                 }
             }

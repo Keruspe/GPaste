@@ -7,6 +7,7 @@
 
 #include <gpaste-ui-panel-history.h>
 #include <gpaste-ui-panel.h>
+#include <gpaste-ui-window.h>
 
 enum
 {
@@ -194,7 +195,7 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
     if (!G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
 
-    g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item));
+    g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item), GTK_WIDGET (self));
 }
 
 /* @length is what the listing said this history holds, or %NULL when whoever
@@ -318,7 +319,10 @@ g_paste_ui_panel_do_switch (GPasteUiPanel *self)
 {
     const gchar *text = gtk_editable_get_text (GTK_EDITABLE (self->switch_entry));
 
-    g_paste_client_switch_history (self->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY, NULL, NULL);
+    g_paste_client_switch_history (self->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY,
+                                   g_paste_ui_report_void_cb,
+                                   g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_switch_history_finish,
+                                                           _("Could not switch history")));
     gtk_editable_set_text (GTK_EDITABLE (self->switch_entry), "");
 
     gtk_widget_grab_focus (self->search_entry);
@@ -355,6 +359,11 @@ typedef struct
     GPasteClient *client;
     gchar        *history;
     GtkEditable  *entry;
+    /* The window the toast goes to. The entry is inside the dialog, which is
+     * already closed and unparented by the time the response arrives, so asking
+     * it for its root finds no window and the failure goes unsaid -- and a
+     * refused backup, the name being taken, is now the common answer. */
+    GtkWindow    *rootwin;
 } BackupHistoryData;
 
 static void
@@ -371,7 +380,13 @@ on_backup_response (GObject      *dialog,
     {
         const gchar *text = gtk_editable_get_text (data->entry);
         if (text && *text)
-            g_paste_client_backup_history (client, history, text, NULL, NULL);
+        {
+            g_paste_client_backup_history (client, history, text,
+                                           g_paste_ui_report_void_cb,
+                                           g_paste_ui_report_void (GTK_WIDGET (data->rootwin),
+                                                                   g_paste_client_backup_history_finish,
+                                                                   _("Could not back up the history")));
+        }
     }
 }
 
@@ -399,6 +414,7 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
     data->client = g_object_ref (self->client);
     data->history = g_strdup (history);
     data->entry = GTK_EDITABLE (entry);
+    data->rootwin = self->rootwin;
 
     adw_alert_dialog_choose (dialog, GTK_WIDGET (self->rootwin), NULL, on_backup_response, data);
 }
@@ -407,6 +423,7 @@ typedef struct
 {
     GPasteClient *client;
     gchar        *history;
+    GtkWindow    *rootwin; /* borrowed: it outlives the dialog */
 } DeleteHistoryData;
 
 static void
@@ -418,7 +435,13 @@ on_delete_confirmed (gboolean confirmed,
     g_autofree gchar *history = data->history;
 
     if (confirmed)
-        g_paste_client_delete_history (client, history, NULL, NULL);
+    {
+        g_paste_client_delete_history (client, history,
+                                       g_paste_ui_report_void_cb,
+                                       g_paste_ui_report_void (GTK_WIDGET (data->rootwin),
+                                                               g_paste_client_delete_history_finish,
+                                                               _("Could not delete the history")));
+    }
 }
 
 static void
@@ -437,6 +460,7 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
 
     data->client = g_object_ref (self->client);
     data->history = g_strdup (history);
+    data->rootwin = self->rootwin;
     /* Translators: %s is the name of the history being deleted. */
     g_autofree gchar *msg = g_strdup_printf (_("Are you sure you want to delete \"%s\"?"), history);
     g_paste_gtk_util_confirm_dialog (self->rootwin, _("Delete"), msg, on_delete_confirmed, data);

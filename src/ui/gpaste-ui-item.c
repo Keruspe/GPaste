@@ -9,6 +9,7 @@
 #include <gpaste-ui-color-swatch.h>
 #include <gpaste-ui-edit-item.h>
 #include <gpaste-ui-item.h>
+#include <gpaste-ui-window.h>
 
 struct _GPasteUiItem
 {
@@ -302,6 +303,61 @@ on_edit (GSimpleAction *action    G_GNUC_UNUSED,
     g_paste_ui_edit_item_show (self->client, self->rootwin, self->uuid);
 }
 
+/* The address is only copied once the daemon has taken it: an add can be refused
+ * (a url shorter than min-text-item-size, say), and saying it was copied when it
+ * was not is worse than saying nothing. */
+static void
+on_upload_address_copied (GObject      *source_object,
+                          GAsyncResult *res,
+                          gpointer      user_data)
+{
+    g_autoptr (GPasteUiItem) self = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *uuid = g_paste_client_add_text_finish (G_PASTE_CLIENT (source_object), res, &error);
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
+
+    if (!uuid)
+        g_warning ("Could not copy the address of the uploaded item: %s",
+                   (error) ? error->message : "the daemon kept nothing");
+
+    if (!G_PASTE_IS_UI_WINDOW (root))
+        return;
+
+    g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root),
+                             (uuid) ? _("The item was uploaded, and its address copied")
+                                    : _("The item was uploaded, but its address could not be copied"));
+}
+
+/* Upload answers the url it made and adds nothing itself, so the url is this
+ * caller's to keep: put on the clipboard, which is what the keyboard shortcut's
+ * own handler does with it daemon-side, and where a user who just uploaded
+ * something wants it. Reporting the string generically would drop it -- the
+ * report helper finishes a call answering a uuid, whose item comes back as an
+ * update of its own, and a url is not that. */
+static void
+on_upload_done (GObject      *source_object,
+                GAsyncResult *res,
+                gpointer      user_data)
+{
+    g_autoptr (GPasteUiItem) self = user_data;
+    GPasteClient *client = G_PASTE_CLIENT (source_object);
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = g_paste_client_upload_finish (client, res, &error);
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
+
+    if (!url)
+    {
+        g_warning ("Could not upload the item: %s", (error) ? error->message : "the daemon answered with no url");
+
+        if (G_PASTE_IS_UI_WINDOW (root))
+            g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root), _("Could not upload the item"));
+
+        return;
+    }
+
+    g_paste_client_add_text (client, url, on_upload_address_copied, g_object_ref (self));
+}
+
 static void
 on_upload (GSimpleAction *action    G_GNUC_UNUSED,
            GVariant      *parameter G_GNUC_UNUSED,
@@ -309,7 +365,7 @@ on_upload (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_client_upload (self->client, self->uuid, NULL, NULL);
+    g_paste_client_upload (self->client, self->uuid, on_upload_done, g_object_ref (self));
 }
 
 static void
@@ -319,7 +375,10 @@ on_delete (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_client_delete_item (self->client, self->uuid, NULL, NULL);
+    g_paste_client_delete_item (self->client, self->uuid,
+                                g_paste_ui_report_void_cb,
+                                g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_delete_item_finish,
+                                                        _("Could not delete the item")));
 }
 
 /* Asks the daemon for the state the star is not showing; the answer comes back
@@ -332,7 +391,11 @@ on_pin (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_client_set_favourite (self->client, self->uuid, !self->favourited, NULL, NULL);
+    g_paste_client_set_favourite (self->client, self->uuid, !self->favourited,
+                                  g_paste_ui_report_void_cb,
+                                  g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_set_favourite_finish,
+                                                          (self->favourited) ? _("Could not unpin the item")
+                                                                             : _("Could not pin the item")));
 }
 
 /**
@@ -484,7 +547,10 @@ g_paste_ui_item_activate (GPasteUiItem *self)
     if (!self->uuid)
         return FALSE;
 
-    g_paste_client_select (self->client, self->uuid, NULL, NULL);
+    g_paste_client_select (self->client, self->uuid,
+                           g_paste_ui_report_void_cb,
+                           g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
+                                                   _("Could not select the item")));
 
     if (g_paste_settings_get_close_on_select (self->settings))
         gtk_window_close (self->rootwin); /* Exit the application */
@@ -509,6 +575,12 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!texture)
     {
         g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
+
+        GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
+
+        if (G_PASTE_IS_UI_WINDOW (root))
+            g_paste_ui_window_toast (G_PASTE_UI_WINDOW (root), _("Could not load an image preview"));
+
         /* Rather than leave the row showing an image that is not the one it is
          * now bound to. */
         g_paste_ui_item_set_thumbnail (self, NULL);

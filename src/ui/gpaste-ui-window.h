@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <gpaste-3/gpaste-client.h>
 #include <gpaste-3/gpaste-macros.h>
 
 #include <adwaita.h>
@@ -12,6 +13,42 @@ G_BEGIN_DECLS
 #define G_PASTE_TYPE_UI_WINDOW (g_paste_ui_window_get_type ())
 
 G_PASTE_FINAL_TYPE (UiWindow, ui_window, UI_WINDOW, AdwApplicationWindow)
+
+/* The two shapes a client call's _finish () comes in, for the callbacks below. */
+typedef void   (*GPasteUiVoidFinish)   (GPasteClient *client,
+                                        GAsyncResult *result,
+                                        GError      **error);
+typedef gchar *(*GPasteUiStringFinish) (GPasteClient *client,
+                                        GAsyncResult *result,
+                                        GError      **error);
+
+void g_paste_ui_window_toast (GPasteUiWindow *self,
+                              const gchar    *message);
+
+/* Report a failed call to the user rather than to a console nobody is reading.
+ * Pair the matching _cb with what _report_* returns:
+ *
+ *   g_paste_client_delete_item (client, uuid,
+ *                               g_paste_ui_report_void_cb,
+ *                               g_paste_ui_report_void (widget,
+ *                                                       g_paste_client_delete_item_finish,
+ *                                                       what_to_say_if_it_failed));
+ *
+ * @origin is anything inside the window; @message is a translated literal, kept
+ * by pointer rather than copied. */
+gpointer g_paste_ui_report_void   (GtkWidget           *origin,
+                                   GPasteUiVoidFinish   finish,
+                                   const gchar         *message);
+gpointer g_paste_ui_report_string (GtkWidget           *origin,
+                                   GPasteUiStringFinish finish,
+                                   const gchar         *message);
+
+void g_paste_ui_report_void_cb   (GObject      *source_object,
+                                  GAsyncResult *result,
+                                  gpointer      user_data);
+void g_paste_ui_report_string_cb (GObject      *source_object,
+                                  GAsyncResult *result,
+                                  gpointer      user_data);
 
 void g_paste_ui_window_empty_history (GPasteUiWindow *self,
                                       const gchar    *history);

@@ -13,7 +13,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiPanelHistory, ui_panel_history, UI_PANEL_HISTORY, AdwSidebarItem)
 
-void g_paste_ui_panel_history_activate   (GPasteUiPanelHistory *self);
+void g_paste_ui_panel_history_activate   (GPasteUiPanelHistory *self,
+                                          GtkWidget            *origin);
 void g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
                                           guint64               length);
 

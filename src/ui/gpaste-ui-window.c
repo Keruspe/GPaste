@@ -96,6 +96,152 @@ run_when_initialized (GPasteUiWindow *self,
     g_source_set_name_by_id (g_idle_add (run_deferred_action, deferred), source_name);
 }
 
+/**
+ * g_paste_ui_window_toast:
+ * @self: the #GPasteUiWindow
+ * @message: what to say
+ *
+ * Say something to the user, in the window they are looking at.
+ */
+void
+g_paste_ui_window_toast (GPasteUiWindow *self,
+                         const gchar    *message)
+{
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
+
+    /* Disposed mid-flight: the overlay went with the widget tree. */
+    if (!self->toast_overlay)
+        return;
+
+    adw_toast_overlay_add_toast (self->toast_overlay, adw_toast_new (message));
+}
+
+/* @window is owned, so a call outliving nothing in particular still has
+ * somewhere to report to; @message is a translated literal and is not. */
+typedef struct
+{
+    GPasteUiWindow      *window;
+    const gchar         *message;
+    GPasteUiVoidFinish   void_finish;
+    GPasteUiStringFinish string_finish;
+} GPasteUiReport;
+
+static gpointer
+report_new (GtkWidget   *origin,
+            const gchar *message)
+{
+    GtkRoot *root = gtk_widget_get_root (origin);
+    GPasteUiReport *report = g_new0 (GPasteUiReport, 1);
+
+    /* A row is only ever in a window of ours, but it is asked rather than
+     * assumed: the reply still has to be finished either way. */
+    if (G_PASTE_IS_UI_WINDOW (root))
+        report->window = g_object_ref (G_PASTE_UI_WINDOW (root));
+
+    report->message = message;
+
+    return report;
+}
+
+static void
+report_done (GPasteUiReport *report,
+             const GError   *error)
+{
+    if (error)
+    {
+        g_warning ("%s: %s", report->message, error->message);
+
+        if (report->window)
+            g_paste_ui_window_toast (report->window, report->message);
+    }
+
+    g_clear_object (&report->window);
+    g_free (report);
+}
+
+/**
+ * g_paste_ui_report_void:
+ * @origin: any widget inside the window to report through
+ * @finish: the call's _finish ()
+ * @message: what to say should the call have failed
+ *
+ * Returns: (transfer full): the user_data to pass alongside
+ *          g_paste_ui_report_void_cb ()
+ */
+gpointer
+g_paste_ui_report_void (GtkWidget         *origin,
+                        GPasteUiVoidFinish finish,
+                        const gchar       *message)
+{
+    GPasteUiReport *report = report_new (origin, message);
+
+    report->void_finish = finish;
+
+    return report;
+}
+
+/**
+ * g_paste_ui_report_string:
+ * @origin: any widget inside the window to report through
+ * @finish: the call's _finish ()
+ * @message: what to say should the call have failed
+ *
+ * Returns: (transfer full): the user_data to pass alongside
+ *          g_paste_ui_report_string_cb ()
+ */
+gpointer
+g_paste_ui_report_string (GtkWidget           *origin,
+                          GPasteUiStringFinish finish,
+                          const gchar         *message)
+{
+    GPasteUiReport *report = report_new (origin, message);
+
+    report->string_finish = finish;
+
+    return report;
+}
+
+/**
+ * g_paste_ui_report_void_cb:
+ * @source_object: the #GPasteClient the call was made on
+ * @result: the call's result
+ * @user_data: what g_paste_ui_report_void () returned
+ *
+ * Finish a call whose only interesting outcome is whether it failed.
+ */
+void
+g_paste_ui_report_void_cb (GObject      *source_object,
+                           GAsyncResult *result,
+                           gpointer      user_data)
+{
+    GPasteUiReport *report = user_data;
+    g_autoptr (GError) error = NULL;
+
+    report->void_finish (G_PASTE_CLIENT (source_object), result, &error);
+    report_done (report, error);
+}
+
+/**
+ * g_paste_ui_report_string_cb:
+ * @source_object: the #GPasteClient the call was made on
+ * @result: the call's result
+ * @user_data: what g_paste_ui_report_string () returned
+ *
+ * Finish a call answering the uuid it created, which nothing here wants: the
+ * item it stands for arrives as an update of its own.
+ */
+void
+g_paste_ui_report_string_cb (GObject      *source_object,
+                             GAsyncResult *result,
+                             gpointer      user_data)
+{
+    GPasteUiReport *report = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *uuid = report->string_finish (G_PASTE_CLIENT (source_object), result, &error);
+
+    report_done (report, error);
+}
+
 static void
 do_empty_history (GPasteUiWindow *self,
                   const gchar    *history)
@@ -249,10 +395,19 @@ static void
 on_reexec_confirmed (gboolean confirmed,
                      gpointer user_data)
 {
-    g_autoptr (GPasteClient) client = user_data;
+    g_autoptr (GPasteUiWindow) self = user_data;
 
-    if (confirmed)
-        g_paste_client_reexecute (client, NULL, NULL);
+    /* The dialog holds its own ref, so the answer can come back after the window
+     * was closed and dispose() dropped the client: there is nothing left to ask,
+     * and the report the call would carry would never be handed over. */
+    if (confirmed && self->client)
+    {
+        g_paste_client_reexecute (self->client,
+                                  g_paste_ui_report_void_cb,
+                                  g_paste_ui_report_void (GTK_WIDGET (self),
+                                                          g_paste_client_reexecute_finish,
+                                                          _("Could not restart the daemon")));
+    }
 }
 
 static void
@@ -266,17 +421,36 @@ on_restart_daemon (GSimpleAction *action    G_GNUC_UNUSED,
                                      _("Restart"),
                                      _("Do you really want to restart the daemon?"),
                                      on_reexec_confirmed,
-                                     g_object_ref (self->client));
+                                     g_object_ref (self));
+}
+
+/* Asks the daemon, and sets nothing: the check follows the daemon's own
+ * "tracking" signal, so a refused call leaves it where it was and the menu never
+ * claims something the daemon did not do. It does say so, though. */
+static void
+g_paste_ui_window_set_tracking (GPasteUiWindow *self,
+                                gboolean        state)
+{
+    /* Reached from a confirmation the window may not have outlived. */
+    if (!self->client)
+        return;
+
+    g_paste_client_set_active (self->client, state,
+                               g_paste_ui_report_void_cb,
+                               g_paste_ui_report_void (GTK_WIDGET (self),
+                                                       g_paste_client_set_active_finish,
+                                                       (state) ? _("Could not start tracking the clipboard")
+                                                               : _("Could not stop tracking the clipboard")));
 }
 
 static void
 on_track_confirmed (gboolean confirmed,
                     gpointer user_data)
 {
-    g_autoptr (GPasteClient) client = user_data;
+    g_autoptr (GPasteUiWindow) self = user_data;
 
     if (confirmed)
-        g_paste_client_set_active (client, FALSE, NULL, NULL);
+        g_paste_ui_window_set_tracking (self, FALSE);
 }
 
 static void
@@ -293,12 +467,10 @@ on_track_changes (GSimpleAction *action,
                                          _("Stop"),
                                          _("Do you really want to stop tracking clipboard changes?"),
                                          on_track_confirmed,
-                                         g_object_ref (self->client));
+                                         g_object_ref (self));
     }
     else
-    {
-        g_paste_client_set_active (self->client, TRUE, NULL, NULL);
-    }
+        g_paste_ui_window_set_tracking (self, TRUE);
 }
 
 static void
@@ -567,7 +739,12 @@ do_merge (GPasteUiWindow *self,
 
     /* uuids are in selection order, so the merge keeps it. */
     if (n >= 2)
-        g_paste_client_merge (self->client, "", separator, (const gchar * const *) uuids, NULL, NULL);
+    {
+        g_paste_client_merge (self->client, "", separator, (const gchar * const *) uuids,
+                              g_paste_ui_report_string_cb,
+                              g_paste_ui_report_string (GTK_WIDGET (self), g_paste_client_merge_finish,
+                                                        _("Could not merge the selected items")));
+    }
 
     exit_selection_mode (self);
 }
@@ -670,6 +847,7 @@ g_paste_ui_window_dispose (GObject *object)
      * anything still in flight tests to know the window is gone. */
     self->banner = NULL;
     self->split_view = NULL;
+    self->toast_overlay = NULL;
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
