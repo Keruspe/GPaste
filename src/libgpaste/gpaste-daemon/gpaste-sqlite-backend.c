@@ -51,9 +51,14 @@
  * `meta` table so the key can be re-derived and verified — a wrong passphrase
  * is refused like a newer schema, so it can never overwrite the real data with
  * a wrongly-encrypted history. Unlike the plain flavor it persists password
- * items (the content is unreadable without the passphrase), trading the
- * metadata leak of row count/kind/rank/date/checksum for incremental
- * (non-rewriting) updates. */
+ * items (the content is unreadable without the passphrase), trading a metadata
+ * leak for incremental (non-rewriting) updates: row count, kind, rank, date,
+ * checksum and a special value's mime stay in the clear because reading has to
+ * order and filter on them, and a secretbox is exactly NONCEBYTES + MACBYTES
+ * longer than what it seals, so every value's length shows through too -- a
+ * password's among them, beside the `kind` column saying it is one. The
+ * encrypted file flavor does not leak that last one, its 4 KiB chunking
+ * blurring it. */
 
 #define G_PASTE_SQLITE_SCHEMA_VERSION 2
 
@@ -258,10 +263,18 @@ g_paste_sqlite_backend_load_crypto_params (sqlite3 *db,
     {
         const gchar *key = (const gchar *) sqlite3_column_text (stmt, 0);
 
-        if (g_paste_str_equal (key, "salt") && sqlite3_column_bytes (stmt, 1) == crypto_pwhash_SALTBYTES)
+        /* The blob first, then its length: asking a column its size can convert
+         * the value, which is what invalidates the pointer the other order
+         * hands back. */
+        if (g_paste_str_equal (key, "salt"))
         {
-            memcpy (salt, sqlite3_column_blob (stmt, 1), crypto_pwhash_SALTBYTES);
-            has_salt = TRUE;
+            gconstpointer blob = sqlite3_column_blob (stmt, 1);
+
+            if (sqlite3_column_bytes (stmt, 1) == crypto_pwhash_SALTBYTES)
+            {
+                memcpy (salt, blob, crypto_pwhash_SALTBYTES);
+                has_salt = TRUE;
+            }
         }
         else if (g_paste_str_equal (key, "opslimit"))
         {
@@ -275,9 +288,11 @@ g_paste_sqlite_backend_load_crypto_params (sqlite3 *db,
         }
         else if (g_paste_str_equal (key, "check"))
         {
+            gconstpointer blob = sqlite3_column_blob (stmt, 1);
+
             *check_length = sqlite3_column_bytes (stmt, 1);
             g_clear_pointer (check, g_free);
-            *check = g_memdup2 (sqlite3_column_blob (stmt, 1), *check_length);
+            *check = g_memdup2 (blob, *check_length);
         }
     }
 
