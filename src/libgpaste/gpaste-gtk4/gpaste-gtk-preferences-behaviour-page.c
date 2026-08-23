@@ -32,10 +32,6 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                        _("Close UI on select"),
                                                        G_PASTE_CLOSE_ON_SELECT_SETTING,
                                                        settings);
-    g_paste_gtk_preferences_group_add_boolean_setting (group,
-                                                       _("Open the UI window centered"),
-                                                       G_PASTE_OPEN_CENTERED_SETTING,
-                                                       settings);
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     if (g_paste_util_has_gnome_shell ())

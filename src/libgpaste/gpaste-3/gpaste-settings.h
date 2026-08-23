@@ -17,7 +17,6 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (Settings, settings, SETTINGS, GObject)
 
 gboolean     g_paste_settings_get_close_on_select            (GPasteSettings *self);
-gboolean     g_paste_settings_get_open_centered              (GPasteSettings *self);
 guint64      g_paste_settings_get_element_size               (GPasteSettings *self);
 gboolean     g_paste_settings_get_empty_history_confirmation (GPasteSettings *self);
 gboolean     g_paste_settings_get_experimental_meta_daemon   (GPasteSettings *self);
@@ -47,8 +46,6 @@ gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *se
 const gchar *g_paste_settings_get_upload                     (GPasteSettings *self);
 
 void g_paste_settings_set_close_on_select            (GPasteSettings *self,
-                                                      gboolean        value);
-void g_paste_settings_set_open_centered              (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint64         value);

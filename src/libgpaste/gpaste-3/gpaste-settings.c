@@ -17,7 +17,6 @@ struct _GPasteSettings
     GSignalGroup *shell_settings_signals;
 
     gboolean      close_on_select;
-    gboolean      open_centered;
     guint64       element_size;
     gboolean      empty_history_confirmation;
     gboolean      experimental_meta_daemon;
@@ -132,23 +131,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * Change the "close-on-select" setting
  */
 BOOLEAN_SETTING (close_on_select, CLOSE_ON_SELECT)
-
-/**
- * g_paste_settings_get_open_centered:
- * @self: a #GPasteSettings instance
- *
- * Get the "open-centered" setting
- *
- * Returns: the value of the "open-centered" setting
- */
-/**
- * g_paste_settings_set_open_centered:
- * @self: a #GPasteSettings instance
- * @value: the new history name
- *
- * Change the "open-centered" setting
- */
-BOOLEAN_SETTING (open_centered, OPEN_CENTERED)
 
 /**
  * g_paste_settings_get_element_size:
@@ -728,7 +710,6 @@ typedef struct
 
 static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (CLOSE_ON_SELECT, close_on_select),
-    SETTING_ENTRY (OPEN_CENTERED, open_centered),
     SETTING_ENTRY (ELEMENT_SIZE, element_size),
     SETTING_ENTRY (EMPTY_HISTORY_CONFIRMATION, empty_history_confirmation),
     SETTING_ENTRY (EXPERIMENTAL_META_DAEMON, experimental_meta_daemon),
@@ -795,7 +776,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
  * validation), and external changes notify through the "changed" handler. */
 #define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR, ENUM)                             \
     BOOL (close_on_select,            CLOSE_ON_SELECT)                                    \
-    BOOL (open_centered,              OPEN_CENTERED)                                      \
     UINT (element_size,               ELEMENT_SIZE)                                       \
     BOOL (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)                         \
     BOOL (experimental_meta_daemon,   EXPERIMENTAL_META_DAEMON)                           \
