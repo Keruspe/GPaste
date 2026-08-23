@@ -8,6 +8,10 @@
 #include <errno.h>
 #include <string.h>
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <sodium.h>
+#endif
+
 /**
  * g_paste_util_replace:
  * @text: the initial text
@@ -243,6 +247,44 @@ g_paste_util_ensure_history_dir_exists (void)
     }
 
     return TRUE;
+}
+
+/**
+ * g_paste_util_wipe:
+ * @data: (nullable): decrypted bytes
+ * @length: how many bytes @data holds
+ *
+ * Wipe @data where it lies, leaving it allocated.
+ *
+ * sodium_memzero() rather than memset(), which a compiler is free to drop from
+ * a buffer nothing reads again.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_wipe (gpointer data,
+                   gsize    length)
+{
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    if (data && length)
+        sodium_memzero (data, length);
+#else
+    (void) data;
+    (void) length;
+#endif
+}
+
+/**
+ * g_paste_util_free_cleartext:
+ * @cleartext: (nullable) (transfer full): a #GPasteCleartext
+ *
+ * Wipe a NUL-terminated decrypted buffer and release it.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_free_cleartext (GPasteCleartext *cleartext)
+{
+    if (cleartext)
+        g_paste_util_wipe (cleartext, strlen (cleartext));
+
+    g_free (cleartext);
 }
 
 /**

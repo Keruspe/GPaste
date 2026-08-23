@@ -625,8 +625,8 @@ start_tag (GMarkupParseContext *context,
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->checksum, g_free);
-        g_clear_pointer (&data->name, g_free);
-        g_clear_pointer (&data->text, g_free);
+        g_clear_pointer (&data->name, g_paste_util_free_cleartext);
+        g_clear_pointer (&data->text, g_paste_util_free_cleartext);
         g_clear_slist (&data->special_values, g_object_unref);
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
@@ -948,12 +948,24 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
         g_autoptr (GInputStream) decrypted = g_converter_input_stream_new (G_INPUT_STREAM (file_in), converter);
         g_autoptr (GOutputStream) buffer = g_memory_output_stream_new_resizable ();
 
+        /* The source is closed by the splice, which is what makes the converter
+         * flush and check the stream's FINAL tag. The target is not, so the
+         * terminator below still has somewhere to go; it is closed after it. */
         if (g_output_stream_splice (buffer, decrypted,
-                                    G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                    G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
                                     NULL, error) < 0)
             return FALSE;
 
-        *text_length = g_memory_output_stream_get_data_size (G_MEMORY_OUTPUT_STREAM (buffer));
+        /* The plain flavour hands back what g_file_get_contents() wrote, which is
+         * NUL-terminated; a #GPasteCleartext is wiped by strlen(), so terminate
+         * this one too. The stream rounds its buffer up to a power of two, so a
+         * document whose length already is one fills the allocation exactly and
+         * leaves no zero byte past the end for strlen() to stop at. */
+        if (!g_output_stream_write_all (buffer, "", 1, NULL, NULL /* cancellable */, error) ||
+            !g_output_stream_close (buffer, NULL /* cancellable */, error))
+            return FALSE;
+
+        *text_length = g_memory_output_stream_get_data_size (G_MEMORY_OUTPUT_STREAM (buffer)) - 1;
         *text = g_memory_output_stream_steal_data (G_MEMORY_OUTPUT_STREAM (buffer));
 
         return TRUE;
@@ -985,7 +997,9 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
-    g_autofree gchar *text = NULL;
+    /* The decrypted document, password values and all, for the encrypted
+     * flavour: wiped rather than merely freed once it has been parsed. */
+    g_autoptr (GPasteCleartext) text = NULL;
 
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
@@ -1070,8 +1084,8 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
         g_clear_pointer (&data.uuid, g_free);
         g_clear_pointer (&data.date, g_free);
         g_clear_pointer (&data.checksum, g_free);
-        g_clear_pointer (&data.name, g_free);
-        g_clear_pointer (&data.text, g_free);
+        g_clear_pointer (&data.name, g_paste_util_free_cleartext);
+        g_clear_pointer (&data.text, g_paste_util_free_cleartext);
         /* add_item() consumes these at every </item>; a document that ends inside
          * one (truncated file, failed parse) leaves the last item's behind. */
         g_clear_slist (&data.special_values, g_object_unref);
@@ -1149,6 +1163,9 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                       gchar               **tmp_path)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
+    /* The file's plaintext -- an image's pixels as readily as a history's
+     * passwords -- so it is wiped by length rather than as a string, as is the
+     * @check read back below: neither is text. */
     g_autofree gchar *text = NULL;
     gsize length = 0;
     g_autoptr (GError) error = NULL;
@@ -1165,7 +1182,11 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                                                                                      tmp_file);
 
     if (!stream)
+    {
+        g_paste_util_wipe (text, length);
+
         return FALSE;
+    }
 
     gboolean ok = g_output_stream_write_all (stream, text, length, NULL, NULL /* cancellable */, &error) &&
                   g_output_stream_close (stream, NULL /* cancellable */, &error);
@@ -1177,7 +1198,11 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
 
         ok = g_paste_file_backend_load_contents (rekeyed, tmp, tmp_file, &check, &check_length, &error) &&
              check_length == length && !memcmp (check, text, length);
+
+        g_paste_util_wipe (check, check_length);
     }
+
+    g_paste_util_wipe (text, length);
 
     if (!ok)
     {
@@ -1377,7 +1402,7 @@ g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
 {
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (GFile) file = g_file_new_for_path (path);
-    g_autofree gchar *text = NULL;
+    g_autoptr (GPasteCleartext) text = NULL;
     gsize text_length;
     g_autoptr (GError) error = NULL;
 

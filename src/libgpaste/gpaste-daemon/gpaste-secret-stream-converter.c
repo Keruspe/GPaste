@@ -313,6 +313,9 @@ decrypt_process (GPasteSecretStreamConverter *self,
         }
 
         g_byte_array_append (self->out, plain, mlen);
+        /* The chunk is in @out now; the stack it was decrypted on keeps whatever
+         * the deepest chunk of this stream left there otherwise. */
+        sodium_memzero (plain, mlen);
         g_byte_array_remove_range (self->in, 0, 4 + clen);
 
         if (tag == TAG_FINAL)

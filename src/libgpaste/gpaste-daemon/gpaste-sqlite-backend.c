@@ -1112,7 +1112,9 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
 {
     const gchar *kind_str = (const gchar *) sqlite3_column_text (stmt, 2);
     GPasteItemKind kind = g_paste_item_kind_from_string (kind_str);
-    g_autofree gchar *value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, NULL);
+    /* A password's value comes back through here too, so the buffer is wiped
+     * rather than merely freed once the item has taken a copy of it. */
+    g_autoptr (GPasteCleartext) value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, NULL);
 
     if (!value)
     {
@@ -1128,7 +1130,7 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         return g_paste_uris_item_new_from_str (value);
     case G_PASTE_ITEM_KIND_PASSWORD:
     {
-        g_autofree gchar *name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
+        g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
 
         return g_paste_password_item_new (name, value);
     }
@@ -1787,12 +1789,14 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
     }
 
     const gchar *passphrase = g_paste_sqlite_backend_get_passphrase (self);
-    guchar key[crypto_secretbox_KEYBYTES];
+    /* Where every other derived key lives: the stack is pageable, so a key on it
+     * can reach the swap between here and the memzero below. */
+    guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
     gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
     gboolean checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
     gboolean has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
 
-    sodium_memzero (key, sizeof (key));
+    gcr_secure_memory_free (key);
     sqlite3_close (db);
 
     return derived && !checks_out && has_data;
