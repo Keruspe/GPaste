@@ -17,4 +17,6 @@ G_PASTE_GTK_FINAL_TYPE (PreferencesWidget, preferences_widget, PREFERENCES_WIDGE
 
 GtkWidget *g_paste_gtk_preferences_widget_new (void);
 
+GPtrArray *g_paste_gtk_preferences_pages_list (void);
+
 G_END_DECLS

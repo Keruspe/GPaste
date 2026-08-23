@@ -89,6 +89,39 @@ g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 }
 
 /**
+ * g_paste_gtk_preferences_pages_list:
+ *
+ * The preferences as the pages they are made of, for a caller with a window of
+ * its own to put them in -- the GNOME Shell extension, whose preferences window
+ * has a view switcher already and would otherwise show ours nested inside one
+ * of its own rows.
+ *
+ * Returns: (element-type AdwPreferencesPage) (transfer full): every page, in
+ *          the order they are shown
+ */
+G_PASTE_VISIBLE GPtrArray *
+g_paste_gtk_preferences_pages_list (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree AdwPreferencesPage **pages = g_paste_gtk_preferences_pages_new (settings);
+    /* No free func: the array is (transfer full) down to its elements, so a
+     * binding unrefs each page itself once it has taken it. Owning them here
+     * too would drop the last reference the caller is still holding. */
+    GPtrArray *list = g_ptr_array_new ();
+
+    for (AdwPreferencesPage **page = pages; *page; ++page)
+    {
+        /* The rows bind to (and reset through) the settings without holding a
+         * reference, so it has to outlive them: with no widget of ours left to
+         * keep it on, every page keeps one. */
+        g_object_set_data_full (G_OBJECT (*page), "gpaste-settings", g_object_ref (settings), g_object_unref);
+        g_ptr_array_add (list, g_object_ref_sink (*page));
+    }
+
+    return list;
+}
+
+/**
  * g_paste_gtk_preferences_widget_new:
  *
  * Create a new instance of #GPasteGtkPreferencesWidget
