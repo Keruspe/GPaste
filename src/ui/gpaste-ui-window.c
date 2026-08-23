@@ -19,7 +19,7 @@ struct _GPasteUiWindow
     GPasteClient    *client;
     GPasteSettings  *settings;
 
-    AdwToolbarView  *toolbar_view;
+    AdwNavigationSplitView *split_view;
     GtkSearchBar    *search_bar;
     GtkSearchEntry  *search_entry;
     GtkBox          *content_box;
@@ -409,8 +409,9 @@ on_escape (GtkWidget *widget,
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (widget);
 
-    /* The search bar closes itself on Escape; let it. */
-    if (gtk_search_bar_get_search_mode (self->search_bar))
+    /* The search bar closes itself on Escape; let it. A window presented for
+     * the connection-failure banner alone has none. */
+    if (self->search_bar && gtk_search_bar_get_search_mode (self->search_bar))
         return FALSE;
 
     if (self->merge_bar && gtk_action_bar_get_revealed (self->merge_bar))
@@ -457,8 +458,6 @@ on_search_activate (GtkSearchEntry *entry,
     GPasteUiWindow *self = user_data;
     const gchar *search = gtk_editable_get_text (GTK_EDITABLE (entry));
 
-    /* These two are wired up from init(), before there is anything to search:
-     * the window can be on screen with only the connection-failure banner. */
     if (self->history && search && *search)
         g_paste_ui_history_select_first (self->history);
 }
@@ -501,6 +500,11 @@ on_history_changed (GPasteClient *client,
         return;
 
     g_paste_ui_header_set_subtitle (self->header, history);
+
+    /* Collapsed, the sidebar and the list are two pages rather than two panes:
+     * having picked a history, the user wants to see it. */
+    if (self->split_view && adw_navigation_split_view_get_collapsed (self->split_view))
+        adw_navigation_split_view_set_show_content (self->split_view, TRUE);
 }
 
 static void
@@ -665,6 +669,7 @@ g_paste_ui_window_dispose (GObject *object)
     /* Chaining up unparents (and frees) every widget below, so drop the one
      * anything still in flight tests to know the window is gone. */
     self->banner = NULL;
+    self->split_view = NULL;
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
@@ -694,33 +699,15 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_quit), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
 
-    GtkWidget *search_bar = gtk_search_bar_new ();
-    GtkWidget *search_entry = gtk_search_entry_new ();
-
-    self->search_bar = GTK_SEARCH_BAR (search_bar);
-    self->search_entry = GTK_SEARCH_ENTRY (search_entry);
-    gtk_search_bar_set_child (self->search_bar, search_entry);
-    gtk_search_bar_connect_entry (self->search_bar, GTK_EDITABLE (search_entry));
-    gtk_box_append (GTK_BOX (vbox), search_bar);
-
-    gtk_search_bar_set_key_capture_widget (self->search_bar, GTK_WIDGET (self));
-
-    GtkWidget *toolbar_view = adw_toolbar_view_new ();
-    self->toolbar_view = ADW_TOOLBAR_VIEW (toolbar_view);
-
+    /* The banner is the only thing above the split view, and the header bars,
+     * the search bar and the merge bar all belong to one page of it or the
+     * other -- which is what gives a collapsed window a header of its own to
+     * carry the back button. So there is no window-level toolbar view. */
     GtkWidget *toast_overlay = adw_toast_overlay_new ();
     self->toast_overlay = ADW_TOAST_OVERLAY (toast_overlay);
     adw_toast_overlay_set_child (ADW_TOAST_OVERLAY (toast_overlay), vbox);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar_view), toast_overlay);
 
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), toolbar_view);
-
-    GtkSearchEntry *entry = self->search_entry;
-
-    GSignalGroup *search_signals = self->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
-    g_signal_group_connect (search_signals, "activate", G_CALLBACK (on_search_activate), self);
-    g_signal_group_connect (search_signals, "search-changed", G_CALLBACK (on_search), self);
-    g_signal_group_set_target (search_signals, entry);
+    adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), toast_overlay);
 
     self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (self->client_signals, "notify::history", G_CALLBACK (on_history_changed), self);
@@ -729,7 +716,8 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     add_shortcuts (self);
 
     gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
-    gtk_widget_set_size_request (GTK_WIDGET (self), 400, 300);
+    /* The narrowest the HIG asks an application window to survive. */
+    gtk_widget_set_size_request (GTK_WIDGET (self), 360, 294);
 }
 
 static void
@@ -755,9 +743,6 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         g_critical ("%s: %s", _("Couldn't connect to GPaste daemon"), error->message);
         adw_banner_set_title (self->banner, _("Couldn't connect to GPaste daemon"));
         adw_banner_set_revealed (self->banner, TRUE);
-        /* Nothing was built to search through, so stop a keystroke from pulling
-         * up a search bar that could only ignore it. */
-        gtk_search_bar_set_key_capture_widget (self->search_bar, NULL);
         /* Present anyway: the banner explaining what went wrong is the whole
          * point, and a window that is never shown leaves the application
          * running with nothing on screen at all. */
@@ -767,6 +752,25 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     GPasteSettings *settings = self->settings;
     GtkWidget *header = g_paste_ui_header_new ();
+
+    /* Built here rather than in init(): there is nothing to search through
+     * until the daemon has answered, and a window presented for the
+     * connection-failure banner alone would only be offering a search bar that
+     * could ignore whatever was typed into it. */
+    GtkWidget *search_bar = gtk_search_bar_new ();
+    GtkWidget *search_entry = gtk_search_entry_new ();
+
+    self->search_bar = GTK_SEARCH_BAR (search_bar);
+    self->search_entry = GTK_SEARCH_ENTRY (search_entry);
+    gtk_search_bar_set_child (self->search_bar, search_entry);
+    gtk_search_bar_connect_entry (self->search_bar, GTK_EDITABLE (search_entry));
+    gtk_search_bar_set_key_capture_widget (self->search_bar, GTK_WIDGET (self));
+
+    GSignalGroup *search_signals = self->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
+    g_signal_group_connect (search_signals, "activate", G_CALLBACK (on_search_activate), self);
+    g_signal_group_connect (search_signals, "search-changed", G_CALLBACK (on_search), self);
+    g_signal_group_set_target (search_signals, self->search_entry);
+
     GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, self->search_entry);
     GtkWidget *history = g_paste_ui_history_new (client, settings, G_PASTE_UI_PANEL (panel), win);
 
@@ -778,9 +782,6 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     add_window_actions (self);
 
-    adw_toolbar_view_add_top_bar (self->toolbar_view, header);
-    adw_toolbar_view_add_bottom_bar (self->toolbar_view, build_merge_bar (user_data));
-
     g_signal_connect_object (g_paste_ui_header_get_merge_button (self->header), "clicked",
                              G_CALLBACK (on_enter_selection_mode), user_data, 0);
     g_signal_connect_object (g_paste_ui_header_get_cancel_button (self->header), "clicked",
@@ -788,13 +789,33 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     g_signal_connect_object (self->history, "selection-changed",
                              G_CALLBACK (on_selection_changed), user_data, 0);
 
-    AdwNavigationPage *sidebar_page = adw_navigation_page_new (panel, _("Histories"));
-    AdwNavigationPage *content_page = adw_navigation_page_new (history, _("History"));
+    /* A header bar apiece, which is what the pages need to stand on their own
+     * once the split view collapses them into a navigation stack: the sidebar's
+     * is bare, so it shows its page's title, and the content's carries ours. */
+    GtkWidget *sidebar_view = adw_toolbar_view_new ();
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (sidebar_view), adw_header_bar_new ());
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (sidebar_view), panel);
+
+    GtkWidget *content_view = adw_toolbar_view_new ();
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (content_view), header);
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (content_view), search_bar);
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (content_view), history);
+    adw_toolbar_view_add_bottom_bar (ADW_TOOLBAR_VIEW (content_view), build_merge_bar (user_data));
+
+    AdwNavigationPage *sidebar_page = adw_navigation_page_new (sidebar_view, _("Histories"));
+    AdwNavigationPage *content_page = adw_navigation_page_new (content_view, _("History"));
 
     GtkWidget *nav_split_view = adw_navigation_split_view_new ();
-    adw_navigation_split_view_set_sidebar (ADW_NAVIGATION_SPLIT_VIEW (nav_split_view), sidebar_page);
-    adw_navigation_split_view_set_content (ADW_NAVIGATION_SPLIT_VIEW (nav_split_view), content_page);
-    adw_navigation_split_view_set_min_sidebar_width (ADW_NAVIGATION_SPLIT_VIEW (nav_split_view), 240);
+    self->split_view = ADW_NAVIGATION_SPLIT_VIEW (nav_split_view);
+    adw_navigation_split_view_set_sidebar (self->split_view, sidebar_page);
+    adw_navigation_split_view_set_content (self->split_view, content_page);
+    adw_navigation_split_view_set_min_sidebar_width (self->split_view, 240);
+
+    /* Below this, the two panes become two pages the user navigates between,
+     * so the window still works at the 360px the HIG asks for. */
+    AdwBreakpoint *breakpoint = adw_breakpoint_new (adw_breakpoint_condition_parse ("max-width: 600px"));
+    adw_breakpoint_add_setters (breakpoint, G_OBJECT (nav_split_view), "collapsed", TRUE, NULL);
+    adw_application_window_add_breakpoint (ADW_APPLICATION_WINDOW (self), breakpoint);
 
     gtk_widget_set_hexpand (nav_split_view, TRUE);
     gtk_widget_set_vexpand (nav_split_view, TRUE);
