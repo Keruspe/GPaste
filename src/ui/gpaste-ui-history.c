@@ -270,6 +270,21 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (cdata->generation != self->display_generation)
         return;
 
+    /* The size is of whatever history the daemon held when it handled the call,
+     * and the reply does not say which: it is the one this refresh was issued
+     * under only while that is still the current one. A switch that landed in
+     * between makes the number another history's, and would go on the sidebar
+     * row of the one it is not; the refresh the switch itself triggers is what
+     * reports it. */
+    g_autofree gchar *current = g_paste_client_get_history_name (self->client);
+
+    if (!current || !g_paste_str_equal (current, cdata->name))
+    {
+        self->loading = FALSE;
+
+        return;
+    }
+
     g_autoptr (GError) error = NULL;
     guint64 old_size = self->size;
     guint64 new_size = g_paste_client_get_history_size_finish (self->client, res, &error);
@@ -325,10 +340,10 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         return;
     }
 
-    /* The history's name is a cached property, so sizing it is the only call --
-     * but that cache is emptied whenever the daemon leaves the bus, which a
-     * re-exec on upgrade does, and the %NULL it then answers must not be passed
-     * on: the size call would build it as g_variant_new ("(s)", NULL). Keep
+    /* Sizing the history is the only call; its name is a cached property, and is
+     * needed here only to tell the panel which row to update. That cache is
+     * emptied whenever the daemon leaves the bus, which a re-exec on upgrade
+     * does, and a nameless history is one we cannot report a length for. Keep
      * showing what is there; the daemon announces itself once it is back, and
      * that refresh finds the name again. */
     g_autofree gchar *name = g_paste_client_get_history_name (self->client);
@@ -357,7 +372,7 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
 
     cdata->name = g_steal_pointer (&name);
 
-    g_paste_client_get_history_size (self->client, cdata->name, g_paste_ui_history_refresh_history, cdata);
+    g_paste_client_get_history_size (self->client, g_paste_ui_history_refresh_history, cdata);
 }
 
 static gboolean

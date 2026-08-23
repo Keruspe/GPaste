@@ -789,11 +789,12 @@ test_uuid_lookup_survives_reshuffling (void)
     g_assert_nonnull (g_paste_history_get_by_uuid (history, uuids[0]));
 
     /* A replace retires the old uuid and publishes the new one. */
-    g_paste_history_replace (history, uuids[0], "replaced");
+    g_autofree gchar *replaced_uuid = g_paste_history_replace (history, uuids[0], "replaced");
     g_assert_null (g_paste_history_get_by_uuid (history, uuids[0]));
 
     GPasteItem *replaced = g_paste_history_get (history, 0);
     g_assert_cmpstr (g_paste_item_get_value (replaced), ==, "replaced");
+    g_assert_cmpstr (g_paste_item_get_uuid (replaced), ==, replaced_uuid);
     g_assert_true (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (replaced)) == replaced);
 
     /* Whatever is left must still be reachable both ways, and nothing else. */
@@ -1035,15 +1036,15 @@ test_favourite_survives_replace (void)
 
     g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
 
-    g_paste_history_replace (history, uuid, "after");
+    g_autofree gchar *after_uuid = g_paste_history_replace (history, uuid, "after");
 
     g_assert_cmpstr (value_at (history, 0), ==, "after");
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, after_uuid);
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 
-    g_autofree gchar *replaced = dup_uuid_at (history, 0);
+    g_autofree gchar *secret_uuid = g_paste_history_set_password (history, after_uuid, "secret");
 
-    g_paste_history_set_password (history, replaced, "secret");
-
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, secret_uuid);
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 

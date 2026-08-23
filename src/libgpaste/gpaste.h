@@ -23,6 +23,7 @@
 
 /* GPasteClient */
 #include <gpaste-3/gpaste-client.h>
+#include <gpaste-3/gpaste-client-history.h>
 #include <gpaste-3/gpaste-client-item.h>
 
 /* Utilities */

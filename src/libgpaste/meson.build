@@ -4,6 +4,7 @@ libgpaste_gtk4_soversion = '1.0.1'
 pkg = import('pkgconfig')
 
 libgpaste_sources = [
+  'gpaste-3/gpaste-client-history.c',
   'gpaste-3/gpaste-client-item.c',
   'gpaste-3/gpaste-client.c',
   'gpaste-3/gpaste-error.c',
@@ -19,6 +20,7 @@ libgpaste_sources = [
 # inline helper shared by libgpaste-gtk4 and libgpaste-daemon, so it is compiled
 # in-tree through include_directories('.') and never installed nor introspected.
 libgpaste_headers = [
+  'gpaste-3/gpaste-client-history.h',
   'gpaste-3/gpaste-client-item.h',
   'gpaste-3/gpaste-client.h',
   'gpaste-3/gpaste-error.h',

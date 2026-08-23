@@ -31,10 +31,11 @@ g_paste_error_quark (void)
         { G_PASTE_ERROR_INVALID_INDEX,    G_PASTE_BUS_NAME ".Error.InvalidIndex"    },
         { G_PASTE_ERROR_WRONG_ITEM_KIND,  G_PASTE_BUS_NAME ".Error.WrongItemKind"   },
         { G_PASTE_ERROR_ALREADY_EXISTS,   G_PASTE_BUS_NAME ".Error.AlreadyExists"   },
-        { G_PASTE_ERROR_NOT_ENCRYPTED,    G_PASTE_BUS_NAME ".Error.NotEncrypted"    }
+        { G_PASTE_ERROR_NOT_ENCRYPTED,    G_PASTE_BUS_NAME ".Error.NotEncrypted"    },
+        { G_PASTE_ERROR_REJECTED,         G_PASTE_BUS_NAME ".Error.Rejected"        }
     };
 
-    G_STATIC_ASSERT (G_N_ELEMENTS (entries) == G_PASTE_ERROR_NOT_ENCRYPTED + 1);
+    G_STATIC_ASSERT (G_N_ELEMENTS (entries) == G_PASTE_ERROR_REJECTED + 1);
 
     g_dbus_error_register_error_domain ("g-paste-error-quark",
                                         &quark,

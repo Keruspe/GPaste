@@ -20,7 +20,8 @@ void g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
 const gchar *g_paste_ui_panel_history_get_history (GPasteUiPanelHistory *self);
 
 GPasteUiPanelHistory *g_paste_ui_panel_history_new (GPasteClient *client,
-                                                    const gchar  *history);
+                                                    const gchar  *history,
+                                                    guint64       length);
 
 G_END_DECLS
 

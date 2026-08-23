@@ -63,28 +63,6 @@ g_paste_ui_panel_history_get_history (GPasteUiPanelHistory *self)
 }
 
 static void
-on_size_ready (GObject      *source_object,
-               GAsyncResult *res,
-               gpointer      user_data)
-{
-    /* Held across the call (see _new): the sidebar drops us as soon as our
-     * history is deleted, which can well happen before the size comes back. */
-    g_autoptr (GPasteUiPanelHistory) self = user_data;
-
-    g_autoptr (GError) error = NULL;
-    guint64 size = g_paste_client_get_history_size_finish (G_PASTE_CLIENT (source_object), res, &error);
-
-    /* A failure reads back as 0, which would show this history as empty. */
-    if (error)
-    {
-        g_warning ("Could not get the size of history \"%s\": %s", self->history, error->message);
-        return;
-    }
-
-    g_paste_ui_panel_history_set_length (self, size);
-}
-
-static void
 g_paste_ui_panel_history_dispose (GObject *object)
 {
     GPasteUiPanelHistory *self = G_PASTE_UI_PANEL_HISTORY (object);
@@ -122,15 +100,21 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self G_GNUC_UNUSED)
  * g_paste_ui_panel_history_new:
  * @client: a #GPasteClient instance
  * @history: the history we represent
+ * @length: how many items it holds
  *
  * Create a new instance of #GPasteUiPanelHistory
+ *
+ * @length is passed in rather than asked for: the listing that named this
+ * history answered its size along with it, so a sidebar of them costs one call
+ * rather than one per row.
  *
  * Returns: a newly allocated #GPasteUiPanelHistory
  *          free it with g_object_unref
  */
 GPasteUiPanelHistory *
 g_paste_ui_panel_history_new (GPasteClient *client,
-                              const gchar  *history)
+                              const gchar  *history,
+                              guint64       length)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);
@@ -141,9 +125,7 @@ g_paste_ui_panel_history_new (GPasteClient *client,
     self->history = g_strdup (history);
 
     adw_sidebar_item_set_title (ADW_SIDEBAR_ITEM (self), history);
-
-    /* The callback owns this ref (see on_size_ready). */
-    g_paste_client_get_history_size (client, history, on_size_ready, g_object_ref (self));
+    g_paste_ui_panel_history_set_length (self, length);
 
     return self;
 }

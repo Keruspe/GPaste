@@ -28,9 +28,9 @@ G_BEGIN_DECLS
 
 /* GPasteClient turns each of these into its own, richer signal, so it matches
  * on the wire name. */
-#define G_PASTE_DAEMON_SIG_DELETE_HISTORY    "DeleteHistory"
-#define G_PASTE_DAEMON_SIG_EMPTY_HISTORY     "EmptyHistory"
 #define G_PASTE_DAEMON_SIG_HISTORIES_CHANGED "HistoriesChanged"
+#define G_PASTE_DAEMON_SIG_HISTORY_DELETED   "HistoryDeleted"
+#define G_PASTE_DAEMON_SIG_HISTORY_EMPTIED   "HistoryEmptied"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY      "ShowHistory"
 #define G_PASTE_DAEMON_SIG_UPDATE            "Update"
 

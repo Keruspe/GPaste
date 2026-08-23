@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-18 19:12+0200\n"
+"POT-Creation-Date: 2026-08-18 22:31+0200\n"
 "PO-Revision-Date: 2020-04-10 21:57-0400\n"
 "Last-Translator: Peniel Vargas <tsuneake.kaemitsu@gmail.com>\n"
 "Language-Team: Japanese\n"
@@ -1126,254 +1126,255 @@ msgstr ""
 msgid "Couldn't spawn %s: %s"
 msgstr "spawn できませんでした"
 
-#: src/client/gpaste-client.c:274
+#: src/client/gpaste-client.c:277
 msgid "Successfully re-executed the daemon"
 msgstr "デーモンを正常に再実行しました"
 
-#: src/client/gpaste-client.c:288
+#: src/client/gpaste-client.c:291
 #, fuzzy
 msgid "Successfully triggered the storage migration"
 msgstr "デーモンを正常に再実行しました"
 
-#: src/client/gpaste-client.c:305
+#: src/client/gpaste-client.c:308
 #, fuzzy
 msgid "Successfully triggered the passphrase change"
 msgstr "デーモンを正常に再実行しました"
 
-#: src/client/gpaste-client.c:467
+#: src/client/gpaste-client.c:468
 msgid "Cannot add non-UTF-8 data as text."
 msgstr "UTF-8 以外のデータはテキストとして追加できません。"
 
-#: src/client/gpaste-client.c:690
+#: src/client/gpaste-client.c:696
 #, fuzzy
 msgid "print the history with UUIDs"
 msgstr "インデックス付きの履歴を表示する"
 
-#: src/client/gpaste-client.c:691
-msgid "print the size of the history"
+#: src/client/gpaste-client.c:697
+#, fuzzy
+msgid "print the size of the current history"
 msgstr "履歴の大きさを表示する"
 
-#: src/client/gpaste-client.c:692
+#: src/client/gpaste-client.c:698
 #, fuzzy
 msgid "print the items of the history matching <pattern>"
 msgstr "履歴の大きさを表示する"
 
-#: src/client/gpaste-client.c:693
+#: src/client/gpaste-client.c:699
 msgid "get the name of the current history"
 msgstr "現在の履歴の名前を取得する"
 
-#: src/client/gpaste-client.c:694
+#: src/client/gpaste-client.c:700
 msgid "back up the current history"
 msgstr "現在の履歴をバックアップする"
 
-#: src/client/gpaste-client.c:695
+#: src/client/gpaste-client.c:701
 msgid "switch to another history"
 msgstr "他の履歴に切り替える"
 
-#: src/client/gpaste-client.c:696
+#: src/client/gpaste-client.c:702
 msgid "delete a history"
 msgstr "履歴を削除する"
 
-#: src/client/gpaste-client.c:697
+#: src/client/gpaste-client.c:703
 msgid "list available histories"
 msgstr "利用可能な履歴を一覧表示する"
 
-#: src/client/gpaste-client.c:698
+#: src/client/gpaste-client.c:704
 msgid "set text to clipboard"
 msgstr "テキストをクリップボードに追加する"
 
-#: src/client/gpaste-client.c:699
+#: src/client/gpaste-client.c:705
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "クリップボードに名前とパスワードの組み合わせを追加する"
 
-#: src/client/gpaste-client.c:700
+#: src/client/gpaste-client.c:706
 msgid "rename the password"
 msgstr "パスワードの名前を変更する"
 
-#: src/client/gpaste-client.c:701
+#: src/client/gpaste-client.c:707
 #, fuzzy
 msgid "get the item <uuid> from the history"
 msgstr "この ID に一致する項目を履歴からクリップボードに設定する"
 
-#: src/client/gpaste-client.c:702
+#: src/client/gpaste-client.c:708
 #, fuzzy
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "この ID に一致する項目を履歴からクリップボードに設定する"
 
-#: src/client/gpaste-client.c:703
+#: src/client/gpaste-client.c:709
 #, fuzzy
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "履歴の <uuid> に一致する項目の内容を指定した項目で置き換える"
 
-#: src/client/gpaste-client.c:704
+#: src/client/gpaste-client.c:710
 #, fuzzy
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr "履歴の <数字> 番目の項目をマージして、結果をクリップボードに追加する"
 
-#: src/client/gpaste-client.c:705
+#: src/client/gpaste-client.c:711
 #, fuzzy
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr "履歴の <数字> 番目の項目を <名前> という名前のパスワードとして設定する"
 
-#: src/client/gpaste-client.c:706
+#: src/client/gpaste-client.c:712
 #, fuzzy
 msgid "delete item <uuid> from the history"
 msgstr "履歴からパスワード <名前> を削除する"
 
-#: src/client/gpaste-client.c:707
+#: src/client/gpaste-client.c:713
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:708
+#: src/client/gpaste-client.c:714
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:709
+#: src/client/gpaste-client.c:715
 msgid "delete the password <name> from the history"
 msgstr "履歴からパスワード <名前> を削除する"
 
-#: src/client/gpaste-client.c:710
+#: src/client/gpaste-client.c:716
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "<パス> にあるファイルの内容をクリップボードに追加"
 
-#: src/client/gpaste-client.c:711
+#: src/client/gpaste-client.c:717
 msgid "empty the history"
 msgstr "履歴を空にする"
 
-#: src/client/gpaste-client.c:712
+#: src/client/gpaste-client.c:718
 msgid "start tracking clipboard changes"
 msgstr "クリップボードの変更の追跡を開始する"
 
-#: src/client/gpaste-client.c:713
+#: src/client/gpaste-client.c:719
 msgid "stop tracking clipboard changes"
 msgstr "クリップボードの変更の追跡を停止する"
 
-#: src/client/gpaste-client.c:714
+#: src/client/gpaste-client.c:720
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "デーモンを再実行する (アップグレード後...)"
 
-#: src/client/gpaste-client.c:715
+#: src/client/gpaste-client.c:721
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:716
+#: src/client/gpaste-client.c:722
 #, fuzzy
 msgid "change the passphrase of the encrypted history"
 msgstr "現在の履歴の名前を取得する"
 
-#: src/client/gpaste-client.c:717
+#: src/client/gpaste-client.c:723
 msgid "launch the configuration tool"
 msgstr "設定ツールを起動する"
 
-#: src/client/gpaste-client.c:718
+#: src/client/gpaste-client.c:724
 msgid "launch the graphical tool"
 msgstr "GUI ツールを起動する"
 
-#: src/client/gpaste-client.c:719
+#: src/client/gpaste-client.c:725
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "アプレットまたは拡張機能に履歴を表示させる"
 
-#: src/client/gpaste-client.c:720
+#: src/client/gpaste-client.c:726
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "<uuid> に一致する項目を Pastebin にアップロードする"
 
-#: src/client/gpaste-client.c:721
+#: src/client/gpaste-client.c:727
 msgid "display the version"
 msgstr "バージョンを表示する"
 
-#: src/client/gpaste-client.c:722
+#: src/client/gpaste-client.c:728
 msgid "display the daemon version"
 msgstr "デーモンのバージョンを表示する"
 
-#: src/client/gpaste-client.c:723
+#: src/client/gpaste-client.c:729
 msgid "display this help"
 msgstr "ヘルプを表示する"
 
-#: src/client/gpaste-client.c:724
+#: src/client/gpaste-client.c:730
 msgid "display the about dialog"
 msgstr "GPaste についてのダイアログを表示する"
 
-#: src/client/gpaste-client.c:757
+#: src/client/gpaste-client.c:763
 #, c-format
 msgid "Usage:\n"
 msgstr "使い方:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:778
+#: src/client/gpaste-client.c:784
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:778
+#: src/client/gpaste-client.c:784
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "プログラムの出力をクリップボードに設定する"
 
-#: src/client/gpaste-client.c:781
+#: src/client/gpaste-client.c:787
 #, fuzzy, c-format
 msgid "Convenience options:"
 msgstr "マージオプション:"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:784
+#: src/client/gpaste-client.c:790
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:786
+#: src/client/gpaste-client.c:792
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
-#: src/client/gpaste-client.c:789
+#: src/client/gpaste-client.c:795
 #, c-format
 msgid "Display options:"
 msgstr "表示オプション:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:792
+#: src/client/gpaste-client.c:798
 msgid "display each item on only one line"
 msgstr "各項目を一行に表示する"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:794
+#: src/client/gpaste-client.c:800
 msgid "display each item raw (without line numbers)"
 msgstr "各項目を表示する (行番号なし)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:796
+#: src/client/gpaste-client.c:802
 msgid "display the items in reverse order"
 msgstr "項目を逆順で表示する"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:798
+#: src/client/gpaste-client.c:804
 msgid "use a NUL character instead of a new line between each item"
 msgstr "各項目の区切りに改行ではなくヌル文字を使用する"
 
-#: src/client/gpaste-client.c:801
+#: src/client/gpaste-client.c:807
 #, c-format
 msgid "Merge options:"
 msgstr "マージオプション:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:804 src/client/gpaste-client.c:806
+#: src/client/gpaste-client.c:810 src/client/gpaste-client.c:812
 msgid "string"
 msgstr "文字列"
 
-#: src/client/gpaste-client.c:804
+#: src/client/gpaste-client.c:810
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr "マージする前に各項目の最初と最後に指定した文字列を追加する"
 
-#: src/client/gpaste-client.c:806
+#: src/client/gpaste-client.c:812
 msgid "add the given separator between each item when merging"
 msgstr "マージする時に各項目の間に指定された区切り記号を追加する"
 
@@ -1539,19 +1540,19 @@ msgstr "プライマリー選択からクリップボードに同期する"
 msgid "Sync Primary to Clipboard"
 msgstr "プライマリー選択からクリップボードに同期する"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:323
+#: src/libgpaste/gpaste-3/gpaste-util.c:324
 msgid "Image"
 msgstr "画像"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:325
+#: src/libgpaste/gpaste-3/gpaste-util.c:326
 msgid "Color"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:330
+#: src/libgpaste/gpaste-3/gpaste-util.c:331
 msgid "Files"
 msgstr "ファイル"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:335
+#: src/libgpaste/gpaste-3/gpaste-util.c:336
 msgid "Password"
 msgstr "パスワード"
 
@@ -1735,7 +1736,7 @@ msgstr ""
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1022
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:52
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:198
-#: src/ui/gpaste-ui-header.c:321 src/ui/gpaste-ui-panel.c:363
+#: src/ui/gpaste-ui-header.c:321 src/ui/gpaste-ui-panel.c:389
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -1896,7 +1897,7 @@ msgstr ""
 msgid "Do you really want to empty \"%s\"?"
 msgstr "本当に履歴を空にしますか？"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:135 src/ui/gpaste-ui-panel.c:561
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:135 src/ui/gpaste-ui-panel.c:587
 #, fuzzy
 msgctxt "verb"
 msgid "Empty"
@@ -1955,20 +1956,20 @@ msgstr "(検索結果はありません)"
 msgid "No Pinned Items"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:114
+#: src/ui/gpaste-ui-item.c:134
 msgid "Unpin"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:114 src/ui/gpaste-ui-item.c:665
+#: src/ui/gpaste-ui-item.c:134 src/ui/gpaste-ui-item.c:687
 msgid "Pin"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:666
+#: src/ui/gpaste-ui-item.c:688
 msgid "Upload"
 msgstr "アップロード"
 
-#: src/ui/gpaste-ui-item.c:667 src/ui/gpaste-ui-panel.c:410
-#: src/ui/gpaste-ui-panel.c:562
+#: src/ui/gpaste-ui-item.c:689 src/ui/gpaste-ui-panel.c:436
+#: src/ui/gpaste-ui-panel.c:588
 msgid "Delete"
 msgstr "削除"
 
@@ -1980,26 +1981,26 @@ msgstr ""
 msgid "New item"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:359
+#: src/ui/gpaste-ui-panel.c:385
 msgid "Under which name do you want to back up this history?"
 msgstr "この履歴をどのような名前でバックアップしますか？"
 
-#: src/ui/gpaste-ui-panel.c:363 src/ui/gpaste-ui-panel.c:560
+#: src/ui/gpaste-ui-panel.c:389 src/ui/gpaste-ui-panel.c:586
 msgid "Backup"
 msgstr "バックアップ"
 
 #. Translators: %s is the name of the history being deleted.
-#: src/ui/gpaste-ui-panel.c:409
+#: src/ui/gpaste-ui-panel.c:435
 #, fuzzy, c-format
 msgid "Are you sure you want to delete \"%s\"?"
 msgstr "この履歴を削除してもよろしいですか？"
 
-#: src/ui/gpaste-ui-panel.c:484
+#: src/ui/gpaste-ui-panel.c:510
 #, fuzzy
 msgid "Switch to history"
 msgstr "他の履歴に切り替える"
 
-#: src/ui/gpaste-ui-panel.c:491
+#: src/ui/gpaste-ui-panel.c:517
 msgid "Switch to"
 msgstr "切り替え"
 

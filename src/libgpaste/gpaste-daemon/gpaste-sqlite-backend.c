@@ -1182,6 +1182,115 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     return NULL;
 }
 
+/* What read_history_file would have returned, counted in the database rather
+ * than carried out of it: same predicate, same cap, same favourites, and the
+ * same image rows dropped when images are turned off.
+ *
+ * On a connection of its own, closed again on the way out, rather than the
+ * cached one: counting needs no content and so no key, while opening another
+ * database through the cache would evict the current history's connection --
+ * and with it the derived key, which only a fresh Argon2 pass can replace. That
+ * matters here because listing counts every history in turn.
+ *
+ * Read-only, so a history that is not there is not created by being counted; it
+ * simply counts 0, as an unreadable one does. A row whose content cannot be
+ * decoded at all is still counted, unlike in a read, which drops it -- that
+ * is corruption, and a listing one item out is the smaller of the two problems
+ * it causes.
+ *
+ * Opening by hand means the gates g_paste_sqlite_backend_open () applies have to
+ * be applied here too, or a listing answers for a database a read refuses. A
+ * user_version from a newer GPaste counts 0, the way that read reports nothing;
+ * the schema the version names picks the query, since a database still on v1 has
+ * no favourite column and a count that assumed one would answer 0 for a history
+ * that reads back in full. The passphrase is the one gate it cannot apply: the
+ * key is per-database and only an Argon2 pass produces it, which a listing
+ * cannot afford once per history, so a `.dbs` written under some other
+ * passphrase is counted here and refused on the read. */
+static gsize
+g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
+                                      const gchar          *name)
+{
+    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+    g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
+    sqlite3 *db = NULL;
+
+    if (sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    {
+        sqlite3_close (db);
+
+        return 0;
+    }
+
+    sqlite3_busy_timeout (db, 5000);
+
+    gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
+
+    /* 0 is a database with no schema yet, which a read creates and finds empty;
+     * anything past ours is one this GPaste will not touch. */
+    if (!version || version > G_PASTE_SQLITE_SCHEMA_VERSION)
+    {
+        sqlite3_close (db);
+
+        return 0;
+    }
+
+    gboolean images_support = g_paste_settings_get_images_support (settings);
+    const gchar *query;
+
+    if (version >= 2)
+    {
+        query = (images_support)
+            ? "SELECT COUNT (*) FROM items "
+              "WHERE favourite = 1 "
+              "   OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?1);"
+            : "SELECT COUNT (*) FROM items "
+              "WHERE kind != ?2 "
+              "  AND (favourite = 1 "
+              "       OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?1));";
+    }
+    else
+    {
+        /* v1 has no favourite column, and the migration that adds one defaults
+         * every row to unpinned: what a read of this database returns is the cap
+         * applied to all of it. */
+        query = (images_support)
+            ? "SELECT COUNT (*) FROM items "
+              "WHERE id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1);"
+            : "SELECT COUNT (*) FROM items "
+              "WHERE kind != ?2 "
+              "  AND id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1);";
+    }
+
+    sqlite3_stmt *stmt = NULL;
+    gsize count = 0;
+
+    if (sqlite3_prepare_v2 (db, query, -1, &stmt, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to prepare history count query: %s", sqlite3_errmsg (db));
+        sqlite3_close (db);
+
+        return 0;
+    }
+
+    sqlite3_bind_int64 (stmt, 1, g_paste_settings_get_max_history_size (settings));
+
+    /* The nick the rows were written with, not a literal: it is one enum
+     * registration away from being something else. */
+    if (!images_support)
+        sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (G_PASTE_ITEM_KIND_IMAGE), -1, SQLITE_STATIC);
+
+    if (sqlite3_step (stmt) == SQLITE_ROW)
+        count = sqlite3_column_int64 (stmt, 0);
+
+    sqlite3_finalize (stmt);
+    sqlite3_close (db);
+
+    return count;
+}
+
 static gboolean
 g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
                                           const gchar          *name,
@@ -1699,6 +1808,7 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->write_history_file = g_paste_sqlite_backend_write_history_file;
     storage_class->get_kind = g_paste_sqlite_backend_get_kind;
     storage_class->delete_history = g_paste_sqlite_backend_delete_history;
+    storage_class->count_history = g_paste_sqlite_backend_count_history;
 
     storage_class->add_item = g_paste_sqlite_backend_add_item;
     storage_class->remove_item = g_paste_sqlite_backend_remove_item;

@@ -214,66 +214,113 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
 }
 
 static void
-g_paste_daemon_upload_finish (GObject      *source_object,
-                              GAsyncResult *res,
-                              gpointer      user_data)
+on_wgetpaste_done (GObject      *source_object,
+                   GAsyncResult *res,
+                   gpointer      user_data)
 {
+    /* The ref g_subprocess_new () handed us; the async call holds its own for as
+     * long as it needs one. */
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
+    g_autoptr (GTask) task = user_data;
     g_autofree gchar *url = NULL;
-    GPasteDaemon *self = user_data;
-    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+    GError *error = NULL;
 
-    g_autoptr (GError) error = NULL;
     if (!g_subprocess_communicate_utf8_finish (upload, res, &url, NULL, &error))
-        g_warning ("Upload failed: %s", error->message);
-
-    if (url)
     {
-        g_autoptr (GError) add_error = NULL;
-
-        g_paste_daemon_methods_do_add (&methods, url, strlen (url), &add_error);
-        if (add_error)
-            g_warning ("Failed to add the uploaded url: %s", add_error->message);
+        g_task_return_error (task, error);
+        return;
     }
+
+    /* wgetpaste answers the url on stdout, with the newline it ended the line
+     * with; anything else means it did not upload. */
+    if (url)
+        g_strstrip (url);
+
+    if (!url || !*url)
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "The pastebin service answered no url.");
+        return;
+    }
+
+    g_task_return_pointer (task, g_steal_pointer (&url), g_free);
 }
 
 /**
  * g_paste_daemon_upload:
  * @self: (transfer none): the #GPasteDaemon
- * @uuid: the uuid of the item to upload
+ * @uuid: the uuid of the item to upload, or "" (or %NULL) for the current one
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the upload is done
+ * @user_data: (nullable): the data to pass to @callback
  *
- * Upload an item to a pastebin service
+ * Upload an item to a pastebin service.
  *
- * Returns: whether there was something to upload
+ * The upload is what this waits for, not merely the spawning of the tool that
+ * performs it: the url only exists once it has finished, and an upload that
+ * failed is what @callback is told about. What to do with the url is the
+ * caller's business -- nothing is added to the history here.
  */
-G_PASTE_VISIBLE gboolean
-g_paste_daemon_upload (GPasteDaemon *self,
-                       const gchar  *uuid)
+G_PASTE_VISIBLE void
+g_paste_daemon_upload (GPasteDaemon       *self,
+                       const gchar        *uuid,
+                       GAsyncReadyCallback callback,
+                       gpointer            user_data)
 {
-    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
-    GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (self->history, uuid) : g_paste_history_get (self->history, 0);
+    g_autoptr (GTask) task = g_task_new (self, NULL, callback, user_data);
+
+    g_task_set_source_tag (task, g_paste_daemon_upload);
+
+    /* No uuid means the current item, which is what the keyboard shortcut
+     * uploads. It travels as an empty string rather than as nothing, a D-Bus
+     * string never being absent. */
+    GPasteItem *item = (uuid && *uuid) ? g_paste_history_get_by_uuid (self->history, uuid) : g_paste_history_get (self->history, 0);
 
     if (!item)
-        return FALSE;
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
+        return;
+    }
 
     g_autoptr (GError) error = NULL;
     GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, &error, "wgetpaste", NULL);
 
     if (!upload)
     {
-        g_warning ("Failed to spawn wgetpaste: %s", error->message);
-        return FALSE;
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "Failed to spawn wgetpaste: %s", error->message);
+        return;
     }
 
-    const gchar *value = g_paste_item_get_value (item);
-
     g_subprocess_communicate_utf8_async (upload,
-                                         value,
+                                         g_paste_item_get_value (item),
                                          NULL, /* cancellable */
-                                         g_paste_daemon_upload_finish,
-                                         self);
-    return TRUE;
+                                         on_wgetpaste_done,
+                                         g_steal_pointer (&task));
+}
+
+/**
+ * g_paste_daemon_upload_finish:
+ * @self: (transfer none): the #GPasteDaemon
+ * @result: a #GAsyncResult obtained from the #GAsyncReadyCallback passed to g_paste_daemon_upload()
+ * @error: return location for a #GError, or %NULL
+ *
+ * Finish an upload started with g_paste_daemon_upload().
+ *
+ * Errors are in %G_PASTE_ERROR (%G_PASTE_ERROR_NOT_FOUND for a uuid matching
+ * nothing, %G_PASTE_ERROR_FAILED when the tool could not be run or answered no
+ * url) or whatever running it reported.
+ *
+ * Returns: (transfer full) (nullable): the url the item was uploaded to
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_daemon_upload_finish (GPasteDaemon *self,
+                              GAsyncResult *result,
+                              GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), NULL);
+    g_return_val_if_fail (g_task_is_valid (result, self), NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 /****************/
@@ -290,7 +337,7 @@ keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
     if (!first)
         return;
 
-    g_paste_history_set_password (history, g_paste_item_get_uuid (first), NULL);
+    g_autofree gchar *uuid = g_paste_history_set_password (history, g_paste_item_get_uuid (first), NULL);
 }
 
 static void
@@ -333,10 +380,37 @@ keybinding_launch_ui (GPasteKeybinding *self G_GNUC_UNUSED,
 }
 
 static void
+on_keybinding_upload_done (GObject      *source_object,
+                           GAsyncResult *res,
+                           gpointer      user_data G_GNUC_UNUSED)
+{
+    GPasteDaemon *self = G_PASTE_DAEMON (source_object);
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = g_paste_daemon_upload_finish (self, res, &error);
+
+    if (!url)
+    {
+        g_warning ("Upload failed: %s", error->message);
+        return;
+    }
+
+    /* A shortcut has nobody to hand a url back to, so the history is where it
+     * goes: putting it on the clipboard is the whole of what pressing the
+     * shortcut does. The D-Bus method answers its caller instead, and adds
+     * nothing. */
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+    g_autoptr (GError) add_error = NULL;
+    g_autofree gchar *uuid = g_paste_daemon_methods_do_add (&methods, url, strlen (url), &add_error);
+
+    if (!uuid)
+        g_warning ("Failed to add the uploaded url: %s", add_error->message);
+}
+
+static void
 keybinding_upload (GPasteKeybinding *self G_GNUC_UNUSED,
                    gpointer          data)
 {
-    g_paste_daemon_upload (data, NULL);
+    g_paste_daemon_upload (data, NULL, on_keybinding_upload_done, NULL);
 }
 
 static void
@@ -481,11 +555,17 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
         G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_##name (self->skeleton, invocation, value)); \
     }
 
-G_PASTE_DAEMON_HANDLER_ERR (add_file, (const gchar *file), (file))
+G_PASTE_DAEMON_HANDLER_RET_ERR (add_file,
+                                g_autofree gchar *uuid, uuid,
+                                (const gchar *path), (path))
 
-G_PASTE_DAEMON_HANDLER_ERR (add_text, (const gchar *text), (text))
+G_PASTE_DAEMON_HANDLER_RET_ERR (add_text,
+                                g_autofree gchar *uuid, uuid,
+                                (const gchar *text), (text))
 
-G_PASTE_DAEMON_HANDLER_ERR (add_password, (const gchar *name, const gchar *password), (name, password))
+G_PASTE_DAEMON_HANDLER_RET_ERR (add_password,
+                                g_autofree gchar *uuid, uuid,
+                                (const gchar *name, const gchar *password), (name, password))
 
 G_PASTE_DAEMON_HANDLER_ERR (backup_history, (const gchar *history, const gchar *backup), (history, backup))
 
@@ -506,13 +586,13 @@ G_PASTE_DAEMON_HANDLER_ERR (delete_history, (const gchar *name), (name))
 
 G_PASTE_DAEMON_HANDLER_ERR (delete_password, (const gchar *name), (name))
 
-G_PASTE_DAEMON_HANDLER (empty_history, (const gchar *name), (name))
+G_PASTE_DAEMON_HANDLER_ERR (empty_history, (const gchar *name), (name))
 
 G_PASTE_DAEMON_HANDLER_RET (get_favourites, (), ())
 
 G_PASTE_DAEMON_HANDLER_RET (get_history, (), ())
 
-G_PASTE_DAEMON_HANDLER_RET (get_history_size, (const gchar *name), (name))
+G_PASTE_DAEMON_HANDLER_RET (get_history_size, (), ())
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (get_image,
                                 GVariant *image, image,
@@ -535,10 +615,16 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_uris,
                                 (const gchar *uuid), (uuid))
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
-                                g_auto (GStrv) histories, (const gchar * const *) histories,
+                                GVariant *histories, histories,
                                 (), ())
 
-G_PASTE_DAEMON_HANDLER_ERR (merge, (const gchar *decoration, const gchar *separator, const gchar * const *uuids), (decoration, separator, uuids))
+G_PASTE_DAEMON_HANDLER_RET_ERR (make_password,
+                                g_autofree gchar *new_uuid, new_uuid,
+                                (const gchar *uuid, const gchar *name), (uuid, name))
+
+G_PASTE_DAEMON_HANDLER_RET_ERR (merge,
+                                g_autofree gchar *uuid, uuid,
+                                (const gchar *decoration, const gchar *separator, const gchar * const *uuids), (decoration, separator, uuids))
 
 static gboolean
 g_paste_daemon_handle_report_extension_state (GPasteDaemon          *self,
@@ -565,7 +651,9 @@ g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
 
 G_PASTE_DAEMON_HANDLER_ERR (rename_password, (const gchar *old_name, const gchar *new_name), (old_name, new_name))
 
-G_PASTE_DAEMON_HANDLER_ERR (replace, (const gchar *uuid, const gchar *contents), (uuid, contents))
+G_PASTE_DAEMON_HANDLER_RET_ERR (replace,
+                                g_autofree gchar *new_uuid, new_uuid,
+                                (const gchar *uuid, const gchar *contents), (uuid, contents))
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (search,
                                 GVariant *results, results,
@@ -576,18 +664,6 @@ G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 G_PASTE_DAEMON_HANDLER (set_active, (gboolean active), (active))
 
 G_PASTE_DAEMON_HANDLER_ERR (set_favourite, (const gchar *uuid, gboolean favourite), (uuid, favourite))
-
-G_PASTE_DAEMON_HANDLER_ERR (set_password, (const gchar *uuid, const gchar *name), (uuid, name))
-
-static gboolean
-g_paste_daemon_handle_show_about (GPasteDaemon          *self,
-                                  GDBusMethodInvocation *invocation)
-{
-    g_paste_util_activate_ui ("about", NULL);
-    g_paste_daemon3_complete_show_about (self->skeleton, invocation);
-
-    return TRUE;
-}
 
 static gboolean
 g_paste_daemon_handle_show_history (GPasteDaemon          *self,
@@ -602,20 +678,31 @@ g_paste_daemon_handle_show_history (GPasteDaemon          *self,
 
 G_PASTE_DAEMON_HANDLER_ERR (switch_history, (const gchar *name), (name))
 
+/* The one method that cannot answer from its handler: the url exists only once
+ * wgetpaste has finished, so the invocation is carried along and answered from
+ * the callback. */
+static void
+on_upload_done (GObject      *source_object,
+                GAsyncResult *res,
+                gpointer      user_data)
+{
+    GPasteDaemon *self = G_PASTE_DAEMON (source_object);
+    GDBusMethodInvocation *invocation = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = g_paste_daemon_upload_finish (self, res, &error);
+
+    if (!url)
+        g_dbus_method_invocation_take_error (invocation, g_steal_pointer (&error));
+    else
+        g_paste_daemon3_complete_upload (self->skeleton, invocation, url);
+}
+
 static gboolean
 g_paste_daemon_handle_upload (GPasteDaemon          *self,
                               GDBusMethodInvocation *invocation,
                               const gchar           *uuid)
 {
-    if (g_paste_daemon_upload (self, uuid))
-        g_paste_daemon3_complete_upload (self->skeleton, invocation);
-    else
-    {
-        g_dbus_method_invocation_return_error_literal (invocation,
-                                                      G_PASTE_ERROR,
-                                                      G_PASTE_ERROR_NOT_FOUND,
-                                                      "Provided uuid doesn't match any item.");
-    }
+    g_paste_daemon_upload (self, uuid, on_upload_done, invocation);
 
     return TRUE;
 }
@@ -651,6 +738,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-get-items",                   G_CALLBACK (g_paste_daemon_handle_get_items)                   },
         { "handle-get-uris",                    G_CALLBACK (g_paste_daemon_handle_get_uris)                    },
         { "handle-list-histories",              G_CALLBACK (g_paste_daemon_handle_list_histories)              },
+        { "handle-make-password",               G_CALLBACK (g_paste_daemon_handle_make_password)               },
         { "handle-merge",                       G_CALLBACK (g_paste_daemon_handle_merge)                       },
         { "handle-reexecute",                   G_CALLBACK (g_paste_daemon_handle_reexecute)                   },
         { "handle-rename-password",             G_CALLBACK (g_paste_daemon_handle_rename_password)             },
@@ -660,8 +748,6 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-select",                      G_CALLBACK (g_paste_daemon_handle_select)                      },
         { "handle-set-active",                  G_CALLBACK (g_paste_daemon_handle_set_active)                  },
         { "handle-set-favourite",               G_CALLBACK (g_paste_daemon_handle_set_favourite)               },
-        { "handle-set-password",                G_CALLBACK (g_paste_daemon_handle_set_password)                },
-        { "handle-show-about",                  G_CALLBACK (g_paste_daemon_handle_show_about)                  },
         { "handle-show-history",                G_CALLBACK (g_paste_daemon_handle_show_history)                },
         { "handle-switch-history",              G_CALLBACK (g_paste_daemon_handle_switch_history)              },
         { "handle-upload",                      G_CALLBACK (g_paste_daemon_handle_upload)                      },

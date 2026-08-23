@@ -19,8 +19,13 @@ void g_paste_daemon_resume       (GPasteDaemon *self);
 void g_paste_daemon_reload_storage (GPasteDaemon *self);
 void g_paste_daemon_extension_state_changed (GPasteDaemon *self,
                                              gboolean      state);
-gboolean g_paste_daemon_upload   (GPasteDaemon *self,
-                                  const gchar  *uuid);
+void   g_paste_daemon_upload        (GPasteDaemon       *self,
+                                     const gchar        *uuid,
+                                     GAsyncReadyCallback callback,
+                                     gpointer            user_data);
+gchar *g_paste_daemon_upload_finish (GPasteDaemon *self,
+                                     GAsyncResult *result,
+                                     GError      **error);
 
 GPasteDaemon *g_paste_daemon_new (GPasteSettings          *settings,
                                   GPasteClipboardProvider *clipboard,

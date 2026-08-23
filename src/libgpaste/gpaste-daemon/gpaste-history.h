@@ -27,20 +27,20 @@ GPasteItem         *g_paste_history_dup             (GPasteHistory *self,
                                                      guint64        index);
 gboolean            g_paste_history_select          (GPasteHistory *self,
                                                      const gchar   *uuid);
-void                g_paste_history_replace         (GPasteHistory *self,
+gchar              *g_paste_history_replace         (GPasteHistory *self,
                                                      const gchar   *uuid,
                                                      const gchar   *contents);
 gboolean            g_paste_history_set_favourite   (GPasteHistory *self,
                                                      const gchar   *uuid,
                                                      gboolean       favourite);
-void                g_paste_history_set_password    (GPasteHistory *self,
+gchar              *g_paste_history_set_password    (GPasteHistory *self,
                                                      const gchar   *uuid,
                                                      const gchar   *name);
 GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
                                                      const gchar   *name);
-void                g_paste_history_delete_password (GPasteHistory *self,
+gboolean            g_paste_history_delete_password (GPasteHistory *self,
                                                      const gchar   *name);
-void                g_paste_history_rename_password (GPasteHistory *self,
+gboolean            g_paste_history_rename_password (GPasteHistory *self,
                                                      const gchar   *old_name,
                                                      const gchar   *new_name);
 void         g_paste_history_empty       (GPasteHistory *self);
@@ -51,6 +51,7 @@ void     g_paste_history_save       (GPasteHistory *self,
                                      const gchar   *name);
 void     g_paste_history_load       (GPasteHistory *self,
                                      const gchar   *name);
+gboolean g_paste_history_is_unreadable (GPasteHistory *self);
 void     g_paste_history_load_async (GPasteHistory *self,
                                      const gchar   *name);
 void     g_paste_history_switch     (GPasteHistory *self,
@@ -67,7 +68,9 @@ GStrv g_paste_history_search (GPasteHistory *self,
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
-GStrv g_paste_history_list (GPasteHistory *self,
-                             GError       **error);
+GStrv    g_paste_history_list     (GPasteHistory *self,
+                                   GError       **error);
+guint64  g_paste_history_get_size (GPasteHistory *self,
+                                   const gchar   *name);
 
 G_END_DECLS

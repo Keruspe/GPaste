@@ -15,7 +15,7 @@ import {GPasteActionButton} from './actionButton.js';
 
 export const GPasteActions = GObject.registerClass(
 class GPasteActions extends PopupBaseMenuItem {
-    constructor(client, menu, emptyHistoryItem) {
+    constructor(menu, emptyHistoryItem) {
         super({
             reactive: false,
             can_focus: false,
@@ -36,7 +36,10 @@ class GPasteActions extends PopupBaseMenuItem {
         box.add_child(emptyHistoryItem);
         box.add_child(new GPasteActionButton('dialog-information-symbolic', _('About'), () => {
             menu.itemActivated();
-            client.show_about(null);
+            // The UI app's own action, reached directly: the daemon has no
+            // part in an about dialog, and its ShowAbout did no more than make
+            // this same call. Which is why nothing here needs the client.
+            GPaste.util_activate_ui('about', null);
         }));
         this.add_child(box);
 

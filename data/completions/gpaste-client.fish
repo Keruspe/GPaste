@@ -100,7 +100,7 @@ __gpaste_subcommand get g                              'Display an element of th
 __gpaste_subcommand get-history gh                     'Get the name of the current history'
 __gpaste_subcommand help                               'Display the help'
 __gpaste_subcommand history h                          'Display the history'
-__gpaste_subcommand history-size hs                    'Display the size of the history'
+__gpaste_subcommand history-size hs                    'Display the size of the current history'
 __gpaste_subcommand list-histories lh                  'List available histories'
 __gpaste_subcommand merge m                            'Merge various elements from the history'
 __gpaste_subcommand migrate                            'Migrate the history to a different storage backend'
@@ -121,7 +121,7 @@ __gpaste_subcommand version v                          'Display the version'
 
 # Arguments. backup-history takes <history> <backup name>, the history being
 # optional, so only its first argument names a history.
-complete -c gpaste-client -n '__fish_seen_subcommand_from empty e history-size hs delete-history dh switch-history sh backup-history bh' \
+complete -c gpaste-client -n '__fish_seen_subcommand_from empty e delete-history dh switch-history sh backup-history bh' \
     -a '(__gpaste_histories)' -d History
 
 complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F

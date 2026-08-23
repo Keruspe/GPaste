@@ -21,9 +21,22 @@
     below keeps, so that the generated g_paste_daemon3_* symbols never collide
     with the g_paste_daemon_* ones of the GPasteDaemon object that implements it.
 
+    THE CURRENT HISTORY IS WHAT EVERY ITEM CALL ACTS ON. Reading items
+    (GetHistory, GetItem, GetItemAtIndex, GetItems, GetFavourites, GetImage,
+    GetUris, Search, GetHistorySize) and changing them (the Add* calls, Merge,
+    Replace, MakePassword, Select, SetFavourite, DeleteItem, DeletePassword,
+    RenamePassword) never name a history: they are about the one in use, which
+    the History property carries.
+    The calls that name a history are the ones that treat histories as objects
+    rather than as a place to put items: ListHistories, BackupHistory,
+    EmptyHistory, DeleteHistory and SwitchHistory. Inspecting another history
+    means switching to it.
+
     An item travels as (uuid, value, kind, favourite): everything a client needs
     to draw a row, in one reply. @kind is the GPasteItemKind value, the numeric
-    one rather than its nick, which is now the storage backends' business alone.
+    one rather than its nick, which is now the storage backends' business alone;
+    the DocString annotation below spells the numbers out, so a client that
+    never sees GPaste's headers can still read them off Introspect().
 
     @value is the one string an item has here, the one a user is shown. There
     used to be a second, "raw" flavour of every getter, answering what a script
@@ -36,23 +49,52 @@
   <interface name="org.gnome.GPaste3">
     <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon3"/>
 
-    <!-- Add the contents of a file to the history -->
+    <!--
+      The one thing a client cannot work out from the signatures alone: what the
+      numbers mean. Carried as annotations rather than only as comments so they
+      come back from Introspect() over the bus, where a client that never read
+      this file can still find them.
+
+      Under a name of GPaste's own, not org.gtk.GDBus.DocString: gdbus-codegen
+      consumes anything in its own namespace as an instruction to itself and
+      emits none of it into the GDBusInterfaceInfo the skeleton answers
+      Introspect() from, which is the one place these have to reach.
+    -->
+    <annotation name="org.gnome.GPaste3.ItemKind"
+                value="0=invalid 1=text 2=uris 3=image 4=password 5=color"/>
+
+    <!--
+      Add the contents of a file to the history.
+
+      @path is read by the daemon, so it must be one the daemon can reach; a
+      client resolves a relative one against its own directory first. A file that
+      is not valid UTF-8 is tried as an image.
+    -->
     <method name="AddFile">
-      <arg type="s" direction="in" name="file"/>
+      <arg type="s" direction="in"  name="path"/>
+      <arg type="s" direction="out" name="uuid"/>
     </method>
 
     <!-- Add a password item to the history -->
     <method name="AddPassword">
-      <arg type="s" direction="in" name="name"/>
-      <arg type="s" direction="in" name="password"/>
+      <arg type="s" direction="in"  name="name"/>
+      <arg type="s" direction="in"  name="password"/>
+      <arg type="s" direction="out" name="uuid"/>
     </method>
 
     <!-- Add a text item to the history -->
     <method name="AddText">
-      <arg type="s" direction="in" name="text"/>
+      <arg type="s" direction="in"  name="text"/>
+      <arg type="s" direction="out" name="uuid"/>
     </method>
 
-    <!-- Backup a history under another name -->
+    <!--
+      Backup a history under another name.
+
+      Refuses with .Error.AlreadyExists rather than overwrite a history already
+      called @backup: a backup silently destroying an older one of the same name
+      is a loss noticed far too late.
+    -->
     <method name="BackupHistory">
       <arg type="s" direction="in" name="history"/>
       <arg type="s" direction="in" name="backup"/>
@@ -100,9 +142,14 @@
       <arg type="a(ssub)" direction="out" name="history"/>
     </method>
 
-    <!-- How many items a given history holds -->
+    <!--
+      How many items the current history holds.
+
+      The sizes of the *other* histories come from ListHistories, which answers
+      all of them at once: asking here for one history at a time is what used to
+      make a sidebar listing every history cost the daemon one full load each.
+    -->
     <method name="GetHistorySize">
-      <arg type="s" direction="in"  name="name"/>
       <arg type="t" direction="out" name="size"/>
     </method>
 
@@ -162,16 +209,37 @@
       <arg type="as" direction="out" name="uris"/>
     </method>
 
-    <!-- The names of every known history -->
+    <!--
+      Every known history, each with how many items it holds.
+
+      The size rides along because everything that lists histories draws their
+      sizes beside them, and asking per history meant one full load of one
+      history apiece, inside the daemon's main loop. The order is the storage
+      backend's, which is the order such a listing is drawn in.
+    -->
     <method name="ListHistories">
-      <arg type="as" direction="out" name="histories"/>
+      <arg type="a(st)" direction="out" name="histories"/>
     </method>
 
-    <!-- Merge several items into a new one -->
+    <!-- Turn one item into a password item -->
+    <method name="MakePassword">
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="in"  name="name"/>
+      <arg type="s" direction="out" name="new_uuid"/>
+    </method>
+
+    <!--
+      Merge several items into a new one.
+
+      Daemon-side because it has to be: what gets joined is each item's real
+      value, and the only string an item travels with here is the one a user is
+      shown. @decoration wraps each item, @separator goes between them.
+    -->
     <method name="Merge">
-      <arg type="s"  direction="in" name="decoration"/>
-      <arg type="s"  direction="in" name="separator"/>
-      <arg type="as" direction="in" name="uuids"/>
+      <arg type="s"  direction="in"  name="decoration"/>
+      <arg type="s"  direction="in"  name="separator"/>
+      <arg type="as" direction="in"  name="uuids"/>
+      <arg type="s"  direction="out" name="uuid"/>
     </method>
 
     <!-- Have the daemon exec a fresh copy of itself -->
@@ -179,8 +247,8 @@
 
     <!-- Rename a password item -->
     <method name="RenamePassword">
-      <arg type="s" direction="in" name="old_name"/>
-      <arg type="s" direction="in" name="new_name"/>
+      <arg type="s" direction="in" name="old"/>
+      <arg type="s" direction="in" name="new"/>
     </method>
 
     <!--
@@ -193,10 +261,16 @@
       <arg type="b" direction="in" name="active"/>
     </method>
 
-    <!-- Replace the contents of one item -->
+    <!--
+      Replace the contents of one item.
+
+      The replacement is an item of its own, with a uuid of its own: that is what
+      comes back, and why the Update this raises names no item.
+    -->
     <method name="Replace">
-      <arg type="s" direction="in" name="uuid"/>
-      <arg type="s" direction="in" name="contents"/>
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="in"  name="contents"/>
+      <arg type="s" direction="out" name="new_uuid"/>
     </method>
 
     <!-- The items matching a query -->
@@ -227,26 +301,32 @@
       <arg type="b" direction="in" name="favourite"/>
     </method>
 
-    <!-- Turn one item into a password item -->
-    <method name="SetPassword">
-      <arg type="s" direction="in" name="uuid"/>
-      <arg type="s" direction="in" name="name"/>
-    </method>
-
-    <!-- Show the about dialog -->
-    <method name="ShowAbout"/>
-
     <!-- Ask for the history to be displayed -->
     <method name="ShowHistory"/>
 
-    <!-- Switch to another history; the History property carries the outcome -->
+    <!--
+      Switch to another history.
+
+      Switching to a name no history goes by creates it, empty: that is how a new
+      history comes into being, there being no CreateHistory of its own. The
+      History property carries the outcome, and HistoriesChanged is raised when
+      the switch did create one.
+    -->
     <method name="SwitchHistory">
       <arg type="s" direction="in" name="name"/>
     </method>
 
-    <!-- Upload one item to a pastebin service -->
+    <!--
+      Upload one item to a pastebin service, and answer where it landed.
+
+      The reply comes when the upload has finished, not when it has started, and
+      an upload that failed fails this call. What to do with the url is the
+      caller's business: it is not added to the history. An empty @uuid means the
+      current item, which is what the keyboard shortcut uploads.
+    -->
     <method name="Upload">
-      <arg type="s" direction="in" name="uuid"/>
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="out" name="url"/>
     </method>
 
     <!--
@@ -256,28 +336,39 @@
       (Update hands out GPasteUpdateAction/GPasteUpdateTarget enums rather than
       their numeric values) and keeps the whole public surface declared on
       GPasteClient itself, where the GIR and the VAPI can see it.
+
+      They are named for what happened rather than for the method that did it,
+      which is also what keeps a signal from sharing a name with a method: the
+      two live in one namespace for generated bindings, and a language mapping
+      both onto members of one class has nowhere to put the second. ShowHistory
+      is the one pair that does share a name, and has to: the signal is a
+      request rather than a report of something that happened, and it is what
+      the method of that name forwards. Its "Raw" C name is what keeps the
+      generated C side of the two apart.
     -->
-
-    <!-- A history was deleted -->
-    <signal name="DeleteHistory">
-      <annotation name="org.gtk.GDBus.C.Name" value="RawDeleteHistory"/>
-      <arg type="s" name="history"/>
-    </signal>
-
-    <!-- A history was emptied -->
-    <signal name="EmptyHistory">
-      <annotation name="org.gtk.GDBus.C.Name" value="RawEmptyHistory"/>
-      <arg type="s" name="history"/>
-    </signal>
 
     <!--
       The set of histories changed, so anything listing them should ask again.
 
       Distinct from switching: a backup creates a history without making it the
-      current one, which no change of the History property can express.
+      current one, which no change of the History property can express. Raised
+      by every membership change: a backup, a deletion, and an empty or a
+      switch that named a history there was none of.
     -->
     <signal name="HistoriesChanged">
       <annotation name="org.gtk.GDBus.C.Name" value="RawHistoriesChanged"/>
+    </signal>
+
+    <!-- A history was deleted -->
+    <signal name="HistoryDeleted">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawHistoryDeleted"/>
+      <arg type="s" name="history"/>
+    </signal>
+
+    <!-- A history was emptied -->
+    <signal name="HistoryEmptied">
+      <annotation name="org.gtk.GDBus.C.Name" value="RawHistoryEmptied"/>
+      <arg type="s" name="history"/>
     </signal>
 
     <!-- The history should be displayed -->
@@ -296,8 +387,12 @@
     -->
     <signal name="Update">
       <annotation name="org.gtk.GDBus.C.Name" value="RawUpdate"/>
-      <arg type="u" name="action"/>
-      <arg type="u" name="target"/>
+      <arg type="u" name="action">
+        <annotation name="org.gnome.GPaste3.UpdateAction" value="0=invalid 1=replace 2=remove"/>
+      </arg>
+      <arg type="u" name="target">
+        <annotation name="org.gnome.GPaste3.UpdateTarget" value="0=invalid 1=all 2=item"/>
+      </arg>
       <arg type="s" name="uuid"/>
       <arg type="t" name="index"/>
     </signal>

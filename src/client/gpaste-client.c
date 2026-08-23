@@ -231,13 +231,19 @@ g_paste_history (Context *ctx,
     return EXIT_SUCCESS;
 }
 
+/* Activating the UI app's own action, not a round trip through the daemon: the
+ * daemon did nothing else with this than make the same call, and a client that
+ * only wants the about dialog has no reason to need a daemon at all. */
 static gint
-g_paste_about (Context *ctx,
+g_paste_about (Context *ctx G_GNUC_UNUSED,
                GError **error)
 {
-    g_paste_client_show_about_sync (ctx->client, error);
+    /* Synchronously: there is no main loop here to finish an asynchronous call
+     * from, so the process would exit before anything reached the bus. */
+    if (!g_paste_util_activate_ui_sync ("about", NULL, error))
+        return EXIT_FAILURE;
 
-    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 /* A daemon that honours the re-exec tears its D-Bus connection down before
@@ -368,12 +374,7 @@ static gint
 g_paste_history_size (Context *ctx,
                       GError **error)
 {
-    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : current_history (ctx, error);
-
-    if (*error)
-        return EXIT_FAILURE;
-
-    guint64 size = g_paste_client_get_history_size_sync (ctx->client, name, error);
+    guint64 size = g_paste_client_get_history_size_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -387,13 +388,16 @@ static gint
 g_paste_list_histories (Context *ctx,
                         GError **error)
 {
-    g_auto (GStrv) histories = g_paste_client_list_histories_sync (ctx->client, error);
+    g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    for (GStrv h = histories; *h; ++h)
-        printf ("%s\n", *h);
+    /* The names alone: this is what a script enumerating histories reads, and
+     * the sizes the listing now carries have gpaste-client history-size and the
+     * graphical panel for a home. */
+    for (const GList *h = histories; h; h = h->next)
+        printf ("%s\n", g_paste_client_history_get_name (h->data));
 
     return EXIT_SUCCESS;
 }
@@ -468,7 +472,7 @@ g_paste_add (Context *ctx,
         return EXIT_FAILURE;
     }
 
-    g_paste_client_add_text_sync (ctx->client, data, error);
+    g_autofree gchar *uuid = g_paste_client_add_text_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -482,7 +486,7 @@ g_paste_add_password (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, error);
+    g_autofree gchar *uuid = g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -542,7 +546,7 @@ static gint
 g_paste_file (Context *ctx,
               GError **error)
 {
-    g_paste_client_add_file_sync (ctx->client, ctx->args[0], error);
+    g_autofree gchar *uuid = g_paste_client_add_file_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -570,7 +574,7 @@ g_paste_replace (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_paste_client_replace_sync (ctx->client, ctx->uuid, data, error);
+    g_autofree gchar *uuid = g_paste_client_replace_sync (ctx->client, ctx->uuid, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -627,9 +631,14 @@ static gint
 g_paste_upload (Context *ctx,
                 GError **error)
 {
-    g_paste_client_upload_sync (ctx->client, ctx->uuid, error);
+    g_autofree gchar *url = g_paste_client_upload_sync (ctx->client, ctx->uuid, error);
 
-    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+    if (*error)
+        return EXIT_FAILURE;
+
+    printf ("%s\n", url);
+
+    return EXIT_SUCCESS;
 }
 
 static gint
@@ -645,7 +654,7 @@ static gint
 g_paste_set_password (Context *ctx,
                       GError **error)
 {
-    g_paste_client_set_password_sync (ctx->client, ctx->uuid, ctx->args[1], error);
+    g_autofree gchar *uuid = g_paste_client_make_password_sync (ctx->client, ctx->uuid, ctx->args[1], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -654,7 +663,7 @@ static gint
 g_paste_merge (Context *ctx,
                GError **error)
 {
-    g_paste_client_merge_sync (ctx->client, ctx->decoration, ctx->separator, ctx->args, error);
+    g_autofree gchar *uuid = g_paste_client_merge_sync (ctx->client, ctx->decoration, ctx->separator, ctx->args, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -688,7 +697,7 @@ static const Command commands[] = {
         { 0, NULL, NULL, 0,        TRUE,  NULL, NULL, g_paste_history     },
 
         { 1, "history",           "h",               0,        TRUE,  NULL,                    N_ ("print the history with UUIDs"),                                                            g_paste_history },
-        { 1, "history-size",      "hs",              1,        TRUE,  NULL,                    N_ ("print the size of the history"),                                                           g_paste_history_size },
+        { 1, "history-size",      "hs",              0,        TRUE,  NULL,                    N_ ("print the size of the current history"),                                                   g_paste_history_size },
         { 2, "search",            NULL,              0,        TRUE,  "<pattern>",             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
         { 1, "get-history",       "gh",              0,        TRUE,  NULL,                    N_ ("get the name of the current history"),                                                     g_paste_get_history },
         { 2, "backup-history",    "bh",              1,        TRUE,  "<name>",                N_ ("back up the current history"),                                                             g_paste_backup_history },
@@ -721,7 +730,7 @@ static const Command commands[] = {
         { 1, "version",           "v",               0,        FALSE, NULL,                    N_ ("display the version"),                                                                     g_paste_version },
         { 1, "daemon-version",    "dv",              0,        TRUE,  NULL,                    N_ ("display the daemon version"),                                                              g_paste_daemon_version },
         { 1, "help",              NULL,              0,        FALSE, NULL,                    N_ ("display this help"),                                                                       g_paste_help },
-        { 1, "about",             NULL,              0,        TRUE,  NULL,                    N_ ("display the about dialog"),                                                                g_paste_about },
+        { 1, "about",             NULL,              0,        FALSE, NULL,                    N_ ("display the about dialog"),                                                                g_paste_about },
 };
 
 /* @verb is the canonical name or any of the aliases. */

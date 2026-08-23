@@ -353,16 +353,27 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
     return FALSE;
 }
 
-/* A history's images live in their own directory (so histories never share,
- * nor cross-delete, image files): deleting the history deletes them with it,
- * whichever backend stored the history itself.
+/**
+ * g_paste_storage_backend_delete_history_images:
+ * @name: the name of the history whose images to sweep
+ * @error: a #GError
  *
- * %FALSE, with @error set to the first thing that went wrong, when anything the
- * sweep should have removed is still on disk. The rest is swept anyway: these
- * are the clipboard's screenshots, so every one that can go, goes. */
-static gboolean
-_g_paste_storage_backend_delete_history_images (const gchar *name,
-                                                GError     **error)
+ * A history's images live in their own directory (so histories never share,
+ * nor cross-delete, image files): deleting or emptying the history takes them
+ * with it, whichever backend stored the history itself.
+ *
+ * Keyed by name alone, no backend instance being needed to find them, so a
+ * caller holding only the name of a history that is not the current one can
+ * sweep it too.
+ *
+ * Returns: %FALSE, with @error set to the first thing that went wrong, when
+ *          anything the sweep should have removed is still on disk. The rest is
+ *          swept anyway: these are the clipboard's screenshots, so every one
+ *          that can go, goes.
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_delete_history_images (const gchar *name,
+                                               GError     **error)
 {
     g_autofree gchar *images_dir_path = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
@@ -440,7 +451,7 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
 
     g_autoptr (GError) images_error = NULL;
 
-    if (_g_paste_storage_backend_delete_history_images (name, &images_error))
+    if (g_paste_storage_backend_delete_history_images (name, &images_error))
         return;
 
     /* Never over the store's own failure: the first thing that went wrong is
@@ -519,6 +530,40 @@ g_paste_storage_backend_list_histories (GPasteStorageBackend *self,
         return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories (self, error);
 
     return _g_paste_storage_backend_list_histories_by_extension (self, error);
+}
+
+/**
+ * g_paste_storage_backend_count_history:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history to count
+ *
+ * How many items the history called @name holds, without loading it where the
+ * backend can tell without.
+ *
+ * Reading a history back to count it is what listing every history's size
+ * costs, once per history, in the daemon's main loop; a backend that can ask
+ * its store overrides this. The fallback reads and counts, so the answer is
+ * the same either way.
+ *
+ * Returns: the number of items @name holds, and 0 for a history that is empty,
+ *          absent or unreadable
+ */
+G_PASTE_VISIBLE gsize
+g_paste_storage_backend_count_history (GPasteStorageBackend *self,
+                                       const gchar          *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), 0);
+    g_return_val_if_fail (name, 0);
+
+    if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->count_history)
+        return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->count_history (self, name);
+
+    g_autolist (GPasteItem) history = NULL;
+    gsize size;
+
+    g_paste_storage_backend_read_history (self, name, &history, &size);
+
+    return g_list_length (history);
 }
 
 /**
@@ -730,6 +775,7 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->get_kind = NULL;
     klass->delete_history = NULL;
     klass->list_histories = NULL;
+    klass->count_history = NULL;
     klass->rekey = NULL;
     klass->history_refutes_passphrase = NULL;
 

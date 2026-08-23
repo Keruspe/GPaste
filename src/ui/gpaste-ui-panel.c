@@ -132,8 +132,9 @@ on_history_emptied (GPasteClient *client G_GNUC_UNUSED,
 
 static void
 g_paste_ui_panel_add_history (GPasteUiPanel *self,
-                              const gchar          *history,
-                              gboolean              select);
+                              const gchar   *history,
+                              const guint64 *length,
+                              gboolean       select);
 
 static void
 on_history_changed (GPasteClient *client,
@@ -148,7 +149,10 @@ on_history_changed (GPasteClient *client,
     if (!history)
         return;
 
-    g_paste_ui_panel_add_history (self, history, TRUE);
+    /* No size to give: a switch says which history is current, not how much it
+     * holds. A history that had to be created for it lands its size with the
+     * refresh HistoriesChanged raises. */
+    g_paste_ui_panel_add_history (self, history, NULL, TRUE);
 }
 
 static void g_paste_ui_panel_refresh (GPasteUiPanel *self);
@@ -193,9 +197,14 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
     g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item));
 }
 
+/* @length is what the listing said this history holds, or %NULL when whoever
+ * calls has no size to give -- a switch says which history is current, not how
+ * much it holds, and a row already showing its size must not be blanked by
+ * one. */
 static void
 g_paste_ui_panel_add_history (GPasteUiPanel *self,
                               const gchar   *history,
+                              const guint64 *length,
                               gboolean       select)
 {
     GList *concurrent = history_find (self->histories, history);
@@ -208,10 +217,15 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
     self->inhibit_switch = TRUE;
 
     if (concurrent)
+    {
         h = concurrent->data;
+
+        if (length)
+            g_paste_ui_panel_history_set_length (h, *length);
+    }
     else
     {
-        h = g_paste_ui_panel_history_new (self->client, history);
+        h = g_paste_ui_panel_history_new (self->client, history, (length) ? *length : 0);
         adw_sidebar_section_append (self->section, ADW_SIDEBAR_ITEM (h));
 
         self->histories = g_list_prepend (self->histories, h);
@@ -242,9 +256,20 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_autoptr (GError) error = NULL;
-    g_auto (GStrv) histories = g_paste_client_list_histories_finish (self->client, res, &error);
+    g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_finish (self->client, res, &error);
 
-    g_paste_ui_panel_add_history (self, G_PASTE_DEFAULT_HISTORY, g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
+    /* The default history is always drawn, listed or not: it is where a switch
+     * away from a deleted history lands. Zero until the loop below names it,
+     * which is also what it holds when there is no store for it yet -- but only
+     * when there is a listing for it to be absent from. A failed one says
+     * nothing about any history's size, so the row keeps the length it is
+     * already showing rather than being blanked by a call that answered
+     * nothing: the daemon is briefly off the bus on every upgrade, which is
+     * exactly when a refresh runs. */
+    guint64 none = 0;
+
+    g_paste_ui_panel_add_history (self, G_PASTE_DEFAULT_HISTORY, (error) ? NULL : &none,
+                                  g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
 
     if (error)
     {
@@ -252,12 +277,19 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    for (GStrv h = histories; *h; ++h)
-        g_paste_ui_panel_add_history (self, *h, g_paste_str_equal (*h, current));
+    for (const GList *h = histories; h; h = h->next)
+    {
+        GPasteClientHistory *history = h->data;
+        const gchar *name = g_paste_client_history_get_name (history);
+        guint64 length = g_paste_client_history_get_size (history);
+
+        g_paste_ui_panel_add_history (self, name, &length, g_paste_str_equal (name, current));
+    }
 }
 
-/* Rebuild the list. The current history's name comes off the proxy's cached
- * property, so only the listing itself is a call. */
+/* Rebuild the list. The listing answers each history's size along with its name,
+ * so the whole sidebar costs one call; the current history's name comes off the
+ * proxy's cached property. */
 static void
 g_paste_ui_panel_refresh (GPasteUiPanel *self)
 {
@@ -564,11 +596,11 @@ g_paste_ui_panel_new (GPasteClient   *client,
 
     GSignalGroup *client_signals = self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (client_signals,
-                            "delete-history",
+                            "history-deleted",
                             G_CALLBACK (on_history_deleted),
                             self);
     g_signal_group_connect (client_signals,
-                            "empty-history",
+                            "history-emptied",
                             G_CALLBACK (on_history_emptied),
                             self);
     g_signal_group_connect (client_signals,

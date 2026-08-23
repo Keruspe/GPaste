@@ -44,6 +44,16 @@ struct _GPasteStorageBackendClass
     GStrv                 (*list_histories) (GPasteStorageBackend *self,
                                              GError               **error);
 
+    /*< protected, optional: how many items a history holds >*/
+    /* Answer without materializing the history, where the store can count on its
+     * own. The default reads the history and counts what came back, which is
+     * what listing every history's size costs when a backend has nothing
+     * cheaper; a store that can count must answer the same set read_history_file
+     * would have returned, cap and favourites included, or a listing and the
+     * history it leads to would disagree. */
+    gsize    (*count_history)              (GPasteStorageBackend *self,
+                                            const gchar          *name);
+
     /*< protected, optional: passphrase verification >*/
     /* Whether the history called @name proves this backend's passphrase wrong:
      * it holds encrypted data the backend cannot open. Everything else -- an
@@ -118,6 +128,10 @@ void g_paste_storage_backend_delete_history   (GPasteStorageBackend *self,
                                                GError               **error);
 GStrv g_paste_storage_backend_list_histories  (GPasteStorageBackend *self,
                                                GError               **error);
+gsize g_paste_storage_backend_count_history   (GPasteStorageBackend *self,
+                                               const gchar          *name);
+gboolean g_paste_storage_backend_delete_history_images (const gchar *name,
+                                                        GError     **error);
 gboolean g_paste_storage_backend_rekey        (GPasteStorageBackend *self,
                                                const gchar          *name,
                                                const gchar          *new_passphrase);

@@ -853,24 +853,32 @@ _g_paste_history_replace (GPasteHistory *self,
  * @uuid: the uuid of the #GPasteTextItem to replace
  * @contents: the new contents
  *
- * Replace the contents of text item at index @index
+ * Replace the contents of the text item @uuid names
+ *
+ * The replacement is an item of its own, so it has a uuid of its own: that is
+ * what comes back, since the update this raises names no item (see
+ * _g_paste_history_replace()) and a caller would otherwise have no way to reach
+ * what it just created.
+ *
+ * Returns: (transfer full) (nullable): the new item's uuid, or %NULL when @uuid
+ *          matched nothing
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gchar *
 g_paste_history_replace (GPasteHistory *self,
                          const gchar   *uuid,
                          const gchar   *contents)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (!contents || g_utf8_validate (contents, -1, NULL));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (!contents || g_utf8_validate (contents, -1, NULL), NULL);
 
     G_PASTE_LOCK_HISTORY;
     guint index;
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
 
     if (!item)
-        return;
+        return NULL;
 
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (item), NULL);
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
@@ -878,6 +886,8 @@ g_paste_history_replace (GPasteHistory *self,
 
     if (!index)
         g_paste_history_selected (self, new);
+
+    return g_strdup (g_paste_item_get_uuid (new));
 }
 
 /**
@@ -990,26 +1000,33 @@ _g_paste_history_private_get_password (GPasteHistory *self,
  * @name: (nullable): the name to give to the password
  *
  * Mark a text item as password
+ *
+ * A password item is an item of its own, with a uuid of its own, for the same
+ * reason g_paste_history_replace() hands one back.
+ *
+ * Returns: (transfer full): the new item's uuid
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gchar *
 g_paste_history_set_password (GPasteHistory *self,
                               const gchar   *uuid,
                               const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
     G_PASTE_LOCK_HISTORY;
     guint index;
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
 
-    g_return_if_fail (item);
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
-    g_return_if_fail (!_g_paste_history_private_get_password (self, name, NULL));
+    g_return_val_if_fail (item, NULL);
+    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (item), NULL);
+    g_return_val_if_fail (!_g_paste_history_private_get_password (self, name, NULL), NULL);
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
     _g_paste_history_replace (self, index, password);
+
+    return g_strdup (g_paste_item_get_uuid (password));
 }
 
 /**
@@ -1041,19 +1058,25 @@ g_paste_history_get_password (GPasteHistory *self,
  * @name: the name of the #GPastePasswordItem
  *
  * Delete the password matching name
+ *
+ * Returns: %FALSE when no password carries @name, %TRUE otherwise
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_delete_password (GPasteHistory *self,
                                  const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), FALSE);
 
     G_PASTE_LOCK_HISTORY;
     guint64 index;
 
-    if (_g_paste_history_private_get_password (self, name, &index))
-        g_paste_history_remove_locked (self, index);
+    if (!_g_paste_history_private_get_password (self, name, &index))
+        return FALSE;
+
+    g_paste_history_remove_locked (self, index);
+
+    return TRUE;
 }
 
 /**
@@ -1063,24 +1086,29 @@ g_paste_history_delete_password (GPasteHistory *self,
  * @new_name: (nullable): the new name of the #GPastePasswordItem
  *
  * Rename the password item
+ *
+ * Returns: %FALSE when no password carries @old_name, %TRUE otherwise
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_rename_password (GPasteHistory *self,
                                  const gchar   *old_name,
                                  const gchar   *new_name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL));
-    g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL), FALSE);
+    g_return_val_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL), FALSE);
 
     G_PASTE_LOCK_HISTORY;
     guint64 index = 0;
     GPasteItem *item = _g_paste_history_private_get_password (self, old_name, &index);
-    if (item)
-    {
-        g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item), FALSE);
-    }
+
+    if (!item)
+        return FALSE;
+
+    g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item), FALSE);
+
+    return TRUE;
 }
 
 /**
@@ -1677,6 +1705,28 @@ g_paste_history_get_current (GPasteHistory *self)
 }
 
 /**
+ * g_paste_history_is_unreadable:
+ * @self: a #GPasteHistory instance
+ *
+ * Whether the history that was last loaded is on disk but could not be read
+ * (wrong passphrase, corrupt or truncated file, I/O error), leaving this
+ * instance holding an empty model that is not what the store actually has.
+ *
+ * Recording stops on its own for that case, so nothing overwrites the intact
+ * data; a caller that copies the model out somewhere else -- a backup -- has to
+ * ask, an empty answer being indistinguishable from a genuinely empty history.
+ *
+ * Returns: %TRUE when the model is empty because the read failed
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_is_unreadable (GPasteHistory *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+
+    return self->unreadable;
+}
+
+/**
  * g_paste_history_search:
  * @self: a #GPasteHistory instance
  * @pattern: the pattern to match
@@ -1777,7 +1827,7 @@ g_paste_history_new (GPasteSettings *settings)
  * Errors are the storage backend's own, in %G_IO_ERROR or %G_FILE_ERROR.
  *
  * Returns: (transfer full): The list of history names
- *                           free it with g_array_unref
+ *                           free it with g_strfreev
  */
 G_PASTE_VISIBLE GStrv
 g_paste_history_list (GPasteHistory *self,
@@ -1787,4 +1837,29 @@ g_paste_history_list (GPasteHistory *self,
     g_return_val_if_fail (!error || !(*error), NULL);
 
     return g_paste_storage_backend_list_histories (self->backend, error);
+}
+
+/**
+ * g_paste_history_get_size:
+ * @self: a #GPasteHistory instance
+ * @name: the name of the history to size
+ *
+ * How many items the history called @name holds.
+ *
+ * The one in use answers from what is already loaded; any other is counted in
+ * the store, which a backend that can count never loads at all.
+ *
+ * Returns: the number of items @name holds
+ */
+G_PASTE_VISIBLE guint64
+g_paste_history_get_size (GPasteHistory *self,
+                          const gchar   *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
+    g_return_val_if_fail (name, 0);
+
+    if (g_paste_str_equal (name, g_paste_history_get_current (self)))
+        return g_paste_history_get_length (self);
+
+    return g_paste_storage_backend_count_history (self->backend, name);
 }

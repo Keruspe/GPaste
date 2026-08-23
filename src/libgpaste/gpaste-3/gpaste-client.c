@@ -47,9 +47,9 @@ enum
 
 enum
 {
-    DELETE_HISTORY,
-    EMPTY_HISTORY,
     HISTORIES_CHANGED,
+    HISTORY_DELETED,
+    HISTORY_EMPTIED,
     SHOW_HISTORY,
     TRACKING,
     UPDATE,
@@ -161,10 +161,19 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), result, error);           \
     }
 
+/* Every method but one is answered out of what the daemon already holds, so the
+ * GDBusProxy default is as much time as any of them can need. Upload is the
+ * exception: it answers only once the pastebin has taken the paste, a network
+ * round trip a large item or a loaded service pushes well past those 25
+ * seconds -- and a call that times out reports a failure the upload did not
+ * have, having already succeeded on the daemon's side. */
+#define G_PASTE_CLIENT_TIMEOUT_DEFAULT -1
+#define G_PASTE_CLIENT_TIMEOUT_UPLOAD  (10 * 60 * 1000)
+
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
- * bail-out returns. */
-#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS)               \
+ * bail-out returns. @timeout is how long the call waits for its reply. */
+#define G_PASTE_CLIENT_METHOD_RET_FULL(name, timeout, type, fail, decl, out, ret, PARAMS, ARGS) \
     G_PASTE_VISIBLE type                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
@@ -176,7 +185,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
                                                                                                 \
         if (!g_paste_daemon3_call_##name##_sync (G_PASTE_DAEMON3 (self) ARGLIST ARGS,           \
                                                  G_DBUS_CALL_FLAGS_NONE,                        \
-                                                 -1, /* timeout */                              \
+                                                 timeout,                                       \
                                                  out,                                           \
                                                  NULL, /* cancellable */                        \
                                                  error))                                        \
@@ -193,7 +202,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
                                                                                                 \
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
-                                     -1, /* timeout */                                          \
+                                     timeout,                                                   \
                                      NULL, /* cancellable */                                    \
                                      callback,                                                  \
                                      user_data);                                                \
@@ -215,32 +224,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
         return ret;                                                                             \
     }
 
-/**
- * g_paste_client_show_about_sync:
- * @self: a #GPasteClient instance
- * @error: return location for a #GError, or %NULL
- *
- * Display the about dialog
- */
-/**
- * g_paste_client_show_about:
- * @self: a #GPasteClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Display the about dialog
- */
-/**
- * g_paste_client_show_about_finish:
- * @self: a #GPasteClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: return location for a #GError, or %NULL
- *
- * Display the about dialog
- */
-G_PASTE_CLIENT_METHOD (show_about,
-                       (), ())
+#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS)               \
+    G_PASTE_CLIENT_METHOD_RET_FULL (name, G_PASTE_CLIENT_TIMEOUT_DEFAULT, type, fail, decl, out, ret, PARAMS, ARGS)
 
 /**
  * g_paste_client_add_text_sync:
@@ -249,6 +234,8 @@ G_PASTE_CLIENT_METHOD (show_about,
  * @error: return location for a #GError, or %NULL
  *
  * Add an item to the #GPasteDaemon
+ *
+ * Returns: (transfer full): the uuid of the item that was added
  */
 /**
  * g_paste_client_add_text:
@@ -267,9 +254,13 @@ G_PASTE_CLIENT_METHOD (show_about,
  * @error: return location for a #GError, or %NULL
  *
  * Add an item to the #GPasteDaemon
+ *
+ * Returns: (transfer full): the uuid of the item that was added
  */
-G_PASTE_CLIENT_METHOD (add_text,
-                       (const gchar *text), (text))
+G_PASTE_CLIENT_METHOD_RET (add_text,
+                           gchar *, NULL,
+                           g_autofree gchar *uuid = NULL, &uuid, g_steal_pointer (&uuid),
+                           (const gchar *text), (text))
 
 /**
  * g_paste_client_add_file_sync:
@@ -278,12 +269,14 @@ G_PASTE_CLIENT_METHOD (add_text,
  * @error: return location for a #GError, or %NULL
  *
  * Add the file contents to the #GPasteDaemon
+ *
+ * Returns: (transfer full): the uuid of the item that was added
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gchar *
 g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **error)
 {
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (!error || !(*error));
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
 
     g_autofree gchar *absolute_path = NULL;
 
@@ -293,7 +286,12 @@ g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **er
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
-    g_paste_daemon3_call_add_file_sync (G_PASTE_DAEMON3 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, error);
+    g_autofree gchar *uuid = NULL;
+
+    if (!g_paste_daemon3_call_add_file_sync (G_PASTE_DAEMON3 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &uuid, NULL /* cancellable */, error))
+        return NULL;
+
+    return g_steal_pointer (&uuid);
 }
 
 /**
@@ -329,17 +327,24 @@ g_paste_client_add_file (GPasteClient *self, const gchar *file, GAsyncReadyCallb
  * @error: return location for a #GError, or %NULL
  *
  * Add the file contents to the #GPasteDaemon
+ *
+ * Returns: (transfer full): the uuid of the item that was added
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gchar *
 g_paste_client_add_file_finish (GPasteClient *self,
                                 GAsyncResult *result,
                                 GError      **error)
 {
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
 
-    g_paste_daemon3_call_add_file_finish (G_PASTE_DAEMON3 (self), result, error);
+    g_autofree gchar *uuid = NULL;
+
+    if (!g_paste_daemon3_call_add_file_finish (G_PASTE_DAEMON3 (self), &uuid, result, error))
+        return NULL;
+
+    return g_steal_pointer (&uuid);
 }
 
 /**
@@ -350,6 +355,8 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * @error: return location for a #GError, or %NULL
  *
  * Add the password to the #GPasteDaemon
+ *
+ * Returns: (transfer full): the uuid of the item that was added
  */
 /**
  * g_paste_client_add_password:
@@ -369,9 +376,13 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * @error: return location for a #GError, or %NULL
  *
  * Add the password to the #GPasteDaemon
+ *
+ * Returns: (transfer full): the uuid of the item that was added
  */
-G_PASTE_CLIENT_METHOD (add_password,
-                       (const gchar *name, const gchar *password), (name, password))
+G_PASTE_CLIENT_METHOD_RET (add_password,
+                           gchar *, NULL,
+                           g_autofree gchar *uuid = NULL, &uuid, g_steal_pointer (&uuid),
+                           (const gchar *name, const gchar *password), (name, password))
 
 /**
  * g_paste_client_backup_history_sync:
@@ -765,22 +776,22 @@ G_PASTE_CLIENT_METHOD_RET (get_history,
 /**
  * g_paste_client_get_history_size_sync:
  * @self: a #GPasteClient instance
- * @name: the name of the history
  * @error: return location for a #GError, or %NULL
  *
- * Get the history size from the #GPasteDaemon
+ * Get the size of the current history from the #GPasteDaemon. The sizes of the
+ * other histories come from g_paste_client_list_histories_sync(), which answers
+ * all of them at once.
  *
  * Returns: the size of the history
  */
 /**
  * g_paste_client_get_history_size:
  * @self: a #GPasteClient instance
- * @name: the name of the history
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
  *
- * Get the history isize from the #GPasteDaemon
+ * Get the size of the current history from the #GPasteDaemon
  */
 /**
  * g_paste_client_get_history_size_finish:
@@ -795,7 +806,7 @@ G_PASTE_CLIENT_METHOD_RET (get_history,
 G_PASTE_CLIENT_METHOD_RET (get_history_size,
                            guint64, 0,
                            guint64 size = 0, &size, size,
-                           (const gchar *name), (name))
+                           (), ())
 
 /**
  * g_paste_client_get_image_sync:
@@ -875,9 +886,10 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
  * @self: a #GPasteClient instance
  * @error: return location for a #GError, or %NULL
  *
- * List all available histories
+ * List all available histories, each with how many items it holds: a view
+ * drawing the sizes beside the names needs no call of its own per history.
  *
- * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
+ * Returns: (element-type GPasteClientHistory) (transfer full): a newly allocated list of histories
  */
 /**
  * g_paste_client_list_histories:
@@ -886,7 +898,7 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
  *
- * List all available histories
+ * List all available histories, each with how many items it holds
  */
 /**
  * g_paste_client_list_histories_finish:
@@ -894,13 +906,13 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @error: return location for a #GError, or %NULL
  *
- * List all available histories
+ * List all available histories, each with how many items it holds
  *
- * Returns: (transfer full): a newly allocated %NULL-terminated array of strings
+ * Returns: (element-type GPasteClientHistory) (transfer full): a newly allocated list of histories
  */
 G_PASTE_CLIENT_METHOD_RET (list_histories,
-                           GStrv, NULL,
-                           g_auto (GStrv) histories = NULL, &histories, g_steal_pointer (&histories),
+                           GList *, NULL,
+                           g_autoptr (GVariant) histories = NULL, &histories, g_paste_util_get_dbus_histories_result (histories),
                            (), ())
 
 /**
@@ -915,22 +927,30 @@ G_PASTE_CLIENT_METHOD_RET (list_histories,
  *
  * If decoration is " and separator is , and entries are foo bar baz
  * result will be "foo","bar","baz"
+ *
+ * Returns: (transfer full): the uuid of the merged item
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gchar *
 g_paste_client_merge_sync (GPasteClient *self, const gchar *decoration, const gchar *separator, const gchar * const *uuids, GError **error)
 {
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (uuids);
-    g_return_if_fail (!error || !(*error));
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (uuids, NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
 
-    g_paste_daemon3_call_merge_sync (G_PASTE_DAEMON3 (self),
-                                     (decoration) ? decoration : "",
-                                     (separator) ? separator : "",
-                                     uuids,
-                                     G_DBUS_CALL_FLAGS_NONE,
-                                     -1, /* timeout */
-                                     NULL, /* cancellable */
-                                     error);
+    g_autofree gchar *uuid = NULL;
+
+    if (!g_paste_daemon3_call_merge_sync (G_PASTE_DAEMON3 (self),
+                                          (decoration) ? decoration : "",
+                                          (separator) ? separator : "",
+                                          uuids,
+                                          G_DBUS_CALL_FLAGS_NONE,
+                                          -1, /* timeout */
+                                          &uuid,
+                                          NULL, /* cancellable */
+                                          error))
+        return NULL;
+
+    return g_steal_pointer (&uuid);
 }
 
 /**
@@ -972,17 +992,24 @@ g_paste_client_merge (GPasteClient *self, const gchar *decoration, const gchar *
  * @error: return location for a #GError, or %NULL
  *
  * Merge some history entries
+ *
+ * Returns: (transfer full): the uuid of the merged item
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gchar *
 g_paste_client_merge_finish (GPasteClient *self,
                              GAsyncResult *result,
                              GError      **error)
 {
-    g_return_if_fail (G_PASTE_IS_CLIENT (self));
-    g_return_if_fail (G_IS_ASYNC_RESULT (result));
-    g_return_if_fail (!error || !(*error));
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
 
-    g_paste_daemon3_call_merge_finish (G_PASTE_DAEMON3 (self), result, error);
+    g_autofree gchar *uuid = NULL;
+
+    if (!g_paste_daemon3_call_merge_finish (G_PASTE_DAEMON3 (self), &uuid, result, error))
+        return NULL;
+
+    return g_steal_pointer (&uuid);
 }
 
 /**
@@ -1080,6 +1107,9 @@ G_PASTE_CLIENT_METHOD (rename_password,
  * @error: return location for a #GError, or %NULL
  *
  * Replace the contents of an item
+ *
+ * Returns: (transfer full): the uuid of the item that replaced it, which is one
+ *          of its own
  */
 /**
  * g_paste_client_replace:
@@ -1099,9 +1129,14 @@ G_PASTE_CLIENT_METHOD (rename_password,
  * @error: return location for a #GError, or %NULL
  *
  * Replace the contents of an item
+ *
+ * Returns: (transfer full): the uuid of the item that replaced it, which is one
+ *          of its own
  */
-G_PASTE_CLIENT_METHOD (replace,
-                       (const gchar *uuid, const gchar *contents), (uuid, contents))
+G_PASTE_CLIENT_METHOD_RET (replace,
+                           gchar *, NULL,
+                           g_autofree gchar *new_uuid = NULL, &new_uuid, g_steal_pointer (&new_uuid),
+                           (const gchar *uuid, const gchar *contents), (uuid, contents))
 
 /**
  * g_paste_client_search_sync:
@@ -1202,35 +1237,43 @@ G_PASTE_CLIENT_METHOD (set_favourite,
                        (const gchar *uuid, gboolean favourite), (uuid, favourite))
 
 /**
- * g_paste_client_set_password_sync:
+ * g_paste_client_make_password_sync:
  * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to set as password
+ * @uuid: the uuid of the item we want to turn into a password
  * @name: the name to identify the password
  * @error: return location for a #GError, or %NULL
  *
- * Set the item as password
+ * Turn a text item into a password item
+ *
+ * Returns: (transfer full): the uuid of the password item that replaced it,
+ *          which is one of its own
  */
 /**
- * g_paste_client_set_password:
+ * g_paste_client_make_password:
  * @self: a #GPasteClient instance
- * @uuid: the uuid of the element we want to set as password
+ * @uuid: the uuid of the item we want to turn into a password
  * @name: the name to identify the password
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: The data to pass to @callback.
  *
- * Set the item as password
+ * Turn a text item into a password item
  */
 /**
- * g_paste_client_set_password_finish:
+ * g_paste_client_make_password_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @error: return location for a #GError, or %NULL
  *
- * Set the item as password
+ * Turn a text item into a password item
+ *
+ * Returns: (transfer full): the uuid of the password item that replaced it,
+ *          which is one of its own
  */
-G_PASTE_CLIENT_METHOD (set_password,
-                       (const gchar *uuid, const gchar *name), (uuid, name))
+G_PASTE_CLIENT_METHOD_RET (make_password,
+                           gchar *, NULL,
+                           g_autofree gchar *new_uuid = NULL, &new_uuid, g_steal_pointer (&new_uuid),
+                           (const gchar *uuid, const gchar *name), (uuid, name))
 
 /**
  * g_paste_client_show_history_sync:
@@ -1323,7 +1366,11 @@ G_PASTE_CLIENT_METHOD (set_active,
  * @uuid: the uuid of the element we want to upload
  * @error: return location for a #GError, or %NULL
  *
- * Upload an item to a pastebin service
+ * Upload an item to a pastebin service, and answer where it landed. The reply
+ * comes when the upload has finished, and an upload that failed fails the call.
+ * An empty @uuid uploads the current item.
+ *
+ * Returns: (transfer full): the url the item was uploaded to
  */
 /**
  * g_paste_client_upload:
@@ -1333,7 +1380,9 @@ G_PASTE_CLIENT_METHOD (set_active,
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
  *
- * Upload an item to a pastebin service
+ * Upload an item to a pastebin service, and answer where it landed. The reply
+ * comes when the upload has finished, and an upload that failed fails the call.
+ * An empty @uuid uploads the current item.
  */
 /**
  * g_paste_client_upload_finish:
@@ -1341,10 +1390,16 @@ G_PASTE_CLIENT_METHOD (set_active,
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @error: return location for a #GError, or %NULL
  *
- * Upload an item to a pastebin service
+ * Upload an item to a pastebin service, and answer where it landed. The reply
+ * comes when the upload has finished, and an upload that failed fails the call.
+ * An empty @uuid uploads the current item.
+ *
+ * Returns: (transfer full): the url the item was uploaded to
  */
-G_PASTE_CLIENT_METHOD (upload,
-                       (const gchar *uuid), (uuid))
+G_PASTE_CLIENT_METHOD_RET_FULL (upload, G_PASTE_CLIENT_TIMEOUT_UPLOAD,
+                                gchar *, NULL,
+                                g_autofree gchar *url = NULL, &url, g_steal_pointer (&url),
+                                (const gchar *uuid), (uuid))
 
 #undef ARGLIST
 
@@ -1484,15 +1539,15 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
 
     if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_SHOW_HISTORY))
         g_signal_emit (self, signals[SHOW_HISTORY], 0 /* detail */);
-    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_DELETE_HISTORY))
+    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_HISTORY_DELETED))
     {
         g_variant_get (parameters, "(&s)", &history);
-        g_signal_emit (self, signals[DELETE_HISTORY], 0 /* detail */, history);
+        g_signal_emit (self, signals[HISTORY_DELETED], 0 /* detail */, history);
     }
-    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_EMPTY_HISTORY))
+    else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_HISTORY_EMPTIED))
     {
         g_variant_get (parameters, "(&s)", &history);
-        g_signal_emit (self, signals[EMPTY_HISTORY], 0 /* detail */, history);
+        g_signal_emit (self, signals[HISTORY_EMPTIED], 0 /* detail */, history);
     }
     else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_HISTORIES_CHANGED))
         g_signal_emit (self, signals[HISTORIES_CHANGED], 0 /* detail */);
@@ -1616,24 +1671,27 @@ g_paste_client_class_init (GPasteClientClass *klass)
     g_paste_daemon3_override_properties (object_class, PROP_ACTIVE);
 
     /**
-     * GPasteClient::delete-history:
+     * GPasteClient::history-deleted:
      * @client: the object on which the signal was emitted
-     * @history: the name of the history we deleted
+     * @history: the name of the history that was deleted
      *
-     * The "delete-history" signal is emitted when we delete
-     * a history.
+     * The "history-deleted" signal is emitted when a history is deleted.
+     *
+     * Named for what happened rather than for the method that did it, the way
+     * the wire signal it carries is: a listing that only cares that the set
+     * changed has #GPasteClient::histories-changed, which this is always
+     * accompanied by.
      */
-    signals[DELETE_HISTORY] = NEW_SIGNAL_WITH_DATA ("delete-history", STRING);
+    signals[HISTORY_DELETED] = NEW_SIGNAL_WITH_DATA ("history-deleted", STRING);
 
     /**
-     * GPasteClient::empty-history:
+     * GPasteClient::history-emptied:
      * @client: the object on which the signal was emitted
-     * @history: the name of the history we emptied
+     * @history: the name of the history that was emptied
      *
-     * The "empty-history" signal is emitted when we empty
-     * a history.
+     * The "history-emptied" signal is emitted when a history is emptied.
      */
-    signals[EMPTY_HISTORY] = NEW_SIGNAL_WITH_DATA ("empty-history", STRING);
+    signals[HISTORY_EMPTIED] = NEW_SIGNAL_WITH_DATA ("history-emptied", STRING);
 
     /**
      * GPasteClient::histories-changed:

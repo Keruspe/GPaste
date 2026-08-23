@@ -137,7 +137,7 @@ class GPasteIndicator extends Button {
         this._scrollView.update_fade_effect(new Clutter.Margin({top: 16, bottom: 16}));
 
         this.menu.addMenuItem(new PopupSeparatorMenuItem());
-        this._actions = new GPasteActions(this._client, this.menu, this._emptyHistoryItem);
+        this._actions = new GPasteActions(this.menu, this._emptyHistoryItem);
         this.menu.addMenuItem(this._actions);
 
         const dummyIndex = this.menu.box.get_children().indexOf(this._dummyHistoryItem);
@@ -373,15 +373,14 @@ class GPasteIndicator extends Button {
     async _fetchAvailable() {
         const generation = this._reloadGeneration;
 
-        // The history's name is a cached property, so sizing it is the only
-        // call -- but the cache is empty while the daemon is off the bus, and
-        // sizing a history named null is no question to ask.
-        const history = this._client.get_history_name();
-
-        if (!history)
+        // Sizing asks about the current history, whichever that is. Its name is
+        // only read here to tell a live daemon from one off the bus: the
+        // property's cache is empty while there is none, and there is nothing
+        // to size then.
+        if (!this._client.get_history_name())
             return false;
 
-        const available = await this._client.get_history_size(history);
+        const available = await this._client.get_history_size();
         if (!this._client || generation !== this._reloadGeneration)
             return false;
 

@@ -479,6 +479,11 @@ typedef struct
     guint64               current_size;
     guint64               max_size;
     gboolean              images_support;
+    /* Counting only: no item is built, no image is materialized (nor deleted),
+     * and @count carries the answer instead of @history. Same parser and same
+     * gates as a read, so the two cannot drift apart. */
+    gboolean              count_only;
+    gsize                 count;
     gboolean              favourite;
     gchar                *uuid;
     gchar                *date;
@@ -684,6 +689,29 @@ add_item (Data *data)
 {
     GPasteItem *item = NULL;
 
+    if (data->count_only)
+    {
+        /* What the switch below would have built, decided rather than done: an
+         * item needs a value and a usable kind, and an image needs images turned
+         * on and a date to restore. The one thing not foreseen here is a value a
+         * constructor rejects on inspection (a colour that does not parse), so a
+         * corrupt history can count one high -- the read warns about it. */
+        gboolean countable = data->text && data->type != G_PASTE_ITEM_KIND_INVALID &&
+                             (data->type != G_PASTE_ITEM_KIND_IMAGE || (data->images_support && data->date));
+
+        if (countable)
+        {
+            ++data->count;
+
+            if (!data->favourite)
+                ++data->current_size;
+        }
+
+        g_slist_free_full (g_steal_pointer (&data->special_values), g_object_unref);
+
+        return;
+    }
+
     /* Every kind is built from the item's value, and every constructor rejects a
      * %NULL one with a critical: an <item> with no usable kind, or with no
      * <value> at all (absent, empty or whitespace-only), carries nothing we can
@@ -736,7 +764,10 @@ add_item (Data *data)
 
         g_paste_item_set_uuid (item, data->uuid);
         g_paste_item_set_favourite (item, data->favourite);
-        data->history = g_list_append (data->history, item);
+        /* Prepended and reversed once at the end of the parse: appending walks
+         * the list per item, which is quadratic over a history that goes up to
+         * max-history-size items. */
+        data->history = g_list_prepend (data->history, item);
 
         /* Only the items the cap can actually evict are counted against it: a
          * favourite is read back whatever it costs, or one that had sunk past
@@ -901,11 +932,21 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
     return g_file_get_contents (history_file_path, text, text_length, error);
 }
 
+/* One walk of the document, for both of the questions asked of it: @history and
+ * @size for a read, @count for a listing that only wants how many items there
+ * are. Counting skips the item building and the images entirely (see add_item),
+ * but goes through the same parser, the same version gate and the same size cap,
+ * so what a listing reports is what switching to that history hands back.
+ *
+ * Only a read creates the placeholder file for a history that is not there:
+ * counting must not bring a history into existence. */
 static gboolean
-g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
-                                        const gchar          *name,
-                                        GList               **history,
-                                        gsize                *size)
+_g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
+                                     const gchar          *name,
+                                     gboolean              count_only,
+                                     GList               **history,
+                                     gsize                *size,
+                                     gsize                *count)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
@@ -932,6 +973,8 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),
+            count_only,
+            0, /* count */
             FALSE, /* favourite: set per item from its "favourite" attribute */
             NULL, /* uuid */
             NULL, /* date */
@@ -982,8 +1025,14 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
                 g_warning ("Unexpected state after parsing history %s: %" G_GINT32_FORMAT, location, data.state);
         }
 
-        *history = data.history;
-        *size = data.mem_size;
+        if (count_only)
+            *count = data.count;
+        else
+        {
+            *history = g_list_reverse (data.history);
+            *size = data.mem_size;
+        }
+
         g_clear_pointer (&data.uuid, g_free);
         g_clear_pointer (&data.date, g_free);
         g_clear_pointer (&data.checksum, g_free);
@@ -1001,7 +1050,7 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
          * above just protected. */
         return parsed && data.version != HISTORY_INVALID;
     }
-    else
+    else if (!count_only)
     {
         /* Create the empty file to be listed as an available history */
         if (g_paste_util_ensure_history_dir_exists ())
@@ -1015,6 +1064,32 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
 
     /* An absent history is a legitimately empty one, not a read failure. */
     return TRUE;
+}
+
+static gboolean
+g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
+                                        const gchar          *name,
+                                        GList               **history,
+                                        gsize                *size)
+{
+    return _g_paste_file_backend_read_or_count (self, name, FALSE, history, size, NULL);
+}
+
+/* Parsing is what a count costs here -- the document has to be walked (and, for
+ * the encrypted flavour, decrypted) to know how many items survive the cap. What
+ * it does not cost is the items themselves: no value is copied out, no image is
+ * loaded from its side file, and nothing is added to a list only to be dropped
+ * again, which is the whole of what a listing used to pay per history. */
+static gsize
+g_paste_file_backend_count_history (GPasteStorageBackend *self,
+                                    const gchar          *name)
+{
+    gsize count = 0;
+
+    if (!_g_paste_file_backend_read_or_count (self, name, TRUE, NULL, NULL, &count))
+        return 0;
+
+    return count;
 }
 
 static void
@@ -1314,6 +1389,7 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     storage_class->write_history_file = g_paste_file_backend_write_history_file;
     storage_class->get_kind = g_paste_file_backend_get_kind;
     storage_class->delete_history = g_paste_file_backend_delete_history;
+    storage_class->count_history = g_paste_file_backend_count_history;
     storage_class->drop_item_data = g_paste_file_backend_drop_item_data;
 
     klass->get_output_stream = g_paste_file_backend_get_output_stream;

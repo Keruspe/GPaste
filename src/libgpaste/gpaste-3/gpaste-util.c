@@ -1,10 +1,19 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-client-history.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <string.h>
+
+/* Every GPaste app is reached the same way: the standard interface a desktop
+ * application exports, on the bus name and object path its own name makes. The
+ * graphical tool is the one addressed by a caller that is not spawning it, so
+ * it is spelled out rather than built. */
+#define G_PASTE_APPLICATION_IFACE "org.freedesktop.Application"
+#define G_PASTE_UI_BUS_NAME       "org.gnome.GPaste.Ui"
+#define G_PASTE_UI_OBJECT_PATH    "/org/gnome/GPaste/Ui"
 
 /* Copied from glib's gio/gapplication-tool.c */
 static GVariant *
@@ -64,7 +73,7 @@ g_paste_util_spawn (const gchar *app)
                               NULL,
                               name,
                               object,
-                              "org.freedesktop.Application",
+                              G_PASTE_APPLICATION_IFACE,
                               NULL,
                               g_paste_util_spawn_on_proxy_ready,
                               NULL);
@@ -82,7 +91,7 @@ _bus_proxy_new_sync (const gchar *app,
                                           NULL,
                                           name,
                                           object,
-                                          "org.freedesktop.Application",
+                                          G_PASTE_APPLICATION_IFACE,
                                           NULL,
                                           error);
 }
@@ -131,6 +140,32 @@ g_paste_util_spawn_sync (const gchar *app,
     return _spawn_sync (proxy, error);
 }
 
+/* The ActivateAction payload, which is the whole of what the two flavours below
+ * have in common: same interface, same action, same floating @arg wrapped in the
+ * "av" the method takes, same platform data. */
+static GVariant *
+activate_ui_params (const gchar *action,
+                    GVariant    *arg)
+{
+    g_auto (GVariantBuilder) params;
+
+    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
+
+    if (arg)
+        g_variant_builder_add (&params, "v", arg);
+
+    return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ());
+}
+
+/* @arg is floating, and the payload is what would have consumed it: a proxy that
+ * never came up is the one path that has to do it by hand. */
+static void
+activate_ui_drop_arg (GVariant *arg)
+{
+    if (arg)
+        g_variant_unref (g_variant_ref_sink (arg));
+}
+
 static void
 g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
                                          GAsyncResult *res,
@@ -145,21 +180,13 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
     if (!proxy)
     {
         g_warning ("Failed to get D-Bus proxy: %s", error->message);
-        if (arg)
-            g_variant_unref (g_variant_ref_sink (arg));
+        activate_ui_drop_arg (arg);
         return;
     }
 
-    g_auto (GVariantBuilder) params;
-
-    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
-
-    if (arg)
-        g_variant_builder_add (&params, "v", arg);
-
     g_dbus_proxy_call (proxy,
                        "ActivateAction",
-                       g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ()),
+                       activate_ui_params (action, arg),
                        G_DBUS_CALL_FLAGS_NONE,
                        -1,
                        NULL, /* cancellable */
@@ -187,12 +214,61 @@ g_paste_util_activate_ui (const gchar *action,
     g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
                               G_DBUS_PROXY_FLAGS_NONE,
                               NULL,
-                              "org.gnome.GPaste.Ui",
-                              "/org/gnome/GPaste/Ui",
-                              "org.freedesktop.Application",
+                              G_PASTE_UI_BUS_NAME,
+                              G_PASTE_UI_OBJECT_PATH,
+                              G_PASTE_APPLICATION_IFACE,
                               NULL,
                               g_paste_util_activate_ui_on_proxy_ready,
                               data);
+}
+
+/**
+ * g_paste_util_activate_ui_sync:
+ * @action: the action to activate
+ * @arg: (nullable): the action argument
+ * @error: a #GError
+ *
+ * Activate an action on a GPaste app, and wait for the call to have been made.
+ *
+ * g_paste_util_activate_ui() only starts the work, finishing it from a callback
+ * the main loop dispatches; a caller with no main loop to give it -- the command
+ * line client -- would return before anything reached the bus, and exit
+ * reporting the success of having asked. This is that caller's version.
+ *
+ * Returns: %FALSE, with @error set, when the app could not be reached
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_activate_ui_sync (const gchar *action,
+                               GVariant    *arg,
+                               GError     **error)
+{
+    g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
+
+    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                                  G_DBUS_PROXY_FLAGS_NONE,
+                                                                  NULL,
+                                                                  G_PASTE_UI_BUS_NAME,
+                                                                  G_PASTE_UI_OBJECT_PATH,
+                                                                  G_PASTE_APPLICATION_IFACE,
+                                                                  NULL, /* cancellable */
+                                                                  error);
+
+    if (!proxy)
+    {
+        activate_ui_drop_arg (arg);
+
+        return FALSE;
+    }
+
+    g_autoptr (GVariant) ret = g_dbus_proxy_call_sync (proxy,
+                                                       "ActivateAction",
+                                                       activate_ui_params (action, arg),
+                                                       G_DBUS_CALL_FLAGS_NONE,
+                                                       -1,
+                                                       NULL, /* cancellable */
+                                                       error);
+
+    return !!ret;
 }
 
 /**
@@ -404,11 +480,39 @@ g_paste_util_get_dbus_items_result (GVariant *variant)
     g_variant_iter_init (&iter, variant);
     while ((v = g_variant_iter_next_value (&iter)))
     {
-        items = g_list_append (items, g_paste_util_get_dbus_item_result (v));
+        items = g_list_prepend (items, g_paste_util_get_dbus_item_result (v));
         g_variant_unref (v);
     }
 
-    return items;
+    /* Prepended and reversed once: appending walks the whole list on every
+     * item, which a full history makes quadratic. */
+    return g_list_reverse (items);
+}
+
+/**
+ * g_paste_util_get_dbus_histories_result:
+ * @variant: a #GVariant
+ *
+ * Get the %G_PASTE_HISTORIES_VARIANT_STRING #GVariant as a list of histories
+ *
+ * Returns: (element-type GPasteClientHistory) (transfer full): The histories
+ */
+G_PASTE_VISIBLE GList *
+g_paste_util_get_dbus_histories_result (GVariant *variant)
+{
+    GList *histories = NULL;
+    GVariantIter iter;
+    g_autofree gchar *name = NULL;
+    guint64 size;
+
+    g_variant_iter_init (&iter, variant);
+    while (g_variant_iter_next (&iter, G_PASTE_HISTORY_VARIANT_STRING, &name, &size))
+    {
+        histories = g_list_prepend (histories, g_paste_client_history_new (name, size));
+        g_clear_pointer (&name, g_free);
+    }
+
+    return g_list_reverse (histories);
 }
 
 static gchar *

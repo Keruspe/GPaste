@@ -88,7 +88,7 @@ _gpaste-client_subcommands() {
         {get-history,gh}:"Get the name of the current history"
         help:"Display the help"
         {history,h}:"Display the history"
-        {history-size,hs}:"Display the size of the history"
+        {history-size,hs}:"Display the size of the current history"
         {list-histories,lh}:"List available histories"
         {merge,m}:"Merge various elements from the history"
         migrate:"Migrate the history to a different storage backend"
@@ -119,7 +119,7 @@ _gpaste-client_arguments() {
     (( ${+opt_args[-i]} || ${+opt_args[--use-index]} )) && item=_gpaste-client_indexes
 
     case ${words[1]} in
-        (empty|e|history-size|hs|delete-history|dh|switch-history|sh)
+        (empty|e|delete-history|dh|switch-history|sh)
             _arguments -s : \
                 '1:history:_gpaste-client_histories'
             ;;

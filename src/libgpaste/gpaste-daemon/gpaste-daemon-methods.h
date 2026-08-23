@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <gpaste-3/gpaste-client-history.h>
 #include <gpaste-3/gpaste-client-item.h>
 #include <gpaste-3/gpaste-daemon3.h>
 #include <gpaste-3/gpaste-error.h>
@@ -46,17 +47,17 @@ typedef struct
  * wants. A borrowed const gchar * is one the reply copies before the call
  * returns; a GVariant * is floating and consumed by the completion. */
 
-void      g_paste_daemon_methods_do_add                     (const GPasteDaemonMethods *self,
+gchar    *g_paste_daemon_methods_do_add                     (const GPasteDaemonMethods *self,
                                                              const gchar               *text,
                                                              guint64                    length,
                                                              GError                   **error);
-void      g_paste_daemon_methods_add_text                   (const GPasteDaemonMethods *self,
+gchar    *g_paste_daemon_methods_add_text                   (const GPasteDaemonMethods *self,
                                                              const gchar               *text,
                                                              GError                   **error);
-void      g_paste_daemon_methods_add_file                   (const GPasteDaemonMethods *self,
-                                                             const gchar               *file,
+gchar    *g_paste_daemon_methods_add_file                   (const GPasteDaemonMethods *self,
+                                                             const gchar               *path,
                                                              GError                   **error);
-void      g_paste_daemon_methods_add_password               (const GPasteDaemonMethods *self,
+gchar    *g_paste_daemon_methods_add_password               (const GPasteDaemonMethods *self,
                                                              const gchar               *name,
                                                              const gchar               *password,
                                                              GError                   **error);
@@ -74,11 +75,11 @@ void      g_paste_daemon_methods_delete_password            (const GPasteDaemonM
                                                              const gchar               *name,
                                                              GError                   **error);
 void      g_paste_daemon_methods_empty_history              (const GPasteDaemonMethods *self,
-                                                             const gchar               *name);
+                                                             const gchar               *name,
+                                                             GError                   **error);
 GVariant *g_paste_daemon_methods_get_favourites             (const GPasteDaemonMethods *self);
 GVariant *g_paste_daemon_methods_get_history                (const GPasteDaemonMethods *self);
-guint64   g_paste_daemon_methods_get_history_size           (const GPasteDaemonMethods *self,
-                                                             const gchar               *name);
+guint64   g_paste_daemon_methods_get_history_size           (const GPasteDaemonMethods *self);
 GVariant *g_paste_daemon_methods_get_image                  (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              GError                   **error);
@@ -94,9 +95,9 @@ GVariant *g_paste_daemon_methods_get_items                  (const GPasteDaemonM
 GStrv     g_paste_daemon_methods_get_uris                   (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              GError                   **error);
-GStrv     g_paste_daemon_methods_list_histories             (const GPasteDaemonMethods *self,
+GVariant *g_paste_daemon_methods_list_histories             (const GPasteDaemonMethods *self,
                                                              GError                   **error);
-void      g_paste_daemon_methods_merge                      (const GPasteDaemonMethods *self,
+gchar    *g_paste_daemon_methods_merge                      (const GPasteDaemonMethods *self,
                                                              const gchar               *decoration,
                                                              const gchar               *separator,
                                                              const gchar * const       *uuids,
@@ -111,7 +112,7 @@ GVariant *g_paste_daemon_methods_search                     (const GPasteDaemonM
 void      g_paste_daemon_methods_select                     (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              GError                   **error);
-void      g_paste_daemon_methods_replace                    (const GPasteDaemonMethods *self,
+gchar    *g_paste_daemon_methods_replace                    (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              const gchar               *contents,
                                                              GError                   **error);
@@ -119,7 +120,7 @@ void      g_paste_daemon_methods_set_favourite              (const GPasteDaemonM
                                                              const gchar               *uuid,
                                                              gboolean                   favourite,
                                                              GError                   **error);
-void      g_paste_daemon_methods_set_password               (const GPasteDaemonMethods *self,
+gchar    *g_paste_daemon_methods_make_password              (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              const gchar               *name,
                                                              GError                   **error);

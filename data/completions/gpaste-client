@@ -158,7 +158,7 @@ _gpaste-client()
     fi
 
     case ${verb} in
-        empty|e|history-size|hs|delete-history|dh|switch-history|sh|backup-history|bh)
+        empty|e|delete-history|dh|switch-history|sh|backup-history|bh)
             # backup-history takes <history> <backup name>, the history being
             # optional; either way only its first argument names a history.
             ((argpos == 0)) && COMPREPLY=($(compgen -W "$(_gpaste_client_histories)" -- "${cur}"))

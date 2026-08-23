@@ -22,6 +22,8 @@ G_BEGIN_DECLS
  * @G_PASTE_ERROR_ALREADY_EXISTS: something already goes by that name
  * @G_PASTE_ERROR_NOT_ENCRYPTED: the operation only means something on an
  *                               encrypted history, and this one is not
+ * @G_PASTE_ERROR_REJECTED: the daemon's own policy refused the item; the
+ *                          request was well formed and nothing went wrong
  *
  * The errors the daemon reports over D-Bus.
  *
@@ -38,7 +40,8 @@ typedef enum {
     G_PASTE_ERROR_INVALID_INDEX,
     G_PASTE_ERROR_WRONG_ITEM_KIND,
     G_PASTE_ERROR_ALREADY_EXISTS,
-    G_PASTE_ERROR_NOT_ENCRYPTED
+    G_PASTE_ERROR_NOT_ENCRYPTED,
+    G_PASTE_ERROR_REJECTED
 } GPasteError;
 
 /**
