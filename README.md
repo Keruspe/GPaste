@@ -160,10 +160,15 @@ repository conventions in more detail.
 
 ## Contributing
 
-Translations go through [Weblate](https://hosted.weblate.org/projects/gpaste/gpaste/).
-
 Bug reports and patches are welcome on
 [GitHub](https://github.com/Keruspe/GPaste).
+
+Translations go through
+[Weblate](https://hosted.weblate.org/projects/gpaste/gpaste/), which credits
+every translator on the project page.
+
+GPaste is what a hundred or so people have made it: thanks to
+[everyone who has contributed](https://github.com/Keruspe/GPaste/graphs/contributors).
 
 ## Releases
 
