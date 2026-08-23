@@ -1588,6 +1588,35 @@ test_encrypted_roundtrip (void)
     g_list_free_full (items, g_object_unref);
 }
 
+/* Reading a history that does not exist yet writes an empty placeholder file so
+ * the history shows up in listings. Reading that placeholder back must say
+ * "empty", not "unreadable": an unreadable history is one the daemon refuses to
+ * persist over, so a brand new encrypted history would have stopped being stored
+ * the first time the daemon restarted after it was created. */
+static void
+test_encrypted_empty_placeholder (void)
+{
+    const gchar *name = "encrypted-placeholder";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
+
+    /* The first read creates the placeholder. */
+    g_autolist (GPasteItem) first = read_history_ok (backend, name);
+
+    g_assert_null (first);
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xmls");
+
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+
+    /* The second read is the one that used to fail: the file is there and holds
+     * no encrypted stream. */
+    g_autolist (GPasteItem) second = read_history_ok (backend, name);
+
+    g_assert_null (second);
+}
+
 /* g_paste_storage_backend_new_with_passphrase() must key the backend with
  * exactly the passphrase it is given, never with the process-wide one: a
  * migration between two encrypted flavors holds the source and the destination
@@ -3074,6 +3103,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
+    g_test_add_func ("/history/encrypted_empty_placeholder", test_encrypted_empty_placeholder);
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
     g_test_add_func ("/history/encrypted_rekey", test_encrypted_rekey);
     g_test_add_func ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);

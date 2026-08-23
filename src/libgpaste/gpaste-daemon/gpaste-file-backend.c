@@ -923,6 +923,27 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
         if (!file_in)
             return FALSE;
 
+        g_autoptr (GFileInfo) info = g_file_input_stream_query_info (file_in, G_FILE_ATTRIBUTE_STANDARD_SIZE,
+                                                                     NULL, /* cancellable */
+                                                                     error);
+
+        if (!info)
+            return FALSE;
+
+        /* The placeholder read_history_file() writes for a history that exists
+         * but has never been stored to. An empty file holds no stream at all, so
+         * the converter reports it as a truncation -- and a history that reads
+         * back as unreadable is one the daemon stops persisting, which is what a
+         * brand new encrypted history hit on its first restart. Asked of the
+         * stream we already opened, so nothing can swap the file underneath. */
+        if (!g_file_info_get_size (info))
+        {
+            *text = g_strdup ("");
+            *text_length = 0;
+
+            return TRUE;
+        }
+
         g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_DECRYPT, passphrase);
         g_autoptr (GInputStream) decrypted = g_converter_input_stream_new (G_INPUT_STREAM (file_in), converter);
         g_autoptr (GOutputStream) buffer = g_memory_output_stream_new_resizable ();
