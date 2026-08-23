@@ -18,8 +18,10 @@ typedef void (*GPasteGtkConfirmDialogCallback) (gboolean confirmed,
                                                 gpointer user_data);
 
 void     g_paste_gtk_util_confirm_dialog   (GtkWindow                     *parent,
+                                            const gchar                   *heading,
+                                            const gchar                   *body,
                                             const gchar                   *action,
-                                            const gchar                   *msg,
+                                            AdwResponseAppearance          appearance,
                                             GPasteGtkConfirmDialogCallback on_confirmation,
                                             gpointer                       user_data);
 
@@ -34,8 +36,15 @@ void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
 
 void     g_paste_gtk_util_show_window      (GApplication *application);
 
-AdwAlertDialog *g_paste_gtk_util_text_dialog (const gchar    *confirm_label,
-                                              const gchar    *text,
-                                              GtkTextBuffer **buffer);
+/* @text is what the user wrote, or %NULL if they cancelled. */
+typedef void (*GPasteGtkTextDialogCallback) (const gchar *text,
+                                             gpointer     user_data);
+
+void     g_paste_gtk_util_text_dialog      (GtkWindow                  *parent,
+                                            const gchar                *heading,
+                                            const gchar                *confirm_label,
+                                            const gchar                *text,
+                                            GPasteGtkTextDialogCallback callback,
+                                            gpointer                    user_data);
 
 G_END_DECLS

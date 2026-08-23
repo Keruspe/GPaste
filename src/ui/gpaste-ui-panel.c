@@ -462,8 +462,14 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
     data->history = g_strdup (history);
     data->rootwin = self->rootwin;
     /* Translators: %s is the name of the history being deleted. */
-    g_autofree gchar *msg = g_strdup_printf (_("Are you sure you want to delete \"%s\"?"), history);
-    g_paste_gtk_util_confirm_dialog (self->rootwin, _("Delete"), msg, on_delete_confirmed, data);
+    g_autofree gchar *heading = g_strdup_printf (_("Delete \u201c%s\u201d?"), history);
+    g_paste_gtk_util_confirm_dialog (self->rootwin,
+                                     heading,
+                                     _("The history and everything in it are deleted for good."),
+                                     _("Delete"),
+                                     ADW_RESPONSE_DESTRUCTIVE,
+                                     on_delete_confirmed,
+                                     data);
 }
 
 static void

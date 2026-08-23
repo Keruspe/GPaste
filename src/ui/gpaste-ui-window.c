@@ -418,8 +418,10 @@ on_restart_daemon (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiWindow *self = user_data;
 
     g_paste_gtk_util_confirm_dialog (GTK_WINDOW (self),
+                                     _("Restart the GPaste Daemon?"),
+                                     _("The clipboard is not recorded while it restarts."),
                                      _("Restart"),
-                                     _("Do you really want to restart the daemon?"),
+                                     ADW_RESPONSE_DEFAULT,
                                      on_reexec_confirmed,
                                      g_object_ref (self));
 }
@@ -464,8 +466,10 @@ on_track_changes (GSimpleAction *action,
     if (g_variant_get_boolean (state))
     {
         g_paste_gtk_util_confirm_dialog (GTK_WINDOW (self),
+                                         _("Stop Tracking the Clipboard?"),
+                                         _("What you copy will not be added to the history until tracking is turned back on."),
                                          _("Stop"),
-                                         _("Do you really want to stop tracking clipboard changes?"),
+                                         ADW_RESPONSE_DEFAULT,
                                          on_track_confirmed,
                                          g_object_ref (self));
     }

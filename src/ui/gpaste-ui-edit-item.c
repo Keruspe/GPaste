@@ -14,38 +14,29 @@ typedef struct
 
 typedef struct
 {
-    GPasteClient  *client;
-    gchar         *uuid;
-    GtkTextBuffer *buffer;
-    GtkWindow     *rootwin;
+    GPasteClient *client;
+    gchar        *uuid;
+    GtkWindow    *rootwin;
 } EditItemDialogData;
 
 static void
-on_edit_response (GObject      *dialog,
-                  GAsyncResult *result,
-                  gpointer      user_data)
+on_edit_response (const gchar *text,
+                  gpointer     user_data)
 {
     g_autofree EditItemDialogData *data = user_data;
     g_autoptr (GPasteClient) client = data->client;
     g_autofree gchar *uuid = data->uuid;
-    g_autoptr (GtkTextBuffer) buffer = data->buffer;
     g_autoptr (GtkWindow) rootwin = data->rootwin;
-    const gchar *response = adw_alert_dialog_choose_finish (ADW_ALERT_DIALOG (dialog), result);
 
-    if (g_strcmp0 (response, "confirm") == 0)
-    {
-        GtkTextIter start, end;
+    /* %NULL means cancelled, empty means the item was emptied -- which is not
+     * an edit but a deletion, and is not what Save was asked for. */
+    if (!text || !*text)
+        return;
 
-        gtk_text_buffer_get_bounds (buffer, &start, &end);
-        g_autofree gchar *txt = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
-        if (txt && *txt)
-        {
-            g_paste_client_replace (client, uuid, txt,
-                                    g_paste_ui_report_string_cb,
-                                    g_paste_ui_report_string (GTK_WIDGET (rootwin), g_paste_client_replace_finish,
-                                                              _("Could not save the edited item")));
-        }
-    }
+    g_paste_client_replace (client, uuid, text,
+                            g_paste_ui_report_string_cb,
+                            g_paste_ui_report_string (GTK_WIDGET (rootwin), g_paste_client_replace_finish,
+                                                      _("Could not save the edited item")));
 }
 
 static void
@@ -77,16 +68,13 @@ on_item_ready (GObject      *source_object,
 
     const gchar *old_item = g_paste_client_item_get_value (item);
 
-    GtkTextBuffer *buf = NULL;
-    AdwAlertDialog *dialog = g_paste_gtk_util_text_dialog (_("Edit"), old_item, &buf);
-
     EditItemDialogData *dialog_data = g_new (EditItemDialogData, 1);
+
     dialog_data->client = g_object_ref (client);
     dialog_data->uuid = g_strdup (uuid);
-    dialog_data->buffer = g_object_ref (buf);
     dialog_data->rootwin = g_object_ref (rootwin);
 
-    adw_alert_dialog_choose (dialog, GTK_WIDGET (rootwin), NULL, on_edit_response, dialog_data);
+    g_paste_gtk_util_text_dialog (rootwin, _("Edit Item"), _("Save"), old_item, on_edit_response, dialog_data);
 }
 
 /**
