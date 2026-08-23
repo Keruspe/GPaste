@@ -38,7 +38,39 @@ explains what clipboard managers are for.
 sudo dnf install gpaste gpaste-ui gnome-shell-extension-gpaste
 ```
 
-Then enable the extension in the Extensions app.
+### Arch Linux
+
+```bash
+sudo pacman -S gpaste
+```
+
+One package: it ships the daemon, the graphical tool and the extension together.
+
+### Debian and Ubuntu
+
+```bash
+sudo apt install gpaste-2 gnome-shell-extension-gpaste
+```
+
+The digit tracks the library API version, so it becomes `gpaste-3` once this
+release lands. Ubuntu's copy lives in `universe` and lags a long way behind —
+several major versions, even on the current LTS — while Debian unstable keeps
+up.
+
+### openSUSE
+
+```bash
+sudo zypper install gpaste
+```
+
+### Elsewhere
+
+GPaste is packaged in plenty of other distributions — Alpine, nixpkgs, Void and
+Gentoo among them. [Repology](https://repology.org/project/gpaste/versions)
+tracks which version each one ships.
+
+Wherever it came from, enable the extension in the Extensions app once it is
+installed.
 
 ### From source
 
@@ -173,8 +205,8 @@ GPaste is what a hundred or so people have made it: thanks to
 ## Releases
 
 The latest release for GNOME 50 is
-[GPaste 50.7](https://www.imagination-land.org/posts/2026-08-02-gpaste-50.7-released.html)
-([tarball](https://www.imagination-land.org/files/gpaste/GPaste-50.7.tar.xz)).
+[GPaste 50.8](https://www.imagination-land.org/posts/2026-08-10-gpaste-50.8-released.html)
+([tarball](https://www.imagination-land.org/files/gpaste/GPaste-50.8.tar.xz)).
 
 Release announcements and everything else about GPaste are
 [on my blog](https://www.imagination-land.org/tags/GPaste.html). See
