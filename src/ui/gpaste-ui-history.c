@@ -64,10 +64,12 @@ G_PASTE_DEFINE_TYPE (UiHistory, ui_history, GTK_TYPE_BOX)
 static void
 g_paste_ui_history_show_status (GPasteUiHistory *self,
                                 const gchar     *icon,
-                                const gchar     *title)
+                                const gchar     *title,
+                                const gchar     *description)
 {
     adw_status_page_set_icon_name (self->status_page, icon);
     adw_status_page_set_title (self->status_page, title);
+    adw_status_page_set_description (self->status_page, description);
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), TRUE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
 }
@@ -89,6 +91,16 @@ g_paste_ui_history_show_list (GPasteUiHistory *self)
 {
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), FALSE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), TRUE);
+}
+
+/* What the history says of itself before it has said anything: the state the
+ * list is built in, and the one it goes back to whenever a refresh finds it
+ * empty. One copy, so the two cannot drift apart. */
+static void
+g_paste_ui_history_show_empty (GPasteUiHistory *self)
+{
+    g_paste_ui_history_show_status (self, "edit-paste-symbolic", _("No Items"),
+                                    _("Copy something to start building your history."));
 }
 
 /* Take the initial focus the first time the list makes it on screen. Left alone,
@@ -328,7 +340,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (self->size)
         g_paste_ui_history_show_list (self);
     else
-        g_paste_ui_history_show_status (self, "edit-paste-symbolic", C_("the history holds nothing", "Empty"));
+        g_paste_ui_history_show_empty (self);
 
     g_paste_ui_panel_update_history_length (self->panel, cdata->name, new_size);
 
@@ -494,9 +506,11 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
     if (self->size)
         g_paste_ui_history_show_list (self);
     else if (cdata->searched)
-        g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"));
+        g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"),
+                                        _("Try a different search."));
     else
-        g_paste_ui_history_show_status (self, "non-starred-symbolic", _("No Pinned Items"));
+        g_paste_ui_history_show_status (self, "non-starred-symbolic", _("No Pinned Items"),
+                                        _("Pin an item to keep it out of reach of the size and memory limits."));
 }
 
 /* List by uuid rather than by position: a search asks the daemon to match, the
@@ -1081,8 +1095,6 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     GtkWidget *status_page = adw_status_page_new ();
     self->status_page = ADW_STATUS_PAGE (status_page);
-    adw_status_page_set_icon_name (self->status_page, "edit-paste-symbolic");
-    adw_status_page_set_title (self->status_page, C_("the history holds nothing", "Empty"));
     gtk_widget_set_hexpand (status_page, TRUE);
     gtk_widget_set_vexpand (status_page, TRUE);
     gtk_box_append (box, status_page);
@@ -1105,8 +1117,11 @@ g_paste_ui_history_new (GPasteClient   *client,
     gtk_widget_set_halign (scroll, GTK_ALIGN_FILL);
     gtk_widget_set_valign (scroll, GTK_ALIGN_FILL);
     gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), list_view);
-    gtk_widget_set_visible (scroll, FALSE);
     gtk_box_append (box, scroll);
+
+    /* Both children are in place, so the empty state can be what the list is
+     * shown in until the first size answer says otherwise. */
+    g_paste_ui_history_show_empty (self);
 
     GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scroll));
     g_signal_connect_object (vadjustment, "changed", G_CALLBACK (g_paste_ui_history_on_adjustment_changed), self, 0);

@@ -71,39 +71,39 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
 
     AdwPreferencesPage *self = ADW_PREFERENCES_PAGE (g_object_new (ADW_TYPE_PREFERENCES_PAGE,
                                                                    "name", "history-settings",
-                                                                   "title", _("History settings"),
+                                                                   "title", _("History Settings"),
                                                                    "icon-name", "preferences-other",
                                                                    NULL));
 
-    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Resource limits"));
+    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Resource Limits"));
     g_paste_gtk_preferences_group_add_range_setting (group,
-                                                     _("Max history size"),
+                                                     _("Max History Size"),
                                                      G_PASTE_MAX_HISTORY_SIZE_SETTING,
                                                      5, 65535, 5,
                                                      settings);
     g_paste_gtk_preferences_group_add_range_setting (group,
-                                                     _("Max memory usage (MB)"),
+                                                     _("Max Memory Usage (MB)"),
                                                      G_PASTE_MAX_MEMORY_USAGE_SETTING,
                                                      5, 16383, 5,
                                                      settings);
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
-    group = g_paste_gtk_preferences_group_new (_("Text limits"));
+    group = g_paste_gtk_preferences_group_new (_("Text Limits"));
     g_paste_gtk_preferences_group_add_range_setting (group,
-                                                     _("Min text item length"),
+                                                     _("Min Text Item Length"),
                                                      G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING,
                                                      1, 65535, 1,
                                                      settings);
     g_paste_gtk_preferences_group_add_range_setting (group,
-                                                     _("Max text item length"),
+                                                     _("Max Text Item Length"),
                                                      G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING,
                                                      1, 2147483647, 1,
                                                      settings);
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
-    group = g_paste_gtk_preferences_group_new (_("Display settings"));
+    group = g_paste_gtk_preferences_group_new (_("Display Settings"));
     g_paste_gtk_preferences_group_add_range_setting (group,
-                                                     _("Max element size when displaying"),
+                                                     _("Max Element Size When Displaying"),
                                                      G_PASTE_ELEMENT_SIZE_SETTING,
                                                      0, 511, 5,
                                                      settings);
@@ -113,7 +113,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
     adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
                                            _("Choose how the history is stored on disk (plain or encrypted)."));
     g_paste_gtk_preferences_group_add_button (group,
-                                              _("Change storage backend…"),
+                                              _("Change Storage Backend…"),
                                               G_CALLBACK (on_storage_migration_activated),
                                               NULL);
 
@@ -122,7 +122,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
      * Bound to the setting rather than read once: the button above can change
      * the backend from this very window. */
     AdwButtonRow *passphrase = g_paste_gtk_preferences_group_add_button (group,
-                                                                          _("Change passphrase…"),
+                                                                          _("Change Passphrase…"),
                                                                           G_CALLBACK (on_change_passphrase_activated),
                                                                           NULL);
 

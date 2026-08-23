@@ -793,7 +793,7 @@ build_merge_bar (GPasteUiWindow *self)
     gtk_widget_set_margin_end (box, 6);
 
     /* translators: separators inserted between the merged items */
-    add_separator_choice (GTK_BOX (box), self, _("New line"), "\n");
+    add_separator_choice (GTK_BOX (box), self, _("New Line"), "\n");
     add_separator_choice (GTK_BOX (box), self, _("Space"), " ");
     add_separator_choice (GTK_BOX (box), self, _("Comma"), ", ");
     add_separator_choice (GTK_BOX (box), self, _("Tab"), "\t");

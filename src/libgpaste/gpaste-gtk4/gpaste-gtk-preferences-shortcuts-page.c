@@ -21,7 +21,7 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteSettings *settings)
 
     AdwPreferencesPage *self = ADW_PREFERENCES_PAGE (g_object_new (ADW_TYPE_PREFERENCES_PAGE,
                                                                    "name", "shortcuts",
-                                                                   "title", _("Keyboard shortcuts"),
+                                                                   "title", _("Keyboard Shortcuts"),
                                                                    "icon-name", "preferences-desktop-keyboard-shortcuts",
                                                                    NULL));
 

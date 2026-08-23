@@ -403,11 +403,15 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
 
     const gchar *history = g_paste_ui_panel_history_get_history (item);
     g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
-    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, _("Under which name do you want to back up this history?")));
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (_("Back Up History"),
+                                                                     _("Choose a name for the copy. The history being backed up is left as it is.")));
     GtkWidget *entry = gtk_entry_new ();
 
     gtk_editable_set_text (GTK_EDITABLE (entry), default_name);
-    adw_alert_dialog_add_responses (dialog, "cancel", _("Cancel"), "backup", _("Backup"), NULL);
+    adw_alert_dialog_add_responses (dialog, "cancel", _("Cancel"), "backup", _("Back Up"), NULL);
+    adw_alert_dialog_set_response_appearance (dialog, "backup", ADW_RESPONSE_SUGGESTED);
+    adw_alert_dialog_set_default_response (dialog, "cancel");
+    adw_alert_dialog_set_close_response (dialog, "cancel");
     adw_alert_dialog_set_extra_child (dialog, entry);
 
     BackupHistoryData *data = g_new (BackupHistoryData, 1);
@@ -543,14 +547,20 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 
     GtkWidget *switch_entry = adw_entry_row_new ();
     self->switch_entry = ADW_ENTRY_ROW (switch_entry);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch to history"));
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch or Create"));
+    /* An AdwEntryRow has no subtitle to say it, and that a name nobody has used
+     * before makes a history rather than failing to find one is not something a
+     * user can be expected to guess. */
+    gtk_widget_set_tooltip_text (switch_entry,
+                                 _("Type the name of a history to switch to it, or a new name to create one"));
     gtk_editable_set_enable_undo (GTK_EDITABLE (switch_entry), FALSE);
 
     GtkWidget *jump_button = gtk_button_new_from_icon_name ("go-jump-symbolic");
     self->jump_button = GTK_BUTTON (jump_button);
     gtk_widget_set_valign (jump_button, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class (jump_button, "flat");
-    gtk_widget_set_tooltip_text (jump_button, _("Switch to"));
+    gtk_widget_set_tooltip_text (jump_button, _("Switch or Create"));
+    gtk_accessible_update_property (GTK_ACCESSIBLE (jump_button), GTK_ACCESSIBLE_PROPERTY_LABEL, _("Switch or Create"), -1);
     adw_entry_row_add_suffix (ADW_ENTRY_ROW (switch_entry), jump_button);
 
     self->c_signals[C_SWITCH_ACTIVATED] = g_signal_connect (G_OBJECT (switch_entry),
@@ -627,7 +637,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
     gtk_widget_insert_action_group (widget, "panel", G_ACTION_GROUP (ag));
 
     g_autoptr (GMenu) menu = g_menu_new ();
-    g_menu_append (menu, _("Backup"), "panel.backup-history");
+    g_menu_append (menu, _("Back Up"), "panel.backup-history");
     g_menu_append (menu, C_("verb", "Empty"), "panel.empty-history");
     g_menu_append (menu, _("Delete"), "panel.delete-history");
     adw_sidebar_set_menu_model (self->sidebar, G_MENU_MODEL (menu));

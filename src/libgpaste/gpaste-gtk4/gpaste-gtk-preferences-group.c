@@ -60,7 +60,7 @@ popup_reset_menu (GtkGesture *gesture,
     /* A plain button that resets the key directly, like the suffix button does;
      * no GAction, so there is no action-muxer lookup to get wrong. Disabled
      * while the key is already at its default. */
-    GtkWidget *button = gtk_button_new_with_label (_("Reset to default"));
+    GtkWidget *button = gtk_button_new_with_label (_("Reset to Default"));
     gtk_button_set_has_frame (GTK_BUTTON (button), FALSE);
     gtk_widget_set_sensitive (button, !g_paste_settings_is_default (data->settings, data->key));
     g_signal_connect (button, "clicked", G_CALLBACK (on_reset_menu_clicked), data);
