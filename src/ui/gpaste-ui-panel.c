@@ -532,9 +532,17 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                           G_CALLBACK (g_paste_ui_panel_switch_clicked),
                                                           self);
 
-    /* The sidebar's own suffix slot, rather than a boxed-list GtkListBox
-     * alongside it: libadwaita styles and spaces the slot for us. */
-    adw_sidebar_set_suffix (self->sidebar, switch_entry);
+    /* An AdwEntryRow is a list row and says so: put alone in the sidebar's
+     * suffix slot -- an AdwBin -- libadwaita warns and leaves it unstyled. It
+     * wants a GtkListBox, so give it the one-row boxed list every other
+     * preferences row lives in. */
+    GtkWidget *switch_list = gtk_list_box_new ();
+
+    gtk_list_box_set_selection_mode (GTK_LIST_BOX (switch_list), GTK_SELECTION_NONE);
+    gtk_widget_add_css_class (switch_list, "boxed-list");
+    gtk_list_box_append (GTK_LIST_BOX (switch_list), switch_entry);
+
+    adw_sidebar_set_suffix (self->sidebar, switch_list);
 
     gtk_box_append (box, sidebar);
 }
