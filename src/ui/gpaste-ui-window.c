@@ -39,61 +39,81 @@ struct _GPasteUiWindow
     GSignalGroup    *client_signals;
 
     gboolean         initialized;
+    /* Actions asked for before the daemon connection concluded, run in order
+     * once it has. */
+    GSList          *deferred;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
 
-/* The three actions the application can be asked to perform before the window
- * has finished connecting to the daemon. Each waits on an idle for @initialized,
- * so it needs the window kept alive and, for two of them, an argument to carry
- * along -- @arg is owned and freed here, and NULL for the one with none. */
+/* An action the application can be asked to perform before the window has
+ * finished connecting to the daemon: held until it has, and run in the order
+ * they were asked for. @arg is owned, and NULL for the ones that take none;
+ * @needs_client says whether the action has anything to act on when the
+ * connection concluded without one. */
 typedef struct
 {
-    GPasteUiWindow *self;
-    gchar          *arg;
-    void          (*run) (GPasteUiWindow *self,
-                          const gchar    *arg);
+    gchar *arg;
+    void (*run) (GPasteUiWindow *self,
+                 const gchar    *arg);
+    gboolean needs_client;
 } DeferredAction;
 
-static gboolean
-run_deferred_action (gpointer user_data)
+static void
+deferred_action_free (gpointer user_data)
 {
     DeferredAction *deferred = user_data;
-    GPasteUiWindow *self = deferred->self;
 
-    /* Keep waiting until the connection attempt has concluded, unless the window
-     * was destroyed meanwhile — @banner is what dispose() clears to say so.
-     * Waiting on @client instead would drop the action on the very first idle
-     * turn: it is only assigned once g_paste_client_new() has come back, well
-     * after this runs. */
-    if (self->banner && !self->initialized)
-        return G_SOURCE_CONTINUE;
-
-    /* Concluded without a client means it failed, and the banner is saying so;
-     * there is nothing left for the action to act on. */
-    if (self->client)
-        deferred->run (self, deferred->arg);
-
-    g_object_unref (self);
     g_free (deferred->arg);
     g_free (deferred);
+}
 
-    return G_SOURCE_REMOVE;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (DeferredAction, deferred_action_free)
+
+/* Run what was asked for before the connection concluded, and forget it either
+ * way. Concluded without a client means it failed, and the banner is saying so;
+ * the actions that would have talked to the daemon are skipped, and the ones
+ * that would not -- About, which is the application's own, and the preferences,
+ * which are GSettings -- still run: they are exactly what is still worth
+ * showing when there is no daemon to reach.
+ *
+ * Called from wherever @initialized is set, rather than waited for from an idle:
+ * an idle that returns G_SOURCE_CONTINUE until a condition holds is dispatched
+ * again immediately, which spins a core for as long as the connection takes --
+ * and that is longest exactly when the daemon has to be bus-activated, which is
+ * the case this whole path exists for. */
+static void
+g_paste_ui_window_run_deferred_actions (GPasteUiWindow *self)
+{
+    g_autoslist (DeferredAction) deferred = g_steal_pointer (&self->deferred);
+
+    for (GSList *d = deferred; d; d = d->next)
+    {
+        DeferredAction *action = d->data;
+
+        if (action->needs_client && !self->client)
+            continue;
+
+        action->run (self, action->arg);
+    }
 }
 
 static void
 run_when_initialized (GPasteUiWindow *self,
                       void          (*run) (GPasteUiWindow *self, const gchar *arg),
                       const gchar    *arg,
-                      const gchar    *source_name)
+                      gboolean        needs_client)
 {
     DeferredAction *deferred = g_new (DeferredAction, 1);
 
-    deferred->self = g_object_ref (self);
     deferred->arg = g_strdup (arg);
     deferred->run = run;
+    deferred->needs_client = needs_client;
 
-    g_source_set_name_by_id (g_idle_add (run_deferred_action, deferred), source_name);
+    self->deferred = g_slist_append (self->deferred, deferred);
+
+    if (self->initialized)
+        g_paste_ui_window_run_deferred_actions (self);
 }
 
 /* @window is owned, so a call outliving nothing in particular still has
@@ -243,7 +263,7 @@ g_paste_ui_window_empty_history (GPasteUiWindow *self,
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
-    run_when_initialized (self, do_empty_history, history, "[GPaste] empty");
+    run_when_initialized (self, do_empty_history, history, TRUE);
 }
 
 /* Connected swapped, so the button is the emitter and its state is read back
@@ -277,7 +297,7 @@ g_paste_ui_window_search (GPasteUiWindow *self,
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (search, -1, NULL));
 
-    run_when_initialized (self, do_search, search, "[GPaste] search");
+    run_when_initialized (self, do_search, search, TRUE);
 }
 
 static void
@@ -305,7 +325,7 @@ g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
 
-    run_when_initialized (self, do_show_prefs, NULL, "[GPaste] show_prefs");
+    run_when_initialized (self, do_show_prefs, NULL, FALSE);
 }
 
 /**
@@ -319,7 +339,7 @@ g_paste_ui_window_show_about (GPasteUiWindow *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
 
-    run_when_initialized (self, do_show_about, NULL, "[GPaste] show_about");
+    run_when_initialized (self, do_show_about, NULL, FALSE);
 }
 
 static void
@@ -499,6 +519,26 @@ on_about (GSimpleAction *action    G_GNUC_UNUSED,
     adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (self));
 }
 
+/* The two actions with nothing to ask the daemon: About is the application's own
+ * and the preferences are GSettings. Added whichever way the connection
+ * concluded, so they are there for a window presented for the failure banner
+ * alone -- which is what lets `gpaste-client about` work with no daemon
+ * running. */
+static void
+add_daemonless_window_actions (GPasteUiWindow *self)
+{
+    static const GActionEntry entries[] = {
+        { "about",          on_about,          NULL, NULL,    NULL, { 0 } },
+        { "preferences",    on_preferences,    NULL, NULL,    NULL, { 0 } },
+    };
+
+    g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
+
+    gtk_application_set_accels_for_action (gtk_window_get_application (GTK_WINDOW (self)),
+                                           "win.preferences",
+                                           (const char *[]) { "<primary>comma", NULL });
+}
+
 /* Every control in the header drives one of these, so the window owns the state
  * and the header owns only how it is shown -- which is what lets the rare,
  * app-level ones live in a menu rather than as an icon apiece. */
@@ -506,15 +546,15 @@ static void
 add_window_actions (GPasteUiWindow *self)
 {
     static const GActionEntry entries[] = {
-        { "about",          on_about,          NULL, NULL,    NULL, { 0 } },
         { "new-item",       on_new_item,       NULL, NULL,    NULL, { 0 } },
-        { "preferences",    on_preferences,    NULL, NULL,    NULL, { 0 } },
         { "restart-daemon", on_restart_daemon, NULL, NULL,    NULL, { 0 } },
         { "toggle-search",  on_toggle_search,  NULL, NULL,    NULL, { 0 } },
         { "track-changes",  on_track_changes,  NULL, "false", NULL, { 0 } },
     };
 
     g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
+
+    add_daemonless_window_actions (self);
 
     g_autoptr (GSimpleAction) show_shortcuts = g_simple_action_new ("show-help-overlay", NULL);
     g_signal_connect_object (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), self, 0);
@@ -528,7 +568,6 @@ add_window_actions (GPasteUiWindow *self)
         { "win.show-help-overlay", "<primary>question" },
         { "win.toggle-search",     "<primary>f" },
         { "win.new-item",          "<primary>n" },
-        { "win.preferences",       "<primary>comma" },
         { "window.close",          "<primary>w" },
     };
 
@@ -826,6 +865,7 @@ g_paste_ui_window_dispose (GObject *object)
     /* Registered on the dialog, pointing at a field of ours: left in place it
      * would have GObject write into freed memory should the dialog outlive us. */
     g_clear_weak_pointer (&self->preferences);
+    g_clear_slist (&self->deferred, deferred_action_free);
 
     /* Chaining up unparents (and frees) every widget below, so drop the one
      * anything still in flight tests to know the window is gone. */
@@ -901,14 +941,18 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (error)
     {
-        self->initialized = TRUE;
         g_critical ("%s: %s", _("Couldn't connect to GPaste daemon"), error->message);
         adw_banner_set_title (self->banner, _("Couldn't connect to GPaste daemon"));
         adw_banner_set_revealed (self->banner, TRUE);
+        add_daemonless_window_actions (self);
         /* Present anyway: the banner explaining what went wrong is the whole
          * point, and a window that is never shown leaves the application
-         * running with nothing on screen at all. */
+         * running with nothing on screen at all. Before the deferred actions,
+         * so the one that survives a failed connection has a presented window
+         * to put its dialog over. */
         gtk_window_present (win);
+        self->initialized = TRUE;
+        g_paste_ui_window_run_deferred_actions (self);
         return;
     }
 
@@ -997,8 +1041,9 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     on_history_changed (self->client, NULL, self);
 
-    self->initialized = TRUE;
     gtk_window_present (win);
+    self->initialized = TRUE;
+    g_paste_ui_window_run_deferred_actions (self);
 }
 
 /**
