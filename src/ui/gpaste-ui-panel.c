@@ -362,7 +362,7 @@ typedef struct
     /* The window the toast goes to. The entry is inside the dialog, which is
      * already closed and unparented by the time the response arrives, so asking
      * it for its root finds no window and the failure goes unsaid -- and a
-     * refused backup, the name being taken, is now the common answer. */
+     * refused backup, the name being taken, is a common answer. */
     GtkWindow    *rootwin;
 } BackupHistoryData;
 

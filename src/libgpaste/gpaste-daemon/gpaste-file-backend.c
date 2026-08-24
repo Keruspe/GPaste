@@ -1125,7 +1125,7 @@ g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
  * the encrypted flavour, decrypted) to know how many items survive the cap. What
  * it does not cost is the items themselves: no value is copied out, no image is
  * loaded from its side file, and nothing is added to a list only to be dropped
- * again, which is the whole of what a listing used to pay per history. */
+ * again. */
 static gsize
 g_paste_file_backend_count_history (GPasteStorageBackend *self,
                                     const gchar          *name)

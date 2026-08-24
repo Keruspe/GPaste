@@ -328,8 +328,7 @@ g_paste_daemon_version (Context *ctx,
  * comes off the proxy's cached property, which is empty until the daemon has
  * answered for it and again once it leaves the bus -- and a %NULL name must not
  * travel on to a call that expects one, where it would be built as
- * g_variant_new ("(s)", NULL). Reading it used to be a call of its own, so this
- * is the error that call would have raised. */
+ * g_variant_new ("(s)", NULL). */
 static gchar *
 current_history (Context *ctx,
                  GError **error)

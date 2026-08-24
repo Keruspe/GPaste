@@ -1603,8 +1603,8 @@ test_encrypted_empty_placeholder (void)
 
     g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
 
-    /* The second read is the one that used to fail: the file is there and holds
-     * no encrypted stream. */
+    /* The second read finds the file already there, holding no encrypted
+     * stream. */
     g_autolist (GPasteItem) second = read_history_ok (backend, name);
 
     g_assert_null (second);

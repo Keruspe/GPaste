@@ -578,8 +578,8 @@ class GPasteIndicator extends Button {
         super._onOpenStateChanged(menu, state);
     }
 
-    // The footer items walk among themselves now that they are menu items, but
-    // the history above them is not in the menu's item tree -- its rows live in
+    // The footer items are menu items and walk among themselves, but the
+    // history above them is not in the menu's item tree -- its rows live in
     // a section nested in the scroll view -- so Up from the first of them has
     // nothing there to land on. Bridge that one step.
     _onMenuKeyPress(actor, event) {

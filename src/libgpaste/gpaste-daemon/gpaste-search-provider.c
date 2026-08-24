@@ -444,9 +444,9 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     /* Anything at all changing in the history is enough to drop the kept
      * values: they are a snapshot of one reply, and an item edited, renamed or
-     * turned into a password since would otherwise be described with the string
-     * it used to have. Dropping them costs one GetItems on the next
-     * GetResultMetas, which is what the path did every time before. */
+     * turned into a password since would otherwise be described by the snapshot
+     * rather than by what it now holds. Dropping them costs one GetItems on the
+     * next GetResultMetas. */
     if (self->client)
         g_signal_connect_object (self->client, "update", G_CALLBACK (g_paste_search_provider_forget_results), self, G_CONNECT_SWAPPED);
 

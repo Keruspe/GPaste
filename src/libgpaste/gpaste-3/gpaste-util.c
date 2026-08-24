@@ -373,8 +373,7 @@ g_paste_util_uris_display_string (const gchar *value)
  * comes out in *that* process's language: the daemon has a locale of its own,
  * and the gnome-shell extension a whole catalogue of its own; a client handed a
  * finished string could neither re-translate it nor read the value back out of
- * it, which is what used to make a second round trip the only way to recover an
- * item's contents. Here rather than on #GPasteClientItem so that everything
+ * it. Here rather than on #GPasteClientItem so that everything
  * drawing an item shares the one implementation: the item caches what this
  * returns, the search provider describes its results with it, and the
  * gnome-shell extension calls it through introspection instead of keeping a

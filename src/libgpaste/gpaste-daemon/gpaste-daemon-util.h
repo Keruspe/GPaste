@@ -41,9 +41,7 @@ gboolean g_paste_util_ensure_history_dir_exists (void);
 
 /* Wiping what was decrypted. A read hands back the very thing the passphrase was
  * protecting, and releasing it with g_free() leaves it in the heap for whatever
- * allocates that block next -- and in any core dump taken meanwhile. The re-key
- * path has always wiped what it decrypted; every other read path is what these
- * are for.
+ * allocates that block next -- and in any core dump taken meanwhile.
  *
  * They live here rather than beside the converter because the read paths holding
  * a cleartext buffer are compiled whether or not this build has encryption; in a
