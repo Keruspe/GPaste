@@ -804,6 +804,57 @@ g_paste_ui_history_picked_at (GPasteUiHistory *self,
     return -1;
 }
 
+/* Keep the picks in step with the selection model's own bitset, which
+ * #GtkMultiSelection splices on every items-changed: what the splice removed
+ * loses its bit, and what sat after it moves by the difference. The picks name
+ * the same rows, in the order they were picked, so they are spliced the same
+ * way -- otherwise a merge acts on whatever slid into the remembered positions,
+ * or on a row that is no longer there at all.
+ *
+ * A history that is being watched changes under the picking whenever the
+ * clipboard does, and it arrives as rows keeping their positions and being
+ * handed fresh items to refetch with, so what they show is no longer what was
+ * picked. #GtkMultiSelection re-selects only the items it still recognizes,
+ * which those are not, so the checkmarks go -- and this drops the picks that
+ * named them, in the same pass, rather than leaving Merge holding rows the list
+ * no longer shows as picked.
+ *
+ * The order the picks are held in is the order they were made in, which the
+ * merge depends on, so they are edited in place rather than rebuilt. */
+static void
+on_selection_items_changed (GListModel *model G_GNUC_UNUSED,
+                            guint       position,
+                            guint       removed,
+                            guint       added,
+                            gpointer    user_data)
+{
+    GPasteUiHistory *self = user_data;
+
+    if (!removed && !added)
+        return;
+
+    gboolean dropped = FALSE;
+
+    for (guint i = self->selection->len; i > 0; --i)
+    {
+        guint *picked = &g_array_index (self->selection, guint, i - 1);
+
+        if (*picked < position)
+            continue;
+
+        if (*picked < position + removed)
+        {
+            g_array_remove_index (self->selection, i - 1);
+            dropped = TRUE;
+        }
+        else
+            *picked += added - removed;
+    }
+
+    if (dropped)
+        g_signal_emit (self, signals[SELECTION_CHANGED], 0, self->selection->len);
+}
+
 /* The selection model tracks which positions are picked; the merge wants them in
  * the order they were picked, which a #GtkBitset cannot express. So mirror each
  * change into @selection, which keeps that order.
@@ -863,6 +914,9 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
         : GTK_SELECTION_MODEL (gtk_no_selection_new (model));
 
     g_signal_connect_object (selection, "selection-changed", G_CALLBACK (on_selection_changed), self, 0);
+    /* The picks are positions, so a splice moves what they name, and a row handed
+     * fresh contents is no longer the row that was picked. */
+    g_signal_connect_object (selection, "items-changed", G_CALLBACK (on_selection_items_changed), self, 0);
     gtk_list_view_set_model (self->list_view, selection);
     self->selection_model = selection;
 
