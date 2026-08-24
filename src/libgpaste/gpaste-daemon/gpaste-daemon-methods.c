@@ -115,10 +115,16 @@ g_paste_daemon_methods_do_add (const GPasteDaemonMethods *self,
     gboolean trim_items = g_paste_settings_get_trim_items (settings);
     g_autofree gchar *stripped = trim_items ? g_strstrip (g_strdup (text)) : NULL;
     const gchar *to_add = trim_items ? stripped : text;
+    /* Measured on what is about to be stored, not on what came in: with trimming
+     * on, the two differ by the whitespace, and the caps are a statement about
+     * the item the history ends up holding. A line of indentation was enough to
+     * carry a too-short paste past min-text-item-size, and to have a paste that
+     * fits be refused for exceeding the maximum. */
+    guint64 to_add_length = (trim_items) ? strlen (to_add) : length;
 
-    G_PASTE_DBUS_ASSERT_FULL (length >= g_paste_settings_get_min_text_item_size (settings),
+    G_PASTE_DBUS_ASSERT_FULL (to_add_length >= g_paste_settings_get_min_text_item_size (settings),
                               G_PASTE_ERROR_REJECTED, "the content is shorter than min-text-item-size", NULL);
-    G_PASTE_DBUS_ASSERT_FULL (length <= g_paste_settings_get_max_text_item_size (settings),
+    G_PASTE_DBUS_ASSERT_FULL (to_add_length <= g_paste_settings_get_max_text_item_size (settings),
                               G_PASTE_ERROR_REJECTED, "the content is longer than max-text-item-size", NULL);
     G_PASTE_DBUS_ASSERT_FULL (*to_add, G_PASTE_ERROR_REJECTED, "the content is blank once trimmed", NULL);
 
