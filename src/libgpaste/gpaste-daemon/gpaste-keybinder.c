@@ -7,7 +7,7 @@ struct _GPasteKeybinder
 {
     GObject parent_instance;
 
-    GHashTable               *keybindings;  /* const gchar * (borrowed from _Keybinding) → _Keybinding * */
+    GHashTable                 *keybindings;  /* const gchar * (borrowed from _Keybinding) → _Keybinding * */
 
     GPasteSettings             *settings;
     GSignalGroup               *settings_signals;

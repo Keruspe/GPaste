@@ -17,9 +17,9 @@ struct _GPasteUiHistory
 {
     GtkBox parent_instance;
 
-    GPasteClient   *client;
-    GPasteSettings *settings;
-    GPasteUiPanel  *panel;
+    GPasteClient         *client;
+    GPasteSettings       *settings;
+    GPasteUiPanel        *panel;
 
     AdwStatusPage        *status_page;
     GtkScrolledWindow    *scroll;
@@ -27,19 +27,19 @@ struct _GPasteUiHistory
     GPasteUiHistoryModel *model;
     GtkSelectionModel    *selection_model; /* borrowed: the list view owns it */
 
-    GtkWindow      *rootwin;
+    GtkWindow            *rootwin;
 
-    guint64         size;       /* number of rows currently in the model */
-    guint64         limit;      /* how many items we currently allow on screen; grows lazily */
-    guint64         available;  /* last known total size of the history */
-    gboolean        loading;    /* a lazy-growth refresh is in flight */
-    guint64         display_generation; /* bumped per refresh and per search; stale callbacks bail */
-    gboolean        selection_mode; /* merge mode: rows are multi-selectable */
-    GArray         *selection;       /* selected positions, in the order they were picked */
-    gint32          item_height;
+    guint64               size;       /* number of rows currently in the model */
+    guint64               limit;      /* how many items we currently allow on screen; grows lazily */
+    guint64               available;  /* last known total size of the history */
+    gboolean              loading;    /* a lazy-growth refresh is in flight */
+    guint64               display_generation; /* bumped per refresh and per search; stale callbacks bail */
+    gboolean              selection_mode; /* merge mode: rows are multi-selectable */
+    GArray               *selection;       /* selected positions, in the order they were picked */
+    gint32                item_height;
 
-    gchar          *search;
-    gboolean        favourites; /* show only the pinned items */
+    gchar                *search;
+    gboolean              favourites; /* show only the pinned items */
 };
 
 enum

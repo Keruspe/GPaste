@@ -118,16 +118,16 @@ gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self
 
 gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
                                                const gchar          *name,
-                                               GList                **history,
+                                               GList               **history,
                                                gsize                *size);
 void g_paste_storage_backend_write_history    (GPasteStorageBackend *self,
                                                const gchar          *name,
                                                const GList          *history);
 void g_paste_storage_backend_delete_history   (GPasteStorageBackend *self,
                                                const gchar          *name,
-                                               GError               **error);
+                                               GError              **error);
 GStrv g_paste_storage_backend_list_histories  (GPasteStorageBackend *self,
-                                               GError               **error);
+                                               GError              **error);
 gsize g_paste_storage_backend_count_history   (GPasteStorageBackend *self,
                                                const gchar          *name);
 gboolean g_paste_storage_backend_delete_history_images (const gchar *name,

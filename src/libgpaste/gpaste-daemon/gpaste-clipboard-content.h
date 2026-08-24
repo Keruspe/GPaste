@@ -70,10 +70,10 @@ typedef enum
 } GPasteClipboardTextAction;
 
 GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
-                                                                  GPasteSettings         *settings,
-                                                                  gboolean                      is_clipboard,
-                                                                  const gchar                  *text,
-                                                                  gchar                       **out_value);
+                                                                   GPasteSettings               *settings,
+                                                                   gboolean                      is_clipboard,
+                                                                   const gchar                  *text,
+                                                                   gchar                       **out_value);
 
 gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
                                                 GdkFileList *b);

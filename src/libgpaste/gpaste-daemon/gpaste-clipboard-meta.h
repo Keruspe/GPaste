@@ -14,8 +14,8 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (ClipboardMeta, clipboard_meta, CLIPBOARD_META, GObject)
 
 GPasteClipboardProvider *g_paste_clipboard_meta_new_clipboard (MetaSelection  *selection,
-                                                              GPasteSettings *settings);
+                                                               GPasteSettings *settings);
 GPasteClipboardProvider *g_paste_clipboard_meta_new_primary   (MetaSelection  *selection,
-                                                              GPasteSettings *settings);
+                                                               GPasteSettings *settings);
 
 G_END_DECLS

@@ -49,7 +49,7 @@ typedef enum
 void     g_paste_history_saver_record       (GPasteHistorySaver  *self,
                                              GPasteHistorySaveOp  op,
                                              const gchar         *name,
-                                             GPasteItem    *item,
+                                             GPasteItem          *item,
                                              const gchar         *uuid,
                                              GList               *history);
 void     g_paste_history_saver_load         (GPasteHistorySaver *self,

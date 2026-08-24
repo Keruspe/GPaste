@@ -45,9 +45,9 @@ g_paste_file_backend_get_passphrase (GPasteStorageBackend *self)
 static gboolean g_paste_file_backend_load_contents (GPasteStorageBackend *self,
                                                     const gchar          *history_file_path,
                                                     GFile                *history_file,
-                                                    gchar                **text,
+                                                    gchar               **text,
                                                     gsize                *text_length,
-                                                    GError               **error);
+                                                    GError              **error);
 
 static gboolean
 _g_paste_file_backend_write_password_name (GOutputStream      *stream,

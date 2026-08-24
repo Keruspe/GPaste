@@ -66,8 +66,8 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteCleartext, g_paste_util_free_cleartext)
  * half way does, are decided once here rather than at each of the four places
  * that enumerate one -- and getting the second one wrong is how a migration
  * imports half a history and its cleanup deletes the rest. */
-GStrv    g_paste_util_list_directory            (GFile               *dir,
-                                                 const gchar         *attribute,
-                                                 GError             **error);
+GStrv g_paste_util_list_directory (GFile        *dir,
+                                   const gchar  *attribute,
+                                   GError      **error);
 
 G_END_DECLS

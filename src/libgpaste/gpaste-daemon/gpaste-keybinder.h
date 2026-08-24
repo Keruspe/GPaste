@@ -12,12 +12,12 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Keybinder, keybinder, KEYBINDER, GObject)
 
-void g_paste_keybinder_add_keybinding (GPasteKeybinder          *self,
-                                       GPasteKeybinding         *binding);
-void g_paste_keybinder_activate_all   (GPasteKeybinder          *self);
-void g_paste_keybinder_deactivate_all (GPasteKeybinder          *self);
+void g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
+                                       GPasteKeybinding *binding);
+void g_paste_keybinder_activate_all   (GPasteKeybinder  *self);
+void g_paste_keybinder_deactivate_all (GPasteKeybinder  *self);
 
-GPasteKeybinder *g_paste_keybinder_new (GPasteSettings                *settings,
+GPasteKeybinder *g_paste_keybinder_new (GPasteSettings             *settings,
                                         GPasteGlobalShortcutClient *provider);
 
 G_END_DECLS

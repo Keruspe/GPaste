@@ -15,43 +15,43 @@ struct _GPasteUiItem
 {
     GtkBox parent_instance;
 
-    GSignalGroup   *settings_signals;
+    GSignalGroup       *settings_signals;
 
     /* Everything this row can be asked to do, under the "item." prefix. The
      * inline buttons and the context menu both go through them, so there is one
      * implementation of each action and one place that says whether the row can
      * currently perform it. */
     GSimpleActionGroup *actions;
-    GtkWidget      *favourite;       /* the star: shown while pinned, or on hover */
-    GtkWidget      *remove;          /* shown on hover */
-    GtkWidget      *menu;            /* the context menu, parented to the row */
+    GtkWidget          *favourite;       /* the star: shown while pinned, or on hover */
+    GtkWidget          *remove;          /* shown on hover */
+    GtkWidget          *menu;            /* the context menu, parented to the row */
 
-    GtkWidget      *hbox;
+    GtkWidget          *hbox;
 
-    GtkLabel       *index_label;
-    GtkInscription *label;
-    GtkPicture     *thumbnail;
-    GtkWidget      *swatch;          /* colour items: what the value looks like */
-    GtkWidget      *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
-    gboolean        editable;
-    gboolean        uploadable;
-    gboolean        favourited;
-    gboolean        hovered;
-    gboolean        selection_mode;
+    GtkLabel           *index_label;
+    GtkInscription     *label;
+    GtkPicture         *thumbnail;
+    GtkWidget          *swatch;          /* colour items: what the value looks like */
+    GtkWidget          *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
+    gboolean            editable;
+    gboolean            uploadable;
+    gboolean            favourited;
+    gboolean            hovered;
+    gboolean            selection_mode;
 
-    GPasteClient   *client;
-    GPasteSettings *settings;
+    GPasteClient       *client;
+    GPasteSettings     *settings;
 
-    GtkWindow      *rootwin;
+    GtkWindow          *rootwin;
 
-    guint64         index;
-    gboolean        fake_index;
-    gchar          *uuid;
+    guint64             index;
+    gboolean            fake_index;
+    gchar              *uuid;
 
     /* Bumped on every (re)binding. GtkListView recycles row widgets, so a reply
      * for a previous binding must be dropped rather than overwrite the content
      * the widget has since been rebound to. */
-    guint64         generation;
+    guint64             generation;
 };
 
 enum

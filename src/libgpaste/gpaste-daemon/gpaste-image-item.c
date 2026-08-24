@@ -24,7 +24,7 @@ struct _GPasteImageItem
      * store, so everything reaching for a file has the one thing to check. */
     gchar      *cache_path;
 
-    guint64    additional_size;
+    guint64     additional_size;
 };
 
 G_PASTE_DEFINE_TYPE (ImageItem, image_item, G_PASTE_TYPE_ITEM)

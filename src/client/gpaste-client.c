@@ -331,8 +331,8 @@ g_paste_daemon_version (Context *ctx,
  * g_variant_new ("(s)", NULL). Reading it used to be a call of its own, so this
  * is the error that call would have raised. */
 static gchar *
-current_history (Context  *ctx,
-                 GError  **error)
+current_history (Context *ctx,
+                 GError **error)
 {
     gchar *name = g_paste_client_get_history_name (ctx->client);
 

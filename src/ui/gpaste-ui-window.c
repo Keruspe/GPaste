@@ -14,34 +14,34 @@ struct _GPasteUiWindow
 {
     AdwApplicationWindow parent_instance;
 
-    AdwHeaderBar    *header;
-    GPasteUiHistory *history;
-    GPasteClient    *client;
-    GPasteSettings  *settings;
+    AdwHeaderBar           *header;
+    GPasteUiHistory        *history;
+    GPasteClient           *client;
+    GPasteSettings         *settings;
 
     AdwNavigationSplitView *split_view;
-    GtkSearchBar    *search_bar;
-    GtkSearchEntry  *search_entry;
-    GtkBox          *content_box;
-    AdwToastOverlay *toast_overlay;
-    AdwBanner       *banner;
+    GtkSearchBar           *search_bar;
+    GtkSearchEntry         *search_entry;
+    GtkBox                 *content_box;
+    AdwToastOverlay        *toast_overlay;
+    AdwBanner              *banner;
 
-    GtkActionBar    *merge_bar;
-    GtkWidget       *merge_button;
-    GtkWidget       *merge_entry; /* custom separator */
+    GtkActionBar           *merge_bar;
+    GtkWidget              *merge_button;
+    GtkWidget              *merge_entry; /* custom separator */
 
-    AdwDialog       *shortcuts;
+    AdwDialog              *shortcuts;
     /* Weak: the dialog belongs to whatever is presenting it, and we only keep
      * it to raise the one already up rather than stack a second. */
-    AdwDialog       *preferences;
+    AdwDialog              *preferences;
 
-    GSignalGroup    *search_signals;
-    GSignalGroup    *client_signals;
+    GSignalGroup           *search_signals;
+    GSignalGroup           *client_signals;
 
-    gboolean         initialized;
+    gboolean                initialized;
     /* Actions asked for before the daemon connection concluded, run in order
      * once it has. */
-    GSList          *deferred;
+    GSList                 *deferred;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)

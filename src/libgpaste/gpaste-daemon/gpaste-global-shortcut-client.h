@@ -36,17 +36,17 @@ G_PASTE_FINAL_TYPE (GlobalShortcutClient, global_shortcut_client, GLOBAL_SHORTCU
 /* Methods */
 /***********/
 
-void g_paste_global_shortcut_client_grab_all   (GPasteGlobalShortcutClient     *self,
-                                                    const GPasteKeybindingAccelerator *accels);
-void g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient     *self);
+void g_paste_global_shortcut_client_grab_all   (GPasteGlobalShortcutClient        *self,
+                                                const GPasteKeybindingAccelerator *accels);
+void g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient        *self);
 
 /****************/
 /* Constructors */
 /****************/
 
-void                           g_paste_global_shortcut_client_new        (GAsyncReadyCallback  callback,
-                                                                              gpointer             user_data);
-GPasteGlobalShortcutClient *g_paste_global_shortcut_client_new_finish (GAsyncResult        *result,
-                                                                              GError             **error);
+void                        g_paste_global_shortcut_client_new        (GAsyncReadyCallback callback,
+                                                                       gpointer            user_data);
+GPasteGlobalShortcutClient *g_paste_global_shortcut_client_new_finish (GAsyncResult       *result,
+                                                                       GError            **error);
 
 G_END_DECLS
