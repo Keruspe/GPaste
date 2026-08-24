@@ -64,10 +64,9 @@ static gboolean
 detect_current_backend (GPasteSettings *settings,
                         GPasteStorage  *current)
 {
-    /* The storing flavours in tie-break precedence order (encrypted over plain,
-     * file over database), used both for the active-name lookup and the on-disk
-     * count fallback. Each kind's extension is the shared
-     * g_paste_storage_get_extension(), so a new flavour only needs adding here. */
+    /* The storing flavours in tie-break precedence order: encrypted over plain,
+     * file over database. Extensions come from g_paste_storage_get_extension(),
+     * so a new flavour only needs adding here. */
     static const GPasteStorage flavours[] = {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
         G_PASTE_STORAGE_ENCRYPTED_FILE,
@@ -110,11 +109,10 @@ detect_current_backend (GPasteSettings *settings,
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
 
-    /* Only reached when the active history has no file of any flavour, so a
-     * fresh profile (no directory yet) is the ordinary case, and lists nothing.
-     * A directory that is there but unreadable is not: the count would come out
-     * zero and this would answer "nothing is stored", which the caller writes to
-     * storage-backend -- so it answers nothing at all instead. */
+    /* A fresh profile has no directory yet and lists nothing, which is an
+     * answer. A directory that is there but unreadable is not: its count would
+     * come out zero and be written to storage-backend as "nothing is stored",
+     * so it answers nothing at all instead. */
     if (!files)
     {
         g_warning ("Could not list the history directory to detect the current backend: %s", error->message);
@@ -153,8 +151,7 @@ detect_current_backend (GPasteSettings *settings,
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* The passphrase that already opens @storage_kind, without asking anyone: the
- * one this process holds -- the common case, since the daemon has been serving
- * the history with it -- and failing that the one remembered in the keyring,
+ * one this process holds, and failing that the one remembered in the keyring,
  * which is applied to the process when it verifies. %NULL when neither does and
  * the user has to be prompted.
  *
@@ -723,10 +720,7 @@ on_passphrase_set (GObject      *source,
 {
     MigrationData *self = user_data;
     GPasteStorageRemember remember;
-    /* A dismissal comes back as %NULL with no error set; an error means the
-     * prompt implementation itself failed, which the built-in ones never do but
-     * an out-of-tree one (gnome-shell's) can. Both end the same way -- there is
-     * no passphrase -- so it is only worth saying which happened. */
+    /* As in on_unlock_reply(): a dismissal is %NULL with no error set. */
     g_autoptr (GError) prompt_error = NULL;
     g_autoptr (GPastePassphrase) passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result,
                                                                                 &remember, &prompt_error);
@@ -866,16 +860,12 @@ on_migration_reply (GObject      *source,
         return;
     }
 
-    /* Both toggles are clamped into the fields rather than trusted: a prompt
-     * backend is a public, introspectable interface, and "delete the old
-     * data" answered for a migration that is not moving anywhere would wipe the
-     * current history with nothing imported to replace it. Our own backends grey
-     * the toggles out, but that is their courtesy, not our guarantee. Clamping
-     * the fields rather than a pair of locals is what keeps the two spellings
-     * from meaning different things further down — and clamping them here, as
-     * the answer comes in, is what keeps continue_apply() from making the user
-     * unlock an encrypted history for an import and a cleanup that will not
-     * happen. */
+    /* Both toggles are clamped rather than trusted: a prompt backend is a
+     * public, introspectable interface, and "delete the old data" answered for
+     * a migration that is not moving anywhere would wipe the current history
+     * with nothing imported to replace it. Clamping the fields, as the answer
+     * comes in, is also what keeps continue_apply() from making the user unlock
+     * an encrypted history for an import and a cleanup that will not happen. */
     self->import = self->import && g_paste_prompt_can_import (self->current, self->chosen);
     self->cleanup = self->cleanup && g_paste_prompt_backend_changes (self->current, self->chosen);
 
@@ -1252,10 +1242,7 @@ on_rekey_passphrase_set (GObject      *source,
 {
     RekeyData *self = user_data;
     GPasteStorageRemember remember;
-    /* A dismissal comes back as %NULL with no error set; an error means the
-     * prompt implementation itself failed, which the built-in ones never do but
-     * an out-of-tree one (gnome-shell's) can. Both end the same way -- there is
-     * no passphrase -- so it is only worth saying which happened. */
+    /* As in on_unlock_reply(): a dismissal is %NULL with no error set. */
     g_autoptr (GError) prompt_error = NULL;
     g_autoptr (GPastePassphrase) passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result,
                                                                                 &remember, &prompt_error);

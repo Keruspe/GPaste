@@ -73,7 +73,7 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
 /**
  * g_paste_gtk_util_get_image_finish:
  * @client: the #GPasteClient the g_paste_client_get_image() call was made on
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to g_paste_client_get_image()
+ * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
  * Finish a g_paste_client_get_image() call as a ready-to-display texture. The

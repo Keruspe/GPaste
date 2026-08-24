@@ -104,7 +104,7 @@ g_paste_clipboard_provider_is_empty (GPasteClipboardProvider *self)
  * g_paste_clipboard_provider_update:
  * @self: a #GPasteClipboardProvider instance
  * @callback: (scope async): the callback to be called when the content is ready
- * @user_data: user data to pass to @callback
+ * @user_data: the data to pass to @callback
  *
  * Read the current selection content and update the internal cache. The
  * callback receives a newly created #GPasteItem or %NULL if the content is

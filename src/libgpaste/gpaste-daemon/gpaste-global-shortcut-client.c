@@ -557,7 +557,7 @@ g_paste_global_shortcut_client_init (GPasteGlobalShortcutClient *self)
 /**
  * g_paste_global_shortcut_client_new:
  * @callback: Callback function to invoke when the proxy is ready.
- * @user_data: User data to pass to @callback.
+ * @user_data: the data to pass to @callback
  *
  * Create a new instance of #GPasteGlobalShortcutClient
  */
@@ -580,7 +580,7 @@ g_paste_global_shortcut_client_new (GAsyncReadyCallback callback,
 
 /**
  * g_paste_global_shortcut_client_new_finish:
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
+ * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
  * Create a new instance of #GPasteGlobalShortcutClient

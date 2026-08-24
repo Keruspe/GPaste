@@ -204,7 +204,7 @@ g_paste_ui_report_string (GtkWidget           *origin,
 /**
  * g_paste_ui_report_void_cb:
  * @source_object: the #GPasteClient the call was made on
- * @result: the call's result
+ * @result: the #GAsyncResult handed to the callback
  * @user_data: what g_paste_ui_report_void () returned
  *
  * Finish a call whose only interesting outcome is whether it failed.
@@ -224,7 +224,7 @@ g_paste_ui_report_void_cb (GObject      *source_object,
 /**
  * g_paste_ui_report_string_cb:
  * @source_object: the #GPasteClient the call was made on
- * @result: the call's result
+ * @result: the #GAsyncResult handed to the callback
  * @user_data: what g_paste_ui_report_string () returned
  *
  * Finish a call answering the uuid it created, which nothing here wants: the

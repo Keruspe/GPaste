@@ -301,7 +301,7 @@ g_paste_daemon_upload (GPasteDaemon       *self,
 /**
  * g_paste_daemon_upload_finish:
  * @self: (transfer none): the #GPasteDaemon
- * @result: a #GAsyncResult obtained from the #GAsyncReadyCallback passed to g_paste_daemon_upload()
+ * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
  * Finish an upload started with g_paste_daemon_upload().

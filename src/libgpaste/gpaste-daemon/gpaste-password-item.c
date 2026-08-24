@@ -137,7 +137,7 @@ g_paste_password_item_new (const gchar *name,
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
 
-    /* override password value length */
+    /* A password weighs nothing against the caps: its length is the secret. */
     g_paste_item_set_size (self, 0);
     g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
 

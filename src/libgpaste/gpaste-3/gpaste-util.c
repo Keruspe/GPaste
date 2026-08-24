@@ -226,7 +226,7 @@ g_paste_util_activate_ui (const gchar *action,
  * g_paste_util_activate_ui_sync:
  * @action: the action to activate
  * @arg: (nullable): the action argument
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * Activate an action on a GPaste app, and wait for the call to have been made.
  *

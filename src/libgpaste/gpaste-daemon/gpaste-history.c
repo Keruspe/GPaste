@@ -540,7 +540,8 @@ _g_paste_history_add (GPasteHistory *self,
         }
         else
         {
-            /* size may change when state is idle */
+            /* Going idle changes what the item weighs, so it is taken out at
+             * its old size and put back at its new one. */
             self->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
 

@@ -266,7 +266,6 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     g_autofree GPasteClipboardGdkTextureCallbackData *data = user_data;
     g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in set_texture */
     g_autoptr (GError) error = NULL;
-    /* Transfer full — we own this ref */
     g_autoptr (GdkTexture) texture = gdk_clipboard_read_texture_finish (GDK_CLIPBOARD (source_object), res, &error);
 
     if (!texture)

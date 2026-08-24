@@ -356,7 +356,7 @@ main (gint argc, gchar *argv[])
 
     G_PASTE_GTK_INIT_APPLICATION ("Daemon");
 
-    /* Keep the gapplication around */
+    /* Nothing holds the application otherwise: the daemon has no window. */
     g_application_hold (gapp);
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();

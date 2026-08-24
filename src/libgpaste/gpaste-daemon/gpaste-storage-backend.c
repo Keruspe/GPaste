@@ -340,7 +340,7 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
 /**
  * g_paste_storage_backend_delete_history_images:
  * @name: the name of the history whose images to sweep
- * @error: a #GError
+ * @error: return location for a #GError, or %NULL
  *
  * A history's images live in their own directory (so histories never share,
  * nor cross-delete, image files): deleting or emptying the history takes them
