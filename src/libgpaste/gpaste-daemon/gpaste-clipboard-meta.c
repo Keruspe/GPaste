@@ -332,15 +332,27 @@ g_paste_clipboard_meta_source_read_finish (MetaSelectionSource *source,
 }
 
 static void
+g_paste_clipboard_meta_source_dispose (GObject *object)
+{
+    GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (object);
+
+    g_clear_pointer (&self->contents, g_hash_table_unref);
+    g_clear_pointer (&self->serialize_mimetypes, g_hash_table_unref);
+    /* The bridged payload is a #GdkTexture or a #GdkFileList as often as it is a
+     * plain string, so it is a reference like any other -- and unsetting zeroes
+     * it, which is what makes a second dispose a no-op. */
+    if (G_IS_VALUE (&self->value))
+        g_value_unset (&self->value);
+
+    G_OBJECT_CLASS (g_paste_clipboard_meta_source_parent_class)->dispose (object);
+}
+
+static void
 g_paste_clipboard_meta_source_finalize (GObject *object)
 {
     GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (object);
 
-    g_list_free_full (self->mimetypes, g_free);
-    g_hash_table_unref (self->contents);
-    g_hash_table_unref (self->serialize_mimetypes);
-    if (G_IS_VALUE (&self->value))
-        g_value_unset (&self->value);
+    g_clear_list (&self->mimetypes, g_free);
 
     G_OBJECT_CLASS (g_paste_clipboard_meta_source_parent_class)->finalize (object);
 }
@@ -351,6 +363,7 @@ g_paste_clipboard_meta_source_class_init (GPasteClipboardMetaSourceClass *klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     MetaSelectionSourceClass *source_class = META_SELECTION_SOURCE_CLASS (klass);
 
+    object_class->dispose = g_paste_clipboard_meta_source_dispose;
     object_class->finalize = g_paste_clipboard_meta_source_finalize;
     source_class->get_mimetypes = g_paste_clipboard_meta_source_get_mimetypes;
     source_class->read_async = g_paste_clipboard_meta_source_read_async;
