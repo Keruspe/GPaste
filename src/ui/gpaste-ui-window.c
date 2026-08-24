@@ -867,11 +867,22 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_weak_pointer (&self->preferences);
     g_clear_slist (&self->deferred, deferred_action_free);
 
-    /* Chaining up unparents (and frees) every widget below, so drop the one
-     * anything still in flight tests to know the window is gone. */
-    self->banner = NULL;
+    /* Chaining up unparents (and frees) every widget below, so every pointer to
+     * one is dangling from here on. They are dropped together rather than as
+     * each is found to be read after dispose: an asynchronous reply landing on a
+     * closed window is the normal case here, not the exotic one, and a field
+     * that is NULL is the test the rest of the file already makes. */
+    self->header = NULL;
+    self->history = NULL;
     self->split_view = NULL;
+    self->search_bar = NULL;
+    self->search_entry = NULL;
+    self->content_box = NULL;
     self->toast_overlay = NULL;
+    self->banner = NULL;
+    self->merge_bar = NULL;
+    self->merge_button = NULL;
+    self->merge_entry = NULL;
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
