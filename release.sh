@@ -13,6 +13,10 @@ main() {
     ls po/*.po | sed 's|po/||; s|\.po$||' | sort > po/LINGUAS
     run_ninja GPaste-pot
     run_ninja GPaste-update-po
+    # msgmerge keeps what a release drops as #~ entries; nothing reads them back.
+    for po in po/*.po; do
+        msgattrib --no-obsolete "${po}" > "${po}.new" && mv "${po}.new" "${po}"
+    done
     git commit -asm "Release GPaste ${version}"
     run_ninja dist
     git tag -m "Release GPaste ${version}" v${version}
