@@ -61,22 +61,17 @@ g_paste_storage_keyring_has_passphrase (void)
      * yes/no question never materializes the passphrase — and never makes the
      * user unlock their keyring just so a switch can pick its initial state. */
     g_autoptr (GHashTable) attributes = g_hash_table_new (g_str_hash, g_str_equal);
-    GList *items = secret_service_search_sync (NULL, /* default service */
-                                               g_paste_storage_keyring_schema (),
-                                               attributes,
-                                               SECRET_SEARCH_NONE,
-                                               NULL, /* cancellable */
-                                               &error);
+    g_autolist (SecretItem) items = secret_service_search_sync (NULL, /* default service */
+                                                                g_paste_storage_keyring_schema (),
+                                                                attributes,
+                                                                SECRET_SEARCH_NONE,
+                                                                NULL, /* cancellable */
+                                                                &error);
 
     if (error)
         g_warning ("Could not look up the history passphrase in the keyring: %s", error->message);
 
-    if (!items)
-        return FALSE;
-
-    g_list_free_full (items, g_object_unref);
-
-    return TRUE;
+    return items != NULL;
 }
 
 G_PASTE_VISIBLE gboolean

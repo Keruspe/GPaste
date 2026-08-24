@@ -480,7 +480,7 @@ g_paste_util_get_dbus_items_result (GVariant *variant)
     while ((v = g_variant_iter_next_value (&iter)))
     {
         items = g_list_prepend (items, g_paste_util_get_dbus_item_result (v));
-        g_variant_unref (v);
+        g_clear_pointer (&v, g_variant_unref);
     }
 
     /* Prepended and reversed once: appending walks the whole list on every

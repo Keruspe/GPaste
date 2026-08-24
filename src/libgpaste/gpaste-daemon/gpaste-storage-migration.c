@@ -320,7 +320,7 @@ import_histories (GPasteSettings *settings,
 
     for (GStrv name = names; ok && *name; ++name)
     {
-        GList *history = NULL;
+        g_autolist (GPasteItem) history = NULL;
         gsize size = 0;
 
         /* Never let a source we could not actually read (a wrong passphrase, a
@@ -330,14 +330,13 @@ import_histories (GPasteSettings *settings,
          * for a retry with the data untouched. */
         if (!g_paste_storage_backend_read_history (previous, *name, &history, &size))
         {
-            g_list_free_full (history, g_object_unref);
             ok = FALSE;
             break;
         }
 
         g_paste_storage_backend_write_history (next, *name, history);
 
-        GList *written = NULL;
+        g_autolist (GPasteItem) written = NULL;
         gsize written_size = 0;
 
         g_paste_storage_backend_read_history (next, *name, &written, &written_size);
@@ -358,9 +357,6 @@ import_histories (GPasteSettings *settings,
         /* Nothing may read back that was not written. */
         if (w)
             ok = FALSE;
-
-        g_list_free_full (written, g_object_unref);
-        g_list_free_full (history, g_object_unref);
     }
 
     return ok;

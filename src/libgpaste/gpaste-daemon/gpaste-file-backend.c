@@ -718,7 +718,7 @@ add_item (Data *data)
                 ++data->current_size;
         }
 
-        g_slist_free_full (g_steal_pointer (&data->special_values), g_object_unref);
+        g_clear_slist (&data->special_values, g_object_unref);
 
         return;
     }
