@@ -474,13 +474,16 @@ g_paste_util_get_dbus_items_result (GVariant *variant)
 {
     GList *items = NULL;
     GVariantIter iter;
-    g_autoptr (GVariant) v = NULL;
 
     g_variant_iter_init (&iter, variant);
-    while ((v = g_variant_iter_next_value (&iter)))
+    while (TRUE)
     {
+        g_autoptr (GVariant) v = g_variant_iter_next_value (&iter);
+
+        if (!v)
+            break;
+
         items = g_list_prepend (items, g_paste_util_get_dbus_item_result (v));
-        g_clear_pointer (&v, g_variant_unref);
     }
 
     /* Prepended and reversed once: appending walks the whole list on every
