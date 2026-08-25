@@ -287,9 +287,22 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
 {
     const GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
     GTask *task = g_task_new (source, cancellable, callback, user_data);
-    GBytes *bytes = g_hash_table_lookup (self->contents, mimetype);
 
     g_task_set_source_tag (task, g_paste_clipboard_meta_source_read_async);
+
+    /* Disposed while mutter still holds it -- a takeover swapping the owner out
+     * from under a read in flight. Everything a read is served from went with
+     * dispose, so this answers that there is nothing left rather than look in
+     * tables that are no longer there. */
+    if (!self->contents)
+    {
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CLOSED,
+                                 "The selection source is gone");
+        g_object_unref (task);
+        return;
+    }
+
+    GBytes *bytes = g_hash_table_lookup (self->contents, mimetype);
 
     if (bytes)
     {
@@ -343,18 +356,13 @@ g_paste_clipboard_meta_source_dispose (GObject *object)
      * it, which is what makes a second dispose a no-op. */
     if (G_IS_VALUE (&self->value))
         g_value_unset (&self->value);
-
-    G_OBJECT_CLASS (g_paste_clipboard_meta_source_parent_class)->dispose (object);
-}
-
-static void
-g_paste_clipboard_meta_source_finalize (GObject *object)
-{
-    GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (object);
-
+    /* Plain strings with nothing to unref, but dropped here with the rest: what
+     * this list advertises is what the tables above answer for, so a disposed
+     * source that still named its formats would be offering reads it can only
+     * refuse. */
     g_clear_list (&self->mimetypes, g_free);
 
-    G_OBJECT_CLASS (g_paste_clipboard_meta_source_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_clipboard_meta_source_parent_class)->dispose (object);
 }
 
 static void
@@ -364,7 +372,6 @@ g_paste_clipboard_meta_source_class_init (GPasteClipboardMetaSourceClass *klass)
     MetaSelectionSourceClass *source_class = META_SELECTION_SOURCE_CLASS (klass);
 
     object_class->dispose = g_paste_clipboard_meta_source_dispose;
-    object_class->finalize = g_paste_clipboard_meta_source_finalize;
     source_class->get_mimetypes = g_paste_clipboard_meta_source_get_mimetypes;
     source_class->read_async = g_paste_clipboard_meta_source_read_async;
     source_class->read_finish = g_paste_clipboard_meta_source_read_finish;
