@@ -221,6 +221,10 @@ The latest release for GNOME 50 is
 [GPaste 50.8](https://www.imagination-land.org/posts/2026-08-10-gpaste-50.8-released.html)
 ([tarball](https://www.imagination-land.org/files/gpaste/GPaste-50.8.tar.xz)).
 
+GNOME 51 is being prepared:
+[GPaste 51.beta](https://www.imagination-land.org/posts/2026-08-25-gpaste-51.beta-released.html)
+([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.beta.tar.xz)).
+
 Release announcements and everything else about GPaste are
 [on my blog](https://www.imagination-land.org/tags/GPaste.html). See
 [`NEWS`](NEWS) for the full changelog.

@@ -2,25 +2,26 @@
 <!-- SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause -->
 <releases>
-  <release type="stable" date="UNRELEASED" version="51.0">
+  <release type="development" date="2026-08-25" version="51.beta">
     <description>
-      <p>This is a major release. Changes:</p>
+      <p>This is a beta release for the upcoming 51.0. Changes:</p>
       <ul>
+        <li>Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool</li>
+        <li>Pin items as favourites, which the size and memory limits never drop, and filter the history down to them</li>
+        <li>Add a merge mode to combine several history items</li>
+        <li>Rework the graphical tool's window: adaptive, one menu for its rare actions, a row's actions kept out of the way until asked, and a toast when something did not work</li>
+        <li>Show image thumbnails and colour swatches on the rows, in the GNOME Shell menu as well as in the graphical tool, and enlarge an image preview on hover</li>
+        <li>Rework the extension's panel menu footer into menu items the keyboard can reach, and hand the shell's extensions window our preference pages directly</li>
         <li>Encrypt the history at rest with an optional encrypted file backend, and remember its passphrase in the keyring</li>
         <li>Add SQLite storage backends, plain and encrypted, that store the history in a per-history database and images as blobs</li>
         <li>Choose where the history is stored and move it there, from a migration dialog, the preferences or gpaste-client</li>
-        <li>Change the passphrase of an encrypted history from the preferences or gpaste-client</li>
+        <li>Take a password back off the clipboard once its timeout has passed</li>
         <li>Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter (experimental)</li>
-        <li>Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool</li>
-        <li>Add a merge mode to combine several history items</li>
-        <li>Pin items as favourites, which the size and memory limits never drop, and filter the history down to them</li>
-        <li>Bump the DBus interface to org.gnome.GPaste3, renaming Element to Item and carrying each item's kind and favourite state with it</li>
-        <li>Enlarge image previews on hover via a custom tooltip</li>
         <li>Publish copied colours as text on the clipboard as well</li>
         <li>Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu</li>
-        <li>Make the embeddable preferences widget adaptive, and remember the window geometry across sessions</li>
-        <li>Raise the default retention, element and memory limits</li>
+        <li>Track images by default, and raise the default retention, element and memory limits</li>
         <li>Drop the internal X11 keybinder and the GNOME Shell keybinding client, leaving keyboard shortcuts to the XDG portal</li>
+        <li>Bump the DBus interface to org.gnome.GPaste3: this is a major release, and both libraries break API and ABI</li>
         <li>Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10</li>
       </ul>
     </description>

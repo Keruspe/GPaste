@@ -1,39 +1,27 @@
-NEW in 51.0 (UNRELEASED)
+NEW in 51.beta (25/08/2026)
 =============
 
-- Encrypt the history at rest: an optional encrypted file backend (libsodium secretstream) keeps the history, the images it references and its password entries unreadable without a passphrase, which libsecret can remember for you
-- Add SQLite storage backends, plain and encrypted, that persist the history incrementally in a per-history database and keep images as blobs rather than as files on disk
-- Choose where the history is stored, and move it there: a migration dialog on upgrade, or on demand from the preferences and "gpaste-client migrate", with the daemon flushing, migrating and reloading the backend itself rather than racing whoever asked -- and a "Keep as is" button for those who want none of it, which changes nothing and does not ask again, where closing the window asks once more on the next start
-- Change the passphrase of an encrypted history from the preferences or with "gpaste-client change-passphrase"
-- Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter rather than as an X11 client (experimental and opt-in, with a clean bus-name handover to and from the standalone daemon)
 - Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool: they fill the window at runtime and load more as you scroll, so max-displayed-history-size is gone
-- Add a merge mode to combine several history items
 - Pin items as favourites: neither the history size limit nor the memory one may evict a pinned item, so the history grows past its cap rather than let one go, and the graphical tool, the extension and "gpaste-client --favourites" can list only those
-- Take a password back off the clipboard: a password carries a timeout, in seconds, after which the daemon stops publishing it -- selecting the first item that is not a password, or emptying the selection when the history holds none. "gpaste-client make-password --timeout" and a Make Password composer in the graphical tool set it, Edit on a password row reopens that composer to change it, and a "password-timeout" setting is what the keyboard shortcut and both dialogs start from
-- Enlarge image previews on hover via a custom tooltip
-- Show a colour item's colour as a swatch in the graphical tool, the way an image item shows a thumbnail
-- Show image thumbnails and colour swatches in the GNOME Shell menu too, the thumbnails following the same images-preview settings as the graphical tool's
+- Add a merge mode to combine several history items
+- Rework the graphical tool's window: it collapses to a single pane on a narrow screen, gathers Settings, About and Restart behind one menu, keeps a row's Edit and Upload in a context menu with Pin and Delete inline, asks its questions in the dialog's own heading, remembers its geometry across sessions, and says in a toast when something did not work
+- Show image thumbnails and colour swatches on the rows, in the GNOME Shell menu as well as in the graphical tool, and enlarge an image preview when the pointer rests on it
+- Rework the extension's panel menu: its footer is made of real menu items the keyboard can reach, and the shell's extensions window is handed GPaste's preference pages directly instead of nesting them all inside a single row
+- Document the graphical tool's own shortcuts in its shortcuts window, beside the global ones
+- Encrypt the history at rest: an optional encrypted file backend (libsodium secretstream) keeps the history, the images it references and its password entries unreadable without a passphrase, which libsecret can remember for you, and which can be changed from the preferences or with "gpaste-client change-passphrase"
+- Add SQLite storage backends, plain and encrypted, that persist the history incrementally in a per-history database and keep images as blobs rather than as files on disk
+- Choose where the history is stored, and move it there: a migration dialog on upgrade, or on demand from the preferences and "gpaste-client migrate", with a "Keep as is" button for those who want none of it, which changes nothing and does not ask again
+- Take a password back off the clipboard: a password carries a timeout, in seconds, after which the daemon stops publishing it, set from a Make Password composer in the graphical tool, from "gpaste-client make-password --timeout", or as the "password-timeout" default they both start from
+- Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter rather than as an X11 client (experimental and opt-in, with a clean bus-name handover to and from the standalone daemon)
 - Publish copied colours as text on the clipboard as well, so they paste into plain text fields too
-- Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu
-- Make the embeddable preferences widget adaptive, and remember the graphical tool's window geometry across sessions
-- Raise the default retention, element and memory limits; cap the image preview size and raise the minimum text item default
-- Drop the internal X11 keybinder and the GNOME Shell keybinding client: keyboard shortcuts now go through the XDG GlobalShortcuts portal alone
-- Install the daemon objects as a libgpaste-daemon library, and the daemon's D-Bus interface definition as $datadir/dbus-1/interfaces/org.gnome.GPaste3.xml, so anything can read the contract without building GPaste
-- API: take a mutable instance pointer everywhere, as GObject itself does, and drop the const shims that existed to work around it (_G_PASTE_IS_FOO, _G_PASTE_FOO and friends are gone; use the stock macros)
-- API: g_paste_item_get_kind() answers a GPasteItemKind instead of a string, and the enumeration gained the Color member it was missing -- gpaste-client get-kind reported colour items as invalid
-- API: GPasteStorage is a registered enumeration, GPasteScreensaverClient exposes an "active" property in place of its "active-changed" signal, and g_paste_client_get_elements(), merge() and their sync twins take a NULL-terminated array of uuids instead of an array and a length
-- API: a GPasteClipboardProvider interface abstracts a single selection, with the GDK implementation renamed to GPasteClipboardGdk alongside the new mutter one
-- API: the D-Bus interface is org.gnome.GPaste3. Element is Item throughout, an item answers as one (uuid, value, kind, favourite) struct so a client draws a row from a single reply -- GetElementKind and the GetRaw* twins are gone, and Search answers items rather than uuids -- Update names the item it is about instead of only its position, the current history is the History property in place of GetHistoryName and the SwitchHistory signal, HistoriesChanged reports a history appearing beside it, and About, Add, Delete, Track and OnExtensionStateChanged are ShowAbout, AddText, DeleteItem, SetActive and ReportExtensionState, and GetUris answers the uris a files item holds beside GetImage, an array being something the one string an item travels with cannot carry
-- API: an item travels as its own content rather than as a decorated string -- the "[Files]", "[Color]", "[Image, ...]" and "[Password]" a user reads are put on by whichever client draws the row, in that client's language rather than the daemon's, so "gpaste-client history" now prints raw values
-- API: an image item's value is its checksum rather than a cache path that only one storage backend ever wrote -- where its bytes were materialized is a nullable g_paste_image_item_get_cache_path(), the images/<history>/<checksum>.png layout belongs to the file backend, and a backend is asked to drop what it materialized (drop_item_data) when the history drops an item, so a database-backed history stops deleting files that never existed
-- API: the helpers only the daemon ever used moved to libgpaste-daemon, libgpaste-gtk4 installs and introspects only the preferences dialog and the embeddable widget, nine exported functions nothing called are gone, and every throwing function documents the GError domain it reports in
-- API: MakePassword takes a password as readily as a text item, updating its name and its timeout where it stands and answering the uuid it was given, so RenamePassword is gone -- renaming a password is MakePassword handed that password's own uuid. It and AddPassword take the timeout, GetPasswordTimeout reads one back, and a password with no name of its own is the one name a history may hold several entries under
-- Fix "gpaste-client --oneline" emitting literal tabulations, which broke parsing its output on a colon
-- Fix a rejected GlobalShortcuts portal dialog being reported as success, leaving the shortcuts silently unbound
+- Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu, in an embeddable widget that is now adaptive
+- Track images by default, raise the default retention, element and memory limits, and drop "open-centered", a preference nothing has been able to honour since the GTK4 port
+- Drop the internal X11 keybinder and the GNOME Shell keybinding client: keyboard shortcuts now go through the XDG GlobalShortcuts portal alone, and a portal dialog the user rejects is reported as the failure it is rather than silently leaving them unbound
+- Fix the graphical tool crashing on startup, opening with the keyboard focus in the sidebar instead of the history, and showing a search's results over a newer one's
 - Fix every GNOME Shell overview result disappearing when a single item had been evicted from the history between the search and the results being described
-- Fix the graphical tool crashing on startup, showing a search's results over a newer one's, and letting a D-Bus reply write into a window that had been closed while the call was in flight
-- Fix the graphical tool opening with the keyboard focus in the sidebar's "Switch to history" entry, which swallowed what you typed instead of letting it start a search: the history list takes the focus as it appears
-- Fix lowering the history size or memory limit dropping items without saving or announcing it, which left every open client showing rows the daemon no longer had, and a stored history referencing image files it had just deleted
+- Fix lowering the history size or memory limit dropping items without saving or announcing it, which left every open client showing rows the daemon no longer had
+- Fix "gpaste-client --oneline" emitting literal tabulations, which broke parsing its output on a colon
+- API: this is a major release and both libraries break API and ABI: the D-Bus interface is org.gnome.GPaste3, an item travels as its own content rather than as a decorated string, and the daemon's objects and its interface definition are installed for others to build on. See the git log for the full list
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
 NEW in 50.8 (10/08/2026)

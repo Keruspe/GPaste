@@ -1,5 +1,5 @@
 project('GPaste', 'c',
-  version: '51.0',
+  version: '51.beta',
   meson_version: '>=1.1',
   default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )
@@ -150,7 +150,28 @@ conf.set('version', meson.project_version())
 version_parts = meson.project_version().split('.')
 extension_version = version_parts[0].to_int() * 100
 if version_parts.length() > 1
-  extension_version += version_parts[1].to_int()
+  minor = version_parts[1]
+  if minor.version_compare('>=0')
+    extension_version += minor.to_int()
+  else
+    # A pre-release names its minor rather than numbering it ('51.beta'), so
+    # there is no integer to add. Each takes one of the ten numbers just below
+    # the release it leads to: every one of them compares lower than each point
+    # release in the series -- which is what a pre-release is, and leaves .0 free
+    # to be published over them -- and they run in the order the pre-releases
+    # themselves do, so each is an update over the last rather than the same
+    # number twice. A name not listed here is refused: silently sharing a number
+    # would have the shell keep the code of the pre-release before it.
+    pre_releases = {
+      'alpha': 0, 'alpha1': 1, 'alpha2': 2,
+      'beta': 3, 'beta1': 4, 'beta2': 5,
+      'rc': 6, 'rc1': 7, 'rc2': 8,
+    }
+    if not pre_releases.has_key(minor)
+      error('Cannot number the pre-release "@0@": name it @1@.'.format(minor, ', '.join(pre_releases.keys())))
+    endif
+    extension_version += pre_releases[minor] - 10
+  endif
 endif
 conf.set('extension_version', extension_version)
 conf.set('gettext_domain', 'GPaste')
