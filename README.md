@@ -20,7 +20,8 @@ explains what clipboard managers are for.
   persists incrementally, or nothing at all. Switch at any time from the
   preferences or with `gpaste-client migrate`.
 - **Passwords**: mark an item as a password to have it shown as a name instead
-  of its contents, and excluded from the plain-text history.
+  of its contents, and excluded from the plain-text history. Give it a timeout
+  and the clipboard stops handing it out once that runs out.
 - **Favourites**: pin an item and the history never drops it on its own — the
   size and memory limits give way instead. Filter the list down to the pinned
   items from the UI, the extension or `gpaste-client --favourites`.
@@ -127,7 +128,7 @@ meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd> | Show the history |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd> | Launch the graphical tool |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> | Pop the first item off the history |
-| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd> | Mark the active item as a password |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd> | Mark the active item as a password, if it is a text one |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd> | Sync the clipboard to the primary selection |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> | Sync the primary selection to the clipboard |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> | Upload the active item to a pastebin (needs `wgetpaste`) |

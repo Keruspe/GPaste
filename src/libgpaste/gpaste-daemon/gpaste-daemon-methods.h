@@ -60,6 +60,7 @@ gchar    *g_paste_daemon_methods_add_file                   (const GPasteDaemonM
 gchar    *g_paste_daemon_methods_add_password               (const GPasteDaemonMethods *self,
                                                              const gchar               *name,
                                                              const gchar               *password,
+                                                             guint                      timeout,
                                                              GError                   **error);
 void      g_paste_daemon_methods_backup_history             (const GPasteDaemonMethods *self,
                                                              const gchar               *history,
@@ -92,6 +93,9 @@ GVariant *g_paste_daemon_methods_get_item_at_index          (const GPasteDaemonM
 GVariant *g_paste_daemon_methods_get_items                  (const GPasteDaemonMethods *self,
                                                              const gchar * const       *uuids,
                                                              GError                   **error);
+guint     g_paste_daemon_methods_get_password_timeout       (const GPasteDaemonMethods *self,
+                                                             const gchar               *uuid,
+                                                             GError                   **error);
 GStrv     g_paste_daemon_methods_get_uris                   (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              GError                   **error);
@@ -101,10 +105,6 @@ gchar    *g_paste_daemon_methods_merge                      (const GPasteDaemonM
                                                              const gchar               *decoration,
                                                              const gchar               *separator,
                                                              const gchar * const       *uuids,
-                                                             GError                   **error);
-void      g_paste_daemon_methods_rename_password            (const GPasteDaemonMethods *self,
-                                                             const gchar               *old_name,
-                                                             const gchar               *new_name,
                                                              GError                   **error);
 GVariant *g_paste_daemon_methods_search                     (const GPasteDaemonMethods *self,
                                                              const gchar               *query,
@@ -123,6 +123,7 @@ void      g_paste_daemon_methods_set_favourite              (const GPasteDaemonM
 gchar    *g_paste_daemon_methods_make_password              (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              const gchar               *name,
+                                                             guint                      timeout,
                                                              GError                   **error);
 void      g_paste_daemon_methods_switch_history             (const GPasteDaemonMethods *self,
                                                              const gchar               *name,

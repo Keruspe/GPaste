@@ -352,9 +352,13 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @name: the name to identify the password to add
  * @password: the password to add
+ * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
+ *           as anything else
  * @error: return location for a #GError, or %NULL
  *
  * Add the password to the #GPasteDaemon
+ *
+ * @timeout is as in g_paste_client_make_password().
  *
  * Returns: (transfer full): the uuid of the item that was added
  */
@@ -363,6 +367,8 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @name: the name to identify the password to add
  * @password: the password to add
+ * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
+ *           as anything else
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -382,7 +388,7 @@ g_paste_client_add_file_finish (GPasteClient *self,
 G_PASTE_CLIENT_METHOD_RET (add_password,
                            gchar *, NULL,
                            g_autofree gchar *uuid = NULL, &uuid, g_steal_pointer (&uuid),
-                           (const gchar *name, const gchar *password), (name, password))
+                           (const gchar *name, const gchar *password, guint timeout), (name, password, timeout))
 
 /**
  * g_paste_client_backup_history_sync:
@@ -845,6 +851,48 @@ G_PASTE_CLIENT_METHOD_RET (get_image,
                            (const gchar *uuid), (uuid))
 
 /**
+ * g_paste_client_get_password_timeout_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the password item we want the timeout of
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get how long a password item may stay on the clipboard, in seconds, 0 for one
+ * that stays as long as anything else does
+ *
+ * A call of its own rather than a field every item travels with, as GetImage and
+ * GetUris are: only a client about to change a timeout wants it, so as a field it
+ * would be a number every item of every kind carried for the password's sake.
+ *
+ * Returns: the timeout in seconds, 0 on failure as well as for a password with
+ *          none
+ */
+/**
+ * g_paste_client_get_password_timeout:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the password item we want the timeout of
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
+ *            satisfied, or %NULL to ignore the result
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Get how long a password item may stay on the clipboard, in seconds
+ */
+/**
+ * g_paste_client_get_password_timeout_finish:
+ * @self: a #GPasteClient instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Get how long a password item may stay on the clipboard, in seconds
+ *
+ * Returns: the timeout in seconds, 0 on failure as well as for a password with
+ *          none
+ */
+G_PASTE_CLIENT_METHOD_RET (get_password_timeout,
+                           guint, 0,
+                           guint timeout = 0, &timeout, timeout,
+                           (const gchar *uuid), (uuid))
+
+/**
  * g_paste_client_get_uris_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the uris item we want the uris of
@@ -1069,37 +1117,6 @@ G_PASTE_CLIENT_METHOD (reexecute,
                        (), ())
 
 /**
- * g_paste_client_rename_password_sync:
- * @self: a #GPasteClient instance
- * @old_name: the name of the password to rename
- * @new_name: the new name to give it
- * @error: return location for a #GError, or %NULL
- *
- * Rename the password in the #GPasteDaemon
- */
-/**
- * g_paste_client_rename_password:
- * @self: a #GPasteClient instance
- * @old_name: the old name of the password to rename
- * @new_name: the new name to give it
- * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
- *            satisfied, or %NULL to ignore the result
- * @user_data: the data to pass to @callback
- *
- * Rename the password in the #GPasteDaemon
- */
-/**
- * g_paste_client_rename_password_finish:
- * @self: a #GPasteClient instance
- * @result: the #GAsyncResult handed to the callback
- * @error: return location for a #GError, or %NULL
- *
- * Rename the password in the #GPasteDaemon
- */
-G_PASTE_CLIENT_METHOD (rename_password,
-                       (const gchar *old_name, const gchar *new_name), (old_name, new_name))
-
-/**
  * g_paste_client_replace_sync:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to replace
@@ -1239,25 +1256,38 @@ G_PASTE_CLIENT_METHOD (set_favourite,
 /**
  * g_paste_client_make_password_sync:
  * @self: a #GPasteClient instance
- * @uuid: the uuid of the item we want to turn into a password
+ * @uuid: the uuid of the text item to turn into a password, or of the password
+ *        item to update
  * @name: the name to identify the password
+ * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
+ *           as anything else
  * @error: return location for a #GError, or %NULL
  *
- * Turn a text item into a password item
+ * Turn a text item into a password item, or write a password's name and timeout
  *
- * Returns: (transfer full): the uuid of the password item that replaced it,
- *          which is one of its own
+ * @timeout is how long the password may stay on the clipboard once it is the
+ * active item: when it runs out the daemon selects the next non-password item,
+ * or clears the selection if the history holds none.
+ *
+ * A text item is replaced by a password item, which is an item of its own, so
+ * what comes back is a new uuid; a password item is updated where it stands, so
+ * what comes back is the uuid that went in.
+ *
+ * Returns: (transfer full): the uuid of the item this left in the history
  */
 /**
  * g_paste_client_make_password:
  * @self: a #GPasteClient instance
- * @uuid: the uuid of the item we want to turn into a password
+ * @uuid: the uuid of the text item to turn into a password, or of the password
+ *        item to update
  * @name: the name to identify the password
+ * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
+ *           as anything else
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: the data to pass to @callback
  *
- * Turn a text item into a password item
+ * Turn a text item into a password item, or write a password's name and timeout
  */
 /**
  * g_paste_client_make_password_finish:
@@ -1265,15 +1295,14 @@ G_PASTE_CLIENT_METHOD (set_favourite,
  * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
- * Turn a text item into a password item
+ * Turn a text item into a password item, or write a password's name and timeout
  *
- * Returns: (transfer full): the uuid of the password item that replaced it,
- *          which is one of its own
+ * Returns: (transfer full): the uuid of the item this left in the history
  */
 G_PASTE_CLIENT_METHOD_RET (make_password,
                            gchar *, NULL,
                            g_autofree gchar *new_uuid = NULL, &new_uuid, g_steal_pointer (&new_uuid),
-                           (const gchar *uuid, const gchar *name), (uuid, name))
+                           (const gchar *uuid, const gchar *name, guint timeout), (uuid, name, timeout))
 
 /**
  * g_paste_client_show_history_sync:

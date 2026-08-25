@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-error.h>
+#include <gpaste-3/gpaste-gsettings-keys.h>
+#include <gpaste-3/gpaste-settings.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <getopt.h>
@@ -22,6 +24,8 @@ typedef struct
     gboolean      reverse;
     gboolean      use_index;
     gboolean      zero;
+    guint         timeout;
+    gboolean      timeout_given;
     const gchar  *decoration;
     const gchar  *separator;
 } Context;
@@ -43,6 +47,7 @@ parse_cmdline (int     *argc,
         { "raw",        no_argument,       NULL,  'r'  },
         { "reverse",    no_argument,       NULL,  'e'  },
         { "separator",  required_argument, NULL,  's'  },
+        { "timeout",    required_argument, NULL,  't'  },
         { "use-index",  no_argument,       NULL,  'i'  },
         { "version",    no_argument,       NULL,  'v'  },
         { "zero",       no_argument,       NULL,  'z'  },
@@ -50,7 +55,7 @@ parse_cmdline (int     *argc,
     };
     gint64 c;
 
-    while ((c = getopt_long (*argc, *argv, "d:fhores:ivz", long_options, NULL)) != -1)
+    while ((c = getopt_long (*argc, *argv, "d:fhores:t:ivz", long_options, NULL)) != -1)
     {
         switch (c)
         {
@@ -75,6 +80,26 @@ parse_cmdline (int     *argc,
         case 's':
             ctx->separator = optarg;
             break;
+        case 't':
+        {
+            gchar *end = NULL;
+            guint64 timeout = g_ascii_strtoull (optarg, &end, 10);
+
+            /* 0 is a timeout of its own -- a password that is never taken off
+             * the clipboard -- so a malformed value has to be refused rather
+             * than fall to it. Past the range is refused for the same reason:
+             * the item caps what it is given, and a number silently becoming a
+             * smaller one is a password expiring at a time nobody asked for. */
+            if (!*optarg || (end && *end) || timeout > G_PASTE_PASSWORD_TIMEOUT_MAX)
+            {
+                ctx->help = TRUE;
+                return FALSE;
+            }
+
+            ctx->timeout = (guint) timeout;
+            ctx->timeout_given = TRUE;
+            break;
+        }
         case 'i':
             ctx->use_index = TRUE;
             break;
@@ -476,6 +501,19 @@ g_paste_add (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+/* 0 is a timeout of its own -- a password that is never taken back off -- so
+ * without --timeout, AddPassword is sent the one the settings carry. */
+static guint
+password_timeout (Context *ctx)
+{
+    if (ctx->timeout_given)
+        return ctx->timeout;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    return (guint) g_paste_settings_get_password_timeout (settings);
+}
+
 static gint
 g_paste_add_password (Context *ctx,
                       GError **error)
@@ -485,7 +523,7 @@ g_paste_add_password (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_autofree gchar *uuid = g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, error);
+    g_autofree gchar *uuid = g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, password_timeout (ctx), error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -641,19 +679,15 @@ g_paste_upload (Context *ctx,
 }
 
 static gint
-g_paste_rename_password (Context *ctx,
-                         GError **error)
+g_paste_make_password (Context *ctx,
+                       GError **error)
 {
-    g_paste_client_rename_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
-
-    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-
-static gint
-g_paste_set_password (Context *ctx,
-                      GError **error)
-{
-    g_autofree gchar *uuid = g_paste_client_make_password_sync (ctx->client, ctx->uuid, ctx->args[1], error);
+    /* Without --timeout there is nothing to write: an item that is already a
+     * password keeps the countdown it carries -- the settings' default would
+     * cancel a running one -- and a text item becoming one takes that default
+     * anyway, which is what the sentinel asks the daemon for. */
+    guint timeout = (ctx->timeout_given) ? ctx->timeout : G_PASTE_PASSWORD_TIMEOUT_UNCHANGED;
+    g_autofree gchar *uuid = g_paste_client_make_password_sync (ctx->client, ctx->uuid, ctx->args[1], timeout, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -705,12 +739,11 @@ static const Command commands[] = {
         { 1, "list-histories",    "lh",              0,        TRUE,  NULL,                    N_ ("list available histories"),                                                                g_paste_list_histories },
         { 1, "add",               "a",               1,        TRUE,  "<text>",                N_ ("set text to clipboard"),                                                                   g_paste_add },
         { 2, "add-password",      "ap",              1,        TRUE,  "<name> <password>",     N_ ("add the <name> / <password> pair to the clipboard"),                                       g_paste_add_password },
-        { 3, "rename-password",   "rp",              0,        TRUE,  "<old name> <new name>", N_ ("rename the password"),                                                                     g_paste_rename_password },
         { 2, "get",               "g",               0,        TRUE,  "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
         { 2, "select",            "s set",           0,        TRUE,  "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
         { 2, "replace",           NULL,              1,        TRUE,  "<uuid> <contents>",     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },
         { 4, "merge",             "m",               G_MAXINT, TRUE,  "<uuid> … <uuid>",       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
-        { 3, "set-password",      "sp",              0,        TRUE,  "<uuid> <name>",         N_ ("set the item <uuid> from the history as a password named <name>"),                         g_paste_set_password },
+        { 3, "make-password",     "mp",              0,        TRUE,  "<uuid> <name>",         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
         { 2, "delete",            "d del rm remove", 0,        TRUE,  "<uuid>",                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
         { 2, "favourite",         "fav",             0,        TRUE,  "<uuid>",                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
         { 2, "unfavourite",       "unfav",           0,        TRUE,  "<uuid>",                N_ ("unpin item <uuid>, letting the history drop it again"),                                    g_paste_unfavourite },
@@ -790,6 +823,8 @@ show_help (void)
     printf ("\n");
     /* Translators: help for --favourites */
     printf ("  --favourites: %s\n", _("only display the pinned items"));
+    /* Translators: help for --timeout */
+    printf ("  --timeout: %s\n", _("how long a password stays on the clipboard, in seconds; 0 for as long as anything else"));
     /* Translators: help for --use-index */
     printf ("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
 

@@ -34,6 +34,11 @@
 #endif
 #endif
 
+/* The timeout the storage round-trips carry on their password entry: a value no
+ * default would produce, so reading one back proves it was persisted rather than
+ * merely defaulted. */
+#define PASSWORD_TIMEOUT 42
+
 /* Build a fresh, empty history backed by an in-memory GSettings.
  * Growing-lines merging is disabled so distinct strings stay distinct. */
 static GPasteHistory *
@@ -584,12 +589,13 @@ test_content_kind_transitions (void)
  * pointer when the two compare equal, so measuring the argument rather than
  * what we ended up holding both reads freed memory and underflows the size —
  * after which the history believes it is permanently over max-memory-usage and
- * starts evicting. Reachable from D-Bus as `gpaste-client rename-password foo
- * foo`. */
+ * starts evicting. Reachable from D-Bus as `gpaste-client make-password <uuid>
+ * foo` on a password already called foo, which is a live path: keeping your own
+ * name is not a collision. */
 static void
 test_same_display_string_keeps_size (void)
 {
-    g_autoptr (GPasteItem) item = g_paste_password_item_new ("foo", "s3kr1t");
+    g_autoptr (GPasteItem) item = g_paste_password_item_new ("foo", "s3kr1t", 0);
     guint64 size = g_paste_item_get_size (item);
 
     g_assert_cmpuint (size, >, 0);
@@ -1036,10 +1042,110 @@ test_favourite_survives_replace (void)
     g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, after_uuid);
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 
-    g_autofree gchar *secret_uuid = g_paste_history_set_password (history, after_uuid, "secret");
+    g_autofree gchar *secret_uuid = g_paste_history_make_password (history, after_uuid, "secret", 0);
 
     g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, secret_uuid);
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+}
+
+/* MakePassword handed a password's own uuid updates it where it stands rather
+ * than minting a replacement: the uuid that went in comes back, the name and the
+ * timeout are written and the value is not. That is the branch Edit Password
+ * drives on every save. */
+static void
+test_make_password_updates_in_place (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_text_item_new ("s3kr1t"));
+
+    g_autofree gchar *text_uuid = dup_uuid_at (history, 0);
+    g_autofree gchar *uuid = g_paste_history_make_password (history, text_uuid, "gmail", PASSWORD_TIMEOUT);
+
+    /* A text item is replaced, so that one is an item of its own. */
+    g_assert_cmpstr (uuid, !=, text_uuid);
+
+    g_autofree gchar *same_uuid = g_paste_history_make_password (history, uuid, "webmail", PASSWORD_TIMEOUT + 1);
+
+    g_assert_cmpstr (same_uuid, ==, uuid);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    GPasteItem *password = g_paste_history_get (history, 0);
+
+    g_assert_cmpint (g_paste_item_get_kind (password), ==, G_PASTE_ITEM_KIND_PASSWORD);
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (password)), ==, "webmail");
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (password)), ==, PASSWORD_TIMEOUT + 1);
+    /* Never its value: that is the one thing this may not touch. */
+    g_assert_cmpstr (g_paste_item_get_real_value (password), ==, "s3kr1t");
+    g_assert_nonnull (g_paste_history_get_password (history, "webmail"));
+
+    /* Keeping the name it already goes by is not a collision with itself: the
+     * timeout may be all the caller came to change. */
+    g_autofree gchar *again = g_paste_history_make_password (history, uuid, "webmail", 0);
+
+    g_assert_cmpstr (again, ==, uuid);
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (g_paste_history_get (history, 0))), ==, 0);
+}
+
+/* Nameless passwords all read as G_PASTE_PASSWORD_ITEM_NO_NAME, which is no name
+ * anybody picked: it is the one a history may hold several entries under. The
+ * make-password shortcut, which has none to hand over, is what makes them. */
+static void
+test_nameless_passwords_may_coexist (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_text_item_new ("first secret"));
+
+    g_autofree gchar *first_text = dup_uuid_at (history, 0);
+    g_autofree gchar *first = g_paste_history_make_password (history, first_text, NULL, 0);
+
+    g_assert_nonnull (first);
+
+    g_paste_history_add (history, g_paste_text_item_new ("second secret"));
+
+    g_autofree gchar *second_text = dup_uuid_at (history, 0);
+    /* Spelled out rather than left to the %NULL coercion: a caller handing the
+     * placeholder itself is asking for the same nameless password. */
+    g_autofree gchar *second = g_paste_history_make_password (history, second_text, G_PASTE_PASSWORD_ITEM_NO_NAME, 0);
+
+    g_assert_nonnull (second);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (g_paste_history_get (history, 0))), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (g_paste_history_get (history, 1))), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
+}
+
+/* The name is part of what a password weighs, so renaming one where it stands has
+ * to move the history's own total with it. Left out, the longer name is
+ * subtracted once more than it was ever added when the item goes -- and that
+ * total is unsigned, so it wraps and the memory cap starts evicting everything
+ * that arrives afterwards. */
+static void
+test_rename_keeps_history_size (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_text_item_new ("s3kr1t"));
+
+    g_autofree gchar *text_uuid = dup_uuid_at (history, 0);
+    g_autofree gchar *uuid = g_paste_history_make_password (history, text_uuid, "pw", 0);
+    g_autofree gchar *renamed = g_paste_history_make_password (history, uuid, "a much longer password name", 0);
+
+    g_assert_cmpstr (renamed, ==, uuid);
+
+    /* The only entry goes, taking exactly what it weighs with it. */
+    g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    /* A wrapped total is permanently over max-memory-usage, which shows as the
+     * cap evicting everything but the active item. */
+    g_paste_history_add (history, g_paste_text_item_new ("one"));
+    g_paste_history_add (history, g_paste_text_item_new ("two"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
 }
 
 /* A line that grows as it is typed replaces the entry it grew out of, and a
@@ -1512,7 +1618,7 @@ test_encrypted_roundtrip (void)
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
     GList *items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
-    items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+    items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_paste_settings_set_images_support (settings, TRUE);
@@ -1557,6 +1663,7 @@ test_encrypted_roundtrip (void)
             found_password = TRUE;
             g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
             g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+            g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)), ==, PASSWORD_TIMEOUT);
         }
         else if (kind == G_PASTE_ITEM_KIND_IMAGE)
         {
@@ -1718,7 +1825,7 @@ test_encrypted_rekey (void)
             GList *items = NULL;
 
             items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
-            items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+            items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
             items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
@@ -1763,6 +1870,7 @@ test_encrypted_rekey (void)
                     found_password = TRUE;
                     g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
                     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+                    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)), ==, PASSWORD_TIMEOUT);
                 }
                 else if (kind == G_PASTE_ITEM_KIND_IMAGE)
                 {
@@ -1925,7 +2033,7 @@ test_sqlite_roundtrip (void)
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(255,0,0)"));
     items = g_list_append (items, g_paste_image_item_new_from_file (png_path, date,
                                                                     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
-    items = g_list_append (items, g_paste_password_item_new ("my login", "s3cr3t"));
+    items = g_list_append (items, g_paste_password_item_new ("my login", "s3cr3t", 0));
 
     g_paste_storage_backend_write_history (backend, name, items);
 
@@ -2110,9 +2218,9 @@ test_sqlite_replace (void)
     g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES);
     g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (svs->data), replacement_sv));
 
-    /* set_password turns an item into a password: it must leave storage, not
+    /* make_password turns an item into a password: it must leave storage, not
      * linger as a stale plaintext row. */
-    g_autoptr (GPasteItem) password = g_paste_password_item_new ("login", "s3cr3t");
+    g_autoptr (GPasteItem) password = g_paste_password_item_new ("login", "s3cr3t", 0);
 
     g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (replacement), password, NULL);
 
@@ -2146,11 +2254,12 @@ sqlite_raw_count (const gchar *path,
     return count;
 }
 
-/* The schema's version 2 added the favourite column, and migrate_schema is what
- * carries a database written by an older GPaste across. Nothing else exercises
- * that path: every database the other tests touch is created at the current
- * version, so build a v1 one by hand and prove both halves — the column
- * appears, and the rows that were already there survive it. */
+/* Version 2 added the favourite column and version 3 the password timeout, and
+ * migrate_schema is what carries a database written by an older GPaste across.
+ * Nothing else exercises that path: every database the other tests touch is
+ * created at the current version, so build a v1 one by hand and prove both
+ * halves — both columns appear, one step per version and each falling through to
+ * the next, and the rows that were already there survive the lot. */
 static void
 test_sqlite_schema_migration (void)
 {
@@ -2213,8 +2322,9 @@ test_sqlite_schema_migration (void)
         g_list_free_full (history, g_object_unref);
     }
 
-    g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), ==, 2);
+    g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), ==, 3);
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name = 'favourite';"), ==, 1);
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name = 'timeout';"), ==, 1);
 }
 
 /* remove_item relies on the FK cascade to clean an item's special values, and
@@ -2649,7 +2759,7 @@ test_encrypted_sqlite_roundtrip (void)
     g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
                                                                    g_bytes_new_static (html_value, strlen (html_value))));
     items = g_list_append (items, text);
-    items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+    items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(0,255,0)"));
     items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
@@ -2701,6 +2811,7 @@ test_encrypted_sqlite_roundtrip (void)
     g_assert_cmpint (g_paste_item_get_kind (read_password), ==, G_PASTE_ITEM_KIND_PASSWORD);
     g_assert_cmpstr (g_paste_item_get_real_value (read_password), ==, secret);
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM ((gpointer) read_password)), ==, pw_name);
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM ((gpointer) read_password)), ==, PASSWORD_TIMEOUT);
 
     g_assert_cmpstr (g_paste_item_get_value (read_color), ==, g_paste_item_get_value (g_list_nth_data (items, 2)));
 
@@ -2820,7 +2931,7 @@ test_encrypted_sqlite_rekey (void)
                                                                            g_bytes_ref (html)));
 
             items = g_list_append (items, text);
-            items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+            items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
             items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
@@ -2866,6 +2977,7 @@ test_encrypted_sqlite_rekey (void)
                     found_password = TRUE;
                     g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
                     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+                    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)), ==, PASSWORD_TIMEOUT);
                 }
                 else if (kind == G_PASTE_ITEM_KIND_IMAGE)
                 {
@@ -2985,7 +3097,7 @@ test_encrypted_password_name_is_escaped (void)
 
     GList *items = NULL;
 
-    items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+    items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_text_item_new ("the entry after it"));
 
     g_paste_storage_backend_write_history (backend, name, items);
@@ -3001,6 +3113,7 @@ test_encrypted_password_name_is_escaped (void)
 
     g_assert_cmpint (g_paste_item_get_kind (password), ==, G_PASTE_ITEM_KIND_PASSWORD);
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (password)), ==, pw_name);
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (password)), ==, PASSWORD_TIMEOUT);
     g_assert_cmpstr (g_paste_item_get_real_value (password), ==, secret);
     g_assert_cmpstr (g_paste_item_get_real_value (loaded->next->data), ==, "the entry after it");
 }
@@ -3079,6 +3192,9 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/favourite_survives_memory_cap", test_favourite_survives_memory_cap);
     g_test_add_func ("/history/favourite_roundtrip", test_favourite_roundtrip);
     g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
+    g_test_add_func ("/history/make_password_updates_in_place", test_make_password_updates_in_place);
+    g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
+    g_test_add_func ("/history/rename_keeps_history_size", test_rename_keeps_history_size);
     g_test_add_func ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
     g_test_add_func ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
     g_test_add_func ("/history/uris_item_answers_its_uris", test_uris_item_answers_its_uris);

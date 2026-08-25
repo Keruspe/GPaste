@@ -90,13 +90,12 @@ _gpaste-client_subcommands() {
         {history,h}:"Display the history"
         {history-size,hs}:"Display the size of the current history"
         {list-histories,lh}:"List available histories"
+        {make-password,mp}:"Make an item a password, or update one that already is"
         {merge,m}:"Merge various elements from the history"
         migrate:"Migrate the history to a different storage backend"
-        {rename-password,rp}:"Rename a password"
         replace:"Replace the contents of an item"
         search:"Search the history"
         {select,set,s}:"Select an element of the history"
-        {set-password,sp}:"Mark an item as being a password"
         {settings,preferences,p}:"Launch the configuration tool"
         show-history:"Make the GNOME Shell extension display the history"
         {start,daemon,d}:"Start tracking clipboard changes"
@@ -142,7 +141,7 @@ _gpaste-client_arguments() {
                 "1:item:${item}" \
                 '2:contents:'
             ;;
-        (set-password|sp)
+        (make-password|mp)
             _arguments -s : \
                 "1:item:${item}" \
                 '2:name:'
@@ -159,11 +158,6 @@ _gpaste-client_arguments() {
             _arguments -s : \
                 '1:name:' \
                 '2:password:'
-            ;;
-        (rename-password|rp)
-            _arguments -s : \
-                '1:old name:' \
-                '2:new name:'
             ;;
         (search)
             _arguments -s : \
@@ -189,6 +183,7 @@ _gpaste-client() {
         '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]' \
         '(-d --decoration)'{-d,--decoration}'[Add the decoration at the beginning and end of each item before merging.]:decoration:' \
         '(-s --separator)'{-s,--separator}'[Add a separator between each item when merging.]:separator:' \
+        '(-t --timeout)'{-t,--timeout}'[How long a password stays on the clipboard, in seconds; 0 for as long as anything else.]:seconds:' \
         '1: :_gpaste-client_subcommands' \
         '*:: :->arguments' && return
 

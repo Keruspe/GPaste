@@ -185,6 +185,11 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
 static void
 g_paste_daemon_reexecute (GPasteDaemon *self)
 {
+    /* Storing hands the current selection to the clipboard manager so it
+     * survives the exec, and the successor arms nothing for an item it merely
+     * loaded: a password left on the clipboard here would outlive its timeout by
+     * the whole session. */
+    g_paste_clipboards_manager_expire_password (self->clipboards_manager);
     g_paste_clipboards_manager_store (self->clipboards_manager);
 
     g_signal_emit (self,
@@ -327,17 +332,33 @@ g_paste_daemon_upload_finish (GPasteDaemon *self,
 /* Keybindings  */
 /****************/
 
+/* Takes the daemon, not just the history: the countdown the new password calls
+ * for is armed on the clipboards, which the history has no reach into. */
 static void
 keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
                           gpointer          data)
 {
-    GPasteHistory *history = data;
+    GPasteDaemon *daemon = data;
+    GPasteHistory *history = daemon->history;
     GPasteItem *first = g_paste_history_get (history, 0);
 
-    if (!first)
+    /* A text item alone: a password is one already, and a shortcut carries
+     * neither a name nor a timeout, so there is nothing it could change about
+     * one. */
+    if (!first || !G_PASTE_IS_TEXT_ITEM (first))
         return;
 
-    g_autofree gchar *uuid = g_paste_history_set_password (history, g_paste_item_get_uuid (first), NULL);
+    /* No timeout of its own to hand over, so the item takes the one the settings
+     * carry -- which is what %G_PASTE_PASSWORD_TIMEOUT_UNCHANGED asks for. */
+    g_autofree gchar *uuid = g_paste_history_make_password (history, g_paste_item_get_uuid (first), NULL,
+                                                            G_PASTE_PASSWORD_TIMEOUT_UNCHANGED);
+    /* As in g_paste_daemon_methods_make_password(): the selection carries the
+     * value the password was just made from, and the history publishes nothing,
+     * so the countdown the timeout calls for is ours to ask for. */
+    GPasteItem *password = g_paste_history_get_by_uuid (history, uuid);
+
+    if (password)
+        g_paste_clipboards_manager_rearm_password (daemon->clipboards_manager, password);
 }
 
 static void
@@ -431,7 +452,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
         GPasteKeybindingFunc   callback;
         gpointer               user_data;
     } handlers[] = {
-        { G_PASTE_MAKE_PASSWORD_SETTING,             g_paste_settings_get_make_password,             keybinding_make_password,             history            },
+        { G_PASTE_MAKE_PASSWORD_SETTING,             g_paste_settings_get_make_password,             keybinding_make_password,             self               },
         { G_PASTE_POP_SETTING,                       g_paste_settings_get_pop,                       keybinding_pop,                       history            },
         { G_PASTE_SHOW_HISTORY_SETTING,              g_paste_settings_get_show_history,              keybinding_show_history,              self               },
         { G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING, g_paste_settings_get_sync_clipboard_to_primary, keybinding_sync_clipboard_to_primary, clipboards_manager },
@@ -565,7 +586,7 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (add_text,
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (add_password,
                                 g_autofree gchar *uuid, uuid,
-                                (const gchar *name, const gchar *password), (name, password))
+                                (const gchar *name, const gchar *password, guint timeout), (name, password, timeout))
 
 G_PASTE_DAEMON_HANDLER_ERR (backup_history, (const gchar *history, const gchar *backup), (history, backup))
 
@@ -610,6 +631,10 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_items,
                                 GVariant *items, items,
                                 (const gchar * const *uuids), (uuids))
 
+G_PASTE_DAEMON_HANDLER_RET_ERR (get_password_timeout,
+                                guint timeout, timeout,
+                                (const gchar *uuid), (uuid))
+
 G_PASTE_DAEMON_HANDLER_RET_ERR (get_uris,
                                 g_auto (GStrv) uris, (const gchar * const *) uris,
                                 (const gchar *uuid), (uuid))
@@ -620,7 +645,7 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (make_password,
                                 g_autofree gchar *new_uuid, new_uuid,
-                                (const gchar *uuid, const gchar *name), (uuid, name))
+                                (const gchar *uuid, const gchar *name, guint timeout), (uuid, name, timeout))
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (merge,
                                 g_autofree gchar *uuid, uuid,
@@ -648,8 +673,6 @@ g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
 
     return TRUE;
 }
-
-G_PASTE_DAEMON_HANDLER_ERR (rename_password, (const gchar *old_name, const gchar *new_name), (old_name, new_name))
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (replace,
                                 g_autofree gchar *new_uuid, new_uuid,
@@ -736,12 +759,12 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-get-item",                    G_CALLBACK (g_paste_daemon_handle_get_item)                    },
         { "handle-get-item-at-index",           G_CALLBACK (g_paste_daemon_handle_get_item_at_index)           },
         { "handle-get-items",                   G_CALLBACK (g_paste_daemon_handle_get_items)                   },
+        { "handle-get-password-timeout",        G_CALLBACK (g_paste_daemon_handle_get_password_timeout)        },
         { "handle-get-uris",                    G_CALLBACK (g_paste_daemon_handle_get_uris)                    },
         { "handle-list-histories",              G_CALLBACK (g_paste_daemon_handle_list_histories)              },
         { "handle-make-password",               G_CALLBACK (g_paste_daemon_handle_make_password)               },
         { "handle-merge",                       G_CALLBACK (g_paste_daemon_handle_merge)                       },
         { "handle-reexecute",                   G_CALLBACK (g_paste_daemon_handle_reexecute)                   },
-        { "handle-rename-password",             G_CALLBACK (g_paste_daemon_handle_rename_password)             },
         { "handle-replace",                     G_CALLBACK (g_paste_daemon_handle_replace)                     },
         { "handle-report-extension-state",      G_CALLBACK (g_paste_daemon_handle_report_extension_state)      },
         { "handle-search",                      G_CALLBACK (g_paste_daemon_handle_search)                      },

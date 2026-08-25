@@ -120,6 +120,18 @@
       </description>
     </key>
 
+    <key name="password-timeout" type="t">
+      <range min="0" max="65535"/>
+      <default>0</default>
+      <summary>Password timeout</summary>
+      <description>
+        How long a password may stay on the clipboard, in seconds, once it is the
+        active item. When it runs out, the next item that is not a password is
+        selected, or the clipboard is emptied if the history holds none. 0 means
+        a password stays for as long as anything else would.
+      </description>
+    </key>
+
     <key name="pop" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
       <summary>The keyboard shortcut to delete the first element in history</summary>

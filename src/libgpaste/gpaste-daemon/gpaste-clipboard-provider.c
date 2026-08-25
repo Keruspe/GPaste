@@ -180,29 +180,40 @@ g_paste_clipboard_provider_select_item (GPasteClipboardProvider *self,
  * @history: a #GPasteHistory instance
  *
  * Ensure the selection has some contents (as long as the history's not empty)
+ *
+ * What comes back is what this put there, so a caller can act on a selection it
+ * did not perform itself -- arming a password's countdown, above all, which
+ * otherwise only the ordinary selection path does.
+ *
+ * Returns: (transfer none) (nullable): the #GPasteItem this put on the selection,
+ *          or %NULL when it left the selection as it found it
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE GPasteItem *
 g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
                                              GPasteHistory           *history)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
-    g_return_if_fail (G_PASTE_IS_HISTORY (history));
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
 
     /* Identical for every backend: if we hold nothing, re-own the selection with
      * the history's head (dropping it if the backend rejects it). Backends only
      * report emptiness through the is_empty vfunc. */
     if (!g_paste_clipboard_provider_is_empty (self))
-        return;
+        return NULL;
 
     const GPtrArray *hist = g_paste_history_get_history (history);
 
     if (!hist->len)
-        return;
+        return NULL;
 
     GPasteItem *item = g_ptr_array_index (hist, 0);
 
-    if (!g_paste_clipboard_provider_select_item (self, item))
-        g_paste_history_remove (history, 0);
+    if (g_paste_clipboard_provider_select_item (self, item))
+        return item;
+
+    g_paste_history_remove (history, 0);
+
+    return NULL;
 }
 
 /**

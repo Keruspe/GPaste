@@ -60,7 +60,7 @@
  * encrypted file flavor does not leak that last one, its 4 KiB chunking
  * blurring it. */
 
-#define G_PASTE_SQLITE_SCHEMA_VERSION 2
+#define G_PASTE_SQLITE_SCHEMA_VERSION 3
 
 /* Far beyond any reachable rank (one increment per add/select), but cheap to
  * guard against: past this, ranks are compacted back to 1..N on open. */
@@ -612,7 +612,8 @@ g_paste_sqlite_backend_create_schema (sqlite3 *db)
         "    checksum TEXT,"             /* Image: hex sha256 */
         "    name     TEXT,"             /* Password: reserved for an encrypted variant */
         "    image    BLOB,"             /* Image: the encoded PNG */
-        "    favourite INTEGER NOT NULL DEFAULT 0" /* pinned: exempt from both caps */
+        "    favourite INTEGER NOT NULL DEFAULT 0," /* pinned: exempt from both caps */
+        "    timeout   INTEGER NOT NULL DEFAULT 0"  /* Password: seconds on the clipboard, 0 for no limit */
         ");"
         "CREATE UNIQUE INDEX IF NOT EXISTS items_rank ON items (rank DESC);"
         "CREATE TABLE IF NOT EXISTS special_values ("
@@ -638,6 +639,13 @@ g_paste_sqlite_backend_migrate_schema (sqlite3 *db,
          * item an older GPaste stored comes back unpinned, which is what it
          * was. */
         if (!g_paste_sqlite_backend_exec (db, "ALTER TABLE items ADD COLUMN favourite INTEGER NOT NULL DEFAULT 0;"))
+            return FALSE;
+        G_GNUC_FALLTHROUGH;
+    case 2:
+        /* Password timeouts, a pure addition for the same reason: every password
+         * an older GPaste stored comes back with no timeout, which is what it
+         * had. */
+        if (!g_paste_sqlite_backend_exec (db, "ALTER TABLE items ADD COLUMN timeout INTEGER NOT NULL DEFAULT 0;"))
             return FALSE;
         G_GNUC_FALLTHROUGH;
     default:
@@ -915,11 +923,12 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3      *db,
 
 /* Bind an item's content columns: uuid, kind and value at the fixed positions
  * 1-3, then the image (date, checksum, image blob) or password (name) columns
- * starting at @meta_base, with the favourite flag closing the group at
- * @meta_base + 4. The INSERT and UPDATE statements share this layout and
- * differ only by @meta_base — the INSERT carries an extra rank column between the
- * value and the meta group, so it binds at base 5 while the UPDATE binds at 4.
- * Keeping the two in one place stops their column indices drifting apart. */
+ * starting at @meta_base, with the favourite flag and the password timeout
+ * closing the group at @meta_base + 4 and @meta_base + 5. The INSERT and UPDATE
+ * statements share this layout and differ only by @meta_base — the INSERT
+ * carries an extra rank column between the value and the meta group, so it binds
+ * at base 5 while the UPDATE binds at 4. Keeping the two in one place stops
+ * their column indices drifting apart. */
 static void
 g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
                                   const guchar *key,
@@ -933,6 +942,11 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
     /* Every kind has one, so it is bound outside the per-kind branches below.
      * Plaintext like rank and date: the read has to order and filter on it. */
     sqlite3_bind_int (stmt, meta_base + 4, g_paste_item_is_favourite (item));
+    /* Only a password ever carries one, but the column is NOT NULL: leaving it
+     * unbound would insert the NULL that constraint refuses. Plaintext too --
+     * it is a duration, not content. As an int64, since a timeout is a guint and
+     * the ones above G_MAXINT would otherwise be stored negative. */
+    sqlite3_bind_int64 (stmt, meta_base + 5, (G_PASTE_IS_PASSWORD_ITEM (item)) ? (gint64) g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)) : 0);
 
     if (G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -960,8 +974,8 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db,
-                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image, favourite) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
-                            "ON CONFLICT (uuid) DO UPDATE SET rank = excluded.rank, favourite = excluded.favourite "
+                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image, favourite, timeout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                            "ON CONFLICT (uuid) DO UPDATE SET rank = excluded.rank, favourite = excluded.favourite, timeout = excluded.timeout "
                             "RETURNING id;",
                             -1, &stmt, NULL) != SQLITE_OK)
     {
@@ -1148,7 +1162,12 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     {
         g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
 
-        return g_paste_password_item_new (name, value);
+        /* Clamped before the cast, as the file backend's own parse is: a stored
+         * value past G_MAXUINT truncates, and 2^32 truncates to 0 -- the one
+         * value that means the password never comes off the clipboard. */
+        gint64 timeout = CLAMP (sqlite3_column_int64 (stmt, 9), 0, G_PASTE_PASSWORD_TIMEOUT_MAX);
+
+        return g_paste_password_item_new (name, value, (guint) timeout);
     }
     case G_PASTE_ITEM_KIND_COLOR:
         return g_paste_color_item_new_from_str (value);
@@ -1338,7 +1357,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
      * favourite is read back however deep it has sunk, or the next save would
      * destroy the very thing pinning it was meant to protect. */
     if (sqlite3_prepare_v2 (db,
-                            "SELECT id, uuid, kind, value, date, checksum, name, image, favourite FROM items "
+                            "SELECT id, uuid, kind, value, date, checksum, name, image, favourite, timeout FROM items "
                             "WHERE favourite = 1 "
                             "   OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?) "
                             "ORDER BY rank DESC;",
@@ -1557,7 +1576,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     const guchar *key = g_paste_sqlite_backend_get_key (self);
 
-    /* In the plain flavor, an item turning into a password (set_password) must
+    /* In the plain flavor, an item turning into a password (make_password) must
      * vanish from storage, exactly as the plain XML backend drops passwords on
      * rewrite. The encrypted flavor persists it like any other item. */
     if (!g_paste_sqlite_backend_stores_item (key, item))
@@ -1572,7 +1591,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     sqlite3_stmt *stmt = NULL;
     gboolean success = (sqlite3_prepare_v2 (db,
-                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ?, image = ?, favourite = ? WHERE uuid = ? "
+                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ?, image = ?, favourite = ?, timeout = ? WHERE uuid = ? "
                                             "RETURNING id;",
                                             -1, &stmt, NULL) == SQLITE_OK);
 
@@ -1583,9 +1602,9 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
         return;
     }
 
-    /* uuid, kind, value at 1-3, the meta group at base 4, then old uuid at 9. */
+    /* uuid, kind, value at 1-3, the meta group at base 4, then old uuid at 10. */
     g_paste_sqlite_backend_bind_item (stmt, key, item, 4);
-    sqlite3_bind_text (stmt, 9, old_uuid, -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 10, old_uuid, -1, SQLITE_STATIC);
 
     /* No row means the replaced item was never persisted (e.g. renaming a
      * password): nothing to update. */

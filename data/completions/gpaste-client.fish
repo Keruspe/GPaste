@@ -73,6 +73,7 @@ complete -c gpaste-client -s e -l reverse    -d 'Display the items in reverse or
 complete -c gpaste-client -s z -l zero       -d 'Use a NUL character instead of a newline between each item'
 complete -c gpaste-client -s d -l decoration -r -d 'Decoration to add around each item when merging'
 complete -c gpaste-client -s s -l separator  -r -d 'Separator to add between each item when merging'
+complete -c gpaste-client -s t -l timeout    -r -d 'How long a password stays on the clipboard, in seconds; 0 for as long as anything else'
 
 # Subcommands, the aliases sharing their verb's description.
 function __gpaste_subcommand
@@ -102,13 +103,12 @@ __gpaste_subcommand help                               'Display the help'
 __gpaste_subcommand history h                          'Display the history'
 __gpaste_subcommand history-size hs                    'Display the size of the current history'
 __gpaste_subcommand list-histories lh                  'List available histories'
+__gpaste_subcommand make-password mp                   'Make an item a password, or update one that already is'
 __gpaste_subcommand merge m                            'Merge various elements from the history'
 __gpaste_subcommand migrate                            'Migrate the history to a different storage backend'
-__gpaste_subcommand rename-password rp                 'Rename a password'
 __gpaste_subcommand replace                            'Replace the contents of an item'
 __gpaste_subcommand search                             'Search the history'
 __gpaste_subcommand select set s                       'Select an element of the history'
-__gpaste_subcommand set-password sp                    'Mark an item as being a password'
 __gpaste_subcommand settings preferences p             'Launch the configuration tool'
 __gpaste_subcommand show-history                       'Make the GNOME Shell extension display the history'
 __gpaste_subcommand start daemon d                     'Start tracking clipboard changes'
@@ -126,5 +126,5 @@ complete -c gpaste-client -n '__fish_seen_subcommand_from empty e delete-history
 
 complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
 
-complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace set-password sp merge m favourite fav unfavourite unfav' \
+complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace make-password mp merge m favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'

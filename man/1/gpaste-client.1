@@ -59,12 +59,8 @@ Add the name / password pair to the history
 Delete the password <name>
 .br
 .TP
-.B gpaste-client set-password <uuid> <name>
-Mark the item matching <uuid> from the history as being a password named <name>
-.br
-.TP
-.B gpaste-client rename-password <old name> <new name>
-Rename the password
+.B gpaste-client make-password <uuid> <name>
+Make the item matching <uuid> from the history a password named <name>. Handed the uuid of an item that is already a password, it renames that one instead of creating a second one, and leaves its timeout alone unless \fB--timeout\fR says otherwise
 .br
 .TP
 .B gpaste-client get <uuid>
@@ -180,6 +176,16 @@ Only display the pinned items, when listing the history or a search
 .TP
 .B --use-index
 Use the item index instead of its uuid
+.br
+.TP
+.B --timeout <seconds>
+How long a password stays on the clipboard once it is the active item, for
+.B add-password
+and
+.BR make-password .
+When it runs out, the next item that is not a password is selected, or the clipboard is emptied if the history holds none. 0 lets a password stay for as long as anything else would, and 65535 is as high as it goes. Without this option, a password already in the history keeps the timeout it carries and the countdown running for it, while one being created takes the
+.B password-timeout
+setting
 .br
 .TP
 .B --oneline

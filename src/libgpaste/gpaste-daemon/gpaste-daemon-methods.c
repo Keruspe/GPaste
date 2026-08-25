@@ -174,6 +174,7 @@ G_PASTE_VISIBLE gchar *
 g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
                                      const gchar               *name,
                                      const gchar               *password,
+                                     guint                      timeout,
                                      GError                   **error)
 {
     G_PASTE_DBUS_ASSERT_FULL (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no name for the password to add", NULL);
@@ -184,10 +185,14 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
      * one goes only once the new one is in: the add is refusable -- the history
      * can keep nothing, and the clipboard can turn the item down -- so dropping
      * it first would answer an error having left neither. By uuid rather than by
-     * name, the new item carrying that name by then. */
-    GPastePasswordItem *previous = g_paste_history_get_password (self->history, name);
+     * name, the new item carrying that name by then.
+     *
+     * G_PASTE_PASSWORD_ITEM_NO_NAME is not such a name: every nameless password
+     * reads as it rather than as a name anybody picked, so a second one joins
+     * them instead of replacing the one that happened to be there. */
+    GPastePasswordItem *previous = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
     g_autofree gchar *previous_uuid = (previous) ? g_strdup (g_paste_item_get_uuid (G_PASTE_ITEM (previous))) : NULL;
-    g_autofree gchar *uuid = g_paste_daemon_methods_do_add_item (self, g_paste_password_item_new (name, password), error);
+    g_autofree gchar *uuid = g_paste_daemon_methods_do_add_item (self, g_paste_password_item_new (name, password, timeout), error);
 
     if (!uuid)
         return NULL;
@@ -503,6 +508,21 @@ g_paste_daemon_methods_get_uris (const GPasteDaemonMethods *self,
     return g_paste_uris_item_get_uris (G_PASTE_URIS_ITEM (item));
 }
 
+/* Asked for rather than carried by every item: see
+ * g_paste_client_get_password_timeout_sync (). */
+G_PASTE_VISIBLE guint
+g_paste_daemon_methods_get_password_timeout (const GPasteDaemonMethods *self,
+                                             const gchar               *uuid,
+                                             GError                   **error)
+{
+    GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
+
+    G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", 0);
+    G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_PASSWORD_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "Provided uuid doesn't match a password item.", 0);
+
+    return g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item));
+}
+
 /* Every history with how many items it holds, in the order the store lists them,
  * which is the order such a listing is drawn in. The size rides along because
  * everything listing histories draws their sizes beside them, and asking one at
@@ -589,19 +609,6 @@ g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
         g_paste_settings_set_track_changes (self->settings, state);
 }
 
-G_PASTE_VISIBLE void
-g_paste_daemon_methods_rename_password (const GPasteDaemonMethods *self,
-                                        const gchar               *old_name,
-                                        const gchar               *new_name,
-                                        GError                   **error)
-{
-    G_PASTE_DBUS_ASSERT (old_name && *old_name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to rename");
-    G_PASTE_DBUS_ASSERT (new_name && *new_name, G_PASTE_ERROR_INVALID_ARGUMENT, "no name to rename the password to");
-
-    G_PASTE_DBUS_ASSERT (g_paste_history_rename_password (self->history, old_name, new_name),
-                         G_PASTE_ERROR_NOT_FOUND, "no password goes by that name");
-}
-
 /* The matches themselves, not their uuids: a caller wanting to show them would
  * only have to ask for every one of them straight back. */
 G_PASTE_VISIBLE GVariant *
@@ -672,19 +679,40 @@ G_PASTE_VISIBLE gchar *
 g_paste_daemon_methods_make_password (const GPasteDaemonMethods *self,
                                       const gchar               *uuid,
                                       const gchar               *name,
+                                      guint                      timeout,
                                       GError                   **error)
 {
     GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
-    G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_TEXT_ITEM (item) || G_PASTE_IS_PASSWORD_ITEM (item),
+                              G_PASTE_ERROR_WRONG_ITEM_KIND,
+                              "attempted to make a password of an item that is neither a GPasteTextItem nor a GPastePasswordItem",
+                              NULL);
     G_PASTE_DBUS_ASSERT_FULL (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password name given", NULL);
-    G_PASTE_DBUS_ASSERT_FULL (!g_paste_history_get_password (self->history, name), G_PASTE_ERROR_ALREADY_EXISTS, "a password with that name already exists", NULL);
+
+    /* Keeping the name it already carries is not a collision: the timeout may be
+     * all the caller came to change. Neither is G_PASTE_PASSWORD_ITEM_NO_NAME,
+     * which every nameless password reads as rather than a name anybody picked. */
+    GPastePasswordItem *namesake = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
+
+    G_PASTE_DBUS_ASSERT_FULL (!namesake || (GPasteItem *) namesake == item,
+                              G_PASTE_ERROR_ALREADY_EXISTS,
+                              "another password with that name already exists",
+                              NULL);
 
     /* As in g_paste_daemon_methods_replace(): unreachable, and not a reply. */
-    gchar *new_uuid = g_paste_history_set_password (self->history, uuid, name);
+    gchar *new_uuid = g_paste_history_make_password (self->history, uuid, name, timeout);
 
     G_PASTE_DBUS_ASSERT_FULL (new_uuid, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
+
+    /* @timeout is how long the password may stay on a selection, so a countdown
+     * armed from the old one is now running for the wrong duration. The history
+     * publishes nothing here, which is what leaves the re-arming to us. */
+    GPasteItem *password = g_paste_history_get_by_uuid (self->history, new_uuid);
+
+    if (password)
+        g_paste_clipboards_manager_rearm_password (self->clipboards_manager, password);
 
     return new_uuid;
 }

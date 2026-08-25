@@ -85,6 +85,13 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                                                            settings);
     adw_action_row_set_subtitle (ADW_ACTION_ROW (growing_lines_switch),
                                  _("When enabled, if a new clipboard entry starts with the previous one, the previous entry is replaced instead of creating a new one"));
+    AdwSpinRow *password_timeout_spin = g_paste_gtk_preferences_group_add_range_setting (group,
+                                                                                         _("Clear a Password After (seconds)"),
+                                                                                         G_PASTE_PASSWORD_TIMEOUT_SETTING,
+                                                                                         0, G_PASTE_PASSWORD_TIMEOUT_MAX, 5,
+                                                                                         settings);
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (password_timeout_spin),
+                                 _("How long a password stays on the clipboard once it is the active item. When it runs out, the next item that is not a password is selected. 0 lets a password stay for as long as anything else would"));
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     return self;

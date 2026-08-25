@@ -78,8 +78,14 @@ _gpaste_client_options()
         get|g)
             printf '%s' "${common} --use-index -i"
             ;;
-        select|set|s|delete|del|d|remove|rm|replace|upload|u|set-password|sp|favourite|fav|unfavourite|unfav)
+        select|set|s|delete|del|d|remove|rm|replace|upload|u|favourite|fav|unfavourite|unfav)
             printf '%s' "${common} --use-index -i"
+            ;;
+        make-password|mp)
+            printf '%s' "${common} --use-index -i --timeout -t"
+            ;;
+        add-password|ap)
+            printf '%s' "${common} --timeout -t"
             ;;
         merge|m)
             printf '%s' "${common} --decoration -d --separator -s"
@@ -101,7 +107,7 @@ _gpaste-client()
 
     # Both take a free-form value we have no way to guess.
     case ${prev} in
-        -d|--decoration|-s|--separator)
+        -d|--decoration|-s|--separator|-t|--timeout)
             return
             ;;
     esac
@@ -111,7 +117,7 @@ _gpaste-client()
     # @argpos ends up being the index of the argument now being completed.
     for ((i = 1; i < COMP_CWORD; ++i)); do
         case ${COMP_WORDS[i]} in
-            -d|--decoration|-s|--separator)
+            -d|--decoration|-s|--separator|-t|--timeout)
                 ((++i))
                 ;;
             -i|--use-index)
@@ -142,9 +148,9 @@ _gpaste-client()
                      daemon daemon-reexec daemon-version del delete delete-history
                      delete-password dh dp dr dv e empty f fav favourite file g get
                      get-history gh h help history history-size hs lh list-histories m
-                     merge migrate p preferences q quit remove rename-password replace rm
-                     rp s search select set set-password settings sh show-history sp
-                     start stop switch-history u ui unfav unfavourite upload v version"
+                     make-password merge migrate mp p preferences q quit remove replace
+                     rm s search select set settings sh show-history start stop
+                     switch-history u ui unfav unfavourite upload v version"
 
         COMPREPLY=($(compgen -W "${verbs}" -- "${cur}"))
         return
@@ -167,7 +173,7 @@ _gpaste-client()
             COMPREPLY=($(compgen -f -- "${cur}"))
             compopt -o filenames 2>/dev/null
             ;;
-        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|set-password|sp|favourite|fav|unfavourite|unfav)
+        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|make-password|mp|favourite|fav|unfavourite|unfav)
             ((argpos == 0)) && COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))
             ;;
         merge|m)

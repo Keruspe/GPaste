@@ -30,6 +30,7 @@ G_BEGIN_DECLS
 #define G_PASTE_MAX_MEMORY_USAGE_SETTING           "max-memory-usage"
 #define G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING         "max-text-item-size"
 #define G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING         "min-text-item-size"
+#define G_PASTE_PASSWORD_TIMEOUT_SETTING           "password-timeout"
 #define G_PASTE_POP_SETTING                        "pop"
 #define G_PASTE_PRIMARY_TO_HISTORY_SETTING         "primary-to-history"
 #define G_PASTE_RICH_TEXT_SUPPORT_SETTING          "rich-text-support"
@@ -43,6 +44,20 @@ G_BEGIN_DECLS
 #define G_PASTE_TRACK_EXTENSION_STATE_SETTING      "track-extension-state"
 #define G_PASTE_TRIM_ITEMS_SETTING                 "trim-items"
 #define G_PASTE_UPLOAD_SETTING                     "upload"
+
+/* The range "password-timeout" is declared with, in seconds: a bit over eighteen
+ * hours. It bounds the value itself rather than only the key, since the same
+ * number reaches a password through MakePassword and AddPassword -- whose wire
+ * type is wider -- and comes back out of both storage backends. Past it a
+ * countdown outlives every session it could run in, which reads as expiring and
+ * never does. */
+#define G_PASTE_PASSWORD_TIMEOUT_MAX 65535
+
+/* What MakePassword is handed when the caller has no timeout to write: the
+ * password keeps the one it already carries, and a text item becoming one takes
+ * the "password-timeout" default. Above the range, so it is no number anything
+ * can ask for -- the same role %NULL plays for the name. */
+#define G_PASTE_PASSWORD_TIMEOUT_UNCHANGED G_MAXUINT
 
 #define G_PASTE_EXTENSION_ENABLED_SETTING          "extension-enabled"
 #define G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING   "enabled-extensions"

@@ -239,6 +239,78 @@ g_paste_gtk_util_show_window (GApplication *application)
     }
 }
 
+static void
+on_form_dialog_cancel (GtkButton *button,
+                       gpointer   user_data G_GNUC_UNUSED)
+{
+    adw_dialog_close (ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (button), ADW_TYPE_DIALOG)));
+}
+
+/**
+ * g_paste_gtk_util_form_dialog:
+ * @heading: what the dialog is for
+ * @confirm_label: the label of the confirm button
+ * @content: (transfer none): what fills the dialog under its header bar
+ * @width: the content width to give the dialog
+ * @height: the content height to give it, or 0 to let @content ask for its own
+ * @confirm: (out) (transfer none): the confirm button, which the caller connects
+ *           to and is free to follow -- desensitizing it while the form is
+ *           incomplete, and again once it has been pressed, since closing is
+ *           asynchronous and the button stays live until it happens
+ *
+ * The shell every composer puts up: @content under a header bar offering to
+ * cancel or to confirm, cancelling being all it handles by itself.
+ *
+ * A dialog rather than an alert: an alert is a short message with a question
+ * attached, and a composer is neither -- a text editor six hundred pixels wide,
+ * or a small form in a boxed list.
+ *
+ * Returns: (transfer none): the dialog, not presented yet: the caller still has
+ *          its own data to hang off it
+ */
+G_PASTE_VISIBLE AdwDialog *
+g_paste_gtk_util_form_dialog (const gchar  *heading,
+                              const gchar  *confirm_label,
+                              GtkWidget    *content,
+                              gint          width,
+                              gint          height,
+                              GtkWidget   **confirm)
+{
+    g_return_val_if_fail (heading, NULL);
+    g_return_val_if_fail (confirm_label, NULL);
+    g_return_val_if_fail (GTK_IS_WIDGET (content), NULL);
+    g_return_val_if_fail (confirm, NULL);
+
+    GtkWidget *cancel = gtk_button_new_with_label (_("Cancel"));
+
+    *confirm = gtk_button_new_with_label (confirm_label);
+
+    gtk_widget_add_css_class (*confirm, "suggested-action");
+    g_signal_connect (cancel, "clicked", G_CALLBACK (on_form_dialog_cancel), NULL);
+
+    GtkWidget *header = adw_header_bar_new ();
+
+    adw_header_bar_set_show_start_title_buttons (ADW_HEADER_BAR (header), FALSE);
+    adw_header_bar_set_show_end_title_buttons (ADW_HEADER_BAR (header), FALSE);
+    adw_header_bar_pack_start (ADW_HEADER_BAR (header), cancel);
+    adw_header_bar_pack_end (ADW_HEADER_BAR (header), *confirm);
+
+    GtkWidget *toolbar = adw_toolbar_view_new ();
+
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), content);
+
+    AdwDialog *dialog = adw_dialog_new ();
+
+    adw_dialog_set_title (dialog, heading);
+    adw_dialog_set_content_width (dialog, width);
+    if (height)
+        adw_dialog_set_content_height (dialog, height);
+    adw_dialog_set_child (dialog, toolbar);
+
+    return dialog;
+}
+
 /* Kept on the dialog, so it lives exactly as long as the dialog does. @answer
  * is what the user wrote, set only when they confirmed: the result is delivered
  * from "closed", which is the one place every way out of the dialog goes
@@ -270,13 +342,6 @@ on_text_dialog_closed (AdwDialog *dialog,
 }
 
 static void
-on_text_dialog_cancel (GtkButton *button,
-                       gpointer   user_data G_GNUC_UNUSED)
-{
-    adw_dialog_close (ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (button), ADW_TYPE_DIALOG)));
-}
-
-static void
 on_text_dialog_confirm (GtkButton *button,
                         gpointer   user_data G_GNUC_UNUSED)
 {
@@ -303,13 +368,9 @@ on_text_dialog_confirm (GtkButton *button,
  * @callback: (closure user_data) (scope async): handed what the user wrote,
  *            or %NULL if they cancelled
  *
- * The dialog for composing an item: a wrapping, scrollable text view under a
- * header bar offering to cancel or to confirm. Both adding a new item and
- * editing an existing one put up the same one.
- *
- * A dialog rather than an alert: an alert is a short message with a question
- * attached, and this is a text editor -- one that was being handed to
- * adw_alert_dialog_set_extra_child () six hundred pixels wide.
+ * The dialog for composing an item: a wrapping, scrollable text view in the shell
+ * g_paste_gtk_util_form_dialog () puts up. Both adding a new item and editing an
+ * existing one put up the same one.
  */
 G_PASTE_VISIBLE void
 g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
@@ -342,31 +403,10 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
     gtk_scrolled_window_set_child (sw, view);
     gtk_widget_set_vexpand (scroll, TRUE);
 
-    GtkWidget *cancel = gtk_button_new_with_label (_("Cancel"));
-    GtkWidget *confirm = gtk_button_new_with_label (confirm_label);
+    GtkWidget *confirm;
+    AdwDialog *dialog = g_paste_gtk_util_form_dialog (heading, confirm_label, scroll, 600, 400, &confirm);
 
-    gtk_widget_add_css_class (confirm, "suggested-action");
-    g_signal_connect (cancel, "clicked", G_CALLBACK (on_text_dialog_cancel), NULL);
     g_signal_connect (confirm, "clicked", G_CALLBACK (on_text_dialog_confirm), NULL);
-
-    GtkWidget *header = adw_header_bar_new ();
-
-    adw_header_bar_set_show_start_title_buttons (ADW_HEADER_BAR (header), FALSE);
-    adw_header_bar_set_show_end_title_buttons (ADW_HEADER_BAR (header), FALSE);
-    adw_header_bar_pack_start (ADW_HEADER_BAR (header), cancel);
-    adw_header_bar_pack_end (ADW_HEADER_BAR (header), confirm);
-
-    GtkWidget *toolbar = adw_toolbar_view_new ();
-
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), scroll);
-
-    AdwDialog *dialog = adw_dialog_new ();
-
-    adw_dialog_set_title (dialog, heading);
-    adw_dialog_set_content_width (dialog, 600);
-    adw_dialog_set_content_height (dialog, 400);
-    adw_dialog_set_child (dialog, toolbar);
 
     GPasteGtkTextDialogData *data = g_new0 (GPasteGtkTextDialogData, 1);
 

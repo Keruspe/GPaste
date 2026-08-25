@@ -31,6 +31,7 @@ struct _GPasteSettings
     guint64       max_memory_usage;
     guint64       max_text_item_size;
     guint64       min_text_item_size;
+    guint64       password_timeout;
     gchar        *pop;
     gboolean      primary_to_history;
     gboolean      rich_text_support;
@@ -369,6 +370,24 @@ UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
  * Change the "min-text-item-size" setting
  */
 UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
+
+/**
+ * g_paste_settings_get_password_timeout:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "password-timeout" setting
+ *
+ * Returns: the value of the "password-timeout" setting
+ */
+/**
+ * g_paste_settings_set_password_timeout:
+ * @self: a #GPasteSettings instance
+ * @value: how long a password may stay on the clipboard, in seconds, or 0 for
+ *         as long as anything else
+ *
+ * Change the "password-timeout" setting
+ */
+UNSIGNED_SETTING (password_timeout, PASSWORD_TIMEOUT)
 
 /**
  * g_paste_settings_get_pop:
@@ -724,6 +743,7 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (MAX_MEMORY_USAGE, max_memory_usage),
     SETTING_ENTRY (MAX_TEXT_ITEM_SIZE, max_text_item_size),
     SETTING_ENTRY (MIN_TEXT_ITEM_SIZE, min_text_item_size),
+    SETTING_ENTRY (PASSWORD_TIMEOUT, password_timeout),
     KEYBINDING_ENTRY (POP, pop),
     SETTING_ENTRY (PRIMARY_TO_HISTORY, primary_to_history),
     SETTING_ENTRY (RICH_TEXT_SUPPORT, rich_text_support),
@@ -790,6 +810,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     UINT (max_memory_usage,           MAX_MEMORY_USAGE)                                   \
     UINT (max_text_item_size,         MAX_TEXT_ITEM_SIZE)                                 \
     UINT (min_text_item_size,         MIN_TEXT_ITEM_SIZE)                                 \
+    UINT (password_timeout,           PASSWORD_TIMEOUT)                                   \
     STR  (pop,                        POP)                                                \
     BOOL (primary_to_history,         PRIMARY_TO_HISTORY)                                 \
     BOOL (rich_text_support,          RICH_TEXT_SUPPORT)                                  \

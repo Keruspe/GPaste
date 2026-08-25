@@ -30,6 +30,7 @@ src/ui/gpaste-ui-edit-item.c
 src/ui/gpaste-ui-header.c
 src/ui/gpaste-ui-history.c
 src/ui/gpaste-ui-item.c
+src/ui/gpaste-ui-make-password.c
 src/ui/gpaste-ui-new-item.c
 src/ui/gpaste-ui-panel-history.c
 src/ui/gpaste-ui-panel.c

@@ -31,6 +31,7 @@ guint64      g_paste_settings_get_max_history_size           (GPasteSettings *se
 guint64      g_paste_settings_get_max_memory_usage           (GPasteSettings *self);
 guint64      g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
 guint64      g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
+guint64      g_paste_settings_get_password_timeout           (GPasteSettings *self);
 const gchar *g_paste_settings_get_pop                        (GPasteSettings *self);
 gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
 gboolean     g_paste_settings_get_rich_text_support          (GPasteSettings *self);
@@ -74,6 +75,8 @@ void g_paste_settings_set_max_memory_usage           (GPasteSettings *self,
 void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
+                                                      guint64         value);
+void g_paste_settings_set_password_timeout           (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_pop                        (GPasteSettings *self,
                                                       const gchar    *value);

@@ -996,22 +996,33 @@ _g_paste_history_private_get_password (GPasteHistory *self,
 }
 
 /**
- * g_paste_history_set_password:
+ * g_paste_history_make_password:
  * @self: a #GPasteHistory instance
- * @uuid: the uuid of the #GPasteTextItem to change as password
- * @name: (nullable): the name to give to the password
+ * @uuid: the uuid of the #GPasteTextItem to turn into a password, or of the
+ *        #GPastePasswordItem to update
+ * @name: (nullable): the name to give to the password, or %NULL to leave a
+ *        password's own name alone -- a text item becoming one takes
+ *        %G_PASTE_PASSWORD_ITEM_NO_NAME
+ * @timeout: how long it may stay on the clipboard, in seconds, 0 for as long as
+ *           anything else, or %G_PASTE_PASSWORD_TIMEOUT_UNCHANGED to write none
+ *           -- a password keeping the one it carries, a text item becoming one
+ *           taking the "password-timeout" default
  *
- * Mark a text item as password
+ * Mark a text item as password, or write a password's name and timeout
  *
- * A password item is an item of its own, with a uuid of its own, for the same
- * reason g_paste_history_replace() hands one back.
+ * The two hand back different uuids. A text item is *replaced*: a password item
+ * is an item of its own, with a uuid of its own, for the same reason
+ * g_paste_history_replace() hands one back. A password item is updated where it
+ * stands -- its name and its timeout, never its value -- so what comes back is
+ * the uuid that went in.
  *
- * Returns: (transfer full): the new item's uuid
+ * Returns: (transfer full): the uuid of the item this left in the history
  */
 G_PASTE_VISIBLE gchar *
-g_paste_history_set_password (GPasteHistory *self,
-                              const gchar   *uuid,
-                              const gchar   *name)
+g_paste_history_make_password (GPasteHistory *self,
+                               const gchar   *uuid,
+                               const gchar   *name,
+                               guint          timeout)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
@@ -1021,14 +1032,113 @@ g_paste_history_set_password (GPasteHistory *self,
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
 
     g_return_val_if_fail (item, NULL);
-    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (item), NULL);
-    g_return_val_if_fail (!_g_paste_history_private_get_password (self, name, NULL), NULL);
+    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (item) || G_PASTE_IS_PASSWORD_ITEM (item), NULL);
 
-    GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
+    /* Keeping the name it already carries is not a collision with itself: only
+     * the timeout may be what the caller came to change. Nor is a nameless one,
+     * since they all go by G_PASTE_PASSWORD_ITEM_NO_NAME: that is no name a user
+     * picked, so it is the one a history may hold several of. */
+    gboolean named = (name && !g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME));
+    GPasteItem *namesake = (named) ? _g_paste_history_private_get_password (self, name, NULL) : NULL;
 
-    _g_paste_history_replace (self, index, password);
+    /* Not a g_return_val_if_fail (): a name the user picked twice is an ordinary
+     * refusal and not a programming error, so it neither warrants a CRITICAL nor
+     * may compile away under G_DISABLE_CHECKS -- g_paste_daemon_methods_make_password ()
+     * reports it as .Error.AlreadyExists before ever reaching here, and a caller
+     * coming straight to the library gets the same rule rather than a second
+     * password under a name already taken. */
+    if (namesake && namesake != item)
+        return NULL;
 
-    return g_strdup (g_paste_item_get_uuid (password));
+    /* Nothing to write means whatever it already has: what a password carries,
+     * and for a text item -- which carries none -- the default the settings hold
+     * for a password being made. */
+    if (timeout == G_PASTE_PASSWORD_TIMEOUT_UNCHANGED)
+    {
+        timeout = (G_PASTE_IS_PASSWORD_ITEM (item))
+                ? g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item))
+                : (guint) g_paste_settings_get_password_timeout (self->settings);
+    }
+
+    /* Our own copy: the memory cap the in-place branch runs can evict the very
+     * item being renamed. */
+    g_autofree gchar *new_uuid = NULL;
+
+    if (G_PASTE_IS_PASSWORD_ITEM (item))
+    {
+        gboolean was_biggest = g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (item));
+        guint length_before = self->history->len;
+
+        new_uuid = g_strdup (g_paste_item_get_uuid (item));
+
+        /* The name is part of what the item weighs, so the history's own total
+         * has to follow it out and back in. Left out, a rename that lengthens
+         * the name is subtracted once more than it was ever added when the item
+         * goes, and self->size is unsigned. */
+        self->size -= g_paste_item_get_size (item);
+        /* A password already carries a name of its own, so %NULL is nothing to
+         * write over it: the placeholder every nameless one reads as is not a
+         * name the caller asked for, and putting it here would leave this one
+         * unreachable by the name the user gave it. */
+        if (name)
+            g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), name);
+        g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (item), timeout);
+        self->size += g_paste_item_get_size (item);
+
+        if (was_biggest)
+        {
+            /* A shorter name may have taken it below the runner-up, which only
+             * a full election can name. */
+            g_paste_history_private_elect_new_biggest (self);
+        }
+        else
+        {
+            /* A longer one may have taken it past the item elected, which one
+             * comparison places, the same way _g_paste_history_add places an
+             * item leaving the active slot. Index 0 and favourites stay
+             * untracked, as ever. */
+            guint64 size = g_paste_item_get_size (item);
+
+            if (index && !g_paste_item_is_favourite (item) && size >= self->biggest_size)
+            {
+                self->biggest_uuid = g_paste_item_get_uuid (item);
+                self->biggest_size = size;
+            }
+        }
+
+        /* A longer name weighs more, so the total this cap watches has just
+         * moved and the sweep has to run here -- left to whatever is added next,
+         * the eviction it calls for would be blamed on that instead. The item
+         * count did not change, which is what leaves the other cap out. */
+        g_paste_history_private_check_memory_usage (self);
+
+        if (self->history->len != length_before)
+        {
+            /* As in g_paste_history_set_favourite (): evictions rode along, a
+             * replace carries no snapshot for an incremental backend to
+             * reconcile against, and @item may be among them -- hence neither it
+             * nor @index is touched from here on. */
+            g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+        }
+        else
+            g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, new_uuid, FALSE);
+    }
+    else
+    {
+        GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item), timeout);
+
+        _g_paste_history_replace (self, index, password);
+        new_uuid = g_strdup (g_paste_item_get_uuid (password));
+    }
+
+    /* Nothing is selected, wherever the item sits: a password is published as
+     * g_paste_item_get_real_value (), which neither branch touches, and the item
+     * at the front is not necessarily what a selection holds -- selecting would
+     * be writing its cleartext over whatever the user has copied since. Arming
+     * the countdown the new timeout calls for is
+     * g_paste_clipboards_manager_rearm_password ()'s job, the clipboards being
+     * what the history has no reach into. */
+    return g_steal_pointer (&new_uuid);
 }
 
 /**
@@ -1077,38 +1187,6 @@ g_paste_history_delete_password (GPasteHistory *self,
         return FALSE;
 
     g_paste_history_remove_locked (self, index);
-
-    return TRUE;
-}
-
-/**
- * g_paste_history_rename_password:
- * @self: a #GPasteHistory instance
- * @old_name: the old name of the #GPastePasswordItem
- * @new_name: (nullable): the new name of the #GPastePasswordItem
- *
- * Rename the password item
- *
- * Returns: %FALSE when no password carries @old_name, %TRUE otherwise
- */
-G_PASTE_VISIBLE gboolean
-g_paste_history_rename_password (GPasteHistory *self,
-                                 const gchar   *old_name,
-                                 const gchar   *new_name)
-{
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
-    g_return_val_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL), FALSE);
-    g_return_val_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL), FALSE);
-
-    G_PASTE_LOCK_HISTORY;
-    guint64 index = 0;
-    GPasteItem *item = _g_paste_history_private_get_password (self, old_name, &index);
-
-    if (!item)
-        return FALSE;
-
-    g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item), FALSE);
 
     return TRUE;
 }

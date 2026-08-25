@@ -33,16 +33,14 @@ gchar              *g_paste_history_replace         (GPasteHistory *self,
 gboolean            g_paste_history_set_favourite   (GPasteHistory *self,
                                                      const gchar   *uuid,
                                                      gboolean       favourite);
-gchar              *g_paste_history_set_password    (GPasteHistory *self,
+gchar              *g_paste_history_make_password   (GPasteHistory *self,
                                                      const gchar   *uuid,
-                                                     const gchar   *name);
+                                                     const gchar   *name,
+                                                     guint          timeout);
 GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
                                                      const gchar   *name);
 gboolean            g_paste_history_delete_password (GPasteHistory *self,
                                                      const gchar   *name);
-gboolean            g_paste_history_rename_password (GPasteHistory *self,
-                                                     const gchar   *old_name,
-                                                     const gchar   *new_name);
 void         g_paste_history_empty       (GPasteHistory *self);
 void         g_paste_history_flush       (GPasteHistory *self);
 void         g_paste_history_resume      (GPasteHistory *self);

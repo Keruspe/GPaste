@@ -9,6 +9,7 @@
 #include <gpaste-ui-color-swatch.h>
 #include <gpaste-ui-edit-item.h>
 #include <gpaste-ui-item.h>
+#include <gpaste-ui-make-password.h>
 #include <gpaste-ui-window.h>
 
 struct _GPasteUiItem
@@ -33,8 +34,11 @@ struct _GPasteUiItem
     GtkPicture         *thumbnail;
     GtkWidget          *swatch;          /* colour items: what the value looks like */
     GtkWidget          *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
-    gboolean            editable;
-    gboolean            uploadable;
+    /* Every action's availability follows the kind, so the row keeps that rather
+     * than a flag per action, which could go stale against it. INVALID is what a
+     * row holds before it has an item, where the missing uuid disables
+     * everything anyway. */
+    GPasteItemKind      kind;
     gboolean            favourited;
     gboolean            hovered;
     gboolean            selection_mode;
@@ -135,9 +139,14 @@ static void
 g_paste_ui_item_update_actions (GPasteUiItem *self)
 {
     gboolean armed = (self->uuid != NULL);
+    gboolean text = (self->kind == G_PASTE_ITEM_KIND_TEXT);
 
-    g_simple_action_set_enabled (item_action (self, "edit"), armed && self->editable);
-    g_simple_action_set_enabled (item_action (self, "upload"), armed && self->uploadable);
+    /* Edit covers a password too, where it opens the make-password composer
+     * rather than the text editor -- which is why Make Password is offered on a
+     * text row alone: on a password row it would put up that same dialog. */
+    g_simple_action_set_enabled (item_action (self, "edit"), armed && (text || self->kind == G_PASTE_ITEM_KIND_PASSWORD));
+    g_simple_action_set_enabled (item_action (self, "make-password"), armed && text);
+    g_simple_action_set_enabled (item_action (self, "upload"), armed && text);
     g_simple_action_set_enabled (item_action (self, "pin"), armed);
     g_simple_action_set_enabled (item_action (self, "delete"), armed);
 }
@@ -154,20 +163,6 @@ g_paste_ui_item_update_actions_visibility (GPasteUiItem *self)
 
     gtk_widget_set_visible (self->favourite, revealed || (self->favourited && !self->selection_mode));
     gtk_widget_set_visible (self->remove, revealed);
-}
-
-static void
-g_paste_ui_item_set_editable (GPasteUiItem *self,
-                              gboolean      editable)
-{
-    self->editable = editable;
-}
-
-static void
-g_paste_ui_item_set_uploadable (GPasteUiItem *self,
-                                gboolean      uploadable)
-{
-    self->uploadable = uploadable;
 }
 
 /* The star says what the item is, not what the button does, so its icon is the
@@ -293,6 +288,9 @@ g_paste_ui_item_on_thumbnail_query_tooltip (GtkWidget  *widget,
 /* The actions themselves. Each is disabled without a uuid (see
  * g_paste_ui_item_update_actions), so none has to check for one. */
 
+/* One entry for two composers, because the row has one thing to edit either way:
+ * a text item's contents, or a password's name and timeout -- never a password's
+ * value, which nothing can read back. */
 static void
 on_edit (GSimpleAction *action    G_GNUC_UNUSED,
          GVariant      *parameter G_GNUC_UNUSED,
@@ -300,7 +298,20 @@ on_edit (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_ui_edit_item_show (self->client, self->rootwin, self->uuid);
+    if (self->kind == G_PASTE_ITEM_KIND_PASSWORD)
+        g_paste_ui_make_password_edit (self->client, self->rootwin, self->uuid);
+    else
+        g_paste_ui_edit_item_show (self->client, self->rootwin, self->uuid);
+}
+
+static void
+on_make_password (GSimpleAction *action    G_GNUC_UNUSED,
+                  GVariant      *parameter G_GNUC_UNUSED,
+                  gpointer       user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    g_paste_ui_make_password_show (self->client, self->settings, self->rootwin, self->uuid);
 }
 
 /* The address is only copied once the daemon has taken it: an add can be refused
@@ -594,8 +605,7 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     g_paste_ui_item_apply_index (self, self->index);
 
     /* The kind arrives with the item, so only an image still costs a call. */
-    g_paste_ui_item_set_editable (self, kind == G_PASTE_ITEM_KIND_TEXT);
-    g_paste_ui_item_set_uploadable (self, kind == G_PASTE_ITEM_KIND_TEXT);
+    self->kind = kind;
     g_paste_ui_item_set_favourited (self, g_paste_client_item_is_favourite (item));
     g_paste_ui_item_update_actions (self);
 
@@ -682,6 +692,13 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
     self->index = index;
     self->fake_index = fake_index;
 
+    /* The kind belongs to the item the reply will bring, and until it lands
+     * there is none: a row rebound to another uuid still answering for the
+     * previous item's kind would steer the actions at what it used to hold --
+     * Edit above all, which opens one composer or the other, so a text item
+     * would be handed the password composer and turned into a password. */
+    self->kind = G_PASTE_ITEM_KIND_INVALID;
+
     /* The list view shows exactly the rows the model holds, so an unbound one is
      * simply not on screen — there is nothing to hide. Drop its uuid, though: a
      * recycled row must not be activatable — or, in merge mode, pickable — as
@@ -704,10 +721,11 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
         g_clear_pointer (&self->uuid, g_free);
         g_paste_ui_item_apply_index (self, index);
         g_paste_ui_item_set_favourited (self, FALSE);
-        g_paste_ui_item_update_actions (self);
         g_paste_ui_color_swatch_set_color (self->swatch, NULL);
         g_paste_ui_item_set_thumbnail (self, NULL);
     }
+
+    g_paste_ui_item_update_actions (self);
 }
 
 /**
@@ -855,7 +873,6 @@ g_paste_ui_item_init (GPasteUiItem *self)
 
     self->index_label = GTK_LABEL (index_label);
     self->label = GTK_INSCRIPTION (label);
-    self->editable = TRUE;
 
     gtk_widget_set_margin_start (index_label, 6);
     gtk_widget_set_margin_end (index_label, 6);
@@ -946,10 +963,11 @@ g_paste_ui_item_new (GPasteClient   *client,
     self->rootwin = rootwin;
 
     static const GActionEntry entries[] = {
-        { "delete", on_delete, NULL, NULL,    NULL, { 0 } },
-        { "edit",   on_edit,   NULL, NULL,    NULL, { 0 } },
-        { "pin",    on_pin,    NULL, "false", NULL, { 0 } },
-        { "upload", on_upload, NULL, NULL,    NULL, { 0 } },
+        { "delete",        on_delete,        NULL, NULL,    NULL, { 0 } },
+        { "edit",          on_edit,          NULL, NULL,    NULL, { 0 } },
+        { "make-password", on_make_password, NULL, NULL,    NULL, { 0 } },
+        { "pin",           on_pin,           NULL, "false", NULL, { 0 } },
+        { "upload",        on_upload,        NULL, NULL,    NULL, { 0 } },
     };
 
     self->actions = g_simple_action_group_new ();
@@ -963,6 +981,7 @@ g_paste_ui_item_new (GPasteClient   *client,
 
     g_autoptr (GMenu) edit_section = g_menu_new ();
     g_menu_append (edit_section, _("Edit…"), "item.edit");
+    g_menu_append (edit_section, _("Make Password…"), "item.make-password");
     g_menu_append (edit_section, _("Upload"), "item.upload");
     g_menu_append_section (menu, NULL, G_MENU_MODEL (edit_section));
 

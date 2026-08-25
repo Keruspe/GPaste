@@ -24,9 +24,9 @@
     THE CURRENT HISTORY IS WHAT EVERY ITEM CALL ACTS ON. Reading items
     (GetHistory, GetItem, GetItemAtIndex, GetItems, GetFavourites, GetImage,
     GetUris, Search, GetHistorySize) and changing them (the Add* calls, Merge,
-    Replace, MakePassword, Select, SetFavourite, DeleteItem, DeletePassword,
-    RenamePassword) never name a history: they are about the one in use, which
-    the History property carries.
+    Replace, MakePassword, Select, SetFavourite, DeleteItem, DeletePassword)
+    never name a history: they are about the one in use, which the History
+    property carries.
     The calls that name a history are the ones that treat histories as objects
     rather than as a place to put items: ListHistories, BackupHistory,
     EmptyHistory, DeleteHistory and SwitchHistory. Inspecting another history
@@ -75,10 +75,15 @@
       <arg type="s" direction="out" name="uuid"/>
     </method>
 
-    <!-- Add a password item to the history -->
+    <!--
+      Add a password item to the history.
+
+      @timeout is as in MakePassword: seconds, 0 for none.
+    -->
     <method name="AddPassword">
       <arg type="s" direction="in"  name="name"/>
       <arg type="s" direction="in"  name="password"/>
+      <arg type="u" direction="in"  name="timeout"/>
       <arg type="s" direction="out" name="uuid"/>
     </method>
 
@@ -189,6 +194,22 @@
     </method>
 
     <!--
+      How long a password item may stay on the clipboard, in seconds. 0 for one
+      that stays as long as anything else does.
+
+      A method rather than a sixth field on the item struct, for the reason
+      GetImage and GetUris are ones: nothing drawing a row wants it, only a
+      client putting up a dialog to change it, so as a field it would be a number
+      every item of every kind carried for the password's sake.
+
+      Anything but a password item is .Error.WrongItemKind.
+    -->
+    <method name="GetPasswordTimeout">
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="u" direction="out" name="timeout"/>
+    </method>
+
+    <!--
       The uris a files item holds.
 
       A files item's @value is these same uris joined by newlines, which is
@@ -221,10 +242,40 @@
       <arg type="a(st)" direction="out" name="histories"/>
     </method>
 
-    <!-- Turn one item into a password item -->
+    <!--
+      Turn a text item into a password item, or update one that already is.
+
+      @timeout is in seconds, and is how long the password may stay on the
+      clipboard once it is the active item: when it runs out the daemon selects
+      the next non-password item, or clears the selection if the history holds
+      none. 0 means no timeout. It is armed afresh every time the password is
+      selected, and cancelled by anything else being selected. Its range is 0 to
+      65535, the same one the "password-timeout" setting is declared with.
+
+      0xffffffff, which is above that range and so collides with no timeout
+      anything can ask for, writes no timeout at all: a password keeps the one it
+      carries and the countdown already running for it, and a text item becoming
+      one takes the "password-timeout" default. That is what a caller changing
+      only the name sends, rather than reading the timeout back with
+      GetPasswordTimeout first and echoing it here: anything else it sends
+      replaces a running countdown, and 0 cancels it outright.
+
+      What comes back depends on what @uuid named. A text item is REPLACED by a
+      password item, which is an item of its own, so a new uuid comes back and
+      the Update that follows reports ALL, one uuid being unable to say both
+      which item went and which arrived. A password item is updated where it
+      stands (its name and its timeout, never its value), so its own uuid comes
+      back and the Update names it (ITEM), which is what lets a search or a
+      favourites view repaint one row instead of re-running its query.
+
+      Anything else is .Error.WrongItemKind. A name already carried by ANOTHER
+      password is .Error.AlreadyExists; a password keeping its own name has
+      collided with nothing.
+    -->
     <method name="MakePassword">
       <arg type="s" direction="in"  name="uuid"/>
       <arg type="s" direction="in"  name="name"/>
+      <arg type="u" direction="in"  name="timeout"/>
       <arg type="s" direction="out" name="new_uuid"/>
     </method>
 
@@ -244,12 +295,6 @@
 
     <!-- Have the daemon exec a fresh copy of itself -->
     <method name="Reexecute"/>
-
-    <!-- Rename a password item -->
-    <method name="RenamePassword">
-      <arg type="s" direction="in" name="old"/>
-      <arg type="s" direction="in" name="new"/>
-    </method>
 
     <!--
       Tell the daemon whether the gnome-shell extension is running.

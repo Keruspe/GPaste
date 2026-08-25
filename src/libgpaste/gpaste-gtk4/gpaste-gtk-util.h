@@ -39,6 +39,13 @@ void     g_paste_gtk_util_show_window      (GApplication *application);
 void     g_paste_gtk_util_toast            (GtkWidget   *origin,
                                             const gchar *message);
 
+AdwDialog *g_paste_gtk_util_form_dialog    (const gchar  *heading,
+                                            const gchar  *confirm_label,
+                                            GtkWidget    *content,
+                                            gint          width,
+                                            gint          height,
+                                            GtkWidget   **confirm);
+
 /* @text is what the user wrote, or %NULL if they cancelled. */
 typedef void (*GPasteGtkTextDialogCallback) (const gchar *text,
                                              gpointer     user_data);

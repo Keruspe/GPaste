@@ -147,7 +147,7 @@ void          g_paste_clipboard_provider_sync_text          (GPasteClipboardProv
                                                              GPasteClipboardProvider *other);
 gboolean      g_paste_clipboard_provider_select_item        (GPasteClipboardProvider *self,
                                                              GPasteItem              *item);
-void          g_paste_clipboard_provider_ensure_not_empty   (GPasteClipboardProvider *self,
+GPasteItem   *g_paste_clipboard_provider_ensure_not_empty   (GPasteClipboardProvider *self,
                                                              GPasteHistory           *history);
 void          g_paste_clipboard_provider_store              (GPasteClipboardProvider *self);
 

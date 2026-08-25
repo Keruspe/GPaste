@@ -10,6 +10,7 @@ struct _GPastePasswordItem
     GPasteItem parent_instance;
 
     gchar *name;
+    guint  timeout;
 };
 
 G_PASTE_DEFINE_TYPE (PasswordItem, password_item, G_PASTE_TYPE_ITEM)
@@ -45,7 +46,7 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     if (!name)
-        name = "******";
+        name = G_PASTE_PASSWORD_ITEM_NO_NAME;
 
     GPasteItem *item = G_PASTE_ITEM (self);
 
@@ -55,15 +56,55 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     g_set_str (&self->name, name);
 
     /* The name alone, never the password: it is what get_value () masks as
-     * "******" and what get_real_value () holds. The "[Password]" a user reads in
-     * front of it is the drawing client's to add. */
+     * G_PASTE_PASSWORD_ITEM_NO_NAME and what get_real_value () holds. The
+     * "[Password]" a user reads in front of it is the drawing client's to add. */
     g_paste_item_set_display_string (item, g_strdup (name));
+}
+
+/**
+ * g_paste_password_item_get_timeout:
+ * @self: a #GPastePasswordItem instance
+ *
+ * Get how long the password may stay on the clipboard once it is the active
+ * item, in seconds
+ *
+ * Returns: the timeout in seconds, 0 when the password has none
+ */
+G_PASTE_VISIBLE guint
+g_paste_password_item_get_timeout (GPastePasswordItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), 0);
+
+    return self->timeout;
+}
+
+/**
+ * g_paste_password_item_set_timeout:
+ * @self: a #GPastePasswordItem instance
+ * @timeout: the new timeout, in seconds, or 0 for none
+ *
+ * Set how long the password may stay on the clipboard once it is the active item
+ *
+ * Capped at %G_PASTE_PASSWORD_TIMEOUT_MAX, here rather than in each of the
+ * callers -- a D-Bus method, a keyboard shortcut and both storage backends
+ * reading one back -- since it is the item the range is a fact about.
+ *
+ * The countdown itself belongs to #GPasteClipboardsManager, which arms it every
+ * time the item is selected; this only says how long it runs for.
+ */
+G_PASTE_VISIBLE void
+g_paste_password_item_set_timeout (GPastePasswordItem *self,
+                                   guint               timeout)
+{
+    g_return_if_fail (G_PASTE_IS_PASSWORD_ITEM (self));
+
+    self->timeout = MIN (timeout, G_PASTE_PASSWORD_TIMEOUT_MAX);
 }
 
 static const gchar *
 g_paste_password_item_get_value (GPasteItem *self G_GNUC_UNUSED)
 {
-    return "******";
+    return G_PASTE_PASSWORD_ITEM_NO_NAME;
 }
 
 static GPasteItemKind
@@ -121,6 +162,8 @@ g_paste_password_item_init (GPastePasswordItem *self G_GNUC_UNUSED)
  * g_paste_password_item_new:
  * @name: (nullable): the name used to identify the password
  * @password: the content of the desired #GPastePasswordItem
+ * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
+ *           as anything else
  *
  * Create a new instance of #GPastePasswordItem
  *
@@ -129,7 +172,8 @@ g_paste_password_item_init (GPastePasswordItem *self G_GNUC_UNUSED)
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_password_item_new (const gchar *name,
-                           const gchar *password)
+                           const gchar *password,
+                           guint        timeout)
 {
     g_return_val_if_fail (password, NULL);
     g_return_val_if_fail (g_utf8_validate (password, -1, NULL), NULL);
@@ -140,6 +184,7 @@ g_paste_password_item_new (const gchar *name,
     /* A password weighs nothing against the caps: its length is the secret. */
     g_paste_item_set_size (self, 0);
     g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (self), timeout);
 
     return self;
 }

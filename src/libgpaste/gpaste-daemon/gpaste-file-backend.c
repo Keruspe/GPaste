@@ -63,9 +63,14 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
      * the attribute's escaping, and the entities it writes are the ones
      * GMarkup gives back on read. */
     g_autofree gchar *name = g_markup_escape_text (g_paste_password_item_get_name (item), -1);
+    guint timeout = g_paste_password_item_get_timeout (item);
+    /* Written only when set, as the favourite attribute is: a password with no
+     * timeout, which is every one an older GPaste wrote, reads back the same. */
+    g_autofree gchar *timeout_attr = (timeout) ? g_strdup_printf ("\" timeout=\"%u", timeout) : NULL;
 
     return g_output_stream_write_all (stream, "\" name=\"", 8, NULL, NULL /* cancellable */, error) &&
-           g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error);
+           g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error) &&
+           (!timeout_attr || g_output_stream_write_all (stream, timeout_attr, strlen (timeout_attr), NULL, NULL /* cancellable */, error));
 }
 
 /**
@@ -496,6 +501,7 @@ typedef struct
     gboolean              count_only;
     gsize                 count;
     gboolean              favourite;
+    guint                 timeout;
     gchar                *uuid;
     gchar                *date;
     gchar                *checksum;
@@ -620,6 +626,7 @@ start_tag (GMarkupParseContext *context,
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
         data->type = G_PASTE_ITEM_KIND_INVALID;
         data->favourite = FALSE;
+        data->timeout = 0;
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->checksum, g_free);
@@ -668,6 +675,26 @@ start_tag (GMarkupParseContext *context,
                     continue;
                 }
                 data->name = g_strdup (*v);
+            }
+            else if (g_paste_str_equal (*a, "timeout"))
+            {
+                if (data->type != G_PASTE_ITEM_KIND_PASSWORD)
+                {
+                    WARN_AT ("Expected a Password item, but got a %s one", g_paste_item_kind_to_string (data->type));
+                    continue;
+                }
+                /* Read wide and clamped, never cast: a stored value past
+                 * G_MAXUINT truncates, and 2^32 truncates to 0 -- the one value
+                 * that means the password never comes off the clipboard. */
+                guint64 timeout = g_ascii_strtoull (*v, NULL, 10);
+
+                if (timeout > G_PASTE_PASSWORD_TIMEOUT_MAX)
+                {
+                    WARN_AT ("Password timeout out of range: %s", *v);
+                    timeout = G_PASTE_PASSWORD_TIMEOUT_MAX;
+                }
+
+                data->timeout = (guint) timeout;
             }
             else if (g_paste_str_equal (*a, "favourite"))
                 data->favourite = g_paste_str_equal (*v, "true");
@@ -741,7 +768,7 @@ add_item (Data *data)
         item = g_paste_uris_item_new_from_str (data->text);
         break;
     case G_PASTE_ITEM_KIND_PASSWORD:
-        item = g_paste_password_item_new (data->name, data->text);
+        item = g_paste_password_item_new (data->name, data->text, data->timeout);
         break;
     case G_PASTE_ITEM_KIND_COLOR:
         item = g_paste_color_item_new_from_str (data->text);
@@ -1022,6 +1049,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
             count_only,
             0, /* count */
             FALSE, /* favourite: set per item from its "favourite" attribute */
+            0, /* timeout: set per password from its "timeout" attribute */
             NULL, /* uuid */
             NULL, /* date */
             NULL, /* checksum */
