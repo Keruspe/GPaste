@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-25 12:09+0200\n"
-"PO-Revision-Date: 2026-08-16 14:51+0000\n"
+"PO-Revision-Date: 2026-08-27 09:51+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
-">\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -320,13 +320,12 @@ msgid "Run the experimental in-shell (mutter) daemon"
 msgstr "Использовать экспериментальный запуск демона внутри оболочки (shell)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:253
-#, fuzzy
 msgid ""
 "Disabled by default: the GNOME Shell extension is a pure client and the "
 "standalone daemon does the work."
 msgstr ""
-"При отключении расширение gnome-shell работает как чистый клиент, и вместо "
-"него используется автономный демон"
+"Отключено по умолчанию: расширение gnome-shell работает как чистый клиент, а "
+"работу выполняет автономный демон."
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:9
 msgid "Marc-Antoine Perennou"
@@ -360,9 +359,9 @@ msgstr "Настройки интерфейса"
 
 #. Translators: %s is the program GPaste tried to start, then the reason it could not.
 #: src/client/gpaste-client.c:173
-#, fuzzy, c-format
+#, c-format
 msgid "Couldn't spawn %s: %s"
-msgstr "Не удалось создать"
+msgstr "Не удалось запустить: %s: %s"
 
 #: src/client/gpaste-client.c:305
 msgid "Successfully re-executed the daemon"
@@ -385,9 +384,8 @@ msgid "print the history with UUIDs"
 msgstr "выводить историю с UUID"
 
 #: src/client/gpaste-client.c:733
-#, fuzzy
 msgid "print the size of the current history"
-msgstr "выводить размер истории"
+msgstr "выводить размер текущей истории"
 
 #: src/client/gpaste-client.c:734
 msgid "print the items of the history matching <pattern>"
@@ -1164,7 +1162,6 @@ msgid "Change Storage Backend…"
 msgstr "Изменить бэкенд хранилища…"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
-#, fuzzy
 msgid "Change Passphrase…"
 msgstr "Изменить парольную фразу…"
 
@@ -1243,10 +1240,9 @@ msgstr "Редактировать"
 
 #: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-make-password.c:167
 msgid "Save"
-msgstr ""
+msgstr "Сохранить"
 
 #: src/ui/gpaste-ui-header.c:89
-#, fuzzy
 msgid "Restart Daemon"
 msgstr "Перезапустить демон"
 
@@ -1256,7 +1252,7 @@ msgstr "О GPaste"
 
 #: src/ui/gpaste-ui-header.c:102
 msgid "Main Menu"
-msgstr ""
+msgstr "Главное меню"
 
 #: src/ui/gpaste-ui-header.c:259
 #, c-format
@@ -1267,7 +1263,6 @@ msgstr[1] "%u выделено"
 msgstr[2] "%u выделено"
 
 #: src/ui/gpaste-ui-header.c:280
-#, fuzzy
 msgid "New Item"
 msgstr "Новый элемент"
 
@@ -1317,32 +1312,28 @@ msgid "Could not upload the item"
 msgstr "Не удалось создать каталог истории"
 
 #: src/ui/gpaste-ui-item.c:385
-#, fuzzy
 msgid "Could not delete the item"
-msgstr "Не удалось создать каталог истории"
+msgstr "Не удалось удалить элемент"
 
 #: src/ui/gpaste-ui-item.c:401
 msgid "Could not unpin the item"
-msgstr ""
+msgstr "Не удалось открепить элемент"
 
 #: src/ui/gpaste-ui-item.c:402
-#, fuzzy
 msgid "Could not pin the item"
-msgstr "Не удалось создать каталог истории"
+msgstr "Не удалось закрепить элемент"
 
 #: src/ui/gpaste-ui-item.c:582
 msgid "Could not load an image preview"
 msgstr ""
 
 #: src/ui/gpaste-ui-item.c:983
-#, fuzzy
 msgid "Edit…"
-msgstr "Редактировать"
+msgstr "Редактировать…"
 
 #: src/ui/gpaste-ui-item.c:984
-#, fuzzy
 msgid "Make Password…"
-msgstr "Пароль"
+msgstr "Создать пароль…"
 
 #: src/ui/gpaste-ui-item.c:985
 msgid "Upload"
@@ -1350,7 +1341,7 @@ msgstr "Загрузить"
 
 #: src/ui/gpaste-ui-item.c:989
 msgid "Pinned"
-msgstr ""
+msgstr "Закреплено"
 
 #: src/ui/gpaste-ui-make-password.c:56
 #, fuzzy
@@ -1371,9 +1362,8 @@ msgid ""
 msgstr ""
 
 #: src/ui/gpaste-ui-make-password.c:167
-#, fuzzy
 msgid "Edit Password"
-msgstr "Пароль"
+msgstr "Редактировать пароль"
 
 #: src/ui/gpaste-ui-make-password.c:188
 #, fuzzy
@@ -1386,23 +1376,20 @@ msgid "Could not read the password to edit"
 msgstr "Не удалось создать каталог истории"
 
 #: src/ui/gpaste-ui-make-password.c:247
-#, fuzzy
 msgid "Make Password"
-msgstr "Пароль"
+msgstr "Создать пароль"
 
 #: src/ui/gpaste-ui-new-item.c:30
-#, fuzzy
 msgid "Could not add the item"
-msgstr "Не удалось создать каталог истории"
+msgstr "Не удалось добавить элемент"
 
 #: src/ui/gpaste-ui-new-item.c:52
-#, fuzzy
 msgid "Add New Item"
 msgstr "Добавить новый элемент"
 
 #: src/ui/gpaste-ui-new-item.c:52
 msgid "Add"
-msgstr ""
+msgstr "Добавить"
 
 #: src/ui/gpaste-ui-panel-history.c:36 src/ui/gpaste-ui-panel.c:325
 #, fuzzy
@@ -1438,7 +1425,7 @@ msgstr "Не удалось создать каталог истории"
 #: src/ui/gpaste-ui-panel.c:469
 #, c-format
 msgid "Delete “%s”?"
-msgstr ""
+msgstr "Удалить «%s»?"
 
 #: src/ui/gpaste-ui-panel.c:472
 msgid "The history and everything in it are deleted for good."
@@ -1460,7 +1447,6 @@ msgid "Search the history"
 msgstr "очистить историю"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:26
-#, fuzzy
 msgid "Add a new item"
 msgstr "Добавить новый элемент"
 
@@ -1473,32 +1459,28 @@ msgid "Ctrl+0 through Ctrl+9, for the first ten items"
 msgstr ""
 
 #: src/ui/gpaste-ui-shortcuts-window.c:28
-#, fuzzy
 msgid "Show the preferences"
-msgstr "Настройки GPaste"
+msgstr "Показать настройки"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:29
-#, fuzzy
 msgid "Show the keyboard shortcuts"
-msgstr "Комбинации клавиш"
+msgstr "Показать комбинации клавиш"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:30
 msgid "Close the window"
-msgstr ""
+msgstr "Закрыть окно"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:36
 msgid "This window"
 msgstr ""
 
 #: src/ui/gpaste-ui-window.c:409
-#, fuzzy
 msgid "Could not restart the daemon"
-msgstr "Перезапустить демон"
+msgstr "Не удалось перезапустить демон"
 
 #: src/ui/gpaste-ui-window.c:421
-#, fuzzy
 msgid "Restart the GPaste Daemon?"
-msgstr "Перезапустить демон"
+msgstr "Перезапустить демон GPaste?"
 
 #: src/ui/gpaste-ui-window.c:422
 msgid "The clipboard is not recorded while it restarts."
