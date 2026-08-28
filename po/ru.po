@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-25 12:09+0200\n"
-"PO-Revision-Date: 2026-08-27 09:51+0000\n"
+"PO-Revision-Date: 2026-08-28 12:51+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "ru/>\n"
@@ -50,6 +50,8 @@ msgstr "Управляйте историей буфера обмена"
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Copy;Paste;History;Manager;"
 msgstr ""
+"Clipboard;Copy;Paste;History;Manager;буфер "
+"обмена;копировать;вырезать;вставить;менеджер;история;"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:17
 #: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:93
@@ -71,18 +73,16 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:23
-#, fuzzy
 msgid "Detect and replace growing lines"
-msgstr "Мы обнаруживаем и заменяем растущие линии в истории?"
+msgstr "Обнаружение и замена разрастающихся строк"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:24
-#, fuzzy
 msgid ""
 "Copying \"Here is\", then \"Here is an example\", leaves two entries in the "
 "history. With this enabled, the second replaces the first instead."
 msgstr ""
-"По умолчанию выделение \"Вот\", а затем \"Вот пример\" создаст две записи в "
-"истории. При включении этой функции первая запись будет заменена второй."
+"Копирование фраз «Вот» и «Вот пример» оставляет в истории две отдельные "
+"записи. При включении этого параметра первая запись будет заменена второй."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:32
 msgid "The name of the current history"
@@ -90,25 +90,25 @@ msgstr "Имя текущей истории"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:33
 msgid "The default name is \"history\""
-msgstr "Имя по умолчанию - \"история\""
+msgstr "Имя по умолчанию - «история»"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
-#, fuzzy
 msgid "Save copied images to the history"
-msgstr "Сохраняем ли мы скопированные изображения в историю или только текст?"
+msgstr "Сохранять скопированные изображения в историю"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
 msgid "Enabled by default: images are kept alongside text."
-msgstr ""
+msgstr "Включено по умолчанию: изображения сохраняются вместе с текстом."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:48
-#, fuzzy
 msgid "Show image previews in the history"
-msgstr "Отображать предварительный просмотр изображений в истории?"
+msgstr "Отображать в истории предварительный просмотр изображений"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "Enabled by default: an image item shows a thumbnail of itself."
 msgstr ""
+"Включено по умолчанию: элемент изображения в истории отображает свою "
+"миниатюру."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Size of image previews in pixels"
@@ -187,9 +187,8 @@ msgstr ""
 "границы, игнорируется."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:126
-#, fuzzy
 msgid "Password timeout"
-msgstr "Пароль"
+msgstr "Таймаут пароля"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:127
 msgid ""
@@ -198,6 +197,12 @@ msgid ""
 "selected, or the clipboard is emptied if the history holds none. 0 means a "
 "password stays for as long as anything else would."
 msgstr ""
+"Время (в секундах), в течение которого пароль может оставаться в буфере "
+"обмена, после того как станет активным элементом. По истечении этого времени "
+"либо выбирается следующий по списку элемент не являющийся паролем, либо "
+"буфер обмена очищается, если в истории не содержится других элементов. "
+"Значение 0 означает, что пароль остается в буфере обмена столько же, сколько "
+"и любой другой элемент."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:137
 msgid "The keyboard shortcut to delete the first element in history"
