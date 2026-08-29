@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-25 12:09+0200\n"
-"PO-Revision-Date: 2026-08-28 12:51+0000\n"
+"PO-Revision-Date: 2026-08-29 14:51+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "ru/>\n"
@@ -71,6 +71,9 @@ msgid ""
 "Anything past that length is replaced by \"…\" when an element is shown in "
 "the history, and newlines and tabs are shown as spaces. 0 disables the limit."
 msgstr ""
+"При показе элемента в истории, всё, что превышает указанную длину, "
+"заменяется многоточием «…» , а переносы строк и табуляция отображаются как "
+"пробелы. Значение 0 отключает ограничение."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:23
 msgid "Detect and replace growing lines"
@@ -123,14 +126,13 @@ msgstr ""
 "при наведении курсора. Размер по умолчанию — 50 пикселей."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:65
-#, fuzzy
 msgid "Close the UI after selecting an item"
-msgstr "Закрываем ли мы пользовательский интерфейс после выбора элемента?"
+msgstr "Закрывать пользовательский интерфейс после выбора элемента"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:66
 #: data/gsettings/org.gnome.GPaste.gschema.xml:211
 msgid "Enabled by default."
-msgstr ""
+msgstr "Включено по умолчанию."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:73
 msgid "The keyboard shortcut to launch the graphical interface"
@@ -144,7 +146,7 @@ msgstr "Комбинация клавиш для запуска графичес
 #: data/gsettings/org.gnome.GPaste.gschema.xml:195
 #: data/gsettings/org.gnome.GPaste.gschema.xml:237
 msgid "An empty string disables this shortcut."
-msgstr ""
+msgstr "Пустая строка отключает эту комбинацию клавиш."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:81
 msgid "The keyboard shortcut to mark the active item as being a password"
@@ -220,13 +222,16 @@ msgstr "По умолчанию только буфер обмена (ctrl+c) в
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:153
 msgid "Save every flavour of copied rich text"
-msgstr ""
+msgstr "При копировании форматированного текста сохранять все варианты"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:154
 msgid ""
 "Enabled by default. When disabled, only the plain text of a rich text "
 "selection (HTML and the like) is kept."
 msgstr ""
+"Включено по умолчанию. При отключении этого параметра выделенный фрагмент "
+"форматированного текста (HTML и т.п.) сохраняется только в виде простого "
+"текста."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:162
 msgid "The keyboard shortcut to display the menu"
@@ -264,15 +269,16 @@ msgstr ""
 "Комбинация клавиш для синхронизации основного выделения с буфером обмена"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:202
-#, fuzzy
 msgid "Keep the primary selection and the clipboard in sync"
-msgstr "Синхронизированы ли основное выделение и буфер обмена?"
+msgstr ""
+"Следить за тем, чтобы основное выделение и буфер обмена были синхронизированы"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:203
-#, fuzzy
 msgid ""
 "Disabled by default: the primary selection and the clipboard are independent."
-msgstr "По умолчанию основное выделение и буфер обмена являются независимыми."
+msgstr ""
+"По умолчанию отключено: Основное выделение и буфер обмена являются "
+"независимыми."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:210
 msgid "Track clipboard changes"
@@ -311,18 +317,16 @@ msgstr ""
 "Комбинация клавиш для отправки первого элемента истории на сервис pastebin"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:244
-#, fuzzy
 msgid "Ask for confirmation before emptying a history"
-msgstr "Запрашиваем ли мы подтверждение при очистке истории?"
+msgstr "Запрашивать подтверждение при очистке истории"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:245
 msgid "Enabled by default, because emptying a history cannot be undone."
-msgstr ""
+msgstr "Включено по умолчанию, поскольку очистку истории отменить невозможно."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:252
-#, fuzzy
 msgid "Run the experimental in-shell (mutter) daemon"
-msgstr "Использовать экспериментальный запуск демона внутри оболочки (shell)"
+msgstr "Использовать экспериментальный запуск демона внутри оболочки (mutter)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:253
 msgid ""
@@ -647,9 +651,8 @@ msgid ""
 msgstr ""
 
 #: src/gnome-shell/actions.js:30
-#, fuzzy
 msgid "Open GPaste"
-msgstr "GPaste"
+msgstr "Открыть GPaste"
 
 #: src/gnome-shell/actions.js:33
 #, fuzzy
@@ -665,16 +668,15 @@ msgstr "Удалить"
 
 #: src/gnome-shell/dummyHistoryItem.js:15
 msgid "Loading…"
-msgstr ""
+msgstr "Загрузка…"
 
 #: src/gnome-shell/dummyHistoryItem.js:20
-#, fuzzy
 msgid "GPaste daemon not running"
-msgstr "Настройки GPaste"
+msgstr "Демон GPaste не запущен"
 
 #: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-history.c:92
 msgid "No Items"
-msgstr ""
+msgstr "Нет элементов"
 
 #: src/gnome-shell/dummyHistoryItem.js:30 src/ui/gpaste-ui-history.c:499
 msgid "No Results"
@@ -682,18 +684,18 @@ msgstr "Ничего не найдено"
 
 #: src/gnome-shell/dummyHistoryItem.js:38 src/ui/gpaste-ui-history.c:502
 msgid "No Pinned Items"
-msgstr ""
+msgstr "Нет закреплённых элементов"
 
 #. The star shows a state and asks for the other one, so its name is
 #. what clicking it does.
 #: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:178
 msgid "Unpin"
-msgstr ""
+msgstr "Открепить"
 
 #: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:178
 #: src/ui/gpaste-ui-item.c:930
 msgid "Pin"
-msgstr ""
+msgstr "Закрепить"
 
 #: src/gnome-shell/searchItem.js:27
 msgid "Type to search…"
@@ -701,13 +703,12 @@ msgstr "Начните печатать для поиска…"
 
 #: src/gnome-shell/searchItem.js:54 src/ui/gpaste-ui-header.c:282
 msgid "Show Only Pinned Items"
-msgstr ""
+msgstr "Показывать только закреплённые элементы"
 
 #. Stateful and boolean, so it comes out as a check item.
 #: src/gnome-shell/stateSwitch.js:12
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:28
 #: src/ui/gpaste-ui-header.c:86
-#, fuzzy
 msgid "Track Clipboard Changes"
 msgstr "Отслеживать изменения в буфере обмена"
 
@@ -1477,7 +1478,7 @@ msgstr "Закрыть окно"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:36
 msgid "This window"
-msgstr ""
+msgstr "Это окно"
 
 #: src/ui/gpaste-ui-window.c:409
 msgid "Could not restart the daemon"
@@ -1489,32 +1490,31 @@ msgstr "Перезапустить демон GPaste?"
 
 #: src/ui/gpaste-ui-window.c:422
 msgid "The clipboard is not recorded while it restarts."
-msgstr ""
+msgstr "Содержимое буфера обмена не сохраняется после перезагрузки."
 
 #: src/ui/gpaste-ui-window.c:423
 msgid "Restart"
 msgstr "Перезапустить"
 
 #: src/ui/gpaste-ui-window.c:444
-#, fuzzy
 msgid "Could not start tracking the clipboard"
-msgstr "начать отслеживать изменения в буфере обмена"
+msgstr "Не удалось начать отслеживание изменений в буфере обмена"
 
 #: src/ui/gpaste-ui-window.c:445
-#, fuzzy
 msgid "Could not stop tracking the clipboard"
-msgstr "прекратить отслеживать изменения в буфере обмена"
+msgstr "Не удалось остановить отслеживание изменений в буфере обмена"
 
 #: src/ui/gpaste-ui-window.c:469
-#, fuzzy
 msgid "Stop Tracking the Clipboard?"
-msgstr "прекратить отслеживать изменения в буфере обмена"
+msgstr "Остановить отслеживание изменений в буфере обмена?"
 
 #: src/ui/gpaste-ui-window.c:470
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
+"Скопированные данные не будут добавлены в историю, пока отслеживание не "
+"будет снова запущено."
 
 #: src/ui/gpaste-ui-window.c:471
 msgid "Stop"
@@ -1531,13 +1531,11 @@ msgid "translator-credits"
 msgstr ""
 
 #: src/ui/gpaste-ui-window.c:769
-#, fuzzy
 msgid "Could not merge the selected items"
-msgstr "Не удалось создать каталог истории"
+msgstr "Не удалось объединить выбранные элементы"
 
 #. translators: separators inserted between the merged items
 #: src/ui/gpaste-ui-window.c:815
-#, fuzzy
 msgid "New Line"
 msgstr "Новая линия"
 
