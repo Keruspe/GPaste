@@ -23,8 +23,11 @@ struct _GPasteUiItem
      * implementation of each action and one place that says whether the row can
      * currently perform it. */
     GSimpleActionGroup *actions;
-    GtkWidget          *favourite;       /* the star: shown while pinned, or on hover */
-    GtkWidget          *remove;          /* shown on hover */
+    /* Each inline button and the revealer that shows and hides it, see
+     * g_paste_ui_item_update_actions_visibility(). */
+    GtkWidget          *favourite;       /* the star: kept because its icon is the pinned state */
+    GtkWidget          *favourite_revealer;
+    GtkWidget          *remove_revealer; /* the bin: nothing about it ever changes */
     GtkWidget          *menu;            /* the context menu, parented to the row */
 
     GtkWidget          *hbox;
@@ -160,14 +163,23 @@ g_paste_ui_item_update_actions (GPasteUiItem *self)
  * frequent ones are inline and they wait to be asked for. The star is the
  * exception: on a pinned item it is not a button but a badge, and a badge that
  * only appears under the pointer says nothing. Everything a row can do is in
- * its context menu, which is also the whole of the keyboard path. */
+ * its context menu, which is also the whole of the keyboard path.
+ *
+ * They are hidden by their revealer rather than by their own visibility: a
+ * button is taller than the text beside it, so a row that stops measuring one
+ * altogether is as tall as its text without the buttons and as tall as a button
+ * with them, and every row below it moved as the pointer went by. A collapsed
+ * horizontal revealer still measures its child's height, so the row keeps a
+ * button's height whether it is showing one or not -- and, unlike a button
+ * merely faded out, it takes none of the row's width while hidden. */
 static void
 g_paste_ui_item_update_actions_visibility (GPasteUiItem *self)
 {
     gboolean revealed = self->hovered && !self->selection_mode;
 
-    gtk_widget_set_visible (self->favourite, revealed || (self->favourited && !self->selection_mode));
-    gtk_widget_set_visible (self->remove, revealed);
+    gtk_revealer_set_reveal_child (GTK_REVEALER (self->favourite_revealer),
+                                   revealed || (self->favourited && !self->selection_mode));
+    gtk_revealer_set_reveal_child (GTK_REVEALER (self->remove_revealer), revealed);
 }
 
 /* The star says what the item is, not what the button does, so its icon is the
@@ -850,7 +862,13 @@ g_paste_ui_item_class_init (GPasteUiItemClass *klass)
 }
 
 /* A row button: flat, so the list does not read as a stack of button bars, and
- * named for a screen reader, which an icon cannot name it for. */
+ * named for a screen reader, which an icon cannot name it for. Returns the
+ * revealer it comes wrapped in -- what the row appends and what shows it later;
+ * the button itself is the revealer's child.
+ *
+ * Sideways and at once: a horizontal slide is what leaves the button's height
+ * measured while its width goes (see the reveal above), and an animation the
+ * eye can follow would re-ellipsize the label all the way through it. */
 static GtkWidget *
 row_button_new (const gchar *icon_name,
                 const gchar *label,
@@ -862,10 +880,16 @@ row_button_new (const gchar *icon_name,
     gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
     gtk_widget_add_css_class (button, "flat");
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
-    gtk_widget_set_visible (button, FALSE);
     gtk_actionable_set_action_name (GTK_ACTIONABLE (button), action_name);
 
-    return button;
+    GtkWidget *revealer = gtk_revealer_new ();
+
+    gtk_revealer_set_transition_type (GTK_REVEALER (revealer), GTK_REVEALER_TRANSITION_TYPE_SLIDE_LEFT);
+    gtk_revealer_set_transition_duration (GTK_REVEALER (revealer), 0);
+    gtk_revealer_set_reveal_child (GTK_REVEALER (revealer), FALSE);
+    gtk_revealer_set_child (GTK_REVEALER (revealer), button);
+
+    return revealer;
 }
 
 static void
@@ -906,10 +930,6 @@ g_paste_ui_item_init (GPasteUiItem *self)
     gtk_widget_set_halign (index_label, GTK_ALIGN_START);
     gtk_box_append (GTK_BOX (hbox), index_label);
 
-    gtk_widget_set_hexpand (label, TRUE);
-    gtk_widget_set_halign (label, GTK_ALIGN_START);
-    gtk_box_append (GTK_BOX (hbox), label);
-
     GtkWidget *thumbnail = gtk_picture_new ();
     self->thumbnail = GTK_PICTURE (thumbnail);
     gtk_picture_set_content_fit (self->thumbnail, GTK_CONTENT_FIT_CONTAIN);
@@ -930,12 +950,25 @@ g_paste_ui_item_init (GPasteUiItem *self)
 
     gtk_box_append (GTK_BOX (thumbnail_container), thumbnail);
     gtk_box_append (GTK_BOX (thumbnail_container), swatch);
+
+    /* Preview first, then the text: the label is the only child that expands, so
+     * it is the only one whose width the pin and delete buttons take when they
+     * appear under the pointer, and everything before it stays where it is. With
+     * the preview after the label instead, the buttons pushed it left the moment
+     * the pointer arrived -- and the preview is what the eye is on. It is also
+     * where a list row puts an image: a thumbnail leads the row, the text
+     * follows it, and the row's own actions sit at the end. */
     gtk_box_append (GTK_BOX (hbox), thumbnail_container);
 
-    self->favourite = row_button_new ("non-starred-symbolic", _("Pin"), "item.pin");
-    self->remove = row_button_new ("edit-delete-symbolic", _("Delete"), "item.delete");
-    gtk_box_append (GTK_BOX (hbox), self->favourite);
-    gtk_box_append (GTK_BOX (hbox), self->remove);
+    gtk_widget_set_hexpand (label, TRUE);
+    gtk_widget_set_halign (label, GTK_ALIGN_START);
+    gtk_box_append (GTK_BOX (hbox), label);
+
+    self->favourite_revealer = row_button_new ("non-starred-symbolic", _("Pin"), "item.pin");
+    self->remove_revealer = row_button_new ("edit-delete-symbolic", _("Delete"), "item.delete");
+    self->favourite = gtk_revealer_get_child (GTK_REVEALER (self->favourite_revealer));
+    gtk_box_append (GTK_BOX (hbox), self->favourite_revealer);
+    gtk_box_append (GTK_BOX (hbox), self->remove_revealer);
 }
 
 /**
