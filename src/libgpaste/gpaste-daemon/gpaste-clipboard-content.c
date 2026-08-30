@@ -275,7 +275,7 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
  * @texture: (nullable): the image, for %CLIPBOARD_CONTENT_IMAGE
  * @file_list: (nullable): the files, for %CLIPBOARD_CONTENT_FILE_LIST
  * @rgba: (nullable): the colour, for %CLIPBOARD_CONTENT_COLOR
- * @special_mimes: (array fixed-size=4): the alternative representations
+ * @special_mimes: (array fixed-size=5): the alternative representations
  *
  * Build the item a finished clipboard read describes. Both backends end their
  * update here, which is what keeps them agreeing on what each kind produces and
