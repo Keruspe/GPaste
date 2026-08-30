@@ -3,9 +3,20 @@ Description=GPaste daemon
 PartOf=graphical-session.target
 After=graphical-session.target
 
+# Spelled out because Type=dbus used to imply exactly these and the [Service]
+# comment says why it is gone: a daemon whose whole job is owning a name on the
+# session bus has no business being started before the bus is there, and
+# graphical-session.target only happens to be past it.
+Requires=dbus.socket
+After=dbus.socket
+
 [Service]
-Type=dbus
-BusName=org.gnome.GPaste
+# Not Type=dbus: releasing the well-known name is how this daemon re-executes
+# itself, and a Type=dbus unit is stopped the moment its BusName= goes away --
+# which killed the successor before it could take the name back, leaving the
+# session with no daemon at all. D-Bus activation does not depend on it: the bus
+# starts the unit named by SystemdService= and waits for the name to appear.
+Type=exec
 ExecStart=@pkglibexecdir@/gpaste-daemon
 
 [Install]

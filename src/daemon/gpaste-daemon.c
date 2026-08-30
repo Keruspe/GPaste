@@ -310,8 +310,8 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
     {
         /* A takeover (typically the gnome-shell extension, or `gpaste-daemon
          * --replace`): flush the history and release the lock so the successor
-         * loads our final state, then exit successfully so a Type=dbus systemd
-         * unit does not land in the failed state. */
+         * loads our final state, then exit successfully so the systemd unit
+         * does not land in the failed state. */
         g_print ("%s\n", _("Replaced by another GPaste daemon, exiting"));
         flush_and_unlock (ctx);
         g_application_quit (ctx->gapp);
