@@ -1099,7 +1099,15 @@ g_paste_sqlite_backend_read_content (sqlite3_stmt *stmt,
     return content;
 }
 
-static void
+/* An item's alternative representations, read back onto it.
+ *
+ * Returns %FALSE when the scan stopped short of the end of the rows (a corrupt
+ * page, an I/O error): the item then carries some of what was stored for it and
+ * not the rest, which the caller must not pass off as the whole of it. A row
+ * this build cannot make sense of -- an unknown mime, a value that does not
+ * decrypt -- is a different thing entirely: the scan completed, and dropping
+ * that one representation is the answer. */
+static gboolean
 g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
                                             GEnumClass   *atom_class,
                                             const guchar *key,
@@ -1108,7 +1116,9 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
 {
     sqlite3_bind_int64 (stmt, 1, item_id);
 
-    while (sqlite3_step (stmt) == SQLITE_ROW)
+    gint rc;
+
+    while ((rc = sqlite3_step (stmt)) == SQLITE_ROW)
     {
         const gchar *mime = (const gchar *) sqlite3_column_text (stmt, 0);
         GEnumValue *gev = g_enum_get_value_by_nick (atom_class, mime);
@@ -1133,6 +1143,8 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
 
     sqlite3_reset (stmt);
     sqlite3_clear_bindings (stmt);
+
+    return (rc == SQLITE_DONE);
 }
 
 static GPasteItem *
@@ -1385,7 +1397,10 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
-    while (sqlite3_step (stmt) == SQLITE_ROW)
+    gint rc;
+    gboolean complete = TRUE;
+
+    while ((rc = sqlite3_step (stmt)) == SQLITE_ROW)
     {
         GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support);
 
@@ -1399,15 +1414,37 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
         g_paste_item_set_favourite (item, sqlite3_column_int (stmt, 8));
 
-        g_paste_sqlite_backend_read_special_values (sv_stmt, atom_class, key, sqlite3_column_int64 (stmt, 0), item);
+        complete = g_paste_sqlite_backend_read_special_values (sv_stmt, atom_class, key,
+                                                               sqlite3_column_int64 (stmt, 0), item) && complete;
 
         *history = g_list_prepend (*history, item);
         *size += g_paste_item_get_size (item);
     }
 
+    complete = complete && (rc == SQLITE_DONE);
+
+    /* Said while the statements are still open: finalizing them is what replaces
+     * the message the connection last reported. */
+    if (!complete)
+        g_warning ("sqlite: could not read every row of the history: %s", sqlite3_errmsg (db));
+
     g_type_class_unref (atom_class);
     sqlite3_finalize (sv_stmt);
     sqlite3_finalize (stmt);
+
+    /* A scan cut short is not the end of the history. Handing back the rows it
+     * did reach, as a successful read, is what has the caller install them as
+     * the whole model -- and the next clipboard change then writes that
+     * truncation back over the rows still in the store. Report the failure
+     * instead, which is what stops the history being persisted at all, exactly
+     * as the file backend refuses a parse that did not finish. */
+    if (!complete)
+    {
+        g_clear_list (history, g_object_unref);
+        *size = 0;
+
+        return FALSE;
+    }
 
     *history = g_list_reverse (*history);
 
