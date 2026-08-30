@@ -967,8 +967,16 @@ g_paste_ui_item_init (GPasteUiItem *self)
     self->favourite_revealer = row_button_new ("non-starred-symbolic", _("Pin"), "item.pin");
     self->remove_revealer = row_button_new ("edit-delete-symbolic", _("Delete"), "item.delete");
     self->favourite = gtk_revealer_get_child (GTK_REVEALER (self->favourite_revealer));
-    gtk_box_append (GTK_BOX (hbox), self->favourite_revealer);
+
+    /* The star goes last, after the bin, for the same reason the label is what
+     * the buttons take their width from: a pinned row shows its star whether the
+     * pointer is on it or not, and only the last child of the row keeps its
+     * place when the one before it is revealed. With the star ahead of the bin,
+     * the badge slid a button's width left the moment the pointer arrived --
+     * the row keeping its shape everywhere except on the one part of it that is
+     * always there to be looked at. */
     gtk_box_append (GTK_BOX (hbox), self->remove_revealer);
+    gtk_box_append (GTK_BOX (hbox), self->favourite_revealer);
 }
 
 /**
