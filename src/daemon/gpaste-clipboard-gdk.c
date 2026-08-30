@@ -9,7 +9,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
-#include <gpaste-daemon/gpaste-special-atom.h>
+#include <gpaste-daemon/gpaste-special-mime.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -384,50 +384,50 @@ g_paste_clipboard_gdk_set_color (GPasteClipboardGdk            *self,
                                     data);
 }
 
-typedef void (*GPasteClipboardGdkSpecialAtomCallback) (GPasteClipboardGdk *self,
-                                                       GPasteSpecialAtom   atom,
+typedef void (*GPasteClipboardGdkSpecialMimeCallback) (GPasteClipboardGdk *self,
+                                                       GPasteSpecialMime   mime,
                                                        GBytes             *bytes,
                                                        gpointer            user_data);
 
 typedef struct
 {
     GPasteClipboardGdk                   *self; /* ref'd for the duration of the read */
-    GPasteSpecialAtom                     atom;
-    GPasteClipboardGdkSpecialAtomCallback callback;
+    GPasteSpecialMime                     mime;
+    GPasteClipboardGdkSpecialMimeCallback callback;
     gpointer                              user_data;
-} GPasteClipboardGdkSpecialAtomData;
+} GPasteClipboardGdkSpecialMimeData;
 
 static void
-g_paste_clipboard_gdk_on_special_atom_bytes_ready (GObject      *source_object,
+g_paste_clipboard_gdk_on_special_mime_bytes_ready (GObject      *source_object,
                                                    GAsyncResult *res,
                                                    gpointer      user_data)
 {
-    g_autofree GPasteClipboardGdkSpecialAtomData *data = user_data;
-    g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in fetch_special_atom */
+    g_autofree GPasteClipboardGdkSpecialMimeData *data = user_data;
+    g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in fetch_special_mime */
     g_autoptr (GError) error = NULL;
     g_autoptr (GBytes) bytes = g_input_stream_read_bytes_finish (G_INPUT_STREAM (source_object), res, &error);
 
     if (error || !bytes)
     {
         if (error)
-            g_debug ("Failed to read special atom bytes: %s", error->message);
+            g_debug ("Failed to read special mime bytes: %s", error->message);
         if (data->callback)
-            data->callback (self, data->atom, NULL, data->user_data);
+            data->callback (self, data->mime, NULL, data->user_data);
         return;
     }
 
     if (data->callback)
-        data->callback (self, data->atom, bytes, data->user_data);
+        data->callback (self, data->mime, bytes, data->user_data);
 }
 
 static void
-g_paste_clipboard_gdk_on_special_atom_stream_ready (GObject      *source_object,
+g_paste_clipboard_gdk_on_special_mime_stream_ready (GObject      *source_object,
                                                     GAsyncResult *res,
                                                     gpointer      user_data)
 {
-    g_autofree GPasteClipboardGdkSpecialAtomData *data = user_data;
+    g_autofree GPasteClipboardGdkSpecialMimeData *data = user_data;
     /* Released here unless the read below takes both it and @data over. */
-    g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in fetch_special_atom */
+    g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in fetch_special_mime */
     g_autoptr (GError) error = NULL;
     const gchar *actual_mime = NULL;
     g_autoptr (GInputStream) stream = gdk_clipboard_read_finish (GDK_CLIPBOARD (source_object), res, &actual_mime, &error);
@@ -435,9 +435,9 @@ g_paste_clipboard_gdk_on_special_atom_stream_ready (GObject      *source_object,
     if (error || !stream)
     {
         if (error)
-            g_debug ("Failed to read special atom stream: %s", error->message);
+            g_debug ("Failed to read special mime stream: %s", error->message);
         if (data->callback)
-            data->callback (self, data->atom, NULL, data->user_data);
+            data->callback (self, data->mime, NULL, data->user_data);
         return;
     }
 
@@ -448,34 +448,34 @@ g_paste_clipboard_gdk_on_special_atom_stream_ready (GObject      *source_object,
                                      G_MAXUINT,
                                      G_PRIORITY_DEFAULT,
                                      NULL, /* cancellable */
-                                     g_paste_clipboard_gdk_on_special_atom_bytes_ready,
+                                     g_paste_clipboard_gdk_on_special_mime_bytes_ready,
                                      g_steal_pointer (&data));
 }
 
 static void
-g_paste_clipboard_gdk_fetch_special_atom (GPasteClipboardGdk                   *self,
-                                          GPasteSpecialAtom                     atom,
-                                          GPasteClipboardGdkSpecialAtomCallback callback,
+g_paste_clipboard_gdk_fetch_special_mime (GPasteClipboardGdk                   *self,
+                                          GPasteSpecialMime                     mime,
+                                          GPasteClipboardGdkSpecialMimeCallback callback,
                                           gpointer                              user_data)
 {
-    GPasteClipboardGdkSpecialAtomData *data = g_new (GPasteClipboardGdkSpecialAtomData, 1);
+    GPasteClipboardGdkSpecialMimeData *data = g_new (GPasteClipboardGdkSpecialMimeData, 1);
 
     /* Ref for the whole read (see set_text), across both of its halves. */
     data->self = g_object_ref (self);
-    data->atom = atom;
+    data->mime = mime;
     data->callback = callback;
     data->user_data = user_data;
 
     /* gdk_clipboard_read_async() resolves to a single stream (the first of the
-     * requested mimetypes the owner provides), so distinct atoms cannot be
+     * requested mimetypes the owner provides), so distinct mimes cannot be
      * collapsed into one read; update() already fires these reads in parallel. */
-    const gchar *mime_types[] = { g_paste_special_atom_get (atom), NULL };
+    const gchar *mime_types[] = { g_paste_special_mime_get (mime), NULL };
 
     gdk_clipboard_read_async (self->real,
                               mime_types,
                               G_PRIORITY_DEFAULT,
                               NULL, /* cancellable */
-                              g_paste_clipboard_gdk_on_special_atom_stream_ready,
+                              g_paste_clipboard_gdk_on_special_mime_stream_ready,
                               data);
 }
 
@@ -492,7 +492,7 @@ typedef struct
         GdkFileList   *file_list;
         const GdkRGBA *rgba;
     };
-    GPasteBinaryData                     *special_atom[G_PASTE_SPECIAL_ATOM_LAST];
+    GPasteBinaryData                     *special_mime[G_PASTE_SPECIAL_MIME_LAST];
 } GPasteClipboardGdkUpdateData;
 
 static void
@@ -508,13 +508,13 @@ g_paste_clipboard_gdk_update_maybe_done (GPasteClipboardGdkUpdateData *data)
                                                           (data->content_kind == CLIPBOARD_CONTENT_IMAGE) ? data->texture : NULL,
                                                           (data->content_kind == CLIPBOARD_CONTENT_FILE_LIST) ? data->file_list : NULL,
                                                           (data->content_kind == CLIPBOARD_CONTENT_COLOR) ? data->rgba : NULL,
-                                                          data->special_atom);
+                                                          data->special_mime);
 
     if (data->callback)
         data->callback (G_PASTE_CLIPBOARD_PROVIDER (data->self), item, data->user_data);
 
-    for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
-        g_clear_object (&data->special_atom[atom]);
+    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
+        g_clear_object (&data->special_mime[mime]);
     g_object_unref (data->self); /* ref taken in update */
     g_free (data);
 }
@@ -602,15 +602,15 @@ g_paste_clipboard_gdk_update_on_color_ready (GPasteClipboardGdk *self G_GNUC_UNU
 }
 
 static void
-g_paste_clipboard_gdk_update_on_special_atom_ready (GPasteClipboardGdk *self G_GNUC_UNUSED,
-                                                    GPasteSpecialAtom   atom,
+g_paste_clipboard_gdk_update_on_special_mime_ready (GPasteClipboardGdk *self G_GNUC_UNUSED,
+                                                    GPasteSpecialMime   mime,
                                                     GBytes             *bytes,
                                                     gpointer            user_data)
 {
     GPasteClipboardGdkUpdateData *data = user_data;
 
     if (bytes && g_bytes_get_size (bytes) > 0)
-        data->special_atom[atom] = g_paste_binary_data_new (atom, g_bytes_ref (bytes));
+        data->special_mime[mime] = g_paste_binary_data_new (mime, g_bytes_ref (bytes));
 
     g_paste_clipboard_gdk_update_maybe_done (data);
 }
@@ -662,15 +662,15 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     data->pending = 1;
     data->content_kind = content_kind;
 
-    gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
+    gboolean mime_available[G_PASTE_SPECIAL_MIME_LAST] = { FALSE };
 
     if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
         (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (self->settings)))
     {
-        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
         {
-            if (gdk_content_formats_contain_mime_type (formats, g_paste_special_atom_get (atom)))
-                atom_available[atom] = TRUE;
+            if (gdk_content_formats_contain_mime_type (formats, g_paste_special_mime_get (mime)))
+                mime_available[mime] = TRUE;
         }
     }
 
@@ -694,12 +694,12 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_assert_not_reached ();
     }
 
-    for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
     {
-        if (atom_available[atom])
+        if (mime_available[mime])
         {
             ++data->pending;
-            g_paste_clipboard_gdk_fetch_special_atom (self, atom, g_paste_clipboard_gdk_update_on_special_atom_ready, data);
+            g_paste_clipboard_gdk_fetch_special_mime (self, mime, g_paste_clipboard_gdk_update_on_special_mime_ready, data);
         }
     }
 
@@ -760,7 +760,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
     {
         GPasteBinaryData *v = sv->data;
-        g_ptr_array_add (providers, gdk_content_provider_new_for_bytes (g_paste_special_atom_get (g_paste_binary_data_get_mime (v)), g_paste_binary_data_get_bytes (v)));
+        g_ptr_array_add (providers, gdk_content_provider_new_for_bytes (g_paste_special_mime_get (g_paste_binary_data_get_mime (v)), g_paste_binary_data_get_bytes (v)));
     }
 
     g_autoptr (GdkContentProvider) provider = NULL;

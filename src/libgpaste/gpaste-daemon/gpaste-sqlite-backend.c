@@ -619,7 +619,7 @@ g_paste_sqlite_backend_create_schema (sqlite3 *db)
         "CREATE TABLE IF NOT EXISTS special_values ("
         "    item_id  INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,"
         "    position INTEGER NOT NULL,"
-        "    mime     TEXT    NOT NULL," /* GPasteSpecialAtom value nick */
+        "    mime     TEXT    NOT NULL," /* GPasteSpecialMime value nick */
         "    data     BLOB    NOT NULL,"
         "    PRIMARY KEY (item_id, position)"
         ");");
@@ -823,16 +823,16 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
         return FALSE;
     }
 
-    GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
+    GEnumClass *mime_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_MIME);
     gboolean success = TRUE;
     gint64 position = 0;
 
     for (const GSList *val = special_values; success && val; val = val->next, ++position)
     {
         GPasteBinaryData *value = val->data;
-        GEnumValue *gev = g_enum_get_value (atom_class, g_paste_binary_data_get_mime (value));
+        GEnumValue *gev = g_enum_get_value (mime_class, g_paste_binary_data_get_mime (value));
 
-        /* Skip a value carrying an unknown atom rather than dereferencing NULL,
+        /* Skip a value carrying an unknown mime rather than dereferencing NULL,
          * mirroring the guarded read path in read_special_values. */
         if (!gev)
         {
@@ -859,7 +859,7 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
         sqlite3_clear_bindings (stmt);
     }
 
-    g_type_class_unref (atom_class);
+    g_type_class_unref (mime_class);
     sqlite3_finalize (stmt);
 
     return success;
@@ -1101,7 +1101,7 @@ g_paste_sqlite_backend_read_content (sqlite3_stmt *stmt,
 
 static void
 g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
-                                            GEnumClass   *atom_class,
+                                            GEnumClass   *mime_class,
                                             const guchar *key,
                                             gint64        item_id,
                                             GPasteItem   *item)
@@ -1111,7 +1111,7 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
     while (sqlite3_step (stmt) == SQLITE_ROW)
     {
         const gchar *mime = (const gchar *) sqlite3_column_text (stmt, 0);
-        GEnumValue *gev = g_enum_get_value_by_nick (atom_class, mime);
+        GEnumValue *gev = g_enum_get_value_by_nick (mime_class, mime);
 
         if (!gev)
         {
@@ -1381,7 +1381,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
         return FALSE;
     }
 
-    GEnumClass *atom_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_ATOM);
+    GEnumClass *mime_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_MIME);
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
@@ -1399,13 +1399,13 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
         g_paste_item_set_favourite (item, sqlite3_column_int (stmt, 8));
 
-        g_paste_sqlite_backend_read_special_values (sv_stmt, atom_class, key, sqlite3_column_int64 (stmt, 0), item);
+        g_paste_sqlite_backend_read_special_values (sv_stmt, mime_class, key, sqlite3_column_int64 (stmt, 0), item);
 
         *history = g_list_prepend (*history, item);
         *size += g_paste_item_get_size (item);
     }
 
-    g_type_class_unref (atom_class);
+    g_type_class_unref (mime_class);
     sqlite3_finalize (sv_stmt);
     sqlite3_finalize (stmt);
 

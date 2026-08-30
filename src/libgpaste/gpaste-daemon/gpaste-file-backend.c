@@ -300,9 +300,9 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
     for (const GSList *val = special_values; val; val = val->next)
     {
         GPasteBinaryData *value = val->data;
-        GEnumValue *gev = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), g_paste_binary_data_get_mime (value));
+        GEnumValue *gev = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_MIME), g_paste_binary_data_get_mime (value));
 
-        /* Skip a value carrying an unknown atom rather than dereferencing NULL,
+        /* Skip a value carrying an unknown mime rather than dereferencing NULL,
          * as the sqlite backend does — writing the item is worth more than the
          * one representation we cannot name. */
         if (!gev)
@@ -509,7 +509,7 @@ typedef struct
     gchar                *text;
     GSList               *special_values;
     HistoryVersion        version;
-    GPasteSpecialAtom     mime;
+    GPasteSpecialMime     mime;
 } Data;
 
 /* Where the parser currently is, for a diagnostic. An encrypted history is
@@ -705,12 +705,12 @@ start_tag (GMarkupParseContext *context,
     else if (g_paste_str_equal (element_name, "value"))
     {
         SWITCH_STATE (IN_ITEM, IN_VALUE);
-        data->mime = G_PASTE_SPECIAL_ATOM_INVALID;
+        data->mime = G_PASTE_SPECIAL_MIME_INVALID;
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "mime"))
             {
-                GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), *v);
+                GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_SPECIAL_MIME), *v);
                 if (gev)
                     data->mime = gev->value;
                 else
@@ -894,7 +894,7 @@ on_text (GMarkupParseContext *context,
             if (*g_strstrip (txt))
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
-                if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)
+                if (data->mime == G_PASTE_SPECIAL_MIME_INVALID)
                     g_set_str_take (&data->text, g_steal_pointer (&value));
                 else
                 {
@@ -1057,7 +1057,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
             NULL, /* text */
             NULL, /* special_values */
             HISTORY_INVALID,
-            G_PASTE_SPECIAL_ATOM_INVALID
+            G_PASTE_SPECIAL_MIME_INVALID
         };
         g_autoptr (GMarkupParseContext) ctx = g_markup_parse_context_new (&parser,
                                                                           G_MARKUP_TREAT_CDATA_AS_TEXT,

@@ -11,7 +11,7 @@
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
-#include <gpaste-daemon/gpaste-special-atom.h>
+#include <gpaste-daemon/gpaste-special-mime.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -442,7 +442,7 @@ g_paste_clipboard_meta_source_add_special_values (GPasteClipboardMetaSource *sel
         GPasteBinaryData *v = sv->data;
 
         g_paste_clipboard_meta_source_add (self,
-                                           g_paste_special_atom_get (g_paste_binary_data_get_mime (v)),
+                                           g_paste_special_mime_get (g_paste_binary_data_get_mime (v)),
                                            g_paste_binary_data_get_bytes (v));
     }
 }
@@ -651,7 +651,7 @@ typedef struct
     gchar                                *mime;
     GdkFileList                          *file_list;
     GdkRGBA                               rgba;
-    GPasteBinaryData                     *special_atom[G_PASTE_SPECIAL_ATOM_LAST];
+    GPasteBinaryData                     *special_mime[G_PASTE_SPECIAL_MIME_LAST];
 } GPasteClipboardMetaUpdateData;
 
 static void
@@ -666,13 +666,13 @@ g_paste_clipboard_meta_update_maybe_done (GPasteClipboardMetaUpdateData *data)
                                                           data->texture,
                                                           data->file_list,
                                                           &data->rgba,
-                                                          data->special_atom);
+                                                          data->special_mime);
 
     if (data->callback)
         data->callback (G_PASTE_CLIPBOARD_PROVIDER (data->self), item, data->user_data);
 
-    for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
-        g_clear_object (&data->special_atom[atom]);
+    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
+        g_clear_object (&data->special_mime[mime]);
     g_clear_object (&data->texture);
     if (data->file_list)
         g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&data->file_list));
@@ -853,19 +853,19 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
 typedef struct
 {
     GPasteClipboardMetaUpdateData *data;
-    GPasteSpecialAtom              atom;
-} GPasteClipboardMetaAtomCtx;
+    GPasteSpecialMime              mime;
+} GPasteClipboardMetaMimeCtx;
 
 static void
-g_paste_clipboard_meta_on_atom_bytes (GPasteClipboardMeta *self G_GNUC_UNUSED,
+g_paste_clipboard_meta_on_mime_bytes (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                       GBytes              *bytes,
                                       gpointer             user_data)
 {
-    g_autofree GPasteClipboardMetaAtomCtx *ctx = user_data;
+    g_autofree GPasteClipboardMetaMimeCtx *ctx = user_data;
     GPasteClipboardMetaUpdateData *data = ctx->data;
 
     if (bytes && g_bytes_get_size (bytes) > 0)
-        data->special_atom[ctx->atom] = g_paste_binary_data_new (ctx->atom, g_bytes_ref (bytes));
+        data->special_mime[ctx->mime] = g_paste_binary_data_new (ctx->mime, g_bytes_ref (bytes));
 
     g_paste_clipboard_meta_update_maybe_done (data);
 }
@@ -979,17 +979,17 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
         (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (self->settings)))
     {
-        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
         {
-            if (!mimetypes_contain (mimetypes, g_paste_special_atom_get (atom)))
+            if (!mimetypes_contain (mimetypes, g_paste_special_mime_get (mime)))
                 continue;
 
-            GPasteClipboardMetaAtomCtx *ctx = g_new0 (GPasteClipboardMetaAtomCtx, 1);
+            GPasteClipboardMetaMimeCtx *ctx = g_new0 (GPasteClipboardMetaMimeCtx, 1);
             ctx->data = data;
-            ctx->atom = atom;
+            ctx->mime = mime;
 
             ++data->pending;
-            g_paste_clipboard_meta_read_mime (self, g_paste_special_atom_get (atom), g_paste_clipboard_meta_on_atom_bytes, ctx);
+            g_paste_clipboard_meta_read_mime (self, g_paste_special_mime_get (mime), g_paste_clipboard_meta_on_mime_bytes, ctx);
         }
     }
 

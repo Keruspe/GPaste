@@ -7,7 +7,7 @@ struct _GPasteBinaryData
 {
     GObject parent_instance;
 
-    GPasteSpecialAtom  mime;
+    GPasteSpecialMime  mime;
     GBytes            *bytes;
 };
 
@@ -17,14 +17,14 @@ G_PASTE_DEFINE_TYPE (BinaryData, binary_data, G_TYPE_OBJECT)
  * g_paste_binary_data_get_mime:
  * @self: a #GPasteBinaryData instance
  *
- * Get the special atom (mime type) associated with the #GPasteBinaryData
+ * Get which representation the #GPasteBinaryData holds
  *
- * Returns: the #GPasteSpecialAtom
+ * Returns: the #GPasteSpecialMime
  */
-G_PASTE_VISIBLE GPasteSpecialAtom
+G_PASTE_VISIBLE GPasteSpecialMime
 g_paste_binary_data_get_mime (GPasteBinaryData *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_BINARY_DATA (self), G_PASTE_SPECIAL_ATOM_INVALID);
+    g_return_val_if_fail (G_PASTE_IS_BINARY_DATA (self), G_PASTE_SPECIAL_MIME_INVALID);
 
     return self->mime;
 }
@@ -88,7 +88,7 @@ g_paste_binary_data_init (GPasteBinaryData *self G_GNUC_UNUSED)
 
 /**
  * g_paste_binary_data_new:
- * @mime: the #GPasteSpecialAtom identifying the mime type
+ * @mime: the #GPasteSpecialMime identifying the mime type
  * @bytes: (transfer full): the bytes to store
  *
  * Create a new instance of #GPasteBinaryData, taking ownership of @bytes
@@ -97,7 +97,7 @@ g_paste_binary_data_init (GPasteBinaryData *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteBinaryData *
-g_paste_binary_data_new (GPasteSpecialAtom mime,
+g_paste_binary_data_new (GPasteSpecialMime mime,
                          GBytes           *bytes)
 {
     g_return_val_if_fail (bytes, NULL);

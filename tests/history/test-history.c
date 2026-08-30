@@ -2012,9 +2012,9 @@ test_sqlite_roundtrip (void)
     g_assert_true (g_paste_storage_backend_is_incremental (backend));
 
     GPasteItem *text = g_paste_text_item_new ("plain text entry");
-    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                    g_bytes_new_static ("<b>hi</b>", 9)));
-    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES,
+    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES,
                                                                    g_bytes_new_static ("copy\nfile:///tmp/x", 18)));
 
     /* An image item loaded by path reads its file at construction, so write a
@@ -2178,7 +2178,7 @@ test_sqlite_replace (void)
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
 
     GPasteItem *middle = g_paste_text_item_new ("middle");
-    g_paste_item_add_special_value (middle, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+    g_paste_item_add_special_value (middle, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                      g_bytes_new_static ("<i>old</i>", 10)));
 
     GList *items = NULL;
@@ -2192,7 +2192,7 @@ test_sqlite_replace (void)
     g_autoptr (GPasteItem) replacement = g_paste_text_item_new ("replaced");
     g_autoptr (GBytes) replacement_sv = g_bytes_new_static ("copy\nfile:///tmp/y", 18);
 
-    g_paste_item_add_special_value (replacement, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES,
+    g_paste_item_add_special_value (replacement, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES,
                                                                           g_bytes_ref (replacement_sv)));
 
     /* The backend is incremental, so the fallback snapshot is never used. */
@@ -2215,7 +2215,7 @@ test_sqlite_replace (void)
     const GSList *svs = g_paste_item_get_special_values (g_list_nth_data (loaded, 1));
 
     g_assert_cmpuint (g_slist_length ((GSList *) svs), ==, 1);
-    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES);
+    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES);
     g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (svs->data), replacement_sv));
 
     /* make_password turns an item into a password: it must leave storage, not
@@ -2339,13 +2339,13 @@ test_sqlite_cascade (void)
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
 
     GPasteItem *rich = g_paste_text_item_new ("rich");
-    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                    g_bytes_new_static ("<b>rich</b>", 11)));
-    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES,
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES,
                                                                    g_bytes_new_static ("copy\nfile:///tmp/z", 18)));
 
     GPasteItem *survivor = g_paste_text_item_new ("survivor");
-    g_paste_item_add_special_value (survivor, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+    g_paste_item_add_special_value (survivor, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                        g_bytes_new_static ("<u>keep</u>", 11)));
 
     GList *items = NULL;
@@ -2756,7 +2756,7 @@ test_encrypted_sqlite_roundtrip (void)
     GList *items = NULL;
     GPasteItem *text = g_paste_text_item_new (text_value);
 
-    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                    g_bytes_new_static (html_value, strlen (html_value))));
     items = g_list_append (items, text);
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
@@ -2804,7 +2804,7 @@ test_encrypted_sqlite_roundtrip (void)
 
     const GSList *svs = g_paste_item_get_special_values (read_text);
     g_assert_cmpuint (g_slist_length ((GSList *) svs), ==, 1);
-    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_TEXT_HTML);
+    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_MIME_TEXT_HTML);
     g_assert_cmpmem (g_bytes_get_data (g_paste_binary_data_get_bytes (svs->data), NULL), strlen (html_value),
                      html_value, strlen (html_value));
 
@@ -2927,7 +2927,7 @@ test_encrypted_sqlite_rekey (void)
             GList *items = NULL;
 
             /* A special value exercises the special_values.data column. */
-            g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+            g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                            g_bytes_ref (html)));
 
             items = g_list_append (items, text);
@@ -2995,7 +2995,7 @@ test_encrypted_sqlite_rekey (void)
                     found_text = TRUE;
 
                     g_assert_cmpuint (g_slist_length ((GSList *) svs), ==, 1);
-                    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_TEXT_HTML);
+                    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_MIME_TEXT_HTML);
                     g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (svs->data), html));
                 }
             }

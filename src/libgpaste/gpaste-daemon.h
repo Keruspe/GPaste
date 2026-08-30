@@ -19,7 +19,7 @@
  * uninstalled header is a broken install. */
 
 /* Clipboard item types */
-#include <gpaste-daemon/gpaste-special-atom.h>
+#include <gpaste-daemon/gpaste-special-mime.h>
 #include <gpaste-daemon/gpaste-binary-data.h>
 #include <gpaste-daemon/gpaste-item.h>
 #include <gpaste-daemon/gpaste-text-item.h>

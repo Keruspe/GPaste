@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <gpaste-daemon/gpaste-special-atom.h>
+#include <gpaste-daemon/gpaste-special-mime.h>
 
 G_BEGIN_DECLS
 
@@ -11,11 +11,11 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (BinaryData, binary_data, BINARY_DATA, GObject)
 
-GPasteSpecialAtom  g_paste_binary_data_get_mime     (GPasteBinaryData *self);
+GPasteSpecialMime  g_paste_binary_data_get_mime     (GPasteBinaryData *self);
 GBytes            *g_paste_binary_data_get_bytes    (GPasteBinaryData *self);
 gchar             *g_paste_binary_data_to_base64    (GPasteBinaryData *self);
 
-GPasteBinaryData *g_paste_binary_data_new (GPasteSpecialAtom  mime,
+GPasteBinaryData *g_paste_binary_data_new (GPasteSpecialMime  mime,
                                            GBytes            *bytes);
 
 G_END_DECLS

@@ -275,7 +275,7 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
  * @texture: (nullable): the image, for %CLIPBOARD_CONTENT_IMAGE
  * @file_list: (nullable): the files, for %CLIPBOARD_CONTENT_FILE_LIST
  * @rgba: (nullable): the colour, for %CLIPBOARD_CONTENT_COLOR
- * @special_atoms: (array fixed-size=4): the alternative representations
+ * @special_mimes: (array fixed-size=4): the alternative representations
  *
  * Build the item a finished clipboard read describes. Both backends end their
  * update here, which is what keeps them agreeing on what each kind produces and
@@ -289,7 +289,7 @@ g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
                                    GdkTexture                *texture,
                                    GdkFileList               *file_list,
                                    const GdkRGBA             *rgba,
-                                   GPasteBinaryData         **special_atoms)
+                                   GPasteBinaryData         **special_mimes)
 {
     GPasteItem *item = NULL;
 
@@ -317,13 +317,13 @@ g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
     }
 
     /* Only these two ever come with alternative representations. */
-    if (item && special_atoms &&
+    if (item && special_mimes &&
         (kind == CLIPBOARD_CONTENT_TEXT || kind == CLIPBOARD_CONTENT_FILE_LIST))
     {
-        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
         {
-            if (special_atoms[atom])
-                g_paste_item_add_special_value (item, g_steal_pointer (&special_atoms[atom]));
+            if (special_mimes[mime])
+                g_paste_item_add_special_value (item, g_steal_pointer (&special_mimes[mime]));
         }
     }
 
