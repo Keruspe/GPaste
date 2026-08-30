@@ -870,9 +870,6 @@ g_paste_clipboard_meta_on_mime_bytes (GPasteClipboardMeta *self G_GNUC_UNUSED,
     g_paste_clipboard_meta_update_maybe_done (data);
 }
 
-/* Pick the offered mimetype to read an image from: prefer PNG (what we publish
- * first and lossless), otherwise the first format GDK can deserialise into a
- * texture. Returns a pointer into @mimetypes, or NULL if none qualifies. */
 /* Pick the offered mimetype to read @type from: @preferred (the canonical
  * representation) when it is on offer, otherwise the first format GDK can
  * deserialise into @type. Returns a pointer into @mimetypes, or NULL. */
