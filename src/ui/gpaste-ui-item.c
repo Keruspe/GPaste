@@ -70,16 +70,21 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL };
 
 G_PASTE_DEFINE_TYPE (UiItem, ui_item, GTK_TYPE_BOX)
 
+/* element-size is what a row asks for, not what it insists on: min-chars is a
+ * floor, and the list is in a scrolled window that never scrolls horizontally,
+ * so that floor reaches the window itself -- eighty characters of it, past the
+ * width the window opens at, leaving the header bar to allocate its end buttons
+ * off the right edge. The label ellipsizes, so it has nothing to lose by
+ * settling for less than it asked for. */
 static void
 g_paste_ui_item_set_text_size (GPasteSettings *settings,
                                GParamSpec     *pspec G_GNUC_UNUSED,
                                gpointer        user_data)
 {
     GPasteUiItem *self = user_data;
-    guint64 size = g_paste_settings_get_element_size (settings);
 
-    gtk_inscription_set_min_chars (self->label, size);
-    gtk_inscription_set_nat_chars (self->label, size);
+    gtk_inscription_set_min_chars (self->label, 0);
+    gtk_inscription_set_nat_chars (self->label, g_paste_settings_get_element_size (settings));
 }
 
 /* Keep a colour's preview proportional to a single line of this row's text.
