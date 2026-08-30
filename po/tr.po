@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-30 13:18+0200\n"
+"POT-Creation-Date: 2026-08-31 12:41+0200\n"
 "PO-Revision-Date: 2025-10-11 08:07+0000\n"
 "Last-Translator: Oğuz Ersen <oguz@ersen.moe>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
@@ -655,25 +655,29 @@ msgstr "Geçmişi temizle"
 msgid "Delete"
 msgstr "Sil"
 
-#: src/gnome-shell/dummyHistoryItem.js:15
+#: src/gnome-shell/dummyHistoryItem.js:31
+msgid "Retry"
+msgstr ""
+
+#: src/gnome-shell/dummyHistoryItem.js:64
 msgid "Loading…"
 msgstr ""
 
-#: src/gnome-shell/dummyHistoryItem.js:20
+#: src/gnome-shell/dummyHistoryItem.js:68
 #, fuzzy
 msgid "GPaste daemon not running"
 msgstr "GPaste Ayarları"
 
-#: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-history.c:92
+#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:92
 msgid "No Items"
 msgstr ""
 
-#: src/gnome-shell/dummyHistoryItem.js:30 src/ui/gpaste-ui-history.c:499
+#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:499
 #, fuzzy
 msgid "No Results"
 msgstr "(Sonuç yok)"
 
-#: src/gnome-shell/dummyHistoryItem.js:38 src/ui/gpaste-ui-history.c:502
+#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:502
 msgid "No Pinned Items"
 msgstr ""
 
@@ -1524,54 +1528,54 @@ msgstr ""
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:769
+#: src/ui/gpaste-ui-window.c:773
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "Geçmiş dizini oluşturulamadı"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:815
+#: src/ui/gpaste-ui-window.c:819
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:816
+#: src/ui/gpaste-ui-window.c:820
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:817
+#: src/ui/gpaste-ui-window.c:821
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:818
+#: src/ui/gpaste-ui-window.c:822
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:826
+#: src/ui/gpaste-ui-window.c:830
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:831
+#: src/ui/gpaste-ui-window.c:835
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:842
+#: src/ui/gpaste-ui-window.c:846
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:911
+#: src/ui/gpaste-ui-window.c:915
 msgid "Quit"
 msgstr "Çık"
 
-#: src/ui/gpaste-ui-window.c:955 src/ui/gpaste-ui-window.c:956
+#: src/ui/gpaste-ui-window.c:959 src/ui/gpaste-ui-window.c:960
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste arka plan programına bağlanılamadı"
 
-#: src/ui/gpaste-ui-window.c:1022
+#: src/ui/gpaste-ui-window.c:1026
 #, fuzzy
 msgid "Histories"
 msgstr "Geçmiş erişimi"
 
-#: src/ui/gpaste-ui-window.c:1023
+#: src/ui/gpaste-ui-window.c:1027
 #, fuzzy
 msgid "History"
 msgstr "Geçmiş erişimi"

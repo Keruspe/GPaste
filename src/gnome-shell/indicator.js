@@ -24,6 +24,10 @@ import {GPasteStateSwitch} from './stateSwitch.js';
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
     static _CONNECT_RETRIES = 3;
+    // The reconnect ladder, in seconds: 1, 2, 4, ... 64, which is a little over
+    // two minutes of trying in all. Past it the placeholder row is the way back.
+    static _RECONNECT_FIRST_DELAY = 1;
+    static _RECONNECT_LAST_DELAY = 64;
     // Rows to load before any have been laid out (and a real row height is
     // known); _maybeLoadMore() then tops the list up to fill the viewport.
     static _DEFAULT_BATCH = 20;
@@ -53,7 +57,25 @@ class GPasteIndicator extends Button {
         this._loading = false;
         this._reloadGeneration = 0;
 
+        // Whether there is a daemon to talk to, and the reconnect ladder we
+        // walk while there is none.
+        this._connected = false;
+        this._reconnectId = 0;
+        this._reconnectDelay = 0;
+        // Whether the ladder has been walked to its end with nothing found: the
+        // placeholder then stops saying "wait" and starts offering a retry.
+        this._reconnectSpent = false;
+        this._connecting = false;
+        // Which probe's reply still counts: the ladder is the latest one's to
+        // step, an older one having been overtaken.
+        this._probeGeneration = 0;
+
         this._dummyHistoryItem = new GPasteDummyHistoryItem();
+        // Its own signal rather than 'activate', which would close the menu on
+        // the row about to report what this did. Emitted only while it is saying
+        // there is no daemon, that being the one state where the row is an offer
+        // rather than a label.
+        this._dummyHistoryItem.connect('retry', this._retry.bind(this));
         this.menu.addMenuItem(this._dummyHistoryItem);
 
         this._searchItem = new GPasteSearchItem();
@@ -66,6 +88,12 @@ class GPasteIndicator extends Button {
             'notify::images-preview-size', this._resetImagesPreview.bind(this),
             this);
         this._resetElementSize();
+
+        // Connected here rather than at the end of _setup (): the settings
+        // above are already connected and a reconnect may already be pending
+        // by the time _setup () gives up, and a teardown before it finishes
+        // has to take those with it too.
+        this.connect('destroy', this._onDestroy.bind(this));
 
         this._setup().catch(console.error);
     }
@@ -97,7 +125,18 @@ class GPasteIndicator extends Button {
     }
 
     async _setup() {
-        this._client = await this._connect();
+        // Marks the window where this._client is not assigned yet. _connect ()
+        // retries with a backoff, so that window is seconds long, and a second
+        // _setup () started inside it -- the placeholder row is an offer the
+        // whole time -- would build a second switch, search row, scroll view and
+        // footer into the same menu, orphaning the first of each.
+        this._connecting = true;
+        try {
+            this._client = await this._connect();
+        } finally {
+            this._connecting = false;
+        }
+
         if (this._destroyed || !this._client) {
             // Out of retries: the placeholder has been saying "Loading…" all
             // this while, and now there is something to report.
@@ -147,18 +186,27 @@ class GPasteIndicator extends Button {
             'notify::value', this._maybeLoadMore.bind(this),
             this);
 
-        await this._reload();
-        if (this._destroyed) {
-            this._client = null;
-            return;
-        }
-
         this._client.connectObject(
             'update', this._update.bind(this),
             'show-history', this._popup.bind(this),
             'tracking', this._toggle.bind(this),
+            'notify::history', this._onDaemonStateChanged.bind(this),
             this);
 
+        // The proxy is built whether or not a daemon answered, and it follows
+        // the bus name across a re-exec on its own, so this is the first place
+        // that can tell one case from the other. Read once the handler above is
+        // watching, and not before: a daemon leaving in between would go
+        // unannounced, and _onDaemonStateChanged () would then find the very
+        // state it was told to expect and stand down for the rest of the
+        // session.
+        this._connected = this._daemonReady();
+
+        if (!this._connected)
+            this._onDaemonGone();
+
+        // A no-op with no daemon there, and deliberately: see _onStateChanged ().
+        // _onDaemonAppeared () reports it once one turns up.
         this._onStateChanged(true);
 
         // The ctrl-index overlay and ctrl+0-9 selection are driven by raw key
@@ -168,7 +216,14 @@ class GPasteIndicator extends Button {
         this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
         this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
 
-        this.connect('destroy', this._onDestroy.bind(this));
+        // Last, being the one step that waits on the daemon: one that drops out
+        // while it is in flight rejects the call, and a rejection out of here
+        // abandons the rest of this function -- so everything that notices a
+        // daemon leaving and offers a way back is connected above it, where an
+        // abandoned setup costs the indicator neither its daemon handler nor its
+        // ladder for the session.
+        if (this._connected)
+            await this._reload();
     }
 
     // @extensionDisabled: whether the extension itself is going away, as opposed
@@ -187,16 +242,211 @@ class GPasteIndicator extends Button {
         // lock screen is not that. Reporting it there would stop recording the
         // clipboard for the whole locked session, which is exactly what the
         // "unlock-dialog" session mode exists to prevent.
-        const reported = extensionDisabled && !!this._client;
+        const reported = extensionDisabled && !!this._client && this._connected;
 
         if (reported)
             this._onStateChanged(false);
 
-        // destroy() fires the 'destroy' signal connected in _setup, which runs
-        // _onDestroy(); don't call it a second time here.
+        // destroy() fires the 'destroy' signal connected in the constructor,
+        // which runs _onDestroy(); don't call it a second time here.
         this.destroy();
 
         return reported;
+    }
+
+    // Which history is in use is the daemon's own property, cached off the
+    // proxy, and it reads back null while there is no daemon: whether it has a
+    // value is therefore the honest answer to "is there one to ask".
+    //
+    // The bus name is not that answer. Both daemons own the name *before*
+    // building the object that serves it, so the proxy's GetAll on a new owner
+    // finds nothing at that path and leaves the cache empty; what fills it is
+    // the daemon's own PropertiesChanged a moment later. A reload driven off
+    // "g-name-owner" would run in that gap and find the very null it is meant
+    // to be past -- which is what a re-exec leaves a client sitting in.
+    _daemonReady() {
+        return !!this._client?.get_history_name();
+    }
+
+    // A daemon appearing or going away is a change of what the whole menu can
+    // say, so it is answered here rather than by each path finding out for
+    // itself that its call went nowhere. "notify::history" carries both edges:
+    // the proxy invalidates every cached property the moment the name loses its
+    // owner, and fills them again once there is something to fill them from.
+    //
+    // Returns whether the state actually moved, which is what _reconcileConnection()
+    // asks: a caller that gave up on a daemon still sitting there has been told
+    // nothing by this, and has its own repainting to do.
+    _onDaemonStateChanged() {
+        const connected = this._daemonReady();
+
+        if (connected === this._connected)
+            return false;
+
+        if (connected)
+            this._onDaemonAppeared();
+        else
+            this._onDaemonGone();
+
+        return true;
+    }
+
+    _onDaemonAppeared() {
+        this._connected = true;
+        this._cancelReconnect();
+        this._reconnectDelay = 0;
+        this._reconnectSpent = false;
+        // Held back for as long as there was no daemon to tell, this one having
+        // come up after the extension did.
+        this._onStateChanged(true);
+        this._reloadCurrent();
+    }
+
+    // Drop everything the menu was showing of a history it can no longer speak
+    // for. @_available reaching 0 before the rows go is what the order is for:
+    // emptying them moves the scroll adjustment, and its "changed" would have
+    // _maybeLoadMore() fill them again from a count that still said there was
+    // more to come.
+    _forgetHistory() {
+        this._available = 0;
+        this._filteredUuids = [];
+        this._clearRows();
+        this._updateVisibility(true);
+    }
+
+    _onDaemonGone() {
+        this._connected = false;
+        // A reply about the history that just went away must not land on the
+        // rows the next daemon fills.
+        ++this._reloadGeneration;
+        this._forgetHistory();
+
+        this._reconnectDelay = 0;
+        this._reconnectSpent = false;
+        this._scheduleReconnect();
+    }
+
+    // The daemon is bus-activatable, so an ordinary method call is what brings
+    // it back -- which is exactly what _fetchAvailable ()'s cached-name guard
+    // exists to avoid doing by accident, and what this one is for.
+    //
+    // @activate: whether asking may be what starts a daemon. Only the user gets
+    // to say so, by activating the placeholder row: a ladder that activated on
+    // its own would put back the daemon they had just stopped, within a second
+    // of their stopping it, with no way to suppress it short of turning the
+    // extension off. So a scheduled probe waits for the name to have an owner
+    // and only then asks -- which is the gap it exists for anyway, a daemon
+    // owning the name before it exports anything.
+    //
+    // The reply is not the answer, and a failure is not one either: a daemon
+    // that has just been activated owns the name before it exports anything, so
+    // the call that started it is as likely as not to come back "object does not
+    // exist". What says it worked is _onDaemonStateChanged () firing.
+    async _probeDaemon(activate = false) {
+        if (this._destroyed || !this._client || this._connected)
+            return;
+
+        if (!activate && !this._client.get_name_owner()) {
+            this._scheduleReconnect();
+            return;
+        }
+
+        // Only the latest probe's reply is worth anything: a retry landing while
+        // a scheduled one is still awaiting its call restarts the ladder, and the
+        // overtaken probe stepping it on its way out would walk it twice per
+        // click -- spending it well before the two minutes it is meant to cover.
+        const generation = ++this._probeGeneration;
+
+        try {
+            await this._client.get_history_size();
+        } catch {
+            // Nothing to report: a probe that got nowhere is what the next rung
+            // is for, and the last rung leaves the placeholder row to be asked
+            // again.
+        }
+
+        // A daemon that did come up announced itself, which cancelled what is
+        // scheduled here; one that did not leaves the ladder to carry on --
+        // unless a newer probe has taken it over, which owns what happens next.
+        if (this._destroyed || this._connected || generation !== this._probeGeneration)
+            return;
+
+        this._scheduleReconnect();
+        // And the row says which of "starting" and "not running" is true now, a
+        // retry having left it saying neither.
+        this._updateVisibility(true);
+    }
+
+    // Back off between tries so a session with no daemon to activate is not
+    // polled forever, and stop once the ladder is walked: two minutes is long
+    // enough for a re-exec, an upgrade or a manual restart, and past that
+    // retrying is the user's call.
+    _scheduleReconnect() {
+        this._cancelReconnect();
+
+        const delay = this._reconnectDelay
+            ? this._reconnectDelay * 2
+            : GPasteIndicator._RECONNECT_FIRST_DELAY;
+
+        if (delay > GPasteIndicator._RECONNECT_LAST_DELAY) {
+            // Nothing is coming to fix this on its own, so the placeholder stops
+            // saying "starting" and becomes the way back -- including for a
+            // daemon that owns the bus name and never answered, which is what
+            // "Loading…" was waiting on and has now waited out.
+            this._reconnectSpent = true;
+            this._updateVisibility(true);
+            return;
+        }
+
+        this._reconnectDelay = delay;
+        this._reconnectId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
+            this._reconnectId = 0;
+            this._probeDaemon().catch(console.error);
+            return GLib.SOURCE_REMOVE;
+        });
+        GLib.Source.set_name_by_id(this._reconnectId, '[GPaste] daemon reconnect');
+    }
+
+    _cancelReconnect() {
+        if (this._reconnectId) {
+            GLib.Source.remove(this._reconnectId);
+            this._reconnectId = 0;
+        }
+    }
+
+    // The placeholder row was activated: try again now -- asking for a daemon
+    // rather than waiting for one, since this is the user asking -- and start
+    // the ladder over from its first rung rather than from where it left off.
+    _retry() {
+        if (this._destroyed)
+            return;
+
+        // A _setup () still inside _connect () owns the rebuild; starting
+        // another here is what would duplicate the menu.
+        if (this._connecting)
+            return;
+
+        this._reconnectDelay = 0;
+        this._reconnectSpent = false;
+        this._cancelReconnect();
+
+        // The menu stays open on activation, so this is the row the user is
+        // still looking at: it says the offer was taken before anything goes out
+        // on the bus, and whoever answers paints the outcome over it. It also
+        // stops being an offer while that is in flight, a second click having
+        // nothing to add to the first.
+        this._dummyHistoryItem.showLoading();
+
+        // Running out of connect retries leaves no proxy at all, so there is
+        // nothing to probe with, and the row would be an offer that does
+        // nothing. _setup () returned before it built anything in that case, so
+        // what it takes is simply running it again.
+        if (!this._client) {
+            this._setup().catch(console.error);
+            return;
+        }
+
+        this._probeDaemon(true).catch(console.error);
     }
 
     _onKeyPressEvent(actor, event) {
@@ -369,7 +619,19 @@ class GPasteIndicator extends Button {
         if (!this._client.get_history_name())
             return false;
 
-        const available = await this._client.get_history_size();
+        let available;
+
+        // The name having an owner is not the daemon answering: it may go in
+        // between, or the call may time out. A size that never came back is the
+        // same "nothing to size" as no daemon at all, and the caller reconciles
+        // either way -- an exception escaping here would skip that instead.
+        try {
+            available = await this._client.get_history_size();
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+
         if (!this._client || generation !== this._reloadGeneration)
             return false;
 
@@ -381,14 +643,44 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        ++this._reloadGeneration;
+        const generation = ++this._reloadGeneration;
 
         this._filteredUuids = [];
 
-        if (!await this._fetchAvailable())
+        if (!await this._fetchAvailable()) {
+            this._reconcileConnection(generation);
             return;
+        }
 
         this._rebuild(this._available === 0);
+    }
+
+    // A fetch gives up when there is no daemon left to ask, and nothing on that
+    // path repaints the menu: _rebuild() is what calls _updateVisibility() and
+    // it is not reached, so the rows and the placeholder would go on describing
+    // a daemon that has gone -- or, for a reload that ran right after one came
+    // back, one that is here. So the state is reconciled instead, which is the
+    // same question "notify::history" answers and lands in the same place. A
+    // newer reload owns it once it has moved @generation.
+    //
+    // Guarded like every other path resuming after an await: the indicator may
+    // have been destroyed while the call was out, and _onDaemonGone() would then
+    // paint destroyed actors and schedule a reconnect nothing is left to cancel.
+    _reconcileConnection(generation) {
+        if (this._destroyed || generation !== this._reloadGeneration)
+            return;
+
+        // A daemon that has gone is a change of state, and _onDaemonStateChanged()
+        // repaints the whole menu for it. One that is still there and simply did
+        // not answer is not a change of anything: giving up covers a call that
+        // *failed* as much as one with nothing to ask, and the rows would go on
+        // showing a history this pass could not size. So they go instead, and the
+        // menu says only what it knows -- the next menu opening, update or
+        // keystroke asks again.
+        if (this._onDaemonStateChanged())
+            return;
+
+        this._forgetHistory();
     }
 
     // A search asks the daemon to match; the favourites filter asks it for the
@@ -400,10 +692,22 @@ class GPasteIndicator extends Button {
 
         const generation = ++this._reloadGeneration;
         const search = this._searchItem.text.toLowerCase();
+        let items;
 
-        const items = this._hasSearch()
-            ? await this._client.search(search)
-            : await this._client.get_favourites();
+        // A daemon that has gone fails the match rather than answering an empty
+        // one, and nothing further down repaints the menu: reconciled here as a
+        // fetch that gave up is, so a filtered list does not go on showing rows
+        // for a history nobody can reach.
+        try {
+            items = this._hasSearch()
+                ? await this._client.search(search)
+                : await this._client.get_favourites();
+        } catch (e) {
+            console.error(e);
+            this._reconcileConnection(generation);
+            return;
+        }
+
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
@@ -455,6 +759,13 @@ class GPasteIndicator extends Button {
     }
 
     _reloadCurrent() {
+        // Nothing to ask and nothing to list; re-assert what the menu says
+        // instead, since this is also what every menu opening goes through.
+        if (!this._connected) {
+            this._updateVisibility(true);
+            return;
+        }
+
         if (this._isFiltered())
             this._runFilter().catch(console.error);
         else
@@ -469,10 +780,12 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        ++this._reloadGeneration;
+        const generation = ++this._reloadGeneration;
 
-        if (!await this._fetchAvailable())
+        if (!await this._fetchAvailable()) {
+            this._reconcileConnection(generation);
             return;
+        }
 
         const available = this._available;
 
@@ -526,6 +839,36 @@ class GPasteIndicator extends Button {
     }
 
     _updateVisibility(empty) {
+        // The tracking switch acts on a daemon: offered with none there it
+        // would either fail unreported or quietly start one behind the ladder's
+        // back, showing the state the user just set either way.
+        if (this._switch)
+            this._switch.visible = this._connected;
+
+        if (!this._connected) {
+            // A daemon that owns the bus name but has not answered yet is
+            // starting, not missing: it owns the name before it exports
+            // anything, and a migration or passphrase dialog can hold it there
+            // for as long as the user takes to answer. A _connect () still
+            // retrying is that same state with nothing to ask it of -- there is
+            // no proxy yet, so no name to have an owner -- and a row offering a
+            // retry there is one _retry () refuses, the connection in flight
+            // owning the rebuild. Both hold until the ladder runs out: one that
+            // never answers is not starting any more, and a row that only ever
+            // says "Loading…" is not reactive and offers no way out of it.
+            if ((this._connecting || this._client?.get_name_owner()) && !this._reconnectSpent)
+                this._dummyHistoryItem.showLoading();
+            else
+                this._dummyHistoryItem.showDisconnected();
+
+            // The menu can be opened, and this reached, while _connect () is
+            // still retrying -- before _setup () has built the footer the empty
+            // row comes from.
+            this._emptyHistoryItem?.hide();
+            this._searchItem.hide();
+            return;
+        }
+
         if (!empty) {
             this._dummyHistoryItem.hide();
             this._emptyHistoryItem.show();
@@ -558,8 +901,14 @@ class GPasteIndicator extends Button {
             this._searchItem.grabFocus();
     }
 
+    // Reported only while there is a daemon to report it to. The proxy is built
+    // with G_DBUS_PROXY_FLAGS_NONE, so this is an ordinary call on an
+    // activatable service: made with none there it would start the very daemon
+    // the ladder refuses to start on its own, within a second of the user
+    // stopping it and with nothing they could do about it short of turning the
+    // extension off.
     _onStateChanged(state) {
-        if (this._client)
+        if (this._client && this._connected)
             this._client.report_extension_state(state, null);
     }
 
@@ -622,6 +971,12 @@ class GPasteIndicator extends Button {
     }
 
     _onDestroy() {
+        // Set here and not only in shutdown (): the actor can be destroyed by
+        // other routes, and a _probeDaemon () suspended on its call would
+        // otherwise resume past this and schedule a reconnect nothing is left to
+        // cancel.
+        this._destroyed = true;
+        this._cancelReconnect();
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();

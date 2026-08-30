@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-30 13:18+0200\n"
+"POT-Creation-Date: 2026-08-31 12:41+0200\n"
 "PO-Revision-Date: 2026-08-29 14:51+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
@@ -666,23 +666,27 @@ msgstr "Очистить историю"
 msgid "Delete"
 msgstr "Удалить"
 
-#: src/gnome-shell/dummyHistoryItem.js:15
+#: src/gnome-shell/dummyHistoryItem.js:31
+msgid "Retry"
+msgstr ""
+
+#: src/gnome-shell/dummyHistoryItem.js:64
 msgid "Loading…"
 msgstr "Загрузка…"
 
-#: src/gnome-shell/dummyHistoryItem.js:20
+#: src/gnome-shell/dummyHistoryItem.js:68
 msgid "GPaste daemon not running"
 msgstr "Демон GPaste не запущен"
 
-#: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-history.c:92
+#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:92
 msgid "No Items"
 msgstr "Нет элементов"
 
-#: src/gnome-shell/dummyHistoryItem.js:30 src/ui/gpaste-ui-history.c:499
+#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:499
 msgid "No Results"
 msgstr "Ничего не найдено"
 
-#: src/gnome-shell/dummyHistoryItem.js:38 src/ui/gpaste-ui-history.c:502
+#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:502
 msgid "No Pinned Items"
 msgstr "Нет закреплённых элементов"
 
@@ -1530,51 +1534,51 @@ msgstr "Система управления буфером обмена"
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:769
+#: src/ui/gpaste-ui-window.c:773
 msgid "Could not merge the selected items"
 msgstr "Не удалось объединить выбранные элементы"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:815
+#: src/ui/gpaste-ui-window.c:819
 msgid "New Line"
 msgstr "Новая линия"
 
-#: src/ui/gpaste-ui-window.c:816
+#: src/ui/gpaste-ui-window.c:820
 msgid "Space"
 msgstr "Пробел"
 
-#: src/ui/gpaste-ui-window.c:817
+#: src/ui/gpaste-ui-window.c:821
 msgid "Comma"
 msgstr "Запятая"
 
-#: src/ui/gpaste-ui-window.c:818
+#: src/ui/gpaste-ui-window.c:822
 msgid "Tab"
 msgstr "Табуляция"
 
-#: src/ui/gpaste-ui-window.c:826
+#: src/ui/gpaste-ui-window.c:830
 msgid "Custom separator"
 msgstr "Пользовательский разделитель"
 
-#: src/ui/gpaste-ui-window.c:831
+#: src/ui/gpaste-ui-window.c:835
 msgid "Merge with this separator"
 msgstr "Объединить с помощью этого разделителя"
 
-#: src/ui/gpaste-ui-window.c:842
+#: src/ui/gpaste-ui-window.c:846
 msgid "Merge"
 msgstr "Объединить"
 
-#: src/ui/gpaste-ui-window.c:911
+#: src/ui/gpaste-ui-window.c:915
 msgid "Quit"
 msgstr "Выход"
 
-#: src/ui/gpaste-ui-window.c:955 src/ui/gpaste-ui-window.c:956
+#: src/ui/gpaste-ui-window.c:959 src/ui/gpaste-ui-window.c:960
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Не удалось подключиться к демону GPaste"
 
-#: src/ui/gpaste-ui-window.c:1022
+#: src/ui/gpaste-ui-window.c:1026
 msgid "Histories"
 msgstr "История"
 
-#: src/ui/gpaste-ui-window.c:1023
+#: src/ui/gpaste-ui-window.c:1027
 msgid "History"
 msgstr "История"
