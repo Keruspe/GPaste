@@ -607,12 +607,12 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
      * union means only the member matching the kind may be read, which is the
      * one the builder is handed. */
     GPasteClipboardContentKind kind = (update->produced) ? update->content_kind : CLIPBOARD_CONTENT_NONE;
-    GPasteItem *item = g_paste_clipboard_content_to_item (kind,
-                                                          (kind == CLIPBOARD_CONTENT_TEXT) ? update->text : NULL,
-                                                          (kind == CLIPBOARD_CONTENT_IMAGE) ? update->texture : NULL,
-                                                          (kind == CLIPBOARD_CONTENT_FILE_LIST) ? update->file_list : NULL,
-                                                          (kind == CLIPBOARD_CONTENT_COLOR) ? &update->rgba : NULL,
-                                                          update->mimes.special_mime);
+    g_autoptr (GPasteItem) item = g_paste_clipboard_content_to_item (kind,
+                                                                     (kind == CLIPBOARD_CONTENT_TEXT) ? update->text : NULL,
+                                                                     (kind == CLIPBOARD_CONTENT_IMAGE) ? update->texture : NULL,
+                                                                     (kind == CLIPBOARD_CONTENT_FILE_LIST) ? update->file_list : NULL,
+                                                                     (kind == CLIPBOARD_CONTENT_COLOR) ? &update->rgba : NULL,
+                                                                     update->mimes.special_mime);
 
     /* Everything this conclusion has of its own is done with before either call
      * below, both of which can end up back here: publishing drops the previous
@@ -644,8 +644,12 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     if (reselect && item)
         g_paste_clipboard_provider_select_item (provider, item);
 
+    /* (transfer full) to the callback, and ours to release when there is none:
+     * an update fired with no callback is part of the contract -- what a
+     * backend's update () itself checks on every early return -- and what the
+     * item holds can be a password's cleartext. */
     if (callback)
-        callback (provider, item, user_data);
+        callback (provider, g_steal_pointer (&item), user_data);
 }
 
 /* The guard ran out: conclude the update with what did arrive. Why it concludes
