@@ -22,6 +22,59 @@ import {GPasteFavouriteButton} from './favouriteButton.js';
 // drawn before the actor has a theme node to ask.
 const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
 
+// One stage listener for every row, and not one per row. Where the keyboard is
+// has to be asked of the stage (see the constructor), but a focus move anywhere
+// in the shell would otherwise run a handler on each of the several dozen rows
+// the menu keeps alive, every one of them walking the focused actor's ancestors
+// -- where only the row the focus left and the row it arrived on can have
+// changed, and the focused actor's own ancestry names both.
+//
+// Tied to the rows' own lifetime, nothing here outliving every row and nothing
+// else, and a listener left on the stage past the last row holding that row up
+// with it. Rows count themselves in as they are built and out on 'destroy',
+// which Clutter emits however the actor is torn down -- where destroy() below is
+// a plain method, and any teardown that goes through the parent actor skips it.
+const focusWatcher = {
+    id: 0,
+    rows: 0,
+    row: null,
+
+    watch(row) {
+        if (this.rows++ === 0)
+            this.id = global.stage.connect('notify::key-focus', () => this._moved());
+
+        row.connect('destroy', () => this._forget(row));
+    },
+
+    _forget(row) {
+        if (this.row === row)
+            this.row = null;
+
+        if (--this.rows === 0) {
+            global.stage.disconnect(this.id);
+            this.id = 0;
+        }
+    },
+
+    _moved() {
+        let row = global.stage.get_key_focus();
+
+        while (row !== null && !(row instanceof GPasteItem))
+            row = row.get_parent();
+
+        // A move within one row -- its label to one of its buttons -- leaves
+        // both answers where they were.
+        if (row === this.row)
+            return;
+
+        const left = this.row;
+
+        this.row = row;
+        left?._updateActionsVisibility();
+        row?._updateActionsVisibility();
+    },
+};
+
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
     constructor(client, size, slotIndex, index, uuid = null) {
@@ -54,22 +107,67 @@ class GPasteItem extends PopupMenuItem {
 
         // What the row shows of itself beyond its text: a thumbnail for an image,
         // a swatch for a colour, nothing for anything else. One slot, since an
-        // item is never both, and an empty St.Bin takes no room — added before
-        // the buttons so it sits between the text and them.
+        // item is never both, and an empty St.Bin takes no room.
+        //
+        // Preview first, then the text: the label is the only child that
+        // expands, so it is the only one whose width the pin and delete buttons
+        // take when they appear, and everything before it stays where it is.
+        // It is also where a list row puts an image — a thumbnail leads the row,
+        // the text follows it, and the row's own actions sit at the end — which
+        // is the layout the graphical tool's rows already have.
         this._previewBin = new St.Bin({y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(this._previewBin);
+        this.insert_child_below(this._previewBin, this.label);
 
         // What the row last displayed, so a settings change knows whether it has
         // anything to redo.
         this._kind = null;
         this._imagesPreview = false;
         this._imagesPreviewSize = 0;
+        this._favourited = false;
+
+        // The bin before the star, as in the graphical tool: a pinned row shows
+        // its star whether the pointer is on it or not, and only the last child
+        // of the row keeps its place when the one before it appears. With the
+        // star ahead of the bin, the badge would jump a button's width left the
+        // moment the pointer arrives.
+        this._deleteItem = new GPasteDeleteButton(client, this._uuid);
+        this.add_child(this._deleteItem);
 
         this._favouriteItem = new GPasteFavouriteButton(client, this._uuid);
         this.add_child(this._favouriteItem);
 
-        this._deleteItem = new GPasteDeleteButton(client, this._uuid);
-        this.add_child(this._deleteItem);
+        // Both actions wait to be asked for: they show on the row the pointer is
+        // on, and on the row the keyboard is on — `active` being what the shell
+        // calls the latter, since `hover: false` above leaves the pointer out of
+        // it. The star is the exception, again as in the graphical tool: on a
+        // pinned item it is not a button but a badge, and a badge that only
+        // appears under the pointer says nothing.
+        //
+        // Hidden outright rather than faded out: a line of text is taller than a
+        // symbolic icon, so the row's height is the label's either way, and
+        // hiding them gives their width back to it.
+        //
+        // The buttons themselves are the third thing that counts as asked for:
+        // they are built with can_focus set, and tabbing into one is the
+        // keyboard still on this row — but not to PopupBaseMenuItem, whose
+        // key-focus-out clears `active` with no exemption for its own children.
+        // Without something saying so the button would be hidden by the very
+        // keypress that reached it, and an unmapped actor is one Clutter drops
+        // key focus for, stranding the keyboard on nothing.
+        //
+        // Where the keyboard is is therefore asked of the stage, and answered
+        // once the move has settled: key-focus-out is emitted on the actor
+        // losing focus before the stage has recorded the actor gaining it, so
+        // neither the row's nor a button's own focus signals can tell "leaving
+        // this row" from "arriving at one of its buttons" while they run.
+        // notify::key-focus is emitted after the new focus is in place, which is
+        // the only moment the question has an answer. Asked once for all the
+        // rows there are, through focusWatcher above.
+        focusWatcher.watch(this);
+
+        this.connect('notify::hover', () => this._updateActionsVisibility());
+        this.connect('notify::active', () => this._updateActionsVisibility());
+        this._updateActionsVisibility();
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this.setTextSize(size);
@@ -98,8 +196,12 @@ class GPasteItem extends PopupMenuItem {
             return;
 
         if (state) {
+            // Anchored to the preview bin rather than to a fixed slot: the
+            // index leads the row and the bin sits between it and the label. A
+            // hardcoded position says none of that, and is what any change to
+            // the row's children silently breaks.
             if (!this._indexLabelVisible)
-                this.insert_child_at_index(this._indexLabel, 1);
+                this.insert_child_below(this._indexLabel, this._previewBin);
         } else if (this._indexLabelVisible) {
             this.remove_child(this._indexLabel);
         }
@@ -162,10 +264,15 @@ class GPasteItem extends PopupMenuItem {
         }
     }
 
-    // Both actions are addressed by uuid, and a button with none is inert.
+    // Both actions are addressed by uuid, and a button with none is inert. The
+    // star is more than inert: it is a badge on a pinned row, so a row that has
+    // stopped answering for its old item must stop showing that item's pin
+    // state too, or it claims one that belongs to something else.
     _disarmActions() {
         this._favouriteItem.setUuid(null);
         this._deleteItem.setUuid(null);
+        this._favourited = false;
+        this._updateActionsVisibility();
     }
 
     _setValue(value, favourite = false, kind = null) {
@@ -205,6 +312,17 @@ class GPasteItem extends PopupMenuItem {
         this._favouriteItem.setUuid(this._uuid);
         this._favouriteItem.setFavourite(favourite);
         this._deleteItem.setUuid(this._uuid);
+
+        this._favourited = favourite;
+        this._updateActionsVisibility();
+    }
+
+    _updateActionsVisibility() {
+        const focus = global.stage.get_key_focus();
+        const revealed = this.hover || this.active || (focus !== null && this.contains(focus));
+
+        this._deleteItem.visible = revealed;
+        this._favouriteItem.visible = revealed || this._favourited;
     }
 
     setTextSize(size) {
@@ -265,7 +383,7 @@ class GPasteItem extends PopupMenuItem {
         this._previewBin.child = new St.Icon({
             gicon: Gio.BytesIcon.new(bytes),
             icon_size: size,
-            style: 'margin-left: 6px;',
+            style: 'margin-right: 6px;',
         });
     }
 
@@ -293,7 +411,7 @@ class GPasteItem extends PopupMenuItem {
         const size = this._getSwatchSize();
 
         this._previewBin.child = new St.Widget({
-            style: `background-color: ${color}; border: 1px solid ${SWATCH_BORDER}; border-radius: 4px; margin-left: 6px;`,
+            style: `background-color: ${color}; border: 1px solid ${SWATCH_BORDER}; border-radius: 4px; margin-right: 6px;`,
             width: size,
             height: size,
         });

@@ -1,6 +1,7 @@
 NEW in 51.0 (UNRELEASED)
 =============
 
+- Lay the GNOME Shell menu's rows out like the graphical tool's: the preview leads the row, pin and delete follow the text and show up when the pointer or the keyboard reaches it, and a pinned row keeps its star as a badge
 - Add a password straight from the graphical tool: the New button in its header is now a split button whose menu offers a New Password composer, with the password itself hidden as it is typed and rated as the encryption passphrase is
 - API: an item travels as (uuid, value, kind, favourite, notes) rather than (uuid, value, kind, favourite). The notes are reserved and always empty -- nothing attaches one yet -- and the slot is on the wire now because a note is something a row draws, so adding it later would break every client a second time
 - Drop the rich text of an item and keep its plain text: Remove Rich Text in a row's menu in the graphical tool, "gpaste-client strip-rich-text", and a StripRichText method behind both, for a copy out of a browser or an office suite that should paste as text everywhere. The item keeps its place and its uuid, editing one or making it a password having always dropped the same thing on the way to a new item

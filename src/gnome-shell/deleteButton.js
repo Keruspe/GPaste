@@ -9,7 +9,10 @@ import St from 'gi://St';
 export const GPasteDeleteButton = GObject.registerClass(
 class GPasteDeleteButton extends St.Button {
     constructor(client, uuid) {
-        super();
+        // Focusable, which St.Button is not on its own: the row shows its
+        // actions while the keyboard is on one of them, and hides what the
+        // keyboard cannot reach. See GPasteItem.
+        super({can_focus: true});
 
         this.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',

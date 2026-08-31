@@ -13,7 +13,8 @@ import St from 'gi://St';
 export const GPasteFavouriteButton = GObject.registerClass(
 class GPasteFavouriteButton extends St.Button {
     constructor(client, uuid) {
-        super();
+        // Focusable, as in GPasteDeleteButton.
+        super({can_focus: true});
 
         this._icon = new St.Icon({
             icon_name: 'non-starred-symbolic',
