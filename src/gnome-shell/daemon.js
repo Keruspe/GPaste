@@ -391,6 +391,17 @@ export class GPasteDaemonRunner {
     _releaseDaemon() {
         this._daemon?.disconnectObject(this);
 
+        // Before the flush, so the selection this changes is recorded with the
+        // rest of it: a password still on a selection has to come off while
+        // there is a daemon to take it off with. Dropping our reference below
+        // only hands the wrapper to the garbage collector, and mutter goes on
+        // serving the source we published until the manager behind it is
+        // actually disposed -- which for a password is its cleartext, on the
+        // clipboard, for the rest of the session. The standalone daemon's
+        // re-exec does the same thing for the same reason; its plain exit needs
+        // nothing, the selection dying with the process.
+        this._daemon?.expire_password();
+
         // Flush before releasing the lock so a successor daemon loads our final
         // state; drain happens synchronously inside flush().
         this._daemon?.flush();
