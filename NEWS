@@ -24,6 +24,13 @@ NEW in 51.beta (25/08/2026)
 - API: this is a major release and both libraries break API and ABI: the D-Bus interface is org.gnome.GPaste3, an item travels as its own content rather than as a decorated string, and the daemon's objects and its interface definition are installed for others to build on. See the git log for the full list
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
+NEW in 50.9 (31/08/2026)
+=============
+
+- Fix the daemon crashing when copying files right after copying anything else: the file-list comparison read the clipboard's tagged union without checking what it actually held, walking a text value (or a colour's floats) as a list of files
+- Fix a memory leak on every clipboard read: the file list GDK hands back is the caller's to free
+- Fix "gpaste-client" exiting silently with status 255, instead of showing its usage, on an unknown command or a wrong number of arguments
+
 NEW in 50.8 (10/08/2026)
 =============
 
@@ -109,6 +116,11 @@ NEW in 50.0 (08/06/2026)
 - Write the history file atomically to reduce corruption risk
 - GNOME Shell extension: retry the daemon connection before giving up, and modernise the JavaScript to current GNOME Shell conventions
 - Numerous internal modernisations (async I/O via GTask, GSignalGroup, static GSettings schema)
+
+NEW in 45.12 (31/08/2026)
+=============
+
+- Fix "gpaste-client" exiting silently with status 255, instead of showing its usage, on an unknown command or a wrong number of arguments
 
 NEW in 45.11 (02/08/2026)
 =============

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-25 12:09+0200\n"
+"POT-Creation-Date: 2026-08-30 13:18+0200\n"
 "PO-Revision-Date: 2026-02-27 19:09+0000\n"
 "Last-Translator: ayasa520 <ayasa0520@gmail.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
@@ -613,8 +613,8 @@ msgstr ""
 
 #. A takeover (typically the gnome-shell extension, or `gpaste-daemon
 #. * --replace`): flush the history and release the lock so the successor
-#. * loads our final state, then exit successfully so a Type=dbus systemd
-#. * unit does not land in the failed state.
+#. * loads our final state, then exit successfully so the systemd unit
+#. * does not land in the failed state.
 #: src/daemon/gpaste-daemon.c:315
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr ""
@@ -637,8 +637,8 @@ msgid "Empty History"
 msgstr "清空记录"
 
 #. An icon names the button for the eye and for nothing else.
-#: src/gnome-shell/deleteButton.js:19 src/ui/gpaste-ui-item.c:931
-#: src/ui/gpaste-ui-item.c:990 src/ui/gpaste-ui-panel.c:473
+#: src/gnome-shell/deleteButton.js:19 src/ui/gpaste-ui-item.c:968
+#: src/ui/gpaste-ui-item.c:1036 src/ui/gpaste-ui-panel.c:473
 #: src/ui/gpaste-ui-panel.c:642
 msgid "Delete"
 msgstr "删除"
@@ -667,12 +667,12 @@ msgstr ""
 
 #. The star shows a state and asks for the other one, so its name is
 #. what clicking it does.
-#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:178
+#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:195
 msgid "Unpin"
 msgstr ""
 
-#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:178
-#: src/ui/gpaste-ui-item.c:930
+#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:195
+#: src/ui/gpaste-ui-item.c:967
 msgid "Pin"
 msgstr ""
 
@@ -1263,7 +1263,7 @@ msgid "Pin an item to keep it out of reach of the size and memory limits."
 msgstr ""
 
 #: src/ui/gpaste-ui-history.c:579 src/ui/gpaste-ui-history.c:603
-#: src/ui/gpaste-ui-item.c:557
+#: src/ui/gpaste-ui-item.c:574
 #, fuzzy
 msgid "Could not select the item"
 msgstr "无法新建记录目录"
@@ -1273,52 +1273,52 @@ msgstr "无法新建记录目录"
 msgid "Could not read the history"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:334
+#: src/ui/gpaste-ui-item.c:351
 msgid "The item was uploaded, and its address copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:335
+#: src/ui/gpaste-ui-item.c:352
 msgid "The item was uploaded, but its address could not be copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:357
+#: src/ui/gpaste-ui-item.c:374
 #, fuzzy
 msgid "Could not upload the item"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:385
+#: src/ui/gpaste-ui-item.c:402
 #, fuzzy
 msgid "Could not delete the item"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:401
+#: src/ui/gpaste-ui-item.c:418
 msgid "Could not unpin the item"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:402
+#: src/ui/gpaste-ui-item.c:419
 #, fuzzy
 msgid "Could not pin the item"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:582
+#: src/ui/gpaste-ui-item.c:599
 msgid "Could not load an image preview"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:983
+#: src/ui/gpaste-ui-item.c:1029
 #, fuzzy
 msgid "Edit…"
 msgstr "编辑"
 
-#: src/ui/gpaste-ui-item.c:984
+#: src/ui/gpaste-ui-item.c:1030
 #, fuzzy
 msgid "Make Password…"
 msgstr "密码"
 
-#: src/ui/gpaste-ui-item.c:985
+#: src/ui/gpaste-ui-item.c:1031
 msgid "Upload"
 msgstr "上传"
 
-#: src/ui/gpaste-ui-item.c:989
+#: src/ui/gpaste-ui-item.c:1035
 msgid "Pinned"
 msgstr ""
 
