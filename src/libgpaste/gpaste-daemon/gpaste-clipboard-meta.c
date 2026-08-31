@@ -1025,11 +1025,10 @@ g_paste_clipboard_meta_dispose (GObject *object)
 {
     GPasteClipboardMeta *self = G_PASTE_CLIPBOARD_META (object);
 
-    if (self->selection && self->owner_changed_id)
-    {
+    /* g_clear_signal_handler () no-ops on an id of 0 and zeroes the one it
+     * disconnects, so the instance is the only thing left to check for. */
+    if (self->selection)
         g_clear_signal_handler (&self->owner_changed_id, self->selection);
-        self->owner_changed_id = 0;
-    }
     g_clear_object (&self->owned_source);
     g_clear_object (&self->selection);
     g_clear_object (&self->settings);
