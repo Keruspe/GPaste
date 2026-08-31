@@ -49,7 +49,14 @@ g_paste_storage_keyring_apply (void)
     g_paste_storage_backend_set_passphrase (passphrase);
     secret_password_free (passphrase);
 
-    return TRUE;
+    /* What ended up installed, not what the lookup handed back: an empty secret
+     * is no passphrase and set_passphrase () keeps none, so saying it worked
+     * would have apply_verified () find nothing to verify and report success
+     * all the same -- and g_paste_storage_decryption_needed (), its one caller
+     * that acts on that alone, answer that the history needs no unlocking at
+     * all. No prompt, and a daemon running an encrypted history it never
+     * opened. */
+    return g_paste_storage_backend_get_passphrase () != NULL;
 }
 
 G_PASTE_VISIBLE gboolean
@@ -81,9 +88,14 @@ g_paste_storage_keyring_apply_verified (GPasteStorage   storage_kind,
     if (!g_paste_storage_keyring_apply ())
         return FALSE;
 
+    /* Non-%NULL by construction: apply () only reports success for a passphrase
+     * it actually installed, which is what leaves this with something to verify.
+     * Asked of it unguarded so that a %NULL slipping through here would be
+     * refused (can_decrypt () rejects one) rather than waved past as nothing to
+     * check. */
     const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
 
-    if (passphrase && !g_paste_storage_passphrase_can_decrypt (storage_kind, settings, passphrase))
+    if (!g_paste_storage_passphrase_can_decrypt (storage_kind, settings, passphrase))
     {
         g_warning ("The passphrase stored in the keyring does not unlock the history");
         g_paste_storage_backend_set_passphrase (NULL);
