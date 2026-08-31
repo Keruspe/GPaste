@@ -127,6 +127,35 @@ g_paste_daemon_resume (GPasteDaemon *self)
 }
 
 /**
+ * g_paste_daemon_expire_password:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Take any password still sitting on a selection back off it now, rather than
+ * leave it there for the countdown that will not run.
+ *
+ * Meant for a daemon standing down inside a process that keeps going: dropping
+ * the daemon takes its clipboards manager with it, and that manager's dispose
+ * does exactly this -- but only once the last reference to it is actually gone,
+ * which for the gnome-shell host is whenever the garbage collector gets round
+ * to the wrapper. Until then mutter goes on serving the selection source we
+ * published, and for a password that source holds its cleartext.
+ *
+ * Deliberately not part of g_paste_daemon_flush(): that one is also how a live
+ * daemon persists before re-reading its store (a passphrase change, an
+ * on-demand migration), and yanking a password off the clipboard there would be
+ * expiring it for something that is not an exit at all. A standalone daemon
+ * needs neither, its selections dying with the process; only the re-exec does,
+ * which is why g_paste_daemon_reexecute() has always done it.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_expire_password (GPasteDaemon *self)
+{
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    g_paste_clipboards_manager_expire_password (self->clipboards_manager);
+}
+
+/**
  * g_paste_daemon_reload_storage:
  * @self: (transfer none): the #GPasteDaemon
  *
