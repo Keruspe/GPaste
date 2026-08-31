@@ -1,3 +1,10 @@
+NEW in 50.9 (31/08/2026)
+=============
+
+- Fix the daemon crashing when copying files right after copying anything else: the file-list comparison read the clipboard's tagged union without checking what it actually held, walking a text value (or a colour's floats) as a list of files
+- Fix a memory leak on every clipboard read: the file list GDK hands back is the caller's to free
+- Fix "gpaste-client" exiting silently with status 255, instead of showing its usage, on an unknown command or a wrong number of arguments
+
 NEW in 50.8 (10/08/2026)
 =============
 
