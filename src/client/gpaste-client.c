@@ -815,9 +815,20 @@ main (gint argc, gchar *argv[])
             status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
         }
 
+        /* Nothing matched the command line at all: a verb we do not know, or one
+         * we do with the wrong number of arguments after it. Say so the way a
+         * bad option already does, and before the connection failure below,
+         * which is not what went wrong here. Left alone, g_paste_dispatch ()'s
+         * "not mine" sentinel travels out of main () as a status of its own --
+         * 255 to a shell, and not a word printed. */
+        if (status < 0)
+        {
+            show_help ();
+            status = EXIT_FAILURE;
+        }
         /* Nothing ran, or what ran needed the daemon we never reached: now the
          * connection failure is the one worth reporting. */
-        if (!error && status != EXIT_SUCCESS && connect_error)
+        else if (!error && status != EXIT_SUCCESS && connect_error)
             error = g_steal_pointer (&connect_error);
 
         if (error)
