@@ -84,6 +84,11 @@ NEW in 50.0 (08/06/2026)
 - GNOME Shell extension: retry the daemon connection before giving up, and modernise the JavaScript to current GNOME Shell conventions
 - Numerous internal modernisations (async I/O via GTask, GSignalGroup, static GSettings schema)
 
+NEW in 45.12 (31/08/2026)
+=============
+
+- Fix "gpaste-client" exiting silently with status 255, instead of showing its usage, on an unknown command or a wrong number of arguments
+
 NEW in 45.11 (02/08/2026)
 =============
 

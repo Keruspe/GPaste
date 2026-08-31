@@ -148,6 +148,14 @@
         </ul>
       </description>
     </release>
+    <release type="stable" date="2026-08-31" version="45.12">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix "gpaste-client" exiting silently with status 255, instead of showing its usage, on an unknown command or a wrong number of arguments</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-08-02" version="45.11">
       <description>
         <p>This is a maintenance release. Changes:</p>
