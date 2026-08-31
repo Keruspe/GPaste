@@ -2431,6 +2431,8 @@ test_sqlite_schema_migration (void)
     g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), ==, 3);
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name = 'favourite';"), ==, 1);
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name = 'timeout';"), ==, 1);
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name = 'date' AND \"notnull\" = 0;"), ==, 1);
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items WHERE date IS NULL;"), ==, 1);
 }
 
 /* remove_item relies on the FK cascade to clean an item's special values, and

@@ -1099,7 +1099,19 @@ g_paste_sqlite_backend_read_content (sqlite3_stmt *stmt,
     return content;
 }
 
-static void
+/* An item's alternative representations, read back onto it.
+ *
+ * Returns %FALSE when the scan stopped short of the end of the rows (a corrupt
+ * page, an I/O error): the item then carries some of what was stored for it and
+ * not the rest, and the caller must not pass that off as the whole of it -- the
+ * same answer read_history_file's own scan carries up, and for the same reason.
+ *
+ * A row the scan did reach and this build could make nothing of is the other
+ * thing: a representation dropped, not a history refused. The item itself came
+ * back, and what it is missing is one of the several spellings of a value it
+ * still holds -- the file backend reads an unknown mime the same way, and the
+ * write path already skips one. */
+static gboolean
 g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
                                             GEnumClass   *mime_class,
                                             const guchar *key,
@@ -1108,7 +1120,9 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
 {
     sqlite3_bind_int64 (stmt, 1, item_id);
 
-    while (sqlite3_step (stmt) == SQLITE_ROW)
+    gint rc;
+
+    while ((rc = sqlite3_step (stmt)) == SQLITE_ROW)
     {
         const gchar *mime = (const gchar *) sqlite3_column_text (stmt, 0);
         GEnumValue *gev = g_enum_get_value_by_nick (mime_class, mime);
@@ -1116,6 +1130,7 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
         if (!gev)
         {
             g_warning ("sqlite: unknown mime: %s", mime);
+
             continue;
         }
 
@@ -1125,20 +1140,80 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
         if (!data)
         {
             g_warning ("sqlite: failed to decrypt a special value; dropping it");
+
             continue;
         }
 
         g_paste_item_add_special_value (item, g_paste_binary_data_new (gev->value, g_bytes_new_take (data, length)));
     }
 
+    /* Said before the reset, which is what replaces the message the connection
+     * last reported: the scan that stopped short is this one, and the caller
+     * only ever learns that some row could not be read back. */
+    if (rc != SQLITE_DONE)
+    {
+        g_warning ("sqlite: could not read every special value of an item: %s",
+                   sqlite3_errmsg (sqlite3_db_handle (stmt)));
+    }
+
     sqlite3_reset (stmt);
     sqlite3_clear_bindings (stmt);
+
+    return rc == SQLITE_DONE;
 }
 
+/* A constructor refusing the value a row stores -- a colour that does not parse,
+ * a uri list nothing could be made of -- is a row this build was meant to read
+ * and could not, exactly as one that did not decrypt is. Every kind whose value
+ * is parsed rather than taken as it stands answers through here, so none of them
+ * can drop a row quietly and leave the history reading back as complete. */
+static GPasteItem *
+g_paste_sqlite_backend_built_item (GPasteItem *item,
+                                   gboolean   *unreadable)
+{
+    if (!item)
+    {
+        g_warning ("sqlite: failed to build an item from a stored value; dropping it");
+        *unreadable = TRUE;
+    }
+
+    return item;
+}
+
+/* One row, as the item it stores.
+ *
+ * @unreadable is set when %NULL is a row this build could make nothing of -- a
+ * value that does not decrypt or that its kind's constructor refuses, a kind it
+ * does not know, an image whose stored blob does not decrypt or that no texture
+ * can be made of -- as against the rows dropped on purpose, an image read with
+ * images turned off or with no date, one whose image was never blobbed and whose
+ * cache file has gone with it. The caller cannot tell those
+ * apart from the %NULL alone, and it has to: what it does with a row it was
+ * meant to read and could not is refuse the whole history, the same as for a
+ * scan that stopped short, or the next save writes the rows that did come back
+ * over the ones that did not.
+ *
+ * @stale_images collects the cache files of the image rows dropped for having
+ * images turned off or no date, for the caller to unlink once it knows the read
+ * came back whole -- unlinking one here would delete the picture of a row a
+ * refused read then leaves in the store.
+ *
+ * Deliberately stricter than the file backend, which warns about an <item> it
+ * cannot make sense of and reads the history around it. The two are not being
+ * asked the same thing. A row here is one the store still holds intact and that
+ * only this build could not turn back into an item -- a kind a newer GPaste
+ * wrote, an image whose loader is no longer installed -- so handing back the
+ * rest as a complete history is what has the next save delete it. Refusing
+ * leaves the user a history that reads back empty until whatever it holds can be
+ * understood again, and leaves the store itself untouched, which is the side to
+ * be wrong on: an empty history is a session's inconvenience where a row written
+ * over is gone. */
 static GPasteItem *
 g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
                                   const guchar *key,
-                                  gboolean      images_support)
+                                  gboolean      images_support,
+                                  GPtrArray    *stale_images,
+                                  gboolean     *unreadable)
 {
     const gchar *kind_str = (const gchar *) sqlite3_column_text (stmt, 2);
     GPasteItemKind kind = g_paste_item_kind_from_string (kind_str);
@@ -1146,31 +1221,51 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
      * rather than merely freed once the item has taken a copy of it. */
     g_autoptr (GPasteCleartext) value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, NULL);
 
+    *unreadable = FALSE;
+
     if (!value)
     {
         g_warning ("sqlite: failed to decrypt an item; dropping it");
+        *unreadable = TRUE;
+
         return NULL;
     }
 
     switch (kind)
     {
     case G_PASTE_ITEM_KIND_TEXT:
-        return g_paste_text_item_new (value);
+        return g_paste_sqlite_backend_built_item (g_paste_text_item_new (value), unreadable);
     case G_PASTE_ITEM_KIND_URIS:
-        return g_paste_uris_item_new_from_str (value);
+        return g_paste_sqlite_backend_built_item (g_paste_uris_item_new_from_str (value), unreadable);
     case G_PASTE_ITEM_KIND_PASSWORD:
     {
         g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
+
+        /* A password is always written with a name -- get_name () answers the
+         * G_PASTE_PASSWORD_ITEM_NO_NAME placeholder for the ones that carry
+         * none, and bind_item () binds that -- so nothing here comes back NULL
+         * except a name that did not decrypt. Letting it through would build a
+         * nameless password out of a named one and leave the history reading
+         * back as complete: the next save rewrites the row with the placeholder,
+         * and the name the user gave the secret is gone. */
+        if (!name)
+        {
+            g_warning ("sqlite: failed to decrypt a password's name; dropping it");
+            *unreadable = TRUE;
+
+            return NULL;
+        }
 
         /* Clamped before the cast, as the file backend's own parse is: a stored
          * value past G_MAXUINT truncates, and 2^32 truncates to 0 -- the one
          * value that means the password never comes off the clipboard. */
         gint64 timeout = CLAMP (sqlite3_column_int64 (stmt, 9), 0, G_PASTE_PASSWORD_TIMEOUT_MAX);
 
-        return g_paste_password_item_new (name, value, (guint) timeout);
+        return g_paste_sqlite_backend_built_item (g_paste_password_item_new (name, value, (guint) timeout),
+                                                  unreadable);
     }
     case G_PASTE_ITEM_KIND_COLOR:
-        return g_paste_color_item_new_from_str (value);
+        return g_paste_sqlite_backend_built_item (g_paste_color_item_new_from_str (value), unreadable);
     case G_PASTE_ITEM_KIND_IMAGE:
     {
         if (images_support && sqlite3_column_type (stmt, 4) != SQLITE_NULL)
@@ -1191,22 +1286,52 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
                 if (data)
                 {
                     g_autoptr (GBytes) png = g_bytes_new_take (data, length);
+                    GPasteItem *image = g_paste_image_item_new_from_bytes (png, date, checksum);
 
-                    return g_paste_image_item_new_from_bytes (png, date, checksum);
+                    /* Bytes that came back but that no texture could be made of
+                     * are the same answer as bytes that did not: a row this
+                     * build was meant to read and could not. */
+                    if (!image)
+                    {
+                        g_warning ("sqlite: failed to decode a stored image; dropping it");
+                        *unreadable = TRUE;
+                    }
+
+                    return image;
                 }
 
-                g_warning ("sqlite: failed to decrypt an image; falling back to its cache file");
+                /* Nothing to fall back to: a row storing its image as a blob
+                 * stores the checksum as its value, which names no file. */
+                g_warning ("sqlite: failed to decrypt an image; dropping it");
+                *unreadable = TRUE;
+
+                return NULL;
             }
 
-            return g_paste_image_item_new_from_file (value, date, checksum);
+            GPasteItem *image = g_paste_image_item_new_from_file (value, date, checksum);
+
+            /* %NULL with that cache file gone is the image being gone rather
+             * than unread: a drop, and not a history to refuse. %NULL with the
+             * file still there is the answer a stored blob that would not decode
+             * gives -- a row this build was meant to read and could not -- and
+             * taking it for the first would rewrite the row away and delete a
+             * picture whose bytes are on disk. */
+            if (!image && g_file_test (value, G_FILE_TEST_EXISTS))
+            {
+                g_warning ("sqlite: failed to load an image from its file; dropping it");
+                *unreadable = TRUE;
+            }
+
+            return image;
         }
 
-        /* Images are disabled (or the row carries no date): drop whatever an
-         * older, file-backed life left on disk. Only such a row names a file at
-         * all — one written here stores its image as a blob and its value as
-         * the checksum, which is nobody's path. */
+        /* Images are disabled or the date is missing: whatever a file-backed
+         * row left on disk goes with it. Only such a row names a file at all --
+         * one written here
+         * stores its image as a blob and its value as the checksum, which is
+         * nobody's path. */
         if (g_path_is_absolute (value))
-            g_paste_file_backend_delete_image (value);
+            g_ptr_array_add (stale_images, g_strdup (value));
 
         return NULL;
     }
@@ -1215,6 +1340,7 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     }
 
     g_warning ("Unknown item kind: %s", kind_str);
+    *unreadable = TRUE;
 
     return NULL;
 }
@@ -1231,9 +1357,11 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
  *
  * Read-only, so a history that is not there is not created by being counted; it
  * simply counts 0, as an unreadable one does. A row whose content cannot be
- * decoded at all is still counted, unlike in a read, which drops it -- that
- * is corruption, and a listing one item out is the smaller of the two problems
- * it causes.
+ * decoded at all is still counted, where a read refuses the whole history over
+ * it: telling the two apart needs the key, which counting deliberately does not
+ * take (below), so a corrupt history is named with a size here and opens empty.
+ * That divergence is the smaller of the two problems the corruption causes --
+ * the alternative is an Argon2 pass for every history listed.
  *
  * Opening by hand means the gates g_paste_sqlite_backend_open () applies have to
  * be applied here too, or a listing answers for a database a read refuses. A
@@ -1385,12 +1513,21 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
-    while (sqlite3_step (stmt) == SQLITE_ROW)
+    gint rc;
+    gboolean complete = TRUE;
+    g_autoptr (GPtrArray) stale_images = g_ptr_array_new_with_free_func (g_free);
+
+    while ((rc = sqlite3_step (stmt)) == SQLITE_ROW)
     {
-        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support);
+        gboolean unreadable = FALSE;
+        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support, stale_images, &unreadable);
 
         if (!item)
+        {
+            complete = complete && !unreadable;
+
             continue;
+        }
 
         const gchar *uuid = (const gchar *) sqlite3_column_text (stmt, 1);
 
@@ -1399,15 +1536,49 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
         g_paste_item_set_favourite (item, sqlite3_column_int (stmt, 8));
 
-        g_paste_sqlite_backend_read_special_values (sv_stmt, mime_class, key, sqlite3_column_int64 (stmt, 0), item);
+        complete = g_paste_sqlite_backend_read_special_values (sv_stmt, mime_class, key,
+                                                               sqlite3_column_int64 (stmt, 0), item) && complete;
 
         *history = g_list_prepend (*history, item);
         *size += g_paste_item_get_size (item);
     }
 
+    complete = complete && (rc == SQLITE_DONE);
+
+    /* Said while the statements are still open: finalizing them is what replaces
+     * the message the connection last reported -- which answers for a scan that
+     * stopped short and for nothing else, a row this build could make nothing of
+     * having already said so where it was found. */
+    if (!complete)
+    {
+        g_warning ("sqlite: could not read every row of the history: %s",
+                   (rc == SQLITE_DONE) ? "a row could not be read back" : sqlite3_errmsg (db));
+    }
+
     g_type_class_unref (mime_class);
     sqlite3_finalize (sv_stmt);
     sqlite3_finalize (stmt);
+
+    /* A scan cut short is not the end of the history. Handing back the rows it
+     * did reach, as a successful read, is what has the caller install them as
+     * the whole model -- and the next clipboard change then writes that
+     * truncation back over the rows still in the store. Report the failure
+     * instead, which is what stops the history being persisted at all, exactly
+     * as the file backend refuses a parse that did not finish. */
+    if (!complete)
+    {
+        g_clear_list (history, g_object_unref);
+        *size = 0;
+
+        return FALSE;
+    }
+
+    /* Only now the read has come back whole: the row an image was dropped for
+     * is taken off the store by the save that follows such a read, where a
+     * refused one leaves the row exactly where it is -- and a picture unlinked
+     * from under a row that stays is one nothing can bring back. */
+    for (guint i = 0; i < stale_images->len; ++i)
+        g_paste_file_backend_delete_image (g_ptr_array_index (stale_images, i));
 
     *history = g_list_reverse (*history);
 
