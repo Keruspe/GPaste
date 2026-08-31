@@ -760,8 +760,12 @@ do_merge (GPasteUiWindow *self,
 
     gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_ancestor (origin, GTK_TYPE_POPOVER)));
 
-    /* uuids are in selection order, so the merge keeps it. */
-    if (n >= 2)
+    /* uuids are in selection order, so the merge keeps it. Asked of the answer
+     * and not of the count alone: a selection that could not be resolved comes
+     * back %NULL, and the two only agree today because the one call that can
+     * fail is made before any uuid has been collected -- which is an invariant
+     * of another file, not something this one can see. */
+    if (uuids && n >= 2)
     {
         g_paste_client_merge (self->client, "", separator, (const gchar * const *) uuids,
                               g_paste_ui_report_string_cb,
