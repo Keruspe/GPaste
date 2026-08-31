@@ -183,23 +183,29 @@ g_paste_clipboard_gdk_sync_ready (GObject      *source_object,
                                   GAsyncResult *res,
                                   gpointer      user_data)
 {
-    g_autoptr (GPasteClipboardGdk) other = user_data; /* ref taken in sync_text */
+    GPasteClipboardSyncData *data = user_data; /* built in sync_text */
     g_autoptr (GError) error = NULL;
     g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
     if (error)
         g_debug ("Failed to sync clipboard text: %s", error->message);
-    else if (text)
-        g_paste_clipboard_gdk_select_text (other, text);
+    /* No target left is the guard having concluded this sync already. */
+    else if (text && data->other)
+        g_paste_clipboard_provider_select_text (data->other, text);
+
+    g_paste_clipboard_sync_data_free (data);
 }
 
 static void
 g_paste_clipboard_gdk_sync_text (GPasteClipboardGdk *self,
                                  GPasteClipboardGdk *other)
 {
-    /* The target outlives us in practice, but the read is asynchronous: hold a
-     * ref on it until the text lands, as the meta backend does. */
-    gdk_clipboard_read_text_async (self->real, NULL, g_paste_clipboard_gdk_sync_ready, g_object_ref (other));
+    GPasteClipboardSyncData *data = g_paste_clipboard_sync_data_new (G_PASTE_CLIPBOARD_PROVIDER (other));
+
+    if (!data)
+        return;
+
+    gdk_clipboard_read_text_async (self->real, data->guard.cancellable, g_paste_clipboard_gdk_sync_ready, data);
 }
 
 static void

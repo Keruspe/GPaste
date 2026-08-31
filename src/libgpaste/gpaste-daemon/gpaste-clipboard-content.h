@@ -135,6 +135,23 @@ gboolean g_paste_clipboard_read_guard_is_expired (const GPasteClipboardReadGuard
 void     g_paste_clipboard_read_guard_disarm     (GPasteClipboardReadGuard *guard);
 void     g_paste_clipboard_read_guard_clear      (GPasteClipboardReadGuard *guard);
 
+/* What a sync read has to keep alive: the selection its text is going to, ref'd
+ * because the read spans main-loop iterations. Guarded like an update's reads,
+ * and for the same reason -- an owner that stops answering leaves the read
+ * pending for the rest of the session, and this one is reachable straight from
+ * D-Bus. Concluding a sync is letting go of that target rather than publishing
+ * anything, there being no text to publish; the data itself is freed only if the
+ * read ever lands, cancelling being unable to fail it (see either backend). The
+ * two backends then differ only in the read they fire. */
+typedef struct
+{
+    GPasteClipboardProvider *other;
+    GPasteClipboardReadGuard guard;
+} GPasteClipboardSyncData;
+
+GPasteClipboardSyncData *g_paste_clipboard_sync_data_new  (GPasteClipboardProvider *other);
+void                     g_paste_clipboard_sync_data_free (GPasteClipboardSyncData *data);
+
 /* Where the mime reads an update fires put their answers, and what one of them
  * having come back means. Both backends fire the same reads and want the same
  * thing done with the bytes, so what a read is worth keeping is written down once

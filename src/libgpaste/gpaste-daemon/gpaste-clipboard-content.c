@@ -421,6 +421,55 @@ g_paste_clipboard_read_guard_clear (GPasteClipboardReadGuard *guard)
     g_clear_object (&guard->cancellable);
 }
 
+/* The deadline on a sync ran out: let go of the selection its text was going to,
+ * which is all a sync has to conclude. The read landing afterwards then finds no
+ * target and only frees itself. */
+static void
+g_paste_clipboard_sync_timed_out (gpointer user_data)
+{
+    GPasteClipboardSyncData *data = user_data;
+
+    g_debug ("clipboard: giving up on a sync read that never came back");
+    g_clear_object (&data->other);
+}
+
+/**
+ * g_paste_clipboard_sync_data_new:
+ * @other: the selection the text being read is going to
+ *
+ * What a sync read has to keep alive, guard included
+ *
+ * Returns: (transfer full): the newly allocated #GPasteClipboardSyncData
+ */
+G_PASTE_VISIBLE GPasteClipboardSyncData *
+g_paste_clipboard_sync_data_new (GPasteClipboardProvider *other)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (other), NULL);
+
+    GPasteClipboardSyncData *data = g_new0 (GPasteClipboardSyncData, 1);
+
+    data->other = g_object_ref (other);
+    g_paste_clipboard_read_guard_arm (&data->guard, g_paste_clipboard_sync_timed_out, data);
+
+    return data;
+}
+
+/**
+ * g_paste_clipboard_sync_data_free:
+ * @data: the #GPasteClipboardSyncData to release
+ *
+ * Release what a sync read was keeping alive, whether or not it concluded
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_sync_data_free (GPasteClipboardSyncData *data)
+{
+    g_return_if_fail (data);
+
+    g_paste_clipboard_read_guard_clear (&data->guard);
+    g_clear_object (&data->other);
+    g_free (data);
+}
+
 /**
  * g_paste_clipboard_mime_ctx_new:
  * @data: the update the read counts into

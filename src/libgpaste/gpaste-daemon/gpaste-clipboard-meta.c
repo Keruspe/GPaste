@@ -503,19 +503,19 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                    GBytes              *bytes,
                                    gpointer             user_data)
 {
-    g_autoptr (GPasteClipboardMeta) other = user_data; /* ref taken in sync_text */
-
-    if (!bytes)
-        return;
+    GPasteClipboardSyncData *data = user_data; /* built in sync_text */
 
     gsize size;
-    const gchar *text = g_bytes_get_data (bytes, &size);
+    const gchar *text = (bytes) ? g_bytes_get_data (bytes, &size) : NULL;
 
-    if (text && g_utf8_validate (text, size, NULL))
+    /* No target left is the guard having concluded this sync already. */
+    if (text && data->other && g_utf8_validate (text, size, NULL))
     {
         g_autofree gchar *dup = g_strndup (text, size);
-        g_paste_clipboard_meta_select_text (other, dup);
+        g_paste_clipboard_provider_select_text (data->other, dup);
     }
+
+    g_paste_clipboard_sync_data_free (data);
 }
 
 static void
@@ -531,8 +531,12 @@ g_paste_clipboard_meta_sync_text (GPasteClipboardMeta *self,
                       : NULL;
 
     if (mime)
-        g_paste_clipboard_meta_read_mime ((GPasteClipboardMeta *) self, mime, NULL, /* cancellable */
-                                          g_paste_clipboard_meta_sync_ready, g_object_ref (other));
+    {
+        GPasteClipboardSyncData *data = g_paste_clipboard_sync_data_new (G_PASTE_CLIPBOARD_PROVIDER (other));
+
+        if (data)
+            g_paste_clipboard_meta_read_mime (self, mime, data->guard.cancellable, g_paste_clipboard_meta_sync_ready, data);
+    }
 
     g_list_free_full (mimetypes, g_free);
 }
