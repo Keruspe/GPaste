@@ -379,8 +379,13 @@ g_paste_file_list_equal (GdkFileList *a,
     if (!a || !b)
         return FALSE;
 
-    GSList *fa = gdk_file_list_get_files (a);
-    GSList *fb = gdk_file_list_get_files (b);
+    /* gdk_file_list_get_files is (transfer container): the list is ours to
+     * free, the #GFile it holds are not. */
+    g_autoptr (GSList) files_a = gdk_file_list_get_files (a);
+    g_autoptr (GSList) files_b = gdk_file_list_get_files (b);
+
+    const GSList *fa = files_a;
+    const GSList *fb = files_b;
 
     for (; fa && fb; fa = fa->next, fb = fb->next)
     {
@@ -753,8 +758,9 @@ g_paste_clipboard_update_on_file_list_ready (GObject      *source_object,
     }
 
     GdkFileList *file_list = g_value_get_boxed (value);
+    g_autoptr (GSList) files = (file_list) ? gdk_file_list_get_files (file_list) : NULL;
 
-    if (!gdk_file_list_get_files (file_list))
+    if (!files)
     {
         g_paste_clipboard_update_maybe_done (data);
         return;
@@ -762,7 +768,11 @@ g_paste_clipboard_update_on_file_list_ready (GObject      *source_object,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
-    if (g_paste_file_list_equal (priv->file_list, file_list))
+    /* file_list is only the live member of the union when that is the kind we
+     * hold: reading it for anything else hands a string or a #GdkRGBA to
+     * gdk_file_list_get_files (). */
+    if (priv->content_kind == CLIPBOARD_CONTENT_FILE_LIST &&
+        g_paste_file_list_equal (priv->file_list, file_list))
     {
         g_paste_clipboard_update_maybe_done (data);
         return;
