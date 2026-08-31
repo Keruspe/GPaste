@@ -140,6 +140,7 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
 static void
 g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
                                   const gchar                     *mimetype,
+                                  GCancellable                    *cancellable,
                                   GPasteClipboardMetaBytesCallback callback,
                                   gpointer                         user_data)
 {
@@ -157,7 +158,7 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
                                    mimetype,
                                    -1, /* size unknown */
                                    data->ostream,
-                                   NULL, /* cancellable */
+                                   cancellable,
                                    g_paste_clipboard_meta_on_transfer_done,
                                    data);
 }
@@ -530,7 +531,7 @@ g_paste_clipboard_meta_sync_text (GPasteClipboardMeta *self,
                       : NULL;
 
     if (mime)
-        g_paste_clipboard_meta_read_mime ((GPasteClipboardMeta *) self, mime,
+        g_paste_clipboard_meta_read_mime ((GPasteClipboardMeta *) self, mime, NULL, /* cancellable */
                                           g_paste_clipboard_meta_sync_ready, g_object_ref (other));
 
     g_list_free_full (mimetypes, g_free);
@@ -638,60 +639,20 @@ g_paste_clipboard_meta_is_empty (GPasteClipboardMeta *self)
 
 /* --- update --- */
 
-typedef struct
-{
-    GPasteClipboardMeta                  *self;
-    GPasteClipboardProviderUpdateCallback callback;
-    gpointer                              user_data;
-    gint                                  pending;
-    GPasteClipboardContentKind            content_kind;
-    gboolean                              produced;
-    gchar                                *text;
-    GdkTexture                           *texture;
-    gchar                                *mime;
-    GdkFileList                          *file_list;
-    GdkRGBA                               rgba;
-    GPasteBinaryData                     *special_mime[G_PASTE_SPECIAL_MIME_LAST];
-} GPasteClipboardMetaUpdateData;
-
-static void
-g_paste_clipboard_meta_update_maybe_done (GPasteClipboardMetaUpdateData *data)
-{
-    if (--data->pending > 0)
-        return;
-
-    /* Nothing produced means nothing to build, whatever the kind said. */
-    GPasteItem *item = g_paste_clipboard_content_to_item (data->produced ? data->content_kind : CLIPBOARD_CONTENT_NONE,
-                                                          data->text,
-                                                          data->texture,
-                                                          data->file_list,
-                                                          &data->rgba,
-                                                          data->special_mime);
-
-    if (data->callback)
-        data->callback (G_PASTE_CLIPBOARD_PROVIDER (data->self), item, data->user_data);
-
-    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
-        g_clear_object (&data->special_mime[mime]);
-    g_clear_object (&data->texture);
-    if (data->file_list)
-        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&data->file_list));
-    g_free (data->text);
-    g_free (data->mime);
-    g_object_unref (data->self);
-    g_free (data);
-}
-
+/* Every read below counts into a #GPasteClipboardUpdate, as the GDK backend's do:
+ * only the calls that fetch the bytes are this backend's -- one transfer per
+ * mimetype, the content deserialised afterwards from the mimetype the update
+ * carries. */
 static void
 g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
                                        GBytes              *bytes,
                                        gpointer             user_data)
 {
-    GPasteClipboardMetaUpdateData *data = user_data;
+    GPasteClipboardUpdate *update = user_data;
 
-    if (!bytes)
+    if (g_paste_clipboard_update_is_expired (update) || !bytes)
     {
-        g_paste_clipboard_meta_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
 
@@ -700,7 +661,7 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
 
     if (!raw || !g_utf8_validate (raw, size, NULL))
     {
-        g_paste_clipboard_meta_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
 
@@ -710,20 +671,20 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
     switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
     {
     case G_PASTE_CLIPBOARD_TEXT_REJECT:
-        g_paste_clipboard_meta_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     case G_PASTE_CLIPBOARD_TEXT_RESELECT:
-        g_paste_clipboard_meta_select_text (self, value);
+        update->reselect = TRUE;
         break;
     case G_PASTE_CLIPBOARD_TEXT_SET:
-        /* RESELECT above still needs @value, but this branch is done with it. */
-        g_paste_clipboard_meta_private_set_text_take (self, g_steal_pointer (&value));
         break;
     }
 
-    data->produced = TRUE;
-    data->text = g_strdup (self->content.str);
-    g_paste_clipboard_meta_update_maybe_done (data);
+    g_paste_clipboard_meta_private_set_text_take (self, g_steal_pointer (&value));
+
+    update->produced = TRUE;
+    g_set_str (&update->text, self->content.str);
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 /* The GType GDK deserialises each non-text content kind into. */
@@ -748,22 +709,32 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
                                                      GAsyncResult *res,
                                                      gpointer      user_data)
 {
-    GPasteClipboardMetaUpdateData *data = user_data;
-    GPasteClipboardMeta *self = data->self;
+    GPasteClipboardUpdate *update = user_data;
     g_auto (GValue) value = G_VALUE_INIT;
     g_autoptr (GError) error = NULL;
 
-    g_value_init (&value, g_paste_clipboard_meta_content_gtype (data->content_kind));
+    /* Past the deadline, the cache is the only place this could reach: see
+     * g_paste_clipboard_update_is_expired (). Asked before the provider is read
+     * off @update, a concluded one having handed it on. */
+    if (g_paste_clipboard_update_is_expired (update))
+    {
+        g_paste_clipboard_update_maybe_done (update);
+        return;
+    }
+
+    GPasteClipboardMeta *self = G_PASTE_CLIPBOARD_META (update->provider);
+
+    g_value_init (&value, g_paste_clipboard_meta_content_gtype (update->content_kind));
 
     if (!gdk_content_deserialize_finish (res, &value, &error))
     {
         if (error)
             g_debug ("Failed to decode selection: %s", error->message);
-        g_paste_clipboard_meta_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
 
-    switch (data->content_kind)
+    switch (update->content_kind)
     {
     case CLIPBOARD_CONTENT_IMAGE:
     {
@@ -779,8 +750,8 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         g_paste_clipboard_content_set_image_checksum_take (&self->content, g_steal_pointer (&checksum));
 
-        data->produced = TRUE;
-        data->texture = g_steal_pointer (&texture);
+        update->produced = TRUE;
+        update->texture = g_steal_pointer (&texture);
         break;
     }
     case CLIPBOARD_CONTENT_COLOR:
@@ -792,8 +763,8 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         g_paste_clipboard_content_set_color (&self->content, rgba);
 
-        data->produced = TRUE;
-        data->rgba = *rgba;
+        update->produced = TRUE;
+        update->rgba = *rgba;
         break;
     }
     case CLIPBOARD_CONTENT_FILE_LIST:
@@ -812,15 +783,15 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         g_paste_clipboard_content_set_file_list (&self->content, file_list);
 
-        data->produced = TRUE;
-        data->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
+        update->produced = TRUE;
+        update->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
         break;
     }
     default:
         break;
     }
 
-    g_paste_clipboard_meta_update_maybe_done (data);
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 /* image/color/file-list all decode through GDK's deserialisers, the same path
@@ -831,43 +802,55 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                         GBytes              *bytes,
                                         gpointer             user_data)
 {
-    GPasteClipboardMetaUpdateData *data = user_data;
+    GPasteClipboardUpdate *update = user_data;
 
-    if (!bytes)
+    /* Past the deadline, the cache is the only place this could reach. Asked
+     * before the deserialisation rather than only in its callback, there being
+     * nothing left for it to deserialise for. */
+    if (g_paste_clipboard_update_is_expired (update) || !bytes)
     {
-        g_paste_clipboard_meta_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
+
+    /* The bytes are in, which is this batch demonstrably moving -- and the one
+     * read that does not report it by counting itself out, the slot it holds
+     * being chained into the deserialisation below rather than released. Without
+     * this, that deserialisation runs on whatever was left of the deadline when
+     * the transfer started. */
+    g_paste_clipboard_read_guard_touch (&update->guard);
 
     g_autoptr (GInputStream) stream = g_memory_input_stream_new_from_bytes (bytes);
 
     gdk_content_deserialize_async (stream,
-                                   data->mime,
-                                   g_paste_clipboard_meta_content_gtype (data->content_kind),
+                                   update->mime,
+                                   g_paste_clipboard_meta_content_gtype (update->content_kind),
                                    G_PRIORITY_DEFAULT,
-                                   NULL, /* cancellable */
+                                   update->guard.cancellable,
                                    g_paste_clipboard_meta_update_on_value_deserialized,
-                                   data);
+                                   update);
 }
 
-typedef struct
+/* What a mime read means and what it does to the update it counts into are both
+ * gpaste-clipboard-content.c's; this is here for the shape read_mime () calls
+ * its callback with. */
+static void
+g_paste_clipboard_meta_on_mime_read (GPasteClipboardMeta *self G_GNUC_UNUSED,
+                                     GBytes              *bytes,
+                                     gpointer             user_data)
 {
-    GPasteClipboardMetaUpdateData *data;
-    GPasteSpecialMime              mime;
-} GPasteClipboardMetaMimeCtx;
+    g_paste_clipboard_update_on_mime_read (user_data, bytes);
+}
 
 static void
-g_paste_clipboard_meta_on_mime_bytes (GPasteClipboardMeta *self G_GNUC_UNUSED,
-                                      GBytes              *bytes,
-                                      gpointer             user_data)
+g_paste_clipboard_meta_read_mime_for (GPasteClipboardMeta   *self,
+                                      GPasteClipboardUpdate *update,
+                                      const gchar           *mimetype,
+                                      GPasteSpecialMime      mime)
 {
-    g_autofree GPasteClipboardMetaMimeCtx *ctx = user_data;
-    GPasteClipboardMetaUpdateData *data = ctx->data;
+    GPasteClipboardMimeCtx *ctx = g_paste_clipboard_update_add_mime_read (update, mime);
 
-    if (bytes && g_bytes_get_size (bytes) > 0)
-        data->special_mime[ctx->mime] = g_paste_binary_data_new (ctx->mime, g_bytes_ref (bytes));
-
-    g_paste_clipboard_meta_update_maybe_done (data);
+    g_paste_clipboard_meta_read_mime (self, mimetype, update->guard.cancellable, g_paste_clipboard_meta_on_mime_read, ctx);
 }
 
 /* Pick the offered mimetype to read @type from: @preferred (the canonical
@@ -943,17 +926,25 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         return;
     }
 
-    GPasteClipboardMetaUpdateData *data = g_new0 (GPasteClipboardMetaUpdateData, 1);
+    GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
+                                                                  content_kind,
+                                                                  callback,
+                                                                  user_data);
 
-    /* Hold a ref for the whole update (transfer + deserialize + special-value
-     * reads), released when data is freed in update_maybe_done. */
-    data->self = g_object_ref (self);
-    data->callback = callback;
-    data->user_data = user_data;
-    data->pending = 1;
-    data->content_kind = content_kind;
+    /* Nothing here can have failed its preconditions, but the caller's own
+     * bookkeeping is released by the callback and by nothing else, so the one
+     * path that fires no read still answers. */
+    if (!update)
+    {
+        g_list_free_full (mimetypes, g_free);
+        if (callback)
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+        return;
+    }
 
-    ++data->pending;
+    /* Counted in beside the read it counts, never before the switch: an arm that
+     * fires nothing would leave the update pending on a read that does not
+     * exist. */
     switch (content_kind)
     {
     case CLIPBOARD_CONTENT_FILE_LIST:
@@ -962,11 +953,13 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         /* Kept for the deferred deserialisation once the bytes have arrived. Pass
          * this owned copy (not content_mime, which aliases the mimetypes list freed
          * below) to the async transfer, since it reads the string after we return. */
-        data->mime = g_strdup (content_mime);
-        g_paste_clipboard_meta_read_mime (self, data->mime, g_paste_clipboard_meta_update_on_value, data);
+        update->mime = g_strdup (content_mime);
+        g_paste_clipboard_update_add_read (update);
+        g_paste_clipboard_meta_read_mime (self, update->mime, update->guard.cancellable, g_paste_clipboard_meta_update_on_value, update);
         break;
     case CLIPBOARD_CONTENT_TEXT:
-        g_paste_clipboard_meta_read_mime (self, content_mime, g_paste_clipboard_meta_update_on_text, data);
+        g_paste_clipboard_update_add_read (update);
+        g_paste_clipboard_meta_read_mime (self, content_mime, update->guard.cancellable, g_paste_clipboard_meta_update_on_text, update);
         break;
     case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
@@ -981,18 +974,13 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
             if (!mimetypes_contain (mimetypes, g_paste_special_mime_get (mime)))
                 continue;
 
-            GPasteClipboardMetaMimeCtx *ctx = g_new0 (GPasteClipboardMetaMimeCtx, 1);
-            ctx->data = data;
-            ctx->mime = mime;
-
-            ++data->pending;
-            g_paste_clipboard_meta_read_mime (self, g_paste_special_mime_get (mime), g_paste_clipboard_meta_on_mime_bytes, ctx);
+            g_paste_clipboard_meta_read_mime_for (self, update, g_paste_special_mime_get (mime), mime);
         }
     }
 
     g_list_free_full (mimetypes, g_free);
 
-    g_paste_clipboard_meta_update_maybe_done (data);
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 /* --- external ownership change --- */

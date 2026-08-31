@@ -38,8 +38,12 @@ static void g_paste_clipboard_gdk_provider_iface_init (GPasteClipboardProviderIn
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardGdk, clipboard_gdk, G_TYPE_OBJECT,
                                     G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_gdk_provider_iface_init)
 
+/* @reselect: whether the text read was stripped of something and the selection
+ * therefore has to be re-owned with what came out of it. Answered rather than
+ * acted on, the re-owning having to wait for the whole update: see update (). */
 typedef void (*GPasteClipboardGdkTextCallback)    (GPasteClipboardGdk *self,
                                                    const gchar        *text,
+                                                   gboolean            reselect,
                                                    gpointer            user_data);
 
 typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
@@ -77,14 +81,11 @@ g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdk *self,
     g_paste_clipboard_content_set_text_take (&self->content, text);
 }
 
-static void g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
-                                               const gchar        *text);
-
 typedef struct
 {
     GPasteClipboardGdk            *self; /* ref'd for the duration of the read */
+    GPasteClipboardUpdate         *update; /* what the read counts into, and what says it still matters */
     GPasteClipboardGdkTextCallback callback;
-    gpointer                       user_data;
 } GPasteClipboardGdkTextCallbackData;
 
 static void
@@ -97,51 +98,68 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
+    /* Nothing is waiting for this one any more: the update that fired it was
+     * concluded by its guard, so what the read brings back can only reach the
+     * provider's cache -- where it would dedup, out of every later update, the
+     * very text that never made it to the history. Cancelling cannot fail these
+     * reads (see update ()), and the cancel is not even what says the deadline
+     * is past: a conclusion asks for it last, so the update itself is the only
+     * thing that answers for the window in between (see update_is_expired ()). */
+    if (g_paste_clipboard_update_is_expired (data->update))
+    {
+        if (data->callback)
+            data->callback (self, NULL, FALSE, data->update);
+        return;
+    }
+
     if (!text)
     {
         if (error)
             g_debug ("Failed to read text from clipboard: %s", error->message);
         if (data->callback)
-            data->callback (self, NULL, data->user_data);
+            data->callback (self, NULL, FALSE, data->update);
         return;
     }
 
     g_autofree gchar *value = NULL;
+    gboolean reselect = FALSE;
 
     switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
     {
     case G_PASTE_CLIPBOARD_TEXT_REJECT:
         if (data->callback)
-            data->callback (self, NULL, data->user_data);
+            data->callback (self, NULL, FALSE, data->update);
         return;
     case G_PASTE_CLIPBOARD_TEXT_RESELECT:
-        g_paste_clipboard_gdk_select_text (self, value);
+        reselect = TRUE;
         break;
     case G_PASTE_CLIPBOARD_TEXT_SET:
-        /* RESELECT above still needs @value, but this branch is done with it. */
-        g_paste_clipboard_gdk_private_set_text_take (self, g_steal_pointer (&value));
         break;
     }
 
+    g_paste_clipboard_gdk_private_set_text_take (self, g_steal_pointer (&value));
+
     if (data->callback)
-        data->callback (self, self->content.str, data->user_data);
+        data->callback (self, self->content.str, reselect, data->update);
 }
 
 static void
 g_paste_clipboard_gdk_set_text (GPasteClipboardGdk            *self,
-                                GPasteClipboardGdkTextCallback callback,
-                                gpointer                       user_data)
+                                GPasteClipboardUpdate         *update,
+                                GPasteClipboardGdkTextCallback callback)
 {
     GPasteClipboardGdkTextCallbackData *data = g_new (GPasteClipboardGdkTextCallbackData, 1);
 
     /* Hold a ref for the whole read, as the meta backend does: nothing else
-     * keeps us alive between the request and its callback. */
+     * keeps us alive between the request and its callback. @update needs none:
+     * this read is counted into it and an update is freed by the last read to
+     * report, so it outlives every one of them by construction. */
     data->self = g_object_ref (self);
+    data->update = update;
     data->callback = callback;
-    data->user_data = user_data;
 
     gdk_clipboard_read_text_async (self->real,
-                                   NULL, /* cancellable */
+                                   update->guard.cancellable,
                                    g_paste_clipboard_gdk_on_text_ready,
                                    data);
 }
@@ -254,8 +272,8 @@ g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *self,
 typedef struct
 {
     GPasteClipboardGdk               *self; /* ref'd for the duration of the read */
+    GPasteClipboardUpdate            *update; /* what the read counts into, and what says it still matters */
     GPasteClipboardGdkTextureCallback callback;
-    gpointer                          user_data;
 } GPasteClipboardGdkTextureCallbackData;
 
 static void
@@ -268,12 +286,21 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     g_autoptr (GdkTexture) texture = gdk_clipboard_read_texture_finish (GDK_CLIPBOARD (source_object), res, &error);
 
+    /* Past the deadline, the cache is the only place this could reach: see
+     * on_text_ready (). */
+    if (g_paste_clipboard_update_is_expired (data->update))
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->update);
+        return;
+    }
+
     if (!texture)
     {
         if (error)
             g_debug ("Failed to read texture from clipboard: %s", error->message);
         if (data->callback)
-            data->callback (self, NULL, data->user_data);
+            data->callback (self, NULL, data->update);
         return;
     }
 
@@ -291,23 +318,23 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     }
 
     if (data->callback)
-        data->callback (self, result, data->user_data);
+        data->callback (self, result, data->update);
 }
 
 static void
 g_paste_clipboard_gdk_set_texture (GPasteClipboardGdk               *self,
-                                   GPasteClipboardGdkTextureCallback callback,
-                                   gpointer                          user_data)
+                                   GPasteClipboardUpdate            *update,
+                                   GPasteClipboardGdkTextureCallback callback)
 {
     GPasteClipboardGdkTextureCallbackData *data = g_new (GPasteClipboardGdkTextureCallbackData, 1);
 
-    /* Ref for the whole read (see set_text). */
+    /* A ref for the whole read, and none on the update (see set_text). */
     data->self = g_object_ref (self);
+    data->update = update;
     data->callback = callback;
-    data->user_data = user_data;
 
     gdk_clipboard_read_texture_async (self->real,
-                                      NULL, /* cancellable */
+                                      update->guard.cancellable,
                                       g_paste_clipboard_gdk_on_texture_ready,
                                       data);
 }
@@ -319,8 +346,8 @@ typedef void (*GPasteClipboardGdkRGBACallback) (GPasteClipboardGdk *self,
 typedef struct
 {
     GPasteClipboardGdk            *self; /* ref'd for the duration of the read */
+    GPasteClipboardUpdate         *update; /* what the read counts into, and what says it still matters */
     GPasteClipboardGdkRGBACallback callback;
-    gpointer                       user_data;
 } GPasteClipboardGdkRGBACallbackData;
 
 static void
@@ -333,12 +360,21 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     const GValue *value = gdk_clipboard_read_value_finish (GDK_CLIPBOARD (source_object), res, &error);
 
+    /* Past the deadline, the cache is the only place this could reach: see
+     * on_text_ready (). */
+    if (g_paste_clipboard_update_is_expired (data->update))
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->update);
+        return;
+    }
+
     if (!value)
     {
         if (error)
             g_debug ("Failed to read color from clipboard: %s", error->message);
         if (data->callback)
-            data->callback (self, NULL, data->user_data);
+            data->callback (self, NULL, data->update);
         return;
     }
 
@@ -347,87 +383,97 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
     if (!rgba)
     {
         if (data->callback)
-            data->callback (self, NULL, data->user_data);
+            data->callback (self, NULL, data->update);
         return;
     }
 
     if (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba))
     {
         if (data->callback)
-            data->callback (self, NULL, data->user_data);
+            data->callback (self, NULL, data->update);
         return;
     }
 
     g_paste_clipboard_gdk_private_set_color (self, rgba);
 
     if (data->callback)
-        data->callback (self, &self->content.rgba, data->user_data);
+        data->callback (self, &self->content.rgba, data->update);
 }
 
 static void
 g_paste_clipboard_gdk_set_color (GPasteClipboardGdk            *self,
-                                 GPasteClipboardGdkRGBACallback callback,
-                                 gpointer                       user_data)
+                                 GPasteClipboardUpdate         *update,
+                                 GPasteClipboardGdkRGBACallback callback)
 {
     GPasteClipboardGdkRGBACallbackData *data = g_new (GPasteClipboardGdkRGBACallbackData, 1);
 
-    /* Ref for the whole read (see set_text). */
+    /* A ref for the whole read, and none on the update (see set_text). */
     data->self = g_object_ref (self);
+    data->update = update;
     data->callback = callback;
-    data->user_data = user_data;
 
     gdk_clipboard_read_value_async (self->real,
                                     GDK_TYPE_RGBA,
                                     G_PRIORITY_DEFAULT,
-                                    NULL, /* cancellable */
+                                    update->guard.cancellable,
                                     g_paste_clipboard_gdk_on_rgba_ready,
                                     data);
 }
 
-typedef void (*GPasteClipboardGdkSpecialMimeCallback) (GPasteClipboardGdk *self,
-                                                       GPasteSpecialMime   mime,
-                                                       GBytes             *bytes,
-                                                       gpointer            user_data);
+typedef void (*GPasteClipboardGdkBytesCallback) (GPasteClipboardGdk *self,
+                                                 GBytes             *bytes,
+                                                 gpointer            user_data);
 
 typedef struct
 {
-    GPasteClipboardGdk                   *self; /* ref'd for the duration of the read */
-    GPasteSpecialMime                     mime;
-    GPasteClipboardGdkSpecialMimeCallback callback;
-    gpointer                              user_data;
-} GPasteClipboardGdkSpecialMimeData;
+    GPasteClipboardGdk             *self; /* ref'd for the duration of the read */
+    GCancellable                   *cancellable; /* ref'd: the second half goes out on it */
+    GOutputStream                  *ostream; /* what the transfer is drained into */
+    GPasteClipboardGdkBytesCallback callback;
+    gpointer                        user_data;
+} GPasteClipboardGdkBytesData;
 
 static void
-g_paste_clipboard_gdk_on_special_mime_bytes_ready (GObject      *source_object,
-                                                   GAsyncResult *res,
-                                                   gpointer      user_data)
+g_paste_clipboard_gdk_bytes_data_free (GPasteClipboardGdkBytesData *data)
 {
-    g_autofree GPasteClipboardGdkSpecialMimeData *data = user_data;
-    g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in fetch_special_mime */
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GBytes) bytes = g_input_stream_read_bytes_finish (G_INPUT_STREAM (source_object), res, &error);
+    g_clear_object (&data->self);
+    g_clear_object (&data->cancellable);
+    g_clear_object (&data->ostream);
+    g_free (data);
+}
 
-    if (error || !bytes)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardGdkBytesData, g_paste_clipboard_gdk_bytes_data_free)
+
+static void
+g_paste_clipboard_gdk_on_mime_bytes_ready (GObject      *source_object,
+                                           GAsyncResult *res,
+                                           gpointer      user_data)
+{
+    g_autoptr (GPasteClipboardGdkBytesData) data = user_data; /* built in fetch_mime */
+    g_autoptr (GError) error = NULL;
+
+    if (g_output_stream_splice_finish (G_OUTPUT_STREAM (source_object), res, &error) < 0)
     {
         if (error)
-            g_debug ("Failed to read special mime bytes: %s", error->message);
-        if (data->callback)
-            data->callback (self, data->mime, NULL, data->user_data);
+            g_debug ("Failed to read mime bytes: %s", error->message);
+        data->callback (data->self, NULL, data->user_data);
         return;
     }
 
-    if (data->callback)
-        data->callback (self, data->mime, bytes, data->user_data);
+    /* steal_as_bytes requires a closed stream, which the splice above did
+     * (%G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET). */
+    g_autoptr (GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (data->ostream));
+
+    data->callback (data->self, bytes, data->user_data);
 }
 
 static void
-g_paste_clipboard_gdk_on_special_mime_stream_ready (GObject      *source_object,
-                                                    GAsyncResult *res,
-                                                    gpointer      user_data)
+g_paste_clipboard_gdk_on_mime_stream_ready (GObject      *source_object,
+                                            GAsyncResult *res,
+                                            gpointer      user_data)
 {
-    g_autofree GPasteClipboardGdkSpecialMimeData *data = user_data;
-    /* Released here unless the read below takes both it and @data over. */
-    g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in fetch_special_mime */
+    /* Released here unless the splice below takes @data over. */
+    g_autoptr (GPasteClipboardGdkBytesData) data = user_data; /* built in fetch_mime */
     g_autoptr (GError) error = NULL;
     const gchar *actual_mime = NULL;
     g_autoptr (GInputStream) stream = gdk_clipboard_read_finish (GDK_CLIPBOARD (source_object), res, &actual_mime, &error);
@@ -435,105 +481,100 @@ g_paste_clipboard_gdk_on_special_mime_stream_ready (GObject      *source_object,
     if (error || !stream)
     {
         if (error)
-            g_debug ("Failed to read special mime stream: %s", error->message);
-        if (data->callback)
-            data->callback (self, data->mime, NULL, data->user_data);
+            g_debug ("Failed to read mime stream: %s", error->message);
+        data->callback (data->self, NULL, data->user_data);
         return;
     }
 
-    /* data->self keeps the ref for the second half of the read. */
-    g_steal_pointer (&self);
+    /* Held here rather than read off @data in the call below: the steal that
+     * hands @data to the callback writes %NULL over it, and nothing orders that
+     * after the two arguments beside it -- gcc evaluates the last one first, so
+     * both of those would be read off a pointer already cleared. */
+    GOutputStream *ostream = data->ostream;
+    GCancellable *cancellable = data->cancellable;
 
-    g_input_stream_read_bytes_async (stream,
-                                     G_MAXUINT,
-                                     G_PRIORITY_DEFAULT,
-                                     NULL, /* cancellable */
-                                     g_paste_clipboard_gdk_on_special_mime_bytes_ready,
-                                     g_steal_pointer (&data));
+    /* Spliced rather than read once: a #GdkX11SelectionInputStream hands back
+     * whatever a single property already holds, which for an INCR transfer is
+     * the first chunk of it -- and a representation truncated there is the one
+     * that would be stored on the item and re-published on every later paste.
+     * Draining it into a memory stream is what the mutter backend's transfer
+     * does, so both backends end up with the whole of what the owner sent. */
+    g_output_stream_splice_async (ostream,
+                                  stream,
+                                  G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                  G_PRIORITY_DEFAULT,
+                                  cancellable,
+                                  g_paste_clipboard_gdk_on_mime_bytes_ready,
+                                  g_steal_pointer (&data));
 }
 
+/* Read one named mimetype off the selection, whatever it is being read for: the
+ * mimetype is all this needs, so the caller carries what it means in @user_data.
+ * @callback is required, and both halves report through it on every path, error
+ * ones above all: it is what counts the read out of the update that fired it, so
+ * one that went out without it would leave that update unable to conclude.
+ *
+ * gdk_clipboard_read_async() resolves to a single stream (the first of the
+ * requested mimetypes the owner provides), so distinct mimetypes cannot be
+ * collapsed into one read; update() already fires these reads in parallel. */
 static void
-g_paste_clipboard_gdk_fetch_special_mime (GPasteClipboardGdk                   *self,
-                                          GPasteSpecialMime                     mime,
-                                          GPasteClipboardGdkSpecialMimeCallback callback,
-                                          gpointer                              user_data)
+g_paste_clipboard_gdk_fetch_mime (GPasteClipboardGdk             *self,
+                                  const gchar                    *mimetype,
+                                  GCancellable                   *cancellable,
+                                  GPasteClipboardGdkBytesCallback callback,
+                                  gpointer                        user_data)
 {
-    GPasteClipboardGdkSpecialMimeData *data = g_new (GPasteClipboardGdkSpecialMimeData, 1);
+    GPasteClipboardGdkBytesData *data = g_new0 (GPasteClipboardGdkBytesData, 1);
 
-    /* Ref for the whole read (see set_text), across both of its halves. */
+    /* Refs for the whole read (see set_text), across both of its halves: the
+     * second one goes out on the cancellable the first was fired with, and what
+     * keeps that alive is nothing this read can see. */
     data->self = g_object_ref (self);
-    data->mime = mime;
+    data->cancellable = g_object_ref (cancellable);
+    data->ostream = g_memory_output_stream_new_resizable ();
     data->callback = callback;
     data->user_data = user_data;
 
-    /* gdk_clipboard_read_async() resolves to a single stream (the first of the
-     * requested mimetypes the owner provides), so distinct mimes cannot be
-     * collapsed into one read; update() already fires these reads in parallel. */
-    const gchar *mime_types[] = { g_paste_special_mime_get (mime), NULL };
+    const gchar *mime_types[] = { mimetype, NULL };
 
     gdk_clipboard_read_async (self->real,
                               mime_types,
                               G_PRIORITY_DEFAULT,
-                              NULL, /* cancellable */
-                              g_paste_clipboard_gdk_on_special_mime_stream_ready,
+                              cancellable,
+                              g_paste_clipboard_gdk_on_mime_stream_ready,
                               data);
 }
 
-typedef struct
-{
-    GPasteClipboardGdk                   *self; /* ref'd for the whole update */
-    GPasteClipboardProviderUpdateCallback callback;
-    gpointer                              user_data;
-    gint                                  pending;
-    GPasteClipboardContentKind            content_kind;
-    union {
-        const gchar   *text;
-        GdkTexture    *texture;
-        GdkFileList   *file_list;
-        const GdkRGBA *rgba;
-    };
-    GPasteBinaryData                     *special_mime[G_PASTE_SPECIAL_MIME_LAST];
-} GPasteClipboardGdkUpdateData;
-
-static void
-g_paste_clipboard_gdk_update_maybe_done (GPasteClipboardGdkUpdateData *data)
-{
-    if (--data->pending > 0)
-        return;
-
-    /* The union means only the member matching @content_kind may be read; the
-     * builder looks at exactly that one. */
-    GPasteItem *item = g_paste_clipboard_content_to_item (data->content_kind,
-                                                          (data->content_kind == CLIPBOARD_CONTENT_TEXT) ? data->text : NULL,
-                                                          (data->content_kind == CLIPBOARD_CONTENT_IMAGE) ? data->texture : NULL,
-                                                          (data->content_kind == CLIPBOARD_CONTENT_FILE_LIST) ? data->file_list : NULL,
-                                                          (data->content_kind == CLIPBOARD_CONTENT_COLOR) ? data->rgba : NULL,
-                                                          data->special_mime);
-
-    if (data->callback)
-        data->callback (G_PASTE_CLIPBOARD_PROVIDER (data->self), item, data->user_data);
-
-    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
-        g_clear_object (&data->special_mime[mime]);
-    g_object_unref (data->self); /* ref taken in update */
-    g_free (data);
-}
+/* Every read below counts into the same #GPasteClipboardUpdate: what it holds,
+ * what concluding it means and what releases it are the mutter backend's too,
+ * and live in gpaste-clipboard-content.c. Only the calls that fetch the bytes
+ * are this backend's. */
 
 static void
 g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
                                                  GAsyncResult *res,
                                                  gpointer      user_data)
 {
-    GPasteClipboardGdkUpdateData *data = user_data;
-    GPasteClipboardGdk *self = data->self;
+    GPasteClipboardUpdate *update = user_data;
     g_autoptr (GError) error = NULL;
     const GValue *value = gdk_clipboard_read_value_finish (GDK_CLIPBOARD (source_object), res, &error);
+
+    /* Past the deadline, the cache is the only place this could reach: see
+     * on_text_ready (). Asked before the provider is read off @update, a
+     * concluded one having handed it on. */
+    if (g_paste_clipboard_update_is_expired (update))
+    {
+        g_paste_clipboard_update_maybe_done (update);
+        return;
+    }
+
+    GPasteClipboardGdk *self = G_PASTE_CLIPBOARD_GDK (update->provider);
 
     if (!value)
     {
         if (error)
             g_debug ("Failed to read file list from clipboard: %s", error->message);
-        g_paste_clipboard_gdk_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
 
@@ -543,42 +584,48 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
 
     if (!files)
     {
-        g_paste_clipboard_gdk_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
 
     if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&self->content), file_list))
     {
-        g_paste_clipboard_gdk_update_maybe_done (data);
+        g_paste_clipboard_update_maybe_done (update);
         return;
     }
 
     g_paste_clipboard_gdk_private_set_file_list (self, file_list);
-    data->file_list = g_paste_clipboard_content_get_file_list (&self->content);
 
-    g_paste_clipboard_gdk_update_maybe_done (data);
+    update->produced = TRUE;
+    update->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
+
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 static void
-g_paste_clipboard_gdk_fetch_file_list (GPasteClipboardGdk           *self,
-                                       GPasteClipboardGdkUpdateData *data)
+g_paste_clipboard_gdk_fetch_file_list (GPasteClipboardGdk    *self,
+                                       GPasteClipboardUpdate *update)
 {
     gdk_clipboard_read_value_async (self->real,
                                     GDK_TYPE_FILE_LIST,
                                     G_PRIORITY_DEFAULT,
-                                    NULL, /* cancellable */
+                                    update->guard.cancellable,
                                     g_paste_clipboard_gdk_update_on_file_list_ready,
-                                    data);
+                                    update);
 }
 
 static void
 g_paste_clipboard_gdk_update_on_text_ready (GPasteClipboardGdk *self G_GNUC_UNUSED,
                                             const gchar        *text,
+                                            gboolean            reselect,
                                             gpointer            user_data)
 {
-    GPasteClipboardGdkUpdateData *data = user_data;
-    data->text = text;
-    g_paste_clipboard_gdk_update_maybe_done (data);
+    GPasteClipboardUpdate *update = user_data;
+
+    update->produced = !!text;
+    g_set_str (&update->text, text);
+    update->reselect = reselect;
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 static void
@@ -586,9 +633,11 @@ g_paste_clipboard_gdk_update_on_texture_ready (GPasteClipboardGdk *self G_GNUC_U
                                                GdkTexture         *texture,
                                                gpointer            user_data)
 {
-    GPasteClipboardGdkUpdateData *data = user_data;
-    data->texture = texture;
-    g_paste_clipboard_gdk_update_maybe_done (data);
+    GPasteClipboardUpdate *update = user_data;
+
+    update->produced = !!texture;
+    g_set_object (&update->texture, texture);
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 static void
@@ -596,25 +645,53 @@ g_paste_clipboard_gdk_update_on_color_ready (GPasteClipboardGdk *self G_GNUC_UNU
                                              const GdkRGBA      *rgba,
                                              gpointer            user_data)
 {
-    GPasteClipboardGdkUpdateData *data = user_data;
-    data->rgba = rgba;
-    g_paste_clipboard_gdk_update_maybe_done (data);
+    GPasteClipboardUpdate *update = user_data;
+
+    if (rgba)
+    {
+        update->produced = TRUE;
+        update->rgba = *rgba;
+    }
+
+    g_paste_clipboard_update_maybe_done (update);
+}
+
+/* What a mime read means and what it does to the update it counts into are both
+ * gpaste-clipboard-content.c's; this is here for the shape fetch_mime () calls
+ * its callback with. */
+static void
+g_paste_clipboard_gdk_on_mime_read (GPasteClipboardGdk *self G_GNUC_UNUSED,
+                                    GBytes             *bytes,
+                                    gpointer            user_data)
+{
+    g_paste_clipboard_update_on_mime_read (user_data, bytes);
 }
 
 static void
-g_paste_clipboard_gdk_update_on_special_mime_ready (GPasteClipboardGdk *self G_GNUC_UNUSED,
-                                                    GPasteSpecialMime   mime,
-                                                    GBytes             *bytes,
-                                                    gpointer            user_data)
+g_paste_clipboard_gdk_fetch_mime_for (GPasteClipboardGdk    *self,
+                                      GPasteClipboardUpdate *update,
+                                      const gchar           *mimetype,
+                                      GPasteSpecialMime      mime)
 {
-    GPasteClipboardGdkUpdateData *data = user_data;
+    GPasteClipboardMimeCtx *ctx = g_paste_clipboard_update_add_mime_read (update, mime);
 
-    if (bytes && g_bytes_get_size (bytes) > 0)
-        data->special_mime[mime] = g_paste_binary_data_new (mime, g_bytes_ref (bytes));
-
-    g_paste_clipboard_gdk_update_maybe_done (data);
+    g_paste_clipboard_gdk_fetch_mime (self, mimetype, update->guard.cancellable, g_paste_clipboard_gdk_on_mime_read, ctx);
 }
 
+/* The guard concluding an update rather than failing its reads is not a choice:
+ * cancelling cannot fail them. gdk_x11_clipboard_read_async () and the selection
+ * input stream behind it hand the cancellable to their #GTask and never connect
+ * to it, so an owner that stopped answering leaves the read exactly where it was
+ * whatever we ask of it -- and the update would never conclude, which is the
+ * whole of what that guard is for. The cancel is still worth asking for: a read
+ * that does honour it fails and counts itself out.
+ *
+ * What that leaves is the update outliving its own conclusion, freed only if
+ * those reads ever land. Nothing can be done about the struct itself -- they
+ * hold the pointer -- but everything of any size is let go of at the conclusion
+ * instead (g_paste_clipboard_update_release_content ()), so what a stuck owner
+ * leaves behind is a counter and not the content that was read, nor the ref that
+ * keeps our requestor window on the server. */
 static void
 g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
                               GPasteClipboardProviderUpdateCallback callback,
@@ -652,15 +729,20 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         return;
     }
 
-    GPasteClipboardGdkUpdateData *data = g_new0 (GPasteClipboardGdkUpdateData, 1);
+    GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
+                                                                  content_kind,
+                                                                  callback,
+                                                                  user_data);
 
-    /* Hold a ref for the whole update (the content read plus every special-value
-     * read), released when data is freed in update_maybe_done. */
-    data->self = g_object_ref (self);
-    data->callback = callback;
-    data->user_data = user_data;
-    data->pending = 1;
-    data->content_kind = content_kind;
+    /* Nothing here can have failed its preconditions, but the caller's own
+     * bookkeeping is released by the callback and by nothing else, so the one
+     * path that fires no read still answers. */
+    if (!update)
+    {
+        if (callback)
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+        return;
+    }
 
     gboolean mime_available[G_PASTE_SPECIAL_MIME_LAST] = { FALSE };
 
@@ -674,20 +756,26 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         }
     }
 
-    ++data->pending;
+    /* Counted in beside the read it counts, never before the switch: an arm that
+     * fires nothing would leave the update pending on a read that does not
+     * exist. */
     switch (content_kind)
     {
     case CLIPBOARD_CONTENT_FILE_LIST:
-        g_paste_clipboard_gdk_fetch_file_list (self, data);
+        g_paste_clipboard_update_add_read (update);
+        g_paste_clipboard_gdk_fetch_file_list (self, update);
         break;
     case CLIPBOARD_CONTENT_COLOR:
-        g_paste_clipboard_gdk_set_color (self, g_paste_clipboard_gdk_update_on_color_ready, data);
+        g_paste_clipboard_update_add_read (update);
+        g_paste_clipboard_gdk_set_color (self, update, g_paste_clipboard_gdk_update_on_color_ready);
         break;
     case CLIPBOARD_CONTENT_TEXT:
-        g_paste_clipboard_gdk_set_text (self, g_paste_clipboard_gdk_update_on_text_ready, data);
+        g_paste_clipboard_update_add_read (update);
+        g_paste_clipboard_gdk_set_text (self, update, g_paste_clipboard_gdk_update_on_text_ready);
         break;
     case CLIPBOARD_CONTENT_IMAGE:
-        g_paste_clipboard_gdk_set_texture (self, g_paste_clipboard_gdk_update_on_texture_ready, data);
+        g_paste_clipboard_update_add_read (update);
+        g_paste_clipboard_gdk_set_texture (self, update, g_paste_clipboard_gdk_update_on_texture_ready);
         break;
     case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:
@@ -697,13 +785,10 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
     {
         if (mime_available[mime])
-        {
-            ++data->pending;
-            g_paste_clipboard_gdk_fetch_special_mime (self, mime, g_paste_clipboard_gdk_update_on_special_mime_ready, data);
-        }
+            g_paste_clipboard_gdk_fetch_mime_for (self, update, g_paste_special_mime_get (mime), mime);
     }
 
-    g_paste_clipboard_gdk_update_maybe_done (data);
+    g_paste_clipboard_update_maybe_done (update);
 }
 
 static gboolean
