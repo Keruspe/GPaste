@@ -504,14 +504,22 @@ g_paste_util_get_dbus_histories_result (GVariant *variant)
 {
     GList *histories = NULL;
     GVariantIter iter;
-    g_autofree gchar *name = NULL;
-    guint64 size;
 
     g_variant_iter_init (&iter, variant);
-    while (g_variant_iter_next (&iter, G_PASTE_HISTORY_VARIANT_STRING, &name, &size))
+
+    /* The name belongs to the iteration that read it, so it is declared there:
+     * one hoisted out of the loop and cleared by hand at the bottom of the body
+     * is a free an early exit can forget, where this one's cleanup runs whichever
+     * way the iteration ends. */
+    while (TRUE)
     {
+        g_autofree gchar *name = NULL;
+        guint64 size;
+
+        if (!g_variant_iter_next (&iter, G_PASTE_HISTORY_VARIANT_STRING, &name, &size))
+            break;
+
         histories = g_list_prepend (histories, g_paste_client_history_new (name, size));
-        g_clear_pointer (&name, g_free);
     }
 
     return g_list_reverse (histories);
