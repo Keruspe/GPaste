@@ -11,6 +11,8 @@
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-sensitive-mime.h>
 #include <gpaste-daemon/gpaste-special-mime.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
@@ -458,6 +460,19 @@ g_paste_clipboard_meta_source_add_special_values (GPasteClipboardMetaSource *sel
     }
 }
 
+/* Say that what this source offers is a secret, mirroring
+ * g_paste_clipboard_gdk_select_item (). */
+static void
+g_paste_clipboard_meta_source_add_sensitive_mimes (GPasteClipboardMetaSource *self,
+                                                   GPasteItem                *item)
+{
+    if (!G_PASTE_IS_PASSWORD_ITEM (item))
+        return;
+
+    for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
+        g_paste_clipboard_meta_source_add (self, g_paste_sensitive_mime_get (mime), g_paste_sensitive_mime_get_bytes (mime));
+}
+
 /* --- publishing a source --- */
 
 static void
@@ -634,6 +649,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 
     g_paste_clipboard_meta_source_add_text (source, bytes);
     g_paste_clipboard_meta_source_add_special_values (source, item);
+    g_paste_clipboard_meta_source_add_sensitive_mimes (source, item);
     g_paste_clipboard_meta_publish_source (self, source);
 
     return TRUE;
@@ -652,7 +668,7 @@ g_paste_clipboard_meta_is_empty (GPasteClipboardMeta *self)
  * mimetype, the content deserialised afterwards from the mimetype the update
  * carries. */
 static void
-g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
+g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                        GBytes              *bytes,
                                        gpointer             user_data)
 {
@@ -673,26 +689,19 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
         return;
     }
 
-    g_autofree gchar *text = g_strndup (raw, size);
-    g_autofree gchar *value = NULL;
-
-    switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
-    {
-    case G_PASTE_CLIPBOARD_TEXT_UNCHANGED:
-        update->unchanged = TRUE;
-        G_GNUC_FALLTHROUGH;
-    case G_PASTE_CLIPBOARD_TEXT_REJECT:
-        g_paste_clipboard_update_maybe_done (update);
-        return;
-    case G_PASTE_CLIPBOARD_TEXT_RESELECT:
-        update->reselect = TRUE;
-        break;
-    case G_PASTE_CLIPBOARD_TEXT_SET:
-        break;
-    }
-
+    /* Kept whatever its size, and classified in
+     * g_paste_clipboard_update_conclude (): the size policy exempts a secret, and
+     * whether this is one is what the hint reads still out beside this one
+     * answer, so nothing may turn a text down before they land. What a read with
+     * nowhere left to land is turned down on is the deadline above, as
+     * g_paste_clipboard_sync_data_wants_text () turns the sync beside it down.
+     *
+     * Copied rather than kept as @bytes, which would hold it no shorter: that
+     * buffer is the transfer's resizable stream, grown by doubling and handed
+     * over whole, so it can be near twice the text it carries. The string is the
+     * text's own length, and the buffer goes back as this returns. */
     update->produced = TRUE;
-    g_set_str_take (&update->text, g_steal_pointer (&value));
+    g_set_str_take (&update->text, g_strndup (raw, size));
     g_paste_clipboard_update_maybe_done (update);
 }
 
@@ -846,9 +855,8 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                    update);
 }
 
-/* What a mime read means and what it does to the update it counts into are both
- * gpaste-clipboard-content.c's; this is here for the shape read_mime () calls
- * its callback with. */
+/* As in g_paste_clipboard_gdk_on_mime_read (): the backend only adapts the
+ * callback's shape; the shared update interprets and counts the MIME reply. */
 static void
 g_paste_clipboard_meta_on_mime_read (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                      GBytes              *bytes,
@@ -857,15 +865,24 @@ g_paste_clipboard_meta_on_mime_read (GPasteClipboardMeta *self G_GNUC_UNUSED,
     g_paste_clipboard_update_on_mime_read (user_data, bytes);
 }
 
-static void
-g_paste_clipboard_meta_read_mime_for (GPasteClipboardMeta   *self,
-                                      GPasteClipboardUpdate *update,
-                                      const gchar           *mimetype,
-                                      GPasteSpecialMime      mime)
+/* The two halves this backend answers g_paste_clipboard_update_read_mimes ()
+ * with: what a selection offers is the mimetype list the owner published, and a
+ * read of one mimetype is a transfer reporting to on_mime_read (). Which
+ * mimetypes are asked for is that function's, not this file's. */
+static gboolean
+g_paste_clipboard_meta_offers_mime (gconstpointer offer,
+                                    const gchar  *mimetype)
 {
-    GPasteClipboardMimeCtx *ctx = g_paste_clipboard_update_add_mime_read (update, mime);
+    return mimetypes_contain ((GList *) offer, mimetype);
+}
 
-    g_paste_clipboard_meta_read_mime (self, mimetype, update->guard.cancellable, g_paste_clipboard_meta_on_mime_read, ctx);
+static void
+g_paste_clipboard_meta_read_offered_mime (gpointer                backend,
+                                          const gchar            *mimetype,
+                                          GCancellable           *cancellable,
+                                          GPasteClipboardMimeCtx *ctx)
+{
+    g_paste_clipboard_meta_read_mime (backend, mimetype, cancellable, g_paste_clipboard_meta_on_mime_read, ctx);
 }
 
 /* Pick the offered mimetype to read @type from: @preferred (the canonical
@@ -927,7 +944,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
         return;
     }
     else
@@ -938,14 +955,14 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
          * and give up on the update the previous owner was being read for. */
         g_list_free_full (mimetypes, g_free);
         g_paste_clipboard_update_supersede (&self->update);
-        g_paste_clipboard_content_clear (&self->content);
-        self->content.kind = CLIPBOARD_CONTENT_IGNORED;
+        g_paste_clipboard_content_set_ignored (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
         return;
     }
 
     GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
+                                                                  self->settings,
                                                                   content_kind,
                                                                   &self->update,
                                                                   &self->content,
@@ -959,7 +976,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         g_list_free_full (mimetypes, g_free);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
         return;
     }
 
@@ -992,17 +1009,10 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_assert_not_reached ();
     }
 
-    if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
-        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (self->settings)))
-    {
-        for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
-        {
-            if (!mimetypes_contain (mimetypes, g_paste_special_mime_get (mime)))
-                continue;
-
-            g_paste_clipboard_meta_read_mime_for (self, update, g_paste_special_mime_get (mime), mime);
-        }
-    }
+    /* Every representation asked for on top of the content, the mimetypes the
+     * owner listed saying which are there to ask for. */
+    g_paste_clipboard_update_read_mimes (update, mimetypes, g_paste_clipboard_meta_offers_mime,
+                                         self, g_paste_clipboard_meta_read_offered_mime);
 
     g_list_free_full (mimetypes, g_free);
 

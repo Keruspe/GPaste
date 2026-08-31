@@ -13,6 +13,12 @@ apiversion = '3'
 adwaita_req_version = '1.10.alpha'
 gcr_req_version = '4.0.0'
 glib_req_version = '2.89.0'
+# FIXME: raise this to the first release carrying GTK MR !10321's second patch
+# ("gdkclipboard-x11: keep the TARGETS atoms that are not mime types"), 4.23.5
+# at the earliest. Built against a GTK that filters those atoms out of a
+# selection's GdkContentFormats, the sensitive-mime check answers "not offered"
+# for every selection, so no password copied by another clipboard manager is
+# recognised and every one of them is kept in the history in the clear.
 gtk4_req_version = '4.23.4'
 
 gcr_dep = dependency('gcr-4', version: '>= ' + gcr_req_version)

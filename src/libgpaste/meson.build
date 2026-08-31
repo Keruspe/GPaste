@@ -265,6 +265,7 @@ gpaste_daemon_internal_sources = [
   'gpaste-daemon/gpaste-keybinding.c',
   'gpaste-daemon/gpaste-noop-backend.c',
   'gpaste-daemon/gpaste-screensaver-client.c',
+  'gpaste-daemon/gpaste-sensitive-mime.c',
   'gpaste-daemon/gpaste-uris-item.c',
 ]
 
@@ -283,6 +284,7 @@ gpaste_daemon_internal_headers = [
   'gpaste-daemon/gpaste-keybinding.h',
   'gpaste-daemon/gpaste-noop-backend.h',
   'gpaste-daemon/gpaste-screensaver-client.h',
+  'gpaste-daemon/gpaste-sensitive-mime.h',
   'gpaste-daemon/gpaste-uris-item.h',
 ]
 

@@ -19,15 +19,24 @@ G_DECLARE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_PAST
  *        when the content is unchanged, unrecognised or the selection is empty
  * @superseded: whether another selection change overtook this read; @item is
  *              %NULL and the callback must only release its state in that case
+ * @sensitive: whether the owner marked what it is offering a secret
  * @user_data: the data passed to g_paste_clipboard_provider_update()
  *
  * Receives the outcome of a g_paste_clipboard_provider_update(). The callback
  * **owns** @item: it must hand it to something that takes it (e.g.
  * g_paste_history_add()) or release it.
+ *
+ * @sensitive answers for the selection and not for @item, which is why it is
+ * told apart from "@item is a password": an update that produced nothing still
+ * read the selection, and a text deduped against the one already there is the
+ * only word anything gets on whether what is sitting on it is still a secret.
+ * %FALSE for a selection with no text, and for one whose hint never came back
+ * (see #GPasteClipboardMimeResults).
  */
 typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *self,
                                                        GPasteItem              *item,
                                                        gboolean                 superseded,
+                                                       gboolean                 sensitive,
                                                        gpointer                 user_data);
 
 /**

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
+#include <gpaste-daemon/gpaste-password-item.h>
 
 G_DEFINE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_TYPE_OBJECT)
 
@@ -233,7 +234,8 @@ g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
  * @self: a #GPasteClipboardProvider instance
  * @history: a #GPasteHistory instance
  *
- * Ensure the selection has some contents (as long as the history's not empty)
+ * Ensure the selection has some contents (as long as the history's not empty
+ * and its head is not a password)
  *
  * What comes back is what this put there, so a caller can act on a selection it
  * did not perform itself -- arming a password's countdown, above all, which
@@ -261,6 +263,15 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
         return NULL;
 
     GPasteItem *item = g_ptr_array_index (hist, 0);
+
+    /* A selection falling empty under a password is, as often as not, its owner
+     * taking that password back off -- a password manager clearing what it
+     * copied, which the history recorded as a password item at its head. Putting
+     * it back is exposure nobody asked for, and under a password-timeout of 0 it
+     * would then stay there for the rest of the session. An emptied selection is
+     * left empty instead: there is no other item the user chose to put there. */
+    if (G_PASTE_IS_PASSWORD_ITEM (item))
+        return NULL;
 
     if (g_paste_clipboard_provider_select_item_full (self, item, FALSE))
         return item;

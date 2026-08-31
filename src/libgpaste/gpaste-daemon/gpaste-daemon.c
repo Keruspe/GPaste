@@ -6,6 +6,7 @@
 #include <gpaste-daemon/gpaste-daemon.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-keybinder.h>
+#include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-screensaver-client.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
@@ -1173,8 +1174,9 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemon            *self,
 
     /* Blank the selection on both transitions: nothing of the history sits in
      * the clipboard while the screen is locked, and unlocking puts the head
-     * item back over that blank. An empty text item is always accepted, hence
-     * the unchecked return value here (unlike the one below). */
+     * item back over that blank unless it is a password. An empty text item is
+     * always accepted, hence the unchecked return value here (unlike the one
+     * below). */
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
 
@@ -1185,7 +1187,9 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemon            *self,
     {
         g_autoptr (GPasteItem) item = g_paste_history_dup (self->history, 0);
 
-        if (item)
+        /* As in g_paste_clipboard_provider_ensure_not_empty (): nobody asked to
+         * put a password back, so the blank stays. */
+        if (item && !G_PASTE_IS_PASSWORD_ITEM (item))
         {
             if (!g_paste_clipboards_manager_select (self->clipboards_manager, item))
                 g_paste_history_remove (self->history, 0);

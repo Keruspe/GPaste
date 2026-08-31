@@ -15,6 +15,9 @@ struct _TestClipboard
     GObject parent_instance;
 
     GPasteClipboardContent content;
+    /* Borrowed: what the test configures is what a read must be classified
+     * against, so the mock hands this very object to every update it builds. */
+    GPasteSettings        *settings;
     gboolean               is_clipboard;
     GPasteItem            *published;
     guint                  publications;
@@ -73,14 +76,14 @@ update (GPasteClipboardProvider              *provider,
 
     if (self->defer_reads)
     {
-        GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, CLIPBOARD_CONTENT_TEXT,
+        GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, self->settings, CLIPBOARD_CONTENT_TEXT,
                                                                        &self->pending, &self->content, callback, user_data);
 
         /* The text and HTML replies are released independently by the test. */
         g_paste_clipboard_update_add_read (pending);
     }
     else if (callback)
-        callback (provider, NULL, FALSE, user_data);
+        callback (provider, NULL, FALSE, FALSE, user_data);
 }
 
 static gboolean
@@ -148,6 +151,15 @@ test_clipboard_init (TestClipboard *self G_GNUC_UNUSED)
 {
 }
 
+static TestClipboard *
+make_clipboard (GPasteSettings *settings)
+{
+    TestClipboard *self = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+
+    self->settings = settings;
+    return self;
+}
+
 /* Every case starts from the schema's defaults. The memory backend is shared by
  * the whole binary, so a key one case sets would otherwise reach every case
  * after it -- and a case run alone with -p would see different settings. */
@@ -196,8 +208,8 @@ test_strip_refreshes_matching_selections (gconstpointer user_data)
     if (!at_head)
         g_paste_history_add (history, g_paste_text_item_new ("later history item"));
 
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
 
     clipboard->is_clipboard = TRUE;
@@ -222,24 +234,15 @@ test_strip_refreshes_matching_selections (gconstpointer user_data)
 }
 
 static void
-text_ready (TestClipboard         *self,
-            GPasteSettings        *settings,
+text_ready (TestClipboard         *self G_GNUC_UNUSED,
+            GPasteSettings        *settings G_GNUC_UNUSED,
             GPasteClipboardUpdate *pending,
             const gchar           *text)
 {
     if (!g_paste_clipboard_update_is_expired (pending))
     {
-        g_autofree gchar *value = NULL;
-        GPasteClipboardTextAction action = g_paste_clipboard_content_classify_text (&self->content, settings, self->is_clipboard, text, &value);
-
-        if (action == G_PASTE_CLIPBOARD_TEXT_UNCHANGED)
-            pending->unchanged = TRUE;
-        else if (action != G_PASTE_CLIPBOARD_TEXT_REJECT)
-        {
-            pending->produced = TRUE;
-            pending->reselect = action == G_PASTE_CLIPBOARD_TEXT_RESELECT;
-            g_set_str_take (&pending->text, g_steal_pointer (&value));
-        }
+        pending->produced = TRUE;
+        g_set_str (&pending->text, text);
     }
 
     g_paste_clipboard_update_maybe_done (pending);
@@ -267,7 +270,7 @@ test_overlapping_copies (gconstpointer user_data)
     g_autoptr (GPasteSettings) settings = make_settings ();
     g_autoptr (GPasteHistory) history = make_history (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
 
     clipboard->is_clipboard = TRUE;
     g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
@@ -303,7 +306,6 @@ test_overlapping_copies (gconstpointer user_data)
     GPasteClipboardUpdate *duplicate = clipboard->pending;
 
     text_ready (clipboard, settings, duplicate, "copied text");
-    g_assert_false (duplicate->produced);
     g_paste_clipboard_update_maybe_done (duplicate);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
 }
@@ -318,7 +320,7 @@ test_superseded_empty_cache (gconstpointer user_data)
     g_paste_history_add (history, g_paste_text_item_new ("saved history"));
 
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
 
     clipboard->is_clipboard = TRUE;
     clipboard->defer_reads = bootstrap;
@@ -368,7 +370,7 @@ test_strip_during_read (gconstpointer user_data)
         g_paste_history_add (history, g_paste_text_item_new ("later item"));
 
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
 
     clipboard->is_clipboard = TRUE;
     g_paste_clipboard_content_set_text (&clipboard->content, variant == 2 ? "later item" : "rich text");
@@ -398,10 +400,18 @@ test_strip_during_read (gconstpointer user_data)
         g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
 
     const gchar *text = variant == 0 ? "new copy" : "rich text";
-    gboolean refreshed = variant != 0 && variant != 3 && variant != 4;
+    gboolean refreshed = variant != 0 && variant != 3 && variant != 4 && variant != 6;
 
     if (variant == 5)
         g_paste_settings_set_trim_items (settings, TRUE);
+
+    /* The read identifies a password with the stripped text's value. */
+    if (variant == 6)
+    {
+        g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                               g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    }
+
     text_ready (clipboard, settings, pending, variant == 5 ? " rich text " : text);
     pending->mimes.special_mime[G_PASTE_SPECIAL_MIME_TEXT_HTML] = g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_static ("<b>rich text</b>", 16));
     g_paste_clipboard_update_maybe_done (pending);
@@ -414,6 +424,8 @@ test_strip_during_read (gconstpointer user_data)
         g_assert_cmpstr (g_paste_item_get_uuid (clipboard->published), ==, uuid);
         g_assert_null (g_paste_item_get_special_values (g_paste_history_get_by_uuid (history, uuid)));
     }
+    if (variant == 6)
+        g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
 }
 
 static void
@@ -450,15 +462,16 @@ static void
 test_typed_cache_commit (gconstpointer user_data)
 {
     GPasteClipboardContentKind kind = GPOINTER_TO_INT (user_data);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     GPasteClipboardProvider *provider = G_PASTE_CLIPBOARD_PROVIDER (clipboard);
 
     g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
-    GPasteClipboardUpdate *first = g_paste_clipboard_update_new (provider, kind, &clipboard->pending, &clipboard->content, NULL, NULL);
+    GPasteClipboardUpdate *first = g_paste_clipboard_update_new (provider, settings, kind, &clipboard->pending, &clipboard->content, NULL, NULL);
 
     fill_typed_read (first);
     g_assert_cmpint (clipboard->content.kind, ==, CLIPBOARD_CONTENT_TEXT);
-    GPasteClipboardUpdate *second = g_paste_clipboard_update_new (provider, kind, &clipboard->pending, &clipboard->content, NULL, NULL);
+    GPasteClipboardUpdate *second = g_paste_clipboard_update_new (provider, settings, kind, &clipboard->pending, &clipboard->content, NULL, NULL);
 
     fill_typed_read (second);
     g_paste_clipboard_update_maybe_done (second);
@@ -497,7 +510,7 @@ test_password_expiry_during_read (gconstpointer user_data)
     guint variant = GPOINTER_TO_UINT (user_data);
     g_autoptr (GPasteSettings) settings = make_settings ();
     g_autoptr (GPasteHistory) history = make_history (settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "same secret", 37);
 
@@ -564,7 +577,7 @@ password_fixture_new (guint timeout)
 
     fixture->settings = make_settings ();
     fixture->history = make_history (fixture->settings);
-    fixture->clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    fixture->clipboard = make_clipboard (fixture->settings);
     fixture->manager = g_paste_clipboards_manager_new (fixture->history, fixture->settings);
     fixture->password = g_paste_password_item_new (NULL, "same secret", timeout);
     g_paste_history_add (fixture->history, g_paste_text_item_new ("replacement"));
@@ -714,7 +727,7 @@ test_reselect_overdue_password (gconstpointer user_data)
 {
     gboolean second_selection = GPOINTER_TO_INT (user_data);
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) primary = make_clipboard (fixture->settings);
 
     if (second_selection)
     {
@@ -805,7 +818,7 @@ static void
 test_forced_expiry_waits_for_both_selections (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) primary = make_clipboard (fixture->settings);
     ExpiryCounter counter = { fixture->manager, 0 };
 
     password_read_ready (fixture, "same secret");
@@ -884,23 +897,66 @@ test_trimmed_duplicate (void)
 
     g_paste_settings_set_trim_items (settings, TRUE);
     g_paste_clipboard_content_set_text (&content, " text ");
-    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, TRUE, " text ", &value), ==, G_PASTE_CLIPBOARD_TEXT_RESELECT);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, TRUE, " text ", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_RESELECT);
     g_assert_cmpstr (value, ==, "text");
     g_clear_pointer (&value, g_free);
 
     g_paste_clipboard_content_set_text (&content, "text");
-    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, TRUE, " text ", &value), ==, G_PASTE_CLIPBOARD_TEXT_RESELECT);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, TRUE, " text ", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_RESELECT);
     g_assert_cmpstr (value, ==, "text");
     g_clear_pointer (&value, g_free);
 
     /* The primary selection is never re-owned trimmed, so its padded text read
      * again is still the duplicate of the trimmed value the cache holds. */
-    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, " text ", &value), ==, G_PASTE_CLIPBOARD_TEXT_UNCHANGED);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, " text ", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_UNCHANGED);
     g_assert_null (value);
 
     g_paste_clipboard_content_set_text (&content, " text ");
-    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, " text ", &value), ==, G_PASTE_CLIPBOARD_TEXT_UNCHANGED);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, " text ", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_UNCHANGED);
     g_assert_null (value);
+
+    /* New text comes back as a value only when trimming changed it: the caller
+     * already owns the text, which can be megabytes, and keeps it otherwise. */
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, "new text", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_SET);
+    g_assert_null (value);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, " new text ", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_SET);
+    g_assert_cmpstr (value, ==, "new text");
+    g_paste_clipboard_content_clear (&content);
+}
+
+/* A text its owner marked as a secret is held to neither size setting: they are
+ * the user's filter for noise and blobs, and a secret turned down there would
+ * leave the cleartext on the selection with no item to record it and no
+ * countdown to take it off -- however large it is, which is accepted knowingly
+ * (see g_paste_clipboard_content_classify_text ()). An empty one is refused. */
+static void
+test_sensitive_size_policy (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    GPasteClipboardContent content = { 0 };
+    g_autofree gchar *value = NULL;
+
+    g_paste_settings_set_min_text_item_size (settings, 4);
+    g_paste_settings_set_max_text_item_size (settings, 20);
+
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, "pw", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_DROP);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, "pw", TRUE, &value), ==, G_PASTE_CLIPBOARD_TEXT_SET);
+    g_assert_null (value);
+
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, "a passphrase longer than the limit", FALSE, &value), ==, G_PASTE_CLIPBOARD_TEXT_DROP);
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, "a passphrase longer than the limit", TRUE, &value), ==, G_PASTE_CLIPBOARD_TEXT_SET);
+    g_assert_null (value);
+
+    /* However large. */
+    g_autofree gchar *blob = g_strnfill (1024 * 1024, 'x');
+
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, blob, TRUE, &value), ==, G_PASTE_CLIPBOARD_TEXT_SET);
+    g_assert_null (value);
+
+    /* Nothing is still nothing, marked or not. */
+    g_assert_cmpint (g_paste_clipboard_content_classify_text (&content, settings, FALSE, "", TRUE, &value), ==, G_PASTE_CLIPBOARD_TEXT_DROP);
+    g_assert_null (value);
+
     g_paste_clipboard_content_clear (&content);
 }
 
@@ -985,6 +1041,93 @@ test_unidentified_selection (gconstpointer user_data)
     }
 }
 
+/* A selection emptied under a password -- a password manager clearing what it
+ * copied -- is left empty: re-owning it with the history's head would put that
+ * password straight back, for good under a password-timeout of 0. */
+static void
+test_emptied_under_password (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_history_add (history, g_paste_text_item_new ("older copy"));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "copied secret", 0));
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_track_changes (settings, FALSE);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+    g_assert_true (is_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard)));
+}
+
+typedef struct
+{
+    GPasteItem *item;
+    gboolean    secret;
+} ReadResult;
+
+static void
+capture_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
+              GPasteItem              *item,
+              gboolean                 superseded,
+              gboolean                 secret,
+              gpointer                 user_data)
+{
+    ReadResult *result = user_data;
+
+    g_assert_false (superseded);
+    result->item = item;
+    result->secret = secret;
+}
+
+static void
+test_secret_text_policy (gconstpointer user_data)
+{
+    guint variant = GPOINTER_TO_UINT (user_data);
+    gboolean same_text = variant & 1;
+    gboolean hint_first = variant & 2;
+    gboolean is_clipboard = variant & 4;
+    const gchar *text = (same_text) ? "same secret" : "  padded secret  ";
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    ReadResult result = { 0 };
+
+    clipboard->is_clipboard = is_clipboard;
+    g_paste_settings_set_min_text_item_size (settings, 1);
+    g_paste_settings_set_max_text_item_size (settings, 1000);
+    g_paste_settings_set_trim_items (settings, TRUE);
+    g_paste_settings_set_password_timeout (settings, 37);
+    g_paste_clipboard_content_set_text (&clipboard->content, "same secret");
+
+    GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (clipboard), settings,
+                                                                     CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
+                                                                     &clipboard->content, capture_read, &result);
+    g_paste_clipboard_update_add_read (pending);
+    GPasteClipboardMimeCtx *hint = g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+    GBytes *bytes = g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+
+    if (hint_first)
+        g_paste_clipboard_update_on_mime_read (hint, bytes);
+    text_ready (clipboard, settings, pending, text);
+    if (!hint_first)
+        g_paste_clipboard_update_on_mime_read (hint, bytes);
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_autoptr (GPasteItem) item = result.item;
+
+    g_assert_true (result.secret);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item));
+    g_assert_cmpstr (g_paste_item_get_real_value (item), ==, text);
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)), ==, 37);
+    g_assert_cmpstr (clipboard->content.str, ==, text);
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+}
+
 /* A representation landing on an update that has moved on is dropped where it
  * lands, rather than held until the update's last read reports -- which a read
  * that never reports puts off for good
@@ -995,7 +1138,7 @@ test_late_mime_read (void)
     g_autoptr (GPasteSettings) settings = make_settings ();
     g_autoptr (GPasteHistory) history = make_history (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
 
     clipboard->is_clipboard = TRUE;
     g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
@@ -1005,7 +1148,7 @@ test_late_mime_read (void)
 
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     GPasteClipboardUpdate *first = clipboard->pending;
-    GPasteClipboardMimeCtx *html = g_paste_clipboard_update_add_mime_read (first, G_PASTE_SPECIAL_MIME_TEXT_HTML);
+    GPasteClipboardMimeCtx *html = g_paste_clipboard_update_add_special_mime_read (first, G_PASTE_SPECIAL_MIME_TEXT_HTML);
 
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     GPasteClipboardUpdate *second = clipboard->pending;
@@ -1054,7 +1197,7 @@ test_stale_strip_after_publication (void)
     g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (rich));
     g_paste_history_add (history, rich);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     clipboard->is_clipboard = TRUE;
     g_paste_clipboard_content_set_text (&clipboard->content, "rich text");
     g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
@@ -1094,8 +1237,8 @@ test_sync_copy_order (gconstpointer user_data)
     g_autoptr (GPasteSettings) settings = make_settings ();
     g_autoptr (GPasteHistory) history = make_history (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
 
     g_paste_settings_set_synchronize_clipboards (settings, TRUE);
     g_paste_settings_set_trim_items (settings, trim);
@@ -1148,7 +1291,7 @@ test_expiry_retires_head_before_flush (void)
     g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "same secret", 37);
     g_paste_history_add (history, g_object_ref (password));
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     clipboard->is_clipboard = TRUE;
     g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     g_paste_clipboards_manager_activate (manager);
@@ -1176,7 +1319,7 @@ test_expiry_retires_head_with_other_reading (void)
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
     password_read_ready (fixture, "same secret");
     g_paste_history_add (fixture->history, g_object_ref (fixture->password));
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) primary = make_clipboard (fixture->settings);
     g_paste_clipboard_content_set_text (&primary->content, "same secret");
     g_paste_clipboards_manager_add_clipboard (fixture->manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
     g_paste_clipboards_manager_activate (fixture->manager);
@@ -1202,7 +1345,7 @@ test_sync_after_expiry_publication (void)
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
     password_read_ready (fixture, "same secret");
     g_paste_settings_set_synchronize_clipboards (fixture->settings, TRUE);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) primary = make_clipboard (fixture->settings);
     g_paste_clipboard_content_set_text (&primary->content, "initial primary");
     g_paste_clipboards_manager_add_clipboard (fixture->manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
     g_paste_clipboards_manager_select (fixture->manager, fixture->password);
@@ -1429,8 +1572,8 @@ test_restore_rejected_head (void)
     g_autoptr (GPasteSettings) settings = make_settings ();
     g_autoptr (GPasteHistory) history = make_history (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
 
     g_paste_settings_set_synchronize_clipboards (settings, TRUE);
     g_paste_history_add (history, g_paste_text_item_new ("fallback"));
@@ -1464,8 +1607,8 @@ test_independent_publication_copy_order (gconstpointer user_data)
     g_autoptr (GPasteSettings) settings = make_settings ();
     g_autoptr (GPasteHistory) history = make_history (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
-    g_autoptr (TestClipboard) primary = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
 
     g_paste_settings_set_synchronize_clipboards (settings, TRUE);
     clipboard->is_clipboard = TRUE;
@@ -1521,6 +1664,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/strip_during_read/superseded", GUINT_TO_POINTER (3), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/removed", GUINT_TO_POINTER (4), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/trimmed", GUINT_TO_POINTER (5), test_strip_during_read);
+    g_test_add_data_func ("/clipboard/strip_during_read/password", GUINT_TO_POINTER (6), test_strip_during_read);
     g_test_add_data_func ("/clipboard/image_cache", GINT_TO_POINTER (CLIPBOARD_CONTENT_IMAGE), test_typed_cache_commit);
     g_test_add_data_func ("/clipboard/color_cache", GINT_TO_POINTER (CLIPBOARD_CONTENT_COLOR), test_typed_cache_commit);
     g_test_add_data_func ("/clipboard/file_list_cache", GINT_TO_POINTER (CLIPBOARD_CONTENT_FILE_LIST), test_typed_cache_commit);
@@ -1549,6 +1693,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/publish_pending_deadline", test_publish_pending_deadline);
     g_test_add_func ("/clipboard/timeout_edit/reenable_pending_timeout", test_reenable_pending_timeout);
     g_test_add_func ("/clipboard/trimmed_duplicate", test_trimmed_duplicate);
+    g_test_add_func ("/clipboard/sensitive_size_policy", test_sensitive_size_policy);
     g_test_add_func ("/clipboard/late_mime_read", test_late_mime_read);
     const gchar *outcomes[] = { "too_short", "too_long", "failed", "timed_out", "duplicate_outside_policy", "duplicate" };
 
@@ -1568,5 +1713,12 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/expiry/head_with_other_reading", test_expiry_retires_head_with_other_reading);
     g_test_add_func ("/clipboard/expiry/rechecks_new_read", test_expiry_rechecks_new_read);
     g_test_add_func ("/clipboard/expiry/changing_owner_deadline", test_expiry_deadline_with_changing_owner);
+    for (guint variant = 0; variant < 8; ++variant)
+    {
+        g_autofree gchar *path = g_strdup_printf ("/clipboard/secret_text_policy/%u", variant);
+
+        g_test_add_data_func (path, GUINT_TO_POINTER (variant), test_secret_text_policy);
+    }
+    g_test_add_func ("/clipboard/emptied_under_password", test_emptied_under_password);
     return g_paste_test_env_run ();
 }

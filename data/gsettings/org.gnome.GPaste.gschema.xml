@@ -116,7 +116,9 @@
       <default>1048575</default>
       <summary>Max text item size</summary>
       <description>
-        Maximum size of a text item. Anything out of this boundary is ignored.
+        Maximum size of a text item. Anything out of this boundary is ignored,
+        except a text a password manager marked as a secret, which is kept
+        however long.
       </description>
     </key>
 
@@ -125,7 +127,9 @@
       <default>4</default>
       <summary>Min text item size</summary>
       <description>
-        Minimum size of a text item. Anything out of this boundary is ignored.
+        Minimum size of a text item. Anything out of this boundary is ignored,
+        except a text a password manager marked as a secret, which is kept
+        however short.
       </description>
     </key>
 

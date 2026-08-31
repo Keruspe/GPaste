@@ -2042,6 +2042,59 @@ test_encrypted_empty_placeholder (void)
     g_assert_null (second);
 }
 
+static void
+count_selected (GPasteHistory *history G_GNUC_UNUSED,
+                GPasteItem    *item G_GNUC_UNUSED,
+                gpointer       user_data)
+{
+    ++*(guint *) user_data;
+}
+
+/* Loading a history selects its head, which puts it on the selections -- but not
+ * a password: nobody asked to publish it, and under a password-timeout of 0 it
+ * would then stay there for the session.
+ *
+ * Encryption is not what the rule is about -- it belongs to the load path, and
+ * the removal path pins the same one without any store at all (the
+ * /clipboard/automatic_head cases). It is what the *case* takes: only the
+ * encrypted flavours persist a password entry at all
+ * (g_paste_sqlite_backend_stores_item (), and the same skip in the XML
+ * backend), the readable ones dropping it on write by design, so no other
+ * backend can hand back a history with a password at its head. */
+static void
+test_load_skips_password_head (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
+    const gchar *names[] = { "load-password-head", "load-text-head" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (names); ++i)
+    {
+        g_autolist (GPasteItem) items = NULL;
+
+        items = g_list_append (items, (i) ? g_paste_text_item_new ("head") : g_paste_password_item_new (NULL, "head", 0));
+        items = g_list_append (items, g_paste_text_item_new ("older"));
+        g_paste_storage_backend_write_history (backend, names[i], items);
+    }
+
+    g_paste_storage_backend_set_passphrase ("the master passphrase");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    guint selected = 0;
+
+    g_signal_connect (history, "selected", G_CALLBACK (count_selected), &selected);
+
+    g_paste_history_load (history, names[0]);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpuint (selected, ==, 0);
+
+    g_paste_history_load (history, names[1]);
+    g_assert_cmpuint (selected, ==, 1);
+
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
 /* g_paste_storage_backend_new_with_passphrase() must key the backend with
  * exactly the passphrase it is given, never with the process-wide one: a
  * migration between two encrypted flavors holds the source and the destination
@@ -3609,6 +3662,7 @@ main (int argc, char *argv[])
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
     g_test_add_func ("/history/encrypted_empty_placeholder", test_encrypted_empty_placeholder);
+    g_test_add_func ("/history/load_skips_password_head", test_load_skips_password_head);
     g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
     g_test_add_func ("/history/encrypted_rekey", test_encrypted_rekey);
     g_test_add_func ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);

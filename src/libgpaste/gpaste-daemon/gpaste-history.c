@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
+#include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
@@ -341,6 +342,16 @@ g_paste_history_activate_first (GPasteHistory *self,
 
     if (select)
         g_paste_history_selected (self, first);
+}
+
+/* Activate the head of a history just read in. It is put back on the selections
+ * unless it is a password, as in g_paste_clipboard_provider_ensure_not_empty ():
+ * nobody asked to publish it. */
+static void
+g_paste_history_activate_loaded (GPasteHistory *self)
+{
+    if (self->history->len)
+        g_paste_history_activate_first (self, !G_PASTE_IS_PASSWORD_ITEM (g_ptr_array_index (self->history, 0)));
 }
 
 static GPasteItem *
@@ -1471,8 +1482,7 @@ g_paste_history_load_locked (GPasteHistory *self,
     if (self->unreadable)
         g_warning ("Could not read the history back; it will not be overwritten");
 
-    if (self->history->len)
-        g_paste_history_activate_first (self, TRUE);
+    g_paste_history_activate_loaded (self);
 
     /* Unconditional: biggest_uuid borrows the uuid of an item we just freed, so
      * it has to be re-elected (to NULL) even when the new history is empty. */
@@ -1515,8 +1525,7 @@ g_paste_history_on_loaded (gpointer user_data,
     g_paste_history_private_set_from_list (self, history);
     self->size = size;
 
-    if (self->history->len)
-        g_paste_history_activate_first (self, TRUE);
+    g_paste_history_activate_loaded (self);
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
     g_paste_history_private_elect_new_biggest (self);

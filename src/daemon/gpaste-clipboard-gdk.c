@@ -42,12 +42,10 @@ static void g_paste_clipboard_gdk_provider_iface_init (GPasteClipboardProviderIn
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardGdk, clipboard_gdk, G_TYPE_OBJECT,
                                     G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_gdk_provider_iface_init)
 
-/* @reselect: whether the text read was stripped of something and the selection
- * therefore has to be re-owned with what came out of it. Answered rather than
- * acted on, the re-owning having to wait for the whole update: see update (). */
+/* @text is (transfer full) and nullable: a selection's text can be megabytes,
+ * and the read already allocated it, so it is handed over rather than copied. */
 typedef void (*GPasteClipboardGdkTextCallback)    (GPasteClipboardGdk *self,
-                                                   const gchar        *text,
-                                                   gboolean            reselect,
+                                                   gchar              *text,
                                                    gpointer            user_data);
 
 typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
@@ -103,7 +101,7 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
     if (g_paste_clipboard_update_is_expired (data->update))
     {
         if (data->callback)
-            data->callback (self, NULL, FALSE, data->update);
+            data->callback (self, NULL, data->update);
         return;
     }
 
@@ -112,31 +110,12 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
         if (error)
             g_debug ("Failed to read text from clipboard: %s", error->message);
         if (data->callback)
-            data->callback (self, NULL, FALSE, data->update);
+            data->callback (self, NULL, data->update);
         return;
-    }
-
-    g_autofree gchar *value = NULL;
-    gboolean reselect = FALSE;
-
-    switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
-    {
-    case G_PASTE_CLIPBOARD_TEXT_UNCHANGED:
-        data->update->unchanged = TRUE;
-        G_GNUC_FALLTHROUGH;
-    case G_PASTE_CLIPBOARD_TEXT_REJECT:
-        if (data->callback)
-            data->callback (self, NULL, FALSE, data->update);
-        return;
-    case G_PASTE_CLIPBOARD_TEXT_RESELECT:
-        reselect = TRUE;
-        break;
-    case G_PASTE_CLIPBOARD_TEXT_SET:
-        break;
     }
 
     if (data->callback)
-        data->callback (self, value, reselect, data->update);
+        data->callback (self, g_steal_pointer (&text), data->update);
 }
 
 static void
@@ -618,15 +597,13 @@ g_paste_clipboard_gdk_fetch_file_list (GPasteClipboardGdk    *self,
 
 static void
 g_paste_clipboard_gdk_update_on_text_ready (GPasteClipboardGdk *self G_GNUC_UNUSED,
-                                            const gchar        *text,
-                                            gboolean            reselect,
+                                            gchar              *text,
                                             gpointer            user_data)
 {
     GPasteClipboardUpdate *update = user_data;
 
     update->produced = !!text;
-    g_set_str (&update->text, text);
-    update->reselect = reselect;
+    g_set_str_take (&update->text, text);
     g_paste_clipboard_update_maybe_done (update);
 }
 
@@ -658,9 +635,8 @@ g_paste_clipboard_gdk_update_on_color_ready (GPasteClipboardGdk *self G_GNUC_UNU
     g_paste_clipboard_update_maybe_done (update);
 }
 
-/* What a mime read means and what it does to the update it counts into are both
- * gpaste-clipboard-content.c's; this is here for the shape fetch_mime () calls
- * its callback with. */
+/* The backend only adapts the callback's shape. @user_data identifies the MIME
+ * read; the shared update interprets its bytes and counts it out. */
 static void
 g_paste_clipboard_gdk_on_mime_read (GPasteClipboardGdk *self G_GNUC_UNUSED,
                                     GBytes             *bytes,
@@ -669,15 +645,24 @@ g_paste_clipboard_gdk_on_mime_read (GPasteClipboardGdk *self G_GNUC_UNUSED,
     g_paste_clipboard_update_on_mime_read (user_data, bytes);
 }
 
-static void
-g_paste_clipboard_gdk_fetch_mime_for (GPasteClipboardGdk    *self,
-                                      GPasteClipboardUpdate *update,
-                                      const gchar           *mimetype,
-                                      GPasteSpecialMime      mime)
+/* The two halves this backend answers g_paste_clipboard_update_read_mimes ()
+ * with: what a selection offers is its GdkContentFormats, and a read of one
+ * mimetype is a fetch reporting to on_mime_read (). Which mimetypes are asked
+ * for is that function's, not this file's. */
+static gboolean
+g_paste_clipboard_gdk_offers_mime (gconstpointer offer,
+                                   const gchar  *mimetype)
 {
-    GPasteClipboardMimeCtx *ctx = g_paste_clipboard_update_add_mime_read (update, mime);
+    return gdk_content_formats_contain_mime_type ((GdkContentFormats *) offer, mimetype);
+}
 
-    g_paste_clipboard_gdk_fetch_mime (self, mimetype, update->guard.cancellable, g_paste_clipboard_gdk_on_mime_read, ctx);
+static void
+g_paste_clipboard_gdk_read_mime (gpointer                backend,
+                                 const gchar            *mimetype,
+                                 GCancellable           *cancellable,
+                                 GPasteClipboardMimeCtx *ctx)
+{
+    g_paste_clipboard_gdk_fetch_mime (backend, mimetype, cancellable, g_paste_clipboard_gdk_on_mime_read, ctx);
 }
 
 /* The guard concluding an update rather than failing its reads is not a choice:
@@ -692,8 +677,7 @@ g_paste_clipboard_gdk_fetch_mime_for (GPasteClipboardGdk    *self,
  * those reads ever land. Nothing can be done about the struct itself -- they
  * hold the pointer -- but everything of any size is let go of at the conclusion
  * instead (g_paste_clipboard_update_release_content ()), so what a stuck owner
- * leaves behind is a counter and not the content that was read, nor the ref that
- * keeps our requestor window on the server. */
+ * leaves behind is a counter and not the content that was read, nor the provider reference. */
 static void
 g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
                               GPasteClipboardProviderUpdateCallback callback,
@@ -718,7 +702,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
         return;
     }
     else
@@ -731,11 +715,12 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_paste_clipboard_content_clear (&self->content);
         self->content.kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
         return;
     }
 
     GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
+                                                                  self->settings,
                                                                   content_kind,
                                                                   &self->update,
                                                                   &self->content,
@@ -748,20 +733,8 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     if (!update)
     {
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
         return;
-    }
-
-    gboolean mime_available[G_PASTE_SPECIAL_MIME_LAST] = { FALSE };
-
-    if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
-        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (self->settings)))
-    {
-        for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
-        {
-            if (gdk_content_formats_contain_mime_type (formats, g_paste_special_mime_get (mime)))
-                mime_available[mime] = TRUE;
-        }
     }
 
     /* Counted in beside the read it counts, never before the switch: an arm that
@@ -790,11 +763,8 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_assert_not_reached ();
     }
 
-    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
-    {
-        if (mime_available[mime])
-            g_paste_clipboard_gdk_fetch_mime_for (self, update, g_paste_special_mime_get (mime), mime);
-    }
+    g_paste_clipboard_update_read_mimes (update, formats, g_paste_clipboard_gdk_offers_mime,
+                                         self, g_paste_clipboard_gdk_read_mime);
 
     g_paste_clipboard_update_maybe_done (update);
 }
@@ -856,6 +826,24 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     {
         GPasteBinaryData *v = sv->data;
         g_ptr_array_add (providers, gdk_content_provider_new_for_bytes (g_paste_special_mime_get (g_paste_binary_data_get_mime (v)), g_paste_binary_data_get_bytes (v)));
+    }
+
+    /* Say that what is on offer is a secret, so a clipboard manager reading
+     * these keeps it out of its own history. Only we can say it: a password
+     * travels as ordinary text, and nothing about the text says so.
+     *
+     * Offered and served: the hint reaches every client's TARGETS, and a request
+     * for its value is answered from this provider -- which rests on GDK
+     * resolving a requested target against the formats by its raw name as well
+     * as through gdk_intern_mime_type (), the latter answering %NULL for a name
+     * with no '/' in it. */
+    if (G_PASTE_IS_PASSWORD_ITEM (item))
+    {
+        for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
+        {
+            g_ptr_array_add (providers, gdk_content_provider_new_for_bytes (g_paste_sensitive_mime_get (mime),
+                                                                            g_paste_sensitive_mime_get_bytes (mime)));
+        }
     }
 
     g_autoptr (GdkContentProvider) provider = NULL;

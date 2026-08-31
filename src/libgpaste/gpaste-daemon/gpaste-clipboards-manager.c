@@ -251,6 +251,11 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard  *clip,
 {
     g_autoslist (GPasteItem) pending = g_steal_pointer (&clip->pending_refreshes);
 
+    /* The read found a password with the stripped text's value: that is what the
+     * selection holds, and the plain text would publish it without its hint. */
+    if (*item && G_PASTE_IS_PASSWORD_ITEM (*item))
+        return;
+
     for (GSList *l = pending; l; l = l->next)
     {
         GPasteItem *plain = l->data;
@@ -311,6 +316,7 @@ static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard G_GNUC_UNUSED,
                                             GPasteItem              *item,
                                             gboolean                 superseded,
+                                            gboolean                 sensitive G_GNUC_UNUSED,
                                             gpointer                 user_data)
 {
     g_autoptr (GPasteClipboardsManagerUpdateData) data = user_data;
@@ -450,6 +456,7 @@ static void
 g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
                                          GPasteItem              *item,
                                          gboolean                 superseded,
+                                         gboolean                 sensitive G_GNUC_UNUSED,
                                          gpointer                 user_data)
 {
     g_autoptr (GPasteClipboardsManagerUpdateData) data = user_data;

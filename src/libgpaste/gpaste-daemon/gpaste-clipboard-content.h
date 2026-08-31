@@ -9,6 +9,7 @@
 
 #include <gpaste-daemon/gpaste-clipboard-provider.h>
 #include <gpaste-daemon/gpaste-item.h>
+#include <gpaste-daemon/gpaste-sensitive-mime.h>
 #include <gpaste-daemon/gpaste-special-mime.h>
 
 G_BEGIN_DECLS
@@ -43,6 +44,7 @@ typedef struct
 } GPasteClipboardContent;
 
 void         g_paste_clipboard_content_clear              (GPasteClipboardContent       *content);
+void         g_paste_clipboard_content_set_ignored        (GPasteClipboardContent       *content);
 gboolean     g_paste_clipboard_content_is_empty           (const GPasteClipboardContent *content);
 const gchar *g_paste_clipboard_content_get_text           (const GPasteClipboardContent *content);
 const gchar *g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *content);
@@ -62,12 +64,17 @@ void g_paste_clipboard_content_set_file_list           (GPasteClipboardContent *
                                                         GdkFileList            *file_list);
 
 /* What a backend should do with a candidate clipboard text, as decided by
- * g_paste_clipboard_content_classify_text() from the trim/size/dedup policy. */
+ * g_paste_clipboard_content_classify_text() from the trim/size/dedup policy.
+ *
+ * UNCHANGED and DROP both mean there is no item to build, and they are not the
+ * same answer about the selection: one is standing still, holding the very text
+ * the cache names, and the other has moved to a text nothing here keeps. Only
+ * the first leaves the cache alone. */
 typedef enum
 {
-    G_PASTE_CLIPBOARD_TEXT_REJECT,    /* too short/long: drop it */
-    G_PASTE_CLIPBOARD_TEXT_UNCHANGED, /* exact match: retain the committed cache */
-    G_PASTE_CLIPBOARD_TEXT_SET,       /* cache @out_value as the new text */
+    G_PASTE_CLIPBOARD_TEXT_UNCHANGED, /* the selection is standing still: leave the cache alone */
+    G_PASTE_CLIPBOARD_TEXT_DROP,      /* the size policy turns it down: no @out_value to cache */
+    G_PASTE_CLIPBOARD_TEXT_SET,       /* cache @out_value, or the text itself when %NULL */
     G_PASTE_CLIPBOARD_TEXT_RESELECT,  /* re-own the selection with the stripped @out_value */
 } GPasteClipboardTextAction;
 
@@ -75,6 +82,7 @@ GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteC
                                                                    GPasteSettings               *settings,
                                                                    gboolean                      is_clipboard,
                                                                    const gchar                  *text,
+                                                                   gboolean                      sensitive,
                                                                    gchar                       **out_value);
 
 gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
@@ -160,45 +168,60 @@ typedef struct
 GPasteClipboardSyncData *g_paste_clipboard_sync_data_new  (GPasteClipboardProvider *other);
 void                     g_paste_clipboard_sync_data_free (GPasteClipboardSyncData *data);
 
-/* Where the mime reads an update fires put their answers, and what one of them
- * having come back means. Both backends fire the same reads and want the same
- * thing done with the bytes, so what a read is worth keeping is written down once
- * here rather than in each of them. */
+/* Where the mime reads an update fires put their answers. Both lists are read
+ * the same way and differ only in what their bytes then mean -- a representation
+ * of the content to keep, or a fact about it -- so what tells them apart is a
+ * policy neither backend owns.
+ *
+ * @sensitive is a hint that came back and matched, and nothing else: an update
+ * concluded on its deadline with that read still out leaves it %FALSE and the
+ * text lands as text. A secret is the exception among the things that get
+ * copied, so calling one on a read that never answered would mask ordinary text
+ * -- every copy of it, for as long as its owner keeps not answering -- on no
+ * evidence whatever. Only proof that a text is a secret makes it one, and the
+ * price of that is the reverse case: an owner that serves the text and then
+ * stops answering has its marked password land in the clear, for the one copy
+ * whose hint the guard outlasted. */
 typedef struct
 {
+    gboolean          sensitive;
     GPasteBinaryData *special_mime[G_PASTE_SPECIAL_MIME_LAST];
 } GPasteClipboardMimeResults;
 
-void g_paste_clipboard_mime_results_store (GPasteClipboardMimeResults *results,
-                                           GPasteSpecialMime           mime,
-                                           GBytes                     *bytes);
 void g_paste_clipboard_mime_results_clear (GPasteClipboardMimeResults *results);
 
-/* What one mime read is for: the update it counts into and which entry it was
- * fired for. Neither is a backend's to interpret -- see the results above -- so
- * the pair travels as one, whichever of them is doing the reading. */
-typedef struct
-{
-    gpointer          data;
-    GPasteSpecialMime mime;
-} GPasteClipboardMimeCtx;
+/* What one mime read is for: the update it counts into, and which entry of which
+ * list it was fired for. Neither is a backend's to interpret -- see the results
+ * above -- so the two travel as one, whichever of them is doing the reading, and
+ * what they are is this file's alone: a backend carries the pointer from the
+ * call that fires a read to the one that reports it and never looks inside. That
+ * is also what keeps the two mime enums apart, each entry point below taking its
+ * own -- there is no one integer both lists index. */
+typedef struct _GPasteClipboardMimeCtx GPasteClipboardMimeCtx;
 
-GPasteClipboardMimeCtx *g_paste_clipboard_mime_ctx_new (gpointer          data,
-                                                        GPasteSpecialMime mime);
+void g_paste_clipboard_mime_ctx_free (GPasteClipboardMimeCtx *ctx);
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardMimeCtx, g_paste_clipboard_mime_ctx_free)
 
 /* Turn a finished clipboard read into the item it describes. Only the argument
  * matching @kind is looked at, and %NULL is answered for a kind that produced
  * nothing -- including NONE and IGNORED, so a backend that decided not to
  * produce anything just passes those.
  *
+ * @sensitive says the owner marked its text a secret (see #GPasteSensitiveMime),
+ * which is what makes it a password rather than a text item; @settings is where
+ * the timeout such a password starts with comes from.
+ *
  * @special_mimes is the G_PASTE_SPECIAL_MIME_LAST-long array of alternative
  * representations gathered alongside; the ones that end up on the item are
  * stolen from it, and the rest are left for the caller to release. */
-GPasteItem *g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
+GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settings,
+                                               GPasteClipboardContentKind kind,
                                                const gchar               *text,
                                                GdkTexture                *texture,
                                                GdkFileList               *file_list,
                                                const GdkRGBA             *rgba,
+                                               gboolean                   sensitive,
                                                GPasteBinaryData         **special_mimes);
 
 /* One clipboard update in flight: the reads it fired, what they came back with,
@@ -207,12 +230,13 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
  * bytes differ -- so the whole of that lifecycle lives here, in the one place
  * both of them count their reads into.
  *
- * @provider is ref'd from the update being fired to it being concluded: it spans
- * main-loop iterations, and nothing else keeps it up. Everything that concludes
- * an update is reachable from it, so the guard concludes one without a backend
- * hook. Only to the conclusion, and not to the teardown, because a conclusion
- * the reads outlive would otherwise hold the provider for as long as they do,
- * which for one that never lands is the rest of the session.
+ * @provider and @settings are ref'd from the update being fired to it being
+ * concluded: it spans main-loop iterations, and nothing else keeps either of
+ * them up. Everything that concludes an update is reachable from those two, so
+ * the guard concludes it without a backend hook. Only to the conclusion, and not
+ * to the teardown, because a conclusion the reads outlive would otherwise hold
+ * both of them for as long as those reads do, which for ones that never land is
+ * the rest of the session.
  *
  * @pending counts the reads still out; @concluded says the item was already
  * built, the guard having run out with some of them still going. @mime is the
@@ -257,6 +281,7 @@ typedef struct _GPasteClipboardUpdate GPasteClipboardUpdate;
 struct _GPasteClipboardUpdate
 {
     GPasteClipboardProvider              *provider;
+    GPasteSettings                       *settings;
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;
 
@@ -281,19 +306,43 @@ struct _GPasteClipboardUpdate
     GPasteClipboardMimeResults            mimes;
 };
 
-void                    g_paste_clipboard_update_supersede     (GPasteClipboardUpdate               **slot);
-GPasteClipboardUpdate  *g_paste_clipboard_update_new           (GPasteClipboardProvider              *provider,
-                                                                GPasteClipboardContentKind            content_kind,
-                                                                GPasteClipboardUpdate               **slot,
-                                                                GPasteClipboardContent               *cache,
-                                                                GPasteClipboardProviderUpdateCallback callback,
-                                                                gpointer                              user_data);
-void                    g_paste_clipboard_update_add_read      (GPasteClipboardUpdate                *update);
-GPasteClipboardMimeCtx *g_paste_clipboard_update_add_mime_read (GPasteClipboardUpdate                *update,
-                                                                GPasteSpecialMime                     mime);
-void                    g_paste_clipboard_update_on_mime_read  (GPasteClipboardMimeCtx               *ctx,
-                                                                GBytes                               *bytes);
-gboolean                g_paste_clipboard_update_is_expired    (const GPasteClipboardUpdate          *update);
-void                    g_paste_clipboard_update_maybe_done    (GPasteClipboardUpdate                *update);
+/* What a backend answers about the selection it is reading: whether that
+ * selection offers @mimetype, and how a read of one is fired. @offer is whatever
+ * the backend has to consult to answer the first -- a GdkContentFormats, a list
+ * of mimetype strings -- and it is opaque to everything but the two of them.
+ *
+ * Which mimetypes are worth asking about, and for which kind of content, is not
+ * one of the questions: that is the same policy for either backend, and it lives
+ * in g_paste_clipboard_update_read_mimes () so that a mimetype gained, or a
+ * condition put on one, is written once rather than once per backend. */
+typedef gboolean (*GPasteClipboardMimeOfferedFunc) (gconstpointer           offer,
+                                                    const gchar            *mimetype);
+typedef void     (*GPasteClipboardMimeReadFunc)    (gpointer                backend,
+                                                    const gchar            *mimetype,
+                                                    GCancellable           *cancellable,
+                                                    GPasteClipboardMimeCtx *ctx);
+
+void                    g_paste_clipboard_update_supersede               (GPasteClipboardUpdate               **slot);
+GPasteClipboardUpdate  *g_paste_clipboard_update_new                     (GPasteClipboardProvider              *provider,
+                                                                          GPasteSettings                       *settings,
+                                                                          GPasteClipboardContentKind            content_kind,
+                                                                          GPasteClipboardUpdate               **slot,
+                                                                          GPasteClipboardContent               *cache,
+                                                                          GPasteClipboardProviderUpdateCallback callback,
+                                                                          gpointer                              user_data);
+void                    g_paste_clipboard_update_add_read                (GPasteClipboardUpdate                *update);
+GPasteClipboardMimeCtx *g_paste_clipboard_update_add_special_mime_read   (GPasteClipboardUpdate                *update,
+                                                                          GPasteSpecialMime                     mime);
+GPasteClipboardMimeCtx *g_paste_clipboard_update_add_sensitive_mime_read (GPasteClipboardUpdate                *update,
+                                                                          GPasteSensitiveMime                   mime);
+void                    g_paste_clipboard_update_read_mimes              (GPasteClipboardUpdate                *update,
+                                                                          gconstpointer                         offer,
+                                                                          GPasteClipboardMimeOfferedFunc        offered,
+                                                                          gpointer                              backend,
+                                                                          GPasteClipboardMimeReadFunc           read);
+void                    g_paste_clipboard_update_on_mime_read            (GPasteClipboardMimeCtx               *ctx,
+                                                                          GBytes                               *bytes);
+gboolean                g_paste_clipboard_update_is_expired              (const GPasteClipboardUpdate          *update);
+void                    g_paste_clipboard_update_maybe_done              (GPasteClipboardUpdate                *update);
 
 G_END_DECLS

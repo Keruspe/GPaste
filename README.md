@@ -21,7 +21,10 @@ explains what clipboard managers are for.
   preferences or with `gpaste-client migrate`.
 - **Passwords**: mark an item as a password to have it shown as a name instead
   of its contents, and excluded from the plain-text history. Give it a timeout
-  and the clipboard stops handing it out once that runs out.
+  and the clipboard stops handing it out once that runs out. A text a password
+  manager marks as a secret (KDE's `x-kde-passwordManagerHint`) is taken in as a
+  password on its own, and GPaste marks the passwords it puts on the clipboard
+  the same way, so other clipboard managers leave them alone.
 - **Favourites**: pin an item and the history never drops it on its own — the
   size and memory limits give way instead. Filter the list down to the pinned
   items from the UI, the extension or `gpaste-client --favourites`.
