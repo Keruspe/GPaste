@@ -493,6 +493,38 @@ g_paste_history_private_is_growing_line (GPasteHistory *self,
     return (g_str_has_prefix (n, o) || g_str_has_suffix (n, o));
 }
 
+/* What the arriving duplicate carries beyond the value it matched the head on,
+ * moved onto the head that is kept in its place.
+ *
+ * The dedup deeper in the history puts the arriving item in the matched entry's
+ * place, so whatever it carries comes with it; the head is the one case where
+ * the older object stays and the newer one goes, and without this the same copy
+ * would be answered two ways depending on where its twin happened to sit.
+ *
+ * For a password that is its timeout: two nameless ones match on their value
+ * alone, and the one just read off a selection was built with whatever
+ * password-timeout says now -- which is the duration a later selection of this
+ * entry has to run for. Written in place and recorded like any other such write
+ * (see g_paste_history_make_password ()), the add stopping here being what would
+ * otherwise leave the store carrying the duration that has just been replaced. */
+static void
+g_paste_history_private_merge_into_head (GPasteHistory *self,
+                                         GPasteItem    *head,
+                                         GPasteItem    *duplicate)
+{
+    /* On select the two are one object, which carries nothing to move. */
+    if (head == duplicate || !G_PASTE_IS_PASSWORD_ITEM (head) || !G_PASTE_IS_PASSWORD_ITEM (duplicate))
+        return;
+
+    guint timeout = g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (duplicate));
+
+    if (timeout == g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)))
+        return;
+
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (head), timeout);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, 0, G_PASTE_HISTORY_SAVE_REPLACE, head, g_paste_item_get_uuid (head), FALSE);
+}
+
 static void
 _g_paste_history_add (GPasteHistory *self,
                       GPasteItem    *item,
@@ -520,9 +552,21 @@ _g_paste_history_add (GPasteHistory *self,
     if (self->history->len)
     {
         GPasteItem *old_first = g_ptr_array_index (self->history, 0);
+        /* On select, @item is already in the history and it is that very object
+         * that moves, so what the head is asked is whether it *is* @item, never
+         * whether it looks like it: two nameless passwords holding the same
+         * value are equal, and selecting the deeper one would otherwise leave it
+         * where it sat while the head answered for it. On add there is no
+         * identity to ask about -- @item is a new object -- and the likeness is
+         * the whole point. */
+        gboolean head_matches = (new_selection) ? g_paste_item_equals (old_first, item) : (old_first == item);
 
-        if (g_paste_item_equals (old_first, item))
+        if (head_matches)
+        {
+            g_paste_history_private_merge_into_head (self, old_first, item);
+
             return;
+        }
 
         if (new_selection && g_paste_history_private_is_growing_line (self, old_first, item))
         {
@@ -557,12 +601,20 @@ _g_paste_history_add (GPasteHistory *self,
                 self->biggest_size = size;
             }
 
-            /* Dedup is by value, not by uuid, so the index cannot help here. */
+            /* Dedup is by value, not by uuid, so the index cannot help here --
+             * and no more on select, where the uuid it does answer for leads
+             * back to the object rather than to where it sits. */
             for (guint i = 1; i < self->history->len; ++i)
             {
                 GPasteItem *entry = g_ptr_array_index (self->history, i);
+                /* Identity on select, for the reason the head is asked the same
+                 * way: the entry to move is the one that *is* @item, and a
+                 * likeness deeper in the history is somebody else's row. */
+                gboolean matches = (new_selection) ? (g_paste_item_equals (entry, item) ||
+                                                      g_paste_history_private_is_growing_line (self, entry, item))
+                                                   : (entry == item);
 
-                if (g_paste_item_equals (entry, item) || (new_selection && g_paste_history_private_is_growing_line (self, entry, item)))
+                if (matches)
                 {
                     if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (entry)))
                         election_needed = TRUE;

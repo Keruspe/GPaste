@@ -113,6 +113,18 @@ g_paste_password_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
     return G_PASTE_ITEM_KIND_PASSWORD;
 }
 
+/* A named password is the user's own record of a secret, and two records are two
+ * items whatever they hold: naming one is what says it is worth keeping apart,
+ * so those never match. Nameless ones are a secret read off a selection, and the
+ * same secret read twice -- a password manager copied from again -- is one
+ * exposure the history has already got: telling those apart fills it with
+ * placeholders nothing distinguishes, since the value they would be told apart
+ * by is the one nothing may display.
+ *
+ * Symmetric, as g_paste_item_equals() dispatches on @self alone: a password and
+ * anything else differ in kind either way round. The two being the same object
+ * is not answered here either, g_paste_item_equals() having answered it before
+ * it dispatched. */
 static gboolean
 g_paste_password_item_equals (GPasteItem *self,
                               GPasteItem *other)
@@ -120,8 +132,14 @@ g_paste_password_item_equals (GPasteItem *self,
     g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
 
-    /* Passwords are never considered equals, except when it's the exact same object */
-    return FALSE;
+    if (!G_PASTE_IS_PASSWORD_ITEM (other))
+        return FALSE;
+
+    if (!g_paste_str_equal (G_PASTE_PASSWORD_ITEM (self)->name, G_PASTE_PASSWORD_ITEM_NO_NAME) ||
+        !g_paste_str_equal (G_PASTE_PASSWORD_ITEM (other)->name, G_PASTE_PASSWORD_ITEM_NO_NAME))
+        return FALSE;
+
+    return g_paste_str_equal (g_paste_item_get_real_value (self), g_paste_item_get_real_value (other));
 }
 
 static gboolean

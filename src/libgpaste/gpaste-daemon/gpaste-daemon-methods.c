@@ -71,6 +71,16 @@ g_paste_daemon_methods_do_add_item (const GPasteDaemonMethods *self,
 
     if (current && g_paste_item_equals (current, item))
     {
+        /* Handed over all the same rather than simply dropped: what @item
+         * carries beyond the value it matched on -- a password's timeout, two
+         * nameless ones matching on their value alone -- belongs on the entry
+         * that is kept, and g_paste_history_add () is what moves it there (see
+         * g_paste_history_private_merge_into_head ()). It keeps @current, so the
+         * uuid answered below is still the one the history holds the content
+         * under; skipping this would answer the same AddPassword two ways
+         * depending on whether it arrived here or off a selection. */
+        g_paste_history_add (self->history, g_object_ref (item));
+
         /* Putting the content on the clipboard is the other half of what an add
          * does, and the clipboard is not necessarily on it already: tracking may
          * be off, or the copy that made @current may have been refused a

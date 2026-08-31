@@ -1117,6 +1117,112 @@ test_nameless_passwords_may_coexist (void)
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (g_paste_history_get (history, 1))), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
 }
 
+/* The same secret read off a selection twice is one exposure the history already
+ * has: a password manager copied from again produces a nameless password with
+ * the same value, and telling those apart fills the history with `******` rows
+ * nothing distinguishes -- the value they differ by being the one nothing may
+ * display. This is the head dedup, which every tracked copy goes through. */
+static void
+test_nameless_passwords_with_same_value_dedup (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "s3kr1t", 0));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "s3kr1t", 0));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    /* Spelled out rather than left to the %NULL coercion, since that is what
+     * `AddPassword` hands over when the client has no name to give. */
+    g_paste_history_add (history, g_paste_password_item_new (G_PASTE_PASSWORD_ITEM_NO_NAME, "s3kr1t", 0));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    /* A different secret is a different exposure, nameless or not. */
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "other", 0));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+}
+
+/* Deeper in the history than the head, which is the other dedup scan an add
+ * runs: a nameless password copied again is moved back to the front rather than
+ * added a second time. */
+static void
+test_nameless_password_dedup_past_the_head (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "s3kr1t", 0));
+    g_paste_history_add (history, g_paste_text_item_new ("in between"));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "s3kr1t", 0));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpint (g_paste_item_get_kind (g_paste_history_get (history, 0)), ==, G_PASTE_ITEM_KIND_PASSWORD);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 1)), ==, "in between");
+}
+
+/* Selecting is the one path where two entries may be equal without being the
+ * same object: a history holding two nameless passwords with one value -- one an
+ * older GPaste wrote, or one made the way this test does -- has to move the entry
+ * the user actually activated, rather than let the head answer for its likeness
+ * and leave the row where it sat. */
+static void
+test_select_moves_a_password_the_head_matches (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    /* Through make_password, an add of the second one being deduped into the
+     * first: what it makes is a password where a text item stood. */
+    g_paste_history_add (history, g_paste_text_item_new ("s3kr1t"));
+
+    g_autofree gchar *deeper_text = dup_uuid_at (history, 0);
+    g_autofree gchar *deeper = g_paste_history_make_password (history, deeper_text, NULL, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("s3kr1t"));
+
+    g_autofree gchar *head_text = dup_uuid_at (history, 0);
+    g_autofree gchar *head = g_paste_history_make_password (history, head_text, NULL, 0);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, head);
+
+    g_assert_true (g_paste_history_select (history, deeper));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, deeper);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 1)), ==, head);
+}
+
+/* A name is the user's own record of a secret, and two records are two items
+ * whatever they hold: naming one is what says it is worth keeping apart, so a
+ * named password never matches -- not another entry under the same name, not the
+ * nameless one holding the very same value. */
+static void
+test_named_passwords_never_match (void)
+{
+    g_autoptr (GPasteItem) named = g_paste_password_item_new ("gmail", "s3kr1t", 0);
+    g_autoptr (GPasteItem) same_name = g_paste_password_item_new ("gmail", "s3kr1t", 0);
+    g_autoptr (GPasteItem) nameless = g_paste_password_item_new (NULL, "s3kr1t", 0);
+    g_autoptr (GPasteItem) other_nameless = g_paste_password_item_new (NULL, "s3kr1t", 0);
+    g_autoptr (GPasteItem) text = g_paste_text_item_new ("s3kr1t");
+
+    g_assert_true (g_paste_item_equals (named, named));
+    g_assert_false (g_paste_item_equals (named, same_name));
+
+    /* Symmetric, g_paste_item_equals () dispatching on the first alone. */
+    g_assert_false (g_paste_item_equals (named, nameless));
+    g_assert_false (g_paste_item_equals (nameless, named));
+
+    g_assert_true (g_paste_item_equals (nameless, other_nameless));
+
+    /* A password and a text differ in kind, however the value reads. */
+    g_assert_false (g_paste_item_equals (nameless, text));
+    g_assert_false (g_paste_item_equals (text, nameless));
+}
+
 /* The name is part of what a password weighs, so renaming one where it stands has
  * to move the history's own total with it. Left out, the longer name is
  * subtracted once more than it was ever added when the item goes -- and that
@@ -3194,6 +3300,10 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
     g_test_add_func ("/history/make_password_updates_in_place", test_make_password_updates_in_place);
     g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
+    g_test_add_func ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);
+    g_test_add_func ("/history/nameless_password_dedup_past_the_head", test_nameless_password_dedup_past_the_head);
+    g_test_add_func ("/history/select_moves_a_password_the_head_matches", test_select_moves_a_password_the_head_matches);
+    g_test_add_func ("/history/named_passwords_never_match", test_named_passwords_never_match);
     g_test_add_func ("/history/rename_keeps_history_size", test_rename_keeps_history_size);
     g_test_add_func ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
     g_test_add_func ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
