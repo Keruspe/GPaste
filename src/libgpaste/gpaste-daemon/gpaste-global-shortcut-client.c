@@ -130,8 +130,7 @@ gtk_accel_to_portal_trigger (const gchar *accel)
 static GVariant *
 build_shortcuts_variant (GPasteGlobalShortcutClient *self)
 {
-    g_auto (GVariantBuilder) builder;
-    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(sa{sv})"));
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("a(sa{sv})"));
 
     for (guint i = 0; i < self->shortcuts->len; i++)
     {
@@ -328,9 +327,7 @@ static void
 start_bind_async (GPasteGlobalShortcutClient *self,
                   GTask                      *task)
 {
-    g_auto (GVariantBuilder) options;
-
-    g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
+    g_auto (GVariantBuilder) options = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
 
     GVariant *params[] = {
         g_variant_new_object_path (self->session_handle),
@@ -370,9 +367,8 @@ static void
 start_create_session_async (GPasteGlobalShortcutClient *self,
                             GTask                      *task)
 {
-    g_auto (GVariantBuilder) options;
+    g_auto (GVariantBuilder) options = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
 
-    g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add (&options, "{sv}", "session_handle_token", g_variant_new_string ("gpaste"));
 
     GVariant *params[] = { g_variant_builder_end (&options) };
