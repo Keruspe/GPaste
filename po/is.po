@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-31 12:41+0200\n"
+"POT-Creation-Date: 2026-09-06 17:00+0200\n"
 "PO-Revision-Date: 2026-08-16 14:51+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
@@ -51,7 +51,7 @@ msgid "Clipboard;Copy;Paste;History;Manager;"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:17
-#: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:93
+#: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:123
 msgid "Preferences"
 msgstr "Kjörstillingar"
 
@@ -698,14 +698,14 @@ msgstr ""
 msgid "Type to search…"
 msgstr "Skrifaðu til að leita…"
 
-#: src/gnome-shell/searchItem.js:54 src/ui/gpaste-ui-header.c:282
+#: src/gnome-shell/searchItem.js:54 src/ui/gpaste-ui-header.c:312
 msgid "Show Only Pinned Items"
 msgstr ""
 
 #. Stateful and boolean, so it comes out as a check item.
 #: src/gnome-shell/stateSwitch.js:12
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:28
-#: src/ui/gpaste-ui-header.c:86
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:57
+#: src/ui/gpaste-ui-header.c:116
 #, fuzzy
 msgid "Track Clipboard Changes"
 msgstr "Rekja breytingar á klippispjaldi"
@@ -796,21 +796,38 @@ msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjaldið"
 msgid "Sync Primary to Clipboard"
 msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjald"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:398
+#: src/libgpaste/gpaste-3/gpaste-util.c:402
 msgid "Image"
 msgstr "mynd"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:400
+#: src/libgpaste/gpaste-3/gpaste-util.c:404
 msgid "Color"
 msgstr "Litur"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:405
+#: src/libgpaste/gpaste-3/gpaste-util.c:409
 msgid "Files"
 msgstr "Skrár"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:410
+#: src/libgpaste/gpaste-3/gpaste-util.c:414
+#: src/ui/gpaste-ui-password-dialog.c:222
 msgid "Password"
 msgstr "Lykilorð"
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:814
+msgid "Weak"
+msgstr "Veikt"
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:816
+msgid "Fair"
+msgstr "Þokkalegt"
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:818
+msgid "Good"
+msgstr "Gott"
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:820
+msgid "Strong"
+msgstr "Sterkt"
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:219
 #: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:234
@@ -830,95 +847,79 @@ msgstr "%m/%d/%y %T"
 msgid "%1$d × %2$d (%3$s)"
 msgstr "%1$d × %2$d (%3$s)"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:635
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:631
 msgid "Store the history in a file"
 msgstr "Geyma ferilinn í skrá"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:637
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:633
 msgid "Store the history in an encrypted file"
 msgstr "Geyma ferilinn í dulritaðri skrá"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:639
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:635
 msgid "Store the history in a database"
 msgstr "Geyma ferilinn í gagnagrunni"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:641
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:637
 msgid "Store the history in an encrypted database"
 msgstr "Geyma ferilinn í dulrituðum gagnagrunni"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:643
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:639
 msgid "Don't store anything"
 msgstr "Ekki geyma neitt"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:819
-msgid "Weak"
-msgstr "Veikt"
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:821
-msgid "Fair"
-msgstr "Þokkalegt"
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:823
-msgid "Good"
-msgstr "Gott"
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:825
-msgid "Strong"
-msgstr "Sterkt"
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:965
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:883
 msgid "Encrypted history"
 msgstr "Dulritaður ferill"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:967
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:885
 msgid "Enter the passphrase to unlock your clipboard history."
 msgstr "Settu inn aðgangsorð til að aflæsa ferli klippispjalds."
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:887
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
 "Ef þú gleymir þessu aðgangsorðum, er ekki hægt að endurheimta geymda "
 "ferilinn þinn."
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:889
 msgid "Unlock"
 msgstr "Aflæsa"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:891
 msgid "Set passphrase"
 msgstr "Stilla aðgangsorð"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:893
 msgid "Passphrase"
 msgstr "Aðgangsorð"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:895
 msgid "Confirm passphrase"
 msgstr "Staðfestu aðgangsorð"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:897
 msgid "Passphrase strength"
 msgstr "Styrkur aðgangsorða"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:899
 msgid "Passphrase strength rating is not available in this build"
 msgstr "Þessi uppsetning sýnir ekki styrk aðgangsorða"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:901
 msgid "Remember this passphrase"
 msgstr "Muna þessi aðgangsorð"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:903
 msgid "Store it in the keyring so you are not asked again"
 msgstr "Geyma það í lyklastjóranum svo ekki verði spurt aftur"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:905
 msgid "Storage migration"
 msgstr "Yfirfærsla geymslurýmis"
 
 #. Translators: the quoted words are the label of the button below, so
 #. * the two have to say the same thing.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:909
 #, fuzzy
 msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
@@ -929,60 +930,60 @@ msgstr ""
 "Veldu hvar GPaste ætti að geyma klippispjaldsferilinn þinn. Ekkert verður "
 "haft á diski nema þú veljir geymslubakenda hér."
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:911
 msgid "Apply"
 msgstr "Virkja"
 
 #. Translators: this label is quoted in the description above.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:996
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:914
 msgid "Keep as is"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:998
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:916
 msgid "Storage backend"
 msgstr "Geymslubakendi"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1000
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:918
 msgid "Import existing data"
 msgstr "Flytja inn fyrirliggjandi gögn"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1002
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:920
 msgid "Copy the current history into the new backend"
 msgstr "Afrita fyrirliggjandi feril inn í nýja bakendann"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1004
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:922
 msgid "Delete old data afterwards"
 msgstr "Eyða eldri gögnum eftirá"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1006
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:924
 msgid "Remove the previous on-disk history once done"
 msgstr "Fjarlægja fyrri feril af diski um leið og þessu er lokið"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1008
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:926
 msgid "The old data will be deleted without being imported first"
 msgstr "Eldri gögnum verður eytt án þess að flytja þau fyrst út"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1010
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:928
 msgid "The passphrase was not changed"
 msgstr "Aðgangsorðunum var ekki breytt"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1012
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:930
 msgid "Your history is still encrypted with the passphrase it had before."
 msgstr ""
 "Ferillinn þinn er enn dulritaður með aðgangsorðunum sem hann var með áður."
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1014
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:932
 msgid ""
 "Some of your histories are now encrypted with the new passphrase while the "
 "others keep the previous one, and GPaste could not put them back. Both "
 "passphrases are needed to open them all; the system log says which is which."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1016
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:934
 msgid "The old data was not deleted"
 msgstr "Eldri gögnum var ekki eytt"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1018
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:936
 msgid ""
 "The clipboard history GPaste was told to delete after the migration is still "
 "on disk."
@@ -990,18 +991,18 @@ msgstr ""
 "Ferilskrá klippispjalds sem GPaste var skipað að eyða eftir yfirfærslu er "
 "enn til staðar á diski."
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1020
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:938
 msgid "Close"
 msgstr "Loka"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1022
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
-#: src/ui/gpaste-ui-header.c:287 src/ui/gpaste-ui-panel.c:411
+#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:411
 msgid "Cancel"
 msgstr "Hætta við"
 
-#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:648
+#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:644
 msgid "Wrong passphrase, please try again"
 msgstr "Röng aðgangsorð, reyndu aftur"
 
@@ -1009,28 +1010,28 @@ msgstr "Röng aðgangsorð, reyndu aftur"
 msgid "Failed to register the gtk application"
 msgstr "Gat ekki kerfisskráð gtk-forritið"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:22
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:26
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:51
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:55
 #, fuzzy
 msgid "General Behaviour"
 msgstr "Almenn hegðun"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:32
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:61
 #, fuzzy
 msgid "Close UI on Select"
 msgstr "Loka viðmóti við val"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:44
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:79
 #, fuzzy
 msgid "Enable the GNOME Shell Extension"
 msgstr "Virkja gnome-shell skeljarviðbótina"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:50
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:85
 #, fuzzy
 msgid "Match the Daemon State to the Extension's"
 msgstr "Samstilla stöðu vaktarans við stöðu viðaukans"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:54
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:89
 msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
@@ -1038,48 +1039,48 @@ msgstr ""
 "Þegar þetta er virkt, ræsir eða stöðvar vaktarinn sjálfkrafa vöktun á "
 "breytingum á klippispjaldinu til samræmis við stöðu GNOME Shell viðaukans"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:57
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:92
 #, fuzzy
 msgid "Use the Experimental In-Shell Daemon"
 msgstr "Nota innan-skeljar-vaktara (in-shell daemon) á tilraunastigi"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:61
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:96
 msgid ""
 "Experimental: run the daemon inside GNOME Shell (mutter clipboard) instead "
 "of the standalone one. Takes effect after the extension restarts"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:66
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:112
 #, fuzzy
 msgid "Clipboard Synchronization"
 msgstr "Samstilling klippispjalda"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:68
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
 #, fuzzy
 msgid "Primary Selection Affects History"
 msgstr "Aðalval (primary - miðjuhnappur) hefur áhrif á feril"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:72
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:118
 #, fuzzy
 msgid "Synchronize Clipboard With Primary Selection"
 msgstr "Samræma klippispjald við aðalval (primary - miðjuhnappur)"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:77
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:123
 #, fuzzy
 msgid "Optional Features"
 msgstr "Valkvæðir eiginleikar"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:79
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 #, fuzzy
 msgid "Trim Items"
 msgstr "Stytta atriði"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:83
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:129
 #, fuzzy
 msgid "Detect Growing Lines"
 msgstr "Skynja vaxandi línur"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:87
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
 msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
@@ -1087,11 +1088,11 @@ msgstr ""
 "Þegar þetta er virkt; ef ný færsla á klippispjaldi hefst með því sama og sú "
 "á undan, þá er fyrri færslunni skipt út í stað þess að útbúa nýja"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:89
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:135
 msgid "Clear a Password After (seconds)"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:94
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:140
 msgid ""
 "How long a password stays on the clipboard once it is the active item. When "
 "it runs out, the next item that is not a password is selected. 0 lets a "
@@ -1191,7 +1192,7 @@ msgid "Preview Size"
 msgstr "Stærð forskoðunar"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:24
-#: src/ui/gpaste-ui-header.c:94
+#: src/ui/gpaste-ui-header.c:124
 #, fuzzy
 msgid "Keyboard Shortcuts"
 msgstr "Flýtileiðir á lyklaborði"
@@ -1229,6 +1230,11 @@ msgctxt "verb"
 msgid "Empty"
 msgstr "Tómt"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:522
+#, fuzzy
+msgid "Password strength rating is not available in this build"
+msgstr "Þessi uppsetning sýnir ekki styrk aðgangsorða"
+
 #: src/ui/gpaste-ui-edit-item.c:39
 #, fuzzy
 msgid "Could not save the edited item"
@@ -1244,41 +1250,60 @@ msgstr "Gat ekki búið til möppu undir feril"
 msgid "Edit Item"
 msgstr "Breyta"
 
-#: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-make-password.c:167
+#: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-password-dialog.c:306
 msgid "Save"
 msgstr ""
 
+#: src/ui/gpaste-ui-header.c:88
+#, fuzzy
+msgid "New Item…"
+msgstr "Nýtt atriði"
+
 #: src/ui/gpaste-ui-header.c:89
+#, fuzzy
+msgid "New Password…"
+msgstr "Lykilorð"
+
+#: src/ui/gpaste-ui-header.c:95
+#, fuzzy
+msgid "New Item Kind"
+msgstr "Nýtt atriði"
+
+#. On the button inside, not on the split button: AdwSplitButton has the
+#. * `group` accessible role, and its first child is the button that carries
+#. * the icon and takes the focus -- naming the group leaves that one nameless
+#. * to a screen reader, which is the very thing the helper is for.
+#: src/ui/gpaste-ui-header.c:101
+#, fuzzy
+msgid "New Item"
+msgstr "Nýtt atriði"
+
+#: src/ui/gpaste-ui-header.c:119
 #, fuzzy
 msgid "Restart Daemon"
 msgstr "Endurræsa vaktarann"
 
-#: src/ui/gpaste-ui-header.c:95
+#: src/ui/gpaste-ui-header.c:125
 #, fuzzy
 msgid "About GPaste"
 msgstr "GPaste"
 
-#: src/ui/gpaste-ui-header.c:102
+#: src/ui/gpaste-ui-header.c:132
 msgid "Main Menu"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:259
+#: src/ui/gpaste-ui-header.c:289
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
 msgstr[0] "%u valið"
 msgstr[1] "%u valin"
 
-#: src/ui/gpaste-ui-header.c:280
-#, fuzzy
-msgid "New Item"
-msgstr "Nýtt atriði"
-
-#: src/ui/gpaste-ui-header.c:281
+#: src/ui/gpaste-ui-header.c:311
 msgid "Search"
 msgstr "Leita"
 
-#: src/ui/gpaste-ui-header.c:283
+#: src/ui/gpaste-ui-header.c:313
 #, fuzzy
 msgid "Select Items to Merge"
 msgstr "Veldu atriði til að sameina"
@@ -1355,44 +1380,6 @@ msgstr "Senda inn"
 msgid "Pinned"
 msgstr ""
 
-#: src/ui/gpaste-ui-make-password.c:56
-#, fuzzy
-msgid "Could not make the item a password"
-msgstr "Gat ekki búið til möppu undir feril"
-
-#: src/ui/gpaste-ui-make-password.c:96
-msgid "Name"
-msgstr ""
-
-#: src/ui/gpaste-ui-make-password.c:97
-msgid "Clear After (seconds)"
-msgstr ""
-
-#: src/ui/gpaste-ui-make-password.c:99
-msgid ""
-"0 lets the password stay on the clipboard for as long as anything else would"
-msgstr ""
-
-#: src/ui/gpaste-ui-make-password.c:167
-#, fuzzy
-msgid "Edit Password"
-msgstr "Lykilorð"
-
-#: src/ui/gpaste-ui-make-password.c:188
-#, fuzzy
-msgid "Could not read the password's timeout"
-msgstr "Gat ekki búið til möppu undir feril"
-
-#: src/ui/gpaste-ui-make-password.c:211
-#, fuzzy
-msgid "Could not read the password to edit"
-msgstr "Gat ekki búið til möppu undir feril"
-
-#: src/ui/gpaste-ui-make-password.c:247
-#, fuzzy
-msgid "Make Password"
-msgstr "Lykilorð"
-
 #: src/ui/gpaste-ui-new-item.c:30
 #, fuzzy
 msgid "Could not add the item"
@@ -1403,7 +1390,7 @@ msgstr "Gat ekki búið til möppu undir feril"
 msgid "Add New Item"
 msgstr "Bæta við nýju atriði"
 
-#: src/ui/gpaste-ui-new-item.c:52
+#: src/ui/gpaste-ui-new-item.c:52 src/ui/gpaste-ui-password-dialog.c:384
 msgid "Add"
 msgstr ""
 
@@ -1457,6 +1444,65 @@ msgstr "Skipta í"
 msgid "Type the name of a history to switch to it, or a new name to create one"
 msgstr ""
 
+#: src/ui/gpaste-ui-password-dialog.c:109
+msgid "A password with this name already exists. Choose another name."
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:110
+#, fuzzy
+msgid "Could not make the item a password"
+msgstr "Gat ekki búið til möppu undir feril"
+
+#: src/ui/gpaste-ui-password-dialog.c:111
+#, fuzzy
+msgid "Could not add the password"
+msgstr "Gat ekki búið til möppu undir feril"
+
+#: src/ui/gpaste-ui-password-dialog.c:199
+msgid "Name"
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:200
+msgid "Clear After (seconds)"
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:202
+msgid ""
+"0 lets the password stay on the clipboard for as long as anything else would"
+msgstr ""
+
+#. No @unavailable of its own: what a build without libpwquality has to
+#. * say is the row's, and the passphrase prompt is the only caller with a
+#. * reason to word it differently.
+#: src/ui/gpaste-ui-password-dialog.c:229
+msgid "Strength"
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:306
+#, fuzzy
+msgid "Edit Password"
+msgstr "Lykilorð"
+
+#: src/ui/gpaste-ui-password-dialog.c:327
+#, fuzzy
+msgid "Could not read the password's timeout"
+msgstr "Gat ekki búið til möppu undir feril"
+
+#: src/ui/gpaste-ui-password-dialog.c:350
+#, fuzzy
+msgid "Could not read the password to edit"
+msgstr "Gat ekki búið til möppu undir feril"
+
+#: src/ui/gpaste-ui-password-dialog.c:384
+#, fuzzy
+msgid "New Password"
+msgstr "Lykilorð"
+
+#: src/ui/gpaste-ui-password-dialog.c:411
+#, fuzzy
+msgid "Make Password"
+msgstr "Lykilorð"
+
 #: src/ui/gpaste-ui-shortcuts-window.c:25
 #, fuzzy
 msgid "Search the history"
@@ -1468,131 +1514,136 @@ msgid "Add a new item"
 msgstr "Bæta við nýju atriði"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:27
+#, fuzzy
+msgid "Add a new password"
+msgstr "Lykilorð"
+
+#: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Paste the item at an index"
 msgstr ""
 
-#: src/ui/gpaste-ui-shortcuts-window.c:27
+#: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Ctrl+0 through Ctrl+9, for the first ten items"
 msgstr ""
 
-#: src/ui/gpaste-ui-shortcuts-window.c:28
+#: src/ui/gpaste-ui-shortcuts-window.c:29
 #, fuzzy
 msgid "Show the preferences"
 msgstr "Kjörstillingar GPaste"
 
-#: src/ui/gpaste-ui-shortcuts-window.c:29
+#: src/ui/gpaste-ui-shortcuts-window.c:30
 #, fuzzy
 msgid "Show the keyboard shortcuts"
 msgstr "Flýtileiðir á lyklaborði"
 
-#: src/ui/gpaste-ui-shortcuts-window.c:30
+#: src/ui/gpaste-ui-shortcuts-window.c:31
 msgid "Close the window"
 msgstr ""
 
-#: src/ui/gpaste-ui-shortcuts-window.c:36
+#: src/ui/gpaste-ui-shortcuts-window.c:37
 msgid "This window"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:409
+#: src/ui/gpaste-ui-window.c:420
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "Endurræsa vaktarann"
 
-#: src/ui/gpaste-ui-window.c:421
+#: src/ui/gpaste-ui-window.c:432
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "Endurræsa vaktarann"
 
-#: src/ui/gpaste-ui-window.c:422
+#: src/ui/gpaste-ui-window.c:433
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:423
+#: src/ui/gpaste-ui-window.c:434
 msgid "Restart"
 msgstr "Endurræsa"
 
-#: src/ui/gpaste-ui-window.c:444
+#: src/ui/gpaste-ui-window.c:455
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "byrja að rekja breytingar á klippispjaldi"
 
-#: src/ui/gpaste-ui-window.c:445
+#: src/ui/gpaste-ui-window.c:456
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "hætta að rekja breytingar á klippispjaldi"
 
-#: src/ui/gpaste-ui-window.c:469
+#: src/ui/gpaste-ui-window.c:480
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "hætta að rekja breytingar á klippispjaldi"
 
-#: src/ui/gpaste-ui-window.c:470
+#: src/ui/gpaste-ui-window.c:481
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:471
+#: src/ui/gpaste-ui-window.c:482
 msgid "Stop"
 msgstr "Stöðva"
 
-#: src/ui/gpaste-ui-window.c:511
+#: src/ui/gpaste-ui-window.c:522
 msgid "Clipboard management system"
 msgstr "Klippispjaldsstjórnunarkerfi"
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:517
+#: src/ui/gpaste-ui-window.c:528
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:773
+#: src/ui/gpaste-ui-window.c:786
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "Gat ekki búið til möppu undir feril"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:819
+#: src/ui/gpaste-ui-window.c:832
 #, fuzzy
 msgid "New Line"
 msgstr "Ný lína"
 
-#: src/ui/gpaste-ui-window.c:820
+#: src/ui/gpaste-ui-window.c:833
 msgid "Space"
 msgstr "Bil"
 
-#: src/ui/gpaste-ui-window.c:821
+#: src/ui/gpaste-ui-window.c:834
 msgid "Comma"
 msgstr "Komma"
 
-#: src/ui/gpaste-ui-window.c:822
+#: src/ui/gpaste-ui-window.c:835
 msgid "Tab"
 msgstr "Dálklyklar"
 
-#: src/ui/gpaste-ui-window.c:830
+#: src/ui/gpaste-ui-window.c:843
 msgid "Custom separator"
 msgstr "Sérsniðinn aðgreinir"
 
-#: src/ui/gpaste-ui-window.c:835
+#: src/ui/gpaste-ui-window.c:848
 msgid "Merge with this separator"
 msgstr "Sameina við þennan aðgreini"
 
-#: src/ui/gpaste-ui-window.c:846
+#: src/ui/gpaste-ui-window.c:859
 msgid "Merge"
 msgstr "Sameina"
 
-#: src/ui/gpaste-ui-window.c:915
+#: src/ui/gpaste-ui-window.c:928
 msgid "Quit"
 msgstr "Hætta"
 
-#: src/ui/gpaste-ui-window.c:959 src/ui/gpaste-ui-window.c:960
+#: src/ui/gpaste-ui-window.c:972 src/ui/gpaste-ui-window.c:973
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Ekki tókst að tengjast GPaste-vaktaranum"
 
-#: src/ui/gpaste-ui-window.c:1026
+#: src/ui/gpaste-ui-window.c:1039
 msgid "Histories"
 msgstr "Ferlar"
 
-#: src/ui/gpaste-ui-window.c:1027
+#: src/ui/gpaste-ui-window.c:1040
 msgid "History"
 msgstr "Ferill"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-31 12:41+0200\n"
+"POT-Creation-Date: 2026-09-06 17:00+0200\n"
 "PO-Revision-Date: 2024-01-08 16:06+0000\n"
 "Last-Translator: Quentin PAGÈS <quentinantonin@free.fr>\n"
 "Language-Team: Occitan <https://hosted.weblate.org/projects/gpaste/gpaste/oc/"
@@ -51,7 +51,7 @@ msgid "Clipboard;Copy;Paste;History;Manager;"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:17
-#: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:93
+#: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:123
 #, fuzzy
 msgid "Preferences"
 msgstr "Preferéncias GPaste"
@@ -663,14 +663,14 @@ msgstr ""
 msgid "Type to search…"
 msgstr ""
 
-#: src/gnome-shell/searchItem.js:54 src/ui/gpaste-ui-header.c:282
+#: src/gnome-shell/searchItem.js:54 src/ui/gpaste-ui-header.c:312
 msgid "Show Only Pinned Items"
 msgstr ""
 
 #. Stateful and boolean, so it comes out as a check item.
 #: src/gnome-shell/stateSwitch.js:12
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:28
-#: src/ui/gpaste-ui-header.c:86
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:57
+#: src/ui/gpaste-ui-header.c:116
 #, fuzzy
 msgid "Track Clipboard Changes"
 msgstr "Seguir las modificacions"
@@ -764,21 +764,38 @@ msgstr ""
 msgid "Sync Primary to Clipboard"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:398
+#: src/libgpaste/gpaste-3/gpaste-util.c:402
 msgid "Image"
 msgstr "Image"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:400
+#: src/libgpaste/gpaste-3/gpaste-util.c:404
 msgid "Color"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:405
+#: src/libgpaste/gpaste-3/gpaste-util.c:409
 msgid "Files"
 msgstr "Files"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:410
+#: src/libgpaste/gpaste-3/gpaste-util.c:414
+#: src/ui/gpaste-ui-password-dialog.c:222
 msgid "Password"
 msgstr "Senhal"
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:814
+msgid "Weak"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:816
+msgid "Fair"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:818
+msgid "Good"
+msgstr ""
+
+#: src/libgpaste/gpaste-3/gpaste-util.c:820
+msgid "Strong"
+msgstr ""
 
 #: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:219
 #: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:234
@@ -798,95 +815,79 @@ msgstr "%d/%m/%y %T"
 msgid "%1$d × %2$d (%3$s)"
 msgstr "%1$d × %2$d (%3$s)"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:635
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:631
 msgid "Store the history in a file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:637
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:633
 msgid "Store the history in an encrypted file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:639
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:635
 msgid "Store the history in a database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:641
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:637
 msgid "Store the history in an encrypted database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:643
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:639
 msgid "Don't store anything"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:819
-msgid "Weak"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:821
-msgid "Fair"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:823
-msgid "Good"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:825
-msgid "Strong"
-msgstr ""
-
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:965
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:883
 #, fuzzy
 msgid "Encrypted history"
 msgstr "Voidar l’istoric"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:967
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:885
 #, fuzzy
 msgid "Enter the passphrase to unlock your clipboard history."
 msgstr "Lo nom de l’istoric actual"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:887
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:889
 msgid "Unlock"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:891
 msgid "Set passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:893
 msgid "Passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:895
 msgid "Confirm passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:897
 msgid "Passphrase strength"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:899
 msgid "Passphrase strength rating is not available in this build"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:901
 msgid "Remember this passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:903
 msgid "Store it in the keyring so you are not asked again"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:905
 msgid "Storage migration"
 msgstr ""
 
 #. Translators: the quoted words are the label of the button below, so
 #. * the two have to say the same thing.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:909
 msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
 "disk unless you pick a storing backend here. “Keep as is” changes nothing "
@@ -894,76 +895,76 @@ msgid ""
 "time."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:911
 msgid "Apply"
 msgstr ""
 
 #. Translators: this label is quoted in the description above.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:996
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:914
 msgid "Keep as is"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:998
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:916
 msgid "Storage backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1000
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:918
 msgid "Import existing data"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1002
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:920
 msgid "Copy the current history into the new backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1004
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:922
 msgid "Delete old data afterwards"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1006
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:924
 msgid "Remove the previous on-disk history once done"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1008
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:926
 msgid "The old data will be deleted without being imported first"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1010
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:928
 msgid "The passphrase was not changed"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1012
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:930
 msgid "Your history is still encrypted with the passphrase it had before."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1014
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:932
 msgid ""
 "Some of your histories are now encrypted with the new passphrase while the "
 "others keep the previous one, and GPaste could not put them back. Both "
 "passphrases are needed to open them all; the system log says which is which."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1016
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:934
 msgid "The old data was not deleted"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1018
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:936
 msgid ""
 "The clipboard history GPaste was told to delete after the migration is still "
 "on disk."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1020
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:938
 msgid "Close"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1022
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
-#: src/ui/gpaste-ui-header.c:287 src/ui/gpaste-ui-panel.c:411
+#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:411
 msgid "Cancel"
 msgstr "Anullar"
 
-#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:648
+#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:644
 msgid "Wrong passphrase, please try again"
 msgstr ""
 
@@ -971,76 +972,76 @@ msgstr ""
 msgid "Failed to register the gtk application"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:22
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:26
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:51
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:55
 #, fuzzy
 msgid "General Behaviour"
 msgstr "Comportament general"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:32
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:61
 msgid "Close UI on Select"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:44
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:79
 msgid "Enable the GNOME Shell Extension"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:50
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:85
 msgid "Match the Daemon State to the Extension's"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:54
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:89
 msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:57
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:92
 msgid "Use the Experimental In-Shell Daemon"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:61
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:96
 msgid ""
 "Experimental: run the daemon inside GNOME Shell (mutter clipboard) instead "
 "of the standalone one. Takes effect after the extension restarts"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:66
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:112
 msgid "Clipboard Synchronization"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:68
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
 #, fuzzy
 msgid "Primary Selection Affects History"
 msgstr "Enregistram los imatges copiats a l’istoric o sonque lo tèxte ?"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:72
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:118
 msgid "Synchronize Clipboard With Primary Selection"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:77
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:123
 msgid "Optional Features"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:79
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 msgid "Trim Items"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:83
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:129
 msgid "Detect Growing Lines"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:87
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
 msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:89
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:135
 msgid "Clear a Password After (seconds)"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:94
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:140
 msgid ""
 "How long a password stays on the clipboard once it is the active item. When "
 "it runs out, the next item that is not a password is selected. 0 lets a "
@@ -1131,7 +1132,7 @@ msgid "Preview Size"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:24
-#: src/ui/gpaste-ui-header.c:94
+#: src/ui/gpaste-ui-header.c:124
 #, fuzzy
 msgid "Keyboard Shortcuts"
 msgstr "Acorchis clavièr"
@@ -1167,6 +1168,10 @@ msgctxt "verb"
 msgid "Empty"
 msgstr "Void"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:522
+msgid "Password strength rating is not available in this build"
+msgstr ""
+
 #: src/ui/gpaste-ui-edit-item.c:39
 msgid "Could not save the edited item"
 msgstr ""
@@ -1180,40 +1185,57 @@ msgstr ""
 msgid "Edit Item"
 msgstr "Modificar"
 
-#: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-make-password.c:167
+#: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-password-dialog.c:306
 msgid "Save"
+msgstr ""
+
+#: src/ui/gpaste-ui-header.c:88
+msgid "New Item…"
 msgstr ""
 
 #: src/ui/gpaste-ui-header.c:89
 #, fuzzy
+msgid "New Password…"
+msgstr "Senhal"
+
+#: src/ui/gpaste-ui-header.c:95
+msgid "New Item Kind"
+msgstr ""
+
+#. On the button inside, not on the split button: AdwSplitButton has the
+#. * `group` accessible role, and its first child is the button that carries
+#. * the icon and takes the focus -- naming the group leaves that one nameless
+#. * to a screen reader, which is the very thing the helper is for.
+#: src/ui/gpaste-ui-header.c:101
+msgid "New Item"
+msgstr ""
+
+#: src/ui/gpaste-ui-header.c:119
+#, fuzzy
 msgid "Restart Daemon"
 msgstr "Reaviar"
 
-#: src/ui/gpaste-ui-header.c:95
+#: src/ui/gpaste-ui-header.c:125
 #, fuzzy
 msgid "About GPaste"
 msgstr "GPaste"
 
-#: src/ui/gpaste-ui-header.c:102
+#: src/ui/gpaste-ui-header.c:132
 msgid "Main Menu"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:259
+#: src/ui/gpaste-ui-header.c:289
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/gpaste-ui-header.c:280
-msgid "New Item"
-msgstr ""
-
-#: src/ui/gpaste-ui-header.c:281
+#: src/ui/gpaste-ui-header.c:311
 msgid "Search"
 msgstr "Recercar"
 
-#: src/ui/gpaste-ui-header.c:283
+#: src/ui/gpaste-ui-header.c:313
 msgid "Select Items to Merge"
 msgstr ""
 
@@ -1285,44 +1307,6 @@ msgstr "Enviar"
 msgid "Pinned"
 msgstr ""
 
-#: src/ui/gpaste-ui-make-password.c:56
-#, fuzzy
-msgid "Could not make the item a password"
-msgstr "Suprimir l’istoric"
-
-#: src/ui/gpaste-ui-make-password.c:96
-msgid "Name"
-msgstr ""
-
-#: src/ui/gpaste-ui-make-password.c:97
-msgid "Clear After (seconds)"
-msgstr ""
-
-#: src/ui/gpaste-ui-make-password.c:99
-msgid ""
-"0 lets the password stay on the clipboard for as long as anything else would"
-msgstr ""
-
-#: src/ui/gpaste-ui-make-password.c:167
-#, fuzzy
-msgid "Edit Password"
-msgstr "Senhal"
-
-#: src/ui/gpaste-ui-make-password.c:188
-#, fuzzy
-msgid "Could not read the password's timeout"
-msgstr "Suprimir l’istoric"
-
-#: src/ui/gpaste-ui-make-password.c:211
-#, fuzzy
-msgid "Could not read the password to edit"
-msgstr "Suprimir l’istoric"
-
-#: src/ui/gpaste-ui-make-password.c:247
-#, fuzzy
-msgid "Make Password"
-msgstr "Senhal"
-
 #: src/ui/gpaste-ui-new-item.c:30
 msgid "Could not add the item"
 msgstr ""
@@ -1331,7 +1315,7 @@ msgstr ""
 msgid "Add New Item"
 msgstr ""
 
-#: src/ui/gpaste-ui-new-item.c:52
+#: src/ui/gpaste-ui-new-item.c:52 src/ui/gpaste-ui-password-dialog.c:384
 msgid "Add"
 msgstr ""
 
@@ -1385,6 +1369,65 @@ msgstr "Enregistrar l’istoric"
 msgid "Type the name of a history to switch to it, or a new name to create one"
 msgstr ""
 
+#: src/ui/gpaste-ui-password-dialog.c:109
+msgid "A password with this name already exists. Choose another name."
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:110
+#, fuzzy
+msgid "Could not make the item a password"
+msgstr "Suprimir l’istoric"
+
+#: src/ui/gpaste-ui-password-dialog.c:111
+#, fuzzy
+msgid "Could not add the password"
+msgstr "Suprimir l’istoric"
+
+#: src/ui/gpaste-ui-password-dialog.c:199
+msgid "Name"
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:200
+msgid "Clear After (seconds)"
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:202
+msgid ""
+"0 lets the password stay on the clipboard for as long as anything else would"
+msgstr ""
+
+#. No @unavailable of its own: what a build without libpwquality has to
+#. * say is the row's, and the passphrase prompt is the only caller with a
+#. * reason to word it differently.
+#: src/ui/gpaste-ui-password-dialog.c:229
+msgid "Strength"
+msgstr ""
+
+#: src/ui/gpaste-ui-password-dialog.c:306
+#, fuzzy
+msgid "Edit Password"
+msgstr "Senhal"
+
+#: src/ui/gpaste-ui-password-dialog.c:327
+#, fuzzy
+msgid "Could not read the password's timeout"
+msgstr "Suprimir l’istoric"
+
+#: src/ui/gpaste-ui-password-dialog.c:350
+#, fuzzy
+msgid "Could not read the password to edit"
+msgstr "Suprimir l’istoric"
+
+#: src/ui/gpaste-ui-password-dialog.c:384
+#, fuzzy
+msgid "New Password"
+msgstr "Senhal"
+
+#: src/ui/gpaste-ui-password-dialog.c:411
+#, fuzzy
+msgid "Make Password"
+msgstr "Senhal"
+
 #: src/ui/gpaste-ui-shortcuts-window.c:25
 #, fuzzy
 msgid "Search the history"
@@ -1395,126 +1438,131 @@ msgid "Add a new item"
 msgstr ""
 
 #: src/ui/gpaste-ui-shortcuts-window.c:27
+#, fuzzy
+msgid "Add a new password"
+msgstr "Senhal"
+
+#: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Paste the item at an index"
 msgstr ""
 
-#: src/ui/gpaste-ui-shortcuts-window.c:27
+#: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Ctrl+0 through Ctrl+9, for the first ten items"
 msgstr ""
 
-#: src/ui/gpaste-ui-shortcuts-window.c:28
+#: src/ui/gpaste-ui-shortcuts-window.c:29
 #, fuzzy
 msgid "Show the preferences"
 msgstr "Preferéncias GPaste"
 
-#: src/ui/gpaste-ui-shortcuts-window.c:29
+#: src/ui/gpaste-ui-shortcuts-window.c:30
 #, fuzzy
 msgid "Show the keyboard shortcuts"
 msgstr "Acorchis clavièr"
 
-#: src/ui/gpaste-ui-shortcuts-window.c:30
+#: src/ui/gpaste-ui-shortcuts-window.c:31
 msgid "Close the window"
 msgstr ""
 
-#: src/ui/gpaste-ui-shortcuts-window.c:36
+#: src/ui/gpaste-ui-shortcuts-window.c:37
 msgid "This window"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:409
+#: src/ui/gpaste-ui-window.c:420
 msgid "Could not restart the daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:421
+#: src/ui/gpaste-ui-window.c:432
 msgid "Restart the GPaste Daemon?"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:422
+#: src/ui/gpaste-ui-window.c:433
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:423
+#: src/ui/gpaste-ui-window.c:434
 msgid "Restart"
 msgstr "Reaviar"
 
-#: src/ui/gpaste-ui-window.c:444
+#: src/ui/gpaste-ui-window.c:455
 msgid "Could not start tracking the clipboard"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:445
+#: src/ui/gpaste-ui-window.c:456
 msgid "Could not stop tracking the clipboard"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:469
+#: src/ui/gpaste-ui-window.c:480
 msgid "Stop Tracking the Clipboard?"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:470
+#: src/ui/gpaste-ui-window.c:481
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:471
+#: src/ui/gpaste-ui-window.c:482
 msgid "Stop"
 msgstr "Arrestar"
 
-#: src/ui/gpaste-ui-window.c:511
+#: src/ui/gpaste-ui-window.c:522
 msgid "Clipboard management system"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:517
+#: src/ui/gpaste-ui-window.c:528
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:773
+#: src/ui/gpaste-ui-window.c:786
 msgid "Could not merge the selected items"
 msgstr ""
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:819
+#: src/ui/gpaste-ui-window.c:832
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:820
+#: src/ui/gpaste-ui-window.c:833
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:821
+#: src/ui/gpaste-ui-window.c:834
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:822
+#: src/ui/gpaste-ui-window.c:835
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:830
+#: src/ui/gpaste-ui-window.c:843
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:835
+#: src/ui/gpaste-ui-window.c:848
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:846
+#: src/ui/gpaste-ui-window.c:859
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:915
+#: src/ui/gpaste-ui-window.c:928
 msgid "Quit"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:959 src/ui/gpaste-ui-window.c:960
+#: src/ui/gpaste-ui-window.c:972 src/ui/gpaste-ui-window.c:973
 msgid "Couldn't connect to GPaste daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1026
+#: src/ui/gpaste-ui-window.c:1039
 #, fuzzy
 msgid "Histories"
 msgstr "Accès istoric"
 
-#: src/ui/gpaste-ui-window.c:1027
+#: src/ui/gpaste-ui-window.c:1040
 #, fuzzy
 msgid "History"
 msgstr "Accès istoric"
