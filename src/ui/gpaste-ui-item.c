@@ -9,7 +9,7 @@
 #include <gpaste-ui-color-swatch.h>
 #include <gpaste-ui-edit-item.h>
 #include <gpaste-ui-item.h>
-#include <gpaste-ui-make-password.h>
+#include <gpaste-ui-password-dialog.h>
 #include <gpaste-ui-window.h>
 
 struct _GPasteUiItem
@@ -316,7 +316,7 @@ on_edit (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiItem *self = user_data;
 
     if (self->kind == G_PASTE_ITEM_KIND_PASSWORD)
-        g_paste_ui_make_password_edit (self->client, self->rootwin, self->uuid);
+        g_paste_ui_password_dialog_edit (self->client, self->rootwin, self->uuid);
     else
         g_paste_ui_edit_item_show (self->client, self->rootwin, self->uuid);
 }
@@ -328,7 +328,7 @@ on_make_password (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_ui_make_password_show (self->client, self->settings, self->rootwin, self->uuid);
+    g_paste_ui_password_dialog_make (self->client, self->settings, self->rootwin, self->uuid);
 }
 
 /* The address is only copied once the daemon has taken it: an add can be refused
