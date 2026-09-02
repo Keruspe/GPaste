@@ -7,6 +7,7 @@
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-new-item.h>
+#include <gpaste-ui-password-dialog.h>
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
@@ -363,6 +364,16 @@ on_new_item (GSimpleAction *action    G_GNUC_UNUSED,
 }
 
 static void
+on_new_password (GSimpleAction *action    G_GNUC_UNUSED,
+                 GVariant      *parameter G_GNUC_UNUSED,
+                 gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    g_paste_ui_password_dialog_add (self->client, self->settings, GTK_WINDOW (self));
+}
+
+static void
 on_toggle_search (GSimpleAction *action    G_GNUC_UNUSED,
                   GVariant      *parameter G_GNUC_UNUSED,
                   gpointer       user_data)
@@ -547,6 +558,7 @@ add_window_actions (GPasteUiWindow *self)
 {
     static const GActionEntry entries[] = {
         { "new-item",       on_new_item,       NULL, NULL,    NULL, { 0 } },
+        { "new-password",   on_new_password,   NULL, NULL,    NULL, { 0 } },
         { "restart-daemon", on_restart_daemon, NULL, NULL,    NULL, { 0 } },
         { "toggle-search",  on_toggle_search,  NULL, NULL,    NULL, { 0 } },
         { "track-changes",  on_track_changes,  NULL, "false", NULL, { 0 } },
@@ -568,6 +580,7 @@ add_window_actions (GPasteUiWindow *self)
         { "win.show-help-overlay", "<primary>question" },
         { "win.toggle-search",     "<primary>f" },
         { "win.new-item",          "<primary>n" },
+        { "win.new-password",      "<primary><shift>n" },
         { "window.close",          "<primary>w" },
     };
 

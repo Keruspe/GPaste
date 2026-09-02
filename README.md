@@ -172,6 +172,7 @@ Inside the graphical tool, which has a few of its own:
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | Search the history |
 | <kbd>Ctrl</kbd>+<kbd>N</kbd> | Add a new item |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> | Add a new password |
 | <kbd>Ctrl</kbd>+<kbd>0</kbd>…<kbd>9</kbd> | Paste the item at that index |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | Show the preferences |
 | <kbd>Ctrl</kbd>+<kbd>?</kbd> | Show the keyboard shortcuts |

@@ -74,6 +74,36 @@ header_toggle_new (const gchar *icon_name,
     return button;
 }
 
+/* The two kinds of item the window can be asked to compose. A split button
+ * rather than two buttons or a plain menu: adding text is what this is for
+ * nearly every time, so it keeps its single click and its accelerator, and the
+ * password composer -- wanted rarely, and worth naming rather than leaving to an
+ * icon -- sits behind the arrow. That is the case the HIG names for one: a
+ * primary action with a small number of related alternatives. */
+static GtkWidget *
+header_new_item_new (void)
+{
+    g_autoptr (GMenu) menu = g_menu_new ();
+
+    g_menu_append (menu, _("New Item…"), "win.new-item");
+    g_menu_append (menu, _("New Password…"), "win.new-password");
+
+    GtkWidget *button = adw_split_button_new ();
+
+    adw_split_button_set_icon_name (ADW_SPLIT_BUTTON (button), "document-new-symbolic");
+    adw_split_button_set_menu_model (ADW_SPLIT_BUTTON (button), G_MENU_MODEL (menu));
+    adw_split_button_set_dropdown_tooltip (ADW_SPLIT_BUTTON (button), _("New Item Kind"));
+    gtk_actionable_set_action_name (GTK_ACTIONABLE (button), "win.new-item");
+    /* On the button inside, not on the split button: AdwSplitButton has the
+     * `group` accessible role, and its first child is the button that carries
+     * the icon and takes the focus -- naming the group leaves that one nameless
+     * to a screen reader, which is the very thing the helper is for. */
+    set_icon_button_label (gtk_widget_get_first_child (button), _("New Item"));
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+
+    return button;
+}
+
 /* Everything the window as a whole can be asked to do, in one menu at the end of
  * the header rather than as an icon apiece: they are app-level and rare, where
  * the buttons left beside them all act on the history being shown. */
@@ -277,7 +307,7 @@ g_paste_ui_header_new (void)
     GtkWidget *self = adw_header_bar_new ();
     AdwHeaderBar *bar = ADW_HEADER_BAR (self);
 
-    GtkWidget *new_item = header_button_new ("document-new-symbolic", _("New Item"), "win.new-item");
+    GtkWidget *new_item = header_new_item_new ();
     GtkWidget *search = header_toggle_new ("edit-find-symbolic", _("Search"));
     GtkWidget *favourites = header_toggle_new ("starred-symbolic", _("Show Only Pinned Items"));
     GtkWidget *merge = header_button_new ("edit-select-all-symbolic", _("Select Items to Merge"), NULL);

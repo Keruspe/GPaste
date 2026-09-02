@@ -24,6 +24,7 @@ static const struct
 } window_shortcuts[] = {
     { N_ ("Search the history"),          "<primary>f",        NULL },
     { N_ ("Add a new item"),              "<primary>n",        NULL },
+    { N_ ("Add a new password"),          "<primary><shift>n", NULL },
     { N_ ("Paste the item at an index"),  "<primary>0",        N_ ("Ctrl+0 through Ctrl+9, for the first ten items") },
     { N_ ("Show the preferences"),        "<primary>comma",    NULL },
     { N_ ("Show the keyboard shortcuts"), "<primary>question", NULL },
