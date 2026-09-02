@@ -154,6 +154,7 @@ g_paste_ui_item_update_actions (GPasteUiItem *self)
      * text row alone: on a password row it would put up that same dialog. */
     g_simple_action_set_enabled (item_action (self, "edit"), armed && (text || self->kind == G_PASTE_ITEM_KIND_PASSWORD));
     g_simple_action_set_enabled (item_action (self, "make-password"), armed && text);
+    g_simple_action_set_enabled (item_action (self, "strip-rich-text"), armed && text);
     g_simple_action_set_enabled (item_action (self, "upload"), armed && text);
     g_simple_action_set_enabled (item_action (self, "pin"), armed);
     g_simple_action_set_enabled (item_action (self, "delete"), armed);
@@ -387,6 +388,22 @@ on_upload (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiItem *self = user_data;
 
     g_paste_client_upload (self->client, self->uuid, on_upload_done, g_object_ref (self));
+}
+
+/* Offered on every text row rather than only on one that carries rich text:
+ * nothing in a listing says which do, and asking the daemon per row would be a
+ * round trip apiece for a menu entry. A strip with nothing to strip succeeds. */
+static void
+on_strip_rich_text (GSimpleAction *action    G_GNUC_UNUSED,
+                    GVariant      *parameter G_GNUC_UNUSED,
+                    gpointer       user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    g_paste_client_strip_rich_text (self->client, self->uuid,
+                                    g_paste_ui_report_void_cb,
+                                    g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_strip_rich_text_finish,
+                                                            _("Could not remove the rich text")));
 }
 
 static void
@@ -1009,11 +1026,12 @@ g_paste_ui_item_new (GPasteClient   *client,
     self->rootwin = rootwin;
 
     static const GActionEntry entries[] = {
-        { "delete",        on_delete,        NULL, NULL,    NULL, { 0 } },
-        { "edit",          on_edit,          NULL, NULL,    NULL, { 0 } },
-        { "make-password", on_make_password, NULL, NULL,    NULL, { 0 } },
-        { "pin",           on_pin,           NULL, "false", NULL, { 0 } },
-        { "upload",        on_upload,        NULL, NULL,    NULL, { 0 } },
+        { "delete",          on_delete,          NULL, NULL,    NULL, { 0 } },
+        { "edit",            on_edit,            NULL, NULL,    NULL, { 0 } },
+        { "make-password",   on_make_password,   NULL, NULL,    NULL, { 0 } },
+        { "pin",             on_pin,             NULL, "false", NULL, { 0 } },
+        { "strip-rich-text", on_strip_rich_text, NULL, NULL,    NULL, { 0 } },
+        { "upload",          on_upload,          NULL, NULL,    NULL, { 0 } },
     };
 
     self->actions = g_simple_action_group_new ();
@@ -1028,6 +1046,7 @@ g_paste_ui_item_new (GPasteClient   *client,
     g_autoptr (GMenu) edit_section = g_menu_new ();
     g_menu_append (edit_section, _("Edit…"), "item.edit");
     g_menu_append (edit_section, _("Make Password…"), "item.make-password");
+    g_menu_append (edit_section, _("Remove Rich Text"), "item.strip-rich-text");
     g_menu_append (edit_section, _("Upload"), "item.upload");
     g_menu_append_section (menu, NULL, G_MENU_MODEL (edit_section));
 
