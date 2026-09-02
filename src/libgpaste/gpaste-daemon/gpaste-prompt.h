@@ -240,6 +240,14 @@ void g_paste_prompt_remember_state (GPasteStorageRemember requested,
  * implementation is what keeps the two from drifting. */
 #define G_PASTE_PROMPT_STRENGTH_MAX 4
 
+/* How often g_paste_prompt_passphrase_strength() may be asked, in milliseconds,
+ * spelled out again for the same reason %G_PASTE_PROMPT_STRENGTH_MAX is: the
+ * extension reads it off the typelib, and g-ir-scanner only carries a #define
+ * over when it is a literal. It is the delay %G_PASTE_UTIL_STRENGTH_RATING_DELAY
+ * names, which says what the number is for; a G_STATIC_ASSERT in the
+ * implementation is what keeps the two from drifting. */
+#define G_PASTE_PROMPT_STRENGTH_RATING_DELAY 200
+
 /* Whether the prompt would accept what has been typed: a passphrase, and — when
  * setting a new one — a confirmation that matches. Shared so the two backends
  * cannot come to disagree about it, and so a stricter rule later (a minimum

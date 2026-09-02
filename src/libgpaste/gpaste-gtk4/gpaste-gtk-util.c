@@ -420,3 +420,178 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
     adw_dialog_present (dialog, GTK_WIDGET (parent));
     gtk_widget_grab_focus (view);
 }
+
+/* The meter, kept on the row rather than handed back beside it: AdwActionRow is
+ * a final type, so there is nowhere else to put it, and a caller that only ever
+ * rates what was typed has no use for the widget itself. */
+#define STRENGTH_BAR_KEY "password-strength-bar"
+/* What is waiting to be rated, kept on the row for the same reason. */
+#define STRENGTH_RATING_KEY "password-strength-rating"
+
+/* @source rather than the password itself: a copy here would be a second one of
+ * the cleartext, in ordinary pageable heap, kept for as long as the row lives
+ * and released without being wiped -- where the entry's own buffer is a copy
+ * that exists either way. The waiting rating reads it when it comes to run,
+ * which is also what makes the rate limit right: what is rated is whatever the
+ * entry holds then, not whatever it held when the timer was armed. */
+typedef struct
+{
+    GtkWidget   *row;
+    GtkEditable *source;
+    guint        id;
+} GPasteGtkStrengthRating;
+
+static void
+g_paste_gtk_strength_rating_free (gpointer user_data)
+{
+    GPasteGtkStrengthRating *rating = user_data;
+
+    g_clear_handle_id (&rating->id, g_source_remove);
+    g_clear_weak_pointer (&rating->source);
+    g_free (rating);
+}
+
+static void
+g_paste_gtk_strength_rating_apply (gpointer user_data)
+{
+    GPasteGtkStrengthRating *rating = user_data;
+    GtkWidget *bar = g_object_get_data (G_OBJECT (rating->row), STRENGTH_BAR_KEY);
+
+    rating->id = 0;
+
+    /* The entry went before the rating waiting on it did: what it held is gone
+     * with it, and so is the form it was being typed into. */
+    if (!rating->source)
+        return;
+
+    g_autofree gchar *hint = NULL;
+    guint strength = g_paste_util_password_strength (gtk_editable_get_text (rating->source), &hint);
+
+    gtk_level_bar_set_value (GTK_LEVEL_BAR (bar), strength);
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (rating->row), (hint) ? hint : "");
+}
+
+/* The row is going, and the rating waiting on it would land on a meter its
+ * children no longer include. Dropping the data is what stops it: ::destroy runs
+ * at the top of the row's dispose, before anything it holds is unparented. The
+ * meter goes with it, which is what makes every later rate () a no-op: dropping
+ * the rating alone would leave one arriving during that same dispose arming a
+ * fresh rating on a row about to be finalized. */
+static void
+on_strength_row_destroy (GtkWidget *row,
+                         gpointer   user_data G_GNUC_UNUSED)
+{
+    g_object_set_data (G_OBJECT (row), STRENGTH_RATING_KEY, NULL);
+    g_object_set_data (G_OBJECT (row), STRENGTH_BAR_KEY, NULL);
+}
+
+/**
+ * g_paste_gtk_util_password_strength_row_new:
+ * @title: what the row is called
+ * @unavailable: (nullable): what to say when this build cannot rate anything,
+ *               or %NULL for the standard wording
+ *
+ * The row rating a password as it is typed: a colour-graded meter, and the
+ * rating word or libpwquality's own advice as the subtitle.
+ *
+ * Built without libpwquality there is nothing to rate with, and the row says so
+ * and goes insensitive rather than being left out — someone choosing a password
+ * should know it is not being judged, instead of reading a silent absence as
+ * approval. What it says is this function's to decide, since the condition is:
+ * a caller passes @unavailable only when it wants different words for the same
+ * thing, as the passphrase prompt does, and one that has nothing of its own to
+ * say passes %NULL rather than repeating the sentence.
+ *
+ * Returns: (transfer none): a newly created #AdwActionRow, to be rated with
+ *          g_paste_gtk_util_password_strength_row_rate ()
+ */
+G_PASTE_VISIBLE GtkWidget *
+g_paste_gtk_util_password_strength_row_new (const gchar *title,
+                                            const gchar *unavailable)
+{
+    g_return_val_if_fail (title, NULL);
+
+    GtkWidget *row = adw_action_row_new ();
+
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
+
+    if (!g_paste_util_pwquality_available ())
+    {
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (row),
+                                     unavailable ? unavailable
+                                                 : _("Password strength rating is not available in this build"));
+        gtk_widget_set_sensitive (row, FALSE);
+
+        return row;
+    }
+
+    GtkWidget *bar = gtk_level_bar_new ();
+    GtkLevelBar *level = GTK_LEVEL_BAR (bar);
+
+    gtk_level_bar_set_min_value (level, 0);
+    gtk_level_bar_set_max_value (level, G_PASTE_UTIL_STRENGTH_MAX);
+    /* Colour the meter red → orange → green as the rating climbs. */
+    gtk_level_bar_add_offset_value (level, GTK_LEVEL_BAR_OFFSET_LOW, 1);
+    gtk_level_bar_add_offset_value (level, GTK_LEVEL_BAR_OFFSET_HIGH, 3);
+    gtk_level_bar_add_offset_value (level, GTK_LEVEL_BAR_OFFSET_FULL, G_PASTE_UTIL_STRENGTH_MAX);
+    gtk_widget_set_valign (bar, GTK_ALIGN_CENTER);
+    gtk_widget_set_size_request (bar, 120, -1);
+
+    g_object_set_data (G_OBJECT (row), STRENGTH_BAR_KEY, bar);
+    adw_action_row_add_suffix (ADW_ACTION_ROW (row), bar);
+
+    return row;
+}
+
+/**
+ * g_paste_gtk_util_password_strength_row_rate:
+ * @row: (transfer none): a row from g_paste_gtk_util_password_strength_row_new ()
+ * @source: (transfer none): the editable the password is being typed into
+ *
+ * Show what @source holds rates, in the meter and in the subtitle. What is shown
+ * is always what it holds latest, but shortly after the call rather than within
+ * it: see %G_PASTE_UTIL_STRENGTH_RATING_DELAY.
+ *
+ * The editable rather than its text: rating a password means holding it until
+ * the rating runs, and the entry is already holding it -- where a string handed
+ * here would have to be copied into a second buffer, one this library would keep
+ * for the row's lifetime and free without wiping.
+ *
+ * A no-op on a row with no meter. A build without libpwquality has none: the
+ * row already says so, and overwriting that with an empty rating would take the
+ * explanation away. Neither has a row that has been destroyed, which is what
+ * keeps a rating from being armed on one.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_password_strength_row_rate (GtkWidget   *row,
+                                             GtkEditable *source)
+{
+    g_return_if_fail (ADW_IS_ACTION_ROW (row));
+    g_return_if_fail (GTK_IS_EDITABLE (source));
+
+    GtkWidget *bar = g_object_get_data (G_OBJECT (row), STRENGTH_BAR_KEY);
+
+    if (!bar)
+        return;
+
+    GPasteGtkStrengthRating *rating = g_object_get_data (G_OBJECT (row), STRENGTH_RATING_KEY);
+
+    if (!rating)
+    {
+        rating = g_new0 (GPasteGtkStrengthRating, 1);
+        rating->row = row;
+
+        g_object_set_data_full (G_OBJECT (row), STRENGTH_RATING_KEY, rating, g_paste_gtk_strength_rating_free);
+        g_signal_connect (row, "destroy", G_CALLBACK (on_strength_row_destroy), NULL);
+    }
+
+    /* Weakly, so an entry that goes before its row leaves the waiting rating with
+     * nothing to read rather than a dangling pointer to read it from. */
+    g_set_weak_pointer (&rating->source, source);
+
+    if (rating->id)
+        return;
+
+    rating->id = g_timeout_add_once (G_PASTE_UTIL_STRENGTH_RATING_DELAY, g_paste_gtk_strength_rating_apply, rating);
+    g_source_set_name_by_id (rating->id, "[GPaste] password strength rating");
+}

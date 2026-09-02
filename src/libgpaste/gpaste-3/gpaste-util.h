@@ -49,6 +49,15 @@ gboolean g_paste_util_trigger_storage_migration (GPasteClient *client,
  * against the contract rather than against a number copied out of it. */
 #define G_PASTE_UTIL_STRENGTH_MAX 4
 
+/* How often a form typing a password may ask for one, in milliseconds. The
+ * check is a dictionary lookup off the disk, tens of milliseconds of it on a
+ * cold cache, and it runs on the thread that asks -- which for a form is the one
+ * drawing it. A rate limit rather than a restarted timer, so what a meter says
+ * is never more than this behind what is typed, however long the typing goes
+ * on. Here rather than in each form, so the two that show a meter cannot come to
+ * disagree about how often the disk is worth touching. */
+#define G_PASTE_UTIL_STRENGTH_RATING_DELAY 200
+
 /* Whether this build can rate a password at all (libpwquality). A form that
  * cannot must say so rather than show a meter pinned at zero: someone choosing
  * a password should know it is not being judged, instead of reading a silent

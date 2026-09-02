@@ -8,6 +8,7 @@ import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import * as ShellEntry from 'resource:///org/gnome/shell/ui/shellEntry.js';
 
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
@@ -33,6 +34,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
         this._request = request;
         this._answered = false;
+        this._strengthRatingId = 0;
 
         const confirm = request.get_confirm();
         const errorMessage = request.get_error_message();
@@ -105,6 +107,13 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
     }
 
     _dismiss() {
+        // The rating waiting to run would read an entry that is going with the
+        // dialog, and write into a meter that is going with it too.
+        if (this._strengthRatingId) {
+            GLib.Source.remove(this._strengthRatingId);
+            this._strengthRatingId = 0;
+        }
+
         this._answer(null, GPasteDaemon.StorageRemember.UNCHANGED);
     }
 
@@ -156,16 +165,34 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         this._errorLabel.visible = false;
 
         // Only re-rate when the passphrase itself changed: typing the
-        // confirmation rates a string that did not move, and rating means a
-        // cracklib dictionary pass — here, on the compositor's own thread.
-        if (this._strengthLevel && entry === this._entry) {
-            const [level, hint] = GPasteDaemon.Prompt.passphrase_strength(this._entry.get_text());
-
-            this._strengthLevel.value = level / GPasteDaemon.PROMPT_STRENGTH_MAX;
-            this._strengthHint.text = hint ?? '';
-        }
+        // confirmation rates a string that did not move.
+        if (this._strengthLevel && entry === this._entry)
+            this._rateStrength();
 
         this._updateOk();
+    }
+
+    // At most one rating per PROMPT_STRENGTH_RATING_DELAY, the delay both
+    // prompts rate on: a rating is a cracklib dictionary pass, and the thread it
+    // runs on here is the compositor's own.
+    _rateStrength() {
+        if (this._strengthRatingId)
+            return;
+
+        this._strengthRatingId = GLib.timeout_add(GLib.PRIORITY_DEFAULT,
+            GPasteDaemon.PROMPT_STRENGTH_RATING_DELAY, () => {
+                this._strengthRatingId = 0;
+
+                // What the entry holds when the rating runs, not what armed it:
+                // that is what makes one rating per delay enough.
+                const [level, hint] = GPasteDaemon.Prompt.passphrase_strength(this._entry.get_text());
+
+                this._strengthLevel.value = level / GPasteDaemon.PROMPT_STRENGTH_MAX;
+                this._strengthHint.text = hint ?? '';
+
+                return GLib.SOURCE_REMOVE;
+            });
+        GLib.Source.set_name_by_id(this._strengthRatingId, '[GPaste] password strength rating');
     }
 
     _updateOk() {

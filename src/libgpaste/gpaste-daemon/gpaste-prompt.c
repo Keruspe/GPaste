@@ -800,6 +800,7 @@ g_paste_prompt_pwquality_available (void)
 }
 
 G_STATIC_ASSERT (G_PASTE_PROMPT_STRENGTH_MAX == G_PASTE_UTIL_STRENGTH_MAX);
+G_STATIC_ASSERT (G_PASTE_PROMPT_STRENGTH_RATING_DELAY == G_PASTE_UTIL_STRENGTH_RATING_DELAY);
 
 /**
  * g_paste_prompt_passphrase_strength:

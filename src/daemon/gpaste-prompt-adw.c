@@ -4,6 +4,7 @@
 #include "gpaste-prompt-adw.h"
 
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 /* The libadwaita half of the prompt contract: everything here is widgets and
  * the answers they produce. What to do with those answers — which passphrase
@@ -364,9 +365,8 @@ typedef struct
     gboolean             remembered;
     GtkWidget           *ok;
 
-    /* Only built when setting a new passphrase (confirm): the strength meter and
-     * the row carrying its rating/hint. */
-    GtkLevelBar         *strength;
+    /* Only built when setting a new passphrase (confirm): the row carrying the
+     * strength meter and its rating/hint. */
     GtkWidget           *strength_row;
 } PassphraseDialog;
 
@@ -415,14 +415,8 @@ on_passphrase_changed (GtkEditable *editable,
     /* Reflect the strength of the new passphrase as it is typed — but only when
      * it is the passphrase that changed. Typing the confirmation re-rates a
      * string that did not move, and rating means a cracklib dictionary pass. */
-    if (self->strength && editable == self->entry)
-    {
-        g_autofree gchar *hint = NULL;
-        guint strength = g_paste_prompt_passphrase_strength (gtk_editable_get_text (self->entry), &hint);
-
-        gtk_level_bar_set_value (self->strength, strength);
-        adw_action_row_set_subtitle (ADW_ACTION_ROW (self->strength_row), hint ? hint : "");
-    }
+    if (self->strength_row && editable == self->entry)
+        g_paste_gtk_util_password_strength_row_rate (self->strength_row, self->entry);
 
     passphrase_update_ok (self);
 }
@@ -539,37 +533,13 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         g_signal_connect (confirm_entry, "entry-activated", G_CALLBACK (on_passphrase_activated), self);
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), confirm_entry);
 
-        GtkWidget *strength_row = adw_action_row_new ();
+        /* Rate the new passphrase as it is typed. The same row the graphical
+         * tool's password composer puts up, so the two cannot come to rate the
+         * same string two ways. */
+        self->strength_row = g_paste_gtk_util_password_strength_row_new (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH),
+                                                                         g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE));
 
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (strength_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH));
-
-#ifdef G_PASTE_ENABLE_PWQUALITY
-        /* Rate the new passphrase as it is typed, with the rating or
-         * libpwquality's advice as the subtitle and a colour-graded meter. */
-        self->strength_row = strength_row;
-
-        GtkWidget *strength = gtk_level_bar_new ();
-
-        self->strength = GTK_LEVEL_BAR (strength);
-        gtk_level_bar_set_min_value (self->strength, 0);
-        gtk_level_bar_set_max_value (self->strength, G_PASTE_PROMPT_STRENGTH_MAX);
-        /* Colour the meter red → orange → green as the rating climbs. */
-        gtk_level_bar_add_offset_value (self->strength, GTK_LEVEL_BAR_OFFSET_LOW, 1);
-        gtk_level_bar_add_offset_value (self->strength, GTK_LEVEL_BAR_OFFSET_HIGH, 3);
-        gtk_level_bar_add_offset_value (self->strength, GTK_LEVEL_BAR_OFFSET_FULL, G_PASTE_PROMPT_STRENGTH_MAX);
-        gtk_widget_set_valign (strength, GTK_ALIGN_CENTER);
-        gtk_widget_set_size_request (strength, 120, -1);
-        adw_action_row_add_suffix (ADW_ACTION_ROW (strength_row), strength);
-#else
-        /* Built without libpwquality, so there is no rating to give. Say so
-         * rather than leave the row out: someone choosing a passphrase should
-         * know it is not being judged, instead of reading a silent absence as
-         * approval. */
-        adw_action_row_set_subtitle (ADW_ACTION_ROW (strength_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE));
-        gtk_widget_set_sensitive (strength_row, FALSE);
-#endif
-
-        adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), strength_row);
+        adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), self->strength_row);
     }
 
     /* Whatever the prompt has to say, said once. The standing explanation

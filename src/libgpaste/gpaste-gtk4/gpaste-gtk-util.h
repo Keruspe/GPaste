@@ -57,4 +57,9 @@ void     g_paste_gtk_util_text_dialog      (GtkWindow                  *parent,
                                             GPasteGtkTextDialogCallback callback,
                                             gpointer                    user_data);
 
+GtkWidget *g_paste_gtk_util_password_strength_row_new  (const gchar *title,
+                                                        const gchar *unavailable);
+void       g_paste_gtk_util_password_strength_row_rate (GtkWidget   *row,
+                                                        GtkEditable *source);
+
 G_END_DECLS
