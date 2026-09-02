@@ -1284,6 +1284,194 @@ test_rename_keeps_history_size (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
 }
 
+/* Rich text is a set of alternative representations of the text an item already
+ * shows, so dropping them leaves the entry itself alone: same uuid, same place,
+ * same value, same pin. What does move is the history's own memory total, which
+ * is the sum of what its items weigh, and with it which item the memory cap
+ * would reach for next. */
+static void
+test_strip_rich_text (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+    /* Eight MiB of flavours to draw the two big items from, so that what a strip
+     * takes off the books is bigger than the smallest memory cap
+     * "max-memory-usage" allows, five. */
+    g_autofree gchar *html = g_strnfill (8 * 1024 * 1024, 'h');
+
+    /* A pinned rich item, to be stripped for what the strip must not disturb:
+     * pinning is what exempts an item from both caps, and the election never
+     * looks at one, so this is the only item whose pin can be watched. */
+    GPasteItem *pinned = g_paste_text_item_new ("pinned");
+
+    g_paste_item_add_special_value (pinned, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                     g_bytes_new_static ("<p/>", 4)));
+    g_paste_history_add (history, pinned);
+
+    /* The runner-up: what the election has to find once the item above it stops
+     * outweighing it. Over the cap on its own, so which of the two the cap takes
+     * says whether the strip re-elected or left the old winner standing. */
+    GPasteItem *runner_up = g_paste_text_item_new ("runner-up");
+
+    g_paste_item_add_special_value (runner_up, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                        g_bytes_new (html, 6 * 1024 * 1024)));
+    g_paste_history_add (history, runner_up);
+
+    GPasteItem *rich = g_paste_text_item_new ("rich");
+
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                   g_bytes_new (html, 8 * 1024 * 1024)));
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_XML,
+                                                                   g_bytes_new_static ("<x/>", 4)));
+    g_paste_history_add (history, rich);
+
+    /* A plain item on top, because the active slot is out of the election's
+     * reach: the rich one has to be pushed out of it before its weight counts.
+     */
+    g_paste_history_add (history, g_paste_text_item_new ("later"));
+
+    g_autofree gchar *pinned_uuid = dup_uuid_at (history, 3);
+
+    g_assert_true (g_paste_history_set_favourite (history, pinned_uuid, TRUE));
+    g_assert_true (g_paste_history_strip_rich_text (history, pinned_uuid, NULL));
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 3)));
+    g_assert_null (g_paste_item_get_special_values (g_paste_history_get (history, 3)));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 1);
+
+    g_assert_cmpuint (g_slist_length ((GSList *) g_paste_item_get_special_values (g_paste_history_get (history, 1))), ==, 2);
+
+    /* A saving worker keeps this reference and may already have borrowed the
+     * MIME list. Stripping must leave both valid until the worker releases it. */
+    g_autoptr (GPasteItem) saving = g_paste_history_dup (history, 1);
+    const GSList *saving_values = g_paste_item_get_special_values (saving);
+
+    g_assert_true (g_paste_history_strip_rich_text (history, uuid, NULL));
+
+    GPasteItem *stripped = g_paste_history_get (history, 1);
+
+    g_assert_true (stripped != saving);
+    g_assert_true (g_paste_item_get_special_values (saving) == saving_values);
+    g_assert_cmpuint (g_slist_length ((GSList *) saving_values), ==, 2);
+    g_assert_cmpuint (g_bytes_get_size (g_paste_binary_data_get_bytes (saving_values->data)), ==, 4);
+    g_assert_cmpstr (g_paste_item_get_uuid (stripped), ==, uuid);
+    g_assert_cmpstr (g_paste_item_get_value (stripped), ==, "rich");
+    g_assert_null (g_paste_item_get_special_values (stripped));
+
+    /* Stripping again has nothing to do and still succeeds: what a caller asked
+     * for is true either way, and no listing can tell it which case it is in. A
+     * uuid the history does not hold, and one naming an item of another kind,
+     * are the two failures there are. */
+    g_assert_true (g_paste_history_strip_rich_text (history, uuid, NULL));
+
+    /* @found is what the daemon answers WrongItemKind rather than NOT_FOUND on:
+     * a uuid nothing goes by is the one refusal that is not about the kind. */
+    gboolean found = TRUE;
+
+    g_assert_false (g_paste_history_strip_rich_text (history, "e8a95b3d-33ee-4b1e-8ee3-9c22c9635b8d", &found));
+    g_assert_false (found);
+
+    /* What it weighs is what an item of that text alone weighs: the flavours are
+     * off the item, not merely out of its list. Left on, it over-reports for the
+     * rest of its life and the memory cap evicts around a weight nothing is
+     * holding. */
+    g_autoptr (GPasteItem) plain = g_paste_text_item_new ("rich");
+
+    g_assert_cmpuint (g_paste_item_get_size (stripped), ==, g_paste_item_get_size (plain));
+
+    /* What came off the item came off the history's total, and the strip named
+     * the runner-up as what the cap may now take. One eviction is all a cap of
+     * five has to make: the runner-up's six MiB is the whole of what the history
+     * still weighs. Too little off the total, or an old winner left standing,
+     * and the stripped item goes with it; too much, and the total wraps -- it is
+     * unsigned -- which reads as permanently over the cap and takes everything
+     * the pin does not hold back. */
+    g_paste_settings_set_max_memory_usage (settings, 5 /* MiB */);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 1)), ==, uuid);
+
+    /* And the history takes items again afterwards, rather than evicting each
+     * one as it arrives to pay for a weight nothing is holding. */
+    g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
+    g_paste_history_add (history, g_paste_text_item_new ("one"));
+    g_paste_history_add (history, g_paste_text_item_new ("two"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 4);
+}
+
+/* A store sees the strip as a replace, so what comes back off disk has to have
+ * lost the flavours too: an item read back still carrying them would put them
+ * on the clipboard again after a restart. This one flushes, which rewrites the
+ * whole history whatever happened to it; that the strip *notifies* a store at
+ * all is what test_sqlite_strip_rich_text () is for. */
+static void
+test_strip_rich_text_persists (void)
+{
+    const gchar *name = "strip-rich-text";
+
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history ();
+        g_paste_history_load (writer, name);
+
+        GPasteItem *rich = g_paste_text_item_new ("rich");
+
+        g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                       g_bytes_new_static ("<b>rich</b>", 11)));
+        g_paste_history_add (writer, rich);
+
+        g_autofree gchar *uuid = dup_uuid_at (writer, 0);
+
+        g_assert_true (g_paste_history_strip_rich_text (writer, uuid, NULL));
+
+        g_paste_history_flush (writer);
+    }
+
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history ();
+        g_paste_history_load_async (reader, name);
+
+        g_assert_true (pump_until_length (reader, 1, 5000));
+        g_assert_cmpstr (value_at (reader, 0), ==, "rich");
+        g_assert_null (g_paste_item_get_special_values (g_paste_history_get (reader, 0)));
+    }
+}
+
+/* Editing an item and turning one into a password drop the rich text without
+ * being asked to, both of them minting an item that never had any. That is not
+ * an accident to be relied on quietly: it is the reason StripRichText is the
+ * only path that needed adding. */
+static void
+test_edit_and_make_password_drop_rich_text (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    GPasteItem *edited = g_paste_text_item_new ("edited");
+
+    g_paste_item_add_special_value (edited, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                     g_bytes_new_static ("<b>edited</b>", 13)));
+    g_paste_history_add (history, edited);
+
+    g_autofree gchar *edited_uuid = dup_uuid_at (history, 0);
+    g_autofree gchar *replaced = g_paste_history_replace (history, edited_uuid, "plain");
+
+    g_assert_nonnull (replaced);
+    g_assert_null (g_paste_item_get_special_values (g_paste_history_get (history, 0)));
+
+    GPasteItem *secret = g_paste_text_item_new ("s3kr1t");
+
+    g_paste_item_add_special_value (secret, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                     g_bytes_new_static ("<b>s3kr1t</b>", 13)));
+    g_paste_history_add (history, secret);
+
+    g_autofree gchar *secret_uuid = dup_uuid_at (history, 0);
+    g_autofree gchar *password = g_paste_history_make_password (history, secret_uuid, "pw", 0);
+
+    g_assert_nonnull (password);
+    g_assert_null (g_paste_item_get_special_values (g_paste_history_get (history, 0)));
+}
+
 /* A line that grows as it is typed replaces the entry it grew out of, and a
  * duplicate coming back drops the older copy for the new one. Either way what
  * arrives takes a pinned entry's place, so it takes the pin too -- otherwise a
@@ -2390,6 +2578,65 @@ sqlite_raw_count (const gchar *path,
     return count;
 }
 
+/* An incremental backend only ever learns what an update tells it, so the strip
+ * has to raise one: the model-level test above flushes, and a flush rewrites the
+ * whole history whatever happened to it, which would hide a strip that notified
+ * nobody. Here the rows have to go on their own. */
+static void
+test_sqlite_strip_rich_text (void)
+{
+    const gchar *name = "sqlite-strip-rich-text";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, name);
+
+    GPasteItem *rich = g_paste_text_item_new ("rich");
+
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                   g_bytes_new_static ("<b>rich</b>", 11)));
+    g_paste_history_add (history, rich);
+
+    const gchar * const one[] = { "rich", NULL };
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, one, 5000));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+    {
+        g_autolist (GPasteItem) before = read_history (backend, name);
+
+        g_assert_cmpuint (g_slist_length ((GSList *) g_paste_item_get_special_values (before->data)), ==, 1);
+    }
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_strip_rich_text (history, uuid, NULL));
+
+    /* No flush: the write has to come from the update the strip raised. */
+    gboolean gone = FALSE;
+
+    for (guint i = 0; !gone && i < 5000; ++i)
+    {
+        pump_once ();
+
+        g_autolist (GPasteItem) loaded = read_history (backend, name);
+
+        gone = (g_list_length (loaded) == 1 && !g_paste_item_get_special_values (loaded->data));
+
+        if (!gone)
+            g_usleep (1000);
+    }
+
+    g_assert_true (gone);
+}
+
 /* Version 2 added the favourite column and version 3 the password timeout, and
  * migrate_schema is what carries a database written by an older GPaste across.
  * Nothing else exercises that path: every database the other tests touch is
@@ -3338,6 +3585,9 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/select_moves_a_password_the_head_matches", test_select_moves_a_password_the_head_matches);
     g_test_add_func ("/history/named_passwords_never_match", test_named_passwords_never_match);
     g_test_add_func ("/history/rename_keeps_history_size", test_rename_keeps_history_size);
+    g_test_add_func ("/history/strip_rich_text", test_strip_rich_text);
+    g_test_add_func ("/history/strip_rich_text_persists", test_strip_rich_text_persists);
+    g_test_add_func ("/history/edit_and_make_password_drop_rich_text", test_edit_and_make_password_drop_rich_text);
     g_test_add_func ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
     g_test_add_func ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
     g_test_add_func ("/history/uris_item_answers_its_uris", test_uris_item_answers_its_uris);
@@ -3365,6 +3615,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_roundtrip", test_sqlite_roundtrip);
     g_test_add_func ("/history/sqlite_incremental", test_sqlite_incremental);
     g_test_add_func ("/history/sqlite_replace", test_sqlite_replace);
+    g_test_add_func ("/history/sqlite_strip_rich_text", test_sqlite_strip_rich_text);
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
     g_test_add_func ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
     g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);

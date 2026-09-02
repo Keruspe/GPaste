@@ -354,6 +354,32 @@
     <method name="ShowHistory"/>
 
     <!--
+      Drop the rich text flavours of one item, keeping its plain text.
+
+      Rich text here is what a copy out of a browser or an office suite carries
+      beyond its text: the text/html and text/xml payloads GPaste fetches
+      alongside it and hands back when the item is pasted somewhere that asks
+      for them. They are alternative representations of the very text the item
+      already shows, so dropping them changes nothing a listing displays. The
+      item stays where it is, under the uuid it already had, which is why the
+      Update this raises names it rather than reporting ALL the way Replace does.
+
+      A text item is the only kind this takes. A uris item carries special
+      values of its own, but they are how a file list is handed over
+      (x-special/gnome-copied-files) rather than another spelling of what the
+      item shows, and dropping them would leave a file manager nothing to paste,
+      so anything else answers WrongItemKind. Editing a text item, or turning
+      one into a password, drops its rich text without being asked to: both mint
+      a new item, and a new item carries none.
+
+      An item that had no rich text is stripped successfully; nothing is saved
+      and no Update is raised for it.
+    -->
+    <method name="StripRichText">
+      <arg type="s" direction="in" name="uuid"/>
+    </method>
+
+    <!--
       Switch to another history.
 
       Switching to a name no history goes by creates it, empty: that is how a new

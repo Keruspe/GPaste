@@ -22,6 +22,8 @@ void     g_paste_clipboards_manager_store           (GPasteClipboardsManager *se
 void     g_paste_clipboards_manager_expire_password (GPasteClipboardsManager *self);
 void     g_paste_clipboards_manager_rearm_password  (GPasteClipboardsManager *self,
                                                      GPasteItem              *item);
+void     g_paste_clipboards_manager_refresh_text    (GPasteClipboardsManager *self,
+                                                     GPasteItem              *item);
 
 GPasteClipboardsManager *g_paste_clipboards_manager_new (GPasteHistory  *history,
                                                          GPasteSettings *settings);

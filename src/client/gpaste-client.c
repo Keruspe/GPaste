@@ -617,6 +617,15 @@ g_paste_replace (Context *ctx,
 }
 
 static gint
+g_paste_strip_rich_text (Context *ctx,
+                         GError **error)
+{
+    g_paste_client_strip_rich_text_sync (ctx->client, ctx->uuid, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint
 g_paste_search (Context *ctx,
                 GError **error)
 {
@@ -742,6 +751,7 @@ static const Command commands[] = {
         { 2, "get",               "g",               0,        TRUE,  "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
         { 2, "select",            "s set",           0,        TRUE,  "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
         { 2, "replace",           NULL,              1,        TRUE,  "<uuid> <contents>",     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },
+        { 2, "strip-rich-text",   "srt",             0,        TRUE,  "<uuid>",                N_ ("drop the rich text flavours of the item <uuid>, keeping the plain text it shows"),          g_paste_strip_rich_text },
         { 4, "merge",             "m",               G_MAXINT, TRUE,  "<uuid> … <uuid>",       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
         { 3, "make-password",     "mp",              0,        TRUE,  "<uuid> <name>",         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
         { 2, "delete",            "d del rm remove", 0,        TRUE,  "<uuid>",                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },

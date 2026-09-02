@@ -674,6 +674,38 @@ g_paste_daemon_methods_replace (const GPasteDaemonMethods *self,
     return new_uuid;
 }
 
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_strip_rich_text (const GPasteDaemonMethods *self,
+                                        const gchar               *uuid,
+                                        GError                   **error)
+{
+    GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
+
+    G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND,
+                         "attempted to strip the rich text of an item other than GPasteTextItem");
+
+    /* Asked again rather than taken for granted: an item that had no rich text to
+     * begin with is stripped successfully, but the lookup above is unlocked, so
+     * the item can be evicted, deleted or replaced by one of another kind before
+     * the strip takes the history's lock -- and an empty reply is a success the
+     * caller shows as done.
+     *
+     * Which of the two refusals it was decides the error, as it does above: the
+     * interface answers WrongItemKind for anything but a text item, and a caller
+     * told NOT_FOUND for one that is still there may drop it from its view. */
+    gboolean found;
+    gboolean stripped = g_paste_history_strip_rich_text (self->history, uuid, &found);
+
+    G_PASTE_DBUS_ASSERT (found, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
+    G_PASTE_DBUS_ASSERT (stripped, G_PASTE_ERROR_WRONG_ITEM_KIND,
+                         "attempted to strip the rich text of an item other than GPasteTextItem");
+
+    item = g_paste_history_get_by_uuid (self->history, uuid);
+    if (item)
+        g_paste_clipboards_manager_refresh_text (self->clipboards_manager, item);
+}
+
 G_PASTE_VISIBLE gchar *
 g_paste_daemon_methods_make_password (const GPasteDaemonMethods *self,
                                       const gchar               *uuid,

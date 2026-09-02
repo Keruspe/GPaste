@@ -1338,6 +1338,35 @@ G_PASTE_CLIENT_METHOD (show_history,
                        (), ())
 
 /**
+ * g_paste_client_strip_rich_text_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the text item to strip
+ * @error: return location for a #GError, or %NULL
+ *
+ * Drop the rich text flavours of an item, keeping the plain text it shows
+ */
+/**
+ * g_paste_client_strip_rich_text:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the text item to strip
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
+ *            satisfied, or %NULL to ignore the result
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Drop the rich text flavours of an item, keeping the plain text it shows
+ */
+/**
+ * g_paste_client_strip_rich_text_finish:
+ * @self: a #GPasteClient instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Drop the rich text flavours of an item, keeping the plain text it shows
+ */
+G_PASTE_CLIENT_METHOD (strip_rich_text,
+                       (const gchar *uuid), (uuid))
+
+/**
  * g_paste_client_switch_history_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to

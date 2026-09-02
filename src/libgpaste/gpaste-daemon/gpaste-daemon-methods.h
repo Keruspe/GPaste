@@ -116,6 +116,9 @@ gchar    *g_paste_daemon_methods_replace                    (const GPasteDaemonM
                                                              const gchar               *uuid,
                                                              const gchar               *contents,
                                                              GError                   **error);
+void      g_paste_daemon_methods_strip_rich_text            (const GPasteDaemonMethods *self,
+                                                             const gchar               *uuid,
+                                                             GError                   **error);
 void      g_paste_daemon_methods_set_favourite              (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              gboolean                   favourite,

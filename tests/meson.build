@@ -15,6 +15,7 @@ gpaste_test_bus_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
+subdir('clipboard')
 subdir('completions')
 subdir('global-shortcut-client')
 subdir('history')

@@ -907,6 +907,8 @@ g_paste_daemon_handle_show_history (GPasteDaemon          *self,
     G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_show_history (self->skeleton, invocation));
 }
 
+G_PASTE_DAEMON_HANDLER_ERR (strip_rich_text, (const gchar *uuid), (uuid))
+
 G_PASTE_DAEMON_HANDLER_ERR (switch_history, (const gchar *name), (name))
 
 /* The one method that cannot answer from its handler: the url exists only once
@@ -980,6 +982,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-set-active",                  G_CALLBACK (g_paste_daemon_handle_set_active)                  },
         { "handle-set-favourite",               G_CALLBACK (g_paste_daemon_handle_set_favourite)               },
         { "handle-show-history",                G_CALLBACK (g_paste_daemon_handle_show_history)                },
+        { "handle-strip-rich-text",             G_CALLBACK (g_paste_daemon_handle_strip_rich_text)             },
         { "handle-switch-history",              G_CALLBACK (g_paste_daemon_handle_switch_history)              },
         { "handle-upload",                      G_CALLBACK (g_paste_daemon_handle_upload)                      },
     };

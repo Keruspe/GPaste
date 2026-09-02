@@ -895,10 +895,12 @@ _g_paste_history_replace (GPasteHistory *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (self);
 
-    /* TARGET_ALL, not TARGET_ITEM: @new is a different item with a uuid of its
-     * own, so one uuid cannot say both which one went and which one arrived. A
-     * view keyed on the old one would go on showing it. */
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid, FALSE);
+    /* A replacement that keeps the uuid can update one row. With a new uuid,
+     * one identifier cannot say both which item went and which arrived. */
+    GPasteUpdateTarget target = g_paste_str_equal (old_uuid, g_paste_item_get_uuid (new))
+        ? G_PASTE_UPDATE_TARGET_ITEM : G_PASTE_UPDATE_TARGET_ALL;
+
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid, FALSE);
 }
 
 /**
@@ -942,6 +944,78 @@ g_paste_history_replace (GPasteHistory *self,
         g_paste_history_selected (self, new);
 
     return g_strdup (g_paste_item_get_uuid (new));
+}
+
+/**
+ * g_paste_history_strip_rich_text:
+ * @self: a #GPasteHistory instance
+ * @uuid: the uuid of the #GPasteTextItem to strip
+ * @found: (out) (optional): whether @uuid matched an item at all, which is what
+ *         tells the two refusals apart -- no such item, or one of another kind
+ *
+ * Drop the rich text flavours of the item @uuid names, keeping the plain text
+ * it is shown and pasted as
+ *
+ * The item stays where it is and keeps its uuid: what a rich copy carries
+ * beyond its text is a set of alternative representations of that same text,
+ * so dropping them changes nothing a listing shows. That is why the update this
+ * raises names the item, unlike g_paste_history_replace()'s.
+ *
+ * The caller refreshes selections still carrying this text through
+ * g_paste_clipboards_manager_refresh_text(). The history's position alone says
+ * nothing about what a selection currently holds.
+ *
+ * Editing a text item and turning one into a password each drop the same thing
+ * without being asked to, both of them minting an item that never had any.
+ *
+ * Only a #GPasteTextItem may be stripped: what a uris item keeps beside its text
+ * is not another spelling of it but the payload a file manager pastes, so taking
+ * it away would leave that item unpastable rather than plainer.
+ *
+ * Returns: %FALSE when @uuid matches no #GPasteTextItem, %TRUE otherwise -- an
+ *          item that carried no rich text is stripped successfully, and nothing
+ *          is saved
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_strip_rich_text (GPasteHistory *self,
+                                 const gchar   *uuid,
+                                 gboolean      *found)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+
+    if (found)
+        *found = FALSE;
+
+    G_PASTE_LOCK_HISTORY;
+    guint index;
+    GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
+
+    if (!item)
+        return FALSE;
+
+    if (found)
+        *found = TRUE;
+
+    /* Answered rather than asserted, the caller having asked the same question
+     * already: it asked it of what its own unlocked lookup found, and this one
+     * runs under the lock, so the two need not be looking at the same item. A
+     * race lost is not a programmer error, and a g_critical () in the daemon's
+     * log is not what it deserves. */
+    if (!G_PASTE_IS_TEXT_ITEM (item))
+        return FALSE;
+
+    if (!g_paste_item_get_special_values (item))
+        return TRUE;
+
+    /* Save snapshots hold references to live items, and their worker may be
+     * iterating the rich representations. Keep that object intact for those
+     * readers; the plain replacement preserves the entry's identity and pin. */
+    GPasteItem *plain = g_paste_text_item_new (g_paste_item_get_real_value (item));
+
+    g_paste_item_set_uuid (plain, g_paste_item_get_uuid (item));
+    _g_paste_history_replace (self, index, plain);
+
+    return TRUE;
 }
 
 /**

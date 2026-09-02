@@ -75,6 +75,15 @@ Put the item matching <uuid> from the history into the clipboard
 Replace the contents of the item matching <uuid> from the history with the provided one
 .br
 .TP
+.B gpaste-client strip-rich-text <uuid>
+Drop the rich text flavours of the item matching <uuid>, keeping the plain text it shows
+.br
+A text item is the only kind this takes: a uris item's special mimes are how a file list is handed over, not another
+spelling of its text
+.br
+Editing a text item, or turning one into a password, drops its rich text too
+.br
+.TP
 .B gpaste-client merge [--decoration|-d <string>] [--separator|-s <string>] <uuid> … <uuid>
 Merge the items matching the uuids from the history and put the result in the clipboard
 .br

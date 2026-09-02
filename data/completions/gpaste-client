@@ -78,7 +78,7 @@ _gpaste_client_options()
         get|g)
             printf '%s' "${common} --use-index -i"
             ;;
-        select|set|s|delete|del|d|remove|rm|replace|upload|u|favourite|fav|unfavourite|unfav)
+        select|set|s|delete|del|d|remove|rm|replace|strip-rich-text|srt|upload|u|favourite|fav|unfavourite|unfav)
             printf '%s' "${common} --use-index -i"
             ;;
         make-password|mp)
@@ -149,8 +149,9 @@ _gpaste-client()
                      delete-password dh dp dr dv e empty f fav favourite file g get
                      get-history gh h help history history-size hs lh list-histories m
                      make-password merge migrate mp p preferences q quit remove replace
-                     rm s search select set settings sh show-history start stop
-                     switch-history u ui unfav unfavourite upload v version"
+                     rm s search select set settings sh show-history srt start stop
+                     strip-rich-text switch-history u ui unfav unfavourite upload v
+                     version"
 
         COMPREPLY=($(compgen -W "${verbs}" -- "${cur}"))
         return
@@ -173,7 +174,7 @@ _gpaste-client()
             COMPREPLY=($(compgen -f -- "${cur}"))
             compopt -o filenames 2>/dev/null
             ;;
-        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|make-password|mp|favourite|fav|unfavourite|unfav)
+        get|g|select|set|s|delete|del|d|remove|rm|upload|u|replace|strip-rich-text|srt|make-password|mp|favourite|fav|unfavourite|unfav)
             ((argpos == 0)) && COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))
             ;;
         merge|m)

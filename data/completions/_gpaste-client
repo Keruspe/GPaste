@@ -99,6 +99,7 @@ _gpaste-client_subcommands() {
         {settings,preferences,p}:"Launch the configuration tool"
         show-history:"Make the GNOME Shell extension display the history"
         {start,daemon,d}:"Start tracking clipboard changes"
+        {strip-rich-text,srt}:"Drop the rich text flavours of an item"
         {stop,quit,q}:"Stop tracking clipboard changes"
         {unfavourite,unfav}:"Unpin an item, letting the history drop it again"
         {switch-history,sh}:"Switch to another history"
@@ -132,7 +133,7 @@ _gpaste-client_arguments() {
             _arguments -s : \
                 '*:file:_files'
             ;;
-        (get|g|select|set|s|delete|del|d|remove|rm|upload|u|favourite|fav|unfavourite|unfav)
+        (get|g|select|set|s|delete|del|d|remove|rm|upload|u|strip-rich-text|srt|favourite|fav|unfavourite|unfav)
             _arguments -s : \
                 "1:item:${item}"
             ;;

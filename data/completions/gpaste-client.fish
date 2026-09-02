@@ -113,6 +113,7 @@ __gpaste_subcommand settings preferences p             'Launch the configuration
 __gpaste_subcommand show-history                       'Make the GNOME Shell extension display the history'
 __gpaste_subcommand start daemon d                     'Start tracking clipboard changes'
 __gpaste_subcommand stop quit q                        'Stop tracking clipboard changes'
+__gpaste_subcommand strip-rich-text srt                'Drop the rich text flavours of an item'
 __gpaste_subcommand switch-history sh                  'Switch to another history'
 __gpaste_subcommand ui                                 'Launch the graphical tool'
 __gpaste_subcommand unfavourite unfav                  'Unpin an item, letting the history drop it again'
@@ -126,5 +127,5 @@ complete -c gpaste-client -n '__fish_seen_subcommand_from empty e delete-history
 
 complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
 
-complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace make-password mp merge m favourite fav unfavourite unfav' \
+complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace strip-rich-text srt make-password mp merge m favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'

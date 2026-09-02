@@ -30,6 +30,9 @@ gboolean            g_paste_history_select          (GPasteHistory *self,
 gchar              *g_paste_history_replace         (GPasteHistory *self,
                                                      const gchar   *uuid,
                                                      const gchar   *contents);
+gboolean            g_paste_history_strip_rich_text (GPasteHistory *self,
+                                                     const gchar   *uuid,
+                                                     gboolean      *found);
 gboolean            g_paste_history_set_favourite   (GPasteHistory *self,
                                                      const gchar   *uuid,
                                                      gboolean       favourite);

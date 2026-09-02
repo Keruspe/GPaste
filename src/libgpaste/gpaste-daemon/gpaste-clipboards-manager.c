@@ -3,6 +3,7 @@
 
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-text-item.h>
 
 typedef struct
 {
@@ -466,6 +467,31 @@ g_paste_clipboards_manager_rearm_password (GPasteClipboardsManager *self,
             continue;
 
         g_paste_clipboards_manager_arm_password (clip, item);
+    }
+}
+
+/**
+ * g_paste_clipboards_manager_refresh_text:
+ * @self: a #GPasteClipboardsManager instance
+ * @item: the text item whose representations should be published
+ *
+ * Refresh selections still carrying @item's text, leaving unrelated selections
+ * alone. A history position does not establish clipboard ownership: tracking
+ * may be paused, and the clipboard and primary selection can differ.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_refresh_text (GPasteClipboardsManager *self,
+                                         GPasteItem              *item)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+
+    for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+    {
+        _Clipboard *clip = clipboard->data;
+
+        if (g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
+            g_paste_clipboard_provider_select_item (clip->clipboard, item);
     }
 }
 
