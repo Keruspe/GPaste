@@ -37,11 +37,20 @@ libgpaste_headers = [
 
 subdir('gpaste-3')
 
+# Optional libpwquality support to rate a password's strength. Given to the
+# library alone rather than to libgpaste_deps: no public header names a
+# pwquality type, so it is private to the implementation and has no business in
+# the .pc file's Requires below.
+libgpaste_lib_deps = libgpaste_deps
+if libpwquality_dep.found()
+  libgpaste_lib_deps += libpwquality_dep
+endif
+
 libgpaste = library(
   'gpaste-' + apiversion,
   sources: libgpaste_sources + libgpaste_gdbus_sources,
   version: libgpaste_soversion,
-  dependencies: libgpaste_deps,
+  dependencies: libgpaste_lib_deps,
   install: true,
   install_dir: get_option('libdir'),
   # Exports are the symbols marked G_PASTE_VISIBLE; everything else stays hidden.
@@ -155,7 +164,7 @@ if get_option('introspection')
     libgpaste,
     sources: [ libgpaste_sources, libgpaste_headers ],
     includes: [ 'Gio-2.0', 'GLib-2.0', 'GObject-2.0' ],
-    dependencies: [ libgpaste_deps, libgpaste_internal_dep ],
+    dependencies: [ libgpaste_lib_deps, libgpaste_internal_dep ],
     header: 'gpaste.h',
     namespace: 'GPaste',
     nsversion: apiversion,
@@ -313,11 +322,6 @@ if libsodium_dep.found() and libsecret_dep.found()
   gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-storage-keyring.c' ]
   gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-storage-keyring.h' ]
   gpaste_daemon_deps += libsecret_dep
-endif
-
-# Optional libpwquality support to rate the passphrase strength in the prompt.
-if libsodium_dep.found() and libpwquality_dep.found()
-  gpaste_daemon_deps += libpwquality_dep
 endif
 
 # The mutter (MetaSelection) clipboard backend only makes sense inside

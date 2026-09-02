@@ -85,10 +85,11 @@ if libsodium_dep.found() and libsecret_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_LIBSECRET', language: 'c')
 endif
 
-# Optional libpwquality support to rate the passphrase strength (GNOME-style) in
-# the new-encrypted-history prompt. Only useful alongside encryption.
+# Optional libpwquality support to rate a password's strength (GNOME-style):
+# the passphrase a new encrypted history is given, and the password a new
+# password item carries.
 libpwquality_dep = dependency('pwquality', required: get_option('pwquality'))
-if libsodium_dep.found() and libpwquality_dep.found()
+if libpwquality_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_PWQUALITY', language: 'c')
 endif
 

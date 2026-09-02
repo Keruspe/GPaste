@@ -14,10 +14,6 @@
 #include <gpaste-daemon/gpaste-storage-keyring.h>
 #endif
 
-#ifdef G_PASTE_ENABLE_PWQUALITY
-#include <pwquality.h>
-#endif
-
 typedef struct
 {
     GPasteSettings                *settings;

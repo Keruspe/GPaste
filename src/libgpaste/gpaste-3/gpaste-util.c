@@ -7,6 +7,10 @@
 
 #include <string.h>
 
+#ifdef G_PASTE_ENABLE_PWQUALITY
+#include <pwquality.h>
+#endif
+
 /* Every GPaste app is reached the same way: the standard interface a desktop
  * application exports, on the bus name and object path its own name makes. The
  * graphical tool is the one addressed by a caller that is not spawning it, so
@@ -649,4 +653,130 @@ g_paste_util_trigger_storage_migration (GPasteClient *client,
     g_paste_settings_sync (settings);
 
     return g_paste_util_reexecute_daemon (client, error);
+}
+
+/**
+ * g_paste_util_pwquality_available:
+ *
+ * Whether this build can rate a password at all, i.e. whether it was built with
+ * libpwquality. A form that cannot must say so rather than show a meter pinned
+ * at zero.
+ *
+ * Returns: whether g_paste_util_password_strength() can rate anything
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_pwquality_available (void)
+{
+#ifdef G_PASTE_ENABLE_PWQUALITY
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+#ifdef G_PASTE_ENABLE_PWQUALITY
+/* The textual rating shown when the password passes the basic checks (so
+ * libpwquality has no specific complaint to surface instead). */
+static const gchar *
+password_rating (guint level)
+{
+    switch (level)
+    {
+    case 1:
+        return _("Weak");
+    case 2:
+        return _("Fair");
+    case 3:
+        return _("Good");
+    case 4:
+        return _("Strong");
+    default:
+        return "";
+    }
+}
+#endif
+
+/**
+ * g_paste_util_password_strength:
+ * @password: (nullable): the password to rate
+ * @hint: (out) (transfer full) (nullable): the rating word, or libpwquality's
+ *        own advice on a hard failure
+ *
+ * GNOME-style password rating via libpwquality (as gnome-control-center does):
+ * map the 0-100 score to a 0-4 meter level and produce an actionable hint. On a
+ * hard failure (too short, dictionary word, ...) libpwquality returns a negative
+ * code whose localized reason becomes the hint.
+ *
+ * Built without libpwquality there is no rating to give: the level is 0 and
+ * @hint is %NULL. A form should say so rather than leave the rating out —
+ * someone choosing a password should know it is not being judged, instead of
+ * reading a silent absence as approval.
+ *
+ * Returns: the meter level, from 0 (nothing to say) to 4 (strong)
+ */
+G_PASTE_VISIBLE guint
+g_paste_util_password_strength (const gchar *password,
+                                gchar      **hint)
+{
+    g_return_val_if_fail (hint, 0);
+
+    *hint = NULL;
+
+#ifdef G_PASTE_ENABLE_PWQUALITY
+    if (!password || !*password)
+        return 0;
+
+    /* Re-reading the config on every keystroke would be wasteful, and it cannot
+     * change under us within a process.
+     *
+     * Under a lock rather than on a bare first-use check, and held for the
+     * rating itself: this is installed, introspected API, so the daemon being
+     * single-threaded says nothing about who else calls it -- and a second
+     * caller must neither find the settings published before their config has
+     * been read nor be inside libpwquality's own dictionary lookup while the
+     * first one is. */
+    static GMutex                lock;
+    static pwquality_settings_t *pwq = NULL;
+
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&lock);
+
+    if (!pwq)
+    {
+        pwquality_settings_t *settings = pwquality_default_settings ();
+
+        /* Out of memory. Degrade to "no rating" rather than dereferencing it —
+         * and note the guard re-runs next keystroke, so this retries rather
+         * than latching. */
+        if (!settings)
+            return 0;
+
+        pwquality_read_config (settings, NULL, NULL);
+        pwq = settings;
+    }
+
+    void *auxerror = NULL;
+    gint score = pwquality_check (pwq, password, NULL, NULL, &auxerror);
+
+    if (score < 0)
+    {
+        /* pwquality_strerror also consumes auxerror, so this frees it too. */
+        gchar buf[PWQ_MAX_ERROR_MESSAGE_LEN];
+
+        *hint = g_strdup (pwquality_strerror (buf, sizeof (buf), score, auxerror));
+        return 1;
+    }
+
+    guint level = (score < 50) ? 1
+                : (score < 75) ? 2
+                : (score < 90) ? 3
+                :                G_PASTE_UTIL_STRENGTH_MAX;
+
+    *hint = g_strdup (password_rating (level));
+
+    return level;
+#else
+    (void) password;
+
+    return 0;
+#endif
 }

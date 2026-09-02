@@ -106,7 +106,7 @@ skipped otherwise.
 | `encryption` | `auto` | libsodium-based history encryption |
 | `sqlite` | `auto` | the SQLite storage backends (needs SQLite ≥ 3.35) |
 | `libsecret` | `auto` | remember the encryption passphrase in the keyring |
-| `pwquality` | `auto` | rate passphrase strength in the new-history prompt |
+| `pwquality` | `auto` | rate a passphrase or a password as it is typed |
 | `gnome-shell` | `true` | the GNOME Shell extension and the mutter clipboard backend |
 | `introspection` | `true` | GIR data |
 | `vapi` | `true` | Vala bindings (requires `introspection`) |

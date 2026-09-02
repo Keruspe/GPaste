@@ -9,10 +9,6 @@
 #include <gpaste-daemon/gpaste-storage-keyring.h>
 #endif
 
-#ifdef G_PASTE_ENABLE_PWQUALITY
-#include <pwquality.h>
-#endif
-
 /* Which question a request is, so that answering it with the other one's reply
  * is caught rather than read back as a struct of the wrong shape. */
 
@@ -800,34 +796,10 @@ g_paste_prompt_passphrase_is_complete (const gchar *passphrase,
 G_PASTE_VISIBLE gboolean
 g_paste_prompt_pwquality_available (void)
 {
-#ifdef G_PASTE_ENABLE_PWQUALITY
-    return TRUE;
-#else
-    return FALSE;
-#endif
+    return g_paste_util_pwquality_available ();
 }
 
-#ifdef G_PASTE_ENABLE_PWQUALITY
-/* The textual rating shown when the passphrase passes the basic checks (so
- * libpwquality has no specific complaint to surface instead). */
-static const gchar *
-passphrase_rating (guint level)
-{
-    switch (level)
-    {
-    case 1:
-        return _("Weak");
-    case 2:
-        return _("Fair");
-    case 3:
-        return _("Good");
-    case 4:
-        return _("Strong");
-    default:
-        return "";
-    }
-}
-#endif
+G_STATIC_ASSERT (G_PASTE_PROMPT_STRENGTH_MAX == G_PASTE_UTIL_STRENGTH_MAX);
 
 /**
  * g_paste_prompt_passphrase_strength:
@@ -835,15 +807,9 @@ passphrase_rating (guint level)
  * @hint: (out) (transfer full) (nullable): the rating word, or libpwquality's
  *        own advice on a hard failure
  *
- * GNOME-style passphrase rating via libpwquality (as gnome-control-center
- * does): map the 0-100 score to a 0-4 meter level and produce an actionable
- * hint. On a hard failure (too short, dictionary word, ...) libpwquality
- * returns a negative code whose localized reason becomes the hint.
- *
- * Built without libpwquality there is no rating to give: the level is 0 and
- * @hint is %NULL. A prompt should say so rather than leave the rating out —
- * someone choosing a passphrase should know it is not being judged, instead of
- * reading a silent absence as approval.
+ * Rate @passphrase on a 0-4 scale, as g_paste_util_password_strength() does: a
+ * passphrase is rated by exactly the same rules a password item is, and this is
+ * the spelling of them the gnome-shell prompt reaches through the typelib.
  *
  * Returns: the meter level, from 0 (nothing to say) to 4 (strong)
  */
@@ -851,56 +817,7 @@ G_PASTE_VISIBLE guint
 g_paste_prompt_passphrase_strength (const gchar *passphrase,
                                     gchar      **hint)
 {
-    g_return_val_if_fail (hint, 0);
-
-    *hint = NULL;
-
-#ifdef G_PASTE_ENABLE_PWQUALITY
-    if (!passphrase || !*passphrase)
-        return 0;
-
-    /* Re-reading the config on every keystroke would be wasteful, and it cannot
-     * change under us within a process. */
-    static pwquality_settings_t *pwq = NULL;
-
-    if (!pwq)
-    {
-        pwq = pwquality_default_settings ();
-
-        /* Out of memory. Degrade to "no rating" rather than dereferencing it —
-         * and note the guard re-runs next keystroke, so this retries rather
-         * than latching. */
-        if (!pwq)
-            return 0;
-
-        pwquality_read_config (pwq, NULL, NULL);
-    }
-
-    void *auxerror = NULL;
-    gint score = pwquality_check (pwq, passphrase, NULL, NULL, &auxerror);
-
-    if (score < 0)
-    {
-        /* pwquality_strerror also consumes auxerror, so this frees it too. */
-        gchar buf[PWQ_MAX_ERROR_MESSAGE_LEN];
-
-        *hint = g_strdup (pwquality_strerror (buf, sizeof (buf), score, auxerror));
-        return 1;
-    }
-
-    guint level = (score < 50) ? 1
-                : (score < 75) ? 2
-                : (score < 90) ? 3
-                :                G_PASTE_PROMPT_STRENGTH_MAX;
-
-    *hint = g_strdup (passphrase_rating (level));
-
-    return level;
-#else
-    (void) passphrase;
-
-    return 0;
-#endif
+    return g_paste_util_password_strength (passphrase, hint);
 }
 
 G_PASTE_VISIBLE GType

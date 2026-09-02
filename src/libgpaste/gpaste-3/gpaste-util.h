@@ -41,4 +41,21 @@ gboolean g_paste_util_reexecute_daemon          (GPasteClient *client,
 gboolean g_paste_util_trigger_storage_migration (GPasteClient *client,
                                                  GError      **error);
 
+/* The scale g_paste_util_password_strength() rates on, so a meter is built
+ * against the contract rather than against a number copied out of it. */
+#define G_PASTE_UTIL_STRENGTH_MAX 4
+
+/* Whether this build can rate a password at all (libpwquality). A form that
+ * cannot must say so rather than show a meter pinned at zero: someone choosing
+ * a password should know it is not being judged, instead of reading a silent
+ * zero as a verdict. */
+gboolean g_paste_util_pwquality_available (void);
+
+/* Rate @password on a 0-4 scale, GNOME-style (libpwquality, as
+ * gnome-control-center does), returning in @hint the rating word or
+ * libpwquality's own advice. Built without libpwquality there is no rating to
+ * give: the level is 0 and @hint is %NULL. */
+guint g_paste_util_password_strength (const gchar  *password,
+                                      gchar       **hint);
+
 G_END_DECLS

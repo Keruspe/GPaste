@@ -233,7 +233,11 @@ void g_paste_prompt_remember_state (GPasteStorageRemember requested,
                                     gboolean             *can_forget);
 
 /* The scale g_paste_prompt_passphrase_strength() rates on, so a meter is built
- * against the contract rather than against a number copied out of it. */
+ * against the contract rather than against a number copied out of it. It is the
+ * scale G_PASTE_UTIL_STRENGTH_MAX names, spelled out again rather than aliased
+ * to it: the extension reads this off the typelib, and g-ir-scanner only
+ * carries a #define over when it is a literal. A G_STATIC_ASSERT in the
+ * implementation is what keeps the two from drifting. */
 #define G_PASTE_PROMPT_STRENGTH_MAX 4
 
 /* Whether the prompt would accept what has been typed: a passphrase, and — when

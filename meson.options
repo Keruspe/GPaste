@@ -7,7 +7,7 @@ option('control-center-keybindings-dir', type: 'string', value: '', description:
 option('encryption', type: 'feature', value: 'auto', description: 'build libsodium-based history encryption support')
 option('sqlite', type: 'feature', value: 'auto', description: 'build the SQLite history storage backend')
 option('libsecret', type: 'feature', value: 'auto', description: 'allow storing the encryption passphrase in the keyring via libsecret')
-option('pwquality', type: 'feature', value: 'auto', description: 'rate the encryption passphrase strength via libpwquality')
+option('pwquality', type: 'feature', value: 'auto', description: 'rate password strength via libpwquality')
 option('gnome-shell', type: 'boolean', value: true, description: 'install the gnome-shell extension')
 option('systemd', type: 'boolean', value: true, description: 'install the systemd unit')
 option('systemd-user-unit-dir', type: 'string', value: '', description: 'path to where systemd stores its user units')
