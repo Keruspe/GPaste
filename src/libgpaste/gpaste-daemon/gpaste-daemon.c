@@ -247,13 +247,15 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
                    NULL);
 }
 
+/* Not on_upload_done (): that name belongs to the D-Bus handler further down,
+ * which is what this task eventually answers. */
 static void
-on_wgetpaste_done (GObject      *source_object,
-                   GAsyncResult *res,
-                   gpointer      user_data)
+on_upload_command_done (GObject      *source_object,
+                        GAsyncResult *res,
+                        gpointer      user_data)
 {
-    /* The ref g_subprocess_new () handed us; the async call holds its own for as
-     * long as it needs one. */
+    /* The ref g_subprocess_newv () handed us; the async call holds its own for
+     * as long as it needs one. */
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     g_autoptr (GTask) task = user_data;
     g_autofree gchar *url = NULL;
@@ -265,14 +267,62 @@ on_wgetpaste_done (GObject      *source_object,
         return;
     }
 
-    /* wgetpaste answers the url on stdout, with the newline it ended the line
+    /* The command answers the url on stdout, with the newline it ended the line
      * with; anything else means it did not upload. */
     if (url)
         g_strstrip (url);
 
+    /* Spawning the command and reading its output is all the call above answers
+     * for: a command that exited non-zero got that far too, and what it wrote
+     * on the way out is a diagnostic rather than an address.
+     *
+     * How it ended and not what it wrote: the item's text went in on that
+     * command's standard input, and a tool that hands its input back when it
+     * fails -- a misconfigured "cat", a curl given an error page that quotes the
+     * request body -- would put what the user copied in an error that travels to
+     * the caller over the bus and into the journal behind it. What the command
+     * wrote is the user's to look at by running their own command line. */
+    if (!g_subprocess_get_successful (upload))
+    {
+        if (g_subprocess_get_if_signaled (upload))
+        {
+            g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                     "The upload command was killed by signal %d.",
+                                     g_subprocess_get_term_sig (upload));
+            return;
+        }
+
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "The upload command exited with status %d.",
+                                 g_subprocess_get_exit_status (upload));
+        return;
+    }
+
     if (!url || !*url)
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "The pastebin service answered no url.");
+        return;
+    }
+
+    /* "upload-command" is a command line the user wrote, so a tool that is
+     * misconfigured, out of date or simply not a pastebin client at all answers
+     * with its usage, or with the body of an HTTP error, on the very stream the
+     * url was meant to come back on. Unchecked, that lands on the clipboard and
+     * in the history as though it were an address. Being a valid uri does not
+     * tell the two apart -- a scheme and a colon is the whole of what that
+     * takes, so "Usage:", "curl:" and "Error: 429 Too Many Requests" all pass
+     * -- so the scheme has to be one a browser can open, not merely present.
+     *
+     * Reported without quoting it, for the reason the exit above is: a command
+     * that hands its own input back answers something that is not a url, and
+     * that something is the item. */
+    const gchar *scheme = g_uri_peek_scheme (url);
+
+    if (!g_uri_is_valid (url, G_URI_FLAGS_NONE, NULL) ||
+        (!g_paste_str_equal (scheme, "http") && !g_paste_str_equal (scheme, "https")))
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "The upload command answered something that is not a url.");
         return;
     }
 
@@ -287,6 +337,9 @@ on_wgetpaste_done (GObject      *source_object,
  * @user_data: (nullable): the data to pass to @callback
  *
  * Upload an item to a pastebin service.
+ *
+ * The tool doing the uploading is the "upload-command" setting: a command line
+ * that takes the item on stdin and answers its url on stdout.
  *
  * The upload is what this waits for, not merely the spawning of the tool that
  * performs it: the url only exists once it has finished, and an upload that
@@ -316,19 +369,43 @@ g_paste_daemon_upload (GPasteDaemon       *self,
         return;
     }
 
+    const gchar *command = g_paste_settings_get_upload_command (self->settings);
+
+    if (!command || !*command)
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT,
+                                 "No upload command is configured; see the \"upload-command\" setting.");
+        return;
+    }
+
+    /* Parsed the way a shell would, so the setting can carry arguments
+     * ("pastebinit -b …"), but handed to the kernel as an argv rather than to a
+     * shell: a clipboard item reaching a shell as anything but stdin is not a
+     * risk worth taking for the pipes and globs nobody needs here. */
     g_autoptr (GError) error = NULL;
-    GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, &error, "wgetpaste", NULL);
+    g_auto (GStrv) argv = NULL;
+
+    if (!g_shell_parse_argv (command, NULL, &argv, &error))
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT,
+                                 "Could not parse the upload command \"%s\": %s", command, error->message);
+        return;
+    }
+
+    GSubprocess *upload = g_subprocess_newv ((const gchar * const *) argv,
+                                             G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE,
+                                             &error);
 
     if (!upload)
     {
-        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "Failed to spawn wgetpaste: %s", error->message);
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "Failed to spawn \"%s\": %s", command, error->message);
         return;
     }
 
     g_subprocess_communicate_utf8_async (upload,
                                          g_paste_item_get_value (item),
                                          NULL, /* cancellable */
-                                         on_wgetpaste_done,
+                                         on_upload_command_done,
                                          g_steal_pointer (&task));
 }
 
@@ -341,8 +418,9 @@ g_paste_daemon_upload (GPasteDaemon       *self,
  * Finish an upload started with g_paste_daemon_upload().
  *
  * Errors are in %G_PASTE_ERROR (%G_PASTE_ERROR_NOT_FOUND for a uuid matching
- * nothing, %G_PASTE_ERROR_FAILED when the tool could not be run or answered no
- * url) or whatever running it reported.
+ * nothing, %G_PASTE_ERROR_INVALID_ARGUMENT for an "upload-command" that is
+ * empty or does not parse, %G_PASTE_ERROR_FAILED when the tool could not be run
+ * or answered something that is not a url) or whatever running it reported.
  *
  * Returns: (transfer full) (nullable): the url the item was uploaded to
  */
@@ -731,8 +809,8 @@ g_paste_daemon_handle_show_history (GPasteDaemon          *self,
 G_PASTE_DAEMON_HANDLER_ERR (switch_history, (const gchar *name), (name))
 
 /* The one method that cannot answer from its handler: the url exists only once
- * wgetpaste has finished, so the invocation is carried along and answered from
- * the callback. */
+ * the upload command has finished, so the invocation is carried along and
+ * answered from the callback. */
 static void
 on_upload_done (GObject      *source_object,
                 GAsyncResult *res,

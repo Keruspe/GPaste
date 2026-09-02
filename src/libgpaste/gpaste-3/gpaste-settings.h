@@ -46,6 +46,7 @@ gboolean     g_paste_settings_get_track_changes              (GPasteSettings *se
 gboolean     g_paste_settings_get_track_extension_state      (GPasteSettings *self);
 gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *self);
 const gchar *g_paste_settings_get_upload                     (GPasteSettings *self);
+const gchar *g_paste_settings_get_upload_command             (GPasteSettings *self);
 
 void g_paste_settings_set_close_on_select            (GPasteSettings *self,
                                                       gboolean        value);
@@ -106,6 +107,8 @@ void g_paste_settings_set_track_extension_state      (GPasteSettings *self,
 void g_paste_settings_set_trim_items                 (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_upload                     (GPasteSettings *self,
+                                                      const gchar    *value);
+void g_paste_settings_set_upload_command             (GPasteSettings *self,
                                                       const gchar    *value);
 
 gboolean g_paste_settings_get_extension_enabled (GPasteSettings *self);

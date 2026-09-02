@@ -2,6 +2,7 @@ NEW in 51.0 (UNRELEASED)
 =============
 
 - Add a password straight from the graphical tool: the New button in its header is now a split button whose menu offers a New Password composer, with the password itself hidden as it is typed and rated as the encryption passphrase is
+- Choose what uploads an item to a pastebin: "upload-command" holds a command line -- the item on its standard input, the url on its standard output -- defaulting to curl against paste.rs, so wgetpaste, pastebinit or "nc termbin.com 9999" are a preference away rather than a shim named wgetpaste on the PATH, and an answer that is not a url is reported as the failure it is instead of landing in the history as an address
 - Only offer the GNOME Shell preferences where the extension is actually installed: the switches used to appear wherever gnome-shell was, so enabling one on a machine without the extension wrote GPaste into the shell's extension list and did nothing else
 - Add a master switch that turns every global keyboard shortcut off, from the Keyboard Shortcuts preferences: GPaste then takes no global grab at all, and the shortcuts window says so while still listing the chords (#501)
 - Fix the global shortcuts under the portal: an edited accelerator never reached it, Super went out under a name it doesn't know, a dismissed permission dialog was reported as a successful bind, and a session closed by the compositor left them bound to nothing with nothing to ask for another

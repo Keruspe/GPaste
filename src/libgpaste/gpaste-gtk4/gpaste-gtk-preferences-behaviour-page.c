@@ -138,6 +138,14 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                                                          settings);
     adw_action_row_set_subtitle (ADW_ACTION_ROW (password_timeout_spin),
                                  _("How long a password stays on the clipboard once it is the active item. When it runs out, the next item that is not a password is selected. 0 lets a password stay for as long as anything else would"));
+    /* An AdwEntryRow has a title and no subtitle, so what the command has to
+     * honour goes in a tooltip rather than under the field. */
+    AdwEntryRow *upload_command_entry = g_paste_gtk_preferences_group_add_text_setting (group,
+                                                                                        _("Pastebin Upload Command"),
+                                                                                        G_PASTE_UPLOAD_COMMAND_SETTING,
+                                                                                        settings);
+    gtk_widget_set_tooltip_text (GTK_WIDGET (upload_command_entry),
+                                 _("The item is written to this command's standard input, and the command answers the url it uploaded it to, and nothing else, on its standard output. Arguments are allowed; pipes and redirections are not"));
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     return self;

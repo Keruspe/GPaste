@@ -162,9 +162,14 @@ meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd> | Mark the active item as a password, if it is a text one |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd> | Sync the clipboard to the primary selection |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> | Sync the primary selection to the clipboard |
-| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> | Upload the active item to a pastebin (needs `wgetpaste`) |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> | Upload the active item to a pastebin |
 
 All of them are configurable in the preferences.
+
+Uploading runs whatever the `upload-command` preference names, defaulting to
+`curl -sS --data-binary @- https://paste.rs`. Any command that takes the item on its
+standard input and answers the url on its standard output will do —
+`wgetpaste`, `pastebinit` and `nc termbin.com 9999` among them.
 
 Inside the graphical tool, which has a few of its own:
 

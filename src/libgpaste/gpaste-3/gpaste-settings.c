@@ -46,6 +46,7 @@ struct _GPasteSettings
     gboolean      track_extension_state;
     gboolean      trim_items;
     gchar        *upload;
+    gchar        *upload_command;
 
     gboolean      extension_enabled;
 };
@@ -629,6 +630,23 @@ BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 STRING_SETTING (upload, UPLOAD)
 
 /**
+ * g_paste_settings_get_upload_command:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "upload-command" setting
+ *
+ * Returns: the value of the "upload-command" setting
+ */
+/**
+ * g_paste_settings_set_upload_command:
+ * @self: a #GPasteSettings instance
+ * @value: the new command line
+ *
+ * Change the "upload-command" setting
+ */
+STRING_SETTING (upload_command, UPLOAD_COMMAND)
+
+/**
  * g_paste_settings_get_extension_enabled:
  * @self: a #GPasteSettings instance
  *
@@ -777,6 +795,7 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (TRACK_EXTENSION_STATE, track_extension_state),
     SETTING_ENTRY (TRIM_ITEMS, trim_items),
     KEYBINDING_ENTRY (UPLOAD, upload),
+    SETTING_ENTRY (UPLOAD_COMMAND, upload_command),
 };
 
 #undef SETTING_ENTRY
@@ -844,7 +863,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     BOOL (track_changes,              TRACK_CHANGES)                                      \
     BOOL (track_extension_state,      TRACK_EXTENSION_STATE)                              \
     BOOL (trim_items,                 TRIM_ITEMS)                                         \
-    STR  (upload,                     UPLOAD)
+    STR  (upload,                     UPLOAD)                                             \
+    STR  (upload_command,             UPLOAD_COMMAND)
 
 enum
 {
@@ -1022,6 +1042,7 @@ g_paste_settings_finalize (GObject *object)
     g_free (self->sync_clipboard_to_primary);
     g_free (self->sync_primary_to_clipboard);
     g_free (self->upload);
+    g_free (self->upload_command);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -1101,6 +1122,7 @@ g_paste_settings_init (GPasteSettings *self)
     self->sync_clipboard_to_primary = NULL;
     self->sync_primary_to_clipboard = NULL;
     self->upload = NULL;
+    self->upload_command = NULL;
 
     GSignalGroup *settings_signals = self->settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_settings_settings_changed), self);

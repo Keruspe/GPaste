@@ -248,6 +248,21 @@
       </description>
     </key>
 
+    <key name="upload-command" type="s">
+      <default>'curl -sS --data-binary @- https://paste.rs'</default>
+      <summary>The command uploading an item to a pastebin service</summary>
+      <description>
+        The item is written to the command's standard input, and the command must
+        answer the url it uploaded it to -- and nothing else -- on its standard
+        output. It is parsed as a shell command line, so it may carry arguments,
+        but it is not run through a shell: no pipes, no redirections, no globs.
+        wgetpaste, pastebinit and "nc termbin.com 9999" all fit this contract.
+        The default needs nothing but curl, and asks it to keep quiet about its
+        progress (-s) while still reporting errors (-S), since anything it writes
+        on standard error ends up in the daemon's log.
+      </description>
+    </key>
+
     <key name="empty-history-confirmation" type="b">
       <default>true</default>
       <summary>Ask for confirmation before emptying a history</summary>

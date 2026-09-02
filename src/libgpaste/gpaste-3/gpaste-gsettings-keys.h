@@ -45,6 +45,7 @@ G_BEGIN_DECLS
 #define G_PASTE_TRACK_EXTENSION_STATE_SETTING      "track-extension-state"
 #define G_PASTE_TRIM_ITEMS_SETTING                 "trim-items"
 #define G_PASTE_UPLOAD_SETTING                     "upload"
+#define G_PASTE_UPLOAD_COMMAND_SETTING             "upload-command"
 
 /* The range "password-timeout" is declared with, in seconds: a bit over eighteen
  * hours. It bounds the value itself rather than only the key, since the same
