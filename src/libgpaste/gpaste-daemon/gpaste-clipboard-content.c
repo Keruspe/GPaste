@@ -216,7 +216,13 @@ g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
  * g_paste_clipboard_content_classify_text:
  * @content: the currently held content (for dedup against the new text)
  * @settings: a #GPasteSettings instance (trim and min/max size policy)
- * @is_clipboard: whether the caller drives the clipboard (vs the primary selection)
+ * @may_reselect: whether re-owning the selection with the trimmed text is
+ *                allowed -- the clipboard selection, and only when this read
+ *                knows what it carries. The primary is never re-owned (a
+ *                selection made with the mouse is not GPaste's to rewrite), and
+ *                neither is a text whose sensitive hint never answered, which
+ *                would put hint-less text over what may be a secret. A caller
+ *                passing a plain is_clipboard () here would undo that
  * @text: the candidate text just read from the selection
  * @sensitive: whether the completed hint reads identify a password
  * @out_value: (out) (transfer full) (nullable): the trimmed text to act on, or
@@ -234,7 +240,7 @@ g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
 G_PASTE_VISIBLE GPasteClipboardTextAction
 g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
                                          GPasteSettings               *settings,
-                                         gboolean                      is_clipboard,
+                                         gboolean                      may_reselect,
                                          const gchar                  *text,
                                          gboolean                      sensitive,
                                          gchar                       **out_value)
@@ -280,7 +286,7 @@ g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
 
     /* Trimming changed the clipboard's own text: re-own it with the stripped
      * form, duplicate or not -- the padded form is what is on the selection. */
-    if (trim_items && is_clipboard && !g_paste_str_equal (text, stripped))
+    if (trim_items && may_reselect && !g_paste_str_equal (text, stripped))
     {
         *out_value = g_steal_pointer (&stripped);
         return G_PASTE_CLIPBOARD_TEXT_RESELECT;
@@ -493,37 +499,114 @@ g_paste_clipboard_read_guard_clear (GPasteClipboardReadGuard *guard)
     g_clear_object (&guard->cancellable);
 }
 
-/* The deadline on a sync ran out: let go of the selection its text was going to,
- * which is all a sync has to conclude. The read landing afterwards then finds no
- * target and only frees itself. */
+/* Let go of everything a sync was handed: the selection its text was going to,
+ * and the caller's data with the notify that releases it.
+ *
+ * Run from the deadline as much as from the free, and cleared as it runs so that
+ * whichever comes second finds nothing left. A read that never lands never
+ * reaches the free -- cancelling cannot fail it, see either backend -- and what
+ * @destroy holds is a ref on the whole clipboards manager, where @data itself is
+ * only a struct. */
+static void
+g_paste_clipboard_sync_data_release (GPasteClipboardSyncData *data)
+{
+    GDestroyNotify destroy = data->destroy;
+    gpointer user_data = data->user_data;
+
+    g_clear_object (&data->other);
+    data->destroy = NULL;
+    data->user_data = NULL;
+
+    if (destroy)
+        destroy (user_data);
+}
+
+/* The deadline on a sync ran out: let go of the selection its text was going to
+ * and of what the caller gave us, which is all a sync has to conclude. The read
+ * landing afterwards then finds no target and only frees itself. */
 static void
 g_paste_clipboard_sync_timed_out (gpointer user_data)
 {
     GPasteClipboardSyncData *data = user_data;
 
     g_debug ("clipboard: giving up on a sync read that never came back");
-    g_clear_object (&data->other);
+    g_paste_clipboard_sync_data_release (data);
 }
 
 /**
  * g_paste_clipboard_sync_data_new:
  * @other: the selection the text being read is going to
+ * @callback: what to publish the text with once it lands
+ * @user_data: (nullable): the data to pass to @callback
+ * @destroy: (nullable): how to release @user_data
  *
  * What a sync read has to keep alive, guard included
  *
  * Returns: (transfer full): the newly allocated #GPasteClipboardSyncData
  */
 G_PASTE_VISIBLE GPasteClipboardSyncData *
-g_paste_clipboard_sync_data_new (GPasteClipboardProvider *other)
+g_paste_clipboard_sync_data_new (GPasteClipboardProvider    *other,
+                                 GPasteClipboardSyncCallback callback,
+                                 gpointer                    user_data,
+                                 GDestroyNotify              destroy)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (other), NULL);
+    g_return_val_if_fail (callback, NULL);
 
     GPasteClipboardSyncData *data = g_new0 (GPasteClipboardSyncData, 1);
 
     data->other = g_object_ref (other);
+    data->callback = callback;
+    data->user_data = user_data;
+    data->destroy = destroy;
     g_paste_clipboard_read_guard_arm (&data->guard, g_paste_clipboard_sync_timed_out, data);
 
     return data;
+}
+
+/**
+ * g_paste_clipboard_sync_data_wants_text:
+ * @data: the #GPasteClipboardSyncData the read was fired with
+ *
+ * Returns: whether a landed sync read still has anywhere to be published
+ *
+ * What deliver () refuses on, asked before the text is built rather than after:
+ * a backend whose read hands it the bytes rather than a string would otherwise
+ * copy a whole selection -- of any size -- for a sync the deadline already let
+ * go of, which is the one case where nothing is ever going to read it.
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_sync_data_wants_text (const GPasteClipboardSyncData *data)
+{
+    g_return_val_if_fail (data, FALSE);
+
+    return data->other != NULL;
+}
+
+/**
+ * g_paste_clipboard_sync_data_deliver:
+ * @data: the #GPasteClipboardSyncData the read was fired with
+ * @text: (nullable): what the read came back with
+ *
+ * Hand a landed sync read's text to whoever asked for the sync
+ *
+ * The whole of what a backend does with a sync read that has landed, so that
+ * neither of them decides on its own what a selection carries afterwards: a read
+ * that came back with no text at all (%NULL), and one whose target the deadline
+ * already let go of, both publish nothing. An empty text is a text: it is
+ * published, the destination then carrying what the source does.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_sync_data_deliver (GPasteClipboardSyncData *data,
+                                     const gchar             *text)
+{
+    g_return_if_fail (data);
+
+    /* No target left is the guard having concluded this sync already. */
+    if (!text || !data->other)
+        return;
+
+    data->callback (data->other, text, data->user_data);
 }
 
 /**
@@ -538,7 +621,8 @@ g_paste_clipboard_sync_data_free (GPasteClipboardSyncData *data)
     g_return_if_fail (data);
 
     g_paste_clipboard_read_guard_clear (&data->guard);
-    g_clear_object (&data->other);
+    g_paste_clipboard_sync_data_release (data);
+
     g_free (data);
 }
 
@@ -591,14 +675,41 @@ g_paste_clipboard_mime_ctx_free (GPasteClipboardMimeCtx *ctx)
     g_free (ctx);
 }
 
+/* What an update's mime reads found out about the selection carrying a secret.
+ *
+ * A hint that matched is proof and outranks everything: an answer that came back
+ * says what the selection is, whatever else stayed silent.
+ *
+ * The one reader is the conclusion below, which is why this is not exported:
+ * what a read adds up to is #GPasteClipboardSecret's, and a provider's callers
+ * are handed that answer rather than the reads it was taken from. */
+static GPasteClipboardSecret
+g_paste_clipboard_mime_results_get_secret (const GPasteClipboardMimeResults *results)
+{
+    g_return_val_if_fail (results, CLIPBOARD_SECRET_UNKNOWN);
+
+    if (results->sensitive)
+        return CLIPBOARD_SECRET_YES;
+
+    return (results->sensitive_unknown) ? CLIPBOARD_SECRET_UNKNOWN : CLIPBOARD_SECRET_NO;
+}
+
 /* Record what one finished sensitive-mime read means: a sensitive mime is a fact
- * about the content, so only whether it matched is kept. */
+ * about the content, so only whether it matched is kept.
+ *
+ * A read fired at all means the selection offers the hint, so one that fails is an
+ * owner refusing to serve what it advertises -- which says nothing about the
+ * content either way, and is the very shape a GTK-owned selection has today. One
+ * served empty did answer, and an answer that does not match is a no: only %NULL
+ * is unknown, never empty bytes. */
 static void
 g_paste_clipboard_mime_results_store_sensitive (GPasteClipboardMimeResults *results,
                                                 GPasteSensitiveMime         mime,
                                                 GBytes                     *bytes)
 {
-    if (g_paste_sensitive_mime_matches (mime, bytes))
+    if (!bytes)
+        results->sensitive_unknown = TRUE;
+    else if (g_paste_sensitive_mime_matches (mime, bytes))
         results->sensitive = TRUE;
 }
 
@@ -785,11 +896,10 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
         *update->slot = NULL;
 
     /* Overtaken while it was reading (see @superseded): nothing to build an item
-     * from, no selection to re-own, and nothing it read that can call that
-     * selection a secret -- sensitive is a hint that came back and matched, and
-     * the reads still out on this update are refused before they report. The
-     * callback is still owed all the same, that being what releases whatever the
-     * caller put behind this update. */
+     * from, and no selection to re-own. What is left to answer is the secret,
+     * and %UNKNOWN is the only thing this update can say: what it read is what
+     * that selection carried, the update that overtook it answers for what sits
+     * there now, and a record already kept has no grounds to be retired here. */
     if (update->superseded)
     {
         g_paste_clipboard_update_release_content (update);
@@ -798,19 +908,44 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
         g_autoptr (GPasteClipboardProvider) provider = g_steal_pointer (&update->provider);
 
         if (update->callback)
-            update->callback (provider, NULL, TRUE, FALSE, update->user_data);
+            update->callback (provider, NULL, TRUE, CLIPBOARD_SECRET_UNKNOWN, update->user_data);
 
         return;
     }
 
+    /* A hint read the deadline outlasted answered nothing, and neither does
+     * concluding without it: the text lands as text either way, but a record
+     * already kept for this selection has no grounds to be retired here. */
+    if (update->sensitive_pending)
+        update->mimes.sensitive_unknown = TRUE;
+
     /* Text policy needs the hint results: passwords preserve whitespace and
-     * must reach the manager even when their value matches its text cache. */
+     * must reach the manager even when their value matches its text cache.
+     *
+     * An unanswered hint is not a password, so size, trimming and dedup still
+     * apply; only re-owning does not, as it would put the stripped text over
+     * what may be a secret with no hint on it. Such a text is classified as the
+     * primary's is: trimmed for the history, left as it stands on the selection
+     * (the /clipboard/unknown_hint tests). The cache keeps the selection's exact
+     * value for matching a recorded password, even when history policy trims or
+     * rejects the item. */
+    /* @unidentified says the cache is to keep the selection's own bytes; the
+     * string itself is only taken aside when the classification below is about
+     * to replace them, and is stolen rather than copied even then -- a
+     * selection's text can be megabytes, which is the same reason classify_text ()
+     * hands back %NULL for a text it leaves as it is. */
+    gboolean unidentified = update->produced && update->content_kind == CLIPBOARD_CONTENT_TEXT && update->mimes.sensitive_unknown;
+    g_autofree gchar *unidentified_text = NULL;
+    /* See the DROP case below. */
+    gboolean empty_text = FALSE;
+
     if (update->produced && update->content_kind == CLIPBOARD_CONTENT_TEXT)
     {
         g_autofree gchar *value = NULL;
+        gboolean may_reselect = g_paste_clipboard_provider_is_clipboard (update->provider) && !update->mimes.sensitive_unknown;
         GPasteClipboardTextAction action = g_paste_clipboard_content_classify_text (update->cache, update->settings,
-                                                                                    g_paste_clipboard_provider_is_clipboard (update->provider),
-                                                                                    update->text, update->mimes.sensitive, &value);
+                                                                                    may_reselect, update->text,
+                                                                                    update->mimes.sensitive, &value);
 
         switch (action)
         {
@@ -820,13 +955,46 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
             break;
         case G_PASTE_CLIPBOARD_TEXT_DROP:
             update->produced = FALSE;
+            /* And nothing to keep the selection's own bytes for: the cache is
+             * what @unidentified would hold them in, and this is the one text the
+             * size policy turns down -- which can be megabytes of it, the very
+             * case g_paste_clipboard_content_set_ignored () exists for and what
+             * the chain below reaches instead.
+             *
+             * What the cache would have been kept for is matching a standing
+             * password record, and a cache holding no value is what
+             * confirm_password () reads as a read that saw nothing: the record
+             * stands unconfirmed rather than being retired, which is the side that
+             * keeps a secret recorded (/clipboard/unknown_hint/dropped).
+             *
+             * Except for the empty text, which is not a read that saw nothing:
+             * it is the owner's answer, and the one a password manager clearing
+             * what it copied gives -- with the hint on it or not, served or not,
+             * the value being what says what sits there. The cache holds that
+             * empty string, which is cheap and is exactly what sits there, so
+             * the record for the password it replaced is confirmed as gone and
+             * retired, where a cache holding no value would leave that record
+             * unconfirmed for good: every re-read answers the same, and an
+             * unconfirmed record fails every wait for expiry, a re-exec and a
+             * storage migration included (the /clipboard/empty_text_retires_record tests).
+             * The mutter backend hands an empty transfer over as that empty
+             * string too (g_paste_clipboard_meta_update_on_text ()). A text over
+             * the size limits -- never a secret, which they do not apply to -- is
+             * still held as unidentified: its bytes are what the cache must not
+             * hold. */
+            empty_text = !*update->text;
+            unidentified = FALSE;
             break;
         case G_PASTE_CLIPBOARD_TEXT_RESELECT:
             update->reselect = TRUE;
             G_GNUC_FALLTHROUGH;
         case G_PASTE_CLIPBOARD_TEXT_SET:
             if (value)
+            {
+                if (unidentified)
+                    unidentified_text = g_steal_pointer (&update->text);
                 g_set_str_take (&update->text, g_steal_pointer (&value));
+            }
             break;
         }
     }
@@ -847,7 +1015,16 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     /* Deduplication only remembers content whose update survived. Publishing a
      * cache entry while MIME reads are pending would let a superseded update
      * suppress its successor without either producing a history item. */
-    if (item)
+    if (unidentified)
+    {
+        /* Whichever of the two is the selection's own text: the one taken aside
+         * above when trimming replaced it, and update->text itself otherwise --
+         * which the item, when there is one, was built from by copy. */
+        g_paste_clipboard_content_set_text_take (update->cache,
+                                                 (unidentified_text) ? g_steal_pointer (&unidentified_text)
+                                                                     : g_steal_pointer (&update->text));
+    }
+    else if (item)
     {
         switch (kind)
         {
@@ -870,6 +1047,8 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
             g_assert_not_reached ();
         }
     }
+    else if (empty_text)
+        g_paste_clipboard_content_set_text (update->cache, "");
     /* Rejection and read failure establish no match with the previous owner.
      * Keep an unidentified selection non-empty so it cannot be restored over. */
     else if (!update->unchanged)
@@ -880,7 +1059,7 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
      * completed to zero the struct it owns -- the natural reading of its name --
      * would silently land every marked password as ordinary text. */
     gboolean reselect = update->reselect;
-    gboolean sensitive = update->mimes.sensitive;
+    GPasteClipboardSecret secret = g_paste_clipboard_mime_results_get_secret (&update->mimes);
 
     /* Everything this conclusion has of its own is done with before either call
      * below, both of which can end up back here: publishing drops the previous
@@ -912,7 +1091,7 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
      * backend's update () itself checks on every early return -- and what the
      * item holds can be a password's cleartext. */
     if (callback)
-        callback (provider, g_steal_pointer (&item), FALSE, sensitive, user_data);
+        callback (provider, g_steal_pointer (&item), FALSE, secret, user_data);
 }
 
 /* The guard ran out: conclude the update with what did arrive. Why it concludes
@@ -1134,6 +1313,7 @@ g_paste_clipboard_update_add_sensitive_mime_read (GPasteClipboardUpdate *update,
     g_return_val_if_fail (update, NULL);
 
     g_paste_clipboard_update_add_read (update);
+    ++update->sensitive_pending;
 
     GPasteClipboardMimeCtx *ctx = g_paste_clipboard_mime_ctx_new (update);
 
@@ -1220,6 +1400,9 @@ g_paste_clipboard_update_on_mime_read (GPasteClipboardMimeCtx *ctx,
 
     g_autoptr (GPasteClipboardMimeCtx) owned = ctx;
     GPasteClipboardUpdate *update = ctx->data;
+
+    if (ctx->sensitive)
+        --update->sensitive_pending;
 
     /* As for the content reads (g_paste_clipboard_update_is_expired ()): an
      * update that has moved on stores nothing more, or a sibling read that never

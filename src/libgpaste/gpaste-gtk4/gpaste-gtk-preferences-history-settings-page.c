@@ -4,41 +4,92 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
 
+typedef struct
+{
+    AdwButtonRow *row;
+    guint64       revision;
+} StorageMigration;
+
+static void
+storage_migration_free (StorageMigration *migration)
+{
+    g_object_unref (migration->row);
+    g_free (migration);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (StorageMigration, storage_migration_free)
+
+static void
+storage_migration_complete (StorageMigration *migration,
+                            GError           *error)
+{
+    gtk_widget_set_sensitive (GTK_WIDGET (migration->row), TRUE);
+
+    if (!error)
+        return;
+
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (migration->row));
+
+    /* The dialog needs a window to go on, and the preferences can be closed
+     * while the daemon is still answering -- which is exactly when a migration
+     * that failed has nowhere to report itself. The journal is the only record
+     * left then, so the failure is warned about rather than dropped
+     * (/ui/migration/refused_without_window). Where there is a window the dialog
+     * is the report, and no warning goes out for something the user was shown. */
+    if (!root)
+    {
+        g_warning ("Could not change the storage backend: %s", error->message);
+        return;
+    }
+
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (_("Could Not Change Storage Backend"), error->message));
+
+    adw_alert_dialog_add_response (dialog, "close", _("Close"));
+    adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (root));
+}
+
 static void
 on_storage_migration_done (GObject      *source,
                            GAsyncResult *result,
-                           gpointer      user_data G_GNUC_UNUSED)
+                           gpointer      user_data)
 {
+    g_autoptr (StorageMigration) migration = user_data;
     g_autoptr (GError) error = NULL;
 
     g_paste_client_reexecute_finish (G_PASTE_CLIENT (source), result, &error);
     if (error)
-        g_warning ("Could not trigger the storage migration: %s", error->message);
+        g_paste_util_cancel_storage_migration (migration->revision);
+    storage_migration_complete (migration, error);
 }
 
 static void
 on_storage_migration_client_ready (GObject      *source G_GNUC_UNUSED,
                                    GAsyncResult *result,
-                                   gpointer      user_data G_GNUC_UNUSED)
+                                   gpointer      user_data)
 {
+    g_autoptr (StorageMigration) migration = user_data;
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (result, &error);
 
     if (!client)
     {
-        g_warning ("Could not connect to the daemon to migrate: %s", error->message);
+        storage_migration_complete (migration, error);
         return;
     }
 
-    g_paste_util_prepare_storage_migration ();
-    g_paste_client_reexecute (client, NULL, on_storage_migration_done, NULL);
+    migration->revision = g_paste_util_prepare_storage_migration ();
+    g_paste_client_reexecute (client, NULL, on_storage_migration_done, g_steal_pointer (&migration));
 }
 
 static void
-on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
+on_storage_migration_activated (AdwButtonRow *row,
                                 gpointer      user_data G_GNUC_UNUSED)
 {
-    g_paste_client_new (on_storage_migration_client_ready, NULL);
+    StorageMigration *migration = g_new0 (StorageMigration, 1);
+
+    migration->row = g_object_ref (row);
+    gtk_widget_set_sensitive (GTK_WIDGET (row), FALSE);
+    g_paste_client_new (on_storage_migration_client_ready, migration);
 }
 
 static void

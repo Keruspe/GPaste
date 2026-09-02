@@ -80,7 +80,7 @@ typedef enum
 
 GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
                                                                    GPasteSettings               *settings,
-                                                                   gboolean                      is_clipboard,
+                                                                   gboolean                      may_reselect,
                                                                    const gchar                  *text,
                                                                    gboolean                      sensitive,
                                                                    gchar                       **out_value);
@@ -157,16 +157,27 @@ void g_paste_clipboard_read_guard_clear  (GPasteClipboardReadGuard *guard);
  * pending for the rest of the session, and this one is reachable straight from
  * D-Bus. Concluding a sync is letting go of that target rather than publishing
  * anything, there being no text to publish; the data itself is freed only if the
- * read ever lands, cancelling being unable to fail it (see either backend). The
- * two backends then differ only in the read they fire. */
+ * read ever lands, cancelling being unable to fail it (see either backend) --
+ * @user_data excepted, which the conclusion releases too, that one being a ref
+ * on everything the caller put behind it rather than a struct. The two backends
+ * then differ only in the read they fire. */
 typedef struct
 {
-    GPasteClipboardProvider *other;
-    GPasteClipboardReadGuard guard;
+    GPasteClipboardProvider    *other;
+    GPasteClipboardReadGuard    guard;
+    GPasteClipboardSyncCallback callback;
+    gpointer                    user_data;
+    GDestroyNotify              destroy;
 } GPasteClipboardSyncData;
 
-GPasteClipboardSyncData *g_paste_clipboard_sync_data_new  (GPasteClipboardProvider *other);
-void                     g_paste_clipboard_sync_data_free (GPasteClipboardSyncData *data);
+GPasteClipboardSyncData *g_paste_clipboard_sync_data_new        (GPasteClipboardProvider    *other,
+                                                                 GPasteClipboardSyncCallback callback,
+                                                                 gpointer                    user_data,
+                                                                 GDestroyNotify              destroy);
+gboolean                 g_paste_clipboard_sync_data_wants_text (const GPasteClipboardSyncData *data);
+void                     g_paste_clipboard_sync_data_deliver    (GPasteClipboardSyncData *data,
+                                                                 const gchar             *text);
+void                     g_paste_clipboard_sync_data_free       (GPasteClipboardSyncData *data);
 
 /* Where the mime reads an update fires put their answers. Both lists are read
  * the same way and differ only in what their bytes then mean -- a representation
@@ -181,10 +192,20 @@ void                     g_paste_clipboard_sync_data_free (GPasteClipboardSyncDa
  * evidence whatever. Only proof that a text is a secret makes it one, and the
  * price of that is the reverse case: an owner that serves the text and then
  * stops answering has its marked password land in the clear, for the one copy
- * whose hint the guard outlasted. */
+ * whose hint the guard outlasted.
+ *
+ * @sensitive_unknown is that same silence read the other way, for the one reader
+ * that needs it: an answer that never came is not a selection saying its content
+ * is ordinary, and a record already kept for that selection has to survive it.
+ * Set where nothing could be learned -- a hint the selection offers whose read
+ * failed, or was still out when the deadline ran -- and turned into the
+ * #GPasteClipboardSecret a provider's callers are handed, proof still being what
+ * makes a password. A hint served empty is not that: the owner answered, with a
+ * value that does not match. */
 typedef struct
 {
     gboolean          sensitive;
+    gboolean          sensitive_unknown;
     GPasteBinaryData *special_mime[G_PASTE_SPECIAL_MIME_LAST];
 } GPasteClipboardMimeResults;
 
@@ -238,10 +259,12 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * both of them for as long as those reads do, which for ones that never land is
  * the rest of the session.
  *
- * @pending counts the reads still out; @concluded says the item was already
- * built, the guard having run out with some of them still going. @mime is the
- * mimetype the content is being read under, for a backend that reads by
- * mimetype rather than by type -- %NULL for one that does not.
+ * @pending counts the reads still out and @sensitive_pending how many of those
+ * are hint reads, which is what tells a hint that answered "no" from one that
+ * never answered at all; @concluded says the item was already built, the guard
+ * having run out with some of them still going. @mime is the mimetype the
+ * content is being read under, for a backend that reads by mimetype rather than
+ * by type -- %NULL for one that does not.
  *
  * @superseded says the selection moved on while this update was reading it, so
  * what the reads still out would bring back describes content nothing holds any
@@ -287,6 +310,7 @@ struct _GPasteClipboardUpdate
 
     GPasteClipboardReadGuard              guard;
     gint                                  pending;
+    gint                                  sensitive_pending;
     gboolean                              concluded;
     gboolean                              superseded;
     GPasteClipboardUpdate               **slot;

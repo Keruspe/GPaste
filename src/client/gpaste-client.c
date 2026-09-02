@@ -312,10 +312,22 @@ static gint
 g_paste_migrate (Context *ctx,
                  GError **error)
 {
-    /* Trigger the migration through the daemon: the shared helper opens the gate
-     * (reset the revision, sync) and then runs the very same re-exec as above. */
-    if (!reexec_fallback (g_paste_util_trigger_storage_migration (ctx->client, error), error))
+    /* Through the daemon, and through the very same re-exec as above: the gate
+     * is opened here (reset the revision, sync) so that its next start flushes,
+     * re-runs the migration and reloads the chosen backend, rather than another
+     * process racing the running daemon.
+     *
+     * Closed again only once the fallback has failed too, and not on the failure
+     * the method call reports: the signal reexec_fallback () sends is that same
+     * re-exec happening by another route, and a gate closed before it would hand
+     * the successor nothing to migrate while this printed a success. */
+    guint64 revision = g_paste_util_prepare_storage_migration ();
+
+    if (!reexec_fallback (g_paste_util_reexecute_daemon (ctx->client, error), error))
+    {
+        g_paste_util_cancel_storage_migration (revision);
         return EXIT_FAILURE;
+    }
 
     printf ("%s\n", _("Successfully triggered the storage migration"));
 

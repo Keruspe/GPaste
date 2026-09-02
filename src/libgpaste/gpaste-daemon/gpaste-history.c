@@ -72,8 +72,13 @@ struct _GPasteHistory
     guint64               biggest_size;
 
     /* Recorded by g_paste_history_selected and emitted by G_PASTE_LOCK_HISTORY
-     * once the lock is released again */
+     * once the lock is released again. @pending_clear is a selection recorded
+     * with no item: see g_paste_history_remove_common (). @pending_dropped holds
+     * the passwords that left the model, ref'd because what announces them is
+     * also what frees them (g_paste_history_private_remove ()). */
     GPasteItem           *pending_selection;
+    gboolean              pending_clear;
+    GSList               *pending_dropped;
 };
 
 G_PASTE_DEFINE_TYPE (History, history, G_TYPE_OBJECT)
@@ -81,6 +86,7 @@ G_PASTE_DEFINE_TYPE (History, history, G_TYPE_OBJECT)
 enum
 {
     SELECTED,
+    PASSWORD_DROPPED,
     SWITCH,
     UPDATE,
 
@@ -95,30 +101,49 @@ typedef struct
 } GPasteHistorySelectionScope;
 
 static void
-g_paste_history_emit_pending_selection (GPasteHistorySelectionScope *scope)
+g_paste_history_emit_pending (GPasteHistorySelectionScope *scope)
 {
     GPasteHistory *self = scope->self;
     g_autoptr (GPasteItem) item = NULL;
+    g_autoslist (GPasteItem) dropped = NULL;
+    gboolean clear;
 
     {
         G_PASTE_DO_LOCK_HISTORY;
 
         item = g_steal_pointer (&self->pending_selection);
+        clear = self->pending_clear;
+        self->pending_clear = FALSE;
+        dropped = g_steal_pointer (&self->pending_dropped);
     }
 
-    if (!item)
-        return;
+    if (item || clear)
+    {
+        g_debug ("history: selected");
 
-    g_debug ("history: selected");
+        g_signal_emit (self,
+                       signals[SELECTED],
+                       0, /* detail */
+                       item,
+                       NULL);
+    }
 
-    g_signal_emit (self,
-                   signals[SELECTED],
-                   0, /* detail */
-                   item,
-                   NULL);
+    /* After the selection, which publishes over every selection and drops the
+     * records with it: a password that went as the head is then announced to a
+     * manager with nothing left to take off. */
+    for (GSList *l = dropped; l; l = l->next)
+    {
+        g_debug ("history: password dropped");
+
+        g_signal_emit (self,
+                       signals[PASSWORD_DROPPED],
+                       0, /* detail */
+                       l->data,
+                       NULL);
+    }
 }
 
-G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (GPasteHistorySelectionScope, g_paste_history_emit_pending_selection)
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (GPasteHistorySelectionScope, g_paste_history_emit_pending)
 
 static void
 g_paste_history_private_elect_new_biggest (GPasteHistory *self)
@@ -186,7 +211,25 @@ g_paste_history_private_remove (GPasteHistory *self,
     g_ptr_array_steal_index (self->history, index);
 
     if (remove_leftovers)
+    {
+        /* A password leaving the model for good may still be sitting on a
+         * selection, and the entry that recorded it is about to be gone: nothing
+         * would then take it off, and nothing would record it either. Announced
+         * from here so that every way out is covered at once -- a delete, an
+         * emptying, either cap evicting one -- whatever position it held, since a
+         * selection carries what it carries and not what the history's head says
+         * (GPasteHistory::password-dropped, and the /clipboard/dropped_password
+         * tests). Which selections that is, if any, is the clipboards manager's
+         * to answer.
+         *
+         * A @remove_leftovers of %FALSE is an item being moved to the front or a
+         * duplicate the caller frees, which is no departure: the value stays in
+         * the history. */
+        if (G_PASTE_IS_PASSWORD_ITEM (item))
+            self->pending_dropped = g_slist_prepend (self->pending_dropped, g_object_ref (item));
+
         g_paste_history_item_free (self, item);
+    }
 }
 
 static void
@@ -200,6 +243,7 @@ g_paste_history_selected (GPasteHistory *self,
      * the item: G_PASTE_LOCK_HISTORY emits it once the lock is released.
      */
     g_set_object (&self->pending_selection, item);
+    self->pending_clear = !item;
 }
 
 static void
@@ -340,18 +384,10 @@ g_paste_history_activate_first (GPasteHistory *self,
     g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
     self->size += g_paste_item_get_size (first);
 
-    if (select)
+    /* Becoming the head through load, removal or a refused-item fallback is
+     * not an explicit request to expose a password. select() emits separately. */
+    if (select && !G_PASTE_IS_PASSWORD_ITEM (first))
         g_paste_history_selected (self, first);
-}
-
-/* Activate the head of a history just read in. It is put back on the selections
- * unless it is a password, as in g_paste_clipboard_provider_ensure_not_empty ():
- * nobody asked to publish it. */
-static void
-g_paste_history_activate_loaded (GPasteHistory *self)
-{
-    if (self->history->len)
-        g_paste_history_activate_first (self, !G_PASTE_IS_PASSWORD_ITEM (g_ptr_array_index (self->history, 0)));
 }
 
 static GPasteItem *
@@ -718,7 +754,22 @@ g_paste_history_remove_common (GPasteHistory *self,
     g_paste_history_private_remove (self, index, TRUE);
 
     if (!index)
+    {
         g_paste_history_activate_first (self, TRUE);
+
+        /* What was removed may still be on the selections, and a password at
+         * the head may not replace it (see activate_first ()): the selections
+         * are cleared instead (the /clipboard/automatic_head tests). Ordinary
+         * text is left where it is: it is the user's own copy, and deleting the
+         * entry that listed it is not asking for it to be taken off.
+         *
+         * This is about the head that was not published and nothing else. What
+         * left is private_remove ()'s to announce, and that is what reaches the
+         * selections actually carrying it -- from here, from any other index, or
+         * with no head left to publish at all. */
+        if (self->history->len && G_PASTE_IS_PASSWORD_ITEM (g_ptr_array_index (self->history, 0)))
+            g_paste_history_selected (self, NULL);
+    }
 
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (self);
@@ -1353,7 +1404,12 @@ g_paste_history_empty (GPasteHistory *self)
     G_PASTE_LOCK_HISTORY;
 
     /* Through private_remove rather than the array's own free func: emptying
-     * also drops each item's backing file, and keeps the uuid index in step. */
+     * also drops each item's backing file, keeps the uuid index in step, and
+     * announces every password it takes with it -- their cleartext would
+     * otherwise outlive the entries that recorded them, with no countdown to take
+     * it off under a password-timeout of 0. Nothing is published over the
+     * selections here beyond that: there is no head left to publish, and the
+     * ordinary text a selection holds is the user's own copy. */
     while (self->history->len)
         g_paste_history_private_remove (self, self->history->len - 1, TRUE);
 
@@ -1482,7 +1538,7 @@ g_paste_history_load_locked (GPasteHistory *self,
     if (self->unreadable)
         g_warning ("Could not read the history back; it will not be overwritten");
 
-    g_paste_history_activate_loaded (self);
+    g_paste_history_activate_first (self, TRUE);
 
     /* Unconditional: biggest_uuid borrows the uuid of an item we just freed, so
      * it has to be re-elected (to NULL) even when the new history is empty. */
@@ -1525,7 +1581,7 @@ g_paste_history_on_loaded (gpointer user_data,
     g_paste_history_private_set_from_list (self, history);
     self->size = size;
 
-    g_paste_history_activate_loaded (self);
+    g_paste_history_activate_first (self, TRUE);
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
     g_paste_history_private_elect_new_biggest (self);
@@ -1804,6 +1860,7 @@ g_paste_history_dispose (GObject *object)
     g_clear_object (&self->saver);
     g_clear_object (&self->backend);
     g_clear_object (&self->pending_selection);
+    g_clear_slist (&self->pending_dropped, g_object_unref);
     g_clear_pointer (&self->history, g_ptr_array_unref);
     g_clear_pointer (&self->by_uuid, g_hash_table_unref);
     g_clear_object (&self->settings_signals);
@@ -1834,10 +1891,12 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
     /**
      * GPasteHistory::selected:
      * @history: the object on which the signal was emitted
-     * @item: the new selected item
+     * @item: (nullable): the new selected item, or %NULL when the selections
+     *        are to be cleared
      *
      * The "selected" signal is emitted when the user has just
-     * selected a new item form the history.
+     * selected a new item form the history, or when removing the head leaves a
+     * password there, which is not published without being asked for.
      */
     signals[SELECTED] = g_signal_new ("selected",
                                       G_PASTE_TYPE_HISTORY,
@@ -1849,6 +1908,32 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                       G_TYPE_NONE,
                                       1, /* number of params */
                                       G_PASTE_TYPE_ITEM);
+
+    /**
+     * GPasteHistory::password-dropped:
+     * @history: the object on which the signal was emitted
+     * @item: the password whose entry has just left the history
+     *
+     * The "password-dropped" signal is emitted when a password's entry leaves the
+     * history for good -- deleted, emptied out or evicted by a cap -- from
+     * whatever position it held.
+     *
+     * Its cleartext may still be sitting on a selection, where the entry that
+     * recorded it is now gone and no countdown need ever have been running: a
+     * password-timeout of 0 leaves a password on the clipboard until something
+     * replaces it. Which selections carry it is not something the history can
+     * answer, so this says only which password went.
+     */
+    signals[PASSWORD_DROPPED] = g_signal_new ("password-dropped",
+                                              G_PASTE_TYPE_HISTORY,
+                                              G_SIGNAL_RUN_LAST,
+                                              0, /* class offset */
+                                              NULL, /* accumulator */
+                                              NULL, /* accumulator data */
+                                              g_cclosure_marshal_VOID__OBJECT,
+                                              G_TYPE_NONE,
+                                              1, /* number of params */
+                                              G_PASTE_TYPE_ITEM);
 
     /**
      * GPasteHistory::switch:
@@ -1925,6 +2010,23 @@ g_paste_history_get_history (GPasteHistory *self)
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     return self->history;
+}
+
+/**
+ * g_paste_history_is_loading:
+ * @self: a #GPasteHistory instance
+ *
+ * Whether a load is still replacing the history: what it holds until then is
+ * what the load is about to throw away, adds made in the meantime included.
+ *
+ * Returns: whether a load is in flight
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_is_loading (GPasteHistory *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+
+    return g_paste_history_saver_is_loading (self->saver);
 }
 
 /**

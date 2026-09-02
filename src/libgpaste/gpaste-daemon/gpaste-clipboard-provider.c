@@ -185,17 +185,41 @@ g_paste_clipboard_provider_select_text_full (GPasteClipboardProvider *self,
  * g_paste_clipboard_provider_sync_text:
  * @self: the source #GPasteClipboardProvider instance
  * @other: the target #GPasteClipboardProvider instance
+ * @callback: what to put the text on @other with, once the read lands
+ * @user_data: (nullable): the data to pass to @callback
+ * @destroy: (nullable): how to release @user_data, run whenever the read is
+ *           done with, @callback or no @callback
  *
  * Synchronise the text between two providers
+ *
+ * Reading is the provider's and publishing is the caller's: see
+ * #GPasteClipboardSyncCallback for why the two are not one call.
  */
 G_PASTE_VISIBLE void
-g_paste_clipboard_provider_sync_text (GPasteClipboardProvider *self,
-                                      GPasteClipboardProvider *other)
+g_paste_clipboard_provider_sync_text (GPasteClipboardProvider    *self,
+                                      GPasteClipboardProvider    *other,
+                                      GPasteClipboardSyncCallback callback,
+                                      gpointer                    user_data,
+                                      GDestroyNotify              destroy)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (other));
+    /* Hand-rolled where every other call here uses g_return_if_fail (): @destroy
+     * is ours from this call on -- which is why both backends run it on their own
+     * no-data returns -- so a bare return would leak @user_data and everything it
+     * holds up, the manager and its selections included. Checked once, and the
+     * release happens whether or not the warning compiles away. */
+    if (!G_PASTE_IS_CLIPBOARD_PROVIDER (self) ||
+        !G_PASTE_IS_CLIPBOARD_PROVIDER (other) ||
+        !callback)
+    {
+        g_critical ("%s: assertion failed: valid @self, @other and @callback", G_STRFUNC);
 
-    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->sync_text (self, other);
+        if (destroy)
+            destroy (user_data);
+
+        return;
+    }
+
+    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->sync_text (self, other, callback, user_data, destroy);
 }
 
 /**
@@ -269,7 +293,19 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
      * copied, which the history recorded as a password item at its head. Putting
      * it back is exposure nobody asked for, and under a password-timeout of 0 it
      * would then stay there for the rest of the session. An emptied selection is
-     * left empty instead: there is no other item the user chose to put there. */
+     * left empty instead: there is no other item the user chose to put there.
+     *
+     * A text head goes back, released or not, and that is not to be narrowed:
+     * putting it back is the whole of why closing the application you copied
+     * from does not lose the copy, on both backends. A password its manager
+     * copied *without* the hint was recorded as plain text, and a release then
+     * restores it like any text -- but nothing tells that text from any other,
+     * and refusing to restore text on a release would take the feature away
+     * from every copy to spare the one case the owner did not mark. The same
+     * goes for PRIMARY, whose owners release it on a deselection. And a password
+     * manager clearing its copy by writing the empty string, as they do, does
+     * not come here at all: that string is content (see the DROP case in
+     * g_paste_clipboard_update_conclude ()), and nothing is put back over it. */
     if (G_PASTE_IS_PASSWORD_ITEM (item))
         return NULL;
 

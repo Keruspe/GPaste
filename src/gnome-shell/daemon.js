@@ -395,14 +395,19 @@ export class GPasteDaemonRunner {
         this._daemon?.disconnectObject(this);
 
         // Before the flush, so the selection this changes is recorded with the
-        // rest of it: a password still on a selection has to come off while
-        // there is a daemon to take it off with. Dropping our reference below
-        // only hands the wrapper to the garbage collector, and mutter goes on
-        // serving the source we published until the manager behind it is
+        // rest of it: a password whose countdown is running has to come off
+        // while there is a daemon to take it off with. Dropping our reference
+        // below only hands the wrapper to the garbage collector, and mutter goes
+        // on serving the source we published until the manager behind it is
         // actually disposed -- which for a password is its cleartext, on the
-        // clipboard, for the rest of the session. The standalone daemon's
-        // re-exec does the same thing for the same reason; its plain exit needs
-        // nothing, the selection dying with the process.
+        // clipboard, with nothing left to take it back off.
+        //
+        // A countdown is all it brings forward, and on a stock install there is
+        // none: password-timeout defaults to 0, which is a password the user
+        // asked to keep for as long as anything else, so taking that one off
+        // here would be replacing whatever they had just copied. The standalone
+        // daemon's re-exec does the same thing for the same reason; its plain
+        // exit needs nothing, the selection dying with the process.
         this._daemon?.expire_password();
 
         // Flush before releasing the lock so a successor daemon loads our final

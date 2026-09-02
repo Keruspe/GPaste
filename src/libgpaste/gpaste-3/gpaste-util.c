@@ -778,42 +778,62 @@ g_paste_util_reexecute_daemon (GPasteClient *client,
  * Resetting the revision marks the backend as never migrated. Call this on
  * the main context: the temporary #GPasteSettings wrapper caches settings and
  * receives their notifications there.
+ *
+ * The re-exec is the caller's own, and so is closing the gate again
+ * (g_paste_util_cancel_storage_migration()) once there is no re-exec left to
+ * expect: `gpaste-client migrate` has a second route to one -- signalling a
+ * daemon too old for the method -- and a gate closed on the first route's
+ * failure would leave that successor nothing to migrate.
+ *
+ * Returns: the revision to restore if re-execution fails
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE guint64
 g_paste_util_prepare_storage_migration (void)
 {
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
+    guint64 revision = g_paste_settings_get_storage_backend_revision (settings);
+
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
     g_paste_settings_sync (settings);
+    return revision;
 }
 
 /**
- * g_paste_util_trigger_storage_migration:
- * @client: a connected #GPasteClient
- * @error: return location for a #GError, or %NULL
+ * g_paste_util_cancel_storage_migration:
+ * @revision: the revision returned by g_paste_util_prepare_storage_migration()
  *
- * Open the storage-migration gate and re-execute the daemon through @client
- * (g_paste_util_reexecute_daemon()), so on its next start it flushes, re-runs
- * the migration and reloads the chosen backend instead of another process racing
- * the running daemon. Resetting the backend revision to its default is exactly the
- * "never migrated" state that opens the gate.
+ * Restore the migration gate after a failed re-execution. A revision written
+ * by a completed migration must survive a late transport error from its caller,
+ * which is what the guard below is: a revision already back means the successor
+ * migrated, and the error was reported over a request that in fact succeeded.
  *
- * Errors come from the re-exec it delegates to, so they carry that call's
- * domains (%G_PASTE_ERROR from the daemon, %G_DBUS_ERROR or %G_IO_ERROR from
- * the transport) rather than any of its own.
- *
- * Returns: %TRUE if the migration was triggered
+ * What the guard cannot cover is the same error reported while the successor is
+ * still starting, its revision not yet written -- the gate is then closed again
+ * under a migration that is about to run, and the successor finds nothing to do.
+ * Only the daemon knows which of the two it is, and it is not there to ask: a
+ * re-exec tears the connection down. Closing the gate is the side to be wrong
+ * on, a migration the user asks for again costing one more click where a gate
+ * left open re-runs a migration on every start. A missing reply is not one of
+ * these cases at all: g_paste_client_reexecute_finish() reads it as the success
+ * it is, so an error here is a request that really did fail somewhere.
  */
-G_PASTE_VISIBLE gboolean
-g_paste_util_trigger_storage_migration (GPasteClient *client,
-                                        GError      **error)
+G_PASTE_VISIBLE void
+g_paste_util_cancel_storage_migration (guint64 revision)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
-    g_paste_util_prepare_storage_migration ();
-
-    return g_paste_util_reexecute_daemon (client, error);
+    if (!g_paste_settings_get_storage_backend_revision (settings))
+    {
+        /* Closed the way prepare () opened it: a gate that was open because the
+         * key had no value at all is left with none, rather than with one written
+         * over it that no other path produces. */
+        if (revision)
+            g_paste_settings_set_storage_backend_revision (settings, revision);
+        else
+            g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+        g_paste_settings_sync (settings);
+    }
 }
 
 /**

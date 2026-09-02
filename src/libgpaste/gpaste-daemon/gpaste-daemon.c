@@ -131,8 +131,9 @@ g_paste_daemon_resume (GPasteDaemon *self)
  * g_paste_daemon_expire_password:
  * @self: (transfer none): the #GPasteDaemon
  *
- * Retire active passwords from the history before a host flushes it, and remove
- * them from selections as soon as their pending reads establish ownership.
+ * Retire the passwords a countdown is running for from the history before a host
+ * flushes it, and remove them from selections as soon as their pending reads
+ * establish ownership.
  *
  * Meant for a daemon standing down inside a process that keeps going: dropping
  * the daemon takes its clipboards manager with it, and that manager's dispose
@@ -140,6 +141,11 @@ g_paste_daemon_resume (GPasteDaemon *self)
  * which for the gnome-shell host is whenever the garbage collector gets round
  * to the wrapper. Until then mutter goes on serving the selection source we
  * published, and for a password that source holds its cleartext.
+ *
+ * A selection running no countdown has nothing to bring forward and is left as
+ * it is: password-timeout defaults to 0, which is a password the user asked to
+ * keep for as long as anything else, so on a stock install this takes nothing
+ * off -- see g_paste_clipboards_manager_expire_password ().
  *
  * Deliberately not part of g_paste_daemon_flush(): that one is also how a live
  * daemon persists before re-reading its store (a passphrase change, an
@@ -257,6 +263,7 @@ on_reexecute_passwords_expired (GObject      *source_object G_GNUC_UNUSED,
                                 gpointer      user_data)
 {
     g_autoptr (ReexecuteData) data = user_data;
+
     g_autoptr (GPasteDaemon) self = g_weak_ref_get (&data->daemon);
 
     /* The task carries no source object (the manager's own list holds it), so

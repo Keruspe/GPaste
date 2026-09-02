@@ -53,6 +53,7 @@ void     g_paste_history_save       (GPasteHistory *self,
 void     g_paste_history_load       (GPasteHistory *self,
                                      const gchar   *name);
 gboolean g_paste_history_is_unreadable (GPasteHistory *self);
+gboolean g_paste_history_is_loading    (GPasteHistory *self);
 void     g_paste_history_load_async (GPasteHistory *self,
                                      const gchar   *name);
 void     g_paste_history_switch     (GPasteHistory *self,

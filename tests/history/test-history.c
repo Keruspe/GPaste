@@ -2043,6 +2043,68 @@ test_encrypted_empty_placeholder (void)
 }
 
 static void
+record_dropped (GPasteHistory *history G_GNUC_UNUSED,
+                GPasteItem    *item,
+                gpointer       user_data)
+{
+    g_ptr_array_add (user_data, g_strdup (g_paste_item_get_real_value (item)));
+}
+
+/* Every way a password's entry leaves the model announces it, and its position
+ * is not the question: the cleartext may be sitting on a selection, where the
+ * entry that recorded it is now gone and no countdown need ever have been running
+ * (GPasteHistory::password-dropped). What the selections then carry is the
+ * clipboards manager's to answer (the /clipboard/dropped_password cases).
+ *
+ * An entry merely moving is no departure: the value stays in the history, so
+ * selecting a password says nothing about any selection giving it up. */
+static void
+test_password_dropped (void)
+{
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    {
+        g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+
+        g_paste_history_add (history, g_paste_password_item_new (NULL, "deleted secret", 0));
+        g_paste_history_add (history, g_paste_text_item_new ("a text"));
+        g_assert_cmpuint (dropped->len, ==, 0);
+
+        g_paste_history_remove (history, 1);
+        g_assert_cmpuint (dropped->len, ==, 1);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "deleted secret");
+
+        g_paste_history_add (history, g_paste_password_item_new (NULL, "emptied secret", 0));
+        g_assert_true (g_paste_history_select (history, g_paste_item_get_uuid (g_paste_history_get (history, 1))));
+        g_assert_cmpuint (dropped->len, ==, 1);
+
+        g_paste_history_empty (history);
+        g_assert_cmpuint (dropped->len, ==, 2);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 1), ==, "emptied secret");
+    }
+
+    /* A cap evicting one is a departure like any other: nobody asked for it, and
+     * that is exactly why nothing else would take the cleartext off. */
+    {
+        g_autoptr (GPasteHistory) history = make_history (NULL, 5);
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+
+        g_paste_history_add (history, g_paste_password_item_new (NULL, "evicted secret", 0));
+        for (guint i = 0; i < 5; ++i)
+        {
+            g_autofree gchar *text = g_strdup_printf ("copy %u", i);
+
+            g_paste_history_add (history, g_paste_text_item_new (text));
+        }
+        g_assert_cmpuint (dropped->len, ==, 3);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 2), ==, "evicted secret");
+    }
+}
+
+static void
 count_selected (GPasteHistory *history G_GNUC_UNUSED,
                 GPasteItem    *item G_GNUC_UNUSED,
                 gpointer       user_data)
@@ -3657,6 +3719,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/delete_refused_after_flush", test_delete_refused_after_flush);
     g_test_add_func ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     g_test_add_func ("/history/file_version_guard", test_file_version_guard);
+    g_test_add_func ("/history/password_dropped", test_password_dropped);
     g_test_add_func ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
     g_test_add_func ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

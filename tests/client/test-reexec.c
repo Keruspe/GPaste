@@ -1,11 +1,31 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-settings.h>
+#include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 #include <gpaste-test-env.h>
 #include <signal.h>
 
 static guint signals_sent;
+static GError *reexec_error;
+
+/* The re-exec the CLI asks for, refused with whatever @reexec_error says: the
+ * method is what the migration gate has to outlive, and reaching a daemon to
+ * have it refuse for real would take one. */
+static gboolean
+fake_reexecute_daemon (GPasteClient *client G_GNUC_UNUSED,
+                       GError      **error)
+{
+    if (!reexec_error)
+        return TRUE;
+
+    /* Guarded like the call it stands in for: @error is optional there. */
+    if (error)
+        *error = g_error_copy (reexec_error);
+
+    return FALSE;
+}
 
 static GPid
 fake_pid (const gchar *name G_GNUC_UNUSED)
@@ -27,7 +47,9 @@ fake_kill (GPid pid,
 #define main gpaste_client_main
 #define kill fake_kill
 #define g_paste_util_read_pid_file fake_pid
+#define g_paste_util_reexecute_daemon fake_reexecute_daemon
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_util_reexecute_daemon
 #undef g_paste_util_read_pid_file
 #undef kill
 #undef main
@@ -54,6 +76,41 @@ test_unsupported (void)
     g_assert_cmpuint (signals_sent, ==, 1);
 }
 
+/* `gpaste-client migrate` opens the migration gate, and what closes it again is
+ * *both* routes to a re-exec having failed. A daemon too old for the method is
+ * re-exec'd by signal instead, and the successor has to find the gate open: it
+ * is the one that runs the migration the user asked for, and this prints a
+ * success either way.
+ *
+ * @user_data says whether that fallback applies. A refusal the daemon made
+ * itself has no second route, so the gate is closed and the revision the
+ * migration was asked under is back.
+ */
+static void
+test_migrate_gate (gconstpointer user_data)
+{
+    gboolean unsupported = GPOINTER_TO_INT (user_data);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    signals_sent = 0;
+    reexec_error = (unsupported) ? g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method")
+                                 : g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "Expiry deadline");
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+
+    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, (unsupported) ? EXIT_SUCCESS : EXIT_FAILURE);
+    g_assert_cmpuint (signals_sent, ==, unsupported);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, (unsupported) ? 0 : 37);
+    if (unsupported)
+        g_assert_no_error (error);
+    else
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+
+    g_clear_error (&reexec_error);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -61,5 +118,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/client/reexec/refusal", test_refusal);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
+    g_test_add_data_func ("/client/migrate/gate_survives_fallback", GINT_TO_POINTER (TRUE), test_migrate_gate);
+    g_test_add_data_func ("/client/migrate/gate_closed_on_refusal", GINT_TO_POINTER (FALSE), test_migrate_gate);
     return g_paste_test_env_run ();
 }

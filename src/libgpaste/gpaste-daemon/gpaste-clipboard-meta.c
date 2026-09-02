@@ -524,22 +524,38 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
 {
     GPasteClipboardSyncData *data = user_data; /* built in sync_text */
 
-    gsize size;
-    const gchar *text = (bytes) ? g_bytes_get_data (bytes, &size) : NULL;
-
-    /* No target left is the guard having concluded this sync already. */
-    if (text && data->other && g_utf8_validate (text, size, NULL))
+    /* Asked before the copy below and not only by deliver (): the bytes this read
+     * landed with are the selection's whole text, and duplicating them for a sync
+     * that has nowhere left to put them is the one read that is certainly wasted.
+     * The GDK twin pays nothing for the same check, the text it hands over being
+     * one it already owns. */
+    if (g_paste_clipboard_sync_data_wants_text (data) && bytes)
     {
-        g_autofree gchar *dup = g_strndup (text, size);
-        g_paste_clipboard_provider_select_text (data->other, dup);
+        gsize size;
+        const gchar *text = g_bytes_get_data (bytes, &size);
+
+        /* An empty transfer is an empty text, as update_on_text () takes it, and
+         * as the GDK backend reads it: the other selection gets the empty string
+         * rather than keeping what it had. */
+        if (!size)
+            g_paste_clipboard_sync_data_deliver (data, "");
+        else if (text && g_utf8_validate (text, size, NULL))
+        {
+            g_autofree gchar *dup = g_strndup (text, size);
+
+            g_paste_clipboard_sync_data_deliver (data, dup);
+        }
     }
 
     g_paste_clipboard_sync_data_free (data);
 }
 
 static void
-g_paste_clipboard_meta_sync_text (GPasteClipboardMeta *self,
-                                  GPasteClipboardMeta *other)
+g_paste_clipboard_meta_sync_text (GPasteClipboardMeta        *self,
+                                  GPasteClipboardMeta        *other,
+                                  GPasteClipboardSyncCallback callback,
+                                  gpointer                    user_data,
+                                  GDestroyNotify              destroy)
 {
     GList *mimetypes = meta_selection_get_mimetypes (self->selection, self->type);
     /* Prefer the utf-8 form but accept bare text/plain too, like update() does, so a
@@ -551,11 +567,20 @@ g_paste_clipboard_meta_sync_text (GPasteClipboardMeta *self,
 
     if (mime)
     {
-        GPasteClipboardSyncData *data = g_paste_clipboard_sync_data_new (G_PASTE_CLIPBOARD_PROVIDER (other));
+        GPasteClipboardSyncData *data = g_paste_clipboard_sync_data_new (G_PASTE_CLIPBOARD_PROVIDER (other),
+                                                                         callback, user_data, destroy);
 
         if (data)
+        {
             g_paste_clipboard_meta_read_mime (self, mime, data->guard.cancellable, g_paste_clipboard_meta_sync_ready, data);
+            destroy = NULL;
+        }
     }
+
+    /* No read to hand it to, so nothing is going to be published and nothing
+     * will free what the caller handed over: that is this call's to do. */
+    if (destroy)
+        destroy (user_data);
 
     g_list_free_full (mimetypes, g_free);
 }
@@ -682,6 +707,29 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
 
     gsize size;
     const gchar *raw = g_bytes_get_data (bytes, &size);
+
+    /* An empty transfer comes back as bytes with no data at all, the stream it
+     * was written to having never grown: that is an empty text, not a read that
+     * failed, and it is what a password manager clearing its copy writes. It is
+     * handed over as the empty string, which conclude () takes for the answer it
+     * is -- where dropping it here would leave the record of the password it
+     * replaced unconfirmed for good (see the DROP case there).
+     *
+     * A source that closes its end without writing anything -- one that failed
+     * to serialize, or misbehaves -- comes back exactly the same: a pipe has no
+     * way to tell the two apart. It is taken for an empty text all the same, and
+     * the price is knowingly paid: such a source can have its password's record
+     * retired over the cleartext it still holds, where the other answer leaves
+     * every correct password manager's clear unconfirmed for good -- a record
+     * that refuses every sync out of that selection, and, while it runs a
+     * countdown, fails every re-exec and storage migration waiting on expiry. */
+    if (!size)
+    {
+        update->produced = TRUE;
+        g_set_str (&update->text, "");
+        g_paste_clipboard_update_maybe_done (update);
+        return;
+    }
 
     if (!raw || !g_utf8_validate (raw, size, NULL))
     {
@@ -944,7 +992,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
         return;
     }
     else
@@ -957,7 +1005,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_set_ignored (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
         return;
     }
 
@@ -976,7 +1024,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         g_list_free_full (mimetypes, g_free);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, FALSE, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_UNKNOWN, user_data);
         return;
     }
 
