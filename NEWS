@@ -1,6 +1,7 @@
 NEW in 51.0 (UNRELEASED)
 =============
 
+- Only offer the GNOME Shell preferences where the extension is actually installed: the switches used to appear wherever gnome-shell was, so enabling one on a machine without the extension wrote GPaste into the shell's extension list and did nothing else
 - Fix an SQLite history whose read stopped short, on a corrupt page, an I/O error or a row this build could make nothing of, being installed as a complete history, which had the next clipboard change write that truncation back over the rows still in the store
 
 NEW in 51.beta (25/08/2026)

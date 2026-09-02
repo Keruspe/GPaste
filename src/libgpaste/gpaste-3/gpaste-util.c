@@ -439,6 +439,134 @@ g_paste_util_has_gnome_shell (void)
     return !!schema;
 }
 
+/* Where gnome-shell answers questions about the extensions it has loaded. */
+#define G_PASTE_SHELL_BUS_NAME         "org.gnome.Shell"
+#define G_PASTE_SHELL_OBJECT_PATH      "/org/gnome/Shell"
+#define G_PASTE_SHELL_EXTENSIONS_IFACE "org.gnome.Shell.Extensions"
+
+static void
+on_extension_info (GObject      *source_object,
+                   GAsyncResult *res,
+                   gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GVariant) reply = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
+
+    if (!reply)
+    {
+        /* Said rather than swallowed: a shell that did not answer and a session
+         * with no shell in it leave the same absent group behind, and this line
+         * is the only thing that tells them apart afterwards. */
+        g_debug ("Failed to ask the shell about its extensions: %s", error->message);
+        g_task_return_boolean (task, FALSE);
+        return;
+    }
+
+    /* A uuid the shell knows nothing about is not an error: it answers an empty
+     * dictionary, so what says the extension is there is the dictionary having
+     * anything in it, not the call having succeeded. */
+    g_autoptr (GVariant) info = g_variant_get_child_value (reply, 0);
+
+    g_task_return_boolean (task, g_variant_n_children (info) > 0);
+}
+
+static void
+on_session_bus (GObject      *source_object G_GNUC_UNUSED,
+                GAsyncResult *res,
+                gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GDBusConnection) connection = g_bus_get_finish (res, &error);
+
+    if (!connection)
+    {
+        g_debug ("Failed to reach the session bus: %s", error->message);
+        g_task_return_boolean (task, FALSE);
+        return;
+    }
+
+    /* Read before the task is stolen: the two are arguments of one call, which
+     * C is free to evaluate in either order. */
+    GCancellable *cancellable = g_task_get_cancellable (task);
+
+    /* The uuid the extension is installed under, compiled in from meson.build
+     * and matched on by g_paste_settings_set_extension_enabled () too. */
+    g_dbus_connection_call (connection,
+                            G_PASTE_SHELL_BUS_NAME,
+                            G_PASTE_SHELL_OBJECT_PATH,
+                            G_PASTE_SHELL_EXTENSIONS_IFACE,
+                            "GetExtensionInfo",
+                            g_variant_new ("(s)", G_PASTE_EXTENSION_NAME),
+                            G_VARIANT_TYPE ("(a{sv})"),
+                            /* org.gnome.Shell is not activatable, so a session
+                             * running no shell fails here at once rather than
+                             * waiting out the timeout. */
+                            G_DBUS_CALL_FLAGS_NO_AUTO_START,
+                            /* The default timeout, since what takes the question
+                             * back is the cancellable rather than a deadline. */
+                            -1,
+                            cancellable,
+                            on_extension_info,
+                            g_steal_pointer (&task));
+}
+
+/**
+ * g_paste_util_has_gnome_shell_extension:
+ * @cancellable: (nullable): a #GCancellable, or %NULL
+ * @callback: (nullable): a #GAsyncReadyCallback to call with the answer
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Check whether GPaste's GNOME Shell extension is installed or not
+ *
+ * A different question from g_paste_util_has_gnome_shell(), which asks the
+ * schema source whether gnome-shell itself is installed: only the shell knows
+ * what it has, so this one goes over the bus and answers %FALSE when there is
+ * no shell running to ask.
+ *
+ * Asynchronous because a shell that owns the name and is not dispatching --
+ * starting up, or held up by another extension -- answers late or not at all,
+ * and the caller is a preferences page being built: blocking it would freeze
+ * the dialog with nothing drawn in it, and cutting the wait short would hide
+ * the extension's own rows on a machine that has it.
+ *
+ * That same shell is why @cancellable is worth passing: the call is left the
+ * 25-second D-Bus default, and cancelling is how a caller that has gone in the
+ * meantime stops @user_data being held for the rest of it.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_has_gnome_shell_extension (GCancellable       *cancellable,
+                                        GAsyncReadyCallback callback,
+                                        gpointer            user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
+
+    g_task_set_source_tag (task, g_paste_util_has_gnome_shell_extension);
+
+    g_bus_get (G_BUS_TYPE_SESSION, cancellable, on_session_bus, g_steal_pointer (&task));
+}
+
+/**
+ * g_paste_util_has_gnome_shell_extension_finish:
+ * @result: the #GAsyncResult the callback was handed
+ *
+ * Get the answer to a g_paste_util_has_gnome_shell_extension() call
+ *
+ * Nothing here fails: a bus that could not be reached, a shell that is not
+ * running and a shell that does not have the extension are one answer, there
+ * being no row to offer in any of those cases.
+ *
+ * Returns: %TRUE if the extension is installed
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_has_gnome_shell_extension_finish (GAsyncResult *result)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), NULL);
+}
+
 /**
  * g_paste_util_get_dbus_item_result:
  * @variant: a #GVariant

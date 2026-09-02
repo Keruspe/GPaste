@@ -27,7 +27,11 @@ gchar   *g_paste_util_one_line                (const gchar *text);
 gchar   *g_paste_util_display_string          (const gchar   *value,
                                                GPasteItemKind kind);
 
-gboolean g_paste_util_has_gnome_shell (void);
+gboolean g_paste_util_has_gnome_shell                  (void);
+void     g_paste_util_has_gnome_shell_extension        (GCancellable       *cancellable,
+                                                        GAsyncReadyCallback callback,
+                                                        gpointer            user_data);
+gboolean g_paste_util_has_gnome_shell_extension_finish (GAsyncResult *result);
 
 GPasteClientItem *g_paste_util_get_dbus_item_result      (GVariant *variant);
 GList            *g_paste_util_get_dbus_items_result     (GVariant *variant);
