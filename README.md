@@ -75,8 +75,10 @@ installed.
 
 ### From source
 
+On Fedora and other rpm-based distributions:
+
 ```bash
-# Build dependencies (Fedora)
+# Build dependencies
 sudo dnf install meson ninja-build gcc gettext-devel \
                  glib2-devel gtk4-devel libadwaita-devel gcr-devel \
                  dbus-devel gnome-control-center
@@ -84,7 +86,34 @@ sudo dnf install meson ninja-build gcc gettext-devel \
 # Optional, but on by default when found
 sudo dnf install libsodium-devel sqlite-devel libsecret-devel \
                  libpwquality-devel gobject-introspection-devel vala
+```
 
+On Debian, Ubuntu and other deb-based distributions:
+
+```bash
+# Build dependencies
+sudo apt install meson ninja-build build-essential pkg-config gettext \
+                 libglib2.0-dev libgtk-4-dev libadwaita-1-dev libgcr-4-dev \
+                 libdbus-1-dev systemd-dev gnome-control-center
+
+# Optional, but on by default when found
+sudo apt install libsodium-dev libsqlite3-dev libsecret-1-dev \
+                 libpwquality-dev gobject-introspection \
+                 libgirepository1.0-dev valac
+```
+
+dbus, systemd and gnome-control-center are wanted for their pkg-config files
+alone, which say where the D-Bus service and interface files, the systemd user
+unit and the control-center keybinding files go. Fedora ships systemd's in the
+base package, which is why only the apt line names it. A packager who would
+rather not pull any of them in can name the four directories outright —
+`-Ddbus-services-dir`, `-Ddbus-interfaces-dir`, `-Dsystemd-user-unit-dir` and
+`-Dcontrol-center-keybindings-dir` — and dbus and gnome-control-center are still
+needed at runtime either way.
+
+Then, wherever you are:
+
+```bash
 git clone https://github.com/Keruspe/GPaste.git
 cd GPaste
 meson setup build
@@ -93,7 +122,9 @@ sudo ninja -C build install
 sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
 
-GPaste currently needs GLib 2.90, GTK 4.24, libadwaita 1.10 and gcr 4.
+GPaste currently needs GLib 2.90, GTK 4.24, libadwaita 1.10 and gcr 4. That
+libadwaita is newer than anything Debian ships outside experimental, so a
+deb-based build of the 51 series needs one built by hand.
 
 #### Build options
 
