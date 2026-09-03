@@ -247,6 +247,70 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
                    NULL);
 }
 
+/* How long the "upload-command" is given to answer. It is a command line the
+ * user wrote, so nothing about it promises to exit: a curl with no timeout of
+ * its own against an unreachable host, or an "nc host port" that never gets its
+ * connection closed, waits for as long as the process lives -- and with it the
+ * task, the child, and the pipes the daemon opened for it.
+ *
+ * Nothing secret waits with them: Upload is a text item's action, and what it
+ * hands the command is g_paste_item_get_value (), which a password answers with
+ * G_PASTE_PASSWORD_ITEM_NO_NAME -- the cleartext is get_real_value ()'s and
+ * nothing on this path asks for it.
+ *
+ * Comfortably inside the ten minutes GPasteClient allows this one call, so what
+ * the caller is told is the deadline that ran out rather than a proxy giving up
+ * on a daemon that never answered.
+ *
+ * Elapsed time and not silence, unlike the clipboard read guard: an upload
+ * reports nothing until it is done, so there is no progress to measure. */
+#define G_PASTE_DAEMON_UPLOAD_TIMEOUT (9 * 60)
+
+/* What the deadline needs to reach the upload it is running against, and what
+ * the upload needs to call that deadline off. Held as the task's data, so its
+ * life is the task's. */
+typedef struct
+{
+    GSubprocess  *upload;      /* ref'd: the deadline has to be able to kill it */
+    GCancellable *cancellable;
+    guint         timeout_id;
+} UploadData;
+
+static void
+upload_data_free (gpointer user_data)
+{
+    UploadData *data = user_data;
+
+    g_clear_handle_id (&data->timeout_id, g_source_remove);
+    g_clear_object (&data->upload);
+    g_clear_object (&data->cancellable);
+    g_free (data);
+}
+
+static void
+on_upload_timed_out (gpointer user_data)
+{
+    UploadData *data = user_data;
+
+    data->timeout_id = 0;
+
+    /* Held over the cancel, which is what @data's lifetime hangs on: a read that
+     * completes under the cancellation answers the task, and the last ref going
+     * with it frees @data -- so the child has to be in hand before the cancel to
+     * still be there after it. */
+    g_autoptr (GSubprocess) upload = g_object_ref (data->upload);
+
+    /* The cancel is what says this was the deadline and not the command
+     * answering, and the kill is what makes the read come back at all:
+     * cancelling g_subprocess_communicate_utf8_async () abandons the read
+     * without touching the child, which would then outlive the daemon still
+     * holding the pipes it was writing to. In this order, so that a read failing
+     * under the kill is failed as a cancellation rather than as a command that
+     * exited badly. */
+    g_cancellable_cancel (data->cancellable);
+    g_subprocess_force_exit (upload);
+}
+
 /* Not on_upload_done (): that name belongs to the D-Bus handler further down,
  * which is what this task eventually answers. */
 static void
@@ -258,11 +322,37 @@ on_upload_command_done (GObject      *source_object,
      * as long as it needs one. */
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     g_autoptr (GTask) task = user_data;
+    UploadData *data = g_task_get_task_data (task);
     g_autofree gchar *url = NULL;
     GError *error = NULL;
 
+    /* Whatever the answer is, it has arrived, so there is nothing left for the
+     * deadline to cut off. Here rather than left to upload_data_free (), which
+     * only catches it because the last ref on the task is the one this callback
+     * is holding. */
+    g_clear_handle_id (&data->timeout_id, g_source_remove);
+
     if (!g_subprocess_communicate_utf8_finish (upload, res, &url, NULL, &error))
     {
+        /* The one cancellation there is here is the deadline's, and it is worth
+         * saying so: what the command wrote before it was killed is not an
+         * answer, and "the upload command failed" would read as one it gave. */
+        if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        {
+            g_clear_error (&error);
+            g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                     "The upload command did not answer within %d seconds.",
+                                     G_PASTE_DAEMON_UPLOAD_TIMEOUT);
+            return;
+        }
+
+        /* Any other failure is the read giving up on a command that has not:
+         * communicate () answers once the child has exited, so one that answers
+         * this way leaves it running, holding pipes that are ours. The deadline
+         * that would have killed it is gone with the answer that arrived -- and
+         * goes with the task either way (upload_data_free ()) -- so the kill is
+         * this path's, exactly as it is the deadline's. */
+        g_subprocess_force_exit (upload);
         g_task_return_error (task, error);
         return;
     }
@@ -402,9 +492,20 @@ g_paste_daemon_upload (GPasteDaemon       *self,
         return;
     }
 
+    UploadData *data = g_new0 (UploadData, 1);
+
+    data->upload = g_object_ref (upload);
+    data->cancellable = g_cancellable_new ();
+    data->timeout_id = g_timeout_add_seconds_once (G_PASTE_DAEMON_UPLOAD_TIMEOUT,
+                                                   on_upload_timed_out,
+                                                   data);
+    g_source_set_name_by_id (data->timeout_id, "[GPaste] upload command deadline");
+
+    g_task_set_task_data (task, data, upload_data_free);
+
     g_subprocess_communicate_utf8_async (upload,
                                          g_paste_item_get_value (item),
-                                         NULL, /* cancellable */
+                                         data->cancellable,
                                          on_upload_command_done,
                                          g_steal_pointer (&task));
 }
