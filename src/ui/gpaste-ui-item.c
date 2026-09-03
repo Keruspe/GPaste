@@ -55,10 +55,12 @@ struct _GPasteUiItem
     gboolean            fake_index;
     gchar              *uuid;
 
-    /* Bumped on every (re)binding. GtkListView recycles row widgets, so a reply
-     * for a previous binding must be dropped rather than overwrite the content
-     * the widget has since been rebound to. */
-    guint64             generation;
+    /* The reads filling this row, cancelled and replaced on every (re)binding.
+     * GtkListView recycles row widgets, so a reply for a previous binding must
+     * not overwrite the content the widget has since been rebound to -- and the
+     * read itself is worth stopping, an image row costing its bytes over the bus
+     * for content nothing will draw. */
+    GCancellable       *fill;
 };
 
 enum
@@ -512,19 +514,21 @@ on_leave (GtkEventControllerMotion *controller G_GNUC_UNUSED,
     g_paste_ui_item_update_actions_visibility (self);
 }
 
-/* Carried by every step of the fill chain. @self is owned: the widget's only
- * owner is the list item, so a row recycled or a window closed mid-flight would
- * otherwise finalize it before the reply lands. */
+/* Carried by every step of the fill chain. Both members are owned: the widget's
+ * only owner is the list item, so a row recycled or a window closed mid-flight
+ * would otherwise finalize it before the reply lands, and the cancellable is the
+ * one this read went out on rather than whichever the row holds by then. */
 typedef struct
 {
     GPasteUiItem *self;
-    guint64       generation;
+    GCancellable *cancellable;
 } AsyncCallbackData;
 
 static void
 async_callback_data_free (AsyncCallbackData *data)
 {
     g_object_unref (data->self);
+    g_object_unref (data->cancellable);
     g_free (data);
 }
 
@@ -532,18 +536,22 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (AsyncCallbackData, async_callback_data_free)
 
 /* Whether the reply @data was made for is still the one @self is waiting on.
  *
- * The ref @data holds keeps the widget allocated, not alive: dispose() may
- * already have cleared the client the call was made on, and calling its
- * _finish() would be calling it on %NULL. So this is asked before touching the
- * result at all, not after. */
+ * Asked of the cancellable rather than of the error the reply carries, because
+ * the client is the other half of the answer: the ref @data holds keeps the
+ * widget allocated, not alive, and dispose() may already have cleared the client
+ * the call was made on -- so calling its _finish() would be calling it on %NULL.
+ * Hence before touching the result at all, not after.
+ *
+ * A cancel does not unqueue a reply already on its way either, so this is what
+ * the read a rebinding cancelled lands on. */
 static gboolean
 g_paste_ui_item_still_wants (GPasteUiItem      *self,
                              AsyncCallbackData *data)
 {
-    return self->client && data->generation == self->generation;
+    return self->client && !g_cancellable_is_cancelled (data->cancellable);
 }
 
-/* Only ever called while @self's generation is the current one — every step of
+/* Only ever called while @self's cancellable is the current one — every step of
  * the chain bails before continuing it — so the new data inherits it. */
 static AsyncCallbackData *
 async_callback_data_new (GPasteUiItem *self)
@@ -551,7 +559,7 @@ async_callback_data_new (GPasteUiItem *self)
     AsyncCallbackData *data = g_new (AsyncCallbackData, 1);
 
     data->self = g_object_ref (self);
-    data->generation = self->generation;
+    data->cancellable = g_object_ref (self->fill);
 
     return data;
 }
@@ -648,7 +656,7 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     g_paste_ui_item_update_actions (self);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
-        g_paste_client_get_image (self->client, self->uuid, NULL /* cancellable */, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
+        g_paste_client_get_image (self->client, self->uuid, self->fill, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
     else
         g_paste_ui_item_set_thumbnail (self, NULL);
 
@@ -715,9 +723,9 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     if (self->fake_index)
-        g_paste_client_get_item (self->client, self->uuid, NULL /* cancellable */, g_paste_ui_item_on_uuid_ready, async_callback_data_new (self));
+        g_paste_client_get_item (self->client, self->uuid, self->fill, g_paste_ui_item_on_uuid_ready, async_callback_data_new (self));
     else
-        g_paste_client_get_item_at_index (self->client, self->index, NULL /* cancellable */, g_paste_ui_item_on_index_ready, async_callback_data_new (self));
+        g_paste_client_get_item_at_index (self->client, self->index, self->fill, g_paste_ui_item_on_index_ready, async_callback_data_new (self));
 }
 
 static void
@@ -725,7 +733,23 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
                             guint64       index,
                             gboolean      fake_index)
 {
-    ++self->generation;
+    /* A row the list view drops is unbound after dispose () has run, and there
+     * is nothing left here to rebind: the client every read is made on is gone
+     * with the cancellable they were made under. Allocating a fresh one would be
+     * allocating what dispose () has already run past -- nothing would ever
+     * cancel it, and the read below would go out on a %NULL client. Nothing
+     * below needs doing either: a row past dispose () is being finalised, not
+     * recycled, and the state a rebinding resets is state nothing reads again --
+     * where the widgets it would reset through are children the box has already
+     * let go of. */
+    if (!self->client)
+        return;
+
+    /* Whatever was being read for the binding this row is leaving is a read of
+     * an item it no longer shows. */
+    g_cancellable_cancel (self->fill);
+    g_clear_object (&self->fill);
+    self->fill = g_cancellable_new ();
 
     self->index = index;
     self->fake_index = fake_index;
@@ -795,6 +819,13 @@ g_paste_ui_item_set_uuid (GPasteUiItem *self,
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
+    /* Past the same guard as the rest of the binding, and not before it: the
+     * uuid is what the row answers for, so writing it on a row dispose () has
+     * run through -- which _g_paste_ui_item_set_index () declines to rebind --
+     * would leave that row standing for an item it never read. */
+    if (!self->client)
+        return;
+
     g_set_str (&self->uuid, uuid);
 
     _g_paste_ui_item_set_index (self, (guint64) -2, TRUE);
@@ -804,6 +835,11 @@ static void
 g_paste_ui_item_dispose (GObject *object)
 {
     GPasteUiItem *self = G_PASTE_UI_ITEM (object);
+
+    /* Cancelled before the client goes, so a read still out is stopped rather
+     * than left to land on a row that can no longer finish it. */
+    g_cancellable_cancel (self->fill);
+    g_clear_object (&self->fill);
 
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
@@ -917,6 +953,7 @@ static void
 g_paste_ui_item_init (GPasteUiItem *self)
 {
     self->index = (guint64) -1;
+    self->fill = g_cancellable_new ();
 
     GtkWidget *index_label = gtk_label_new ("");
     GtkWidget *label = gtk_inscription_new (NULL);
