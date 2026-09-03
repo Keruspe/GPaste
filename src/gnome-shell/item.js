@@ -75,8 +75,28 @@ const focusWatcher = {
     },
 };
 
-export const GPasteItem = GObject.registerClass(
-class GPasteItem extends PopupMenuItem {
+export class GPasteItem extends PopupMenuItem {
+    // Registered here rather than through GObject.registerClass (class ...)
+    // because a binding pool is per-class and only exists once the class does.
+    // StWidget then puts a key controller on every instance whose type chain
+    // has one, and that controller walks the chain from this class up, so these
+    // are consulted before the space/Return PopupBaseMenuItem installs.
+    static {
+        GObject.registerClass(this);
+
+        const bindingPool = this.get_binding_pool();
+        const deleteItem = obj => {
+            // Nothing to delete until the row's fetch has landed (see activate).
+            if (obj._uuid)
+                obj._client.delete_item(obj._uuid, null);
+
+            return Clutter.EVENT_STOP;
+        };
+
+        bindingPool.install_closure('delete', Clutter.KEY_BackSpace, 0, deleteItem);
+        bindingPool.install_closure('delete', Clutter.KEY_Delete, 0, deleteItem);
+    }
+
     constructor(client, size, slotIndex, index, uuid = null) {
         // hover: false keeps the pointer from stealing key focus from the search
         // entry (Fix #435) without dropping can_focus, so the rows stay reachable
@@ -428,21 +448,4 @@ class GPasteItem extends PopupMenuItem {
         this._client.select(this._uuid, null);
         super.activate(event);
     }
-
-    vfunc_key_press_event(event) {
-        const symbol = event.get_key_symbol();
-        if (symbol === Clutter.KEY_space || symbol === Clutter.KEY_Return) {
-            this.activate(event);
-            return Clutter.EVENT_STOP;
-        }
-        if (symbol === Clutter.KEY_BackSpace || symbol === Clutter.KEY_Delete) {
-            // Nothing to delete until the row's fetch has landed (see activate).
-            if (this._uuid)
-                this._client.delete_item(this._uuid, null);
-            return Clutter.EVENT_STOP;
-        }
-        // Chain up so PopupBaseMenuItem keeps handling arrow-key focus
-        // navigation between history rows.
-        return super.vfunc_key_press_event(event);
-    }
-});
+}

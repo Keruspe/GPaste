@@ -209,12 +209,23 @@ class GPasteIndicator extends Button {
         // _onDaemonAppeared () reports it once one turns up.
         this._onStateChanged(true);
 
-        // The ctrl-index overlay and ctrl+0-9 selection are driven by raw key
-        // events. The menu object is a Signals.EventEmitter and never emits
-        // 'key-press-event'/'key-release-event'; those fire on its actor, so the
-        // handlers have to be connected there.
-        this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
-        this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
+        // The ctrl-index overlay and ctrl+0-9 selection watch the keyboard for
+        // the whole menu rather than any one row, so they hang off a controller
+        // on the menu's actor: the menu object itself is a Signals.EventEmitter
+        // and has no actor tree of its own to carry actions.
+        //
+        // Its own name, not _keyController: that one is the controller
+        // PanelMenu.Button installs for _onMenuKeyPress ().
+        this._indexKeyController = new Clutter.KeyController();
+        this._indexKeyController.connectObject(
+            'key-press', this._onIndexKeyPress.bind(this),
+            // The overlay follows the modifier itself rather than the press and
+            // release of the two Control keysyms, so it also gets latched and
+            // locked ctrl right (sticky keys), and never misses a release that
+            // happened while the menu did not have the focus.
+            'modifier-change', this._onModifierChange.bind(this),
+            this);
+        this.menu.actor.add_action(this._indexKeyController);
 
         // Last, being the one step that waits on the daemon: one that drops out
         // while it is in flight rejects the call, and a rejection out of here
@@ -449,34 +460,41 @@ class GPasteIndicator extends Button {
         this._probeDaemon(true).catch(console.error);
     }
 
-    _onKeyPressEvent(actor, event) {
-        if (event.has_control_modifier()) {
-            const nb = parseInt(event.get_key_unicode(), 10);
-            if (!Number.isNaN(nb) && nb >= 0 && nb <= 9 && nb < this._history.length)
-                this._history[nb].activate(event);
-        } else {
-            this._maybeUpdateIndexVisibility(event, true);
-        }
+    _onIndexKeyPress() {
+        if (!this._controlHeld())
+            return Clutter.EVENT_PROPAGATE;
+
+        // gunichar comes back as a one-character string, so the digit it stands
+        // for is simply what parses out of it.
+        const [, , , unicode] = this._indexKeyController.get_key();
+        const nb = parseInt(unicode, 10);
+
+        if (Number.isNaN(nb) || nb < 0 || nb > 9 || nb >= this._history.length)
+            return Clutter.EVENT_PROPAGATE;
+
+        this._history[nb].activate(Clutter.get_current_event());
+
+        return Clutter.EVENT_STOP;
     }
 
-    _onKeyReleaseEvent(actor, event) {
-        this._updateIndexVisibility(!this._eventIsControlKey(event) && event.has_control_modifier());
+    _onModifierChange() {
+        this._updateIndexVisibility(this._controlHeld());
+
+        return Clutter.EVENT_PROPAGATE;
     }
 
-    _maybeUpdateIndexVisibility(event, state) {
-        if (this._eventIsControlKey(event))
-            this._updateIndexVisibility(state);
+    // Held, latched or locked all count: what the overlay answers is whether
+    // ctrl+0-9 would select right now, which is the same question.
+    _controlHeld() {
+        const [, pressed, latched, locked] = this._indexKeyController.get_state();
+
+        return ((pressed | latched | locked) & Clutter.ModifierType.CONTROL_MASK) !== 0;
     }
 
     _updateIndexVisibility(state) {
         this._history.slice(0, 10).forEach(i => {
             i.showIndex(state);
         });
-    }
-
-    _eventIsControlKey(event) {
-        const key = event.get_key_symbol();
-        return key === Clutter.KEY_Control_L || key === Clutter.KEY_Control_R;
     }
 
     _hasSearch() {
@@ -889,7 +907,7 @@ class GPasteIndicator extends Button {
     }
 
     _popup() {
-        this.menu.open(true);
+        this.menu.open();
     }
 
     _toggle(c, state) {
@@ -931,22 +949,39 @@ class GPasteIndicator extends Button {
     // history above them is not in the menu's item tree -- its rows live in
     // a section nested in the scroll view -- so Up from the first of them has
     // nothing there to land on. Bridge that one step.
-    _onMenuKeyPress(actor, event) {
+    //
+    // Runs after the focus manager's own controller on the same actor, so it
+    // only ever sees an Up the ordinary navigation had no answer for. Every
+    // other key chains up, which is what leaves PanelMenu.Button its Left/Right
+    // walk to the neighbouring panel menus.
+    //
+    // Both ways a shell calling itself 51 invokes this are served: 51.rc reads
+    // the key off the controller it installs and passes nothing, while 51.beta
+    // still connects 'key-press-event' and passes (actor, event). The key comes
+    // from the event we were handed when there is one, and otherwise from the
+    // one Clutter is dispatching -- what upstream's own binding closures read.
+    // Neither is promised: get_current_event() answers null outside a dispatch,
+    // and a key this override cannot name is one it has no answer for, so it
+    // chains up like any other. Whatever we were handed goes back to the parent
+    // untouched.
+    _onMenuKeyPress(...args) {
         if (this._switch && this._switch.active)
-            return super._onMenuKeyPress(actor, event);
+            return super._onMenuKeyPress(...args);
 
-        if (event.get_key_symbol() !== Clutter.KEY_Up)
-            return Clutter.EVENT_PROPAGATE;
+        const symbol = args[1]?.get_key_symbol() ?? Clutter.get_current_event()?.get_key_symbol();
+
+        if (symbol !== Clutter.KEY_Up)
+            return super._onMenuKeyPress(...args);
 
         const focus = global.stage.get_key_focus();
 
         if (!this._footer || !focus || !this._footer.open.contains(focus))
-            return Clutter.EVENT_PROPAGATE;
+            return super._onMenuKeyPress(...args);
 
         const last = this._lastHistoryItem();
 
         if (!last)
-            return Clutter.EVENT_PROPAGATE;
+            return super._onMenuKeyPress(...args);
 
         last.grab_key_focus();
 
