@@ -31,7 +31,7 @@ G_BEGIN_DECLS
 typedef struct _GPastePassphrase GPastePassphrase;
 
 G_PASTE_VISIBLE
-GType g_paste_passphrase_get_type (void) G_GNUC_CONST;
+GType g_paste_passphrase_get_type (void);
 
 /* Copies @cleartext into secure memory. %NULL, and the empty string — which is
  * no passphrase, not a passphrase that happens to be short — both give %NULL. */
