@@ -13,7 +13,7 @@ apiversion = '3'
 adwaita_req_version = '1.10.alpha'
 gcr_req_version = '4.0.0'
 glib_req_version = '2.89.0'
-gtk4_req_version = '4.23.2'
+gtk4_req_version = '4.23.4'
 
 gcr_dep = dependency('gcr-4', version: '>= ' + gcr_req_version)
 gio_dep = dependency('gio-2.0', version: '>= ' + glib_req_version)

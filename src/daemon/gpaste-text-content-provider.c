@@ -6,27 +6,33 @@
 #include <string.h>
 
 /* A content provider for text, equivalent to what
- * gdk_content_provider_new_typed (G_TYPE_STRING, text) gives us, except that
- * it never lets GTK serialize the value.
+ * gdk_content_provider_new_typed (G_TYPE_STRING, text) gives us, except for
+ * what a client asking for bare text/plain is served.
  *
- * GTK serializes a G_TYPE_STRING through a GConverterOutputStream that nobody
- * owns: the only reference left is the one held by the GTask of the write it
- * starts, so the whole stream chain is finalized from the main loop dispatch
- * which completes that write. GIO's dispose then closes the unclosed chain
- * synchronously, and on X11 that ends up in
- * gdk_x11_selection_output_stream_flush() waiting on a GCond only this very
- * main loop could signal: the daemon deadlocks against itself, most often on
- * the larger items, which go through INCR.
+ * GTK registers the text/plain serializer for a G_TYPE_STRING with "ASCII" as
+ * its target charset and a '?' fallback (string_serializer () in
+ * gdk/gdkcontentserializer.c), so a client that asks for text/plain rather than
+ * for text/plain;charset=utf-8 gets a '?' in place of every character outside
+ * ASCII. Claiming that one mime type and writing the utf-8 bytes into the
+ * stream GDK owns is the whole of what this class is for.
  *
- * Encoding the text ourselves and writing it straight into the stream GDK
- * owns (and closes asynchronously) leaves no unowned stream chain behind,
- * while keeping G_TYPE_STRING in our formats: local readers still get the
- * value directly instead of going through a serialize/deserialize round trip.
+ * Serving utf-8 under that name is a convention rather than a guarantee: RFC
+ * 2046 has a text media type default to US-ASCII, so a client is within its
+ * rights to read those bytes as ASCII. It is the convention X11 clients follow,
+ * and the alternative loses the content outright -- a '?' cannot be read back
+ * as the character it stands for -- while a client that needs a charset it can
+ * name asks for text/plain;charset=..., which the serializers answer.
+ *
+ * Everything else about the value stays GTK's: G_TYPE_STRING is still in our
+ * formats, so a local reader gets it without a serialize/deserialize round
+ * trip, and gdk_clipboard_set_content () unions that gtype with the mime types
+ * the serializers provide, so text/plain;charset=utf-8 and the locale spelling
+ * are still advertised and still served -- by them. What routes the two apart
+ * is gdk_clipboard_write_async (), which hands a provider only the mime types
+ * it claims itself.
  */
 
-#define TEXT_PLAIN         "text/plain"
-#define TEXT_PLAIN_UTF8    "text/plain;charset=utf-8"
-#define TEXT_PLAIN_CHARSET "text/plain;charset="
+#define TEXT_PLAIN "text/plain"
 
 struct _GPasteTextContentProvider
 {
@@ -37,29 +43,17 @@ struct _GPasteTextContentProvider
 
 G_PASTE_DEFINE_TYPE (TextContentProvider, text_content_provider, GDK_TYPE_CONTENT_PROVIDER)
 
-/* The gtype is what lets local readers get our value directly, but the mime
- * types have to be advertised here as well: gdk_clipboard_write_async only
- * hands us the mime types we claim ourselves, and serializes the value (the
- * very path we're avoiding) for all the others. So claim exactly what the
- * G_TYPE_STRING serializers would have provided, and handle all of it in
- * g_paste_text_content_provider_encode.
- */
+/* Claimed and no more: the gtype is what lets a local reader get our value
+ * directly, and text/plain is the one mime type we serve ourselves. Every other
+ * spelling the serializers advertise for a G_TYPE_STRING is left to them, which
+ * is what claiming it here would take away. */
 static GdkContentFormats *
 g_paste_text_content_provider_ref_formats (GdkContentProvider *provider G_GNUC_UNUSED)
 {
     GdkContentFormatsBuilder *builder = gdk_content_formats_builder_new ();
-    const gchar *charset;
 
     gdk_content_formats_builder_add_gtype (builder, G_TYPE_STRING);
-    gdk_content_formats_builder_add_mime_type (builder, TEXT_PLAIN_UTF8);
     gdk_content_formats_builder_add_mime_type (builder, TEXT_PLAIN);
-
-    if (!g_get_charset (&charset))
-    {
-        g_autofree gchar *mime_type = g_strconcat (TEXT_PLAIN_CHARSET, charset, NULL);
-
-        gdk_content_formats_builder_add_mime_type (builder, mime_type);
-    }
 
     return gdk_content_formats_builder_free_to_formats (builder);
 }
@@ -78,45 +72,6 @@ g_paste_text_content_provider_get_value (GdkContentProvider *provider,
     }
 
     return GDK_CONTENT_PROVIDER_CLASS (g_paste_text_content_provider_parent_class)->get_value (provider, value, error);
-}
-
-/* Anything the clipboard advertises on our behalf has to be handled here:
- * gdk_clipboard_set_content unions our G_TYPE_STRING with the mime types the
- * serializers would provide, which is text/plain, text/plain;charset=utf-8
- * and, on a non utf-8 locale, text/plain;charset=<locale>.
- *
- * text/plain gets the utf-8 bytes as everyone expects nowadays, where GTK
- * would encode it as ASCII and replace anything else with '?'.
- */
-static GBytes *
-g_paste_text_content_provider_encode (const gchar *text,
-                                      const gchar *mime_type)
-{
-    if (g_paste_str_equal (mime_type, TEXT_PLAIN_UTF8) ||
-        g_paste_str_equal (mime_type, TEXT_PLAIN))
-            return g_bytes_new (text, strlen (text));
-
-    if (!g_str_has_prefix (mime_type, TEXT_PLAIN_CHARSET))
-        return NULL;
-
-    g_autoptr (GError) error = NULL;
-    gsize length;
-    gchar *converted = g_convert_with_fallback (text,
-                                                -1,
-                                                mime_type + strlen (TEXT_PLAIN_CHARSET), /* to */
-                                                "utf-8",                                 /* from */
-                                                "?",
-                                                NULL, /* bytes read */
-                                                &length,
-                                                &error);
-
-    if (!converted)
-    {
-        g_debug ("Failed to provide text as %s: %s", mime_type, error->message);
-        return NULL;
-    }
-
-    return g_bytes_new_take (converted, length);
 }
 
 static void
@@ -148,9 +103,10 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider *provide
     g_task_set_priority (task, io_priority);
     g_task_set_source_tag (task, g_paste_text_content_provider_write_mime_type_async);
 
-    GBytes *bytes = g_paste_text_content_provider_encode (self->text, mime_type);
-
-    if (!bytes)
+    /* text/plain is the only mime type ref_formats () claims, so it is the only
+     * one gdk_clipboard_write_async () ever routes here -- and what it is served
+     * is the text as it stands, which is the whole point of claiming it. */
+    if (!g_paste_str_equal (mime_type, TEXT_PLAIN))
     {
         g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
                                  "Cannot provide contents as \"%s\"", mime_type);
@@ -158,15 +114,12 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider *provide
         return;
     }
 
-    gsize length;
-    gconstpointer data = g_bytes_get_data (bytes, &length);
-
-    /* Keep the bytes around for as long as we're writing them */
-    g_task_set_task_data (task, bytes, (GDestroyNotify) g_bytes_unref);
-
+    /* The text as it stands, with nothing copied for the write to hold: the task
+     * references the provider until the write is answered, and the text is the
+     * provider's. */
     g_output_stream_write_all_async (stream,
-                                     data,
-                                     length,
+                                     self->text,
+                                     strlen (self->text),
                                      io_priority,
                                      cancellable,
                                      g_paste_text_content_provider_write_done,
