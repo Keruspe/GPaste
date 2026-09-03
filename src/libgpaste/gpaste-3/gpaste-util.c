@@ -585,12 +585,13 @@ g_paste_util_get_dbus_item_result (GVariant *variant)
      * string for the caller to free. */
     g_autofree gchar *uuid = NULL;
     g_autofree gchar *value = NULL;
+    g_auto (GStrv) notes = NULL;
     guint32 kind;
     gboolean favourite;
 
-    g_variant_get (variant, G_PASTE_ITEM_VARIANT_STRING, &uuid, &value, &kind, &favourite);
+    g_variant_get (variant, G_PASTE_ITEM_VARIANT_FORMAT, &uuid, &value, &kind, &favourite, &notes);
 
-    return g_paste_client_item_new (uuid, value, kind, favourite);
+    return g_paste_client_item_new (uuid, value, kind, favourite, (const gchar * const *) notes);
 }
 
 /**

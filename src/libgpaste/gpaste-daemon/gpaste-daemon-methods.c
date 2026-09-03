@@ -26,11 +26,16 @@
 static GVariant *
 g_paste_daemon_methods_item_variant (GPasteItem *item)
 {
-    return g_variant_new (G_PASTE_ITEM_VARIANT_STRING,
+    /* The reserved notes slot, empty because nothing attaches notes to an item
+     * yet: see G_PASTE_ITEM_VARIANT_STRING for why it travels all the same. */
+    static const gchar * const no_notes[] = { NULL };
+
+    return g_variant_new (G_PASTE_ITEM_VARIANT_FORMAT,
                           g_paste_item_get_uuid (item),
                           g_paste_item_get_display_string (item),
                           (guint32) g_paste_item_get_kind (item),
-                          g_paste_item_is_favourite (item));
+                          g_paste_item_is_favourite (item),
+                          no_notes);
 }
 
 /* The same for a whole array of them, which is every listing the daemon

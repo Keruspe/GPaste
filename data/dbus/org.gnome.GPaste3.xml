@@ -32,11 +32,20 @@
     EmptyHistory, DeleteHistory and SwitchHistory. Inspecting another history
     means switching to it.
 
-    An item travels as (uuid, value, kind, favourite): everything a client needs
-    to draw a row, in one reply. @kind is the GPasteItemKind value, the numeric
-    one rather than its nick, which is now the storage backends' business alone;
-    the DocString annotation below spells the numbers out, so a client that
-    never sees GPaste's headers can still read them off Introspect().
+    An item travels as (uuid, value, kind, favourite, notes): everything a client
+    needs to draw a row, in one reply. @kind is the GPasteItemKind value, the
+    numeric one rather than its nick, which is now the storage backends'
+    business alone; the org.gnome.GPaste3.ItemKind annotation below spells the
+    numbers out, so a client that never sees GPaste's headers can still read them
+    off Introspect().
+
+    @notes is reserved and always empty. Nothing attaches notes to an item yet,
+    and no method here writes or reads one; the slot is on the wire because a
+    note is something a row draws, which is what would put it in this struct
+    rather than behind a getter of its own, and widening the struct is a break
+    every client pays for. Spending that break here, on a release already
+    breaking the interface, is cheaper than spending it twice. A client should
+    draw whatever it finds, and today will find nothing.
 
     @value is the one string an item has here, the one a user is shown. There
     used to be a second, "raw" flavour of every getter, answering what a script
@@ -143,12 +152,12 @@
       narrow set already.
     -->
     <method name="GetFavourites">
-      <arg type="a(ssub)" direction="out" name="favourites"/>
+      <arg type="a(ssubas)" direction="out" name="favourites"/>
     </method>
 
     <!-- The whole history -->
     <method name="GetHistory">
-      <arg type="a(ssub)" direction="out" name="history"/>
+      <arg type="a(ssubas)" direction="out" name="history"/>
     </method>
 
     <!--
@@ -181,20 +190,20 @@
 
     <!-- One item, by uuid -->
     <method name="GetItem">
-      <arg type="s"      direction="in"  name="uuid"/>
-      <arg type="(ssub)" direction="out" name="item"/>
+      <arg type="s"        direction="in"  name="uuid"/>
+      <arg type="(ssubas)" direction="out" name="item"/>
     </method>
 
     <!-- The item at a given position -->
     <method name="GetItemAtIndex">
-      <arg type="t"      direction="in"  name="index"/>
-      <arg type="(ssub)" direction="out" name="item"/>
+      <arg type="t"        direction="in"  name="index"/>
+      <arg type="(ssubas)" direction="out" name="item"/>
     </method>
 
     <!-- The items for the given uuids -->
     <method name="GetItems">
-      <arg type="as"      direction="in"  name="uuids"/>
-      <arg type="a(ssub)" direction="out" name="items"/>
+      <arg type="as"        direction="in"  name="uuids"/>
+      <arg type="a(ssubas)" direction="out" name="items"/>
     </method>
 
     <!--
@@ -324,8 +333,8 @@
 
     <!-- The items matching a query -->
     <method name="Search">
-      <arg type="s"       direction="in"  name="query"/>
-      <arg type="a(ssub)" direction="out" name="results"/>
+      <arg type="s"         direction="in"  name="query"/>
+      <arg type="a(ssubas)" direction="out" name="results"/>
     </method>
 
     <!-- Make one item the current selection -->

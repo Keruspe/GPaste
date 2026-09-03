@@ -12,6 +12,10 @@ struct _GPasteClientItem
     gchar         *value;
     GPasteItemKind kind;
     gboolean       favourite;
+    /* Always empty: see G_PASTE_ITEM_VARIANT_STRING. Kept as a strv rather than
+     * left %NULL so that a caller walking it needs no special case for the item
+     * that has none, which is currently every item. */
+    GStrv          notes;
 
     /* Composed on demand from @kind and @value, then kept: a row is redrawn far
      * more often than an item is built. */
@@ -98,6 +102,27 @@ g_paste_client_item_is_favourite (GPasteClientItem *self)
     return self->favourite;
 }
 
+/**
+ * g_paste_client_item_get_notes:
+ * @self: a #GPasteClientItem instance
+ *
+ * Get the notes attached to the item
+ *
+ * There are none: the notes are a slot reserved on the wire, and nothing
+ * attaches any yet. The array is empty rather than %NULL, so a caller drawing
+ * them walks it without a case of its own.
+ *
+ * Returns: (array zero-terminated=1) (transfer none): read-only, owned by the
+ *          item
+ */
+G_PASTE_VISIBLE const gchar * const *
+g_paste_client_item_get_notes (GPasteClientItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), NULL);
+
+    return (const gchar * const *) self->notes;
+}
+
 static void
 g_paste_client_item_finalize (GObject *object)
 {
@@ -106,6 +131,7 @@ g_paste_client_item_finalize (GObject *object)
     g_free (self->uuid);
     g_free (self->value);
     g_free (self->display_string);
+    g_strfreev (self->notes);
 
     G_OBJECT_CLASS (g_paste_client_item_parent_class)->finalize (object);
 }
@@ -127,6 +153,8 @@ g_paste_client_item_init (GPasteClientItem *self G_GNUC_UNUSED)
  * @value: the value of the item
  * @kind: the kind of the item
  * @favourite: whether the item is pinned
+ * @notes: (array zero-terminated=1) (nullable): the notes attached to the item,
+ *         of which there are none yet, %NULL being the same as an empty array
  *
  * Create a new instance of #GPasteClientItem
  *
@@ -134,10 +162,11 @@ g_paste_client_item_init (GPasteClientItem *self G_GNUC_UNUSED)
  *                           free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClientItem *
-g_paste_client_item_new (const gchar   *uuid,
-                         const gchar   *value,
-                         GPasteItemKind kind,
-                         gboolean       favourite)
+g_paste_client_item_new (const gchar         *uuid,
+                         const gchar         *value,
+                         GPasteItemKind       kind,
+                         gboolean             favourite,
+                         const gchar * const *notes)
 {
     g_return_val_if_fail (g_uuid_string_is_valid (uuid), NULL);
     g_return_val_if_fail (g_utf8_validate (value, -1, NULL), NULL);
@@ -148,6 +177,8 @@ g_paste_client_item_new (const gchar   *uuid,
     self->value = g_strdup (value);
     self->kind = kind;
     self->favourite = favourite;
+    /* g_strdupv () of nothing is nothing, and the getter promises an array. */
+    self->notes = (notes) ? g_strdupv ((GStrv) notes) : g_new0 (gchar *, 1);
 
     return self;
 }
