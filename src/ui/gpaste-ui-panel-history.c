@@ -31,6 +31,7 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self,
     g_return_if_fail (GTK_IS_WIDGET (origin));
 
     g_paste_client_switch_history (self->client, self->history,
+                                   NULL /* cancellable */,
                                    g_paste_ui_report_void_cb,
                                    g_paste_ui_report_void (origin, g_paste_client_switch_history_finish,
                                                            _("Could not switch history")));

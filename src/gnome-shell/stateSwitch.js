@@ -33,6 +33,6 @@ class GPasteStateSwitch extends PopupSwitchMenuItem {
         if (this._fromDaemon)
             return;
 
-        this._client.set_active(state, null);
+        this._client.set_active(state, null, null);
     }
 });

@@ -116,7 +116,7 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
     data->invocation = invocation;
     data->complete = complete;
 
-    g_paste_client_search (self->client, search, on_search_ready, data);
+    g_paste_client_search (self->client, search, NULL /* cancellable */, on_search_ready, data);
 
     return TRUE;
 }
@@ -253,7 +253,7 @@ on_items_ready (GObject      *source_object G_GNUC_UNUSED,
     {
         if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX))
         {
-            g_paste_client_get_history (self->client, on_history_ready, g_steal_pointer (&data));
+            g_paste_client_get_history (self->client, NULL /* cancellable */, on_history_ready, g_steal_pointer (&data));
 
             return;
         }
@@ -327,7 +327,7 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
      * them and the fallback matches on them once it comes back. */
     data->uuids = g_strdupv ((GStrv) identifiers);
 
-    g_paste_client_get_items (self->client, (const gchar * const *) data->uuids, on_items_ready, data);
+    g_paste_client_get_items (self->client, (const gchar * const *) data->uuids, NULL /* cancellable */, on_items_ready, data);
 
     return TRUE;
 }
@@ -343,7 +343,7 @@ g_paste_search_provider_handle_activate_result (GPasteSearchProvider  *self,
      * can legitimately be missing for good — as the other entry points already
      * assume. */
     if (self->client)
-        g_paste_client_select (self->client, identifier, NULL, NULL);
+        g_paste_client_select (self->client, identifier, NULL /* cancellable */, NULL, NULL);
 
     g_paste_shell_search_provider2_complete_activate_result (self->skeleton, invocation);
 

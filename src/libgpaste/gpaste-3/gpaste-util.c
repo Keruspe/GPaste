@@ -296,7 +296,7 @@ g_paste_util_empty_with_confirmation (GPasteClient   *client,
     if (g_paste_settings_get_empty_history_confirmation (settings))
         g_paste_util_activate_ui ("empty", g_variant_new_string (history));
     else
-        g_paste_client_empty_history (client, history, NULL, NULL);
+        g_paste_client_empty_history (client, history, NULL /* cancellable */, NULL, NULL);
 }
 
 /**

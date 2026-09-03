@@ -521,6 +521,7 @@ on_reexec_confirmed (gboolean confirmed,
     if (confirmed && self->client)
     {
         g_paste_client_reexecute (self->client,
+                                  NULL /* cancellable */,
                                   g_paste_ui_report_void_cb,
                                   g_paste_ui_report_void (GTK_WIDGET (self),
                                                           g_paste_client_reexecute_finish,
@@ -556,6 +557,7 @@ g_paste_ui_window_set_tracking (GPasteUiWindow *self,
         return;
 
     g_paste_client_set_active (self->client, state,
+                               NULL /* cancellable */,
                                g_paste_ui_report_void_cb,
                                g_paste_ui_report_void (GTK_WIDGET (self),
                                                        g_paste_client_set_active_finish,
@@ -888,6 +890,7 @@ do_merge (GPasteUiWindow *self,
     if (uuids && n >= 2)
     {
         g_paste_client_merge (self->client, "", separator, (const gchar * const *) uuids,
+                              NULL /* cancellable */,
                               g_paste_ui_report_string_cb,
                               g_paste_ui_report_string (GTK_WIDGET (self), g_paste_client_merge_finish,
                                                         _("Could not merge the selected items")));

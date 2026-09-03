@@ -163,7 +163,7 @@ empty_history (GPasteClient *client,
                const gchar  *history,
                GtkWindow    *parent)
 {
-    g_paste_client_empty_history (client, history, on_history_emptied,
+    g_paste_client_empty_history (client, history, NULL /* cancellable */, on_history_emptied,
                                   (parent) ? g_object_ref (parent) : NULL);
 }
 

@@ -137,6 +137,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     }                                                                                           \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name (GPasteClient       *self ARGLIST PARAMS,                             \
+                           GCancellable       *cancellable,                                     \
                            GAsyncReadyCallback callback,                                        \
                            gpointer            user_data)                                       \
     {                                                                                           \
@@ -145,7 +146,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
                                      -1, /* timeout */                                          \
-                                     NULL, /* cancellable */                                    \
+                                     cancellable,                                               \
                                      callback,                                                  \
                                      user_data);                                                \
     }                                                                                           \
@@ -195,6 +196,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     }                                                                                           \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name (GPasteClient       *self ARGLIST PARAMS,                             \
+                           GCancellable       *cancellable,                                     \
                            GAsyncReadyCallback callback,                                        \
                            gpointer            user_data)                                       \
     {                                                                                           \
@@ -203,7 +205,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
                                      timeout,                                                   \
-                                     NULL, /* cancellable */                                    \
+                                     cancellable,                                               \
                                      callback,                                                  \
                                      user_data);                                                \
     }                                                                                           \
@@ -241,6 +243,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * g_paste_client_add_text:
  * @self: a #GPasteClient instance
  * @text: the text to add
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -298,6 +301,7 @@ g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **er
  * g_paste_client_add_file:
  * @self: a #GPasteClient instance
  * @file: the file to add
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -305,7 +309,7 @@ g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **er
  * Add the file contents to the #GPasteDaemon
  */
 G_PASTE_VISIBLE void
-g_paste_client_add_file (GPasteClient *self, const gchar *file, GAsyncReadyCallback callback, gpointer user_data)
+g_paste_client_add_file (GPasteClient *self, const gchar *file, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
@@ -317,7 +321,7 @@ g_paste_client_add_file (GPasteClient *self, const gchar *file, GAsyncReadyCallb
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
-    g_paste_daemon3_call_add_file (G_PASTE_DAEMON3 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
+    g_paste_daemon3_call_add_file (G_PASTE_DAEMON3 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, cancellable, callback, user_data);
 }
 
 /**
@@ -373,6 +377,7 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * @password: the password to add
  * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
  *           as anything else
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -410,6 +415,7 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
  * @self: a #GPasteClient instance
  * @history: the name of the history
  * @backup: the name of the backup
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -439,6 +445,7 @@ G_PASTE_CLIENT_METHOD (backup_history,
 /**
  * g_paste_client_change_passphrase:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -470,6 +477,7 @@ G_PASTE_CLIENT_METHOD (change_passphrase,
  * g_paste_client_delete_item:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to delete
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -499,6 +507,7 @@ G_PASTE_CLIENT_METHOD (delete_item,
  * g_paste_client_delete_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to delete
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -528,6 +537,7 @@ G_PASTE_CLIENT_METHOD (delete_history,
  * g_paste_client_delete_password:
  * @self: a #GPasteClient instance
  * @name: the name of the password to delete
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: the data to pass to @callback
@@ -557,6 +567,7 @@ G_PASTE_CLIENT_METHOD (delete_password,
  * g_paste_client_empty_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to empty
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -588,6 +599,7 @@ G_PASTE_CLIENT_METHOD (empty_history,
  * g_paste_client_get_item:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the item we want to get
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -623,6 +635,7 @@ G_PASTE_CLIENT_METHOD_RET (get_item,
  * g_paste_client_get_item_at_index:
  * @self: a #GPasteClient instance
  * @index: the index of the item we want to get
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -658,6 +671,7 @@ G_PASTE_CLIENT_METHOD_RET (get_item_at_index,
  * g_paste_client_get_items:
  * @self: a #GPasteClient instance
  * @uuids: (array zero-terminated=1): the uuids of the items we want to get
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -694,12 +708,12 @@ g_paste_client_get_items_sync (GPasteClient *self, const gchar * const *uuids, G
 }
 
 G_PASTE_VISIBLE void
-g_paste_client_get_items (GPasteClient *self, const gchar * const *uuids, GAsyncReadyCallback callback, gpointer user_data)
+g_paste_client_get_items (GPasteClient *self, const gchar * const *uuids, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
     g_return_if_fail (uuids);
 
-    g_paste_daemon3_call_get_items (G_PASTE_DAEMON3 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, NULL /* cancellable */, callback, user_data);
+    g_paste_daemon3_call_get_items (G_PASTE_DAEMON3 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, cancellable, callback, user_data);
 }
 
 G_PASTE_VISIBLE GList *
@@ -731,6 +745,7 @@ g_paste_client_get_items_finish (GPasteClient *self,
 /**
  * g_paste_client_get_favourites:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -764,6 +779,7 @@ G_PASTE_CLIENT_METHOD_RET (get_favourites,
 /**
  * g_paste_client_get_history:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -799,6 +815,7 @@ G_PASTE_CLIENT_METHOD_RET (get_history,
 /**
  * g_paste_client_get_history_size:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -835,6 +852,7 @@ G_PASTE_CLIENT_METHOD_RET (get_history_size,
  * g_paste_client_get_image:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the image element we want to get
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -876,6 +894,7 @@ G_PASTE_CLIENT_METHOD_RET (get_image,
  * g_paste_client_get_password_timeout:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the password item we want the timeout of
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -914,6 +933,7 @@ G_PASTE_CLIENT_METHOD_RET (get_password_timeout,
  * g_paste_client_get_uris:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the uris item we want the uris of
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -948,6 +968,7 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
 /**
  * g_paste_client_list_histories:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1013,6 +1034,7 @@ g_paste_client_merge_sync (GPasteClient *self, const gchar *decoration, const gc
  * @decoration: (nullable): the decoration to apply to each entry
  * @separator: (nullable): the separator to add between each entry
  * @uuids: (array zero-terminated=1): the uuids of the elements we want to get
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1023,7 +1045,7 @@ g_paste_client_merge_sync (GPasteClient *self, const gchar *decoration, const gc
  * result will be "foo","bar","baz"
  */
 G_PASTE_VISIBLE void
-g_paste_client_merge (GPasteClient *self, const gchar *decoration, const gchar *separator, const gchar * const *uuids, GAsyncReadyCallback callback, gpointer user_data)
+g_paste_client_merge (GPasteClient *self, const gchar *decoration, const gchar *separator, const gchar * const *uuids, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
     g_return_if_fail (uuids);
@@ -1034,7 +1056,7 @@ g_paste_client_merge (GPasteClient *self, const gchar *decoration, const gchar *
                                 uuids,
                                 G_DBUS_CALL_FLAGS_NONE,
                                 -1, /* timeout */
-                                NULL, /* cancellable */
+                                cancellable,
                                 callback,
                                 user_data);
 }
@@ -1078,6 +1100,7 @@ g_paste_client_merge_finish (GPasteClient *self,
  * g_paste_client_report_extension_state:
  * @self: a #GPasteClient instance
  * @state: the new state of the extension
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1105,6 +1128,7 @@ G_PASTE_CLIENT_METHOD (report_extension_state,
 /**
  * g_paste_client_reexecute:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1139,6 +1163,7 @@ G_PASTE_CLIENT_METHOD (reexecute,
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to replace
  * @contents: the replacement contents
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: the data to pass to @callback
@@ -1175,6 +1200,7 @@ G_PASTE_CLIENT_METHOD_RET (replace,
  * g_paste_client_search:
  * @self: a #GPasteClient instance
  * @pattern: the pattern to look for in history
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1208,6 +1234,7 @@ G_PASTE_CLIENT_METHOD_RET (search,
  * g_paste_client_select:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to select
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1240,6 +1267,7 @@ G_PASTE_CLIENT_METHOD (select,
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the item to pin, or to let go of
  * @favourite: whether the item should be pinned
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1289,6 +1317,7 @@ G_PASTE_CLIENT_METHOD (set_favourite,
  * @name: the name to identify the password
  * @timeout: how long it may stay on the clipboard, in seconds, or 0 for as long
  *           as anything else
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: the data to pass to @callback
@@ -1320,6 +1349,7 @@ G_PASTE_CLIENT_METHOD_RET (make_password,
 /**
  * g_paste_client_show_history:
  * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1349,6 +1379,7 @@ G_PASTE_CLIENT_METHOD (show_history,
  * g_paste_client_strip_rich_text:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the text item to strip
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1378,6 +1409,7 @@ G_PASTE_CLIENT_METHOD (strip_rich_text,
  * g_paste_client_switch_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1407,6 +1439,7 @@ G_PASTE_CLIENT_METHOD (switch_history,
  * g_paste_client_set_active:
  * @self: a #GPasteClient instance
  * @state: the new tracking state of the #GPasteDaemon
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
@@ -1440,6 +1473,7 @@ G_PASTE_CLIENT_METHOD (set_active,
  * g_paste_client_upload:
  * @self: a #GPasteClient instance
  * @uuid: the uuid of the element we want to upload
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback

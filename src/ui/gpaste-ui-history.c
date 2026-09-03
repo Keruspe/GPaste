@@ -392,7 +392,7 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
 
     cdata->name = g_steal_pointer (&name);
 
-    g_paste_client_get_history_size (self->client, g_paste_ui_history_refresh_history, cdata);
+    g_paste_client_get_history_size (self->client, NULL /* cancellable */, g_paste_ui_history_refresh_history, cdata);
 }
 
 static gboolean
@@ -519,9 +519,9 @@ g_paste_ui_history_filter (GPasteUiHistory *self)
     cdata->searched = (self->search != NULL);
 
     if (cdata->searched)
-        g_paste_client_search (self->client, self->search, on_filter_ready, cdata);
+        g_paste_client_search (self->client, self->search, NULL /* cancellable */, on_filter_ready, cdata);
     else
-        g_paste_client_get_favourites (self->client, on_filter_ready, cdata);
+        g_paste_client_get_favourites (self->client, NULL /* cancellable */, on_filter_ready, cdata);
 }
 
 /**
@@ -574,6 +574,7 @@ g_paste_ui_history_select_uuid (GPasteUiHistory *self,
                                 const gchar     *uuid)
 {
     g_paste_client_select (self->client, uuid,
+                           NULL /* cancellable */,
                            g_paste_ui_report_void_cb,
                            g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
                                                    _("Could not select the item")));
@@ -632,7 +633,7 @@ g_paste_ui_history_activate_position (GPasteUiHistory *self,
     if (uuid)
         g_paste_ui_history_select_uuid (self, uuid);
     else
-        g_paste_client_get_item_at_index (self->client, position, on_activate_element_ready, g_object_ref (self));
+        g_paste_client_get_item_at_index (self->client, position, NULL /* cancellable */, on_activate_element_ready, g_object_ref (self));
 
     return TRUE;
 }

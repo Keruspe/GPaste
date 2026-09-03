@@ -34,6 +34,7 @@ on_edit_response (const gchar *text,
         return;
 
     g_paste_client_replace (client, uuid, text,
+                            NULL /* cancellable */,
                             g_paste_ui_report_string_cb,
                             g_paste_ui_report_string (GTK_WIDGET (rootwin), g_paste_client_replace_finish,
                                                       _("Could not save the edited item")));
@@ -100,5 +101,5 @@ g_paste_ui_edit_item_show (GPasteClient *client,
 
     /* The plain getter: Edit is only offered for a text item, whose display
      * string is its value. */
-    g_paste_client_get_item (client, uuid, on_item_ready, data);
+    g_paste_client_get_item (client, uuid, NULL /* cancellable */, on_item_ready, data);
 }

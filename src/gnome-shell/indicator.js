@@ -369,7 +369,7 @@ class GPasteIndicator extends Button {
         const generation = ++this._probeGeneration;
 
         try {
-            await this._client.get_history_size();
+            await this._client.get_history_size(null);
         } catch {
             // Nothing to report: a probe that got nowhere is what the next rung
             // is for, and the last rung leaves the placeholder row to be asked
@@ -644,7 +644,7 @@ class GPasteIndicator extends Button {
         // same "nothing to size" as no daemon at all, and the caller reconciles
         // either way -- an exception escaping here would skip that instead.
         try {
-            available = await this._client.get_history_size();
+            available = await this._client.get_history_size(null);
         } catch (e) {
             console.error(e);
             return false;
@@ -718,8 +718,8 @@ class GPasteIndicator extends Button {
         // for a history nobody can reach.
         try {
             items = this._hasSearch()
-                ? await this._client.search(search)
-                : await this._client.get_favourites();
+                ? await this._client.search(search, null)
+                : await this._client.get_favourites(null);
         } catch (e) {
             console.error(e);
             this._reconcileConnection(generation);
@@ -927,7 +927,7 @@ class GPasteIndicator extends Button {
     // extension off.
     _onStateChanged(state) {
         if (this._client && this._connected)
-            this._client.report_extension_state(state, null);
+            this._client.report_extension_state(state, null, null);
     }
 
     _onOpenStateChanged(menu, state) {

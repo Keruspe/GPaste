@@ -144,12 +144,12 @@ on_confirm (GtkButton *button,
     if (data->uuid)
     {
         g_paste_client_make_password (data->client, data->uuid, name, timeout,
-                                      on_password_saved, request);
+                                      NULL /* cancellable */, on_password_saved, request);
     }
     else
     {
         g_paste_client_add_password (data->client, name, gtk_editable_get_text (data->password), timeout,
-                                     on_password_saved, request);
+                                     NULL /* cancellable */, on_password_saved, request);
     }
 }
 
@@ -440,6 +440,6 @@ g_paste_ui_password_dialog_edit (GPasteClient *client,
     data->uuid = g_strdup (uuid);
     data->pending = 2;
 
-    g_paste_client_get_item (client, uuid, on_item_ready, data);
-    g_paste_client_get_password_timeout (client, uuid, on_timeout_ready, data);
+    g_paste_client_get_item (client, uuid, NULL /* cancellable */, on_item_ready, data);
+    g_paste_client_get_password_timeout (client, uuid, NULL /* cancellable */, on_timeout_ready, data);
 }

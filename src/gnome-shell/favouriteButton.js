@@ -45,6 +45,6 @@ class GPasteFavouriteButton extends St.Button {
         // starts with no uuid; ignore a click landing in that window rather than
         // letting GJS throw on the null argument.
         if (this._uuid)
-            this._client.set_favourite(this._uuid, !this._favourite, null);
+            this._client.set_favourite(this._uuid, !this._favourite, null, null);
     }
 });

@@ -88,7 +88,7 @@ export class GPasteItem extends PopupMenuItem {
         const deleteItem = obj => {
             // Nothing to delete until the row's fetch has landed (see activate).
             if (obj._uuid)
-                obj._client.delete_item(obj._uuid, null);
+                obj._client.delete_item(obj._uuid, null, null);
 
             return Clutter.EVENT_STOP;
         };
@@ -258,7 +258,7 @@ export class GPasteItem extends PopupMenuItem {
             this._uuid = null;
             this._disarmActions();
 
-            const item = await this._client.get_item_at_index(index);
+            const item = await this._client.get_item_at_index(index, null);
             if (generation !== this._generation)
                 return;
             this._uuid = item.get_uuid();
@@ -277,7 +277,7 @@ export class GPasteItem extends PopupMenuItem {
         if (uuid == null) {
             this._setValue(null);
         } else {
-            const item = await this._client.get_item(uuid);
+            const item = await this._client.get_item(uuid, null);
             if (generation !== this._generation)
                 return;
             this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
@@ -390,7 +390,7 @@ export class GPasteItem extends PopupMenuItem {
 
     async _showImage(generation) {
         const size = Math.max(this._imagesPreviewSize, 10);
-        const bytes = await this._client.get_image(this._uuid);
+        const bytes = await this._client.get_image(this._uuid, null);
 
         if (generation !== this._previewGeneration)
             return;
@@ -445,7 +445,7 @@ export class GPasteItem extends PopupMenuItem {
         if (!this._uuid)
             return;
 
-        this._client.select(this._uuid, null);
+        this._client.select(this._uuid, null, null);
         super.activate(event);
     }
 }

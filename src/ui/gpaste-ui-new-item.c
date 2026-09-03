@@ -25,6 +25,7 @@ on_new_item (const gchar *text,
         return;
 
     g_paste_client_add_text (client, text,
+                             NULL /* cancellable */,
                              g_paste_ui_report_string_cb,
                              g_paste_ui_report_string (GTK_WIDGET (rootwin), g_paste_client_add_text_finish,
                                                        _("Could not add the item")));

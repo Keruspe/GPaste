@@ -126,132 +126,164 @@ GPasteClientItem *g_paste_client_get_item_at_index_sync (GPasteClient  *self,
 
 void g_paste_client_add_text                   (GPasteClient       *self,
                                                 const gchar        *text,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_add_file                   (GPasteClient       *self,
                                                 const gchar        *file,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_add_password               (GPasteClient       *self,
                                                 const gchar        *name,
                                                 const gchar        *password,
                                                 guint               timeout,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_backup_history             (GPasteClient       *self,
                                                 const gchar        *history,
                                                 const gchar        *backup,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_change_passphrase          (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_delete_item                (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_delete_history             (GPasteClient       *self,
                                                 const gchar        *name,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_delete_password            (GPasteClient       *self,
                                                 const gchar        *name,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_empty_history              (GPasteClient       *self,
                                                 const gchar        *name,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_item                   (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_item_at_index          (GPasteClient       *self,
                                                 guint64             index,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_items                  (GPasteClient       *self,
                                                 const gchar * const *uuids,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_favourites             (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_history                (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_history_size           (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_image                  (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_password_timeout       (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_uris                   (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_list_histories             (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_merge                      (GPasteClient       *self,
                                                 const gchar        *decoration,
                                                 const gchar        *separator,
                                                 const gchar * const *uuids,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_report_extension_state     (GPasteClient       *self,
                                                 gboolean            state,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_reexecute                  (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_replace                    (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 const gchar        *contents,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_search                     (GPasteClient       *self,
                                                 const gchar        *pattern,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_select                     (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_set_favourite              (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 gboolean            favourite,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_make_password              (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 const gchar        *name,
                                                 guint               timeout,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_show_history               (GPasteClient       *self,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_strip_rich_text            (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_switch_history             (GPasteClient       *self,
                                                 const gchar        *name,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_set_active                 (GPasteClient       *self,
                                                 gboolean            state,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_upload                     (GPasteClient       *self,
                                                 const gchar        *uuid,
+                                                GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 

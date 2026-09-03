@@ -377,7 +377,7 @@ on_upload_done (GObject      *source_object,
         return;
     }
 
-    g_paste_client_add_text (client, url, on_upload_address_copied, g_object_ref (self));
+    g_paste_client_add_text (client, url, NULL /* cancellable */, on_upload_address_copied, g_object_ref (self));
 }
 
 static void
@@ -387,7 +387,7 @@ on_upload (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_client_upload (self->client, self->uuid, on_upload_done, g_object_ref (self));
+    g_paste_client_upload (self->client, self->uuid, NULL /* cancellable */, on_upload_done, g_object_ref (self));
 }
 
 /* Offered on every text row rather than only on one that carries rich text:
@@ -401,6 +401,7 @@ on_strip_rich_text (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiItem *self = user_data;
 
     g_paste_client_strip_rich_text (self->client, self->uuid,
+                                    NULL /* cancellable */,
                                     g_paste_ui_report_void_cb,
                                     g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_strip_rich_text_finish,
                                                             _("Could not remove the rich text")));
@@ -414,6 +415,7 @@ on_delete (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiItem *self = user_data;
 
     g_paste_client_delete_item (self->client, self->uuid,
+                                NULL /* cancellable */,
                                 g_paste_ui_report_void_cb,
                                 g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_delete_item_finish,
                                                         _("Could not delete the item")));
@@ -430,6 +432,7 @@ on_pin (GSimpleAction *action    G_GNUC_UNUSED,
     GPasteUiItem *self = user_data;
 
     g_paste_client_set_favourite (self->client, self->uuid, !self->favourited,
+                                  NULL /* cancellable */,
                                   g_paste_ui_report_void_cb,
                                   g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_set_favourite_finish,
                                                           (self->favourited) ? _("Could not unpin the item")
@@ -586,6 +589,7 @@ g_paste_ui_item_activate (GPasteUiItem *self)
         return FALSE;
 
     g_paste_client_select (self->client, self->uuid,
+                           NULL /* cancellable */,
                            g_paste_ui_report_void_cb,
                            g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
                                                    _("Could not select the item")));
@@ -644,7 +648,7 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     g_paste_ui_item_update_actions (self);
 
     if (kind == G_PASTE_ITEM_KIND_IMAGE)
-        g_paste_client_get_image (self->client, self->uuid, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
+        g_paste_client_get_image (self->client, self->uuid, NULL /* cancellable */, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
     else
         g_paste_ui_item_set_thumbnail (self, NULL);
 
@@ -711,9 +715,9 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
 
     if (self->fake_index)
-        g_paste_client_get_item (self->client, self->uuid, g_paste_ui_item_on_uuid_ready, async_callback_data_new (self));
+        g_paste_client_get_item (self->client, self->uuid, NULL /* cancellable */, g_paste_ui_item_on_uuid_ready, async_callback_data_new (self));
     else
-        g_paste_client_get_item_at_index (self->client, self->index, g_paste_ui_item_on_index_ready, async_callback_data_new (self));
+        g_paste_client_get_item_at_index (self->client, self->index, NULL /* cancellable */, g_paste_ui_item_on_index_ready, async_callback_data_new (self));
 }
 
 static void

@@ -311,7 +311,7 @@ g_paste_ui_panel_refresh (GPasteUiPanel *self)
     if (!data->name)
         g_warning ("Could not get the current history name.");
 
-    g_paste_client_list_histories (self->client, on_histories_ready, data);
+    g_paste_client_list_histories (self->client, NULL /* cancellable */, on_histories_ready, data);
 }
 
 static void
@@ -320,6 +320,7 @@ g_paste_ui_panel_do_switch (GPasteUiPanel *self)
     const gchar *text = gtk_editable_get_text (GTK_EDITABLE (self->switch_entry));
 
     g_paste_client_switch_history (self->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY,
+                                   NULL /* cancellable */,
                                    g_paste_ui_report_void_cb,
                                    g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_switch_history_finish,
                                                            _("Could not switch history")));
@@ -382,6 +383,7 @@ on_backup_response (GObject      *dialog,
         if (text && *text)
         {
             g_paste_client_backup_history (client, history, text,
+                                           NULL /* cancellable */,
                                            g_paste_ui_report_void_cb,
                                            g_paste_ui_report_void (GTK_WIDGET (data->rootwin),
                                                                    g_paste_client_backup_history_finish,
@@ -441,6 +443,7 @@ on_delete_confirmed (gboolean confirmed,
     if (confirmed)
     {
         g_paste_client_delete_history (client, history,
+                                       NULL /* cancellable */,
                                        g_paste_ui_report_void_cb,
                                        g_paste_ui_report_void (GTK_WIDGET (data->rootwin),
                                                                g_paste_client_delete_history_finish,
