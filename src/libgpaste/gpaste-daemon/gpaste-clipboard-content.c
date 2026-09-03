@@ -371,25 +371,6 @@ g_paste_clipboard_read_guard_touch (GPasteClipboardReadGuard *guard)
 }
 
 /**
- * g_paste_clipboard_read_guard_is_expired:
- * @guard: the #GPasteClipboardReadGuard a read went out under
- *
- * Returns: whether @guard's deadline has run out on the read asking
- *
- * What a read landing afterwards is told by. Nothing is waiting for it any more:
- * the batch it counted into was concluded, so what it brings back can only reach
- * the provider's cache -- where it would dedup, out of every later update, the
- * very content that never made it to the history.
- */
-G_PASTE_VISIBLE gboolean
-g_paste_clipboard_read_guard_is_expired (const GPasteClipboardReadGuard *guard)
-{
-    g_return_val_if_fail (guard, TRUE);
-
-    return g_cancellable_is_cancelled (guard->cancellable);
-}
-
-/**
  * g_paste_clipboard_read_guard_disarm:
  * @guard: the #GPasteClipboardReadGuard to disarm
  *
@@ -759,19 +740,25 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
  *
  * Returns: whether @update has already moved on without the read asking
  *
- * What a read landing asks before it touches anything but the counter, the
- * guard alone answering it a moment too late: a conclusion disarms the guard
- * and takes the provider over, and only then cancels -- the cancellation being
- * what runs the handlers that could free the very update being concluded (see
- * g_paste_clipboard_read_guard_timed_out ()). A read landing between the two
- * finds a guard that has not expired and an update with no provider left.
+ * What a read landing asks before it touches anything but the counter. Nothing
+ * is waiting for it any more: the batch it counted into was concluded, so what
+ * it brings back can only reach the provider's cache -- where it would dedup,
+ * out of every later update, the very content that never made it to the history.
+ *
+ * Asked of the update and of nothing else. The guard's cancellable cannot
+ * answer it: a conclusion disarms the guard and takes the provider over, and
+ * only then cancels -- the cancellation being what runs the handlers that could
+ * free the very update being concluded (see
+ * g_paste_clipboard_read_guard_timed_out ()) -- so cancelled says nothing
+ * @concluded has not already said, and says it a read too late for the window
+ * in between.
  */
 G_PASTE_VISIBLE gboolean
 g_paste_clipboard_update_is_expired (const GPasteClipboardUpdate *update)
 {
     g_return_val_if_fail (update, TRUE);
 
-    return update->concluded || g_paste_clipboard_read_guard_is_expired (&update->guard);
+    return update->concluded;
 }
 
 /**

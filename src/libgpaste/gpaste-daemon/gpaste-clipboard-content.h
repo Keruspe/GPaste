@@ -106,10 +106,17 @@ gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
  * them: @expired concludes whatever the guard was armed for, and only then is
  * the cancel asked for.
  *
- * @cancellable is also what a read landing afterwards is told by
- * (g_paste_clipboard_read_guard_is_expired()): cancelling cannot fail these
- * reads (see the backends), but one that does come back can still ask whether
- * anything is left waiting for it. Both backends ask it, so it is asked here.
+ * @cancellable is for failing a read that stalls partway, and is not what says
+ * the deadline is past: g_paste_clipboard_update_is_expired () answers that, off
+ * the update itself, for the window a conclusion leaves between taking the
+ * provider over and asking for the cancel. Cancelling cannot fail the conversion
+ * request an X11 read starts with (see the backends), but the transfer through
+ * the stream that request returns is another matter:
+ * gdk_content_deserialize_async () and the g_output_stream_splice_async () a
+ * mime read ends in both honour it, so a transfer that stops halfway is failed
+ * by the cancel and counts itself out rather than holding the update for the
+ * session. Those take a #GCancellable and nothing else, which is why this is one
+ * rather than a flag.
  *
  * @last_read is when the batch last moved and @timeout how much silence it is
  * allowed: what the timer measures is the gap between those two, which is why a
@@ -127,13 +134,12 @@ typedef struct
     gpointer        user_data;
 } GPasteClipboardReadGuard;
 
-void     g_paste_clipboard_read_guard_arm        (GPasteClipboardReadGuard *guard,
-                                                  GSourceOnceFunc           expired,
-                                                  gpointer                  user_data);
-void     g_paste_clipboard_read_guard_touch      (GPasteClipboardReadGuard *guard);
-gboolean g_paste_clipboard_read_guard_is_expired (const GPasteClipboardReadGuard *guard);
-void     g_paste_clipboard_read_guard_disarm     (GPasteClipboardReadGuard *guard);
-void     g_paste_clipboard_read_guard_clear      (GPasteClipboardReadGuard *guard);
+void g_paste_clipboard_read_guard_arm    (GPasteClipboardReadGuard *guard,
+                                          GSourceOnceFunc           expired,
+                                          gpointer                  user_data);
+void g_paste_clipboard_read_guard_touch  (GPasteClipboardReadGuard *guard);
+void g_paste_clipboard_read_guard_disarm (GPasteClipboardReadGuard *guard);
+void g_paste_clipboard_read_guard_clear  (GPasteClipboardReadGuard *guard);
 
 /* What a sync read has to keep alive: the selection its text is going to, ref'd
  * because the read spans main-loop iterations. Guarded like an update's reads,
