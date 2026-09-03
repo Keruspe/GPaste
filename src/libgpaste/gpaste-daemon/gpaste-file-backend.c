@@ -515,21 +515,54 @@ typedef struct
 /* Where the parser currently is, for a diagnostic. An encrypted history is
  * decrypted into memory before being parsed, so the file on disk has neither
  * these lines nor these offsets; the element we are inside and where it opened
- * are what identify the offending item whichever buffer we ended up parsing. */
+ * are what identify the offending item whichever buffer we ended up parsing.
+ *
+ * @attr is the index, in the arrays the callback was handed, of the attribute
+ * the diagnostic is about, or -1 for one that is about no attribute in
+ * particular. It is worth naming because the parser's own position is of no
+ * use for an attribute: a callback runs once the whole start tag is read, so
+ * every attribute of one item reports the tag's end and they all report the
+ * same place. Only start_tag () may pass one, being the one callback in which
+ * g_markup_parse_context_get_attribute_position () is defined. */
 static gchar *
 parse_location (GMarkupParseContext *context,
-                const Data          *data)
+                const Data          *data,
+                gssize               attr)
 {
-    gint line_number, char_number;
     const gchar *element = g_markup_parse_context_get_element (context);
-
-    g_markup_parse_context_get_position (context, &line_number, &char_number);
+    g_autofree gchar *where = NULL;
 
     /* Where we are, said once; being inside an element only adds to it. */
-    g_autofree gchar *where = g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT
-                                               ", column %" G_GINT32_FORMAT " (byte %" G_GSIZE_FORMAT ")",
-                                               data->history_file_path, line_number, char_number,
-                                               g_markup_parse_context_get_offset (context));
+    if (attr < 0)
+    {
+        gint line_number, char_number;
+
+        g_markup_parse_context_get_position (context, &line_number, &char_number);
+        where = g_strdup_printf ("in file “%s” at line %" G_GINT32_FORMAT
+                                 ", column %" G_GINT32_FORMAT " (byte %" G_GSIZE_FORMAT ")",
+                                 data->history_file_path, line_number, char_number,
+                                 g_markup_parse_context_get_offset (context));
+    }
+    else
+    {
+        /* Zeroed: an index past the attributes the callback was handed is one
+         * get_attribute_position () refuses, leaving these untouched -- and the
+         * warning would then print four uninitialized numbers as a place in a
+         * file. Only WARN_AT_ATTR passes an index at all, and only from the
+         * loop over those very arrays, so nothing reaches that today. */
+        gsize attr_line = 0, attr_char = 0, attr_start = 0, attr_end = 0;
+
+        /* The span rather than a point: a name="value" assignment is what the
+         * warning is about, and its end is where the value stops. */
+        g_markup_parse_context_get_attribute_position (context, (guint) attr,
+                                                       &attr_line, &attr_char, &attr_start,
+                                                       NULL, NULL, &attr_end);
+        where = g_strdup_printf ("in file “%s” at line %" G_GSIZE_FORMAT
+                                 ", column %" G_GSIZE_FORMAT
+                                 " (bytes %" G_GSIZE_FORMAT "-%" G_GSIZE_FORMAT ")",
+                                 data->history_file_path, attr_line, attr_char,
+                                 attr_start, attr_end);
+    }
 
     if (!element)
         return g_steal_pointer (&where);
@@ -542,12 +575,36 @@ parse_location (GMarkupParseContext *context,
                             where, element, tag_line, tag_offset);
 }
 
+/* A kind to name in a diagnostic. g_paste_item_kind_to_string () answers NULL
+ * for G_PASTE_ITEM_KIND_INVALID, deliberately -- it is the serialised form, and
+ * INVALID is registered with no nick precisely so that nothing writes one to a
+ * store or hands one to a binding. Here, where the answer is prose rather than
+ * a value, INVALID has a name like any other. */
+static const gchar *
+parse_kind_name (GPasteItemKind kind)
+{
+    const gchar *name = g_paste_item_kind_to_string (kind);
+
+    return (name) ? name : "Invalid";
+}
+
 /* g_warning() with the parse location appended. Needs @context and @data in
  * scope, which every parser callback has. */
-#define WARN_AT(fmt, ...)                                            \
-    do {                                                             \
-        g_autofree gchar *location = parse_location (context, data); \
-        g_warning (fmt " %s.", ##__VA_ARGS__, location);             \
+#define WARN_AT(fmt, ...)                                                \
+    do {                                                                 \
+        g_autofree gchar *location = parse_location (context, data, -1); \
+        g_warning (fmt " %s.", ##__VA_ARGS__, location);                 \
+    } while (0)
+
+/* WARN_AT for something one attribute says, pointing at that assignment rather
+ * than at the end of the start tag. @a is the cursor the attribute loops walk
+ * @attribute_names with, so it also needs that array in scope: start_tag () is
+ * the only caller, and the only one allowed to be. */
+#define WARN_AT_ATTR(a, fmt, ...)                                        \
+    do {                                                                 \
+        g_autofree gchar *location = parse_location (context, data,      \
+                                                     (a) - attribute_names); \
+        g_warning (fmt " %s.", ##__VA_ARGS__, location);                 \
     } while (0)
 
 #define ASSERT_STATE_FULL(cond, x)                                                       \
@@ -613,9 +670,9 @@ start_tag (GMarkupParseContext *context,
                      * we once wrote, and the file is left intact, so say what
                      * would get it back. */
                     if (g_paste_str_equal (*v, "1.0"))
-                        WARN_AT ("History version 1.0 is no longer supported; the file is left untouched, load it with GPaste 2 to convert it");
+                        WARN_AT_ATTR (a, "History version 1.0 is no longer supported; the file is left untouched, load it with GPaste 2 to convert it");
                     else
-                        WARN_AT ("Unknown history version: %s", *v);
+                        WARN_AT_ATTR (a, "Unknown history version: %s", *v);
                     data->version = HISTORY_INVALID;
                 }
             }
@@ -639,7 +696,7 @@ start_tag (GMarkupParseContext *context,
             {
                 data->type = g_paste_item_kind_from_string (*v);
                 if (data->type == G_PASTE_ITEM_KIND_INVALID)
-                    WARN_AT ("Unknown item kind: %s", *v);
+                    WARN_AT_ATTR (a, "Unknown item kind: %s", *v);
             }
             else if (g_paste_str_equal (*a, "uuid"))
             {
@@ -653,7 +710,7 @@ start_tag (GMarkupParseContext *context,
             {
                 if (data->type != G_PASTE_ITEM_KIND_IMAGE)
                 {
-                    WARN_AT ("Expected an Image item, but got a %s one", g_paste_item_kind_to_string (data->type));
+                    WARN_AT_ATTR (a, "Expected an Image item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
                 data->date = g_strdup (*v);
@@ -662,7 +719,7 @@ start_tag (GMarkupParseContext *context,
             {
                 if (data->type != G_PASTE_ITEM_KIND_IMAGE)
                 {
-                    WARN_AT ("Expected an Image item, but got a %s one", g_paste_item_kind_to_string (data->type));
+                    WARN_AT_ATTR (a, "Expected an Image item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
                 data->checksum = g_strdup (*v);
@@ -671,7 +728,7 @@ start_tag (GMarkupParseContext *context,
             {
                 if (data->type != G_PASTE_ITEM_KIND_PASSWORD)
                 {
-                    WARN_AT ("Expected a Password item, but got a %s one", g_paste_item_kind_to_string (data->type));
+                    WARN_AT_ATTR (a, "Expected a Password item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
                 data->name = g_strdup (*v);
@@ -680,7 +737,7 @@ start_tag (GMarkupParseContext *context,
             {
                 if (data->type != G_PASTE_ITEM_KIND_PASSWORD)
                 {
-                    WARN_AT ("Expected a Password item, but got a %s one", g_paste_item_kind_to_string (data->type));
+                    WARN_AT_ATTR (a, "Expected a Password item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
                 /* Read wide and clamped, never cast: a stored value past
@@ -690,7 +747,7 @@ start_tag (GMarkupParseContext *context,
 
                 if (timeout > G_PASTE_PASSWORD_TIMEOUT_MAX)
                 {
-                    WARN_AT ("Password timeout out of range: %s", *v);
+                    WARN_AT_ATTR (a, "Password timeout out of range: %s", *v);
                     timeout = G_PASTE_PASSWORD_TIMEOUT_MAX;
                 }
 
@@ -699,7 +756,7 @@ start_tag (GMarkupParseContext *context,
             else if (g_paste_str_equal (*a, "favourite"))
                 data->favourite = g_paste_str_equal (*v, "true");
             else
-                WARN_AT ("Unknown item attribute: %s", *a);
+                WARN_AT_ATTR (a, "Unknown item attribute: %s", *a);
         }
     }
     else if (g_paste_str_equal (element_name, "value"))
@@ -714,7 +771,7 @@ start_tag (GMarkupParseContext *context,
                 if (gev)
                     data->mime = gev->value;
                 else
-                    WARN_AT ("Unknown mime: %s", *v);
+                    WARN_AT_ATTR (a, "Unknown mime: %s", *v);
             }
         }
     }
@@ -1090,7 +1147,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
          * truncated file can say where it stopped rather than just how. */
         if (!parsed || data.state != END)
         {
-            g_autofree gchar *location = parse_location (ctx, &data);
+            g_autofree gchar *location = parse_location (ctx, &data, -1);
 
             if (!parsed)
                 g_warning ("Failed to parse history file %s: %s", location, error->message);
