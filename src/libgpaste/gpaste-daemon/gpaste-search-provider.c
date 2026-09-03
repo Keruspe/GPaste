@@ -29,6 +29,12 @@ struct _GPasteSearchProvider
      * the last thing that happened to it; a uuid it does not hold falls back to
      * GetItems. */
     GHashTable                 *last_results;
+
+    /* The search in flight, cancelled and replaced by the next one. The shell
+     * asks again on every keystroke, so a search still running is one for terms
+     * nobody is typing any more -- and its reply, landing last, would leave
+     * @last_results describing it rather than the search that overtook it. */
+    GCancellable               *search;
 };
 
 G_PASTE_DEFINE_TYPE (SearchProvider, search_provider, G_PASTE_TYPE_BUS_OBJECT)
@@ -46,9 +52,22 @@ typedef struct
      * invocation is not reffed -- GDBus hands it to the handler and completing
      * it consumes it. */
     GPasteSearchProvider  *provider;
+    GCancellable          *cancellable;
     GDBusMethodInvocation *invocation;
     SearchCompleteFunc     complete;
 } SearchData;
+
+/* Answer an invocation with nothing, for a search whose terms have been
+ * replaced. Answered rather than dropped: the shell is waiting on this call
+ * whether or not anything still wants what it asked for, and the results it has
+ * already been handed came from the search that overtook this one. */
+static void
+search_data_complete_empty (SearchData *data)
+{
+    const gchar *empty[] = { NULL };
+
+    data->complete (data->provider->skeleton, data->invocation, empty);
+}
 
 static void
 on_search_ready (GObject      *source_object G_GNUC_UNUSED,
@@ -57,6 +76,18 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     g_autofree SearchData *data = user_data;
     g_autoptr (GPasteSearchProvider) self = data->provider;
+    g_autoptr (GCancellable) cancellable = data->cancellable;
+
+    /* Overtaken: a cancel does not unqueue a reply already on its way. Asked
+     * before the result is touched, so @last_results is left as the search that
+     * overtook this one wrote it. */
+    if (g_cancellable_is_cancelled (cancellable))
+    {
+        search_data_complete_empty (data);
+
+        return;
+    }
+
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) results = g_paste_client_search_finish (self->client, res, &error);
 
@@ -100,6 +131,16 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
 {
     g_autofree gchar *search = g_paste_search_provider_join_terms (terms);
 
+    /* What is still out was searched for terms this call has replaced, and what
+     * replaces them is the keystroke rather than the search it starts: dropped
+     * before the short-circuit below and not after it, since that one answers
+     * empty and returns. A five-character search the user has backspaced to two
+     * would otherwise land uncancelled, empty its results table and refill it
+     * with the phrase already abandoned -- which is then what GetResultMetas is
+     * answered from. */
+    g_cancellable_cancel (self->search);
+    g_clear_object (&self->search);
+
     /* Too short to be worth a round trip, or no daemon to make it against. */
     if (strlen (search) < 3 || !self->client)
     {
@@ -110,13 +151,21 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
         return TRUE;
     }
 
+    /* The successor is allocated where it is issued, and not above beside the
+     * cancel: a search answered without a round trip has no request for one to
+     * name, and self->search would stand for a reply that is never coming --
+     * which is why init () does not allocate one either, and why the cancel and
+     * the clear above are written to be no-ops on the %NULL it starts as. */
+    self->search = g_cancellable_new ();
+
     SearchData *data = g_new (SearchData, 1);
 
     data->provider = g_object_ref (self);
+    data->cancellable = g_object_ref (self->search);
     data->invocation = invocation;
     data->complete = complete;
 
-    g_paste_client_search (self->client, search, NULL /* cancellable */, on_search_ready, data);
+    g_paste_client_search (self->client, search, self->search, on_search_ready, data);
 
     return TRUE;
 }
@@ -386,6 +435,11 @@ g_paste_search_provider_dispose (GObject *object)
     GPasteSearchProvider *self = G_PASTE_SEARCH_PROVIDER (object);
 
     g_paste_search_provider_unregister_on_connection (G_PASTE_BUS_OBJECT (self));
+
+    /* A search in flight holds a ref, so dispose () runs only once every one of
+     * them has answered: there is nothing left to cancel here, only the
+     * cancellable itself to release. */
+    g_clear_object (&self->search);
 
     g_clear_object (&self->skeleton);
     g_clear_object (&self->client);
