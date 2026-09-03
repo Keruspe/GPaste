@@ -41,6 +41,10 @@ struct _GPasteHistorySaver
 
     gboolean                     load_in_progress;
     guint64                      load_generation;
+    /* The read the load in flight is doing. The generation says whether anyone
+     * still wants that read's result; this is what stops the read itself, which
+     * is the lock wait and then a whole history off disk. */
+    GCancellable                *load_cancellable;
 
     /* Set by g_paste_history_saver_detach(): the owner has replaced us, so an
      * in-flight load (which keeps us alive through the task's own reference) must
@@ -265,6 +269,10 @@ g_paste_history_saver_detach (GPasteHistorySaver *self)
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     self->detached = TRUE;
+
+    /* The result was going to be dropped either way; this is the read producing
+     * it, which the new saver is not waiting for and the old owner cannot use. */
+    g_cancellable_cancel (self->load_cancellable);
 }
 
 /****************/
@@ -310,16 +318,35 @@ static void
 g_paste_history_saver_load_task (GTask        *task,
                                  gpointer      source_object G_GNUC_UNUSED,
                                  gpointer      task_data,
-                                 GCancellable *cancellable G_GNUC_UNUSED)
+                                 GCancellable *cancellable)
 {
     const GPasteHistorySaverLoadData *data = task_data;
     GPasteHistorySaverLoadResult *result = g_new0 (GPasteHistorySaverLoadResult, 1);
 
     /* First file access of the process: block until any previous daemon has
-     * finished flushing and released the lock, so we never load a stale history. */
-    g_paste_storage_backend_lock ();
+     * finished flushing and released the lock, so we never load a stale history.
+     * The wait is the longest thing a load does and the cancellable is what ends
+     * it, an owner that has moved on having nothing to wait for. */
+    g_paste_storage_backend_lock (cancellable);
 
-    result->readable = g_paste_storage_backend_read_history (data->backend, data->name, &result->history, &result->size);
+    /* Nobody is waiting for what a read would produce: the owner that asked has
+     * moved on, and the generation check drops the result. @readable stays
+     * %FALSE, a read that never happened not being one that succeeded.
+     *
+     * And where the wait above is what was given up on, no lock is held either:
+     * reading then would open -- and, on the sqlite backend, create and
+     * migrate -- a store the previous daemon may still be flushing, which is the
+     * whole of what the lock is for. A load that found the lock already taken is
+     * past that, it being installed process-wide. */
+    if (g_cancellable_is_cancelled (cancellable))
+    {
+        g_task_return_pointer (task, result, (GDestroyNotify) g_paste_history_saver_load_result_free);
+
+        return;
+    }
+
+    result->readable = g_paste_storage_backend_read_history (data->backend, data->name, cancellable,
+                                                             &result->history, &result->size);
     g_task_return_pointer (task, result, (GDestroyNotify) g_paste_history_saver_load_result_free);
 }
 
@@ -388,9 +415,20 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
      * history back after a load would be pure churn: drop the request. */
     data->save_after = save_after && !g_paste_storage_backend_is_incremental (self->backend);
 
+    /* Whatever the load before it was reading, nobody is waiting for it: the
+     * generation check below drops its result, and this is what stops the read
+     * that was producing it. */
+    g_cancellable_cancel (self->load_cancellable);
+    g_clear_object (&self->load_cancellable);
+    self->load_cancellable = g_cancellable_new ();
+
     /* Hold our own ref for the task (see start_write): reload_backend may drop
      * the owner's ref to us while this load is still in flight. */
-    g_autoptr (GTask) task = g_task_new (self->owner, NULL, g_paste_history_saver_load_done, g_object_ref (self));
+    g_autoptr (GTask) task = g_task_new (self->owner, self->load_cancellable, g_paste_history_saver_load_done, g_object_ref (self));
+    /* The result is what says whether the read completed (@readable), and the
+     * generation and @detached are what say whether anyone still wants it, so
+     * GTask must not turn a cancelled load into an error of its own on top. */
+    g_task_set_check_cancellable (task, FALSE);
     g_task_set_static_name (task, "gpaste-history-load");
     g_task_set_task_data (task, data, g_paste_history_saver_load_data_free);
     g_task_run_in_thread (task, g_paste_history_saver_load_task);
@@ -400,10 +438,10 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
  * g_paste_history_saver_abandon_load:
  * @self: a #GPasteHistorySaver
  *
- * Drop the result of the load currently in flight, if any. The read itself is
- * already running on a worker thread and cannot be interrupted, but its result
- * is discarded instead of being installed, and is_loading() reports %FALSE right
- * away. Meant for a caller that just invalidated what is being read (see
+ * Drop the load currently in flight, if any: its result is discarded instead of
+ * being installed, is_loading() reports %FALSE right away, and the read itself
+ * is given up on -- at the lock wait, or between the rows it is still building.
+ * Meant for a caller that just invalidated what is being read (see
  * g_paste_history_delete()), so the load cannot resurrect it afterwards.
  */
 G_PASTE_VISIBLE void
@@ -412,10 +450,12 @@ g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     /* The same mechanism a superseding load relies on: bumping the generation
-     * makes load_done() drop the stale result. Unlike that case there is no
-     * newer load to clear @load_in_progress, so clear it here. */
+     * makes load_done() drop the stale result, and the cancel stops the read
+     * that would have produced it. Unlike that case there is no newer load to
+     * clear @load_in_progress, so clear it here. */
     self->load_generation++;
     self->load_in_progress = FALSE;
+    g_cancellable_cancel (self->load_cancellable);
 }
 
 /**
@@ -443,6 +483,10 @@ g_paste_history_saver_dispose (GObject *object)
 
     g_queue_clear_full (&self->pending, g_paste_history_saver_write_free);
     g_clear_object (&self->backend);
+
+    /* A load in flight holds a ref on us through its task, so dispose () runs
+     * only once it has reported: there is nothing left to cancel here. */
+    g_clear_object (&self->load_cancellable);
 
     G_OBJECT_CLASS (g_paste_history_saver_parent_class)->dispose (object);
 }

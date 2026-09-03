@@ -73,14 +73,21 @@ static gint     g_paste_storage_lock_released;
 
 /**
  * g_paste_storage_backend_lock:
+ * @cancellable: (nullable): the load this wait belongs to, to give it up with
  *
  * Acquire the process-wide history lock, blocking until any other daemon holding
  * it releases it (or its process dies). Idempotent: once held, further calls are
  * a no-op. Meant to be called from the history-loading worker thread, before the
  * first read, so a takeover waits out the previous owner's final write.
+ *
+ * Two things end the wait short of the lock, and they answer different
+ * questions: @cancellable says the load this is waiting for has been given up on
+ * (superseded, or abandoned by the owner), where the released flag says this
+ * process has let go of the lock and wants none. Either way no lock is
+ * installed.
  */
 G_PASTE_VISIBLE void
-g_paste_storage_backend_lock (void)
+g_paste_storage_backend_lock (GCancellable *cancellable)
 {
 #ifdef G_OS_UNIX
     {
@@ -129,7 +136,8 @@ g_paste_storage_backend_lock (void)
             logged = TRUE;
         }
 
-        if (g_atomic_int_get (&g_paste_storage_lock_released))
+        if (g_atomic_int_get (&g_paste_storage_lock_released) ||
+            g_cancellable_is_cancelled (cancellable))
         {
             close (fd);
             return;
@@ -265,20 +273,23 @@ g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
  * g_paste_storage_backend_read_history:
  * @self: a #GPasteItem instance
  * @name: the name of the history to load
+ * @cancellable: (nullable): a #GCancellable to give the read up on
  * @history: (out) (element-type GPasteItem): the history we just read
  * @size: (out): the size used by the history
  *
  * Reads the history from our storage backend
  *
  * Returns: %FALSE when the history exists on disk but could not be read back
- *          (a failed decryption, parse or I/O error), %TRUE otherwise (including
- *          a genuinely empty or absent history)
+ *          (a failed decryption, parse or I/O error, or @cancellable giving up
+ *          on it), %TRUE otherwise (including a genuinely empty or absent
+ *          history)
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_backend_read_history (GPasteStorageBackend *self,
-                                      const gchar          *name,
-                                      GList               **history,
-                                      gsize                *size)
+g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
+                                      const gchar           *name,
+                                      GCancellable          *cancellable,
+                                      GList                **history,
+                                      gsize                 *size)
 {
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
@@ -291,7 +302,7 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *self,
      * with each other and with the empty history the caller is holding. */
     *size = 0;
 
-    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, name, history, size);
+    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, name, cancellable, history, size);
 }
 
 /**
@@ -545,7 +556,7 @@ g_paste_storage_backend_count_history (GPasteStorageBackend *self,
     g_autolist (GPasteItem) history = NULL;
     gsize size;
 
-    g_paste_storage_backend_read_history (self, name, &history, &size);
+    g_paste_storage_backend_read_history (self, name, NULL /* cancellable */, &history, &size);
 
     return g_list_length (history);
 }

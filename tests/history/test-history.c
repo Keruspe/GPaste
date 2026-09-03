@@ -199,7 +199,7 @@ read_history_full (GPasteStorageBackend *backend,
 {
     GList *loaded = NULL;
     gsize size = 0;
-    gboolean read = g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    gboolean read = g_paste_storage_backend_read_history (backend, name, NULL /* cancellable */, &loaded, &size);
 
     if (ok)
         *ok = read;
@@ -2691,7 +2691,7 @@ test_sqlite_schema_migration (void)
         GList *history = NULL;
         gsize size = 0;
 
-        g_assert_true (g_paste_storage_backend_read_history (backend, name, &history, &size));
+        g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL /* cancellable */, &history, &size));
         g_assert_cmpuint (g_list_length (history), ==, 1);
 
         GPasteItem *item = history->data;

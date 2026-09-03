@@ -1069,12 +1069,13 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
  * Only a read creates the placeholder file for a history that is not there:
  * counting must not bring a history into existence. */
 static gboolean
-_g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
-                                     const gchar          *name,
-                                     gboolean              count_only,
-                                     GList               **history,
-                                     gsize                *size,
-                                     gsize                *count)
+_g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
+                                     const gchar           *name,
+                                     GCancellable          *cancellable,
+                                     gboolean               count_only,
+                                     GList                **history,
+                                     gsize                 *size,
+                                     gsize                 *count)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
@@ -1122,6 +1123,15 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
                                                                           NULL);
         gsize text_length;
         g_autoptr (GError) error = NULL;
+
+        /* Asked here and nowhere else: the whole document is read (and, for the
+         * encrypted flavour, decrypted) in one call below and parsed in one
+         * more, neither of which stops halfway, so this is the only point at
+         * which giving up saves the work rather than merely discarding it.
+         * Answered as unreadable, a history a cancel got in front of being one
+         * nothing may persist over. */
+        if (g_cancellable_is_cancelled (cancellable))
+            return FALSE;
 
         if (!g_paste_file_backend_load_contents (self, history_file_path, history_file, &text, &text_length, &error))
         {
@@ -1198,12 +1208,13 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
 }
 
 static gboolean
-g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
-                                        const gchar          *name,
-                                        GList               **history,
-                                        gsize                *size)
+g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
+                                        const gchar           *name,
+                                        GCancellable          *cancellable,
+                                        GList                **history,
+                                        gsize                 *size)
 {
-    return _g_paste_file_backend_read_or_count (self, name, FALSE, history, size, NULL);
+    return _g_paste_file_backend_read_or_count (self, name, cancellable, FALSE, history, size, NULL);
 }
 
 /* Parsing is what a count costs here -- the document has to be walked (and, for
@@ -1217,7 +1228,7 @@ g_paste_file_backend_count_history (GPasteStorageBackend *self,
 {
     gsize count = 0;
 
-    if (!_g_paste_file_backend_read_or_count (self, name, TRUE, NULL, NULL, &count))
+    if (!_g_paste_file_backend_read_or_count (self, name, NULL /* cancellable */, TRUE, NULL, NULL, &count))
         return 0;
 
     return count;

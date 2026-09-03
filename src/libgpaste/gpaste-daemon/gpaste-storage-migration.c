@@ -324,7 +324,7 @@ import_histories (GPasteSettings *settings,
          * into the destination and reporting success would let the caller delete
          * the still-intact originals. Bail out instead so the migration is kept
          * for a retry with the data untouched. */
-        if (!g_paste_storage_backend_read_history (previous, *name, &history, &size))
+        if (!g_paste_storage_backend_read_history (previous, *name, NULL /* cancellable */, &history, &size))
         {
             ok = FALSE;
             break;
@@ -335,7 +335,7 @@ import_histories (GPasteSettings *settings,
         g_autolist (GPasteItem) written = NULL;
         gsize written_size = 0;
 
-        g_paste_storage_backend_read_history (next, *name, &written, &written_size);
+        g_paste_storage_backend_read_history (next, *name, NULL /* cancellable */, &written, &written_size);
 
         const GList *w = written;
 

@@ -1454,7 +1454,7 @@ g_paste_history_load_locked (GPasteHistory *self,
      * other one loaded afterwards. */
     GList *history = NULL;
 
-    self->unreadable = !g_paste_storage_backend_read_history (self->backend, self->name, &history, &self->size);
+    self->unreadable = !g_paste_storage_backend_read_history (self->backend, self->name, NULL /* cancellable */, &history, &self->size);
     g_paste_history_private_set_from_list (self, history);
 
     if (self->unreadable)

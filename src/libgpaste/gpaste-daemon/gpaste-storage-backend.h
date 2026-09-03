@@ -24,11 +24,14 @@ struct _GPasteStorageBackendClass
      *
      * Returns %FALSE when the history file is present but could not be read back
      * (a failed decryption, parse or I/O error), so a caller can tell a genuine
-     * empty history apart from a read that silently yielded nothing. */
-    gboolean (*read_history_file)  (GPasteStorageBackend *self,
-                                    const gchar          *name,
+     * empty history apart from a read that silently yielded nothing -- and
+     * likewise for a read @cancellable stopped partway, a partial history being
+     * one nothing may persist over. */
+    gboolean (*read_history_file)  (GPasteStorageBackend  *self,
+                                    const gchar           *name,
+                                    GCancellable          *cancellable,
                                     GList                **history,
-                                    gsize                *size);
+                                    gsize                 *size);
     void (*write_history_file) (GPasteStorageBackend *self,
                                 const gchar          *name,
                                 const GList          *history);
@@ -116,10 +119,11 @@ gboolean       g_paste_storage_backend_is_encrypted  (GPasteStorageBackend *self
 gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
                                                       const gchar          *name);
 
-gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
-                                               const gchar          *name,
-                                               GList               **history,
-                                               gsize                *size);
+gboolean g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
+                                               const gchar           *name,
+                                               GCancellable          *cancellable,
+                                               GList                **history,
+                                               gsize                 *size);
 void g_paste_storage_backend_write_history    (GPasteStorageBackend *self,
                                                const gchar          *name,
                                                const GList          *history);
@@ -158,7 +162,7 @@ void     g_paste_storage_backend_drop_item_data       (GPasteStorageBackend *sel
 
 gboolean g_paste_storage_backend_is_incremental       (GPasteStorageBackend *self);
 
-void g_paste_storage_backend_lock   (void);
+void g_paste_storage_backend_lock   (GCancellable *cancellable);
 void g_paste_storage_backend_unlock (void);
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,

@@ -1457,10 +1457,11 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
 }
 
 static gboolean
-g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
-                                          const gchar          *name,
-                                          GList               **history,
-                                          gsize                *size)
+g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
+                                          const gchar           *name,
+                                          GCancellable          *cancellable,
+                                          GList                **history,
+                                          gsize                 *size)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
@@ -1513,11 +1514,22 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
-    gint rc;
+    gint rc = SQLITE_DONE;
     gboolean complete = TRUE;
     g_autoptr (GPtrArray) stale_images = g_ptr_array_new_with_free_func (g_free);
+    gboolean cancelled = FALSE;
 
-    while ((rc = sqlite3_step (stmt)) == SQLITE_ROW)
+    /* Row by row, this being a read that does stop halfway: what has been built
+     * so far is dropped by the caller either way, so the rows after the cancel
+     * are decryptions and image loads nobody is waiting for. Answered as
+     * incomplete, a partial history being one nothing may persist over -- the
+     * same answer a row this build could make nothing of gets.
+     *
+     * Asked before the first step and not only between rows: a store with no
+     * rows to walk would otherwise answer a cancelled read as a complete empty
+     * history, which is what this function's own contract says it may not do. */
+    while (!(cancelled = g_cancellable_is_cancelled (cancellable)) &&
+           (rc = sqlite3_step (stmt)) == SQLITE_ROW)
     {
         gboolean unreadable = FALSE;
         GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support, stale_images, &unreadable);
@@ -1543,13 +1555,17 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
         *size += g_paste_item_get_size (item);
     }
 
-    complete = complete && (rc == SQLITE_DONE);
+    complete = complete && !cancelled && (rc == SQLITE_DONE);
 
     /* Said while the statements are still open: finalizing them is what replaces
      * the message the connection last reported -- which answers for a scan that
      * stopped short and for nothing else, a row this build could make nothing of
-     * having already said so where it was found. */
-    if (!complete)
+     * having already said so where it was found.
+     *
+     * A scan given up on is not one that failed, and the connection has no
+     * message for it: sqlite last reported on the step that produced a row,
+     * which reads back as "not an error". */
+    if (!complete && !cancelled)
     {
         g_warning ("sqlite: could not read every row of the history: %s",
                    (rc == SQLITE_DONE) ? "a row could not be read back" : sqlite3_errmsg (db));
