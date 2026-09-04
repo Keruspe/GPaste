@@ -502,7 +502,7 @@ grab_all_cb (GObject      *source_object,
     }
     else if (error)
     {
-        if (error->code == G_DBUS_ERROR_UNKNOWN_METHOD && priv->retries < 10)
+        if (g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD) && priv->retries < 10)
         {
             /* The retry source outlives the callback that queues it, and its
              * data is this client: a reference of its own would put dispose ()
@@ -788,6 +788,14 @@ on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
      * flight and so cannot report the one issued since as done. */
     priv->pending_grab = FALSE;
     priv->in_flight = 0;
+
+    /* A retry queued against the shell that just went away would fire at a dead
+     * name, and the grab on_shell_appeared () issues when it comes back is a new
+     * attempt that deserves the full budget: carrying the counter over means a
+     * login slow enough to burn the ten retries leaves every later restart of
+     * the shell with no global shortcut at all, and only a warning to say so. */
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
+    priv->retries = 0;
 
     /* The shell that granted whatever a reply still out is carrying is this one:
      * a reply that lands after this names grabs nobody holds any more, and the

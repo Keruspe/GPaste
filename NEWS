@@ -2,7 +2,7 @@ NEW in 50.10 (UNRELEASED)
 =============
 
 - New setting to disable the global keyboard shortcuts entirely (#501)
-- Fix gnome-shell being left holding GPaste's grabs for the rest of the session
+- Fix gnome-shell being left holding GPaste's grabs for the rest of the session, and GPaste giving up on them for good after a slow login
 
 NEW in 50.9 (31/08/2026)
 =============
