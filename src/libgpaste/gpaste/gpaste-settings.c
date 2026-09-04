@@ -28,6 +28,7 @@ typedef struct
     gboolean   images_support;
     gboolean   images_preview;
     guint64    images_preview_size;
+    gboolean   keybindings_enabled;
     gchar     *launch_ui;
     gchar     *make_password;
     guint64    max_displayed_history_size;
@@ -329,6 +330,29 @@ BOOLEAN_SETTING (images_preview, IMAGES_PREVIEW)
  * Change the "images-preview-size" setting
  */
 UNSIGNED_SETTING (images_preview_size, IMAGES_PREVIEW_SIZE)
+
+/**
+ * g_paste_settings_get_keybindings_enabled:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "keybindings-enabled" setting
+ *
+ * Returns: the value of the "keybindings-enabled" setting
+ */
+/**
+ * g_paste_settings_reset_keybindings_enabled:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "keybindings-enabled" setting
+ */
+/**
+ * g_paste_settings_set_keybindings_enabled:
+ * @self: a #GPasteSettings instance
+ * @value: whether to enable the global keyboard shortcuts
+ *
+ * Change the "keybindings-enabled" setting
+ */
+BOOLEAN_SETTING (keybindings_enabled, KEYBINDINGS_ENABLED)
 
 /**
  * g_paste_settings_get_launch_ui:
@@ -904,6 +928,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_images_preview_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING))
         g_paste_settings_private_set_images_preview_size_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_KEYBINDINGS_ENABLED_SETTING))
+        g_paste_settings_private_set_keybindings_enabled_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
     {
         g_paste_settings_private_set_launch_ui_from_dconf (priv);
@@ -1102,6 +1128,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_images_support_from_dconf (priv);
     g_paste_settings_private_set_images_preview_from_dconf (priv);
     g_paste_settings_private_set_images_preview_size_from_dconf (priv);
+    g_paste_settings_private_set_keybindings_enabled_from_dconf (priv);
     g_paste_settings_private_set_launch_ui_from_dconf (priv);
     g_paste_settings_private_set_make_password_from_dconf (priv);
     g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);

@@ -13,6 +13,8 @@ typedef struct
 {
     GPasteGtkPreferencesManager *manager;
 
+    AdwSwitchRow                *keybindings_enabled_switch;
+
     AdwEntryRow                 *launch_ui_entry;
     AdwEntryRow                 *show_history_entry;
 
@@ -32,6 +34,13 @@ g_paste_gtk_preferences_shortcuts_page_setting_changed (GPasteGtkPreferencesPage
                                                         const gchar              *key)
 {
     GPasteGtkPreferencesShortcutsPagePrivate *priv = g_paste_gtk_preferences_shortcuts_page_get_instance_private (G_PASTE_GTK_PREFERENCES_SHORTCUTS_PAGE (self));
+
+    if (g_paste_str_equal (key, G_PASTE_KEYBINDINGS_ENABLED_SETTING))
+    {
+        adw_switch_row_set_active (priv->keybindings_enabled_switch, g_paste_settings_get_keybindings_enabled (settings));
+        return;
+    }
+
     AdwEntryRow *entry = NULL;
     const gchar *value = NULL;
 
@@ -74,6 +83,18 @@ g_paste_gtk_preferences_shortcuts_page_setting_changed (GPasteGtkPreferencesPage
     /* Guard against the notify::text → setter → GSettings changed → setting_changed → set_text signal loop */
     if (entry && !g_paste_str_equal (gtk_editable_get_text (GTK_EDITABLE (entry)), value))
         gtk_editable_set_text (GTK_EDITABLE (entry), value);
+}
+
+/* Every accelerator group follows the master switch: adding one goes through
+ * here so the binding cannot be forgotten. */
+static void
+g_paste_gtk_preferences_shortcuts_page_add_accels_group (GPasteGtkPreferencesShortcutsPage *self,
+                                                         GPasteGtkPreferencesGroup         *group)
+{
+    GPasteGtkPreferencesShortcutsPagePrivate *priv = g_paste_gtk_preferences_shortcuts_page_get_instance_private (self);
+
+    g_object_bind_property (priv->keybindings_enabled_switch, "active", group, "sensitive", G_BINDING_SYNC_CREATE);
+    adw_preferences_page_add (ADW_PREFERENCES_PAGE (self), ADW_PREFERENCES_GROUP (group));
 }
 
 static void
@@ -128,9 +149,18 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteGtkPreferencesManager *manager
 
     priv->manager = g_object_ref (manager);
 
-    g_paste_gtk_preferences_manager_register (manager, G_PASTE_GTK_PREFERENCES_PAGE (self));
+    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Global shortcuts"));
+    priv->keybindings_enabled_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
+                                                                                          _("Enable global keyboard shortcuts"),
+                                                                                          g_paste_settings_get_keybindings_enabled (settings),
+                                                                                          g_paste_settings_set_keybindings_enabled,
+                                                                                          g_paste_settings_reset_keybindings_enabled,
+                                                                                          settings);
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (priv->keybindings_enabled_switch),
+                                 _("When disabled, GPaste grabs no global shortcut"));
+    adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
 
-    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("History access"));
+    group = g_paste_gtk_preferences_group_new (_("History access"));
     /* translators: Keyboard shortcut to launch the graphical tool */
     priv->launch_ui_entry = g_paste_gtk_preferences_group_add_text_setting (group,
                                                                             _("Launch the graphical tool"),
@@ -145,7 +175,7 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteGtkPreferencesManager *manager
                                                                                g_paste_settings_set_show_history,
                                                                                g_paste_settings_reset_show_history,
                                                                                settings);
-    adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
+    g_paste_gtk_preferences_shortcuts_page_add_accels_group (self, group);
 
     group = g_paste_gtk_preferences_group_new (_("Active element manipulation"));
     /* translators: Keyboard shortcut to mark the active item as being a password */
@@ -169,7 +199,7 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteGtkPreferencesManager *manager
                                                                       g_paste_settings_set_pop,
                                                                       g_paste_settings_reset_pop,
                                                                       settings);
-    adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
+    g_paste_gtk_preferences_shortcuts_page_add_accels_group (self, group);
 
     group = g_paste_gtk_preferences_group_new (_("Clipboards synchronization"));
     /* translators: Keyboard shortcut to sync the clipboard to the primary selection */
@@ -186,7 +216,13 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteGtkPreferencesManager *manager
                                                                                             g_paste_settings_set_sync_primary_to_clipboard,
                                                                                             g_paste_settings_reset_sync_primary_to_clipboard,
                                                                                             settings);
-    adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
+    g_paste_gtk_preferences_shortcuts_page_add_accels_group (self, group);
+
+    /* Registered once every row a change is handed to exists: a "changed"
+     * arriving before that reaches setting_changed () with the rows still
+     * unset, and the switch is handed to adw_switch_row_set_active () without
+     * an entry's tolerance for a %NULL of its own. */
+    g_paste_gtk_preferences_manager_register (manager, G_PASTE_GTK_PREFERENCES_PAGE (self));
 
     return GTK_WIDGET (self);
 }

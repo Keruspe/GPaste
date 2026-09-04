@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-31 12:30+0200\n"
+"POT-Creation-Date: 2026-09-06 12:05+0200\n"
 "PO-Revision-Date: 2021-05-30 16:32+0000\n"
 "Last-Translator: F4 Developer <skowanski@f4dev.me>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/gpaste/gpaste/pl/"
@@ -25,44 +25,44 @@ msgid "@GETTEXT_PACKAGE@"
 msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
-#: src/ui/gpaste-ui-shortcuts-window.c:24
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:168
+#: src/ui/gpaste-ui-shortcuts-window.c:41
 msgid "Launch the graphical tool"
 msgstr "Uruchom narzędzie graficzne"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
-#: src/ui/gpaste-ui-shortcuts-window.c:25
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:185
+#: src/ui/gpaste-ui-shortcuts-window.c:42
 msgid "Mark the active item as being a password"
 msgstr "Zaznacz aktywny element jako będący hasłem"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
-#: src/ui/gpaste-ui-shortcuts-window.c:23
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:199
+#: src/ui/gpaste-ui-shortcuts-window.c:40
 msgid "Delete the active item from history"
 msgstr "Usuń aktywny element z historii"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
-#: src/ui/gpaste-ui-shortcuts-window.c:26
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:175
+#: src/ui/gpaste-ui-shortcuts-window.c:43
 msgid "Display the history"
 msgstr "Pokaż historię"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
-#: src/ui/gpaste-ui-shortcuts-window.c:27
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:209
+#: src/ui/gpaste-ui-shortcuts-window.c:44
 msgid "Sync the clipboard to the primary selection"
 msgstr "Synchronizuj schowek do pierwszego zaznaczenia"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
-#: src/ui/gpaste-ui-shortcuts-window.c:28
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:216
+#: src/ui/gpaste-ui-shortcuts-window.c:45
 msgid "Sync the primary selection to the clipboard"
 msgstr "Synchronizuj pierwsze zaznaczenie do schowka"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
-#: src/ui/gpaste-ui-shortcuts-window.c:29
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:192
+#: src/ui/gpaste-ui-shortcuts-window.c:46
 msgid "Upload the active item to a pastebin service"
 msgstr "Wygraj aktywny element na pastebin"
 
@@ -183,10 +183,20 @@ msgid "By default, we open it where the mouse cursor is"
 msgstr "Domyślnie śledzimy te zmiany."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:73
+msgid "Are the global keyboard shortcuts enabled?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:74
+msgid ""
+"By default, the global keyboard shortcuts are enabled. Disable this to "
+"prevent GPaste from grabbing any global shortcut."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:82
 msgid "The keyboard shortcut to launch the graphical interface"
 msgstr "Skrót klawiszowy do uruchomienia interfejsu graficznego"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:74
+#: data/gsettings/org.gnome.GPaste.gschema.xml:83
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
@@ -194,12 +204,12 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + g (\"<Ctrl> <Alt>G\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:82
+#: data/gsettings/org.gnome.GPaste.gschema.xml:91
 msgid "The keyboard shortcut to mark the active item as being a password"
 msgstr ""
 "Skrót klawiszowy do zaznaczenia aktywnego elementu jako będącego hasłem"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:83
+#: data/gsettings/org.gnome.GPaste.gschema.xml:92
 msgid ""
 "By default, hitting ctrl + alt + s will mark the active item as being a "
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
@@ -208,58 +218,58 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + s (\"<Ctrl><Alt>S\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:92
+#: data/gsettings/org.gnome.GPaste.gschema.xml:101
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:146
 msgid "Max displayed history size"
 msgstr "Maksymalna wielkość wyświetlanej historii"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:93
+#: data/gsettings/org.gnome.GPaste.gschema.xml:102
 msgid "Maximum number of items displayed in the history"
 msgstr "Maksymalna ilość elementów wyświetlanych w historii"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:101
+#: data/gsettings/org.gnome.GPaste.gschema.xml:110
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:105
 msgid "Max history size"
 msgstr "Maksymalna wielkość historii"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:102
+#: data/gsettings/org.gnome.GPaste.gschema.xml:111
 msgid "Maximum number of items in history"
 msgstr "Maksymalna ilość elementów w historii"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:110
+#: data/gsettings/org.gnome.GPaste.gschema.xml:119
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:112
 msgid "Max memory usage (MB)"
 msgstr "Maksymalne zużycie pamięci (MB)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:111
+#: data/gsettings/org.gnome.GPaste.gschema.xml:120
 msgid "Maximum amount of memory used to store contents"
 msgstr "Maksymalna ilość pamięci używanej do przechowywania zawartości"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:119
+#: data/gsettings/org.gnome.GPaste.gschema.xml:128
 msgid "Max text item size"
 msgstr "Maksymalna długość elementu tekstowego"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:120
+#: data/gsettings/org.gnome.GPaste.gschema.xml:129
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 "Maksymalna długość elementu tekstowego. Wszystko co jest dłuższe, zostanie "
 "zignorowane."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:128
+#: data/gsettings/org.gnome.GPaste.gschema.xml:137
 msgid "Min text item size"
 msgstr "Minimalna długość elementu tekstowego"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:129
+#: data/gsettings/org.gnome.GPaste.gschema.xml:138
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 "Minimalna długość elementu tekstowego. Wszystko, co jest krótsze, zostanie "
 "zignorowane."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:136
+#: data/gsettings/org.gnome.GPaste.gschema.xml:145
 msgid "The keyboard shortcut to delete the first element in history"
 msgstr "Skrót klawiszowy do usunięcia pierwszego elementu w historii"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:137
+#: data/gsettings/org.gnome.GPaste.gschema.xml:146
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
@@ -267,15 +277,15 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + v (\"<Ctrl> <Alt>V\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:145
+#: data/gsettings/org.gnome.GPaste.gschema.xml:154
 msgid "Does the primary selection affects history?"
 msgstr "Czy pierwsze zaznaczenie ma wpływ na historię?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:146
+#: data/gsettings/org.gnome.GPaste.gschema.xml:155
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Domyślnie tylko kopiowanie (ctrl+c) ma wpływ na historię."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:153
+#: data/gsettings/org.gnome.GPaste.gschema.xml:162
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
@@ -283,23 +293,23 @@ msgstr ""
 "Zapisywać wszystkie wersje zaznaczonego bogatego tekstu (rich text, np. "
 "HTML), czy tylko zwykły tekst (plain text)?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:154
+#: data/gsettings/org.gnome.GPaste.gschema.xml:163
 msgid "By default, we're saving all"
 msgstr "Domyślnie zapisujemy wszystkie"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:161
+#: data/gsettings/org.gnome.GPaste.gschema.xml:170
 msgid "Do we save the history from one session to another?"
 msgstr "Zapisywać historię pomiędzy sesjami?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:162
+#: data/gsettings/org.gnome.GPaste.gschema.xml:171
 msgid "By default, we're saving it"
 msgstr "Domyślnie zapisujemy"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:169
+#: data/gsettings/org.gnome.GPaste.gschema.xml:178
 msgid "The keyboard shortcut to display the menu"
 msgstr "Skrót klawiszowy do wyświetlenia menu"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:170
+#: data/gsettings/org.gnome.GPaste.gschema.xml:179
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
@@ -307,11 +317,11 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + h (\"<Ctrl> <Alt>H\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:178
+#: data/gsettings/org.gnome.GPaste.gschema.xml:187
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr "Skrót klawiszowy do synchronizacji schowka z pierwszym zaznaczeniem"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:179
+#: data/gsettings/org.gnome.GPaste.gschema.xml:188
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
@@ -319,11 +329,11 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + o (\"<Ctrl> <Alt>O\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:187
+#: data/gsettings/org.gnome.GPaste.gschema.xml:196
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr "Skrót klawiszowy do synchronizacji pierwszego zaznaczenia do schowka"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:188
+#: data/gsettings/org.gnome.GPaste.gschema.xml:197
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
@@ -331,23 +341,23 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + p (\"<Ctrl> <Alt>P\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:196
+#: data/gsettings/org.gnome.GPaste.gschema.xml:205
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Czy pierwsze zaznaczenie i schowek są zsynchronizowane?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:197
+#: data/gsettings/org.gnome.GPaste.gschema.xml:206
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr "Domyślnie, pierwsze zaznaczenie i schowek są niezależne."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:204
+#: data/gsettings/org.gnome.GPaste.gschema.xml:213
 msgid "Do we track the clipboard changes?"
 msgstr "Czy śledzić zmiany w schowku?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:205
+#: data/gsettings/org.gnome.GPaste.gschema.xml:214
 msgid "By default, we're tracking those changes."
 msgstr "Domyślnie śledzimy te zmiany."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:212
+#: data/gsettings/org.gnome.GPaste.gschema.xml:221
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -355,15 +365,15 @@ msgstr ""
 "Synchronizować status daemons z rozszerzeniem gnome-shella? (wyłącza daemona "
 "w momencie wyłączenia rozszerzenia)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:213
+#: data/gsettings/org.gnome.GPaste.gschema.xml:222
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Domyślnie status daemona nie jest zmieniany"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:220
+#: data/gsettings/org.gnome.GPaste.gschema.xml:229
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "Czyścić elementy tekstowe przed dodawaniem ich do historii?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:221
+#: data/gsettings/org.gnome.GPaste.gschema.xml:230
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
@@ -371,14 +381,14 @@ msgstr ""
 "Czyszczenie oznacza usuwanie wszystkich spacji na początku i końcu tekstu. "
 "Domyślnie, zostawiamy je tak, jak są."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:229
+#: data/gsettings/org.gnome.GPaste.gschema.xml:238
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
 "Skrót klawiszowy do wysyłania pierwszego elementu z historii na pastebin"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:230
+#: data/gsettings/org.gnome.GPaste.gschema.xml:239
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
@@ -386,11 +396,11 @@ msgstr ""
 "Domyślnie jest to wywołane przez ctrl + alt + u (\"<Ctrl> <Alt>U\"). Pusty "
 "ciąg w tym miejscu wyłącza tę funkcjonalność."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:238
+#: data/gsettings/org.gnome.GPaste.gschema.xml:247
 msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "Pytać o potwierdzenie przy czyszczeniu historii?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:239
+#: data/gsettings/org.gnome.GPaste.gschema.xml:248
 msgid "By default, we do as it's a destructive action"
 msgstr "Domyślnie robimy to, jako, że jest to akcja destruktywna"
 
@@ -1563,7 +1573,7 @@ msgid ""
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:166
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:174
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:206
 msgid "Clipboards synchronization"
 msgstr ""
 
@@ -1640,16 +1650,30 @@ msgstr ""
 msgid "Preview size"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:122
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 msgid "Keyboard shortcuts"
 msgstr "Skróty klawiszowe"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:133
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:154
+#, fuzzy
+msgid "Global shortcuts"
+msgstr "Skróty klawiszowe"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:156
+#, fuzzy
+msgid "Enable global keyboard shortcuts"
+msgstr "Skróty klawiszowe"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:162
+msgid "When disabled, GPaste grabs no global shortcut"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:165
 #, fuzzy
 msgid "History access"
 msgstr "Ustawienia historii"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:182
 msgid "Active element manipulation"
 msgstr ""
 
@@ -1740,9 +1764,15 @@ msgstr "Wyszukaj"
 msgid "GPaste Settings"
 msgstr "Ustawienia GPaste"
 
-#: src/ui/gpaste-ui-shortcuts-window.c:21
+#: src/ui/gpaste-ui-shortcuts-window.c:37
 msgid "General"
 msgstr "Generalne"
+
+#: src/ui/gpaste-ui-shortcuts-window.c:38
+msgid ""
+"⚠ Global shortcuts are disabled — GPaste is not listening for any of the "
+"shortcuts below"
+msgstr ""
 
 #: src/ui/gpaste-ui-switch.c:68
 msgid "Stop"
@@ -1756,20 +1786,20 @@ msgstr "Na pewno chcesz przestać śledzić zmiany schowka?"
 msgid "Upload"
 msgstr "Wyślij"
 
-#: src/ui/gpaste-ui-window.c:281
+#: src/ui/gpaste-ui-window.c:368
 msgid "Quit"
 msgstr "Wyjdź"
 
-#: src/ui/gpaste-ui-window.c:330 src/ui/gpaste-ui-window.c:331
+#: src/ui/gpaste-ui-window.c:417 src/ui/gpaste-ui-window.c:418
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Nie można było połączyć się z daemonem GPaste"
 
-#: src/ui/gpaste-ui-window.c:357
+#: src/ui/gpaste-ui-window.c:442
 #, fuzzy
 msgid "Histories"
 msgstr "Ustawienia historii"
 
-#: src/ui/gpaste-ui-window.c:358
+#: src/ui/gpaste-ui-window.c:443
 #, fuzzy
 msgid "History"
 msgstr "Ustawienia historii"

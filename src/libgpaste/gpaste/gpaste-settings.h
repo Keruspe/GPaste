@@ -24,6 +24,7 @@ const gchar *g_paste_settings_get_history_name               (const GPasteSettin
 gboolean     g_paste_settings_get_images_preview             (const GPasteSettings *self);
 guint64      g_paste_settings_get_images_preview_size        (const GPasteSettings *self);
 gboolean     g_paste_settings_get_images_support             (const GPasteSettings *self);
+gboolean     g_paste_settings_get_keybindings_enabled        (const GPasteSettings *self);
 const gchar *g_paste_settings_get_launch_ui                  (const GPasteSettings *self);
 const gchar *g_paste_settings_get_make_password              (const GPasteSettings *self);
 guint64      g_paste_settings_get_max_displayed_history_size (const GPasteSettings *self);
@@ -53,6 +54,7 @@ void g_paste_settings_reset_history_name               (GPasteSettings *self);
 void g_paste_settings_reset_images_preview             (GPasteSettings *self);
 void g_paste_settings_reset_images_preview_size        (GPasteSettings *self);
 void g_paste_settings_reset_images_support             (GPasteSettings *self);
+void g_paste_settings_reset_keybindings_enabled        (GPasteSettings *self);
 void g_paste_settings_reset_launch_ui                  (GPasteSettings *self);
 void g_paste_settings_reset_make_password              (GPasteSettings *self);
 void g_paste_settings_reset_max_displayed_history_size (GPasteSettings *self);
@@ -90,6 +92,8 @@ void g_paste_settings_set_images_preview             (GPasteSettings *self,
 void g_paste_settings_set_images_preview_size        (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_images_support             (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_keybindings_enabled        (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_launch_ui                  (GPasteSettings *self,
                                                       const gchar    *value);

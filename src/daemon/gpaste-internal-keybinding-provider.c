@@ -189,6 +189,12 @@ internal_provider_ungrab_all (GPasteKeybindingProvider *provider)
     g_ptr_array_set_size (priv->bindings, 0);
 }
 
+/* Unlike the two D-Bus providers, this one takes a set it is already holding at
+ * face value and grabs it again: the accelerator strings are the same, but the
+ * keycodes they parse to are the keymap's, and a keyboard layout change under a
+ * running daemon is only ever recovered from by a rebind. The grabs are the X
+ * server's, one round trip each on a connection of our own, so what the other
+ * two save by recognising an unchanged set is not worth losing that. */
 static void
 internal_provider_grab_all (GPasteKeybindingProvider          *provider,
                             const GPasteKeybindingAccelerator *accels)

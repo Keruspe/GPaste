@@ -30,6 +30,12 @@ typedef struct
 #define G_PASTE_KEYBINDING_ACCELERATOR(id, accelerator, description) \
     ((GPasteKeybindingAccelerator) { (id), (accelerator), (description) })
 
+GPasteKeybindingAccelerator *g_paste_keybinding_accelerators_copy   (const GPasteKeybindingAccelerator *accels);
+void                         g_paste_keybinding_accelerators_free   (GPasteKeybindingAccelerator       *accels);
+gsize                        g_paste_keybinding_accelerators_length (const GPasteKeybindingAccelerator *accels);
+gboolean                     g_paste_keybinding_accelerators_match  (const GPasteKeybindingAccelerator *accels,
+                                                                     const GPasteKeybindingAccelerator *others);
+
 #define G_PASTE_TYPE_KEYBINDING_PROVIDER (g_paste_keybinding_provider_get_type ())
 
 G_PASTE_VISIBLE G_DECLARE_INTERFACE (GPasteKeybindingProvider, g_paste_keybinding_provider, G_PASTE, KEYBINDING_PROVIDER, GObject)
@@ -39,7 +45,7 @@ struct _GPasteKeybindingProviderInterface
     GTypeInterface parent_iface;
 
     /**
-     * GPasteKeybindingProviderInterface::grab_all:
+     * GPasteKeybindingProviderInterface::grab_all: (skip)
      * @self: a #GPasteKeybindingProvider
      * @accels: (array): a %NULL-terminated (by @id) array of #GPasteKeybindingAccelerator
      *

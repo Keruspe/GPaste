@@ -23,6 +23,8 @@ A default daemon named `gpaste-daemon` is provided, with seven keybindings:
 * upload the active item to a pastebin service (using wgetpaste)
 * launch the graphical tool
 
+Those keybindings can all be disabled at once from the preferences (the *Keyboard shortcuts* page), which makes GPaste grab no global shortcut at all.
+
 A simple CLI interface is provided: `gpaste-client`, with a subcommands: `gpaste-client ui` which makes the graphical tool pop.
 
 A native gnome-shell extension is provided.

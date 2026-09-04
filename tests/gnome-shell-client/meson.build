@@ -7,3 +7,11 @@ gnome_shell_client_test_exe = executable(
 )
 
 test('test-gnome-shell-client', gnome_shell_client_test_exe)
+
+keybinding_provider_test_exe = executable(
+  'gpaste-keybinding-provider-test',
+  sources: 'test-keybinding-provider.c',
+  dependencies: [ gio_dep, gpaste_test_bus_dep, libgpaste_internal_dep ],
+)
+
+test('test-keybinding-provider', keybinding_provider_test_exe)

@@ -105,6 +105,10 @@ global:
     g_paste_client_item_get_value;
     g_paste_client_item_new;
 
+    g_paste_keybinding_accelerators_copy;
+    g_paste_keybinding_accelerators_free;
+    g_paste_keybinding_accelerators_length;
+    g_paste_keybinding_accelerators_match;
     g_paste_keybinding_provider_emit_keybinding_activated;
     g_paste_keybinding_provider_get_type;
     g_paste_keybinding_provider_grab_all;
@@ -140,6 +144,7 @@ global:
     g_paste_settings_get_images_preview;
     g_paste_settings_get_images_preview_size;
     g_paste_settings_get_images_support;
+    g_paste_settings_get_keybindings_enabled;
     g_paste_settings_get_launch_ui;
     g_paste_settings_get_make_password;
     g_paste_settings_get_max_displayed_history_size;
@@ -170,6 +175,7 @@ global:
     g_paste_settings_reset_images_preview;
     g_paste_settings_reset_images_preview_size;
     g_paste_settings_reset_images_support;
+    g_paste_settings_reset_keybindings_enabled;
     g_paste_settings_reset_launch_ui;
     g_paste_settings_reset_make_password;
     g_paste_settings_reset_max_displayed_history_size;
@@ -199,6 +205,7 @@ global:
     g_paste_settings_set_images_preview;
     g_paste_settings_set_images_preview_size;
     g_paste_settings_set_images_support;
+    g_paste_settings_set_keybindings_enabled;
     g_paste_settings_set_launch_ui;
     g_paste_settings_set_make_password;
     g_paste_settings_set_max_displayed_history_size;
