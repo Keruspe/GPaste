@@ -72,9 +72,9 @@ class GPasteIndicator extends Button {
         // placeholder then stops saying "wait" and starts offering a retry.
         this._reconnectSpent = false;
         this._connecting = false;
-        // Which probe's reply still counts: the ladder is the latest one's to
-        // step, an older one having been overtaken.
-        this._probeGeneration = 0;
+        // The probe in flight, cancelled and replaced by the next: the ladder is
+        // the latest one's to step, an older one having been overtaken.
+        this._probe = null;
 
         this._dummyHistoryItem = new GPasteDummyHistoryItem();
         // Its own signal rather than 'activate', which would close the menu on
@@ -374,20 +374,23 @@ class GPasteIndicator extends Button {
         // a scheduled one is still awaiting its call restarts the ladder, and the
         // overtaken probe stepping it on its way out would walk it twice per
         // click -- spending it well before the two minutes it is meant to cover.
-        const generation = ++this._probeGeneration;
+        const cancellable = this._probe = replaceCancellable(this._probe);
 
         try {
-            await this._client.get_history_size(null);
+            await this._client.get_history_size(cancellable);
         } catch {
             // Nothing to report: a probe that got nowhere is what the next rung
             // is for, and the last rung leaves the placeholder row to be asked
-            // again.
+            // again. A cancelled probe lands here as well, and the check below
+            // is what keeps that one out of the ladder.
         }
 
         // A daemon that did come up announced itself, which cancelled what is
         // scheduled here; one that did not leaves the ladder to carry on --
         // unless a newer probe has taken it over, which owns what happens next.
-        if (this._destroyed || this._connected || generation !== this._probeGeneration)
+        // Asked of the cancellable this probe went out on, a cancel not
+        // unqueueing a reply already on its way.
+        if (this._destroyed || this._connected || cancellable.is_cancelled())
             return;
 
         this._scheduleReconnect();
@@ -1018,10 +1021,11 @@ class GPasteIndicator extends Button {
         // otherwise resume past this and schedule a reconnect nothing is left to
         // cancel.
         this._destroyed = true;
-        // And the reads filling the list go with it: nothing is left to show
-        // them, so a search still being matched is work the daemon is doing for
-        // a menu that has gone.
+        // And the reads still out go with it: nothing is left to show them, so a
+        // search still being matched is work the daemon is doing for a menu that
+        // has gone.
         this._listing?.cancel();
+        this._probe?.cancel();
         this._cancelReconnect();
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
