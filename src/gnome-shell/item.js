@@ -10,6 +10,7 @@ import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
+import {awaitReply, replaceCancellable} from './dependencies.js';
 import {GPasteDeleteButton} from './deleteButton.js';
 import {GPasteFavouriteButton} from './favouriteButton.js';
 
@@ -107,11 +108,16 @@ export class GPasteItem extends PopupMenuItem {
         this._client = client;
         this._index = -1;
         this._uuid = null;
-        this._generation = 0;
-        // The image preview has a generation of its own: a settings change asks
+        // The read filling this row, cancelled and replaced on every (re)binding.
+        // The menu recycles its rows, so a reply for a binding the row has left
+        // must not paint it -- and the read is worth stopping rather than merely
+        // dropping, an image row otherwise costing its bytes over the bus for a
+        // thumbnail nothing will draw.
+        this._fill = null;
+        // The image preview has a cancellable of its own: a settings change asks
         // for a new one without the row being refilled, so the row's would not
-        // move and both fetches would think themselves current.
-        this._previewGeneration = 0;
+        // move and both reads would think themselves current.
+        this._preview = null;
         // The full (untruncated) text currently set on the label. Compared
         // against in _setValue to skip redundant set_text() calls; we can't use
         // label.get_text() for that because max_length truncates what the label
@@ -201,11 +207,11 @@ export class GPasteItem extends PopupMenuItem {
     }
 
     destroy() {
-        // Discard any in-flight setIndex()/setUuid() fetch, and any preview
-        // fetch with it: bumping the generations makes their post-await guards
-        // bail out instead of touching this now-finalized actor.
-        this._generation++;
-        this._previewGeneration++;
+        // Stop any in-flight setIndex()/setUuid() read, and any preview read
+        // with it: the row is going, so the answer has nowhere to land and the
+        // work behind it is worth nothing.
+        this._fill?.cancel();
+        this._preview?.cancel();
         super.destroy();
     }
 
@@ -242,7 +248,7 @@ export class GPasteItem extends PopupMenuItem {
     }
 
     async setIndex(index) {
-        const generation = ++this._generation;
+        const cancellable = this._fill = replaceCancellable(this._fill);
         this._index = index;
 
         if (index === -1) {
@@ -258,16 +264,18 @@ export class GPasteItem extends PopupMenuItem {
             this._uuid = null;
             this._disarmActions();
 
-            const item = await this._client.get_item_at_index(index, null);
-            if (generation !== this._generation)
+            const [wanted, item] = await awaitReply(cancellable, this._client.get_item_at_index(index, cancellable));
+
+            if (!wanted)
                 return;
+
             this._uuid = item.get_uuid();
             this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
         }
     }
 
     async setUuid(uuid) {
-        const generation = ++this._generation;
+        const cancellable = this._fill = replaceCancellable(this._fill);
         this._index = -2;
         this._uuid = uuid;
         // The row's own uuid is known here, but the star reads the pin flag on
@@ -277,9 +285,11 @@ export class GPasteItem extends PopupMenuItem {
         if (uuid == null) {
             this._setValue(null);
         } else {
-            const item = await this._client.get_item(uuid, null);
-            if (generation !== this._generation)
+            const [wanted, item] = await awaitReply(cancellable, this._client.get_item(uuid, cancellable));
+
+            if (!wanted)
                 return;
+
             this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
         }
     }
@@ -366,16 +376,16 @@ export class GPasteItem extends PopupMenuItem {
 
     // Drop whatever the row was showing and show what it should show now. Only
     // the image costs a call -- its bytes would dwarf every listing if they rode
-    // along with the item -- and that one is guarded like the row's own fetch,
-    // by a generation of its own: a recycled row must not be painted with the
+    // along with the item -- and that one is cancelled like the row's own read,
+    // by a cancellable of its own: a recycled row must not be painted with the
     // item it used to hold, nor a resized one with the size it asked for before.
     // A colour needs no call at all: it is the item's value.
     _updatePreview() {
-        // Whatever was being fetched was for the row as it stood a moment ago:
-        // another item, or the same image at another size. Bumped here rather
+        // Whatever was being read was for the row as it stood a moment ago:
+        // another item, or the same image at another size. Cancelled here rather
         // than in _showImage so that a row that has just stopped being an image
-        // discards the fetch too, having no _showImage of its own to bump it.
-        const generation = ++this._previewGeneration;
+        // stops its read too, having no _showImage of its own to do it.
+        const cancellable = this._preview = replaceCancellable(this._preview);
 
         this._previewBin.child = null;
 
@@ -383,16 +393,16 @@ export class GPasteItem extends PopupMenuItem {
             return;
 
         if (this._kind === GPaste.ItemKind.IMAGE && this._imagesPreview)
-            this._showImage(generation).catch(console.error);
+            this._showImage(cancellable).catch(console.error);
         else if (this._kind === GPaste.ItemKind.COLOR)
             this._showColor();
     }
 
-    async _showImage(generation) {
+    async _showImage(cancellable) {
         const size = Math.max(this._imagesPreviewSize, 10);
-        const bytes = await this._client.get_image(this._uuid, null);
+        const [wanted, bytes] = await awaitReply(cancellable, this._client.get_image(this._uuid, cancellable));
 
-        if (generation !== this._previewGeneration)
+        if (!wanted)
             return;
 
         // St loads a GLoadableIcon through GdkPixbuf, scaled into the requested
