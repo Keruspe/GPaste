@@ -72,6 +72,10 @@ class GPasteIndicator extends Button {
         // placeholder then stops saying "wait" and starts offering a retry.
         this._reconnectSpent = false;
         this._connecting = false;
+        // The backoff between connection attempts, and what resumes _connect ()
+        // when a teardown cuts one short.
+        this._connectRetryId = 0;
+        this._resumeConnect = null;
         // The probe in flight, cancelled and replaced by the next: the ladder is
         // the latest one's to step, an older one having been overtaken.
         this._probe = null;
@@ -123,11 +127,42 @@ class GPasteIndicator extends Button {
                 console.error(`GPaste: ${e.message}`);
                 return null;
             }
-            await new Promise(resolve => setTimeout(resolve, delay * 1000));
+            await this._sleepBeforeRetry(delay);
             if (this._destroyed)
                 return null;
             return this._connect(retries - 1, delay * 2);
         }
+    }
+
+    // The backoff between connection attempts, as a source we hold the id of
+    // rather than a bare setTimeout: a teardown during one has something to
+    // remove, where the timer would otherwise go on running -- for as long as
+    // the rung it is on -- against an extension that has gone.
+    //
+    // Cancelling resolves the promise rather than dropping it, so _connect ()
+    // resumes and reads _destroyed instead of hanging for good on a source that
+    // no longer exists, holding the indicator with it.
+    _sleepBeforeRetry(delay) {
+        return new Promise(resolve => {
+            this._resumeConnect = resolve;
+            this._connectRetryId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
+                this._connectRetryId = 0;
+                this._resumeConnect = null;
+                resolve();
+                return GLib.SOURCE_REMOVE;
+            });
+            GLib.Source.set_name_by_id(this._connectRetryId, '[GPaste] connect retry');
+        });
+    }
+
+    _cancelConnectRetry() {
+        if (!this._connectRetryId)
+            return;
+
+        GLib.Source.remove(this._connectRetryId);
+        this._connectRetryId = 0;
+        this._resumeConnect();
+        this._resumeConnect = null;
     }
 
     async _setup() {
@@ -1027,6 +1062,7 @@ class GPasteIndicator extends Button {
         this._listing?.cancel();
         this._probe?.cancel();
         this._cancelReconnect();
+        this._cancelConnectRetry();
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();
