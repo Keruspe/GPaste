@@ -504,8 +504,14 @@ grab_all_cb (GObject      *source_object,
     {
         if (error->code == G_DBUS_ERROR_UNKNOWN_METHOD && priv->retries < 10)
         {
+            /* The retry source outlives the callback that queues it, and its
+             * data is this client: a reference of its own would put dispose ()
+             * -- the one place that cancels the source -- out of reach, and the
+             * client would grab for a provider nobody holds any more. */
             ++priv->retries;
-            priv->retry_source = g_timeout_add_seconds (1, retry_grab_all, ctx->client);
+            g_clear_handle_id (&priv->retry_source, g_source_remove);
+            priv->retry_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, 1, retry_grab_all,
+                                                             g_paste_weak_ref_new (ctx->client), g_paste_weak_ref_free);
             g_source_set_name_by_id (priv->retry_source, "[GPaste] gnome-shell grab retry");
         }
         else
@@ -726,7 +732,11 @@ gnome_shell_client_regrab_stored (GPasteGnomeShellClient *self)
 static gboolean
 retry_grab_all (gpointer user_data)
 {
-    GPasteGnomeShellClient *self = user_data;
+    g_autoptr (GPasteGnomeShellClient) self = g_weak_ref_get (user_data);
+
+    if (!self)
+        return G_SOURCE_REMOVE;
+
     GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
 
     priv->retry_source = 0;
