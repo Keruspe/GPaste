@@ -16,6 +16,7 @@ import St from 'gi://St';
 import GPaste from 'gi://GPaste?version=3';
 
 import {addGPasteFooter} from './actions.js';
+import {awaitReply, replaceCancellable} from './dependencies.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
 import {GPasteItem} from './item.js';
 import {GPasteSearchItem} from './searchItem.js';
@@ -55,7 +56,12 @@ class GPasteIndicator extends Button {
         this._filteredUuids = [];
         this._available = 0;
         this._loading = false;
-        this._reloadGeneration = 0;
+        // The reads repopulating the list, cancelled and replaced by every pass
+        // that starts one -- a reload, a search, a refresh. The list only ever
+        // shows one of them, so the others are worth stopping rather than merely
+        // dropping: the search entry asks again on every keystroke, and a term
+        // the user has typed past is one the daemon need not go on matching.
+        this._listing = null;
 
         // Whether there is a daemon to talk to, and the reconnect ladder we
         // walk while there is none.
@@ -328,8 +334,10 @@ class GPasteIndicator extends Button {
     _onDaemonGone() {
         this._connected = false;
         // A reply about the history that just went away must not land on the
-        // rows the next daemon fills.
-        ++this._reloadGeneration;
+        // rows the next daemon fills. Cancelled and no more: every path that
+        // lists again opens with its own replaceCancellable(), so a successor
+        // installed here would be replaced before a request could go out on it.
+        this._listing?.cancel();
         this._forgetHistory();
 
         this._reconnectDelay = 0;
@@ -620,16 +628,15 @@ class GPasteIndicator extends Button {
             this._loadMore();
     }
 
-    // Ask the daemon how big the current history is and record it. Every path
-    // that repopulates the list bumps _reloadGeneration on entry, so a reload
-    // (or a search, or a refresh) started while we were awaiting makes this one
-    // stale: drop out rather than publish an answer about a history nobody is
-    // showing any more, and likewise once the client has gone.
+    // Ask the daemon how big the current history is and record it. @cancellable
+    // is the caller's, which every path that repopulates the list replaces on
+    // entry, so a reload (or a search, or a refresh) started while we were
+    // awaiting makes this one stale: drop out rather than publish an answer
+    // about a history nobody is showing any more, and likewise once the client
+    // has gone.
     //
     // Returns whether the caller may carry on.
-    async _fetchAvailable() {
-        const generation = this._reloadGeneration;
-
+    async _fetchAvailable(cancellable) {
         // Sizing asks about the current history, whichever that is. Its name is
         // only read here to tell a live daemon from one off the bus: the
         // property's cache is empty while there is none, and there is nothing
@@ -637,20 +644,20 @@ class GPasteIndicator extends Button {
         if (!this._client.get_history_name())
             return false;
 
-        let available;
+        let wanted, available;
 
         // The name having an owner is not the daemon answering: it may go in
         // between, or the call may time out. A size that never came back is the
         // same "nothing to size" as no daemon at all, and the caller reconciles
         // either way -- an exception escaping here would skip that instead.
         try {
-            available = await this._client.get_history_size(null);
+            [wanted, available] = await awaitReply(cancellable, this._client.get_history_size(cancellable));
         } catch (e) {
             console.error(e);
             return false;
         }
 
-        if (!this._client || generation !== this._reloadGeneration)
+        if (!wanted || !this._client)
             return false;
 
         this._available = available;
@@ -661,12 +668,12 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        const generation = ++this._reloadGeneration;
+        const cancellable = this._listing = replaceCancellable(this._listing);
 
         this._filteredUuids = [];
 
-        if (!await this._fetchAvailable()) {
-            this._reconcileConnection(generation);
+        if (!await this._fetchAvailable(cancellable)) {
+            this._reconcileConnection(cancellable);
             return;
         }
 
@@ -679,13 +686,13 @@ class GPasteIndicator extends Button {
     // a daemon that has gone -- or, for a reload that ran right after one came
     // back, one that is here. So the state is reconciled instead, which is the
     // same question "notify::history" answers and lands in the same place. A
-    // newer reload owns it once it has moved @generation.
+    // newer reload owns it once it has cancelled @cancellable.
     //
     // Guarded like every other path resuming after an await: the indicator may
     // have been destroyed while the call was out, and _onDaemonGone() would then
     // paint destroyed actors and schedule a reconnect nothing is left to cancel.
-    _reconcileConnection(generation) {
-        if (this._destroyed || generation !== this._reloadGeneration)
+    _reconcileConnection(cancellable) {
+        if (this._destroyed || cancellable.is_cancelled())
             return;
 
         // A daemon that has gone is a change of state, and _onDaemonStateChanged()
@@ -708,25 +715,25 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        const generation = ++this._reloadGeneration;
+        const cancellable = this._listing = replaceCancellable(this._listing);
         const search = this._searchItem.text.toLowerCase();
-        let items;
+        let wanted, items;
 
         // A daemon that has gone fails the match rather than answering an empty
         // one, and nothing further down repaints the menu: reconciled here as a
         // fetch that gave up is, so a filtered list does not go on showing rows
         // for a history nobody can reach.
         try {
-            items = this._hasSearch()
-                ? await this._client.search(search, null)
-                : await this._client.get_favourites(null);
+            [wanted, items] = await awaitReply(cancellable, this._hasSearch()
+                ? this._client.search(search, cancellable)
+                : this._client.get_favourites(cancellable));
         } catch (e) {
             console.error(e);
-            this._reconcileConnection(generation);
+            this._reconcileConnection(cancellable);
             return;
         }
 
-        if (!this._client || generation !== this._reloadGeneration)
+        if (!wanted || !this._client)
             return;
 
         this._filteredUuids = items
@@ -798,10 +805,10 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        const generation = ++this._reloadGeneration;
+        const cancellable = this._listing = replaceCancellable(this._listing);
 
-        if (!await this._fetchAvailable()) {
-            this._reconcileConnection(generation);
+        if (!await this._fetchAvailable(cancellable)) {
+            this._reconcileConnection(cancellable);
             return;
         }
 
@@ -1011,6 +1018,10 @@ class GPasteIndicator extends Button {
         // otherwise resume past this and schedule a reconnect nothing is left to
         // cancel.
         this._destroyed = true;
+        // And the reads filling the list go with it: nothing is left to show
+        // them, so a search still being matched is work the daemon is doing for
+        // a menu that has gone.
+        this._listing?.cancel();
         this._cancelReconnect();
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
