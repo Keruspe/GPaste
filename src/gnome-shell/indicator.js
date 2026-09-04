@@ -76,6 +76,8 @@ class GPasteIndicator extends Button {
         // when a teardown cuts one short.
         this._connectRetryId = 0;
         this._resumeConnect = null;
+        // The focus grab an opening menu defers to an idle.
+        this._selectSearchId = 0;
         // The probe in flight, cancelled and replaced by the next: the ladder is
         // the latest one's to step, an older one having been overtaken.
         this._probe = null;
@@ -976,6 +978,10 @@ class GPasteIndicator extends Button {
     }
 
     _onOpenStateChanged(menu, state) {
+        // Whatever the last change scheduled was for a menu in the state it has
+        // just left.
+        this._cancelSelectSearch();
+
         if (state) {
             // The menu opens on the history, so both filters go; reset() drops
             // them without announcing either, which is what leaves this one
@@ -983,11 +989,25 @@ class GPasteIndicator extends Button {
             // that happened to be on.
             this._searchItem.reset();
             this._reloadCurrent();
-            GLib.Source.set_name_by_id(GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, this._selectSearch.bind(this)), '[GPaste] select search');
+            // Held by its id: the grab is for a menu that is open, and a close
+            // or a teardown before the idle runs leaves it reaching into one
+            // that is not.
+            this._selectSearchId = GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                this._selectSearchId = 0;
+                this._selectSearch();
+            });
+            GLib.Source.set_name_by_id(this._selectSearchId, '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);
         }
         super._onOpenStateChanged(menu, state);
+    }
+
+    _cancelSelectSearch() {
+        if (this._selectSearchId) {
+            GLib.Source.remove(this._selectSearchId);
+            this._selectSearchId = 0;
+        }
     }
 
     // The footer items are menu items and walk among themselves, but the
@@ -1063,6 +1083,7 @@ class GPasteIndicator extends Button {
         this._probe?.cancel();
         this._cancelReconnect();
         this._cancelConnectRetry();
+        this._cancelSelectSearch();
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();
