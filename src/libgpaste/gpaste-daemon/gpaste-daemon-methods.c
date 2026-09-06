@@ -190,27 +190,16 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no name for the password to add", NULL);
     G_PASTE_DBUS_ASSERT_FULL (password && *password, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to add", NULL);
 
-    /* A password's name is what identifies it, so adding one under a name
-     * already taken means replacing it rather than ending up with two. The old
-     * one goes only once the new one is in: the add is refusable -- the history
-     * can keep nothing, and the clipboard can turn the item down -- so dropping
-     * it first would answer an error having left neither. By uuid rather than by
-     * name, the new item carrying that name by then.
-     *
-     * G_PASTE_PASSWORD_ITEM_NO_NAME is not such a name: every nameless password
-     * reads as it rather than as a name anybody picked, so a second one joins
-     * them instead of replacing the one that happened to be there. */
-    GPastePasswordItem *previous = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
-    g_autofree gchar *previous_uuid = (previous) ? g_strdup (g_paste_item_get_uuid (G_PASTE_ITEM (previous))) : NULL;
-    g_autofree gchar *uuid = g_paste_daemon_methods_do_add_item (self, g_paste_password_item_new (name, password, timeout), error);
+    /* As in g_paste_daemon_methods_make_password(): the nameless placeholder
+     * is shared by passwords that have no user-chosen name. */
+    GPastePasswordItem *namesake = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
 
-    if (!uuid)
-        return NULL;
+    G_PASTE_DBUS_ASSERT_FULL (!namesake,
+                              G_PASTE_ERROR_ALREADY_EXISTS,
+                              "another password with that name already exists",
+                              NULL);
 
-    if (previous_uuid)
-        g_paste_history_remove_by_uuid (self->history, previous_uuid);
-
-    return g_steal_pointer (&uuid);
+    return g_paste_daemon_methods_do_add_item (self, g_paste_password_item_new (name, password, timeout), error);
 }
 
 /* Whether a history called @name is one the store already holds, in @exists.

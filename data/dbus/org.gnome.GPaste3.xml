@@ -78,6 +78,10 @@
     <!--
       Add a password item to the history.
 
+      An existing name fails with org.gnome.GPaste.Error.AlreadyExists without
+      changing the history or clipboard. The nameless placeholder "******"
+      may be shared by multiple passwords.
+
       @timeout is as in MakePassword: seconds, 0 for none.
     -->
     <method name="AddPassword">

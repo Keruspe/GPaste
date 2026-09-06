@@ -6,6 +6,7 @@
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
+#include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
@@ -70,6 +71,35 @@ make_history (GPasteSettings **out_settings,
         g_object_unref (settings);
 
     return history;
+}
+
+static void
+test_add_password_name_conflict (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+    GPasteItem *original = g_paste_password_item_new ("Work", "original secret", PASSWORD_TIMEOUT);
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (original));
+
+    g_paste_history_add (history, original);
+    g_paste_history_add (history, g_paste_text_item_new ("clipboard text"));
+
+    /* No clipboard manager: a conflict must return before publishing anything. */
+    const GPasteDaemonMethods methods = { .history = history };
+    const gchar *values[] = { "replacement secret", "original secret" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (values); ++i)
+    {
+        g_autoptr (GError) error = NULL;
+        g_autofree gchar *result = g_paste_daemon_methods_add_password (&methods, "Work", values[i], 0, &error);
+
+        g_assert_null (result);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS);
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+        g_assert_true (g_paste_history_get_by_uuid (history, uuid) == original);
+        g_assert_cmpstr (g_paste_item_get_real_value (original), ==, "original secret");
+        g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (original)), ==, PASSWORD_TIMEOUT);
+        g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "clipboard text");
+    }
 }
 
 /* Like make_history but without forcing a name into GSettings (which would emit
@@ -3300,6 +3330,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/favourite_survives_memory_cap", test_favourite_survives_memory_cap);
     g_test_add_func ("/history/favourite_roundtrip", test_favourite_roundtrip);
     g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
+    g_test_add_func ("/history/add_password_name_conflict", test_add_password_name_conflict);
     g_test_add_func ("/history/make_password_updates_in_place", test_make_password_updates_in_place);
     g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
     g_test_add_func ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);
