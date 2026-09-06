@@ -64,7 +64,7 @@ tools/check-includes.sh
 - C standard: GNU17
 - Formatting: ClangFormat (see `.clang-format`). Key rules: Allman braces, 4-space indent, no column limit, space before parens, no tabs.
 - clang-format is not yet enforced; do not run it automatically.
-- **Braces**: Remove braces from `if`/`else if`/`else` branches whose body is a single statement on a single line. Keep braces when the body has multiple statements OR spans multiple lines (e.g. a nested if-else chain). Multi-statement macros that need to appear as a single statement must use the `do { ... } while (0)` idiom — `SWITCH_STATE` in `gpaste-file-backend.c` does this and can safely appear without surrounding braces.
+- **Braces**: Remove braces from `if`/`else if`/`else` branches whose body is a single statement on a single line. Keep braces when the body has multiple statements OR spans multiple lines. A **single call wrapped over two lines keeps its braces** — the `if (n_actions != n_ids)` warning in `gpaste-gnome-shell-client.c` is that case, and so is the `else` that inserts into `id_to_action` beside it; a nested if-else chain is the other. Multi-statement macros that need to appear as a single statement must use the `do { ... } while (0)` idiom — `SWITCH_STATE` in `gpaste-file-backend.c` does this and can safely appear without surrounding braces.
 
 ### JavaScript (GNOME Shell extension)
 
