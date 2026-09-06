@@ -42,18 +42,27 @@ handing its bus name straight to a replacement — with a grab already held, and
 one still in flight. It requires no desktop session and runs by default; the older
 interactive Shell test still skips unless explicitly enabled.
 
-`test-portal-provider` uses a private bus with a fake GlobalShortcuts portal and
-session objects. It controls method replies and `Response` signals independently
-to cover both reply orders, superseded and failed creates, disabling during a
-bind, denial recovery, portal restarts, and direct owner replacement with a live
-session or a pending create. Teardown checks that outstanding requests release
-the client, and a test of its own drops the client with a `CreateSession` still
-unanswered: the session that `Response` goes on to carry has to be closed by a
-request whose client is already gone. Another hands the name over while the only
-request outstanding is a `CreateSession` an `ungrab_all()` has retired: it is
-still the one thing naming the portal that took it, and the handoff has to be
-seen through it. These tests run without GTK initialization
-or a desktop session.
+`test-portal-provider` runs the GlobalShortcuts client against a fake portal on
+private buses, without GTK initialization or a desktop session. It controls
+method replies and `Response` signals independently, including both reply
+orders, superseded operations, pending and repeated disposal, actual request
+paths differing from predictions, invalid session handles, untrusted senders,
+partial/empty grants, retry exhaustion and cancellation, and retired-request
+deadlines. Name handoffs leave the old server alive and assert that its known
+and late-created sessions are closed on its unique connection; separate tests
+actually disconnect that server. `Closed` immediately following a create
+response is queued on the I/O thread before main-context dispatch to test the
+subscription race. Close failures are retried after the client is dropped,
+with a bounded budget. A removed-session test unregisters the real GDBus object
+and verifies that cleanup does not retry its UnknownMethod reply. Unexpected
+warnings are fatal; retry exhaustion explicitly expects one warning, while
+intermediate failures only log at debug level. Each fixture has a ten-second
+watchdog naming the stalled case, with a 120-second Meson suite timeout.
+A D-Bus service file activates this test executable in
+`--activated-portal` mode to cover startup without an owner, including disposing
+the client before activation completes. The test target compiles the same
+client source with a 50 ms retry interval and a 1 s retirement deadline;
+production uses one second and ten minutes respectively.
 
 A test that needs a fake service on a private bus links `gpaste_test_bus_dep`
 (`tests/gpaste-test-bus.c`) rather than rolling its own: `g_paste_test_bus_new_server()`
@@ -152,23 +161,107 @@ only the supplied elements, so scanning for a sentinel would read past it.
 Static inline helpers with automatic cleanup are hidden from `__GI_SCANNER__`,
 whose C parser does not understand those cleanup declarations.
 
-**`GPasteGtkGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`). It implements `GPasteKeybindingProvider`; every non-empty `grab_all()` creates a session of its own, for the reason the next paragraph gives. The public API is limited to constructors and the GObject type — all shortcut registration goes through the provider interface. Internally it stores the registered set as an owned `GPasteKeybindingAccelerator` array and handles the portal's Request/Response async pattern transparently. Like the gnome-shell client's, its `grab_all()` and `ungrab_all()` are safe to call on a disposed client: the shortcuts array is then `NULL` — `ungrab_all()` leaves an empty one, which is a set GPaste still holds — and the session `dispose()` closed is already gone.
+**`GPasteGtkGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal
+(`org.freedesktop.portal.Desktop`) and implements `GPasteKeybindingProvider`.
+Its public API contains only constructors and the GObject type. The owned
+`GPasteKeybindingAccelerator` array records the requested set; `NULL` means the
+client has been disposed of, while an empty array means it is still usable but
+holds no shortcuts. Both provider methods tolerate a disposed client.
 
-A portal session binds its shortcuts **once**: the spec says an application "can only attempt to bind shortcuts of a session once", and xdg-desktop-portal rejects a second `BindShortcuts` on the same session. Rebinding is therefore impossible, and `org.freedesktop.portal.Session.Close()` on the session handle is the only way to release what a session bound. So `grab_all()`, `ungrab_all()` and `dispose()` all close the current session, and a non-empty `grab_all()` then creates a fresh one (with a `session_handle_token` of its own, since the old session's object path may not be free yet). A `grab_all()` handed the very set the live session already bound is a no-op, since `GPasteSettings` emits a rebind for any write to an accelerator key — a write of the value already stored included — and closing a session to ask for an identical one puts the portal's permission dialog back in front of the user over a set nothing has changed. That comparison is only possible because the keybinder hands the new set over in a single `grab_all()` and does **not** ungrab first: a provider told to release everything before being handed a set has nothing left to recognise it by. The portal coming back after a restart creates a session for the set still held, the way the gnome-shell client re-grabs from `on_shell_appeared()`: nothing else ever would, and the shortcuts are bound to nothing until it does — but only when no session and no request are alive, since the name appearing because GPaste's own `CreateSession` D-Bus-activated the portal is not a restart, and starting over there would close the session that request is about to be answered with and take the permission dialog the user is looking at down with it. Like the gnome-shell client, it keeps a `generation` counter for the requests the portal has already taken: a `CreateSession` reply that comes back stale closes the session it just got, a stale `BindShortcuts` reply has nothing to do (whoever bumped the generation already closed that session) — including a stale *method* error, which must not close the session that superseded it — and all of them fail their `GTask` with `G_IO_ERROR_CANCELLED`, which the provider callback does not warn about.
+A portal session permits only one `BindShortcuts` attempt. Changing the set,
+ungrabbing, or disposing closes the old session; a non-empty new set creates a
+fresh one with its own session token. Handing the provider the same set while a
+session or live request exists is a no-op. The keybinder therefore hands over
+its entire set without ungrabbing first. A successful bind may return a subset,
+including none: this is a valid user choice, not a reason to re-prompt for the
+omitted shortcuts. The requested set remains the no-op comparison key.
 
-What counts as a request still worth waiting for is a request **of the current generation, still to be answered, and not one kept alive for a session alone** (`has_live_request()`), not merely one still in the list: a superseded `CreateSession` is kept only to close the session it may yet be answered with (`retired`), a cancelled request lingers until the callback that frees it runs on a later main-loop iteration, and a request the portal has already answered (`responded`) is finished — its denial dealt with, its method reply merely waiting for a later main-loop iteration to be dispatched on. None of them will ever bind the set now held, so none may stand in for one — as `priv->requests` alone, both the `grab_all()` no-op guard and the portal-restart recovery would be told a session is on its way when nothing is coming, and the shortcuts would stay bound to nothing until the next settings write. A retired `CreateSession` is also given a **10 minute** deadline: a portal that takes the call, replies to it and then never emits `Response` would otherwise keep the request, its subscription and the session it may still be answered with for the rest of the process. A `CreateSession` that has already been answered is not retired that way at all: only its method reply is still to come, and cancelling the call is what brings that forward.
+Each portal method returns a Request path, not its outcome. Both calls subscribe
+to `Request::Response` before making the method call, predicting the path from
+the connection's unique name and a random-plus-counter `handle_token`. A separate
+`session_handle_token` prevents session path reuse. Missing unique names fail the
+call. If the method returns another path, the subscription follows it. Only
+`(ua{sv})` responses are decoded; malformed signatures are treated as failure
+(response 2), avoiding fatal GLib criticals. Create handles must be strings or
+object paths and pass `g_variant_is_object_path()` before use.
 
-A portal that hands the bus name straight to its replacement never lets go of it, so there is no `NULL` owner in between to say that its sessions went with it. The client therefore records the **owner the session was created under** (`priv->session_owner`) *and the owner every request was issued to* (`data->owner`), and treats any other owner as a loss (`portal_was_replaced()`): left alone, the handle would go on naming a session the portal now on the name knows nothing about — one no `Activated` can ever match, and one the recovery guard would read as a session GPaste still has. The session alone is not enough to notice with, since a `CreateSession` still waiting for its `Response` has no session yet: that request would wait on a `Response` nobody is left to send, holding its subscription for good, while the recovery guard reads it as a bind on its way and refuses to start over. A request issued while **nobody owned the name** — GPaste's own call is what D-Bus-activates the portal — records no owner, and takes the one that turns up, so the handoff after that one has something to be told apart from.
+`awaiting_response` means the method callback has completed; `responded` means
+the Response callback completed first. Whichever arrives last frees the request.
+Every task answer goes through `portal_request_take_error()` or
+`portal_request_return_boolean()`, because a failed CreateSession method may
+still receive a later Response after its task has already been answered.
 
-The `Response` subscription names the portal as its **sender**, and the `handle_token`/`session_handle_token` carry a random half as well as the counter that makes them unique. Without both, any peer on the session bus could answer a request on a path it can predict — with a session handle of its own, which is what `BindShortcuts` would then be told to bind and what every `Activated` is matched against. The handle that comes back is checked for being a string (or an object path: portals send both) *and* a valid object path before it is stored, since `g_variant_new_object_path()` on anything else aborts the process rather than failing the session.
+Requests are tracked in a non-owning list and hold the client through `GWeakRef`.
+Their `GTask` has no source object and owns a `PortalBindData` containing another
+weak reference and the originating generation. D-Bus methods use
+`g_dbus_connection_call()` rather than proxy calls, since a proxy call would
+retain the client until the method reply. Every request callback opens the weak
+reference and checks the generation. The task completion callback separately
+checks its saved generation before touching retry state: a task may be dispatched
+after the request that answered it, or the requested set, has been superseded.
 
-Every request in flight is tracked in `priv->requests` and retired when the session it was made for is closed under it: a `GCancellable` if the method call has yet to reply, and the `GTask` failed with `G_IO_ERROR_CANCELLED` if only the `Response` is left. Nothing else would ever free one — no `Response` follows a session that is gone, so a stranded request holds its subscription for the rest of the process. A request holds the client **weakly**, and its `GTask` is created with no source object, for the reason a `GSource` does: `dispose()` is the one thing that retires a request, and a reference of either kind would be one the client holds on itself through the very list that ends it — an in-flight request would keep the client, its session and its global grabs alive for as long as the portal took to answer, up to that 10 minute deadline. Every callback opens the weak reference with `g_weak_ref_get()` and treats a client that is gone as a superseded generation (`portal_request_is_current()`); a session that arrives for one is closed on the request's own connection, since only that `Response` ever carries its handle. `dispose()` empties the list rather than unlinking one request at a time: GObject clears weak locations **before** `dispose()` runs, so a request freed by the supersede it does could not take itself out, and what it did not free is a retired one — neither may be read again, which is why `retire_requests()` walks a copy. A request outliving the client then frees itself, finding no client to unlink from. The portal losing its bus name (`notify::g-name-owner`) retires them all, and takes the session handle with it. The requests that are *not* retired are the `CreateSession`s: cancelling one abandons the wait, never the call the portal has already taken, and the handle of the session it goes on to create appears in that request's `Response` and nowhere else — so it is left to run, and closing the session it is handed is all its handler does once it sees the generation has moved on. Several of those can be outstanding at once, which is why the tracking is a list rather than a single slot. A `CreateSession` whose **method call** comes back with an error is kept for the same reason, and only a cancellation — the one thing that call is ever cancelled by is the portal going away — frees it: the 25 s D-Bus timeout says nothing about whether the portal took the call, a backend held up behind a dialog of its own answers long after it, and dropping the subscription there would leave the session that `Response` carries bound to whatever it binds for the rest of the process. The failure is reported to the `GTask` straight away and the request lives on under the retired deadline, which is why **every task return goes through `portal_request_take_error()` / `portal_request_return_boolean()`**: a `GTask` answered twice is a critical, and this is the one request that outlives its own answer. A `Response` that does arrive for it is only good for **closing** the session it carries, never for binding it — `on_session_created()` treats a retired request the way it treats a superseded one — since the bind would have that spent task to report on.
+Closing/replacing a session increments `generation` and retires requests. Binds
+are cancelled or completed as superseded. An unanswered create is instead kept
+for its eventual session handle, which must be closed even after disposal. A
+create method error reports failure immediately but retains the request under
+the same retirement deadline; its later Response can only close a session, never
+bind or change revocation state. Retired creates expire after ten minutes, and
+also end when their unique owner disconnects. In `dispose()`, steal the entire
+request list before retiring it: weak references may already be cleared, so
+requests freed there cannot reliably unlink themselves. Retire ordinary lists
+through a copy because freeing requests otherwise mutates the list being walked.
 
-The **method reply of a portal call is only the request's object path** — the outcome arrives later on that request's `org.freedesktop.portal.Request::Response` signal. Both `CreateSession` and `BindShortcuts` subscribe to it; treating the method reply as the result reports a user denying the permission dialog as a success.
+`has_live_request()` counts only current-generation requests that are not
+responded, retired, or cancelled. Cleanup-only creates must never prevent a new
+bind. The retry source holds the client weakly, is cleared on supersede,
+ungrab, disposal, or portal loss, and checks the current session/request state
+again when it runs. General response failures (2) and method errors retry up to
+ten times at one-second intervals. Exhaustion remains exhausted until a user
+reapply, success, or owner loss resets the budget. Obsolete tasks cannot reset,
+consume, or restart that budget.
 
-That subscription goes in **before the call**, not when the reply lands: the portal is free to emit `Response` before the method reply is dispatched, and a `Response` emitted first is simply missed — the `GTask` then never completes and the request is stranded. Each call therefore passes a `handle_token` of its own and the request path is predicted from it (`/org/freedesktop/portal/desktop/request/<unique name, no leading colon, dots as underscores>/<token>`), which is exactly what the token is for. A connection with no unique name has no path to predict, and the call is failed rather than made — subscribing to nothing would strand the request. Both tokens are built by the same helper from a counter of their own, the request's and the session's. The method reply still names the request the portal actually created, and the subscription moves if that is not the predicted path — a portal that ignored the token answers on its own choice. `CreateSession` passes both tokens: `handle_token` for the request, `session_handle_token` for the session.
+Well-known name loss is **not** unique-owner death. `portal_owner` records the
+last observed well-known owner independently of retired requests, seeded from
+the proxy on the first request since construction need not notify its initial
+owner. A change closes the known session on its old unique owner and retires
+outstanding creates without abandoning their responses. A replaced portal can
+stay alive and retain grabs. Each request watches its own unique owner's death;
+only that event makes its remaining responses impossible. Recovery binds the
+retained set when an owner appears and there is no live request or session,
+unless permission was revoked.
 
-A `Response` that arrives first also means the method call is still outstanding with the request as its `user_data`, so **whichever of the two runs last frees the request**. Freeing it from the `Response` handler leaves the method callback on freed memory — and, once the block has been handed to the next request, on somebody else's.
+Requests with an owner subscribe to that unique sender. A request issued while
+unowned first uses the well-known sender and owns an activation watch of its own,
+so disposal before activation completes does not lose the cleanup path. Once
+activation supplies an owner, add a unique-sender subscription without dropping
+the initial subscription: a Response may already be queued on the latter.
+Completion removes both subscriptions, discarding duplicate queued deliveries.
+Response handlers also check the recorded owner so a replacement cannot answer
+an old request through the retained well-known subscription.
+
+`Session::Closed` is subscribed to **before CreateSession**, across all paths and
+senders, and retained until disposal. Subscribing in the create Response handler
+is too late when Closed is already queued behind that Response. The handler
+matches both the stored session handle and its unique sender before changing
+state; unrelated senders and old sessions have no effect. A remote close clears
+the session, retires pending binds, cancels retries, and records
+`session_revoked`. Response 1 from either current, non-retired request records
+the same user decision. This suppresses retries and restart recovery. An explicit
+`grab_all()` clears it, including an unchanged accelerator written again, which
+is GPaste's retry affordance after denial.
+
+Session closes always target the unique owner that supplied the handle. Cleanup
+operations own their connection, owner and handle independently of the client,
+so failed closes can retry after disposal or replacement. They use the same
+one-second, ten-retry budget; a disconnected owner, closed connection, or already
+removed object ends cleanup immediately. Other failures are warned about and
+retried within that budget. No close may activate or target a replacement portal.
+
+Portal trigger strings use `CTRL`, `ALT`, `SHIFT` and `LOGO` (GTK's Super), and
+preserve GDK's keysym names. Uppercasing `Return` or spelling Super as `SUPER`
+breaks the backend parser. Unsupported modifiers such as Meta and Hyper produce
+no `preferred_trigger`; silently dropping the modifier would bind another chord,
+potentially a plain letter. With no preferred trigger the portal asks the user.
 
 **`GPasteGnomeShellClient`** implements `GPasteKeybindingProvider` using GNOME Shell's `GrabAccelerators` D-Bus API. It stores a `GHashTable` mapping shortcut id → GNOME Shell action id, retries on `G_DBUS_ERROR_UNKNOWN_METHOD` (matched with `g_error_matches`, since the code alone is also `G_IO_ERROR_CANCELLED`; up to 10 times per shell, the budget and any queued retry being dropped whenever nothing is held any more: the shell vanishing, `ungrab_all()`, or a `grab_all()` with an empty set), and watches the shell bus name to re-grab on shell restart.
 
@@ -206,7 +299,6 @@ owner before the old owner's outstanding call, using overlapping action IDs.
 They also drop clients with held and pending grabs, without first ungrabbing.
 The grab context keeps only the shortcut **ids**, which is all the reply is
 mapped through; the accelerators go out in the call itself.
-
 
 **GObject type macros** — use these in `.c` files:
 

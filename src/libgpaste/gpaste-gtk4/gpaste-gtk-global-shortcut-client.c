@@ -25,10 +25,22 @@
 
 /* How long a retired CreateSession is waited on before it is given up for lost.
  * A portal that takes the call, replies to it and then never says another word
- * would otherwise keep the request -- and the reference it holds on the client
- * -- for the rest of the process. Long enough that one merely slow to get an
+ * would otherwise keep the request and its connection and subscriptions
+ * for the rest of the process. Long enough that one merely slow to get an
  * answer out of the user is not given up on. */
-#define G_PASTE_GTK_PORTAL_RETIRED_REQUEST_TIMEOUT 600 /* s */
+#ifndef G_PASTE_GTK_PORTAL_RETIRED_REQUEST_TIMEOUT
+#define G_PASTE_GTK_PORTAL_RETIRED_REQUEST_TIMEOUT 600000 /* ms */
+#endif
+
+/* How long the portal is given to settle before a bind that failed is asked for
+ * again, and how many times it is. A backend that was still starting answers
+ * with the portal's own "ended in some other way", and nothing else would ever
+ * ask again: a portal that stayed up sends no owner change to recover on. The
+ * budget is the gnome-shell provider's, for the same kind of transient. */
+#ifndef G_PASTE_GTK_PORTAL_BIND_RETRY_DELAY
+#define G_PASTE_GTK_PORTAL_BIND_RETRY_DELAY 1000 /* ms */
+#endif
+#define G_PASTE_GTK_PORTAL_BIND_RETRIES     10
 
 #define G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE                                                            \
     "<node>"                                                                                             \
@@ -57,13 +69,18 @@ typedef struct _PortalRequestData _PortalRequestData;
 
 typedef struct
 {
+    gchar                       *portal_owner;    /* last observed well-known name owner, independent of retired requests */
     gchar                       *session_handle;
-    gchar                       *session_owner; /* the portal that answered with it, to tell a replacement apart */
-    GPasteKeybindingAccelerator *shortcuts;     /* the set we hold, owned, %NULL once disposed */
-    guint64                      generation;    /* bumped whenever the shortcuts we bound stop being the ones we want */
-    guint64                      request_count; /* what the handle_token of the next request is built from */
-    guint64                      session_count; /* what the session_handle_token of the next session is built from */
-    GSList                      *requests;      /* the requests in flight, _PortalRequestData*, not owned */
+    gchar                       *session_owner;   /* the portal that answered with it, to tell a replacement apart */
+    guint                        session_closed_signal;
+    GPasteKeybindingAccelerator *shortcuts;       /* the set we hold, owned, %NULL once disposed */
+    guint64                      generation;      /* bumped whenever the shortcuts we bound stop being the ones we want */
+    guint64                      request_count;   /* what the handle_token of the next request is built from */
+    guint64                      session_count;   /* what the session_handle_token of the next session is built from */
+    gboolean                     session_revoked; /* a backend closed our session: not ours to ask for another */
+    guint64                      retries;         /* binds that failed since the last one nobody answered no to */
+    guint                        retry_source;    /* asks again for a set a failure left bound to nothing */
+    GSList                      *requests;        /* the requests in flight, _PortalRequestData*, not owned */
 } GPasteGtkGlobalShortcutClientPrivate;
 
 struct _GPasteGtkGlobalShortcutClient
@@ -95,6 +112,14 @@ gtk_accel_to_portal_trigger (const gchar *accel)
     if (!key_name)
         return NULL;
 
+    /* CTRL, ALT, SHIFT and LOGO are the whole of the trigger syntax: a modifier
+     * the portal has no name for cannot be asked for, and leaving it out asks
+     * for a different chord altogether -- <Meta>a going out as a bare "a",
+     * which the portal would bind, and every plain a would then fire. No
+     * preferred_trigger at all leaves the portal to ask the user for one. */
+    if (mods & ~(GdkModifierType) (GDK_CONTROL_MASK | GDK_ALT_MASK | GDK_SHIFT_MASK | GDK_SUPER_MASK))
+        return NULL;
+
     g_autoptr (GStrvBuilder) tokens = g_strv_builder_new ();
 
     if (mods & GDK_CONTROL_MASK)
@@ -104,9 +129,9 @@ gtk_accel_to_portal_trigger (const gchar *accel)
     if (mods & GDK_SHIFT_MASK)
         g_strv_builder_add (tokens, "SHIFT");
     if (mods & GDK_SUPER_MASK)
-        g_strv_builder_add (tokens, "SUPER");
+        g_strv_builder_add (tokens, "LOGO");
 
-    g_strv_builder_take (tokens, g_ascii_strup (key_name, -1));
+    g_strv_builder_add (tokens, key_name);
 
     g_auto (GStrv) parts = g_strv_builder_end (tokens);
     return g_strjoinv ("+", parts);
@@ -127,12 +152,16 @@ build_shortcuts_variant (GPasteGtkGlobalShortcutClientPrivate *priv)
         {
             g_autofree gchar *portal_trigger = gtk_accel_to_portal_trigger (s->accelerator);
             if (portal_trigger)
+            {
                 g_variant_builder_add (&builder, "{sv}", "preferred_trigger",
                                        g_variant_new_string (portal_trigger));
+            }
         }
         if (s->description)
+        {
             g_variant_builder_add (&builder, "{sv}", "description",
                                    g_variant_new_string (s->description));
+        }
         g_variant_builder_close (&builder);
         g_variant_builder_close (&builder);
     }
@@ -153,6 +182,10 @@ struct _PortalRequestData
     gchar                         *request_path;      /* the Request we are subscribed to */
     gchar                         *owner;             /* the portal this request went to, %NULL while nobody owns the name */
     guint                          signal_id;
+    guint                          owner_signal_id;  /* unique subscription added when activation supplies an owner */
+    GDBusSignalCallback            response_callback;
+    guint                          activation_watch; /* finds the owner even if the client is disposed during activation */
+    guint                          owner_watch;      /* the unique owner dying ends even retired creates */
     guint64                        generation;        /* the generation this request was made for */
     gboolean                       awaiting_response; /* the method replied: only Response is left */
     gboolean                       responded;         /* Response came first: only the method reply is left */
@@ -167,7 +200,7 @@ portal_request_data_new (GPasteGtkGlobalShortcutClient *client,
                          GTask                         *task)
 {
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (client);
-    _PortalRequestData *data = g_new (_PortalRequestData, 1);
+    g_autofree _PortalRequestData *data = g_new (_PortalRequestData, 1);
 
     /* Weakly, and for the same reason a GSource holds the object it runs for
      * weakly: dispose () is the one thing that retires a request, and it only
@@ -181,12 +214,19 @@ portal_request_data_new (GPasteGtkGlobalShortcutClient *client,
     data->cancellable = g_cancellable_new ();
     data->request_path = NULL;
     /* Which portal is being asked, so that one replacing it can be told from it:
-     * a request outlives neither, and a CreateSession that has yet to be
-     * answered has no session handle to say the loss with. %NULL while nobody
+     * a CreateSession may outlive a well-known name handoff, but not the
+     * unique connection that must answer it. %NULL while nobody
      * owns the name -- this very call is what D-Bus-activates the portal -- and
      * filled in by the owner that turns up. */
     data->owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (client));
+    /* Initial proxy construction need not emit notify::g-name-owner. */
+    if (!priv->portal_owner)
+        g_set_str (&priv->portal_owner, data->owner);
     data->signal_id = 0;
+    data->owner_watch = 0;
+    data->activation_watch = 0;
+    data->owner_signal_id = 0;
+    data->response_callback = NULL;
     data->generation = priv->generation;
     data->awaiting_response = FALSE;
     data->responded = FALSE;
@@ -200,17 +240,22 @@ portal_request_data_new (GPasteGtkGlobalShortcutClient *client,
      * stopped answering. */
     priv->requests = g_slist_prepend (priv->requests, data);
 
-    return data;
+    return g_steal_pointer (&data);
 }
 
 static void
 portal_request_unsubscribe (_PortalRequestData *data)
 {
-    if (!data->signal_id)
-        return;
-
-    g_dbus_connection_signal_unsubscribe (data->connection, data->signal_id);
-    data->signal_id = 0;
+    if (data->signal_id)
+    {
+        g_dbus_connection_signal_unsubscribe (data->connection, data->signal_id);
+        data->signal_id = 0;
+    }
+    if (data->owner_signal_id)
+    {
+        g_dbus_connection_signal_unsubscribe (data->connection, data->owner_signal_id);
+        data->owner_signal_id = 0;
+    }
 }
 
 static void
@@ -230,6 +275,8 @@ portal_request_data_free (_PortalRequestData *data)
     }
 
     g_clear_handle_id (&data->retire_source, g_source_remove);
+    g_clear_handle_id (&data->owner_watch, g_bus_unwatch_name);
+    g_clear_handle_id (&data->activation_watch, g_bus_unwatch_name);
 
     portal_request_unsubscribe (data);
 
@@ -300,13 +347,14 @@ portal_request_subscribe (_PortalRequestData *data,
                           GDBusSignalCallback callback)
 {
     g_set_str (&data->request_path, request_path);
+    data->response_callback = callback;
 
     /* The portal and nobody else: with no sender to match, any peer on the bus
      * could answer the request -- with a session handle of its own, which is
      * what BindShortcuts would then be told to bind and what every Activated is
      * matched against. */
     data->signal_id = g_dbus_connection_signal_subscribe (
-        data->connection, G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME,
+        data->connection, data->owner ? data->owner : G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME,
         G_PASTE_GTK_PORTAL_REQUEST_INTERFACE_NAME, G_PASTE_GTK_PORTAL_SIG_RESPONSE,
         request_path, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
         callback, data, NULL);
@@ -384,36 +432,101 @@ portal_request_return_boolean (_PortalRequestData *data,
  * attempt to bind shortcuts of a session once" -- so a session is spent as soon
  * as its shortcuts are not the ones we want any more, and so is the permission
  * it carries. Everything that changes the set closes the session first. */
-/* A close that failed leaves the session holding its shortcuts, and the next
- * session binds its own alongside them: nothing else would ever notice. */
+typedef struct
+{
+    GDBusConnection *connection;
+    gchar *handle;
+    gchar *owner;
+    guint retries;
+} PortalCloseData;
+
+static void
+portal_close_data_free (PortalCloseData *data)
+{
+    g_clear_object (&data->connection);
+    g_free (data->handle);
+    g_free (data->owner);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PortalCloseData, portal_close_data_free)
+
+static gboolean close_session_retry (gpointer user_data);
+
 static void
 on_session_closed (GObject      *source,
                    GAsyncResult *result,
-                   gpointer      user_data G_GNUC_UNUSED)
+                   gpointer      user_data)
 {
+    g_autoptr (PortalCloseData) data = user_data;
     g_autoptr (GError) error = NULL;
     g_autoptr (GVariant) ret = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source), result, &error);
 
-    if (!ret)
+    if (ret)
+        return;
+
+    /* A dead unique owner or an already removed object needs no further close.
+     * Other failures may leave global grabs held: keep the handle and retry,
+     * even after the client itself has been disposed of. */
+    if (g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER) ||
+        g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_SERVICE_UNKNOWN) ||
+        g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT) ||
+        g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD) ||
+        g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE) ||
+        g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CLOSED))
+        return;
+
+    if (data->retries++ < G_PASTE_GTK_PORTAL_BIND_RETRIES)
+    {
+        g_debug ("GPasteGtkGlobalShortcutClient: retrying portal session close: %s", error->message);
+        /* The source owns the cleanup operation; its callback hands that
+         * ownership to the next method call. It holds no client reference. */
+        guint source_id = g_timeout_add (G_PASTE_GTK_PORTAL_BIND_RETRY_DELAY,
+                                         close_session_retry, g_steal_pointer (&data));
+        g_source_set_name_by_id (source_id, "[GPaste] portal session close retry");
+    }
+    else
         g_warning ("GPasteGtkGlobalShortcutClient: closing the portal session failed: %s", error->message);
 }
 
+static gboolean
+close_session_retry (gpointer user_data)
+{
+    PortalCloseData *data = user_data;
+
+    g_dbus_connection_call (data->connection, data->owner, data->handle,
+                            G_PASTE_GTK_PORTAL_SESSION_INTERFACE_NAME, G_PASTE_GTK_PORTAL_CLOSE,
+                            NULL, G_VARIANT_TYPE_UNIT, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+                            on_session_closed, data);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* A unique name cannot be handed to another portal or D-Bus-activated. Keep
+ * it with the handle through retries: a replacement knows nothing of this
+ * session. */
 static void
 close_session_handle (GDBusConnection *connection,
-                      const gchar     *handle)
+                      const gchar     *handle,
+                      const gchar     *owner)
 {
-    g_dbus_connection_call (connection,
-                            G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME,
-                            handle,
-                            G_PASTE_GTK_PORTAL_SESSION_INTERFACE_NAME,
-                            G_PASTE_GTK_PORTAL_CLOSE,
-                            NULL, /* parameters */
-                            NULL, /* reply type */
-                            G_DBUS_CALL_FLAGS_NONE,
-                            -1,                /* timeout */
-                            NULL,              /* cancellable */
-                            on_session_closed, /* callback */
-                            NULL);             /* user_data */
+    if (!owner)
+        return;
+
+    g_autoptr (PortalCloseData) data = g_new0 (PortalCloseData, 1);
+    data->connection = g_object_ref (connection);
+    data->handle = g_strdup (handle);
+    data->owner = g_strdup (owner);
+    close_session_retry (g_steal_pointer (&data));
+}
+
+static void
+clear_session (GPasteGtkGlobalShortcutClient *self)
+{
+    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+
+    g_clear_pointer (&priv->session_handle, g_free);
+    g_clear_pointer (&priv->session_owner, g_free);
 }
 
 static void
@@ -425,10 +538,11 @@ close_session (GPasteGtkGlobalShortcutClient *self)
         return;
 
     g_autofree gchar *handle = g_steal_pointer (&priv->session_handle);
+    g_autofree gchar *owner = g_steal_pointer (&priv->session_owner);
 
-    g_clear_pointer (&priv->session_owner, g_free);
+    clear_session (self);
 
-    close_session_handle (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)), handle);
+    close_session_handle (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)), handle, owner);
 }
 
 static gboolean
@@ -453,7 +567,7 @@ on_retired_request_timed_out (gpointer user_data)
 /* Nothing is going to answer a request whose session has just been closed under
  * it, and its Response would be about shortcuts nobody wants any more: the
  * subscription and the references it holds would otherwise sit there for the
- * rest of the process, and the client they keep alive with them. */
+ * rest of the process. The client itself is held weakly. */
 static void
 retire_one_request (_PortalRequestData *data,
                     gboolean            portal_is_gone)
@@ -469,14 +583,14 @@ retire_one_request (_PortalRequestData *data,
          * Letting the request run to it is what closes that session -- its
          * handler sees the generation has moved on and does nothing else.
          * Waiting for it is not waiting for it forever, though: a Response that
-         * never comes is the one thing that would keep this request, and the
-         * client it holds, around for good. */
+         * never comes would otherwise keep the request and its connection
+         * around for good, even after the client has been disposed of. */
         data->retired = TRUE;
 
         if (!data->retire_source)
         {
-            data->retire_source = g_timeout_add_seconds (G_PASTE_GTK_PORTAL_RETIRED_REQUEST_TIMEOUT,
-                                                         on_retired_request_timed_out, data);
+            data->retire_source = g_timeout_add (G_PASTE_GTK_PORTAL_RETIRED_REQUEST_TIMEOUT,
+                                                 on_retired_request_timed_out, data);
             g_source_set_name_by_id (data->retire_source, "[GPaste] retired portal request");
         }
 
@@ -516,40 +630,61 @@ retire_requests (GPasteGtkGlobalShortcutClient *self,
     retire_request_list (requests, portal_is_gone);
 }
 
-/* What a portal that is gone was holding for us: the session it created, and
- * every request it has yet to answer. One handing the bus name straight to its
- * replacement never lets go of it, so there is no %NULL owner in between to say
- * so, and a CreateSession still awaiting its Response has no session handle to
- * say it with -- only the owner it was issued to. Left alone, that request waits
- * on a Response nobody will ever send, holding its subscription and a reference
- * on the client, while the recovery guard reads it as a bind on its way. */
-static gboolean
-portal_was_replaced (const GPasteGtkGlobalShortcutClientPrivate *priv,
-                     const gchar                                *owner)
+/* Losing a well-known name does not destroy a portal's connection. Retired
+ * creates keep listening to that unique owner; only its disappearance makes
+ * it impossible for another session handle to arrive. The watch belongs to
+ * the request and is removed by its free function, including during this call. */
+static void
+on_request_owner_vanished (GDBusConnection *connection G_GNUC_UNUSED,
+                          const gchar     *name       G_GNUC_UNUSED,
+                          gpointer         user_data)
 {
-    if (priv->session_owner && !g_paste_str_equal (priv->session_owner, owner))
-        return TRUE;
+    retire_one_request (user_data, TRUE);
+}
 
-    for (const GSList *r = priv->requests; r; r = r->next)
+static void portal_request_watch_owner (_PortalRequestData *data);
+
+static void
+on_request_activated (GDBusConnection *connection G_GNUC_UNUSED,
+                      const gchar     *name       G_GNUC_UNUSED,
+                      const gchar     *owner,
+                      gpointer         user_data)
+{
+    _PortalRequestData *data = user_data;
+
+    g_set_str (&data->owner, owner);
+    g_clear_handle_id (&data->activation_watch, g_bus_unwatch_name);
+    portal_request_watch_owner (data);
+
+    if (data->signal_id)
     {
-        const _PortalRequestData *data = r->data;
-
-        /* A cancelled request says nothing: the portal has nothing left to
-         * answer it with, and it lingers only until the callback that frees it
-         * runs. One of those is what a handoff already dealt with leaves
-         * behind, and reading it would have the next notification take down the
-         * session just created for the very owner it names.
-         * Everything else counts, whatever generation it was made for: a
-         * retired CreateSession still waits on a Response from the portal it
-         * was issued to, and that owner is all a handoff can be told by. */
-        if (g_cancellable_is_cancelled (data->cancellable))
-            continue;
-
-        if (data->owner && !g_paste_str_equal (data->owner, owner))
-            return TRUE;
+        /* Keep the activation subscription until completion: replacing it
+         * could discard a Response already queued on it. The unique one also
+         * accepts late replies after a handoff. Completion removes both, so
+         * any queued duplicate delivery is discarded. */
+        data->owner_signal_id = g_dbus_connection_signal_subscribe (
+            data->connection, data->owner, G_PASTE_GTK_PORTAL_REQUEST_INTERFACE_NAME,
+            G_PASTE_GTK_PORTAL_SIG_RESPONSE, data->request_path, NULL,
+            G_DBUS_SIGNAL_FLAGS_NONE, data->response_callback, data, NULL);
     }
+}
 
-    return FALSE;
+static void
+portal_request_watch_owner (_PortalRequestData *data)
+{
+    if (data->owner)
+    {
+        data->owner_watch = g_bus_watch_name_on_connection (data->connection, data->owner,
+            G_BUS_NAME_WATCHER_FLAGS_NONE, NULL, on_request_owner_vanished, data, NULL);
+    }
+    else
+    {
+        /* The request, not the client, must discover the activated owner:
+         * dispose () may run before activation has even finished. */
+        data->activation_watch = g_bus_watch_name_on_connection (data->connection,
+            G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME, G_BUS_NAME_WATCHER_FLAGS_NONE,
+            on_request_activated, NULL, data, NULL);
+    }
 }
 
 /* A request that may still bind the set we hold: one made for the generation we
@@ -570,11 +705,25 @@ has_live_request (GPasteGtkGlobalShortcutClientPrivate *priv)
     {
         const _PortalRequestData *data = r->data;
 
-        if (data->generation == priv->generation && !data->responded && !data->retired)
+        if (data->generation == priv->generation && !data->responded && !data->retired &&
+            !g_cancellable_is_cancelled (data->cancellable))
             return TRUE;
     }
 
     return FALSE;
+}
+
+/* Whether asking the portal for a session is ours to do: a set to bind, nothing
+ * holding it or about to -- the name turning up because our own CreateSession
+ * D-Bus-activated the portal is exactly that -- and nothing the user has said no
+ * to. Asking on top of any of those closes the session the request in flight is
+ * about to be answered with, taking the permission dialog the user is looking at
+ * down with it, or puts that dialog back over a grant they have just refused. */
+static gboolean
+portal_may_bind (GPasteGtkGlobalShortcutClientPrivate *priv)
+{
+    return priv->shortcuts && priv->shortcuts[0].id && !priv->session_handle && !priv->session_revoked &&
+           !has_live_request (priv);
 }
 
 /* Whether what the portal is answering is still wanted: a generation that has
@@ -590,7 +739,8 @@ portal_request_is_current (const _PortalRequestData      *data,
 
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (client);
 
-    return data->generation == priv->generation;
+    return priv->shortcuts && data->generation == priv->generation &&
+           !g_cancellable_is_cancelled (data->cancellable);
 }
 
 /* Bumping the generation invalidates every request still in flight: neither
@@ -602,6 +752,11 @@ supersede_session (GPasteGtkGlobalShortcutClient *self)
 {
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
 
+    /* A retry armed for the set being superseded has nothing left to ask for:
+     * whatever supersedes it asks for itself, and letting the timer stand would
+     * have it fire on a session that is only just being created. */
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
+
     ++priv->generation;
     retire_requests (self, FALSE);
     close_session (self);
@@ -609,9 +764,45 @@ supersede_session (GPasteGtkGlobalShortcutClient *self)
 
 static void start_bind_async (GPasteGtkGlobalShortcutClient *self, GTask *task);
 
+/* A backend may close a session without the portal losing its bus name. Drop
+ * the cached session and invalidate its bind, so a later grab can retry. Do not
+ * immediately ask for permission again: closure may be the user's decision. */
+static void
+on_session_closed_signal (GDBusConnection *connection G_GNUC_UNUSED,
+                          const gchar     *sender,
+                          const gchar     *path,
+                          const gchar     *interface G_GNUC_UNUSED,
+                          const gchar     *signal G_GNUC_UNUSED,
+                          GVariant        *parameters G_GNUC_UNUSED,
+                          gpointer         user_data)
+{
+    g_autoptr (GPasteGtkGlobalShortcutClient) self = g_weak_ref_get (user_data);
+
+    if (!self)
+        return;
+
+    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+
+    if (!g_paste_str_equal (path, priv->session_handle) ||
+        !g_paste_str_equal (sender, priv->session_owner))
+        return;
+
+    /* Nothing is to ask for another session until the user asks for one: the
+     * portal restarting is not the user changing their mind, and the recovery
+     * that follows one would otherwise put the permission dialog back in front
+     * of them over the grant they have just taken away. A write to an
+     * accelerator is the user asking, and clears this. */
+    priv->session_revoked = TRUE;
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
+
+    ++priv->generation;
+    retire_requests (self, FALSE);
+    clear_session (self);
+}
+
 static void
 on_shortcuts_bound (GDBusConnection *conn   G_GNUC_UNUSED,
-                    const gchar     *sender G_GNUC_UNUSED,
+                    const gchar     *sender,
                     const gchar     *path   G_GNUC_UNUSED,
                     const gchar     *iface  G_GNUC_UNUSED,
                     const gchar     *sig    G_GNUC_UNUSED,
@@ -620,6 +811,11 @@ on_shortcuts_bound (GDBusConnection *conn   G_GNUC_UNUSED,
 {
     _PortalRequestData *data = user_data;
     g_autoptr (GPasteGtkGlobalShortcutClient) self = g_weak_ref_get (&data->client);
+
+    /* The activation subscription follows the well-known name. Once its
+     * owner is known, a replacement cannot answer the old request through it. */
+    if (data->owner && !g_paste_str_equal (sender, data->owner))
+        return;
 
     /* A Response we cannot read granted us nothing, but it is not the user
      * saying no either: 2, the portal's own "ended in some other way". The
@@ -645,8 +841,13 @@ on_shortcuts_bound (GDBusConnection *conn   G_GNUC_UNUSED,
     }
     else if (response)
     {
-        /* Denied by the user, or refused because the session had already bound
-         * its shortcuts. The session is spent either way. */
+        /* A cancelled interaction (1) is the user's answer. Other failures (2)
+         * are not a revocation and must still allow portal-restart recovery.
+         * The session is spent either way. */
+        GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+
+        priv->session_revoked = response == 1;
+
         close_session (self);
         portal_request_take_error (data, g_error_new (G_IO_ERROR, G_IO_ERROR_FAILED,
                                                       "BindShortcuts portal request failed with response %u", response));
@@ -665,7 +866,7 @@ on_bind_method_done (GObject      *source,
     _PortalRequestData *data = user_data;
     g_autoptr (GPasteGtkGlobalShortcutClient) self = g_weak_ref_get (&data->client);
     g_autoptr (GError) error = NULL;
-    g_autoptr (GVariant) ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (source), result, &error);
+    g_autoptr (GVariant) ret = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source), result, &error);
 
     if (data->responded)
     {
@@ -710,17 +911,24 @@ start_bind_async (GPasteGtkGlobalShortcutClient *self,
                   GTask                         *task)
 {
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
-    GDBusProxy *proxy = G_DBUS_PROXY (self);
-
     _PortalRequestData *data = portal_request_data_new (self, task);
+
+    /* The portal that answered with the session, and no other -- what
+     * close_session_handle () addresses the Close to, and for the same reason:
+     * the well-known name may have been handed to a replacement since
+     * on_session_created () recorded the owner, and this handle would mean
+     * nothing to it. The request data takes the name owner the proxy has now,
+     * which is that replacement. */
+    g_set_str (&data->owner, priv->session_owner);
+    portal_request_watch_owner (data);
 
     g_autofree gchar *token = portal_next_request_token (priv);
     g_autofree gchar *request_path = portal_request_path (data->connection, token);
 
     if (!request_path)
     {
-        g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_FAILED,
-                                 "The connection the portal is reached over has no unique name");
+        portal_request_take_error (data, g_error_new (G_IO_ERROR, G_IO_ERROR_FAILED,
+                                                      "The connection the portal is reached over has no unique name"));
         portal_request_data_free (data);
         return;
     }
@@ -738,15 +946,19 @@ start_bind_async (GPasteGtkGlobalShortcutClient *self,
         g_variant_builder_end (&options)
     };
 
-    g_dbus_proxy_call (proxy, G_PASTE_GTK_GLOBAL_SHORTCUT_BIND_SHORTCUTS,
-                       g_variant_new_tuple (params, 4),
-                       G_DBUS_CALL_FLAGS_NONE, -1, data->cancellable,
-                       on_bind_method_done, data);
+    g_dbus_connection_call (data->connection,
+                            data->owner ? data->owner : G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME,
+                            G_PASTE_GTK_GLOBAL_SHORTCUT_OBJECT_PATH,
+                            G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE_NAME,
+                            G_PASTE_GTK_GLOBAL_SHORTCUT_BIND_SHORTCUTS,
+                            g_variant_new_tuple (params, 4), G_VARIANT_TYPE ("(o)"),
+                            G_DBUS_CALL_FLAGS_NONE, -1, data->cancellable,
+                            on_bind_method_done, data);
 }
 
 static void
-on_session_created (GDBusConnection *conn   G_GNUC_UNUSED,
-                    const gchar     *sender G_GNUC_UNUSED,
+on_session_created (GDBusConnection *conn G_GNUC_UNUSED,
+                    const gchar     *sender,
                     const gchar     *path   G_GNUC_UNUSED,
                     const gchar     *iface  G_GNUC_UNUSED,
                     const gchar     *sig    G_GNUC_UNUSED,
@@ -755,6 +967,10 @@ on_session_created (GDBusConnection *conn   G_GNUC_UNUSED,
 {
     _PortalRequestData *data = user_data;
     g_autoptr (GPasteGtkGlobalShortcutClient) self = g_weak_ref_get (&data->client);
+
+    /* Filtered on the sender for the reason on_shortcuts_bound () gives. */
+    if (data->owner && !g_paste_str_equal (sender, data->owner))
+        return;
 
     /* Read the way on_shortcuts_bound () reads it, and for the same reasons. */
     guint response = 2;
@@ -765,8 +981,19 @@ on_session_created (GDBusConnection *conn   G_GNUC_UNUSED,
 
     if (response != 0)
     {
-        portal_request_take_error (data, g_error_new (G_IO_ERROR, G_IO_ERROR_FAILED,
-                                                      "CreateSession portal request failed with response %u", response));
+        /* Only cancellation (1) records a user decision. A general failure
+         * (2) must not disable recovery when the portal restarts. A superseded
+         * request says nothing about the set we hold now. */
+        if (!data->retired && portal_request_is_current (data, self))
+        {
+            GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+
+            priv->session_revoked = response == 1;
+        }
+
+        portal_request_take_error (data, g_error_new (G_IO_ERROR,
+            data->retired || !portal_request_is_current (data, self) ? G_IO_ERROR_CANCELLED : G_IO_ERROR_FAILED,
+            "CreateSession portal request failed with response %u", response));
         portal_request_done (data);
         return;
     }
@@ -798,7 +1025,7 @@ on_session_created (GDBusConnection *conn   G_GNUC_UNUSED,
          * this handle to be closed by. Binding it is not on offer either -- the
          * task the bind would be reported on has been answered already, and
          * answering it twice is a critical. */
-        close_session_handle (data->connection, handle);
+        close_session_handle (data->connection, handle, sender);
         portal_request_take_error (data, g_error_new (G_IO_ERROR, G_IO_ERROR_CANCELLED,
                                                       "CreateSession was superseded before it completed"));
         portal_request_done (data);
@@ -811,9 +1038,7 @@ on_session_created (GDBusConnection *conn   G_GNUC_UNUSED,
 
     /* Which portal answered, so that one replacing it can be told from the one
      * this session was created by: what a portal holds goes with it. */
-    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self));
-    g_free (priv->session_owner);
-    priv->session_owner = g_steal_pointer (&owner);
+    g_set_str (&priv->session_owner, sender);
 
     g_autoptr (GTask) task = g_object_ref (data->task);
     portal_request_done (data);
@@ -828,7 +1053,7 @@ on_create_session_method_done (GObject      *source,
 {
     _PortalRequestData *data = user_data;
     g_autoptr (GError) error = NULL;
-    g_autoptr (GVariant) ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (source), result, &error);
+    g_autoptr (GVariant) ret = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source), result, &error);
 
     if (data->responded)
     {
@@ -854,7 +1079,7 @@ on_create_session_method_done (GObject      *source,
 
         /* Any other failure says nothing about whether the portal took the
          * call -- a backend held up behind a dialog of its own answers the
-         * request long after the 25 s the method itself is given -- and the
+         * request long after the method timeout -- and the
          * handle of the session it may go on to create appears in that Response
          * and nowhere else. Dropping the subscription here would leave that
          * session holding whatever it binds for the rest of the process, so
@@ -892,18 +1117,29 @@ start_create_session_async (GPasteGtkGlobalShortcutClient *self,
                             GTask                      *task)
 {
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
-    GDBusProxy *proxy = G_DBUS_PROXY (self);
-
     _PortalRequestData *data = portal_request_data_new (self, task);
     data->creates_session = TRUE;
+    portal_request_watch_owner (data);
+
+    /* Install before CreateSession, not in its Response callback: Closed may
+     * already be queued behind that Response when the callback runs. Keep the
+     * subscription across sessions and authenticate both sender and handle in
+     * on_session_closed_signal (). The subscription holds only a weak client. */
+    if (!priv->session_closed_signal)
+    {
+        priv->session_closed_signal = g_dbus_connection_signal_subscribe (
+            data->connection, NULL, G_PASTE_GTK_PORTAL_SESSION_INTERFACE_NAME, "Closed",
+            NULL, NULL, G_DBUS_SIGNAL_FLAGS_NONE, on_session_closed_signal,
+            g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    }
 
     g_autofree gchar *token = portal_next_request_token (priv);
     g_autofree gchar *request_path = portal_request_path (data->connection, token);
 
     if (!request_path)
     {
-        g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_FAILED,
-                                 "The connection the portal is reached over has no unique name");
+        portal_request_take_error (data, g_error_new (G_IO_ERROR, G_IO_ERROR_FAILED,
+                                                      "The connection the portal is reached over has no unique name"));
         portal_request_data_free (data);
         return;
     }
@@ -919,28 +1155,101 @@ start_create_session_async (GPasteGtkGlobalShortcutClient *self,
 
     GVariant *params[] = { g_variant_builder_end (&options) };
 
-    g_dbus_proxy_call (proxy, G_PASTE_GTK_GLOBAL_SHORTCUT_CREATE_SESSION,
-                       g_variant_new_tuple (params, 1),
-                       G_DBUS_CALL_FLAGS_NONE, -1, data->cancellable,
-                       on_create_session_method_done, data);
+    g_dbus_connection_call (data->connection,
+                            data->owner ? data->owner : G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME,
+                            G_PASTE_GTK_GLOBAL_SHORTCUT_OBJECT_PATH,
+                            G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE_NAME,
+                            G_PASTE_GTK_GLOBAL_SHORTCUT_CREATE_SESSION,
+                            g_variant_new_tuple (params, 1), G_VARIANT_TYPE ("(o)"),
+                            G_DBUS_CALL_FLAGS_NONE, -1, data->cancellable,
+                            on_create_session_method_done, data);
 }
 
 /**************************/
 /* GPasteKeybindingProvider */
 /**************************/
 
+typedef struct
+{
+    GWeakRef client;
+    guint64 generation;
+} PortalBindData;
+
+static void
+portal_bind_data_free (gpointer user_data)
+{
+    g_autofree PortalBindData *data = user_data;
+
+    g_weak_ref_clear (&data->client);
+}
+
+static gboolean retry_grab_all (gpointer user_data);
+
 static void
 on_provider_bind_done (GObject      *source   G_GNUC_UNUSED,
                        GAsyncResult *result,
                        gpointer      user_data G_GNUC_UNUSED)
 {
+    GTask *task = G_TASK (result);
+    /* Weakly, and through the task's own data rather than its source object: a
+     * source object is a strong reference, and one held until the portal
+     * answers is one dispose () cannot get past. Owned by the task, so a task
+     * nothing ever answers takes it with it when it is finalized. */
+    PortalBindData *data = g_task_get_task_data (task);
+    g_autoptr (GPasteGtkGlobalShortcutClient) self = g_weak_ref_get (&data->client);
     g_autoptr (GError) error = NULL;
+    gboolean bound = g_task_propagate_boolean (task, &error);
+
+    if (!self)
+        return;
+
+    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+
+    if (!priv->shortcuts || data->generation != priv->generation)
+        return;
+
+    if (bound)
+    {
+        priv->retries = 0;
+        return;
+    }
 
     /* A task can come back false without an error of its own, and a superseded
      * request is not a failure either: something else took over. */
-    if (!g_task_propagate_boolean (G_TASK (result), &error) && error &&
-        !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    if (!error || g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        return;
+
+    /* Asked for again rather than left there: a response of 2 -- the portal's
+     * own "ended in some other way", which a backend that was still starting
+     * answers with -- and a method failure are nobody's answer, and nothing else
+     * would ever ask. A portal that stayed up sends no owner change to recover
+     * on, and a user who never writes another accelerator never asks either: the
+     * shortcuts would be bound to nothing for the rest of the session, with a
+     * single warning to say so.
+     * What the user did answer no to is never asked for again. Whether there is
+     * anything to ask for is left to the retry itself: a task is answered before
+     * the request carrying it is let go of, so the very request that failed is
+     * still in flight as far as portal_may_bind () can tell from here. */
+    if (priv->session_revoked)
+        return;
+
+    if (priv->retries >= G_PASTE_GTK_PORTAL_BIND_RETRIES)
+    {
         g_warning ("GPasteGtkGlobalShortcutClient: binding the global shortcuts failed: %s", error->message);
+        return;
+    }
+
+    g_debug ("GPasteGtkGlobalShortcutClient: retrying global shortcut binding: %s", error->message);
+
+    ++priv->retries;
+
+    /* Weakly, as a request holds it and for the same reason: dispose () is the
+     * one thing that cancels this source, and a reference of its own would put
+     * it out of reach. */
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
+    priv->retry_source = g_timeout_add_full (G_PRIORITY_DEFAULT, G_PASTE_GTK_PORTAL_BIND_RETRY_DELAY,
+                                                     retry_grab_all, g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    g_source_set_name_by_id (priv->retry_source, "[GPaste] portal shortcut bind retry");
 }
 
 /* Bind the shortcuts we hold: a session of their own, then the one chance that
@@ -953,12 +1262,43 @@ start_grab_async (GPasteGtkGlobalShortcutClient *self)
 {
     supersede_session (self);
 
-    /* No source object: the task outlives neither the client nor the requests it
-     * is handed between, and a reference on the client is exactly what the
-     * requests hold weakly to keep dispose () within reach. */
+    /* Neither this task nor the D-Bus calls may retain the client. Requests
+     * hold it weakly and calls use the connection directly: a proxy call would
+     * retain the client until its method reply, preventing dispose (). */
     g_autoptr (GTask) task = g_task_new (NULL, NULL, on_provider_bind_done, NULL);
 
+    /* The client its callback answers for, weakly and owned by the task: the
+     * generation prevents an obsolete task from changing the retry budget. */
+    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    g_autofree PortalBindData *data = g_new (PortalBindData, 1);
+    g_weak_ref_init (&data->client, self);
+    data->generation = priv->generation;
+    g_task_set_task_data (task, g_steal_pointer (&data), portal_bind_data_free);
+
     start_create_session_async (self, task);
+}
+
+/* Ask for the set we hold again: only the portal's answer was lost, to a backend
+ * that was not up yet or to a failure that was nobody's decision. */
+static gboolean
+retry_grab_all (gpointer user_data)
+{
+    g_autoptr (GPasteGtkGlobalShortcutClient) self = g_weak_ref_get (user_data);
+
+    if (!self)
+        return G_SOURCE_REMOVE;
+
+    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+
+    priv->retry_source = 0;
+
+    /* What was true when this was armed may not be any more: a portal that came
+     * back, or a settings write, has asked for a session of its own since, and
+     * starting over would close the very session this is here to get. */
+    if (portal_may_bind (priv))
+        start_grab_async (self);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -990,6 +1330,13 @@ global_shortcut_client_grab_all (GPasteKeybindingProvider          *provider,
     g_paste_keybinding_accelerators_free (priv->shortcuts);
     priv->shortcuts = shortcuts;
 
+    /* The set is being changed, which is the user asking for these shortcuts:
+     * whatever a backend closed under us was about the set before it, and a set
+     * they have just written is a fresh attempt that deserves the whole retry
+     * budget -- one burnt on the set before it must not be what leaves this one
+     * bound to nothing. */
+    priv->session_revoked = FALSE;
+    priv->retries = 0;
 
     /* The set we are registering is not the one the current session bound, and
      * that session cannot be told about it: start over with a new one, or with
@@ -1014,6 +1361,8 @@ global_shortcut_client_ungrab_all (GPasteKeybindingProvider *provider)
     /* Nothing to bind, and a set that is still ours: only a disposed client has
      * none at all. */
     priv->shortcuts = g_new0 (GPasteKeybindingAccelerator, 1);
+    priv->session_revoked = FALSE;
+    priv->retries = 0;
 
     /* Rebinding an empty set would leave the session's shortcuts exactly where
      * they are: closing it is what hands them back. */
@@ -1054,21 +1403,25 @@ g_paste_gtk_global_shortcut_client_g_signal (GDBusProxy  *proxy,
     }
 }
 
-/* The portal takes the sessions and every request in flight with it when it
- * goes: nothing is left to close, and the Response the request is waiting for
- * can never come -- it would hold its subscription, and the client it keeps
- * alive with it, for the rest of the process.
- * Idempotent: a handoff reported as a %NULL owner and then a new one runs this
- * twice, and the second pass finds nothing left to retire or close. */
+/* The well-known name changing invalidates the current bind, but the old
+ * connection may still own sessions. Close the known one on its unique name
+ * and retain unanswered creates until their Response or unique-owner loss. */
 static void
 portal_lost (GPasteGtkGlobalShortcutClient *self)
 {
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
 
+    /* A retry armed against the portal that is gone would ask a name nobody
+     * owns, and the grab its replacement is asked for below is a new attempt
+     * that deserves the whole budget: carrying the count over means a portal
+     * slow to come up at login leaves every later restart of it with no global
+     * shortcut at all, and only a warning to say so. */
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
+    priv->retries = 0;
+
     ++priv->generation;
-    retire_requests (self, TRUE);
-    g_clear_pointer (&priv->session_handle, g_free);
-    g_clear_pointer (&priv->session_owner, g_free);
+    retire_requests (self, FALSE);
+    close_session (self);
 }
 
 static void
@@ -1079,30 +1432,19 @@ on_portal_name_owner_changed (GPasteGtkGlobalShortcutClient *self,
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
     g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self));
 
-    /* A portal handing the name straight to its replacement never lets go of
-     * it, so there is no %NULL in between to say that what it held is gone: an
-     * owner that is not the one our session and our requests were made under
-     * says it just as well. Left alone, the handle would go on naming a session
-     * the portal now on the name knows nothing about -- one no Activated can
-     * ever match, and one the guard below would take for a session we still
-     * have. */
-    if (!owner || portal_was_replaced (priv, owner))
+    if (!priv->shortcuts)
+        return;
+
+    /* Retired requests can still name several older owners. Compare the last
+     * notification instead of treating those cleanup-only requests as another
+     * handoff on every owner notification. */
+    if (!owner || (priv->portal_owner && !g_paste_str_equal (priv->portal_owner, owner)))
         portal_lost (self);
+
+    g_set_str (&priv->portal_owner, owner);
 
     if (!owner)
         return;
-
-    /* A request made while nobody owned the name -- our own call is what
-     * D-Bus-activated the portal -- is being answered by the owner that has
-     * just turned up: without it recorded, the handoff after this one would
-     * have nothing to tell it apart from. */
-    for (const GSList *r = priv->requests; r; r = r->next)
-    {
-        _PortalRequestData *data = r->data;
-
-        if (!data->owner)
-            data->owner = g_strdup (owner);
-    }
 
     /* Back, without the session that held our shortcuts: the set we still hold
      * is bound to nothing until a new session binds it, and nothing else is
@@ -1111,8 +1453,11 @@ on_portal_name_owner_changed (GPasteGtkGlobalShortcutClient *self,
      * owner change did not take -- the name appearing because our own
      * CreateSession D-Bus-activated the portal is exactly that -- and starting
      * over would close the session that request is about to be answered with,
-     * taking the permission dialog the user is looking at down with it. */
-    if (priv->shortcuts && priv->shortcuts[0].id && !priv->session_handle && !has_live_request (priv))
+     * taking the permission dialog the user is looking at down with it.
+     * A session a backend closed under us is not one to ask for again either:
+     * on_session_closed_signal () leaves that to the user, and a portal restart
+     * is not them changing their mind. */
+    if (portal_may_bind (priv))
         start_grab_async (self);
 }
 
@@ -1126,6 +1471,8 @@ g_paste_gtk_global_shortcut_client_dispose (GObject *object)
     GPasteGtkGlobalShortcutClient *self = G_PASTE_GTK_GLOBAL_SHORTCUT_CLIENT (object);
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
 
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
+
     /* Out of the client before a single request is retired, rather than emptied
      * afterwards: weak locations are cleared before dispose () runs, so a
      * request freed below cannot take itself out of this list, and a list
@@ -1138,8 +1485,15 @@ g_paste_gtk_global_shortcut_client_dispose (GObject *object)
     retire_request_list (requests, FALSE);
     close_session (self);
 
+    if (priv->session_closed_signal)
+    {
+        g_dbus_connection_signal_unsubscribe (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
+                                              priv->session_closed_signal);
+        priv->session_closed_signal = 0;
+    }
+
+    g_clear_pointer (&priv->portal_owner, g_free);
     g_clear_pointer (&priv->shortcuts, g_paste_keybinding_accelerators_free);
-    g_clear_pointer (&priv->session_owner, g_free);
 
     G_OBJECT_CLASS (g_paste_gtk_global_shortcut_client_parent_class)->dispose (object);
 }
@@ -1163,12 +1517,16 @@ g_paste_gtk_global_shortcut_client_init (GPasteGtkGlobalShortcutClient *self)
     g_dbus_proxy_set_interface_info (proxy, dbus_info->interfaces[0]);
 
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    priv->portal_owner = NULL;
     priv->session_handle = NULL;
     priv->session_owner = NULL;
     priv->shortcuts = g_new0 (GPasteKeybindingAccelerator, 1);
     priv->generation = 0;
     priv->request_count = 0;
     priv->session_count = 0;
+    priv->session_revoked = FALSE;
+    priv->retries = 0;
+    priv->retry_source = 0;
     priv->requests = NULL;
 
     g_signal_connect (self, "notify::g-name-owner", G_CALLBACK (on_portal_name_owner_changed), NULL);
