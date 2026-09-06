@@ -42,6 +42,19 @@ handing its bus name straight to a replacement — with a grab already held, and
 one still in flight. It requires no desktop session and runs by default; the older
 interactive Shell test still skips unless explicitly enabled.
 
+`test-portal-provider` uses a private bus with a fake GlobalShortcuts portal and
+session objects. It controls method replies and `Response` signals independently
+to cover both reply orders, superseded and failed creates, disabling during a
+bind, denial recovery, portal restarts, and direct owner replacement with a live
+session or a pending create. Teardown checks that outstanding requests release
+the client, and a test of its own drops the client with a `CreateSession` still
+unanswered: the session that `Response` goes on to carry has to be closed by a
+request whose client is already gone. Another hands the name over while the only
+request outstanding is a `CreateSession` an `ungrab_all()` has retired: it is
+still the one thing naming the portal that took it, and the handoff has to be
+seen through it. These tests run without GTK initialization
+or a desktop session.
+
 A test that needs a fake service on a private bus links `gpaste_test_bus_dep`
 (`tests/gpaste-test-bus.c`) rather than rolling its own: `g_paste_test_bus_new_server()`
 puts a second connection on the bus with an object registered on it — a connection
