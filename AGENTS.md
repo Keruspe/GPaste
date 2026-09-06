@@ -53,12 +53,6 @@ connection makes a no-op assertion deterministic, the later rounds drain what a
 reply's own callback issues, and the unique name is what answers while the
 well-known one is unowned or has just changed hands.
 
-Check header include ordering:
-
-```sh
-tools/check-includes.sh
-```
-
 ## Code style
 
 - C standard: GNU17
