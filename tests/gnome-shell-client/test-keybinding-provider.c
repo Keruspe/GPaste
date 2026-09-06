@@ -24,6 +24,7 @@ typedef struct
     guint registration;
     guint replacement_registration;
     guint grabs;
+    guint replacement_releases;
     gboolean ready;
 } Fixture;
 
@@ -34,7 +35,7 @@ static const GPasteKeybindingAccelerator shortcuts[] = {
 };
 
 static void
-on_method_call (GDBusConnection *connection G_GNUC_UNUSED,
+on_method_call (GDBusConnection *connection,
                 const gchar *sender G_GNUC_UNUSED,
                 const gchar *path G_GNUC_UNUSED,
                 const gchar *interface G_GNUC_UNUSED,
@@ -49,6 +50,8 @@ on_method_call (GDBusConnection *connection G_GNUC_UNUSED,
     {
         g_autoptr (GVariant) accels = g_variant_get_child_value (parameters, 0);
         g_assert_cmpuint (g_variant_n_children (accels), ==, 2);
+        if (f->replacement)
+            g_assert_true (connection == f->replacement);
         f->grabs++;
         /* One per shell at the very most, and a handoff leaves the one the shell
          * that left never answered outstanding beside the replacement's. */
@@ -59,6 +62,8 @@ on_method_call (GDBusConnection *connection G_GNUC_UNUSED,
         g_autoptr (GVariant) actions = g_variant_get_child_value (parameters, 0);
         gsize n;
         const guint32 *ids = g_variant_get_fixed_array (actions, &n, sizeof (guint32));
+        if (connection == f->replacement)
+            f->replacement_releases += n;
         g_array_append_vals (f->released, ids, n);
         g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", TRUE));
     }
@@ -134,7 +139,7 @@ answer_grab (Fixture *f, guint32 first, guint32 second)
     g_assert_cmpuint (f->pending->len, >, 0);
     g_autoptr (GDBusMethodInvocation) invocation = g_ptr_array_steal_index (f->pending, 0);
     guint32 ids[] = { first, second };
-    g_dbus_method_invocation_return_value (g_steal_pointer (&invocation), g_variant_new ("(@au)",
+    g_dbus_method_invocation_return_value (invocation, g_variant_new ("(@au)",
         g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, ids, G_N_ELEMENTS (ids), sizeof (guint32))));
     barrier (f);
 }
@@ -143,7 +148,8 @@ static void
 teardown (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
 {
     g_assert_cmpuint (f->pending->len, ==, 0);
-    g_paste_keybinding_provider_ungrab_all (G_PASTE_KEYBINDING_PROVIDER (f->client));
+    if (f->client)
+        g_paste_keybinding_provider_ungrab_all (G_PASTE_KEYBINDING_PROVIDER (f->client));
     barrier (f);
     g_clear_object (&f->client);
     barrier (f);
@@ -232,24 +238,75 @@ owner_handoff (Fixture *f, gconstpointer user_data)
                                                   g_variant_new ("(su)", SHELL_NAME, 2u)), ==, 1);
     barrier (f);
 
-    /* The replacement is asked for the stored set straight away -- a call the
-     * shell that left may never answer must not hold that up -- and the ids it
-     * granted are not handed back: a shell allocates them from a counter that
-     * starts over with it, so they name grabs the replacement has just given
-     * somebody else. */
+    /* Count each destination separately: a shared count lets a re-grab sent
+     * to the old owner masquerade as a successful recovery. Answer the new
+     * owner first, leaving the abandoned old call outstanding. */
     g_assert_cmpuint (f->grabs, ==, 2);
-    g_assert_cmpuint (f->released->len, ==, 0);
-    answer_grab (f, 3, 4);
-    g_assert_cmpuint (f->grabs, ==, 2);
+    g_assert_cmpuint (f->replacement_releases, ==, 0);
+    g_assert_cmpuint (f->released->len, ==, pending ? 0 : 2);
+    guint index = pending ? 1 : 0;
+    GDBusMethodInvocation *current = g_ptr_array_index (f->pending, index);
+    g_assert_true (g_dbus_method_invocation_get_connection (current) == f->replacement);
+    if (pending)
+    {
+        gpointer old = f->pending->pdata[0];
+        f->pending->pdata[0] = f->pending->pdata[1];
+        f->pending->pdata[1] = old;
+    }
+    answer_grab (f, 1, 2);
 
-    /* The abandoned call answering after all says nothing about the shell that
-     * is up now, and hands its ids back to nobody. */
     if (pending)
     {
         answer_grab (f, 1, 2);
-        g_assert_cmpuint (f->grabs, ==, 2);
-        g_assert_cmpuint (f->released->len, ==, 0);
+        g_assert_cmpuint (f->released->len, ==, 2);
     }
+    g_assert_cmpuint (f->grabs, ==, 2);
+    g_assert_cmpuint (f->replacement_releases, ==, 0);
+}
+
+static void
+drop_client (Fixture *f, gconstpointer user_data)
+{
+    gboolean pending = GPOINTER_TO_UINT (user_data);
+    g_paste_keybinding_provider_grab_all (G_PASTE_KEYBINDING_PROVIDER (f->client), shortcuts);
+    barrier (f);
+    if (!pending)
+        answer_grab (f, 1, 2);
+
+    GPasteGnomeShellClient *weak = f->client;
+    g_object_add_weak_pointer (G_OBJECT (weak), (gpointer *) &weak);
+    g_clear_object (&f->client);
+    barrier (f);
+    g_assert_null (weak);
+    if (pending)
+        answer_grab (f, 1, 2);
+    g_assert_cmpuint (f->released->len, ==, 2);
+    g_assert_cmpuint (f->grabs, ==, 1);
+}
+
+static void
+changed_pending (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    const GPasteKeybindingAccelerator changed[] = {
+        { "first", "<Control>c", "First" },
+        { "second", "<Control>d", "Second" },
+        { NULL, NULL, NULL },
+    };
+    g_paste_keybinding_provider_grab_all (G_PASTE_KEYBINDING_PROVIDER (f->client), shortcuts);
+    barrier (f);
+    g_paste_keybinding_provider_grab_all (G_PASTE_KEYBINDING_PROVIDER (f->client), changed);
+    barrier (f);
+    g_assert_cmpuint (f->grabs, ==, 1);
+    answer_grab (f, 1, 2);
+    g_assert_cmpuint (f->grabs, ==, 2);
+    g_assert_cmpuint (f->released->len, ==, 2);
+    GDBusMethodInvocation *current = g_ptr_array_index (f->pending, 0);
+    g_autoptr (GVariant) accels = g_variant_get_child_value (g_dbus_method_invocation_get_parameters (current), 0);
+    const gchar *accel;
+    guint mode, flags;
+    g_variant_get_child (accels, 0, "(&suu)", &accel, &mode, &flags);
+    g_assert_cmpstr (accel, ==, "<Control>c");
+    answer_grab (f, 3, 4);
 }
 
 int
@@ -265,5 +322,8 @@ main (int argc, char **argv)
     g_test_add ("/shell-provider/disable-pending", Fixture, NULL, setup, disable_pending, teardown);
     g_test_add ("/shell-provider/owner-handoff", Fixture, GUINT_TO_POINTER (0), setup, owner_handoff, teardown);
     g_test_add ("/shell-provider/owner-handoff-pending-grab", Fixture, GUINT_TO_POINTER (1), setup, owner_handoff, teardown);
+    g_test_add ("/shell-provider/drop-pending-client", Fixture, GUINT_TO_POINTER (1), setup, drop_client, teardown);
+    g_test_add ("/shell-provider/drop-bound-client", Fixture, GUINT_TO_POINTER (0), setup, drop_client, teardown);
+    g_test_add ("/shell-provider/changed-pending", Fixture, NULL, setup, changed_pending, teardown);
     return g_test_run ();
 }

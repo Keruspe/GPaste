@@ -44,7 +44,7 @@ typedef struct
     GHashTable                  *id_to_action; /* gchar* (owned) → GUINT_TO_POINTER (guint32) */
     GPasteKeybindingAccelerator *stored;       /* the set we hold, owned — saved for re-grab */
     guint64                      generation;   /* bumped whenever the grabs we hold stop being the ones we want */
-    guint64                      shell_epoch;  /* bumped whenever the shell that held them goes away */
+    gchar                       *shell_owner;  /* the unique name supplied by the shell watch */
     guint64                      call_count;   /* what the id of the next GrabAccelerators is taken from */
     guint64                      in_flight;    /* the id of the GrabAccelerators the shell has yet to answer, 0 for none */
     gboolean                     pending_grab; /* a grab was asked for while that one was in flight */
@@ -91,6 +91,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_ASYNC_FINISH_RET_BOOL \
     DBUS_ASYNC_FINISH_RET_BOOL_BASE (GNOME_SHELL_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_AU \
+    DBUS_ASYNC_FINISH_RET_AU_BASE (GNOME_SHELL_CLIENT, NULL)
 
 #define DBUS_ASYNC_FINISH_RET_UINT32 \
     DBUS_ASYNC_FINISH_RET_UINT32_BASE (GNOME_SHELL_CLIENT)
@@ -291,19 +294,6 @@ g_paste_gnome_shell_client_grab_accelerator_finish (GPasteGnomeShellClient *self
     DBUS_ASYNC_FINISH_RET_UINT32;
 }
 
-/* The array length is the shell's own answer, and walking the reply up to the
- * number of accelerators we asked for instead trusts it to have answered with
- * exactly that many: everything internal goes through this, and the public
- * finish call is the same thing with the length thrown away. */
-static guint32 *
-gnome_shell_client_grab_accelerators_finish (GPasteGnomeShellClient *self,
-                                             GAsyncResult           *result,
-                                             guint64                *len,
-                                             GError                **error)
-{
-    DBUS_ASYNC_FINISH_RET_AU_BASE (GNOME_SHELL_CLIENT, len);
-}
-
 /**
  * g_paste_gnome_shell_client_grab_accelerators_finish:
  * @self: a #GPasteGnomeShellClient instance
@@ -312,14 +302,19 @@ gnome_shell_client_grab_accelerators_finish (GPasteGnomeShellClient *self,
  *
  * Grab some keybindings
  *
- * Returns: the action ids corresultponding
+ * The length of the shell's reply is dropped, so the caller has nothing but the
+ * number of accelerators it asked for to walk the result by -- and a shell that
+ * answered with fewer would have it read past the end. Nothing in the tree goes
+ * through here for that reason: grab_all_cb () reads the reply itself.
+ *
+ * Returns: (transfer full): the action ids corresponding
  */
 G_PASTE_VISIBLE guint32 *
 g_paste_gnome_shell_client_grab_accelerators_finish (GPasteGnomeShellClient *self,
                                                      GAsyncResult           *result,
                                                      GError                **error)
 {
-    return gnome_shell_client_grab_accelerators_finish (self, result, NULL, error);
+    DBUS_ASYNC_FINISH_RET_AU;
 }
 
 /**
@@ -346,12 +341,23 @@ g_paste_gnome_shell_client_ungrab_accelerator_finish (GPasteGnomeShellClient *se
 
 typedef struct
 {
-    GPasteGnomeShellClient      *client;
+    GWeakRef                     client;
     GStrv                        ids;         /* owned copy for mapping after async completes */
     guint64                      generation;  /* the generation this grab was issued for */
-    guint64                      shell_epoch; /* the shell this grab was issued to */
+    gchar                       *owner;       /* the unique name this grab was sent to */
     guint64                      call_id;     /* the call this context was handed to the shell with */
 } _GrabAllContext;
+
+static void
+grab_all_context_free (_GrabAllContext *ctx)
+{
+    g_weak_ref_clear (&ctx->client);
+    g_strfreev (ctx->ids);
+    g_free (ctx->owner);
+    g_free (ctx);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_GrabAllContext, grab_all_context_free)
 
 /* UngrabAccelerators is a newer method than the per-action UngrabAccelerator,
  * and a shell that does not have it answers UnknownMethod: with the reply
@@ -365,11 +371,20 @@ on_accelerators_ungrabbed (GObject      *source_object,
                            gpointer      user_data G_GNUC_UNUSED)
 {
     g_autoptr (GError) error = NULL;
-    g_autoptr (GVariant) ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object), res, &error);
+    g_autoptr (GVariant) ret = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
 
     if (!ret)
     {
-        g_warning ("Couldn't release keybindings with gnome-shell: %s", error->message);
+        /* A shell that is gone rather than replaced took our grabs with it, and
+         * the unique name they are handed back to died with it: this is the bus
+         * answering for a name it no longer knows -- the only error a release
+         * addressed to a unique name gets that way. Every restart would say so,
+         * over a release that had nothing left to release. */
+        if (g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER))
+            g_debug ("The gnome-shell we held keybindings with is gone: %s", error->message);
+        else
+            g_warning ("Couldn't release keybindings with gnome-shell: %s", error->message);
+
         return;
     }
 
@@ -388,11 +403,12 @@ on_accelerators_ungrabbed (GObject      *source_object,
  * that granted the ids is the one they mean, and a proxy call would hold a
  * reference on the client until its reply -- which dispose () is waiting for. */
 static void
-gnome_shell_client_ungrab_actions (GPasteGnomeShellClient *self,
+gnome_shell_client_ungrab_actions (GDBusConnection        *connection,
+                                   const gchar            *owner,
                                    const guint32          *actions,
                                    gsize                   n_actions)
 {
-    if (!n_actions)
+    if (!owner || !n_actions)
         return;
 
     g_auto (GVariantBuilder) builder;
@@ -403,14 +419,16 @@ gnome_shell_client_ungrab_actions (GPasteGnomeShellClient *self,
 
     GVariant *params[] = { g_variant_builder_end (&builder) };
 
-    g_dbus_proxy_call (G_DBUS_PROXY (self),
-                       G_PASTE_GNOME_SHELL_UNGRAB_ACCELERATORS,
-                       g_variant_new_tuple (params, 1),
-                       G_DBUS_CALL_FLAGS_NONE,
-                       -1,                        /* timeout */
-                       NULL,                      /* cancellable */
-                       on_accelerators_ungrabbed, /* callback */
-                       NULL);                     /* user_data */
+    g_dbus_connection_call (connection, owner,
+                            G_PASTE_GNOME_SHELL_OBJECT_PATH,
+                            G_PASTE_GNOME_SHELL_INTERFACE_NAME,
+                            G_PASTE_GNOME_SHELL_UNGRAB_ACCELERATORS,
+                            g_variant_new_tuple (params, 1), G_VARIANT_TYPE ("(b)"),
+                            G_DBUS_CALL_FLAGS_NONE,
+                            -1,                        /* timeout */
+                            NULL,                      /* cancellable */
+                            on_accelerators_ungrabbed, /* callback */
+                            NULL);                     /* user_data */
 }
 
 /* Release every accelerator the shell currently holds on our behalf.
@@ -433,7 +451,8 @@ gnome_shell_client_release_grabs (GPasteGnomeShellClient *self)
     while (g_hash_table_iter_next (&iter, &key, &value))
         actions[n_actions++] = GPOINTER_TO_UINT (value);
 
-    gnome_shell_client_ungrab_actions (self, actions, n_actions);
+    gnome_shell_client_ungrab_actions (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
+                                       priv->shell_owner, actions, n_actions);
 
     g_hash_table_remove_all (priv->id_to_action);
 }
@@ -446,22 +465,24 @@ grab_all_cb (GObject      *source_object,
              GAsyncResult *res,
              gpointer      user_data)
 {
-    _GrabAllContext *ctx = user_data;
-    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (ctx->client);
+    g_autoptr (_GrabAllContext) ctx = user_data;
+    g_autoptr (GPasteGnomeShellClient) self = g_weak_ref_get (&ctx->client);
+    GPasteGnomeShellClientPrivate *priv = self ? g_paste_gnome_shell_client_get_instance_private (self) : NULL;
     g_autoptr (GError) error = NULL;
-    guint64 n_actions = 0;
-    g_autofree guint32 *actions = gnome_shell_client_grab_accelerators_finish (
-        G_PASTE_GNOME_SHELL_CLIENT (source_object), res, &n_actions, &error);
+    g_autoptr (GVariant) ret = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
+    g_autoptr (GVariant) array = ret ? g_variant_get_child_value (ret, 0) : NULL;
+    gsize n_actions = 0;
+    const guint32 *actions = array ? g_variant_get_fixed_array (array, &n_actions, sizeof (guint32)) : NULL;
 
     /* Only the call we are still waiting for may say that nothing is: a shell
      * that went away with one outstanding had it abandoned there, and the reply
      * it may still send would otherwise clear the flag for the call issued to
      * its replacement -- letting the next grab go out alongside that one and
      * collide with it accelerator for accelerator. */
-    if (ctx->call_id == priv->in_flight)
+    if (priv && ctx->call_id == priv->in_flight)
         priv->in_flight = 0;
 
-    if (ctx->generation != priv->generation)
+    if (!priv || ctx->generation != priv->generation)
     {
         /* Superseded while in flight: whatever the shell just granted us is not
          * what we want any more, and nothing else knows those action ids, so
@@ -476,28 +497,15 @@ grab_all_cb (GObject      *source_object,
         g_autofree guint32 *granted = g_new (guint32, n_actions);
         gsize n_granted = 0;
 
-        for (guint64 i = 0; i < n_actions; i++)
+        for (gsize i = 0; i < n_actions; i++)
             if (actions[i])
                 granted[n_granted++] = actions[i];
 
-        /* To the shell that granted them and no other: a shell allocates action
-         * ids from a counter that starts over with it, so the ids in a reply
-         * from one that has since been replaced name the grabs the shell now on
-         * the name has just granted us -- handing those back would release the
-         * very accelerators the regrab that replacement triggered asked for.
-         * What the old shell held went with it, and needs no releasing.
-         * Which shell that is comes from the watch that drives the regrab and
-         * from nowhere else: the proxy tracks the name owner under a
-         * subscription of its own, dispatched independently of that one, so a
-         * grab issued from the appeared handler can read an owner the proxy has
-         * yet to catch up with -- and the reply, by which time it has, would
-         * then be taken for a stale one and its grabs left held for good. */
-        if (ctx->shell_epoch == priv->shell_epoch)
-            gnome_shell_client_ungrab_actions (ctx->client, granted, n_granted);
+        /* Even a replaced shell can still be alive. Its unique name cannot
+         * name the replacement, and remains available after the client dies. */
+        gnome_shell_client_ungrab_actions (G_DBUS_CONNECTION (source_object), ctx->owner, granted, n_granted);
 
-        /* The shell answered, so the interface it was missing is up: the budget
-         * belongs to the next grab, stale as this reply is. */
-        if (!error)
+        if (priv && !error && g_paste_str_equal (ctx->owner, priv->shell_owner))
             priv->retries = 0;
     }
     else if (error)
@@ -511,7 +519,7 @@ grab_all_cb (GObject      *source_object,
             ++priv->retries;
             g_clear_handle_id (&priv->retry_source, g_source_remove);
             priv->retry_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, 1, retry_grab_all,
-                                                             g_paste_weak_ref_new (ctx->client), g_paste_weak_ref_free);
+                                                             g_paste_weak_ref_new (self), g_paste_weak_ref_free);
             g_source_set_name_by_id (priv->retry_source, "[GPaste] gnome-shell grab retry");
         }
         else
@@ -528,7 +536,7 @@ grab_all_cb (GObject      *source_object,
 
         if (n_actions != n_ids)
         {
-            g_warning ("gnome-shell answered with %" G_GUINT64_FORMAT " action ids for %" G_GSIZE_FORMAT " accelerators",
+            g_warning ("gnome-shell answered with %" G_GSIZE_FORMAT " action ids for %" G_GSIZE_FORMAT " accelerators",
                        n_actions, n_ids);
         }
 
@@ -538,7 +546,7 @@ grab_all_cb (GObject      *source_object,
         g_autofree guint32 *surplus = g_new (guint32, (n_actions > n_ids) ? n_actions - n_ids : 0);
         gsize n_surplus = 0;
 
-        for (guint64 i = 0; i < n_actions; i++)
+        for (gsize i = 0; i < n_actions; i++)
         {
             if (i >= n_ids)
                 surplus[n_surplus++] = actions[i];
@@ -557,7 +565,7 @@ grab_all_cb (GObject      *source_object,
             }
         }
 
-        gnome_shell_client_ungrab_actions (ctx->client, surplus, n_surplus);
+        gnome_shell_client_ungrab_actions (G_DBUS_CONNECTION (source_object), ctx->owner, surplus, n_surplus);
     }
 
     /* A grab that came in while this call was out has been waiting for it: the
@@ -568,15 +576,11 @@ grab_all_cb (GObject      *source_object,
      * A reply from a call the shell going away abandoned is not the one it was
      * waiting for: the grab issued to the replacement is still out, and the
      * pending one would only be queued behind it again. */
-    if (priv->pending_grab && !priv->in_flight)
+    if (priv && priv->pending_grab && !priv->in_flight)
     {
         priv->pending_grab = FALSE;
-        gnome_shell_client_regrab_stored (ctx->client);
+        gnome_shell_client_regrab_stored (self);
     }
-
-    g_strfreev (ctx->ids);
-    g_object_unref (ctx->client);
-    g_free (ctx);
 }
 
 /* Ask the shell for the set we have stored, and remember which call carries it:
@@ -595,27 +599,39 @@ gnome_shell_client_issue_grab (GPasteGnomeShellClient *self)
     if (!priv->stored)
         return;
 
-    gsize n = g_paste_keybinding_accelerators_length (priv->stored);
+    /* If the initial watch notification has not arrived yet, it will issue
+     * this stored set once it supplies the unique owner to send it to. */
+    if (!priv->shell_owner)
+        return;
 
-    g_autofree GPasteGnomeShellAccelerator *shell_accels = g_new (GPasteGnomeShellAccelerator, n + 1);
+    g_auto (GVariantBuilder) builder;
+    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(suu)"));
     /* The ids alone: they are what the reply's action ids are recorded under,
      * and the accelerators go out in the call itself. */
     g_autoptr (GStrvBuilder) ids = g_strv_builder_new ();
-    for (gsize i = 0; i < n; i++)
+    for (gsize i = 0; priv->stored[i].id; i++)
     {
-        shell_accels[i] = G_PASTE_GNOME_SHELL_ACCELERATOR (priv->stored[i].accelerator);
+        GPasteGnomeShellAccelerator accel = G_PASTE_GNOME_SHELL_ACCELERATOR (priv->stored[i].accelerator);
+        g_variant_builder_add (&builder, "(suu)", accel.accelerator, accel.grab_flags, accel.mode_flags);
         g_strv_builder_add (ids, priv->stored[i].id);
     }
-    shell_accels[n].accelerator = NULL;
 
-    _GrabAllContext *ctx = g_new (_GrabAllContext, 1);
-    ctx->client = g_object_ref (self);
+    g_autoptr (_GrabAllContext) ctx = g_new (_GrabAllContext, 1);
+    g_weak_ref_init (&ctx->client, self);
     ctx->ids = g_strv_builder_end (ids);
     ctx->generation = priv->generation;
-    ctx->shell_epoch = priv->shell_epoch;
+    ctx->owner = g_strdup (priv->shell_owner);
     ctx->call_id = priv->in_flight = ++priv->call_count;
+    const gchar *owner = ctx->owner;
 
-    g_paste_gnome_shell_client_grab_accelerators (self, shell_accels, grab_all_cb, ctx);
+    /* The proxy's owner notification is independent of the watch. Address the
+     * watch's owner directly and hold only the connection during the call, so
+     * dropping the client still reaches dispose (). */
+    g_dbus_connection_call (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)), owner,
+                            G_PASTE_GNOME_SHELL_OBJECT_PATH, G_PASTE_GNOME_SHELL_INTERFACE_NAME,
+                            G_PASTE_GNOME_SHELL_GRAB_ACCELERATORS,
+                            g_variant_new ("(a(suu))", &builder), G_VARIANT_TYPE ("(au)"),
+                            G_DBUS_CALL_FLAGS_NONE, -1, NULL, grab_all_cb, g_steal_pointer (&ctx));
 }
 
 /* Invalidate the grab still in flight, hand back what we hold, and ask the shell
@@ -760,10 +776,14 @@ gnome_shell_client_provider_init (GPasteKeybindingProviderInterface *iface)
 static void
 on_shell_appeared (GDBusConnection *connection G_GNUC_UNUSED,
                    const gchar     *name       G_GNUC_UNUSED,
-                   const gchar     *name_owner G_GNUC_UNUSED,
+                   const gchar     *name_owner,
                    gpointer         user_data)
 {
-    gnome_shell_client_regrab_stored (user_data);
+    GPasteGnomeShellClient *self = user_data;
+    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
+
+    g_set_str (&priv->shell_owner, name_owner);
+    gnome_shell_client_regrab_stored (self);
 }
 
 /* A shell handing the name straight to its replacement -- what
@@ -778,6 +798,13 @@ on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
 {
     GPasteGnomeShellClient *self = user_data;
     GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
+
+    /* Safe on a disposed client, as grab_all () and release_grabs () are: the
+     * table is then %NULL, and the grabs the shell is taking with it are ones
+     * dispose () has already handed back. Nothing but the order dispose () drops
+     * the watch in stands between the walk below and a %NULL table. */
+    if (!priv->id_to_action)
+        return;
 
     /* Whatever was waiting for a reply from the shell that just went away is
      * waiting for nothing: on_shell_appeared () asks for the stored set again.
@@ -797,14 +824,9 @@ on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
     g_clear_handle_id (&priv->retry_source, g_source_remove);
     priv->retries = 0;
 
-    /* The shell that granted whatever a reply still out is carrying is this one:
-     * a reply that lands after this names grabs nobody holds any more, and the
-     * action ids in it belong to a counter that starts over with the
-     * replacement. */
-    ++priv->shell_epoch;
-
     ++priv->generation;
-    g_hash_table_remove_all (priv->id_to_action);
+    gnome_shell_client_release_grabs (self);
+    g_clear_pointer (&priv->shell_owner, g_free);
 }
 
 static void
@@ -830,6 +852,13 @@ g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
                        NULL);
 
         GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
+
+        /* Safe on a disposed client, as grab_all () and release_grabs () are:
+         * the table is then %NULL, and an action the shell activates is one
+         * dispose () has already handed back. */
+        if (!priv->id_to_action)
+            return;
+
         GHashTableIter iter;
         gpointer key, value;
         g_hash_table_iter_init (&iter, priv->id_to_action);
@@ -861,6 +890,7 @@ g_paste_gnome_shell_client_dispose (GObject *object)
 
     g_clear_pointer (&priv->id_to_action, g_hash_table_unref);
     g_clear_pointer (&priv->stored, g_paste_keybinding_accelerators_free);
+    g_clear_pointer (&priv->shell_owner, g_free);
 
     G_OBJECT_CLASS (g_paste_gnome_shell_client_parent_class)->dispose (object);
 }
@@ -909,7 +939,7 @@ g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
     priv->id_to_action = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->stored = NULL;
     priv->generation = 0;
-    priv->shell_epoch = 0;
+    priv->shell_owner = NULL;
     priv->call_count = 0;
     priv->in_flight = 0;
     priv->pending_grab = FALSE;

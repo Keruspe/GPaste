@@ -171,9 +171,35 @@ Only **one `GrabAccelerators` is ever outstanding**. The shell refuses an accele
 
 A `grab_all()` handed the set the client already holds — or the one the call still out is about to bring — is a **no-op** (`g_paste_keybinding_accelerators_match()`, the comparison both D-Bus providers share), for the reason the portal provider's is: `GPasteSettings` emits a rebind for any write to an accelerator key, a write of the value already stored included, and going through with it costs an ungrab and a grab with no global shortcut at all in between. A set the client holds only partially, or nothing of (a grab that failed, or accelerators the shell refused), is asked for again: a refused shortcut may have become available since the last attempt, so only a complete set of held grabs can make an unchanged set a no-op once no call is in flight. What decides that is provider state — a partial grab here, a live session there — so the comparison is shared but the decision is not, and `GPasteInternalKeybindingProvider` deliberately makes none: its accelerator strings parse to the *keymap's* keycodes, and re-grabbing an unchanged set is the only thing that ever picks up a layout change under a running daemon.
 
+The `AcceleratorActivated` handler tolerates a disposed client the way `grab_all()` and `release_grabs()` do: `dispose()` clears the action table, and a signal still dispatched on the proxy after that is about an action it has already handed back. `on_shell_vanished()` carries the same guard: it is unreachable today only because `dispose()` happens to drop the bus-name watch before it clears the table, and nothing else states that ordering — a reordered `dispose()`, or a second `g_object_run_dispose()`, would turn a shell restart into a `NULL` dereference.
+
 The retry `GSource` holds a **weak** reference to the client: `dispose()` is what cancels it, and a strong one would put that out of reach, since `dispose()` only runs once the last reference is dropped.
 
-`GrabAccelerators` is asynchronous and there is no way to cancel one in flight, so the client keeps a `generation` counter, bumped by `grab_all()`, `ungrab_all()`, the shell vanishing and `dispose()`. Each in-flight grab remembers the generation it was issued for, and a reply that comes back stale hands the action ids the shell just granted straight back instead of storing them — without that, disabling the shortcuts (or toggling them off and on) during the round trip leaves the shell holding grabs GPaste believes it released, as dead keys stolen from every other application. `grab_all()` releases the grabs it currently holds before registering the new set, so it honours the interface contract for an empty array too, and `dispose()` releases them as well: a client dropped without a prior `ungrab_all()` would otherwise leave the shell holding every accelerator for the rest of the session. The stale hand-back skips the `0` slots for the same reason the success path does — `0` is the shell refusing an accelerator, not an action id it granted, and `UngrabAccelerators` walks the array it is handed and comes back `false` for the whole set when one entry names nothing it holds — and it clears the retry budget when the reply carried no error, the shell having answered being what the budget was waiting for. It goes to the shell that granted those ids and to no other, which is why each call records **which shell it was issued to** (`ctx->shell_epoch`, against `priv->shell_epoch`): a shell allocates action ids from a counter that starts over with it, so the ids in a reply from one that has since been replaced name the grabs the shell now on the name has just granted GPaste — handing those back would release the very accelerators the regrab that replacement triggered asked for. What the old shell held went with it, and needs no releasing. That epoch is bumped by `on_shell_vanished()` and by nothing else, so it is in step with the very subscription that drives the regrab. A name owner read off the proxy is **not**: the proxy tracks `NameOwnerChanged` under a subscription of its own, dispatched independently of the watch, so a grab issued from the appeared handler can record an owner the proxy has yet to catch up with, and its reply — by which time it has — would be taken for a stale one and its grabs left held for the rest of the session. A shell handing the name straight to its replacement — `gnome-shell --replace` — needs nothing further of its own, unlike the portal client's `portal_was_replaced()`: `g_bus_watch_name()` calls the vanished handler for **any** old owner that is not empty before it calls the appeared one, so `on_shell_vanished()` has already dropped the action ids, the call in flight and the retry budget by the time the regrab goes out. The portal client cannot lean on that — it watches `notify::g-name-owner` on its proxy, which reports a handoff as one new owner and nothing else.
+`GrabAccelerators` is asynchronous: the client keeps a `generation` counter
+for superseded sets and an ID for the one call still in flight. A late reply
+releases its nonzero action IDs instead of storing them. Each call records the
+**unique owner supplied by the shell watch**, and both grabs and releases use
+`g_dbus_connection_call()` addressed to that owner. The proxy's independently
+dispatched owner notification may still describe the old Shell when the watch
+announces its replacement. Sending through that proxy can therefore ask the old
+Shell for grabs and record them as the replacement's. A direct unique-name call
+avoids that race, including for late releases after a handoff. A replaced Shell
+may still be alive, so its old grabs are released on its own unique name rather
+than assumed gone. Its late replies must not reset the replacement's retry
+budget. A Shell that is *gone* rather than replaced answers that release with
+`NameHasNoOwner`, since the name it was addressed to died with it. A vanish
+cannot tell the two apart, so the release is issued either way and that one
+error is logged at debug level rather than warned about — `owner_handoff`
+asserts the release does happen, so skipping it to silence the restart case is
+not on offer. Requests hold the client with `GWeakRef`, and the connection-level calls
+hold only the connection, so dropping the client reaches `dispose()` even while
+a grab is unanswered; its reply can still release the IDs without the client.
+The shell tests assert which server received each call and reply to the new
+owner before the old owner's outstanding call, using overlapping action IDs.
+They also drop clients with held and pending grabs, without first ungrabbing.
+The grab context keeps only the shortcut **ids**, which is all the reply is
+mapped through; the accelerators go out in the call itself.
+
 
 **GObject type macros** — use these in `.c` files:
 
