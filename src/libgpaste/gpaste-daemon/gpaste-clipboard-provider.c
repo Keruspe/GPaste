@@ -85,6 +85,21 @@ g_paste_clipboard_provider_get_image_checksum (GPasteClipboardProvider *self)
 }
 
 /**
+ * g_paste_clipboard_provider_is_reading:
+ * @self: a #GPasteClipboardProvider instance
+ *
+ * Returns: whether the current selection is still being classified; cached
+ *          getters returning %NULL during this interval do not prove a change
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_provider_is_reading (GPasteClipboardProvider *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
+
+    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->is_reading (self);
+}
+
+/**
  * g_paste_clipboard_provider_is_empty:
  * @self: a #GPasteClipboardProvider instance
  *
@@ -108,7 +123,8 @@ g_paste_clipboard_provider_is_empty (GPasteClipboardProvider *self)
  *
  * Read the current selection content and update the internal cache. The
  * callback receives a newly created #GPasteItem or %NULL if the content is
- * unchanged, unrecognised, or the selection has no owner.
+ * unchanged, unrecognised, or the selection has no owner. A superseded read
+ * answers %NULL with @superseded set, and its callback only releases its state.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_provider_update (GPasteClipboardProvider              *self,

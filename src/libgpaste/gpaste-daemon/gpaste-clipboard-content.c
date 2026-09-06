@@ -387,6 +387,30 @@ g_paste_clipboard_read_guard_disarm (GPasteClipboardReadGuard *guard)
     g_clear_handle_id (&guard->timeout_id, g_source_remove);
 }
 
+/* Bring @guard's deadline forward to the next turn of the main loop, the batch it
+ * covers having stopped being worth waiting for. */
+static void
+g_paste_clipboard_read_guard_expire_soon (GPasteClipboardReadGuard *guard)
+{
+    g_return_if_fail (guard);
+
+    /* No deadline left is a batch already concluded, as it is for
+     * g_paste_clipboard_read_guard_touch (). */
+    if (!guard->timeout_id)
+        return;
+
+    g_clear_handle_id (&guard->timeout_id, g_source_remove);
+
+    /* Silence is what the deadline measures, and there is none left to wait out:
+     * whatever answers now answers for content nothing holds. An idle rather than
+     * a deadline of zero seconds, which the timer would round up to the next
+     * second boundary -- the superseded update would hold its provider, and on
+     * X11 the requestor window behind it, for that whole extra second. */
+    guard->timeout = 0;
+    guard->timeout_id = g_idle_add_once (g_paste_clipboard_read_guard_timed_out, guard);
+    g_source_set_name_by_id (guard->timeout_id, "[GPaste] clipboard read guard");
+}
+
 /**
  * g_paste_clipboard_read_guard_clear:
  * @guard: the #GPasteClipboardReadGuard to release
@@ -633,6 +657,29 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
 {
     update->concluded = TRUE;
 
+    /* @slot names the update in flight, and this one has stopped being it,
+     * whichever of the two ways it concluded: an update left there is what the
+     * next one to start marks and releases, which it does without asking whether
+     * anything is left to conclude. */
+    if (*update->slot == update)
+        *update->slot = NULL;
+
+    /* Overtaken while it was reading (see @superseded): nothing to build an item
+     * from, and no selection to re-own. The callback is still owed all the same,
+     * that being what releases whatever the caller put behind this update. */
+    if (update->superseded)
+    {
+        g_paste_clipboard_update_release_content (update);
+        g_paste_clipboard_read_guard_disarm (&update->guard);
+
+        g_autoptr (GPasteClipboardProvider) provider = g_steal_pointer (&update->provider);
+
+        if (update->callback)
+            update->callback (provider, NULL, TRUE, update->user_data);
+
+        return;
+    }
+
     /* Nothing produced means nothing to build, whatever the kind said; and the
      * union means only the member matching the kind may be read, which is the
      * one the builder is handed. */
@@ -643,6 +690,33 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
                                                                      (kind == CLIPBOARD_CONTENT_FILE_LIST) ? update->file_list : NULL,
                                                                      (kind == CLIPBOARD_CONTENT_COLOR) ? &update->rgba : NULL,
                                                                      update->mimes.special_mime);
+
+    /* Deduplication only remembers content whose update survived. Publishing a
+     * cache entry while MIME reads are pending would let a superseded update
+     * suppress its successor without either producing a history item. */
+    if (item)
+    {
+        switch (kind)
+        {
+        case CLIPBOARD_CONTENT_TEXT:
+            /* The item's value is this very string, which the release below
+             * would free: taken rather than copied. */
+            g_paste_clipboard_content_set_text_take (update->cache, g_steal_pointer (&update->text));
+            break;
+        case CLIPBOARD_CONTENT_IMAGE:
+            g_paste_clipboard_content_set_image_checksum (update->cache, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)));
+            break;
+        case CLIPBOARD_CONTENT_FILE_LIST:
+            g_paste_clipboard_content_set_file_list (update->cache, update->file_list);
+            break;
+        case CLIPBOARD_CONTENT_COLOR:
+            g_paste_clipboard_content_set_color (update->cache, &update->rgba);
+            break;
+        case CLIPBOARD_CONTENT_NONE:
+        case CLIPBOARD_CONTENT_IGNORED:
+            g_assert_not_reached ();
+        }
+    }
 
     /* Everything this conclusion has of its own is done with before either call
      * below, both of which can end up back here: publishing drops the previous
@@ -663,14 +737,9 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     gpointer user_data = update->user_data;
     gboolean reselect = update->reselect;
 
-    /* The text read asked for the selection to be re-owned with what it stripped
-     * off. Done here rather than where that was decided, for two reasons: the
-     * reads that say what this text *is* are still running against the owner we
-     * would be replacing, and would come back empty; and what goes on the
-     * selection is then the item, so a password keeps the hint that says it is a
-     * secret -- which bare text cannot carry. Only a text read ever asks, and
-     * select_item () takes every text item there is, so there is no refusal to
-     * answer here: the one kind it can refuse is an image with no texture. */
+    /* Re-own trimmed text or a GDK image only after its reads are complete, so
+     * replacing the owner cannot abort the remaining MIME transfers. Publishing
+     * the item also preserves a password's sensitive hint and an image's texture. */
     if (reselect && item)
         g_paste_clipboard_provider_select_item (provider, item);
 
@@ -679,7 +748,7 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
      * backend's update () itself checks on every early return -- and what the
      * item holds can be a password's cleartext. */
     if (callback)
-        callback (provider, g_steal_pointer (&item), user_data);
+        callback (provider, g_steal_pointer (&item), FALSE, user_data);
 }
 
 /* The guard ran out: conclude the update with what did arrive. Why it concludes
@@ -690,33 +759,97 @@ g_paste_clipboard_update_timed_out (gpointer user_data)
 {
     GPasteClipboardUpdate *update = user_data;
 
-    g_debug ("%s: giving up on a clipboard read that never came back",
-             g_paste_clipboard_provider_target_name (g_paste_clipboard_provider_is_clipboard (update->provider)));
+    g_debug ("%s: %s",
+             g_paste_clipboard_provider_target_name (g_paste_clipboard_provider_is_clipboard (update->provider)),
+             (update->superseded) ? "concluding a clipboard read its selection has moved on from"
+                                  : "giving up on a clipboard read that never came back");
     g_paste_clipboard_update_conclude (update);
+}
+
+/**
+ * g_paste_clipboard_update_supersede:
+ * @slot: where the backend keeps the update in flight on this selection
+ *
+ * Give up on the update @slot holds, the selection it was reading having changed
+ * under it
+ *
+ * Every read it has left is now a read of content nothing holds, and letting it
+ * conclude would add the *older* copy to the history as the newest entry and
+ * hand the provider's cache a text its selection has replaced. Marked rather
+ * than concluded here, a conclusion calling back into the clipboards manager
+ * whose notify () this is running under: what is left of that update is a
+ * counter and a guard, and the guard's deadline -- brought forward to the next
+ * turn of the main loop -- answers for both there instead.
+ *
+ * Everything of any size goes now rather than at that update's own conclusion,
+ * which a read that never lands leaves a whole %G_PASTE_CLIPBOARD_READ_TIMEOUT
+ * away: a superseded texture is one nothing will ever be built from, and a
+ * superseded text can be a password's cleartext.
+ *
+ * Called for its own sake by the paths that answer a change without starting an
+ * update -- a selection released, an owner offering only types this build does
+ * not handle -- since what makes the update in flight stale is the change, not
+ * the one replacing it: those answer their caller and return, and the update
+ * they leave behind would otherwise land as if its selection still stood.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_supersede (GPasteClipboardUpdate **slot)
+{
+    g_return_if_fail (slot);
+
+    if (!*slot)
+        return;
+
+    GPasteClipboardUpdate *previous = g_steal_pointer (slot);
+
+    previous->superseded = TRUE;
+    g_paste_clipboard_update_release_content (previous);
+
+    /* And concluded on the next turn of the main loop rather than at its own
+     * deadline: the callers that supersede without starting a successor leave
+     * nothing else to bound it, so a conclusion %G_PASTE_CLIPBOARD_READ_TIMEOUT
+     * away is one reaching the clipboards manager with an update that says
+     * nothing, against a cache that has moved on twice over -- while holding the
+     * provider, and on X11 the requestor window behind it, for that whole while.
+     * Soon and not here for the reason above: a conclusion calls back into the
+     * notify () this is running under. */
+    g_paste_clipboard_read_guard_expire_soon (&previous->guard);
 }
 
 /**
  * g_paste_clipboard_update_new:
  * @provider: the #GPasteClipboardProvider being read
  * @content_kind: the kind the content read is for
+ * @slot: where the backend keeps the update in flight on this selection
+ * @cache: the provider's committed content, written only when this update completes
  * @callback: (scope async) (nullable): who to hand the item to
  * @user_data: what to hand it with
  *
- * Start an update, guard armed and one read outstanding
+ * Start an update, guard armed and one read outstanding, giving up on the one it
+ * overtakes
  *
  * The one read is the caller's own: a backend fires its reads and then counts
  * itself out with g_paste_clipboard_update_maybe_done(), so an update whose
  * reads all answered synchronously still concludes exactly once.
+ *
+ * Whatever @slot held is superseded (g_paste_clipboard_update_supersede ()),
+ * this being one of the changes that leave it reading a selection nothing holds.
  *
  * Returns: (transfer full): the newly allocated #GPasteClipboardUpdate
  */
 G_PASTE_VISIBLE GPasteClipboardUpdate *
 g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
                               GPasteClipboardContentKind            content_kind,
+                              GPasteClipboardUpdate               **slot,
+                              GPasteClipboardContent               *cache,
                               GPasteClipboardProviderUpdateCallback callback,
                               gpointer                              user_data)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (provider), NULL);
+    g_return_val_if_fail (slot, NULL);
+    g_return_val_if_fail (cache, NULL);
+
+    g_paste_clipboard_update_supersede (slot);
 
     GPasteClipboardUpdate *update = g_new0 (GPasteClipboardUpdate, 1);
 
@@ -728,6 +861,10 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
     update->user_data = user_data;
     update->pending = 1;
     update->content_kind = content_kind;
+    update->slot = slot;
+    update->cache = cache;
+
+    *slot = update;
 
     g_paste_clipboard_read_guard_arm (&update->guard, g_paste_clipboard_update_timed_out, update);
 
@@ -741,24 +878,24 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
  * Returns: whether @update has already moved on without the read asking
  *
  * What a read landing asks before it touches anything but the counter. Nothing
- * is waiting for it any more: the batch it counted into was concluded, so what
- * it brings back can only reach the provider's cache -- where it would dedup,
- * out of every later update, the very content that never made it to the history.
+ * is waiting for it either way, and what it brings back can only reach the
+ * provider's cache -- where it would name content that selection no longer
+ * holds, and dedup that very content out of every later update.
  *
- * Asked of the update and of nothing else. The guard's cancellable cannot
- * answer it: a conclusion disarms the guard and takes the provider over, and
- * only then cancels -- the cancellation being what runs the handlers that could
- * free the very update being concluded (see
- * g_paste_clipboard_read_guard_timed_out ()) -- so cancelled says nothing
- * @concluded has not already said, and says it a read too late for the window
- * in between.
+ * Asked of the update and not of the guard's cancellable, which answers a moment
+ * too late for one half of this and never for the other: a conclusion disarms
+ * the guard and takes the provider over, and only then cancels -- the
+ * cancellation being what runs the handlers that could free the very update
+ * being concluded (see g_paste_clipboard_read_guard_timed_out ()) -- while an
+ * update overtaken by the next one is not cancelled at all, its reads being what
+ * still has to count it out.
  */
 G_PASTE_VISIBLE gboolean
 g_paste_clipboard_update_is_expired (const GPasteClipboardUpdate *update)
 {
     g_return_val_if_fail (update, TRUE);
 
-    return update->concluded;
+    return update->concluded || update->superseded;
 }
 
 /**

@@ -17,6 +17,8 @@ G_DECLARE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_PAST
  * @self: the #GPasteClipboardProvider whose content was read
  * @item: (transfer full) (nullable): the newly created #GPasteItem, or %NULL
  *        when the content is unchanged, unrecognised or the selection is empty
+ * @superseded: whether another selection change overtook this read; @item is
+ *              %NULL and the callback must only release its state in that case
  * @user_data: the data passed to g_paste_clipboard_provider_update()
  *
  * Receives the outcome of a g_paste_clipboard_provider_update(). The callback
@@ -25,6 +27,7 @@ G_DECLARE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_PAST
  */
 typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *self,
                                                        GPasteItem              *item,
+                                                       gboolean                 superseded,
                                                        gpointer                 user_data);
 
 /**
@@ -40,6 +43,11 @@ typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *
  * (running against an X11/XWayland display) or on top of mutter's MetaSelection
  * (running inside gnome-shell), but the clipboards manager talks to all of them
  * through this single contract.
+ *
+ * Every vfunc is required, including is_reading: an asynchronous provider must
+ * hide its committed cache until classification finishes. A default FALSE
+ * would mistake stale password text for the current owner. Providers must be
+ * rebuilt for the 51.0 API/ABI, including the superseded callback argument.
  */
 struct _GPasteClipboardProviderInterface
 {
@@ -48,6 +56,7 @@ struct _GPasteClipboardProviderInterface
     gboolean     (*is_clipboard)       (GPasteClipboardProvider *self);
     const gchar *(*get_text)           (GPasteClipboardProvider *self);
     const gchar *(*get_image_checksum) (GPasteClipboardProvider *self);
+    gboolean     (*is_reading)         (GPasteClipboardProvider *self);
     gboolean     (*is_empty)           (GPasteClipboardProvider *self);
     void         (*update)             (GPasteClipboardProvider              *self,
                                         GPasteClipboardProviderUpdateCallback callback,
@@ -83,6 +92,11 @@ struct _GPasteClipboardProviderInterface
     provider_get_image_checksum (GPasteClipboardProvider *self)                                            \
     {                                                                                                      \
         return g_paste_clipboard_##lc##_get_image_checksum (G_PASTE_CLIPBOARD_##UC ((gpointer) self));     \
+    }                                                                                                      \
+    static gboolean                                                                                        \
+    provider_is_reading (GPasteClipboardProvider *self)                                                      \
+    {                                                                                                      \
+        return g_paste_clipboard_##lc##_is_reading (G_PASTE_CLIPBOARD_##UC ((gpointer) self));               \
     }                                                                                                      \
     static gboolean                                                                                        \
     provider_is_empty (GPasteClipboardProvider *self)                                                      \
@@ -126,6 +140,7 @@ struct _GPasteClipboardProviderInterface
         iface->is_clipboard = provider_is_clipboard;                                                       \
         iface->get_text = provider_get_text;                                                               \
         iface->get_image_checksum = provider_get_image_checksum;                                           \
+        iface->is_reading = provider_is_reading;                                                           \
         iface->is_empty = provider_is_empty;                                                               \
         iface->update = provider_update;                                                                   \
         iface->select_text = provider_select_text;                                                         \
@@ -137,6 +152,7 @@ struct _GPasteClipboardProviderInterface
 gboolean      g_paste_clipboard_provider_is_clipboard       (GPasteClipboardProvider *self);
 const gchar  *g_paste_clipboard_provider_get_text           (GPasteClipboardProvider *self);
 const gchar  *g_paste_clipboard_provider_get_image_checksum (GPasteClipboardProvider *self);
+gboolean      g_paste_clipboard_provider_is_reading         (GPasteClipboardProvider *self);
 gboolean      g_paste_clipboard_provider_is_empty           (GPasteClipboardProvider *self);
 void          g_paste_clipboard_provider_update             (GPasteClipboardProvider              *self,
                                                              GPasteClipboardProviderUpdateCallback callback,

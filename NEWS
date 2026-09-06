@@ -1,6 +1,7 @@
 NEW in 51.0 (UNRELEASED)
 =============
 
+- API: clipboard providers require is_reading and the update callback's superseded argument; provider implementations must be rebuilt. The internal g_paste_clipboard_update_new() also takes the active-update slot and content cache
 - Lay the GNOME Shell menu's rows out like the graphical tool's: the preview leads the row, pin and delete follow the text and show up when the pointer or the keyboard reaches it, and a pinned row keeps its star as a badge
 - Add a password straight from the graphical tool: the New button in its header is now a split button whose menu offers a New Password composer, with the password itself hidden as it is typed and rated as the encryption passphrase is
 - API: every asynchronous GPasteClient method takes a GCancellable, so a caller can abandon a call still in flight -- a thumbnail read for a row that has scrolled away, a search the next keystroke has replaced -- rather than only discard its answer once it lands. The synchronous methods keep their shape
@@ -11,6 +12,7 @@ NEW in 51.0 (UNRELEASED)
 - Add a master switch that turns every global keyboard shortcut off, from the Keyboard Shortcuts preferences: GPaste then takes no global grab at all, and the shortcuts window says so while still listing the chords (#501)
 - Give the pastebin upload a deadline: an "upload-command" that never exits used to hold the request, the process it spawned and the item being uploaded -- a password's cleartext included -- for as long as the daemon lived, where it is now killed after nine minutes and reported as the timeout it is
 - Fix the graphical tool and the GNOME Shell menu fetching image previews for rows that have already scrolled away: a row's reads are now abandoned when it is rebound, so scrolling a history full of images no longer queues a transfer per row it went past
+- Fix two copies made in quick succession landing in the wrong order: the reads they fire run against their own owners and answer at their own pace, so a slow first owner had its text added to the history above the second one's, put back on the selection if it had been trimmed, and left in the record of what that selection carries -- from where every later copy of it was deduped away and a synchronisation republished it
 - Fix the global shortcuts under the portal: an edited accelerator never reached it, Super went out under a name it doesn't know, a dismissed permission dialog was reported as a successful bind, and a session closed by the compositor left them bound to nothing with nothing to ask for another
 - Fix an SQLite history whose read stopped short, on a corrupt page, an I/O error or a row this build could make nothing of, being installed as a complete history, which had the next clipboard change write that truncation back over the rows still in the store
 - Build: require GTK 4.23.4, for a string serializer that closes its own converter stream: below it, serving a large text off the clipboard can hang the daemon against its own main loop

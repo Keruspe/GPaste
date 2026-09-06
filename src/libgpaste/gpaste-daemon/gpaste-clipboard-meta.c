@@ -54,6 +54,10 @@ struct _GPasteClipboardMeta
     gulong                 owner_changed_id;
 
     GPasteClipboardContent content;
+
+    /* The update in flight on this selection, cleared when it concludes: see
+     * @slot on #GPasteClipboardUpdate. */
+    GPasteClipboardUpdate *update;
 };
 
 static void g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface);
@@ -67,16 +71,22 @@ g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
     return self->is_clipboard;
 }
 
+static gboolean
+g_paste_clipboard_meta_is_reading (GPasteClipboardMeta *self)
+{
+    return self->update != NULL;
+}
+
 static const gchar *
 g_paste_clipboard_meta_get_text (GPasteClipboardMeta *self)
 {
-    return g_paste_clipboard_content_get_text (&self->content);
+    return (self->update) ? NULL : g_paste_clipboard_content_get_text (&self->content);
 }
 
 static const gchar *
 g_paste_clipboard_meta_get_image_checksum (GPasteClipboardMeta *self)
 {
-    return g_paste_clipboard_content_get_image_checksum (&self->content);
+    return (self->update) ? NULL : g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
 /* --- mimetype helpers --- */
@@ -454,6 +464,8 @@ static void
 g_paste_clipboard_meta_publish_source (GPasteClipboardMeta       *self,
                                        GPasteClipboardMetaSource *source)
 {
+    g_paste_clipboard_update_supersede (&self->update);
+
     /* Keep our own ref so we can recognise the resulting owner-change as ours. */
     g_set_object (&self->owned_source, META_SELECTION_SOURCE (source));
     meta_selection_set_owner (self->selection, self->type, META_SELECTION_SOURCE (source));
@@ -469,16 +481,6 @@ g_paste_clipboard_meta_private_set_text (GPasteClipboardMeta *self,
     g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     g_paste_clipboard_content_set_text (&self->content, text);
-}
-
-/* Same, for the callers that already own the string they hand over. */
-static void
-g_paste_clipboard_meta_private_set_text_take (GPasteClipboardMeta *self,
-                                              gchar               *text)
-{
-    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
-
-    g_paste_clipboard_content_set_text_take (&self->content, text);
 }
 
 static void
@@ -638,7 +640,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 static gboolean
 g_paste_clipboard_meta_is_empty (GPasteClipboardMeta *self)
 {
-    return g_paste_clipboard_content_is_empty (&self->content);
+    return !self->update && g_paste_clipboard_content_is_empty (&self->content);
 }
 
 /* --- update --- */
@@ -684,10 +686,8 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
         break;
     }
 
-    g_paste_clipboard_meta_private_set_text_take (self, g_steal_pointer (&value));
-
     update->produced = TRUE;
-    g_set_str (&update->text, self->content.str);
+    g_set_str_take (&update->text, g_steal_pointer (&value));
     g_paste_clipboard_update_maybe_done (update);
 }
 
@@ -752,8 +752,6 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         if (self->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, self->content.str))
             break;
 
-        g_paste_clipboard_content_set_image_checksum_take (&self->content, g_steal_pointer (&checksum));
-
         update->produced = TRUE;
         update->texture = g_steal_pointer (&texture);
         break;
@@ -764,8 +762,6 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         if (!rgba || (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba)))
             break;
-
-        g_paste_clipboard_content_set_color (&self->content, rgba);
 
         update->produced = TRUE;
         update->rgba = *rgba;
@@ -784,8 +780,6 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
          * GDK backend's read-path g_paste_clipboard_file_list_equal guard. */
         if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&self->content), file_list))
             break;
-
-        g_paste_clipboard_content_set_file_list (&self->content, file_list);
 
         update->produced = TRUE;
         update->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
@@ -911,27 +905,36 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     else if (!mimetypes)
     {
         /* The selection was released: clear our cache so callers see an
-         * empty clipboard and act accordingly (e.g. ensure_not_empty). */
+         * empty clipboard and act accordingly (e.g. ensure_not_empty).
+         *
+         * Superseded here and not only where an update is started: what makes
+         * the one in flight stale is this change, whether or not it has an
+         * update of its own to be replaced by. */
+        g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
         return;
     }
     else
     {
         /* The owner only provides types we don't handle (e.g. an image
          * while images-support is disabled). Don't track it, but flag the
-         * clipboard as non-empty so ensure_not_empty doesn't override it. */
+         * clipboard as non-empty so ensure_not_empty doesn't override it --
+         * and give up on the update the previous owner was being read for. */
         g_list_free_full (mimetypes, g_free);
+        g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         self->content.kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
         return;
     }
 
     GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
                                                                   content_kind,
+                                                                  &self->update,
+                                                                  &self->content,
                                                                   callback,
                                                                   user_data);
 
@@ -942,9 +945,18 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         g_list_free_full (mimetypes, g_free);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
         return;
     }
+
+    /* What the content read is fired with, whatever its kind, and never
+     * content_mime itself: that one aliases the mimetypes list freed below,
+     * while the transfer reads the string after the call returns. The update
+     * holds this copy until every read it fired has reported, which is what
+     * makes it outlive them (g_paste_clipboard_update_maybe_done ()) -- and the
+     * value reads need it a second time anyway, for the deserialisation once the
+     * bytes have arrived. */
+    update->mime = g_strdup (content_mime);
 
     /* Counted in beside the read it counts, never before the switch: an arm that
      * fires nothing would leave the update pending on a read that does not
@@ -954,16 +966,12 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     case CLIPBOARD_CONTENT_FILE_LIST:
     case CLIPBOARD_CONTENT_COLOR:
     case CLIPBOARD_CONTENT_IMAGE:
-        /* Kept for the deferred deserialisation once the bytes have arrived. Pass
-         * this owned copy (not content_mime, which aliases the mimetypes list freed
-         * below) to the async transfer, since it reads the string after we return. */
-        update->mime = g_strdup (content_mime);
         g_paste_clipboard_update_add_read (update);
         g_paste_clipboard_meta_read_mime (self, update->mime, update->guard.cancellable, g_paste_clipboard_meta_update_on_value, update);
         break;
     case CLIPBOARD_CONTENT_TEXT:
         g_paste_clipboard_update_add_read (update);
-        g_paste_clipboard_meta_read_mime (self, content_mime, update->guard.cancellable, g_paste_clipboard_meta_update_on_text, update);
+        g_paste_clipboard_meta_read_mime (self, update->mime, update->guard.cancellable, g_paste_clipboard_meta_update_on_text, update);
         break;
     case CLIPBOARD_CONTENT_IGNORED:
     case CLIPBOARD_CONTENT_NONE:

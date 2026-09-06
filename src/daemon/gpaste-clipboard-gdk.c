@@ -30,6 +30,10 @@ struct _GPasteClipboardGdk
 
     GPasteClipboardContent content;
 
+    /* The update in flight on this selection, cleared when it concludes: see
+     * @slot on #GPasteClipboardUpdate. */
+    GPasteClipboardUpdate *update;
+
     gulong                 c_signals[C_LAST_SIGNAL];
 };
 
@@ -56,10 +60,16 @@ g_paste_clipboard_gdk_is_clipboard (GPasteClipboardGdk *self)
     return self->is_clipboard;
 }
 
+static gboolean
+g_paste_clipboard_gdk_is_reading (GPasteClipboardGdk *self)
+{
+    return self->update != NULL;
+}
+
 static const gchar *
 g_paste_clipboard_gdk_get_text (GPasteClipboardGdk *self)
 {
-    return g_paste_clipboard_content_get_text (&self->content);
+    return (self->update) ? NULL : g_paste_clipboard_content_get_text (&self->content);
 }
 
 static void
@@ -69,16 +79,6 @@ g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdk *self,
     g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     g_paste_clipboard_content_set_text (&self->content, text);
-}
-
-/* Same, for the callers that already own the string they hand over. */
-static void
-g_paste_clipboard_gdk_private_set_text_take (GPasteClipboardGdk *self,
-                                             gchar              *text)
-{
-    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (self->is_clipboard));
-
-    g_paste_clipboard_content_set_text_take (&self->content, text);
 }
 
 typedef struct
@@ -137,10 +137,8 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
         break;
     }
 
-    g_paste_clipboard_gdk_private_set_text_take (self, g_steal_pointer (&value));
-
     if (data->callback)
-        data->callback (self, self->content.str, reselect, data->update);
+        data->callback (self, value, reselect, data->update);
 }
 
 static void
@@ -169,6 +167,8 @@ g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
                                    const gchar        *text)
 {
     g_debug ("%s: select text", g_paste_clipboard_provider_target_name (self->is_clipboard));
+
+    g_paste_clipboard_update_supersede (&self->update);
 
     /* Avoid cycling twice as setting the content will make the clipboards manager react */
     g_paste_clipboard_gdk_private_set_text (self, text);
@@ -234,7 +234,7 @@ g_paste_clipboard_gdk_store (GPasteClipboardGdk *self)
 static const gchar *
 g_paste_clipboard_gdk_get_image_checksum (GPasteClipboardGdk *self)
 {
-    return g_paste_clipboard_content_get_image_checksum (&self->content);
+    return (self->update) ? NULL : g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
 static void
@@ -268,6 +268,8 @@ g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *self,
                                               const gchar        *checksum)
 {
     g_return_if_fail (GDK_IS_TEXTURE (texture));
+
+    g_paste_clipboard_update_supersede (&self->update);
 
     g_debug ("%s: select image", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
@@ -319,7 +321,7 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     }
     else
     {
-        g_paste_clipboard_gdk_private_select_texture (self, texture, checksum);
+        data->update->reselect = TRUE;
         result = texture;  /* borrowed from the g_autoptr above */
     }
 
@@ -400,10 +402,8 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
         return;
     }
 
-    g_paste_clipboard_gdk_private_set_color (self, rgba);
-
     if (data->callback)
-        data->callback (self, &self->content.rgba, data->update);
+        data->callback (self, rgba, data->update);
 }
 
 static void
@@ -600,8 +600,6 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
         return;
     }
 
-    g_paste_clipboard_gdk_private_set_file_list (self, file_list);
-
     update->produced = TRUE;
     update->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
 
@@ -717,26 +715,35 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     else if (gdk_content_formats_is_empty (formats))
     {
         /* The selection was released: clear our cache so callers see an
-         * empty clipboard and act accordingly (e.g. ensure_not_empty). */
+         * empty clipboard and act accordingly (e.g. ensure_not_empty).
+         *
+         * Superseded here and not only where an update is started: what makes
+         * the one in flight stale is this change, whether or not it has an
+         * update of its own to be replaced by. */
+        g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
         return;
     }
     else
     {
         /* The owner only provides types we don't handle (e.g. an image
          * while images-support is disabled). Don't track it, but flag the
-         * clipboard as non-empty so ensure_not_empty doesn't override it. */
+         * clipboard as non-empty so ensure_not_empty doesn't override it --
+         * and give up on the update the previous owner was being read for. */
+        g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         self->content.kind = CLIPBOARD_CONTENT_IGNORED;
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
         return;
     }
 
     GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
                                                                   content_kind,
+                                                                  &self->update,
+                                                                  &self->content,
                                                                   callback,
                                                                   user_data);
 
@@ -746,7 +753,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     if (!update)
     {
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, user_data);
         return;
     }
 
@@ -815,6 +822,8 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
         return TRUE;
     }
 
+    g_paste_clipboard_update_supersede (&self->update);
+
     if (G_PASTE_IS_COLOR_ITEM (item))
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
@@ -868,7 +877,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 static gboolean
 g_paste_clipboard_gdk_is_empty (GPasteClipboardGdk *self)
 {
-    return g_paste_clipboard_content_is_empty (&self->content);
+    return !self->update && g_paste_clipboard_content_is_empty (&self->content);
 }
 
 static void

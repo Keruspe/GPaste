@@ -217,6 +217,25 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
  * mimetype the content is being read under, for a backend that reads by
  * mimetype rather than by type -- %NULL for one that does not.
  *
+ * @superseded says the selection moved on while this update was reading it, so
+ * what the reads still out would bring back describes content nothing holds any
+ * more: the conclusion builds no item and publishes nothing. Kept apart from
+ * @concluded rather than folded into it because the two say opposite things
+ * about what is still owed -- a superseded update has yet to call its callback,
+ * and that callback is what releases whatever the caller put behind it.
+ *
+ * @slot is where the backend keeps its pointer to the update in flight on this
+ * selection, cleared at the conclusion: one goes out per
+ * #GPasteClipboardProvider::changed and nothing in the reads orders two of them,
+ * which conclude as their owners answer rather than as they were asked. This is
+ * what supplies that order, and the only thing that can tell an update it has
+ * been overtaken. g_paste_clipboard_update_new () supersedes what it finds
+ * there, so an update that starts one never has to remember to; what a backend
+ * does owe is the same call on the changes it answers *without* starting one.
+ * @cache belongs to that provider and holds the last completed content for
+ * deduplication. Reads fill this update alone; only its conclusion writes the
+ * cache, so abandoning a read cannot suppress a subsequent copy of its value.
+ *
  * @content_kind, @produced and the union are what the content read came back
  * with, owned rather than borrowed from the provider's cache: the reads still
  * running leave every route that publishes content free to overwrite that cache
@@ -227,9 +246,11 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
  * one -- reading or freeing another reinterprets unrelated bytes (a string
  * pointer as a GdkFileList *, an RGBA's floats as a pointer, ...). @produced says
  * the read landed with something, a colour having no value that stands for none.
- * @reselect is a text read asking for the selection to be re-taken with what it
- * stripped off. */
-typedef struct
+ * @reselect asks for the selection to be re-owned after all reads complete:
+ * trimmed text needs its normalized value published, and GDK retains images. */
+typedef struct _GPasteClipboardUpdate GPasteClipboardUpdate;
+
+struct _GPasteClipboardUpdate
 {
     GPasteClipboardProvider              *provider;
     GPasteClipboardProviderUpdateCallback callback;
@@ -238,6 +259,9 @@ typedef struct
     GPasteClipboardReadGuard              guard;
     gint                                  pending;
     gboolean                              concluded;
+    gboolean                              superseded;
+    GPasteClipboardUpdate               **slot;
+    GPasteClipboardContent               *cache;
     gchar                                *mime;
 
     GPasteClipboardContentKind            content_kind;
@@ -250,10 +274,13 @@ typedef struct
     };
     gboolean                              reselect;
     GPasteClipboardMimeResults            mimes;
-} GPasteClipboardUpdate;
+};
 
+void                    g_paste_clipboard_update_supersede     (GPasteClipboardUpdate               **slot);
 GPasteClipboardUpdate  *g_paste_clipboard_update_new           (GPasteClipboardProvider              *provider,
                                                                 GPasteClipboardContentKind            content_kind,
+                                                                GPasteClipboardUpdate               **slot,
+                                                                GPasteClipboardContent               *cache,
                                                                 GPasteClipboardProviderUpdateCallback callback,
                                                                 gpointer                              user_data);
 void                    g_paste_clipboard_update_add_read      (GPasteClipboardUpdate                *update);

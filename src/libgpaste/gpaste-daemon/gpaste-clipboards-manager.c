@@ -10,6 +10,7 @@ typedef struct
     GPasteClipboardsManager *manager;
     GPasteClipboardProvider *clipboard;
     GSignalGroup            *signal_group;
+    GSList                  *pending_refreshes;
 
     /* The countdown a password reaching this selection arms, and the item it was
      * armed for -- ref'd, since it may leave the history while still sitting
@@ -38,6 +39,7 @@ struct _GPasteClipboardsManager
 
 G_PASTE_DEFINE_TYPE (ClipboardsManager, clipboards_manager, G_TYPE_OBJECT)
 
+static gboolean g_paste_clipboards_manager_selection_holds (GPasteClipboardProvider *clipboard, GPasteItem *item);
 static void g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard, gpointer user_data);
 static void g_paste_clipboards_manager_on_password_timeout (gpointer user_data);
 static void g_paste_clipboards_manager_ensure_not_empty (_Clipboard *clip);
@@ -76,9 +78,34 @@ g_paste_clipboards_manager_update_data_new (_Clipboard *clip,
     return data;
 }
 
+/* A strip can arrive before the selection's text is known. Only publish the
+ * requested snapshot while it is still the history's item, and substitute it
+ * for the read's item so that stale formats cannot enter the history again. */
+static void
+g_paste_clipboards_manager_finish_refresh (_Clipboard  *clip,
+                                           GPasteItem **item)
+{
+    g_autoslist (GPasteItem) pending = g_steal_pointer (&clip->pending_refreshes);
+
+    for (GSList *l = pending; l; l = l->next)
+    {
+        GPasteItem *plain = l->data;
+
+        if (g_paste_history_get_by_uuid (clip->manager->history, g_paste_item_get_uuid (plain)) == plain &&
+            g_paste_clipboards_manager_selection_holds (clip->clipboard, plain))
+        {
+            g_paste_clipboard_provider_select_item (clip->clipboard, plain);
+            if (*item)
+                g_set_object (item, plain);
+            break;
+        }
+    }
+}
+
 static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard G_GNUC_UNUSED,
                                             GPasteItem              *item,
+                                            gboolean                 superseded,
                                             gpointer                 user_data)
 {
     g_autoptr (GPasteClipboardsManagerUpdateData) data = user_data;
@@ -87,11 +114,12 @@ g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard G
      * was already in it is read and dropped rather than pushed to the history. */
     g_autoptr (GPasteItem) bootstrapped = item;
 
-    /* Disposed while the read was in flight: the history a selection would be
-     * filled from is already gone. */
-    if (!data->manager->history)
+    /* Superseded reads must not restore a selection their successor is still
+     * reading. A disposed manager has no history to restore from either. */
+    if (superseded || !data->manager->history)
         return;
 
+    g_paste_clipboards_manager_finish_refresh (data->clip, &bootstrapped);
     g_paste_clipboards_manager_ensure_not_empty (data->clip);
 }
 
@@ -193,6 +221,7 @@ g_paste_clipboards_manager_notify_finish (_Clipboard  *clip,
 static void
 g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
                                          GPasteItem              *item,
+                                         gboolean                 superseded,
                                          gpointer                 user_data)
 {
     g_autoptr (GPasteClipboardsManagerUpdateData) data = user_data;
@@ -200,14 +229,15 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
 
     g_debug ("clipboards-manager: update ready");
 
-    /* Disposed while the read was in flight: there is no history left to add to
-     * and no settings left to ask, and the item we were handed is ours to
-     * release. */
-    if (!data->manager->history)
+    /* As in bootstrap_ready (): an abandoned read owes cleanup alone, even
+     * when the cache its successor is filling still says the selection is empty. */
+    if (superseded || !data->manager->history)
     {
         g_clear_object (&item);
         return;
     }
+
+    g_paste_clipboards_manager_finish_refresh (clip, &item);
 
     const gchar *synchronized_text = NULL;
 
@@ -490,7 +520,11 @@ g_paste_clipboards_manager_refresh_text (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = clipboard->data;
 
-        if (g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
+        /* A hidden cache can be a pending read; its callback checks whether
+         * the selection matches before publishing this snapshot. */
+        if (g_paste_clipboard_provider_is_reading (clip->clipboard))
+            clip->pending_refreshes = g_slist_prepend (clip->pending_refreshes, g_object_ref (item));
+        else if (g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
             g_paste_clipboard_provider_select_item (clip->clipboard, item);
     }
 }
@@ -525,6 +559,8 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
             selected = FALSE;
             break;
         }
+
+        g_clear_slist (&clip->pending_refreshes, g_object_unref);
 
         /* Armed where the item reaching a selection is known rather than after
          * the loop: a provider that refuses it never took it, and the ones that
@@ -574,6 +610,7 @@ _clipboard_free (gpointer data)
 
     g_clear_handle_id (&clip->password_timeout_id, g_source_remove);
     g_clear_object (&clip->password);
+    g_clear_slist (&clip->pending_refreshes, g_object_unref);
     g_clear_object (&clip->signal_group);
     g_object_unref (clip->clipboard);
     g_free (clip);
@@ -588,6 +625,14 @@ g_paste_clipboards_manager_dispose (GObject *object)
      * providers, and there is no point leaving a password on a selection nothing
      * will be watching. */
     g_paste_clipboards_manager_expire_password (self);
+
+    for (GSList *l = self->clipboards; l; l = l->next)
+    {
+        _Clipboard *clip = l->data;
+
+        g_clear_slist (&clip->pending_refreshes, g_object_unref);
+        g_clear_object (&clip->signal_group);
+    }
 
     g_clear_object (&self->history_signals);
     g_clear_object (&self->history);
