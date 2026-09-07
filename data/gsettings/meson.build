@@ -6,4 +6,4 @@ install_data(
 )
 
 # Compile the schema into the build tree so the test suite can find it without an install.
-gnome.compile_schemas(depend_files: files(schema))
+gpaste_schemas = gnome.compile_schemas(depend_files: files(schema))

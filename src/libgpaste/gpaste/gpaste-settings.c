@@ -899,6 +899,7 @@ g_paste_settings_rebind (GPasteSettings *self,
     g_signal_emit (self,
                    signals[REBIND],
                    g_quark_from_string (key),
+                   key,
                    NULL);
 }
 

@@ -35,6 +35,10 @@ Run tests from the build directory:
 ninja test
 ```
 
+`test-settings` uses the memory GSettings backend and isolated configuration
+directories to check ordinary and detailed `rebind` signal key arguments and
+detail filtering, without reading or writing user preferences.
+
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests
 while a reply is pending, disabling shortcuts before a grab completes, and a shell
