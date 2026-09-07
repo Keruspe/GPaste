@@ -65,9 +65,10 @@ void g_paste_clipboard_content_set_file_list           (GPasteClipboardContent *
  * g_paste_clipboard_content_classify_text() from the trim/size/dedup policy. */
 typedef enum
 {
-    G_PASTE_CLIPBOARD_TEXT_REJECT,   /* too short/long, or unchanged: drop it */
-    G_PASTE_CLIPBOARD_TEXT_SET,      /* cache @out_value as the new text */
-    G_PASTE_CLIPBOARD_TEXT_RESELECT, /* re-own the selection with the stripped @out_value */
+    G_PASTE_CLIPBOARD_TEXT_REJECT,    /* too short/long: drop it */
+    G_PASTE_CLIPBOARD_TEXT_UNCHANGED, /* exact match: retain the committed cache */
+    G_PASTE_CLIPBOARD_TEXT_SET,       /* cache @out_value as the new text */
+    G_PASTE_CLIPBOARD_TEXT_RESELECT,  /* re-own the selection with the stripped @out_value */
 } GPasteClipboardTextAction;
 
 GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
@@ -246,6 +247,8 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteClipboardContentKind kind,
  * one -- reading or freeing another reinterprets unrelated bytes (a string
  * pointer as a GdkFileList *, an RGBA's floats as a pointer, ...). @produced says
  * the read landed with something, a colour having no value that stands for none.
+ * @unchanged confirms an exact match with the cache. A read producing no item
+ * without this confirmation leaves the selection unidentified, not empty.
  * @reselect asks for the selection to be re-owned after all reads complete:
  * trimmed text needs its normalized value published, and GDK retains images. */
 typedef struct _GPasteClipboardUpdate GPasteClipboardUpdate;
@@ -266,6 +269,7 @@ struct _GPasteClipboardUpdate
 
     GPasteClipboardContentKind            content_kind;
     gboolean                              produced;
+    gboolean                              unchanged;
     union {
         gchar       *text;
         GdkTexture  *texture;

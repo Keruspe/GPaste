@@ -69,7 +69,7 @@ g_paste_clipboard_gdk_is_reading (GPasteClipboardGdk *self)
 static const gchar *
 g_paste_clipboard_gdk_get_text (GPasteClipboardGdk *self)
 {
-    return (self->update) ? NULL : g_paste_clipboard_content_get_text (&self->content);
+    return g_paste_clipboard_content_get_text (&self->content);
 }
 
 static void
@@ -98,13 +98,8 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
-    /* Nothing is waiting for this one any more: the update that fired it was
-     * concluded by its guard, so what the read brings back can only reach the
-     * provider's cache -- where it would dedup, out of every later update, the
-     * very text that never made it to the history. Cancelling cannot fail these
-     * reads (see update ()), and the cancel is not even what says the deadline
-     * is past: a conclusion asks for it last, so the update itself is the only
-     * thing that answers for the window in between (see update_is_expired ()). */
+    /* Superseded and timed-out updates only count the reply out: see
+     * g_paste_clipboard_update_is_expired (). */
     if (g_paste_clipboard_update_is_expired (data->update))
     {
         if (data->callback)
@@ -126,6 +121,9 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
 
     switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
     {
+    case G_PASTE_CLIPBOARD_TEXT_UNCHANGED:
+        data->update->unchanged = TRUE;
+        G_GNUC_FALLTHROUGH;
     case G_PASTE_CLIPBOARD_TEXT_REJECT:
         if (data->callback)
             data->callback (self, NULL, FALSE, data->update);
@@ -234,7 +232,7 @@ g_paste_clipboard_gdk_store (GPasteClipboardGdk *self)
 static const gchar *
 g_paste_clipboard_gdk_get_image_checksum (GPasteClipboardGdk *self)
 {
-    return (self->update) ? NULL : g_paste_clipboard_content_get_image_checksum (&self->content);
+    return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
 static void
@@ -294,7 +292,7 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     g_autoptr (GdkTexture) texture = gdk_clipboard_read_texture_finish (GDK_CLIPBOARD (source_object), res, &error);
 
-    /* Past the deadline, the cache is the only place this could reach: see
+    /* Superseded or timed out, the cache is the only place this could reach: see
      * on_text_ready (). */
     if (g_paste_clipboard_update_is_expired (data->update))
     {
@@ -316,9 +314,7 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     GdkTexture *result = NULL;
 
     if (self->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, self->content.str))
-    {
-        /* Same image, nothing to do */
-    }
+        data->update->unchanged = TRUE;
     else
     {
         data->update->reselect = TRUE;
@@ -368,7 +364,7 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     const GValue *value = gdk_clipboard_read_value_finish (GDK_CLIPBOARD (source_object), res, &error);
 
-    /* Past the deadline, the cache is the only place this could reach: see
+    /* Superseded or timed out, the cache is the only place this could reach: see
      * on_text_ready (). */
     if (g_paste_clipboard_update_is_expired (data->update))
     {
@@ -397,6 +393,7 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
 
     if (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba))
     {
+        data->update->unchanged = TRUE;
         if (data->callback)
             data->callback (self, NULL, data->update);
         return;
@@ -565,7 +562,7 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
     g_autoptr (GError) error = NULL;
     const GValue *value = gdk_clipboard_read_value_finish (GDK_CLIPBOARD (source_object), res, &error);
 
-    /* Past the deadline, the cache is the only place this could reach: see
+    /* Superseded or timed out, the cache is the only place this could reach: see
      * on_text_ready (). Asked before the provider is read off @update, a
      * concluded one having handed it on. */
     if (g_paste_clipboard_update_is_expired (update))
@@ -596,6 +593,7 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
 
     if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&self->content), file_list))
     {
+        update->unchanged = TRUE;
         g_paste_clipboard_update_maybe_done (update);
         return;
     }
@@ -716,10 +714,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     {
         /* The selection was released: clear our cache so callers see an
          * empty clipboard and act accordingly (e.g. ensure_not_empty).
-         *
-         * Superseded here and not only where an update is started: what makes
-         * the one in flight stale is this change, whether or not it has an
-         * update of its own to be replaced by. */
+         * See g_paste_clipboard_update_supersede () for changes with no read. */
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
@@ -877,7 +872,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 static gboolean
 g_paste_clipboard_gdk_is_empty (GPasteClipboardGdk *self)
 {
-    return !self->update && g_paste_clipboard_content_is_empty (&self->content);
+    return g_paste_clipboard_content_is_empty (&self->content);
 }
 
 static void

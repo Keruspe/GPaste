@@ -80,13 +80,13 @@ g_paste_clipboard_meta_is_reading (GPasteClipboardMeta *self)
 static const gchar *
 g_paste_clipboard_meta_get_text (GPasteClipboardMeta *self)
 {
-    return (self->update) ? NULL : g_paste_clipboard_content_get_text (&self->content);
+    return g_paste_clipboard_content_get_text (&self->content);
 }
 
 static const gchar *
 g_paste_clipboard_meta_get_image_checksum (GPasteClipboardMeta *self)
 {
-    return (self->update) ? NULL : g_paste_clipboard_content_get_image_checksum (&self->content);
+    return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
 /* --- mimetype helpers --- */
@@ -466,7 +466,9 @@ g_paste_clipboard_meta_publish_source (GPasteClipboardMeta       *self,
 {
     g_paste_clipboard_update_supersede (&self->update);
 
-    /* Keep our own ref so we can recognise the resulting owner-change as ours. */
+    /* Mutter emits owner-changed synchronously; owned_source makes that
+     * notification a no-op here. Its set_owner does not cancel transfers;
+     * superseded read completion is deferred by the shared update helper. */
     g_set_object (&self->owned_source, META_SELECTION_SOURCE (source));
     meta_selection_set_owner (self->selection, self->type, META_SELECTION_SOURCE (source));
     g_object_unref (source);
@@ -640,7 +642,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 static gboolean
 g_paste_clipboard_meta_is_empty (GPasteClipboardMeta *self)
 {
-    return !self->update && g_paste_clipboard_content_is_empty (&self->content);
+    return g_paste_clipboard_content_is_empty (&self->content);
 }
 
 /* --- update --- */
@@ -676,6 +678,9 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
 
     switch (g_paste_clipboard_content_classify_text (&self->content, self->settings, self->is_clipboard, text, &value))
     {
+    case G_PASTE_CLIPBOARD_TEXT_UNCHANGED:
+        update->unchanged = TRUE;
+        G_GNUC_FALLTHROUGH;
     case G_PASTE_CLIPBOARD_TEXT_REJECT:
         g_paste_clipboard_update_maybe_done (update);
         return;
@@ -717,7 +722,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     g_auto (GValue) value = G_VALUE_INIT;
     g_autoptr (GError) error = NULL;
 
-    /* Past the deadline, the cache is the only place this could reach: see
+    /* Superseded or timed out, the cache is the only place this could reach: see
      * g_paste_clipboard_update_is_expired (). Asked before the provider is read
      * off @update, a concluded one having handed it on. */
     if (g_paste_clipboard_update_is_expired (update))
@@ -750,7 +755,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
 
         if (self->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, self->content.str))
+        {
+            update->unchanged = TRUE;
             break;
+        }
 
         update->produced = TRUE;
         update->texture = g_steal_pointer (&texture);
@@ -760,8 +768,14 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     {
         const GdkRGBA *rgba = g_value_get_boxed (&value);
 
-        if (!rgba || (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba)))
+        if (!rgba)
             break;
+
+        if (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba))
+        {
+            update->unchanged = TRUE;
+            break;
+        }
 
         update->produced = TRUE;
         update->rgba = *rgba;
@@ -779,7 +793,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         /* Re-asserting the same file selection must not re-add it, mirroring the
          * GDK backend's read-path g_paste_clipboard_file_list_equal guard. */
         if (g_paste_clipboard_file_list_equal (g_paste_clipboard_content_get_file_list (&self->content), file_list))
+        {
+            update->unchanged = TRUE;
             break;
+        }
 
         update->produced = TRUE;
         update->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
@@ -802,7 +819,7 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
 {
     GPasteClipboardUpdate *update = user_data;
 
-    /* Past the deadline, the cache is the only place this could reach. Asked
+    /* Superseded or timed out, the cache is the only place this could reach. Asked
      * before the deserialisation rather than only in its callback, there being
      * nothing left for it to deserialise for. */
     if (g_paste_clipboard_update_is_expired (update) || !bytes)
@@ -906,10 +923,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         /* The selection was released: clear our cache so callers see an
          * empty clipboard and act accordingly (e.g. ensure_not_empty).
-         *
-         * Superseded here and not only where an update is started: what makes
-         * the one in flight stale is this change, whether or not it has an
-         * update of its own to be replaced by. */
+         * See g_paste_clipboard_update_supersede () for changes with no read. */
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)

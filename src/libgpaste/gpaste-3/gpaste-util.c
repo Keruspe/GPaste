@@ -729,6 +729,14 @@ g_paste_util_read_pid_file (const gchar *component)
  * connection down before replying, so a missing reply is the expected success,
  * not a failure -- which g_paste_client_reexecute_sync() already reads as such.
  *
+ * It first waits for the reads still classifying a selection that has a
+ * password countdown to bring forward, so that no password is handed to the
+ * successor unmonitored. Classification can wait sixty seconds per attempt;
+ * completion revalidation can retry within a thirty-second window, for up to
+ * ninety seconds overall. The client allows two minutes. An in-process host
+ * replies after accepting its restart; a standalone exec closes the connection.
+ * A caller that must not block uses g_paste_client_reexecute().
+ *
  * Returns: %TRUE if the daemon honoured the re-exec
  */
 G_PASTE_VISIBLE gboolean
@@ -748,6 +756,23 @@ g_paste_util_reexecute_daemon (GPasteClient *client,
     g_propagate_error (error, err);
 
     return FALSE;
+}
+
+/**
+ * g_paste_util_prepare_storage_migration:
+ *
+ * Open the storage-migration gate before requesting daemon re-execution.
+ * Resetting the revision marks the backend as never migrated. Call this on
+ * the main context: the temporary #GPasteSettings wrapper caches settings and
+ * receives their notifications there.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_prepare_storage_migration (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+    g_paste_settings_sync (settings);
 }
 
 /**
@@ -773,10 +798,7 @@ g_paste_util_trigger_storage_migration (GPasteClient *client,
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
 
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-
-    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
-    g_paste_settings_sync (settings);
+    g_paste_util_prepare_storage_migration ();
 
     return g_paste_util_reexecute_daemon (client, error);
 }

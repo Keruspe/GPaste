@@ -42,6 +42,7 @@ GPid g_paste_util_read_pid_file  (const gchar *component);
 
 gboolean g_paste_util_reexecute_daemon          (GPasteClient *client,
                                                  GError      **error);
+void     g_paste_util_prepare_storage_migration (void);
 gboolean g_paste_util_trigger_storage_migration (GPasteClient *client,
                                                  GError      **error);
 

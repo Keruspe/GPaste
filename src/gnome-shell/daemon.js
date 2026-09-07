@@ -189,7 +189,10 @@ export class GPasteDaemonRunner {
         // place by reloading the daemon's storage — see _migrateInPlace(). Same
         // deal for a passphrase change — see _changePassphraseInPlace().
         this._daemon.connectObject(
-            'reexecute-self', () => this._deferOnce('reexecute-self', () => this._migrateInPlace()),
+            'reexecute-self', () => {
+                this._deferOnce('reexecute-self', () => this._migrateInPlace());
+                return true;
+            },
             'change-passphrase', () => this._deferOnce('change-passphrase', () => this._changePassphraseInPlace()),
             this);
 

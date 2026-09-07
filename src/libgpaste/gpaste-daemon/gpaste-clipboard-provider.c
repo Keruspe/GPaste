@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-daemon/gpaste-clipboard-provider.h>
+#include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 
 G_DEFINE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_TYPE_OBJECT)
 
 enum
 {
     CHANGED,
+    PUBLISHED,
 
     LAST_SIGNAL
 };
@@ -34,6 +35,22 @@ g_paste_clipboard_provider_default_init (GPasteClipboardProviderInterface *iface
                                      g_cclosure_marshal_VOID__VOID,
                                      G_TYPE_NONE,
                                      0);
+
+    /**
+     * GPasteClipboardProvider::published:
+     * @provider: the object on which the signal was emitted
+     * @independent: whether this write starts a new copy
+     *
+     * A successful local write identifies the selection without another read.
+     * Independent writes retire the previous copy's queued work. Maintenance
+     * writes preserve copy order and any refresh queued for that same copy.
+     */
+    signals[PUBLISHED] = g_signal_new ("published",
+                                       G_PASTE_TYPE_CLIPBOARD_PROVIDER,
+                                       G_SIGNAL_RUN_FIRST,
+                                       0, NULL, NULL,
+                                       g_cclosure_marshal_VOID__BOOLEAN,
+                                       G_TYPE_NONE, 1, G_TYPE_BOOLEAN);
 }
 
 /**
@@ -65,7 +82,7 @@ g_paste_clipboard_provider_get_text (GPasteClipboardProvider *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
 
-    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->get_text (self);
+    return g_paste_clipboard_provider_is_reading (self) ? NULL : G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->get_text (self);
 }
 
 /**
@@ -81,7 +98,7 @@ g_paste_clipboard_provider_get_image_checksum (GPasteClipboardProvider *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), NULL);
 
-    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->get_image_checksum (self);
+    return g_paste_clipboard_provider_is_reading (self) ? NULL : G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->get_image_checksum (self);
 }
 
 /**
@@ -112,7 +129,7 @@ g_paste_clipboard_provider_is_empty (GPasteClipboardProvider *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), TRUE);
 
-    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->is_empty (self);
+    return !g_paste_clipboard_provider_is_reading (self) && G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->is_empty (self);
 }
 
 /**
@@ -147,11 +164,20 @@ G_PASTE_VISIBLE void
 g_paste_clipboard_provider_select_text (GPasteClipboardProvider *self,
                                         const gchar             *text)
 {
+    g_paste_clipboard_provider_select_text_full (self, text, TRUE);
+}
+
+void
+g_paste_clipboard_provider_select_text_full (GPasteClipboardProvider *self,
+                                             const gchar             *text,
+                                             gboolean                 independent)
+{
     g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
     g_return_if_fail (text);
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_text (self, text);
+    g_signal_emit (self, signals[PUBLISHED], 0, independent);
 }
 
 /**
@@ -184,10 +210,22 @@ G_PASTE_VISIBLE gboolean
 g_paste_clipboard_provider_select_item (GPasteClipboardProvider *self,
                                         GPasteItem              *item)
 {
+    return g_paste_clipboard_provider_select_item_full (self, item, TRUE);
+}
+
+gboolean
+g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
+                                             GPasteItem              *item,
+                                             gboolean                 independent)
+{
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
 
-    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_item (self, item);
+    if (!G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_item (self, item))
+        return FALSE;
+
+    g_signal_emit (self, signals[PUBLISHED], 0, independent);
+    return TRUE;
 }
 
 /**
@@ -224,7 +262,7 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
 
     GPasteItem *item = g_ptr_array_index (hist, 0);
 
-    if (g_paste_clipboard_provider_select_item (self, item))
+    if (g_paste_clipboard_provider_select_item_full (self, item, FALSE))
         return item;
 
     g_paste_history_remove (history, 0);

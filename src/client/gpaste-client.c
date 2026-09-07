@@ -273,14 +273,15 @@ g_paste_about (Context *ctx G_GNUC_UNUSED,
 
 /* A daemon that honours the re-exec tears its D-Bus connection down before
  * replying, so @triggered is already TRUE for the expected missing reply; this
- * only covers a daemon too old for it, by signalling the pid it wrote (and then
- * dropping the D-Bus failure, since the re-exec did happen after all). */
+ * only covers an unsupported method by signalling the recorded daemon pid. */
 static gboolean
 reexec_fallback (gboolean triggered,
                  GError **error)
 {
 #ifdef G_OS_UNIX
-    if (!triggered)
+    /* Only an unsupported method warrants the legacy signal path. A daemon's
+     * refusal (including an expiry deadline) must reach the caller unchanged. */
+    if (!triggered && error && g_error_matches (*error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD))
     {
         GPid pid = g_paste_util_read_pid_file ("Daemon");
 

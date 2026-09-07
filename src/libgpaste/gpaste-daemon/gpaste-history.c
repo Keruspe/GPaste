@@ -541,6 +541,17 @@ _g_paste_history_add (GPasteHistory *self,
      * it is g_steal_pointer'd into the list once it is actually stored. */
     g_autoptr (GPasteItem) owned = new_selection ? item : NULL;
 
+    /* Refresh and password retirement pass an extra owned reference to an item
+     * already in the history. Transfer-full applies to the reference, not to
+     * object uniqueness: move the identity without emitting "selected", and
+     * consume the extra reference above. A growing-line match must not insert
+     * this same object twice. */
+    if (new_selection && g_paste_history_private_get_by_uuid (self, g_paste_item_get_uuid (item)) == item)
+    {
+        _g_paste_history_add (self, item, FALSE);
+        return;
+    }
+
     if (g_paste_item_get_size (item) > max_memory)
         return;
 

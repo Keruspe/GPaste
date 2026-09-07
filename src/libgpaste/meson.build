@@ -269,6 +269,7 @@ gpaste_daemon_internal_sources = [
 ]
 
 gpaste_daemon_internal_headers = [
+  'gpaste-daemon/gpaste-clipboard-provider-private.h',
   'gpaste-daemon/gpaste-clipboard-content.h',
   'gpaste-daemon/gpaste-daemon-util.h',
   'gpaste-daemon/gpaste-clipboards-manager.h',

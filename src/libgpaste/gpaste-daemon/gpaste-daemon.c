@@ -130,8 +130,8 @@ g_paste_daemon_resume (GPasteDaemon *self)
  * g_paste_daemon_expire_password:
  * @self: (transfer none): the #GPasteDaemon
  *
- * Take any password still sitting on a selection back off it now, rather than
- * leave it there for the countdown that will not run.
+ * Retire active passwords from the history before a host flushes it, and remove
+ * them from selections as soon as their pending reads establish ownership.
  *
  * Meant for a daemon standing down inside a process that keeps going: dropping
  * the daemon takes its clipboards manager with it, and that manager's dispose
@@ -144,8 +144,9 @@ g_paste_daemon_resume (GPasteDaemon *self)
  * daemon persists before re-reading its store (a passphrase change, an
  * on-demand migration), and yanking a password off the clipboard there would be
  * expiring it for something that is not an exit at all. A standalone daemon
- * needs neither, its selections dying with the process; the re-exec is the one
- * place it does, and calls this for that reason.
+ * needs neither, its selections dying with the process. Pending reads retain
+ * the cleanup until they finish; re-exec awaits the manager's async variant
+ * before replacing the process and losing those callbacks.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_expire_password (GPasteDaemon *self)
@@ -211,20 +212,147 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
 /* Daemon controls  */
 /********************/
 
-static void
-g_paste_daemon_reexecute (GPasteDaemon *self)
+/* The Reexecute invocation travels the whole way down here because it is not
+ * answered on the way out: execl() replaces this process before it could, and
+ * that missing reply is what a caller reads as the expected success
+ * (g_paste_util_reexecute_daemon()). Answered only when there will be no exec.
+ * NULL for a re-exec nobody asked for over the bus (g_paste_daemon_reexecute()).
+ *
+ * The daemon is held weakly: the task this rides in sits in the list of the
+ * daemon's own clipboards manager, and a strong reference here would be the
+ * daemon holding itself up until the reads it waits on resolve -- see AGENTS.md
+ * on what an object tracks so that its own dispose() can end it. */
+typedef struct
 {
-    /* Storing hands the current selection to the clipboard manager so it
-     * survives the exec, and the successor arms nothing for an item it merely
-     * loaded: a password left on the clipboard here would outlive its timeout by
-     * the whole session. */
-    g_paste_clipboards_manager_expire_password (self->clipboards_manager);
+    GWeakRef               daemon;
+    GDBusMethodInvocation *invocation;
+    gint64                 deadline;
+} ReexecuteData;
+
+static void
+reexecute_data_free (ReexecuteData *data)
+{
+    g_weak_ref_clear (&data->daemon);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (ReexecuteData, reexecute_data_free)
+
+static void
+reexecute_stood_down (GDBusMethodInvocation *invocation)
+{
+    if (!invocation)
+        return;
+
+    g_dbus_method_invocation_return_error (invocation,
+                                           G_PASTE_ERROR,
+                                           G_PASTE_ERROR_FAILED,
+                                           "The daemon stood down before it could re-execute.");
+}
+
+static void
+on_reexecute_passwords_expired (GObject      *source_object G_GNUC_UNUSED,
+                                GAsyncResult *result,
+                                gpointer      user_data)
+{
+    g_autoptr (ReexecuteData) data = user_data;
+    g_autoptr (GPasteDaemon) self = g_weak_ref_get (&data->daemon);
+
+    /* The task carries no source object (the manager's own list holds it), so
+     * the manager comes from the daemon -- which can have been finalized or
+     * disposed while the reads were still out, and then there is no re-exec
+     * left to do. */
+    if (!self || !self->clipboards_manager)
+    {
+        reexecute_stood_down (data->invocation);
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_clipboards_manager_expire_password_finish (self->clipboards_manager, result, &error))
+    {
+        if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PENDING) && g_get_monotonic_time () < data->deadline)
+        {
+            g_paste_clipboards_manager_expire_password_async (self->clipboards_manager,
+                                                              on_reexecute_passwords_expired,
+                                                              g_steal_pointer (&data));
+            return;
+        }
+
+        if (data->invocation)
+        {
+            g_dbus_method_invocation_return_error (data->invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                                   "Could not expire passwords before restarting: %s", error->message);
+        }
+        else
+            g_warning ("Could not expire passwords before restarting: %s", error->message);
+        return;
+    }
     g_paste_clipboards_manager_store (self->clipboards_manager);
+
+    gboolean accepted = FALSE;
 
     g_signal_emit (self,
                    signals[REEXECUTE_SELF],
                    0, /* detail */
-                   NULL);
+                   &accepted);
+
+    /* A standalone exec never returns on success. The in-process Shell host
+     * accepts deferred migration explicitly; FALSE reports a host failure. */
+    if (data->invocation)
+    {
+        if (accepted)
+            g_paste_daemon3_complete_reexecute (self->skeleton, data->invocation);
+        else
+        {
+            g_dbus_method_invocation_return_error (data->invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                                   "The daemon host could not re-execute.");
+        }
+    }
+}
+
+static void
+g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
+                                       GDBusMethodInvocation *invocation)
+{
+    if (!self->clipboards_manager)
+    {
+        reexecute_stood_down (invocation);
+        return;
+    }
+
+    /* Storing preserves the selection across exec. Await classification and
+     * expiry first, so the successor inherits no unmonitored password. */
+    ReexecuteData *data = g_new0 (ReexecuteData, 1);
+
+    g_weak_ref_init (&data->daemon, self);
+    data->invocation = invocation;
+    /* Retry a completion invalidated by a new copy for at most thirty seconds.
+     * Each wait has its own sixty-second bound, keeping the entire request
+     * below the client's two-minute allowance. */
+    data->deadline = g_get_monotonic_time () + 30 * G_USEC_PER_SEC;
+    g_paste_clipboards_manager_expire_password_async (self->clipboards_manager,
+                                                      on_reexecute_passwords_expired,
+                                                      data);
+}
+
+/**
+ * g_paste_daemon_reexecute:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Re-execute the daemon the way the Reexecute method does, for a request that
+ * did not come over the bus -- SIGUSR1, which is also what gpaste-client falls
+ * back on only when that method reports UnknownMethod. It has to go through the same
+ * wait: an exec straight away hands the successor whatever password the reads
+ * still being classified were about to take off, unmonitored.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_reexecute (GPasteDaemon *self)
+{
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    g_paste_daemon_reexecute_after_expiry (self, NULL);
 }
 
 /* The prompts a passphrase change needs are the host's job (each has its own
@@ -876,8 +1004,9 @@ static gboolean
 g_paste_daemon_handle_reexecute (GPasteDaemon          *self,
                                  GDBusMethodInvocation *invocation)
 {
-    g_paste_daemon_reexecute (self);
-    g_paste_daemon3_complete_reexecute (self->skeleton, invocation);
+    /* Handed the invocation rather than completing it here: the reply is the one
+     * this daemon is not meant to send (see on_reexecute_passwords_expired()). */
+    g_paste_daemon_reexecute_after_expiry (self, invocation);
 
     return TRUE;
 }
@@ -1154,7 +1283,9 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
      * @gpaste_daemon: the object on which the signal was emitted
      *
      * The "reexecute-self" signal is emitted when the daemon is about
-     * to reexecute itself into a new freshly spawned daemon
+     * to reexecute itself into a new freshly spawned daemon.
+     *
+     * Returns: TRUE if the host accepted an in-process restart; FALSE on failure.
      */
     signals[REEXECUTE_SELF] = g_signal_new ("reexecute-self",
                                             G_PASTE_TYPE_DAEMON,
@@ -1162,8 +1293,8 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
                                             0, /* class offset */
                                             NULL, /* accumulator */
                                             NULL, /* accumulator data */
-                                            g_cclosure_marshal_VOID__VOID,
-                                            G_TYPE_NONE,
+                                            NULL,
+                                            G_TYPE_BOOLEAN,
                                             0);
 
     /**

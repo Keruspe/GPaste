@@ -162,14 +162,21 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), result, error);           \
     }
 
-/* Every method but one is answered out of what the daemon already holds, so the
- * GDBusProxy default is as much time as any of them can need. Upload is the
+/* Every method but two is answered out of what the daemon already holds, so the
+ * GDBusProxy default is as much time as any of them can need. Upload is one
  * exception: it answers only once the pastebin has taken the paste, a network
  * round trip a large item or a loaded service pushes well past those 25
  * seconds -- and a call that times out reports a failure the upload did not
- * have, having already succeeded on the daemon's side. */
-#define G_PASTE_CLIENT_TIMEOUT_DEFAULT -1
-#define G_PASTE_CLIENT_TIMEOUT_UPLOAD  (10 * 60 * 1000)
+ * have, having already succeeded on the daemon's side.
+ *
+ * Reexecute is the other: expiry waits for the selections to be identified.
+ * Each wait has a sixty-second deadline and completion revalidation retries
+ * for at most thirty seconds, so this allowance also covers the final wait.
+ * The CLI preserves deadline errors; only an unsupported method uses SIGUSR1.
+ */
+#define G_PASTE_CLIENT_TIMEOUT_DEFAULT   -1
+#define G_PASTE_CLIENT_TIMEOUT_UPLOAD    (10 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_REEXECUTE (2 * 60 * 1000)
 
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
@@ -1157,7 +1164,7 @@ g_paste_client_reexecute_sync (GPasteClient *self,
 
     g_paste_daemon3_call_reexecute_sync (G_PASTE_DAEMON3 (self),
                                          G_DBUS_CALL_FLAGS_NONE,
-                                         -1, /* timeout */
+                                         G_PASTE_CLIENT_TIMEOUT_REEXECUTE,
                                          NULL, /* cancellable */
                                          &err);
     g_paste_client_reexecute_propagate (err, error);
@@ -1183,7 +1190,7 @@ g_paste_client_reexecute (GPasteClient       *self,
 
     g_paste_daemon3_call_reexecute (G_PASTE_DAEMON3 (self),
                                     G_DBUS_CALL_FLAGS_NONE,
-                                    -1, /* timeout */
+                                    G_PASTE_CLIENT_TIMEOUT_REEXECUTE,
                                     cancellable,
                                     callback,
                                     user_data);

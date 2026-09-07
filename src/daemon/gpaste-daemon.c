@@ -70,10 +70,23 @@ flush_and_unlock (DaemonContext *ctx)
     g_paste_storage_backend_unlock ();
 }
 
-static void
+static gboolean
 reexec (GPasteDaemon *g_paste_daemon,
-        gpointer      user_data G_GNUC_UNUSED)
+        gpointer      user_data)
 {
+    DaemonContext *ctx = user_data;
+    GDBusConnection *connection = g_application_get_dbus_connection (ctx->gapp);
+    g_autoptr (GError) error = NULL;
+
+    /* GApplication and GPasteBus share GIO's session connection. A handler
+     * returning only queues its reply; flush that queue before exec closes the
+     * socket, including mutations that resolved the pending expiry wait. */
+    if (connection && !g_dbus_connection_flush_sync (connection, NULL, &error))
+    {
+        g_warning ("Could not flush D-Bus replies before restarting: %s", error->message);
+        return FALSE;
+    }
+
     /* The clipboards manager was already stored by g_paste_daemon_reexecute();
      * make sure the history hits the disk too before we hand over to the new
      * process, which blocks on the storage lock until we release it. The lock is
@@ -99,6 +112,8 @@ reexec (GPasteDaemon *g_paste_daemon,
 
     if (g_paste_daemon)
         g_paste_daemon_resume (g_paste_daemon);
+
+    return FALSE;
 }
 
 #ifdef G_OS_UNIX
@@ -120,13 +135,19 @@ usr1_handler (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
-    /* reexec() takes the daemon to flush (NULL before it is built, which simply
-     * skips the flush) and ignores its second, signal-closure argument. */
-    reexec (ctx->daemon, ctx);
+    /* Through the daemon while there is one, so the passwords its reads are
+     * still classifying come off first (g_paste_daemon_reexecute()); it then
+     * ends in reexec() through "reexecute-self" like the D-Bus method does.
+     * Before it is built there is nothing to expire nor flush, and reexec()
+     * skips the flush for a NULL daemon. */
+    if (ctx->daemon)
+        g_paste_daemon_reexecute (ctx->daemon);
+    else
+        reexec (NULL, ctx);
 
-    /* Only reached when the exec failed and the daemon resumed: keep the
-     * source so a later SIGUSR1 (e.g. once the binary is back in place) can
-     * still trigger a re-exec. A successful exec replaces the process. */
+    /* With a live daemon, expiry and exec run asynchronously after this handler
+     * returns. Keep listening if that request is refused or exec fails. Before
+     * construction, reexec above is synchronous and returns only on failure. */
     return G_SOURCE_CONTINUE;
 }
 #endif

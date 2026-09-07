@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
+#include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -216,19 +217,28 @@ g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
 
     *out_value = NULL;
 
+    gboolean unchanged = content->kind == CLIPBOARD_CONTENT_TEXT && g_paste_str_equal (content->str, text);
+
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
         length > g_paste_settings_get_max_text_item_size (settings))
-        return G_PASTE_CLIPBOARD_TEXT_REJECT;
+        return unchanged ? G_PASTE_CLIPBOARD_TEXT_UNCHANGED : G_PASTE_CLIPBOARD_TEXT_REJECT;
 
-    if (content->kind == CLIPBOARD_CONTENT_TEXT && g_paste_str_equal (content->str, to_add))
-        return G_PASTE_CLIPBOARD_TEXT_REJECT;
-
-    /* Trimming changed the clipboard's own text: re-own it with the stripped form. */
+    /* Trimming changed the clipboard's own text: re-own it with the stripped form,
+     * duplicate or not -- the padded form is what is on the selection. */
     if (trim_items && is_clipboard && !g_paste_str_equal (text, stripped))
     {
         *out_value = g_steal_pointer (&stripped);
         return G_PASTE_CLIPBOARD_TEXT_RESELECT;
     }
+
+    /* A duplicate is the raw text the cache holds, or its trimmed form: the
+     * primary selection is never re-owned with the stripped text, so an owner
+     * re-asserting it hands back the padded text while the cache holds the
+     * trimmed item's value. Taking that for new content would re-add it over
+     * whatever was copied since and, with synchronization on, publish it over
+     * the clipboard. */
+    if (content->kind == CLIPBOARD_CONTENT_TEXT && (unchanged || g_paste_str_equal (content->str, to_add)))
+        return G_PASTE_CLIPBOARD_TEXT_UNCHANGED;
 
     /* When trimming, to_add aliases the owned stripped buffer — hand it off rather
      * than copying; otherwise to_add borrows text and must be duplicated. */
@@ -717,6 +727,13 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
             g_assert_not_reached ();
         }
     }
+    else if (!update->unchanged)
+    {
+        /* Rejection and read failure establish no match with the previous owner.
+         * Keep an unidentified selection non-empty so it cannot be restored over. */
+        g_paste_clipboard_content_clear (update->cache);
+        update->cache->kind = CLIPBOARD_CONTENT_IGNORED;
+    }
 
     /* Everything this conclusion has of its own is done with before either call
      * below, both of which can end up back here: publishing drops the previous
@@ -741,7 +758,7 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
      * replacing the owner cannot abort the remaining MIME transfers. Publishing
      * the item also preserves a password's sensitive hint and an image's texture. */
     if (reselect && item)
-        g_paste_clipboard_provider_select_item (provider, item);
+        g_paste_clipboard_provider_select_item_full (provider, item, FALSE);
 
     /* (transfer full) to the callback, and ours to release when there is none:
      * an update fired with no callback is part of the contract -- what a
