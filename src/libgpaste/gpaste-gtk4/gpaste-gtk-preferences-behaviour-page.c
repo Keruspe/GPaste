@@ -114,8 +114,6 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager
 
     priv->manager = g_object_ref (manager);
 
-    g_paste_gtk_preferences_manager_register (manager, G_PASTE_GTK_PREFERENCES_PAGE (self));
-
     GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("General behaviour"));
     priv->track_changes_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
                                                                                     _("Track clipboard changes"),
@@ -195,5 +193,5 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager
                                  _("When enabled, if a new clipboard entry starts with the previous one, the previous entry is replaced instead of creating a new one"));
     adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
 
-    return GTK_WIDGET (self);
+    return g_paste_gtk_preferences_page_register (G_PASTE_GTK_PREFERENCES_PAGE (self), manager);
 }

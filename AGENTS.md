@@ -358,7 +358,13 @@ the moment of the register, and a page that registers first reaches it with its
 row pointers still unset. The entry path tolerates that (`entry` is also `NULL`
 for a key the page does not handle), but a row handed straight to a setter —
 `adw_switch_row_set_active()` on the `keybindings-enabled` switch — would take a
-`NULL` and log a critical.
+`NULL` and log a critical. Every page's constructor **ends** with
+`g_paste_gtk_preferences_page_register()`, which registers the page and hands it
+back as the `GtkWidget` the constructor returns: the rule and the reason for it
+live there, rather than in a copy of the same comment per page. Registering is
+the page's own, not its caller's — both the preferences widget and the
+preferences dialog build the same four pages, and a rule kept on that side would
+be two copies of it instead of one.
 
 ### `src/gnome-shell/` — GNOME Shell extension (JavaScript)
 

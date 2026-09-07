@@ -98,8 +98,6 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteGtkPreferencesManager *
 
     priv->manager = g_object_ref (manager);
 
-    g_paste_gtk_preferences_manager_register (manager, G_PASTE_GTK_PREFERENCES_PAGE (self));
-
     GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Resources limits"));
     priv->max_history_size_button = g_paste_gtk_preferences_group_add_range_setting (group,
                                                                                      _("Max history size"),
@@ -151,5 +149,5 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteGtkPreferencesManager *
                                                                                                settings);
     adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
 
-    return GTK_WIDGET (self);
+    return g_paste_gtk_preferences_page_register (G_PASTE_GTK_PREFERENCES_PAGE (self), manager);
 }

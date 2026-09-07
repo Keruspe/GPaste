@@ -218,11 +218,5 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteGtkPreferencesManager *manager
                                                                                             settings);
     g_paste_gtk_preferences_shortcuts_page_add_accels_group (self, group);
 
-    /* Registered once every row a change is handed to exists: a "changed"
-     * arriving before that reaches setting_changed () with the rows still
-     * unset, and the switch is handed to adw_switch_row_set_active () without
-     * an entry's tolerance for a %NULL of its own. */
-    g_paste_gtk_preferences_manager_register (manager, G_PASTE_GTK_PREFERENCES_PAGE (self));
-
-    return GTK_WIDGET (self);
+    return g_paste_gtk_preferences_page_register (G_PASTE_GTK_PREFERENCES_PAGE (self), manager);
 }

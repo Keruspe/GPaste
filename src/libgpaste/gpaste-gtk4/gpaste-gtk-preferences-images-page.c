@@ -87,8 +87,6 @@ g_paste_gtk_preferences_images_page_new (GPasteGtkPreferencesManager *manager)
 
     priv->manager = g_object_ref (manager);
 
-    g_paste_gtk_preferences_manager_register (manager, G_PASTE_GTK_PREFERENCES_PAGE (self));
-
     GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new (_("Images settings"));
     priv->images_support_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
                                                                                      _("Images support"),
@@ -111,5 +109,5 @@ g_paste_gtk_preferences_images_page_new (GPasteGtkPreferencesManager *manager)
                                                                                         settings);
     adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
 
-    return GTK_WIDGET (self);
+    return g_paste_gtk_preferences_page_register (G_PASTE_GTK_PREFERENCES_PAGE (self), manager);
 }

@@ -32,6 +32,7 @@ global:
     g_paste_gtk_preferences_manager_register;
 
     g_paste_gtk_preferences_page_get_type;
+    g_paste_gtk_preferences_page_register;
     g_paste_gtk_preferences_page_setting_changed;
 
     g_paste_gtk_preferences_shortcuts_page_get_type;
