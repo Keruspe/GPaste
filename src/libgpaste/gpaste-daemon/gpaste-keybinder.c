@@ -30,7 +30,6 @@ G_PASTE_DEFINE_TYPE (Keybinder, keybinder, G_TYPE_OBJECT)
 
 typedef struct
 {
-    GPasteKeybinder  *keybinder; /* not ref'd */
     GPasteKeybinding *binding;
     GPasteSettings   *settings;
 } _Keybinding;
@@ -50,13 +49,11 @@ _keybinding_deactivate (_Keybinding *k)
 }
 
 static _Keybinding *
-_keybinding_new (GPasteKeybinder  *keybinder,
-                 GPasteKeybinding *binding,
+_keybinding_new (GPasteKeybinding *binding,
                  GPasteSettings   *settings)
 {
     _Keybinding *k = g_new (_Keybinding, 1);
 
-    k->keybinder = keybinder;
     k->binding = binding;
     k->settings = g_object_ref (settings);
 
@@ -150,7 +147,7 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
 
     g_hash_table_insert (self->keybindings,
                          (gpointer) g_paste_keybinding_get_dconf_key (binding),
-                         _keybinding_new (self, binding, self->settings));
+                         _keybinding_new (binding, self->settings));
 }
 
 /**
