@@ -25,6 +25,7 @@ const gchar *g_paste_settings_get_history_name               (GPasteSettings *se
 gboolean     g_paste_settings_get_images_preview             (GPasteSettings *self);
 guint64      g_paste_settings_get_images_preview_size        (GPasteSettings *self);
 gboolean     g_paste_settings_get_images_support             (GPasteSettings *self);
+gboolean     g_paste_settings_get_keybindings_enabled        (GPasteSettings *self);
 const gchar *g_paste_settings_get_launch_ui                  (GPasteSettings *self);
 const gchar *g_paste_settings_get_make_password              (GPasteSettings *self);
 guint64      g_paste_settings_get_max_history_size           (GPasteSettings *self);
@@ -63,6 +64,8 @@ void g_paste_settings_set_images_preview             (GPasteSettings *self,
 void g_paste_settings_set_images_preview_size        (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_images_support             (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_keybindings_enabled        (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_launch_ui                  (GPasteSettings *self,
                                                       const gchar    *value);

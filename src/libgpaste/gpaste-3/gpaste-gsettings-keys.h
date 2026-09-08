@@ -24,6 +24,7 @@ G_BEGIN_DECLS
 #define G_PASTE_IMAGES_PREVIEW_SETTING             "images-preview"
 #define G_PASTE_IMAGES_PREVIEW_SIZE_SETTING        "images-preview-size"
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
+#define G_PASTE_KEYBINDINGS_ENABLED_SETTING        "keybindings-enabled"
 #define G_PASTE_LAUNCH_UI_SETTING                  "launch-ui"
 #define G_PASTE_MAKE_PASSWORD_SETTING              "make-password"
 #define G_PASTE_MAX_HISTORY_SIZE_SETTING           "max-history-size"

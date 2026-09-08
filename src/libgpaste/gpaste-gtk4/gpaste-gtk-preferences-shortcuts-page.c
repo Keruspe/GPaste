@@ -25,13 +25,23 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteSettings *settings)
                                                                    "icon-name", "preferences-desktop-keyboard-shortcuts",
                                                                    NULL));
 
+    GPasteGtkPreferencesGroup *toggle = g_paste_gtk_preferences_group_new (_("Global Shortcuts"));
+    AdwSwitchRow *enabled = g_paste_gtk_preferences_group_add_boolean_setting (toggle,
+                                                                              _("Enable Global Keyboard Shortcuts"),
+                                                                              G_PASTE_KEYBINDINGS_ENABLED_SETTING,
+                                                                              settings);
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (enabled), _("When disabled, GPaste grabs no global shortcut"));
+    adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (toggle));
+
     gsize n = 0;
     const GPasteKeybindingInfo *keybindings = g_paste_keybindings (&n);
     GPasteGtkPreferencesGroup *group = NULL;
     const gchar *current = NULL;
 
     /* One group per run of shortcuts sharing a group name; the table is already
-     * in the order they are shown. */
+     * in the order they are shown. Every one of them follows the master switch:
+     * the chords are still listed while it is off, greyed out, so that what the
+     * switch turns off is visible rather than a page that has emptied itself. */
     for (gsize i = 0; i < n; ++i)
     {
         const GPasteKeybindingInfo *k = &keybindings[i];
@@ -42,6 +52,7 @@ g_paste_gtk_preferences_shortcuts_page_new (GPasteSettings *settings)
                 adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
             current = k->group;
             group = g_paste_gtk_preferences_group_new (_(current));
+            g_object_bind_property (enabled, "active", group, "sensitive", G_BINDING_SYNC_CREATE);
         }
 
         g_paste_gtk_preferences_group_add_shortcut_setting (group, _(k->description), k->key, settings);

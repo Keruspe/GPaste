@@ -57,4 +57,34 @@ G_BEGIN_DECLS
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \
     textdomain (GETTEXT_PACKAGE)
 
+#ifndef __GI_SCANNER__
+
+/* Data for a GSource whose callback needs a GObject the source does not
+ * otherwise hold on to. A reference of its own would put the one place that
+ * cancels the source -- that object's dispose () -- out of reach, since
+ * dispose () only runs once the last reference is dropped, and a raw pointer
+ * borrows its safety from that same teardown path instead of stating it. A weak
+ * reference does state it: the callback gets the object only for as long as
+ * there is one, and the destroy notify drops the reference whichever of the two
+ * ways the source dies -- removed, or having fired. */
+static inline GWeakRef *
+g_paste_weak_ref_new (gpointer object)
+{
+    GWeakRef *ref = g_new (GWeakRef, 1);
+
+    g_weak_ref_init (ref, object);
+
+    return ref;
+}
+
+static inline void
+g_paste_weak_ref_free (gpointer data)
+{
+    g_autofree GWeakRef *ref = data;
+
+    g_weak_ref_clear (ref);
+}
+
+#endif
+
 G_END_DECLS

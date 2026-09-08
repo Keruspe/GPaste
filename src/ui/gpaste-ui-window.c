@@ -11,6 +11,9 @@
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
+/* The delay the daemon coalesces a rebind burst over, for the same reason. */
+#define G_PASTE_UI_WINDOW_SHORTCUTS_CLOSE_DELAY 250 /* ms */
+
 struct _GPasteUiWindow
 {
     AdwApplicationWindow parent_instance;
@@ -31,10 +34,12 @@ struct _GPasteUiWindow
     GtkWidget              *merge_button;
     GtkWidget              *merge_entry; /* custom separator */
 
+    /* Both weak: the dialog belongs to whatever is presenting it, and we only
+     * keep it to raise the one already up rather than stack a second. */
     AdwDialog              *shortcuts;
-    /* Weak: the dialog belongs to whatever is presenting it, and we only keep
-     * it to raise the one already up rather than stack a second. */
     AdwDialog              *preferences;
+    /* Takes down a shortcuts dialog the settings have moved on from. */
+    guint                   shortcuts_source;
 
     GSignalGroup           *search_signals;
     GSignalGroup           *client_signals;
@@ -343,12 +348,114 @@ g_paste_ui_window_show_about (GPasteUiWindow *self)
     run_when_initialized (self, do_show_about, NULL, FALSE);
 }
 
+/* Take down the snapshot that is up, if any, and call off the close armed for
+ * it. Let go of it before asking it to close, rather than when the close
+ * transition gets around to unparenting it and the weak pointer follows: a
+ * present in between would raise the very snapshot this is retiring. */
+static void
+retire_shortcuts (GPasteUiWindow *self)
+{
+    g_clear_handle_id (&self->shortcuts_source, g_source_remove);
+
+    /* Gone on its own while we were waiting for the burst to settle: whatever
+     * comes next is built from the settings as they are now anyway. */
+    if (!self->shortcuts)
+        return;
+
+    AdwDialog *shortcuts = self->shortcuts;
+
+    g_clear_weak_pointer (&self->shortcuts);
+    adw_dialog_close (shortcuts);
+}
+
+static gboolean
+close_obsolete_shortcuts (gpointer user_data)
+{
+    g_autoptr (GPasteUiWindow) self = g_weak_ref_get (user_data);
+
+    if (!self)
+        return G_SOURCE_REMOVE;
+
+    /* Let go of this source before retiring: the close it does calls off the
+     * one armed for the dialog, and this is the source being dispatched. */
+    self->shortcuts_source = 0;
+
+    retire_shortcuts (self);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* The dialog is a snapshot of the settings it was built from, and an
+ * AdwShortcutsDialog can neither drop a section nor update an accelerator:
+ * close it when what it shows changes -- the master switch flipped from the
+ * preferences in this very process, or from anywhere else -- so the next
+ * present builds one that tells the truth.
+ * Coalesced the way the daemon coalesces a rebind, and over the same burst: an
+ * accelerator typed into the preferences writes its GSettings key on every
+ * keystroke, and closing on the first of them takes the dialog out from under
+ * an edit that has not settled yet. The delay is measured from the last write,
+ * so one edit costs one close.
+ * The source holds the window weakly: dispose () is the one thing that cancels
+ * it, and a reference of its own would put that out of reach. */
+static void
+on_shortcuts_obsolete (GPasteUiWindow *self,
+                       const gchar    *key G_GNUC_UNUSED)
+{
+    g_clear_handle_id (&self->shortcuts_source, g_source_remove);
+
+    /* Nothing to close, and nothing to arm a close for: a dialog the user shut
+     * themselves took the one armed for it with it, and leaving that behind
+     * would have on_show_help_overlay () read a dialog that is not up as one
+     * whose snapshot has gone stale. */
+    if (!self->shortcuts)
+        return;
+
+    self->shortcuts_source = g_timeout_add_full (G_PRIORITY_DEFAULT, G_PASTE_UI_WINDOW_SHORTCUTS_CLOSE_DELAY,
+                                                 close_obsolete_shortcuts,
+                                                 g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    g_source_set_name_by_id (self->shortcuts_source, "[GPaste] close obsolete shortcuts");
+}
+
+static void
+on_shortcuts_enabled_changed (GPasteUiWindow *self,
+                              GParamSpec     *pspec G_GNUC_UNUSED)
+{
+    on_shortcuts_obsolete (self, NULL);
+}
+
 static void
 on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
                       GVariant      *parameter G_GNUC_UNUSED,
                       gpointer       user_data)
 {
     GPasteUiWindow *self = user_data;
+
+    /* A close armed for the dialog that is up says what it shows has gone out of
+     * date, and the user asking for it is asking for one that tells the truth:
+     * retire it here rather than raising it and letting the pending close shut
+     * it a moment later, which would read as the accelerator dismissing the
+     * dialog. It also calls off a close armed for a dialog that has since gone,
+     * which would otherwise shut the fresh snapshot below -- everything that
+     * close was making room for. */
+    if (self->shortcuts_source)
+        retire_shortcuts (self);
+
+    g_autoptr (AdwDialog) shortcuts = NULL;
+
+    /* Built fresh once the previous one is gone. Presenting the live one again
+     * only raises it, which is what the accelerator firing again while the
+     * dialog is up must do.
+     * The dialog comes back floating, and presenting it is what sinks that
+     * reference: hold one until it has. A present that does not take the dialog
+     * -- no dialog host to parent it to -- would otherwise leak it and leave a
+     * weak pointer that never clears, and every later request would re-present
+     * a dialog that is not up. */
+    if (!self->shortcuts)
+    {
+        shortcuts = ADW_DIALOG (g_object_ref_sink (g_paste_ui_shortcuts_window_new (self->settings)));
+
+        g_set_weak_pointer (&self->shortcuts, shortcuts);
+    }
 
     adw_dialog_present (self->shortcuts, GTK_WIDGET (self));
 }
@@ -878,9 +985,10 @@ g_paste_ui_window_dispose (GObject *object)
     g_clear_object (&self->client_signals);
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
-    g_clear_object (&self->shortcuts);
-    /* Registered on the dialog, pointing at a field of ours: left in place it
-     * would have GObject write into freed memory should the dialog outlive us. */
+    g_clear_handle_id (&self->shortcuts_source, g_source_remove);
+    /* Registered on the dialogs, pointing at fields of ours: left in place they
+     * would have GObject write into freed memory should one outlive us. */
+    g_clear_weak_pointer (&self->shortcuts);
     g_clear_weak_pointer (&self->preferences);
     g_clear_slist (&self->deferred, deferred_action_free);
 
@@ -917,6 +1025,15 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     self->settings = g_paste_settings_new ();
     self->content_box = GTK_BOX (vbox);
+
+    g_signal_connect_object (self->settings,
+                             "notify::" G_PASTE_KEYBINDINGS_ENABLED_SETTING,
+                             G_CALLBACK (on_shortcuts_enabled_changed),
+                             self, G_CONNECT_SWAPPED);
+    g_signal_connect_object (self->settings,
+                             "rebind",
+                             G_CALLBACK (on_shortcuts_obsolete),
+                             self, G_CONNECT_SWAPPED);
 
     gtk_widget_set_hexpand (vbox, TRUE);
     gtk_widget_set_vexpand (vbox, TRUE);
@@ -1011,8 +1128,6 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     self->header = ADW_HEADER_BAR (header);
     self->history = G_PASTE_UI_HISTORY (history);
     self->client = g_object_ref (client);
-
-    self->shortcuts = g_object_ref_sink (ADW_DIALOG (g_paste_ui_shortcuts_window_new (settings)));
 
     add_window_actions (self);
 

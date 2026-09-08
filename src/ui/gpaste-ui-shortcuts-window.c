@@ -56,8 +56,13 @@ add_window_section (AdwShortcutsDialog *self)
  *
  * Create a new #AdwShortcutsDialog for GPaste
  *
- * Returns: a newly allocated #AdwShortcutsDialog
- *          free it with g_object_unref
+ * The global shortcuts are always listed -- they are still the chords GPaste
+ * would grab -- under section titles that say whether anything is listening for
+ * them. The dialog reflects the settings as of the time it is built, so it is
+ * built anew every time, and closed when what it shows changes under it.
+ *
+ * Returns: (transfer none): a newly created #AdwShortcutsDialog, holding the
+ *          floating reference its caller sinks
  */
 GtkWidget *
 g_paste_ui_shortcuts_window_new (GPasteSettings *settings)
@@ -65,6 +70,7 @@ g_paste_ui_shortcuts_window_new (GPasteSettings *settings)
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     AdwDialog *self = adw_shortcuts_dialog_new ();
+    gboolean enabled = g_paste_settings_get_keybindings_enabled (settings);
     gsize n = 0;
     const GPasteKeybindingInfo *keybindings = g_paste_keybindings (&n);
     AdwShortcutsSection *section = NULL;
@@ -79,7 +85,25 @@ g_paste_ui_shortcuts_window_new (GPasteSettings *settings)
             if (section)
                 adw_shortcuts_dialog_add (ADW_SHORTCUTS_DIALOG (self), section);
             current = k->group;
-            section = adw_shortcuts_section_new (_(current));
+
+            /* The notice the keybindings-enabled master switch being off
+             * deserves is the title of the section its shortcuts are listed
+             * under, and it is on every one of them: whichever the reader is
+             * looking at is one nothing is listening for. It can be nowhere
+             * else -- a section carries one or more items, so a notice of its
+             * own would have to be an itemless one, and what that renders as is
+             * nobody's contract; an item cannot carry it either, since one with
+             * an empty accelerator renders a "No Shortcut" chip next to the
+             * text and one with none at all is not rendered.
+             * The warning sign is part of the translated string: where it
+             * belongs is the translator's call, and an RTL locale wants it at
+             * the other end. */
+            g_autofree gchar *title = (enabled)
+                ? NULL
+                /* translators: %s is a group of shortcuts, e.g. "History access" */
+                : g_strdup_printf (_("⚠ %s — GPaste is not listening for these"), _(current));
+
+            section = adw_shortcuts_section_new ((enabled) ? _(current) : title);
         }
 
         /* Every setting is a property named exactly like its key, so the

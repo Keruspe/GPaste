@@ -29,7 +29,7 @@ explains what clipboard managers are for.
 - **GNOME Shell integration** through a native extension, with an optional
   experimental mode that runs the daemon inside the Shell itself.
 - **Global shortcuts** through the XDG portal, so they work the same on Wayland
-  and X11.
+  and X11, and one switch in the preferences turns every one of them off.
 
 ## Installation
 

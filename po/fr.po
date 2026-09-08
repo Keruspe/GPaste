@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-06 17:00+0200\n"
+"POT-Creation-Date: 2026-09-08 21:07+0200\n"
 "PO-Revision-Date: 2025-08-17 12:02+0000\n"
 "Last-Translator: J0bot <me@j0bot.ch>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/"
@@ -131,72 +131,83 @@ msgid "Close the UI after selecting an item"
 msgstr "Ferme-t-on l'interface après avoir sélectionné un élément ?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:66
-#: data/gsettings/org.gnome.GPaste.gschema.xml:211
+#: data/gsettings/org.gnome.GPaste.gschema.xml:220
 msgid "Enabled by default."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:73
+#, fuzzy
+msgid "Are the global keyboard shortcuts enabled?"
+msgstr "Raccourcis clavier"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:74
+msgid ""
+"By default, the global keyboard shortcuts are enabled. Disable this to "
+"prevent GPaste from grabbing any global shortcut."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:82
 msgid "The keyboard shortcut to launch the graphical interface"
 msgstr "Le raccourcis clavier pour lancer l'interface graphique"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:74
-#: data/gsettings/org.gnome.GPaste.gschema.xml:82
-#: data/gsettings/org.gnome.GPaste.gschema.xml:138
-#: data/gsettings/org.gnome.GPaste.gschema.xml:163
-#: data/gsettings/org.gnome.GPaste.gschema.xml:187
-#: data/gsettings/org.gnome.GPaste.gschema.xml:195
-#: data/gsettings/org.gnome.GPaste.gschema.xml:237
+#: data/gsettings/org.gnome.GPaste.gschema.xml:83
+#: data/gsettings/org.gnome.GPaste.gschema.xml:91
+#: data/gsettings/org.gnome.GPaste.gschema.xml:147
+#: data/gsettings/org.gnome.GPaste.gschema.xml:172
+#: data/gsettings/org.gnome.GPaste.gschema.xml:196
+#: data/gsettings/org.gnome.GPaste.gschema.xml:204
+#: data/gsettings/org.gnome.GPaste.gschema.xml:246
 msgid "An empty string disables this shortcut."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:81
+#: data/gsettings/org.gnome.GPaste.gschema.xml:90
 msgid "The keyboard shortcut to mark the active item as being a password"
 msgstr ""
 "Le raccourcis clavier pour marquer l'élement actif comme étant un mot de "
 "passe"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:90
+#: data/gsettings/org.gnome.GPaste.gschema.xml:99
 msgid "Max history size"
 msgstr "Taille maximale de l'historique"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:91
+#: data/gsettings/org.gnome.GPaste.gschema.xml:100
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:99
+#: data/gsettings/org.gnome.GPaste.gschema.xml:108
 msgid "Max memory usage (MB)"
 msgstr "Utilisation mémoire maximale (MO)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:100
+#: data/gsettings/org.gnome.GPaste.gschema.xml:109
 msgid "Maximum amount of memory used to store contents"
 msgstr "Quantité maximale de mémoire utilisée pour stcoker du contenu"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:108
+#: data/gsettings/org.gnome.GPaste.gschema.xml:117
 msgid "Max text item size"
 msgstr "Taille maximale d'un élément textuel"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:109
+#: data/gsettings/org.gnome.GPaste.gschema.xml:118
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 "Taille maximale d'un élément textuel. Tout élément hors de ces limites est "
 "ignoré."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:117
+#: data/gsettings/org.gnome.GPaste.gschema.xml:126
 msgid "Min text item size"
 msgstr "Taille minimale d'un élément textuel"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:118
+#: data/gsettings/org.gnome.GPaste.gschema.xml:127
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 "Taille minimale d'un élément textuel. Tout élément hors de ces limites est "
 "ignoré."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:126
+#: data/gsettings/org.gnome.GPaste.gschema.xml:135
 #, fuzzy
 msgid "Password timeout"
 msgstr "Mot de passe"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:127
+#: data/gsettings/org.gnome.GPaste.gschema.xml:136
 msgid ""
 "How long a password may stay on the clipboard, in seconds, once it is the "
 "active item. When it runs out, the next item that is not a password is "
@@ -204,104 +215,104 @@ msgid ""
 "password stays for as long as anything else would."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:137
+#: data/gsettings/org.gnome.GPaste.gschema.xml:146
 msgid "The keyboard shortcut to delete the first element in history"
 msgstr ""
 "Le raccourcis clavier pour supprimer le premier élément de l'historique"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:145
+#: data/gsettings/org.gnome.GPaste.gschema.xml:154
 #, fuzzy
 msgid "Let the primary selection affect the history"
 msgstr "La selection primaire doit-elle affecter l'historique ?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:146
+#: data/gsettings/org.gnome.GPaste.gschema.xml:155
 #, fuzzy
 msgid "Disabled by default: only the clipboard (ctrl+c) affects the history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:153
+#: data/gsettings/org.gnome.GPaste.gschema.xml:162
 msgid "Save every flavour of copied rich text"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:154
+#: data/gsettings/org.gnome.GPaste.gschema.xml:163
 msgid ""
 "Enabled by default. When disabled, only the plain text of a rich text "
 "selection (HTML and the like) is kept."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:162
+#: data/gsettings/org.gnome.GPaste.gschema.xml:171
 msgid "The keyboard shortcut to display the menu"
 msgstr "Le raccourcis clavier pour afficher l'historique"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:170
+#: data/gsettings/org.gnome.GPaste.gschema.xml:179
 #, fuzzy
 msgid "Where the history is stored"
 msgstr "afficher l'historique avec les UUID"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:171
+#: data/gsettings/org.gnome.GPaste.gschema.xml:180
 msgid ""
 "The storage backend used to persist the history: \"file\" keeps it in an on-"
 "disk file, \"sqlite\" in a per-history database (with \"encrypted-file\" and "
 "\"encrypted-sqlite\" flavours), \"none\" keeps nothing."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:178
+#: data/gsettings/org.gnome.GPaste.gschema.xml:187
 msgid "Last processed storage backend revision"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:179
+#: data/gsettings/org.gnome.GPaste.gschema.xml:188
 msgid ""
 "Set by the daemon, not meant to be edited. When it falls behind the daemon's "
 "own revision, the storage migration is offered again on startup."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:186
+#: data/gsettings/org.gnome.GPaste.gschema.xml:195
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 "Le raccourcis clavier pour synchroniser le presse-papier avec la sélection "
 "primaire"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:194
+#: data/gsettings/org.gnome.GPaste.gschema.xml:203
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 "Le raccourcis clavier pour synchroniser la sélection primaire avec le presse-"
 "papier"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:202
+#: data/gsettings/org.gnome.GPaste.gschema.xml:211
 #, fuzzy
 msgid "Keep the primary selection and the clipboard in sync"
 msgstr ""
 "La sélection primaire et le presse-papier doivent-ils être synchronisés ?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:203
+#: data/gsettings/org.gnome.GPaste.gschema.xml:212
 #, fuzzy
 msgid ""
 "Disabled by default: the primary selection and the clipboard are independent."
 msgstr ""
 "Par défaut, la sélection primaire et le presse-papier sont indépendents."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:210
+#: data/gsettings/org.gnome.GPaste.gschema.xml:219
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:218
+#: data/gsettings/org.gnome.GPaste.gschema.xml:227
 #, fuzzy
 msgid "Match the daemon state to the GNOME Shell extension's"
 msgstr "Synchroniser l'état du démon avec celui de l'extension"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:219
+#: data/gsettings/org.gnome.GPaste.gschema.xml:228
 msgid ""
 "When enabled, disabling the extension stops the daemon tracking as well. "
 "Disabled by default: the daemon state is left alone."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:227
+#: data/gsettings/org.gnome.GPaste.gschema.xml:236
 #, fuzzy
 msgid "Trim text items before adding them to the history"
 msgstr ""
 "Doit-on tronquer les éléments textuels avant de les ajouter à l'historique ?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:228
+#: data/gsettings/org.gnome.GPaste.gschema.xml:237
 #, fuzzy
 msgid ""
 "Trimming removes the leading and trailing whitespace. Disabled by default: "
@@ -310,7 +321,7 @@ msgstr ""
 "Tronquer signifie supprimer tous les espaces au début et à la fin. Par "
 "défaut, on laisse les éléments tels-quels."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:236
+#: data/gsettings/org.gnome.GPaste.gschema.xml:245
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
@@ -318,20 +329,20 @@ msgstr ""
 "Le raccourcis clavier pour téléverser le premier élément de l'historique "
 "vers un service de type pastebin"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:244
+#: data/gsettings/org.gnome.GPaste.gschema.xml:253
 #, fuzzy
 msgid "Ask for confirmation before emptying a history"
 msgstr "Faut-il demander confirmation avant de vider un historique ?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:245
+#: data/gsettings/org.gnome.GPaste.gschema.xml:254
 msgid "Enabled by default, because emptying a history cannot be undone."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:252
+#: data/gsettings/org.gnome.GPaste.gschema.xml:261
 msgid "Run the experimental in-shell (mutter) daemon"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:253
+#: data/gsettings/org.gnome.GPaste.gschema.xml:262
 msgid ""
 "Disabled by default: the GNOME Shell extension is a pure client and the "
 "standalone daemon does the work."
@@ -1206,6 +1217,20 @@ msgstr ""
 msgid "Keyboard Shortcuts"
 msgstr "Raccourcis clavier"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:28
+#, fuzzy
+msgid "Global Shortcuts"
+msgstr "Raccourcis clavier"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:30
+#, fuzzy
+msgid "Enable Global Keyboard Shortcuts"
+msgstr "Raccourcis clavier"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:33
+msgid "When disabled, GPaste grabs no global shortcut"
+msgstr ""
+
 #. translators: shown while the row waits for the user to press a shortcut
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:203
 msgid "Press the new shortcut, Backspace to clear, Escape to cancel"
@@ -1544,107 +1569,113 @@ msgstr ""
 msgid "This window"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:420
+#. translators: %s is a group of shortcuts, e.g. "History access"
+#: src/ui/gpaste-ui-shortcuts-window.c:104
+#, c-format
+msgid "⚠ %s — GPaste is not listening for these"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:519
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "Redémarer le démon"
 
-#: src/ui/gpaste-ui-window.c:432
+#: src/ui/gpaste-ui-window.c:531
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "Redémarer le démon"
 
-#: src/ui/gpaste-ui-window.c:433
+#: src/ui/gpaste-ui-window.c:532
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:434
+#: src/ui/gpaste-ui-window.c:533
 msgid "Restart"
 msgstr "Redémarer"
 
-#: src/ui/gpaste-ui-window.c:455
+#: src/ui/gpaste-ui-window.c:554
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "suivre les changements du presse-papier"
 
-#: src/ui/gpaste-ui-window.c:456
+#: src/ui/gpaste-ui-window.c:555
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "arrêter de suivre les changements du presse-papier"
 
-#: src/ui/gpaste-ui-window.c:480
+#: src/ui/gpaste-ui-window.c:579
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "arrêter de suivre les changements du presse-papier"
 
-#: src/ui/gpaste-ui-window.c:481
+#: src/ui/gpaste-ui-window.c:580
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:482
+#: src/ui/gpaste-ui-window.c:581
 msgid "Stop"
 msgstr "Arrêter"
 
-#: src/ui/gpaste-ui-window.c:522
+#: src/ui/gpaste-ui-window.c:621
 msgid "Clipboard management system"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:528
+#: src/ui/gpaste-ui-window.c:627
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:786
+#: src/ui/gpaste-ui-window.c:885
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "Impossible de créer le dossier d'historique"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:832
+#: src/ui/gpaste-ui-window.c:931
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:833
+#: src/ui/gpaste-ui-window.c:932
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:834
+#: src/ui/gpaste-ui-window.c:933
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:835
+#: src/ui/gpaste-ui-window.c:934
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:843
+#: src/ui/gpaste-ui-window.c:942
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:848
+#: src/ui/gpaste-ui-window.c:947
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:859
+#: src/ui/gpaste-ui-window.c:958
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:928
+#: src/ui/gpaste-ui-window.c:1037
 msgid "Quit"
 msgstr "Quitter"
 
-#: src/ui/gpaste-ui-window.c:972 src/ui/gpaste-ui-window.c:973
+#: src/ui/gpaste-ui-window.c:1081 src/ui/gpaste-ui-window.c:1082
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
-#: src/ui/gpaste-ui-window.c:1039
+#: src/ui/gpaste-ui-window.c:1146
 #, fuzzy
 msgid "Histories"
 msgstr "Préférences de l'historique"
 
-#: src/ui/gpaste-ui-window.c:1040
+#: src/ui/gpaste-ui-window.c:1147
 #, fuzzy
 msgid "History"
 msgstr "Préférences de l'historique"

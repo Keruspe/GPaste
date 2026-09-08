@@ -25,6 +25,7 @@ struct _GPasteSettings
     gboolean      images_support;
     gboolean      images_preview;
     guint64       images_preview_size;
+    gboolean      keybindings_enabled;
     gchar        *launch_ui;
     gchar        *make_password;
     guint64       max_history_size;
@@ -268,6 +269,23 @@ BOOLEAN_SETTING (images_preview, IMAGES_PREVIEW)
  * Change the "images-preview-size" setting
  */
 UNSIGNED_SETTING (images_preview_size, IMAGES_PREVIEW_SIZE)
+
+/**
+ * g_paste_settings_get_keybindings_enabled:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "keybindings-enabled" setting
+ *
+ * Returns: the value of the "keybindings-enabled" setting
+ */
+/**
+ * g_paste_settings_set_keybindings_enabled:
+ * @self: a #GPasteSettings instance
+ * @value: whether to enable the global keyboard shortcuts
+ *
+ * Change the "keybindings-enabled" setting
+ */
+BOOLEAN_SETTING (keybindings_enabled, KEYBINDINGS_ENABLED)
 
 /**
  * g_paste_settings_get_launch_ui:
@@ -709,6 +727,7 @@ g_paste_settings_rebind (GPasteSettings *self,
     g_signal_emit (self,
                    signals[REBIND],
                    g_quark_from_string (key),
+                   key,
                    NULL);
 }
 
@@ -737,6 +756,7 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (IMAGES_SUPPORT, images_support),
     SETTING_ENTRY (IMAGES_PREVIEW, images_preview),
     SETTING_ENTRY (IMAGES_PREVIEW_SIZE, images_preview_size),
+    SETTING_ENTRY (KEYBINDINGS_ENABLED, keybindings_enabled),
     KEYBINDING_ENTRY (LAUNCH_UI, launch_ui),
     KEYBINDING_ENTRY (MAKE_PASSWORD, make_password),
     SETTING_ENTRY (MAX_HISTORY_SIZE, max_history_size),
@@ -804,6 +824,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     BOOL (images_support,             IMAGES_SUPPORT)                                     \
     BOOL (images_preview,             IMAGES_PREVIEW)                                     \
     UINT (images_preview_size,        IMAGES_PREVIEW_SIZE)                                \
+    BOOL (keybindings_enabled,        KEYBINDINGS_ENABLED)                                \
     STR  (launch_ui,                  LAUNCH_UI)                                          \
     STR  (make_password,              MAKE_PASSWORD)                                      \
     UINT (max_history_size,           MAX_HISTORY_SIZE)                                   \
