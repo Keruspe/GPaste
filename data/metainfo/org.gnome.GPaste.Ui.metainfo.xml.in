@@ -46,6 +46,18 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-09-08" version="50.10">
+      <description>
+        <p>This release adds a setting to disable the global keyboard shortcuts. Changes:</p>
+        <ul>
+          <li>New setting to disable the global keyboard shortcuts entirely</li>
+          <li>Fix gnome-shell being left holding GPaste's grabs for the rest of the session, and GPaste giving up on them for good after a slow login</li>
+          <li>Fix the daemon crashing on a shortcut activation arriving after its gnome-shell client was disposed</li>
+          <li>Fix the global shortcuts under the portal: an edited accelerator never reached it, Super went out under a name it doesn't know, and a dismissed permission dialog was reported as a successful bind</li>
+          <li>Fix the behaviour, images and history preferences pages acting on a settings change before their rows exist</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-08-31" version="50.9">
       <description>
         <p>This is a maintenance release. Changes:</p>
