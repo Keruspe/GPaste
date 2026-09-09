@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-06 17:00+0200\n"
-"PO-Revision-Date: 2026-08-28 12:51+0000\n"
+"PO-Revision-Date: 2026-09-09 17:42+0000\n"
 "Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
-"Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/"
-">\n"
+"Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/>"
+"\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.9.dev0\n"
+"X-Generator: Weblate 2026.9.1\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -93,10 +93,8 @@ msgid "The default name is \"history\""
 msgstr "Der Standardname lautet „history“"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
-#, fuzzy
 msgid "Save copied images to the history"
-msgstr ""
-"Werden die in die Chronik kopierten Bilder oder nur der Text gespeichert?"
+msgstr "Kopierte Bilder in der Chronik speichern"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
 msgid "Enabled by default: images are kept alongside text."
@@ -228,9 +226,8 @@ msgid "The keyboard shortcut to display the menu"
 msgstr "Das Tastaturkürzel zum Anzeigen des Menüs"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:170
-#, fuzzy
 msgid "Where the history is stored"
-msgstr "Zeige Chronik mit NUL als Trennzeichen"
+msgstr "Wo die Chronik gespeichert wird"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:171
 msgid ""
@@ -1524,9 +1521,8 @@ msgid "Add a new item"
 msgstr "Neues Element hinzufügen"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:27
-#, fuzzy
 msgid "Add a new password"
-msgstr "Passwort"
+msgstr "Neues Passwort hinzufügen"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Paste the item at an index"
@@ -1548,11 +1544,11 @@ msgstr "Tastaturkürzel"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:31
 msgid "Close the window"
-msgstr ""
+msgstr "Fenster schließen"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:37
 msgid "This window"
-msgstr ""
+msgstr "Dieses Fenster"
 
 #: src/ui/gpaste-ui-window.c:420
 #, fuzzy
