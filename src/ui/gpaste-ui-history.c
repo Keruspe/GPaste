@@ -33,7 +33,14 @@ struct _GPasteUiHistory
     guint64               limit;      /* how many items we currently allow on screen; grows lazily */
     guint64               available;  /* last known total size of the history */
     gboolean              loading;    /* a lazy-growth refresh is in flight */
-    guint64               display_generation; /* bumped per refresh and per search; stale callbacks bail */
+
+    /* The call listing the rows, cancelled and replaced by every refresh and
+     * every search. Refresh and filter write the same rows (indices vs. uuids),
+     * so whichever went out last is the one that may land -- and the listing it
+     * replaced is worth stopping, a search over the whole history being work the
+     * daemon does for a view that has moved on. */
+    GCancellable         *display;
+
     gboolean              selection_mode; /* merge mode: rows are multi-selectable */
     GArray               *selection;       /* selected positions, in the order they were picked */
     gint32                item_height;
@@ -229,11 +236,11 @@ g_paste_ui_history_batch (GPasteUiHistory *self)
     return G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 }
 
-/* Carried by both the refresh and the filter callbacks. @self is owned: the
- * widget's only owner is the widget tree, so a window closing mid-flight would
- * otherwise finalize it before the reply lands. @generation is what was current
- * when the call went out — refresh and filter write the same rows (indices vs.
- * uuids), so whichever went out last wins and everything older bails.
+/* Carried by both the refresh and the filter callbacks. Both @self and
+ * @cancellable are owned: the widget's only owner is the widget tree, so a
+ * window closing mid-flight would otherwise finalize it before the reply lands,
+ * and the cancellable is the one this listing went out on rather than whichever
+ * @self holds by then.
  *
  * @searched records which of the two calls the filter made, because the reply
  * has to be finished as the call it was: reading self->search back at reply
@@ -242,9 +249,9 @@ g_paste_ui_history_batch (GPasteUiHistory *self)
 typedef struct
 {
     GPasteUiHistory *self;
+    GCancellable    *cancellable;
     gchar           *name;
     guint64          from_index;
-    guint64          generation;
     gboolean         searched;
 } DisplayCallbackData;
 
@@ -252,21 +259,36 @@ static void
 display_callback_data_free (DisplayCallbackData *data)
 {
     g_clear_object (&data->self);
+    g_clear_object (&data->cancellable);
     g_free (data->name);
     g_free (data);
 }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (DisplayCallbackData, display_callback_data_free)
 
+/* Allocating the data is what supersedes the listing before it: this is called
+ * from the two places a listing goes out, and each of them goes out on the
+ * cancellable it leaves behind.
+ *
+ * Cancelling is the client giving up, not the daemon stopping: D-Bus has no way
+ * to call off a method already sent, so a superseded Search still matches the
+ * whole history and its reply is dropped on arrival. What it buys is this side
+ * letting go at once -- the callback runs with the cancellation, releasing the
+ * widget it holds -- and a reply that can never be mistaken for the current
+ * one. What keeps searches from going out once per character is the search
+ * entry's own delay ("search-changed"), not this. */
 static DisplayCallbackData *
 display_callback_data_new (GPasteUiHistory *self,
                            guint64          from_index)
 {
     DisplayCallbackData *data = g_new0 (DisplayCallbackData, 1);
 
+    g_paste_clear_cancellable (&self->display);
+    self->display = g_cancellable_new ();
+
     data->self = g_object_ref (self);
+    data->cancellable = g_object_ref (self->display);
     data->from_index = from_index;
-    data->generation = ++self->display_generation;
 
     return data;
 }
@@ -286,8 +308,9 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
      * whichever did (a refresh clears it on its own reply, a filter as it goes
      * out) and don't re-index from this stale from_index, which could leave
      * shifted rows with wrong indices — or, for a filtered view, overwrite the
-     * uuids it just installed. */
-    if (cdata->generation != self->display_generation)
+     * uuids it just installed. Asked before the _finish () below, which a
+     * cancelled call answers with an error of no interest to anyone. */
+    if (g_cancellable_is_cancelled (cdata->cancellable))
         return;
 
     /* The size is of whatever history the daemon held when it handled the call,
@@ -371,16 +394,17 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
     if (!name)
     {
         /* Still a refresh, so whatever was in flight is superseded by it and
-         * must not land: bumping the generation is what display_callback_data_new()
-         * would have done, and the only part of it that still applies. Without
-         * it a search reply from before this call would pass the staleness check
-         * and install its rows into a view that has moved on.
+         * must not land: the cancel is what display_callback_data_new () would
+         * have done, and the only part of it that still applies. Without it a
+         * search reply from before this call would pass the staleness check and
+         * install its rows into a view that has moved on. No successor is
+         * allocated to replace it, this refresh having no call to name with one.
          *
          * And nothing is in flight for us either, however the superseded call
-         * ends -- it bails on that generation check without clearing the flag it
-         * set. Left standing it would wedge lazy growth for good, the list
-         * refusing to load another row however far it is scrolled. */
-        ++self->display_generation;
+         * ends -- it bails on that check without clearing the flag it set. Left
+         * standing it would wedge lazy growth for good, the list refusing to
+         * load another row however far it is scrolled. */
+        g_paste_clear_cancellable (&self->display);
         self->loading = FALSE;
 
         return;
@@ -392,7 +416,7 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
 
     cdata->name = g_steal_pointer (&name);
 
-    g_paste_client_get_history_size (self->client, NULL /* cancellable */, g_paste_ui_history_refresh_history, cdata);
+    g_paste_client_get_history_size (self->client, cdata->cancellable, g_paste_ui_history_refresh_history, cdata);
 }
 
 static gboolean
@@ -467,7 +491,7 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
 
     /* A newer search or refresh already owns these rows. Without this, typing
      * "a" then "ab" leaves whichever reply happens to land last on screen. */
-    if (cdata->generation != self->display_generation)
+    if (g_cancellable_is_cancelled (cdata->cancellable))
         return;
 
     g_autolist (GPasteClientItem) items = (cdata->searched)
@@ -519,9 +543,9 @@ g_paste_ui_history_filter (GPasteUiHistory *self)
     cdata->searched = (self->search != NULL);
 
     if (cdata->searched)
-        g_paste_client_search (self->client, self->search, NULL /* cancellable */, on_filter_ready, cdata);
+        g_paste_client_search (self->client, self->search, cdata->cancellable, on_filter_ready, cdata);
     else
-        g_paste_client_get_favourites (self->client, NULL /* cancellable */, on_filter_ready, cdata);
+        g_paste_client_get_favourites (self->client, cdata->cancellable, on_filter_ready, cdata);
 }
 
 /**
@@ -1008,6 +1032,11 @@ g_paste_ui_history_dispose (GObject *object)
 
     g_clear_pointer (&self->search, g_free);
     g_clear_object (&self->model);
+
+    /* Cancelled before the client goes, so a listing still out is given up on
+     * rather than left to land on a view that can no longer finish it. */
+    g_paste_clear_cancellable (&self->display);
+
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
 
