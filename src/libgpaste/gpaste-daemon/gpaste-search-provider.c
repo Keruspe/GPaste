@@ -138,8 +138,7 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
      * would otherwise land uncancelled, empty its results table and refill it
      * with the phrase already abandoned -- which is then what GetResultMetas is
      * answered from. */
-    g_cancellable_cancel (self->search);
-    g_clear_object (&self->search);
+    g_paste_clear_cancellable (&self->search);
 
     /* Too short to be worth a round trip, or no daemon to make it against. */
     if (strlen (search) < 3 || !self->client)
@@ -154,8 +153,8 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
     /* The successor is allocated where it is issued, and not above beside the
      * cancel: a search answered without a round trip has no request for one to
      * name, and self->search would stand for a reply that is never coming --
-     * which is why init () does not allocate one either, and why the cancel and
-     * the clear above are written to be no-ops on the %NULL it starts as. */
+     * which is why init () does not allocate one either, and why the clear above
+     * is a no-op on the %NULL it starts as. */
     self->search = g_cancellable_new ();
 
     SearchData *data = g_new (SearchData, 1);

@@ -418,8 +418,7 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
     /* Whatever the load before it was reading, nobody is waiting for it: the
      * generation check below drops its result, and this is what stops the read
      * that was producing it. */
-    g_cancellable_cancel (self->load_cancellable);
-    g_clear_object (&self->load_cancellable);
+    g_paste_clear_cancellable (&self->load_cancellable);
     self->load_cancellable = g_cancellable_new ();
 
     /* Hold our own ref for the task (see start_write): reload_backend may drop

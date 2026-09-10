@@ -747,8 +747,7 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
 
     /* Whatever was being read for the binding this row is leaving is a read of
      * an item it no longer shows. */
-    g_cancellable_cancel (self->fill);
-    g_clear_object (&self->fill);
+    g_paste_clear_cancellable (&self->fill);
     self->fill = g_cancellable_new ();
 
     self->index = index;
@@ -838,8 +837,7 @@ g_paste_ui_item_dispose (GObject *object)
 
     /* Cancelled before the client goes, so a read still out is stopped rather
      * than left to land on a row that can no longer finish it. */
-    g_cancellable_cancel (self->fill);
-    g_clear_object (&self->fill);
+    g_paste_clear_cancellable (&self->fill);
 
     g_clear_object (&self->client);
     g_clear_object (&self->settings);

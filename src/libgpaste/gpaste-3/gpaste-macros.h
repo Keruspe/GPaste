@@ -85,6 +85,26 @@ g_paste_weak_ref_free (gpointer data)
     g_weak_ref_clear (ref);
 }
 
+/* Give up on what @cancellable_ptr stands for -- a read, a call, a load nobody
+ * is waiting for any more -- and drop it. GLib has g_set_object () and friends
+ * but nothing cancellable-aware, and setting one is exactly what must not
+ * happen here: dropping the old reference without cancelling it leaves the
+ * operation it named running, which is the whole of what the slot is for.
+ *
+ * Both halves are no-ops on the %NULL a slot starts and ends as, so a caller
+ * that may or may not have one out states the giving up and nothing else.
+ *
+ * Allocating the successor is deliberately not part of it: a caller that has
+ * none to issue -- a dispose (), or a request answered without a round trip --
+ * would otherwise be left holding a cancellable that stands for a reply which
+ * is never coming. */
+static inline void
+g_paste_clear_cancellable (GCancellable **cancellable_ptr)
+{
+    g_cancellable_cancel (*cancellable_ptr);
+    g_clear_object (cancellable_ptr);
+}
+
 #endif
 
 G_END_DECLS
