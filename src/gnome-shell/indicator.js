@@ -191,7 +191,7 @@ class GPasteIndicator extends Button {
         }
 
         this._switch = new GPasteStateSwitch(this._client);
-        this._historySwitcher = new GPasteHistorySwitcher(this._client);
+        this._historySwitcher = new GPasteHistorySwitcher(this._client, this._settings, this.menu);
 
         // Header, inserted before the dummy placeholder added in the constructor.
         // The switch is global state and belongs to nothing under it; the
@@ -215,8 +215,7 @@ class GPasteIndicator extends Button {
         // it against the dummy row and the footer separator.
         this._scrollView.update_fade_effect(new Clutter.Margin({top: 16, bottom: 16}));
 
-        this._footer = addGPasteFooter(this.menu, this._extension, this._client, this._settings);
-        this._emptyHistoryItem = this._footer.empty;
+        this._footer = addGPasteFooter(this.menu, this._extension);
 
         const dummyIndex = this.menu.box.get_children().indexOf(this._dummyHistoryItem);
         this.menu.box.insert_child_at_index(this._scrollView, dummyIndex + 1);
@@ -939,29 +938,21 @@ class GPasteIndicator extends Button {
             else
                 this._dummyHistoryItem.showDisconnected();
 
-            // The menu can be opened, and this reached, while _connect () is
-            // still retrying -- before _setup () has built the footer the empty
-            // row comes from.
-            this._emptyHistoryItem?.hide();
             this._searchItem.hide();
             return;
         }
 
         if (!empty) {
             this._dummyHistoryItem.hide();
-            this._emptyHistoryItem.show();
             this._searchItem.show();
         } else if (this._hasSearch()) {
             this._dummyHistoryItem.showNoResult();
-            this._emptyHistoryItem.hide();
             this._searchItem.show();
         } else if (this._searchItem.favourites) {
             this._dummyHistoryItem.showNoPinned();
-            this._emptyHistoryItem.hide();
             this._searchItem.show();
         } else {
             this._dummyHistoryItem.showEmpty();
-            this._emptyHistoryItem.hide();
             this._searchItem.hide();
         }
     }

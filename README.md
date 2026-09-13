@@ -27,8 +27,8 @@ explains what clipboard managers are for.
   items from the UI, the extension or `gpaste-client --favourites`.
 - **Search, merge and edit** items from the UI, the extension or the CLI.
 - **GNOME Shell integration** through a native extension, whose menu names the
-  history in use and switches to or creates another, with an optional
-  experimental mode that runs the daemon inside the Shell itself.
+  history in use and switches to, creates, empties, backs up or deletes one, with
+  an optional experimental mode that runs the daemon inside the Shell itself.
 - **Global shortcuts** through the XDG portal, so they work the same on Wayland
   and X11, and one switch in the preferences turns every one of them off.
 

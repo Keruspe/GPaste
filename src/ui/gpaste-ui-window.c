@@ -248,30 +248,6 @@ g_paste_ui_report_string_cb (GObject      *source_object,
     report_done (report, error);
 }
 
-static void
-do_empty_history (GPasteUiWindow *self,
-                  const gchar    *history)
-{
-    g_paste_gtk_util_empty_history (GTK_WINDOW (self), self->client, self->settings, history);
-}
-
-/**
- * g_paste_ui_window_empty_history:
- * @self: the #GPasteUiWindow
- * @history: the history to empty
- *
- * Empty a history
- */
-void
-g_paste_ui_window_empty_history (GPasteUiWindow *self,
-                                 const gchar    *history)
-{
-    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
-    g_return_if_fail (g_utf8_validate (history, -1, NULL));
-
-    run_when_initialized (self, do_empty_history, history, TRUE);
-}
-
 /* Connected swapped, so the button is the emitter and its state is read back
  * from it rather than carried by the signal. */
 static void

@@ -47,12 +47,10 @@ void g_paste_ui_report_string_cb (GObject      *source_object,
                                   GAsyncResult *result,
                                   gpointer      user_data);
 
-void g_paste_ui_window_empty_history (GPasteUiWindow *self,
-                                      const gchar    *history);
-void g_paste_ui_window_search        (GPasteUiWindow *self,
-                                      const gchar    *search);
-void g_paste_ui_window_show_prefs    (GPasteUiWindow *self);
-void g_paste_ui_window_show_about    (GPasteUiWindow *self);
+void g_paste_ui_window_search     (GPasteUiWindow *self,
+                                   const gchar    *search);
+void g_paste_ui_window_show_prefs (GPasteUiWindow *self);
+void g_paste_ui_window_show_about (GPasteUiWindow *self);
 
 GtkWidget *g_paste_ui_window_new (GtkApplication *app);
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {gettext as _, pgettext} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Dialog from 'resource:///org/gnome/shell/ui/dialog.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import {Ornament, PopupBaseMenuItem, PopupMenuItem, PopupSubMenuMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -71,23 +71,20 @@ function logFailure(finish) {
     };
 }
 
-// Asks before a history goes: unlike an item, it takes everything it holds with
-// it, which is also why the graphical tool asks. The words are that tool's own,
-// so they arrive already translated.
-const GPasteDeleteHistoryDialog = GObject.registerClass(
-class GPasteDeleteHistoryDialog extends ModalDialog.ModalDialog {
-    constructor(client, history) {
+// Asks before a history goes or loses what it holds: unlike an item, that is
+// everything in it at once, which is also why the graphical tool asks. The words
+// are that tool's own, so they arrive already translated.
+const GPasteHistoryConfirmationDialog = GObject.registerClass(
+class GPasteHistoryConfirmationDialog extends ModalDialog.ModalDialog {
+    constructor(title, description, label, action) {
         super();
 
-        this.contentLayout.add_child(new Dialog.MessageDialogContent({
-            // Translators: %s is the name of the history being deleted.
-            title: _('Delete “%s”?').format(history),
-            description: _('The history and everything in it are deleted for good.'),
-        }));
+        this.contentLayout.add_child(new Dialog.MessageDialogContent({title, description}));
 
-        // Cancel is what Escape answers and where the focus starts: the Delete
-        // key is one way here, and pressing Enter after it should not be all it
-        // takes to lose a history.
+        // Cancel is what Escape answers and where the focus starts: a key is as
+        // likely as a click to have asked -- Delete on a row, Enter on one of a
+        // history's actions -- and Enter pressed once more should not be all it
+        // takes to lose a history or what it holds.
         this.addButton({
             label: _('Cancel'),
             action: () => this.close(),
@@ -95,11 +92,9 @@ class GPasteDeleteHistoryDialog extends ModalDialog.ModalDialog {
             default: true,
         });
         this.addButton({
-            label: _('Delete'),
+            label,
             action: () => {
-                // A closing animation can leave its button reachable after name loss.
-                if (client.get_name_owner())
-                    client.delete_history(history, null, logFailure('delete_history_finish'));
+                action();
                 this.close();
             },
         });
@@ -149,10 +144,13 @@ class GPasteHistoryRow extends PopupMenuItem {
             // and it is the list below that shows it -- so the row says it its
             // own way, as the placeholder row does for 'retry', and the switcher
             // listens for that instead. 'delete' is the row asking for the same
-            // thing of its button and of its Delete key.
+            // thing of its button and of its Delete key, and 'actions' for what
+            // else can be done to its history, saying whether the keyboard
+            // asked (the menu key) or the pointer did (a right click).
             Signals: {
                 'switch': {param_types: [GObject.TYPE_STRING]},
                 'delete': {param_types: [GObject.TYPE_STRING]},
+                'actions': {param_types: [GObject.TYPE_STRING, GObject.TYPE_BOOLEAN]},
             },
         }, this);
 
@@ -191,6 +189,20 @@ class GPasteHistoryRow extends PopupMenuItem {
         });
         this.add_child(this._size);
         this.setSize(size);
+
+        // Recognised on press, as the shell's own right clicks are. A gesture
+        // that recognises cancels the others on the same points, so the row's
+        // own click gesture -- which takes any button -- never gets to the
+        // release it would switch on.
+        const rightClick = new Clutter.ClickGesture({
+            required_button: Clutter.BUTTON_SECONDARY,
+            recognize_on_press: true,
+        });
+        rightClick.connect('recognize', () => this.emit('actions', this._history, false));
+        this.add_action(rightClick);
+
+        // What St emits for the menu key and Shift+F10.
+        this.connect('popup-menu', () => this.emit('actions', this._history, true));
     }
 
     get history() {
@@ -212,6 +224,124 @@ class GPasteHistoryRow extends PopupMenuItem {
         this.emit('switch', this._history);
     }
 }
+
+// What can be done to a history besides switching to it, shown under its row on
+// a right click. Delete is there too, although the row has a button and a key
+// for it: this is where the rest of a history's actions are looked for. Inline
+// rather than a menu of its own: a popup menu opened from inside an open one
+// would need a grab of its own, and this keeps the chooser where it is, much as
+// the entry below it does.
+const GPasteHistoryActionsItem = GObject.registerClass({
+    Signals: {
+        'empty': {param_types: [GObject.TYPE_STRING]},
+        'backup': {param_types: [GObject.TYPE_STRING, GObject.TYPE_STRING]},
+        'delete': {param_types: [GObject.TYPE_STRING]},
+    },
+}, class GPasteHistoryActionsItem extends PopupBaseMenuItem {
+    // @isTaken says whether a history of that name is listed already.
+    constructor(isTaken) {
+        // Not activatable, for the reason the entry's row is not: what acts is
+        // a button or the entry, and a row that activated would close the menu.
+        super({
+            activate: false,
+            reactive: true,
+            hover: false,
+            can_focus: false,
+        });
+
+        this._history = null;
+
+        this._buttons = new St.BoxLayout({
+            x_expand: true,
+            style: 'spacing: 6px;',
+        });
+        this._emptyButton = this._addButton(pgettext('verb', 'Empty'), () => this.emit('empty', this._history));
+        this._backupButton = this._addButton(_('Back Up'), () => this._askBackupName());
+        this._addButton(_('Delete'), () => this.emit('delete', this._history));
+        this.add_child(this._buttons);
+
+        // The name of the copy, asked for in place of the buttons, as the
+        // graphical tool asks for it -- prefilled with the name it offers.
+        //
+        // BackupHistory refuses a name already taken, and the entry would fold
+        // away as if the copy had been made: a listed name is held back too. The
+        // list can be a listing behind; a refusal that slips through that way
+        // is logged.
+        this._entry = new St.Entry({
+            style_class: 'search-entry',
+            x_expand: true,
+            track_hover: true,
+            reactive: true,
+            can_focus: true,
+        });
+        this._updateMark = addConfirmMark(this._entry, 'object-select-symbolic',
+            name => GPaste.util_history_name_is_valid(name) && !isTaken(name),
+            name => this.emit('backup', this._history, name));
+        this.add_child(this._entry);
+
+        this.reset();
+    }
+
+    _addButton(label, action) {
+        const button = new St.Button({
+            style_class: 'button',
+            label,
+            x_expand: true,
+            can_focus: true,
+        });
+
+        button.connect('clicked', action);
+        this._buttons.add_child(button);
+
+        return button;
+    }
+
+    get history() {
+        return this._history;
+    }
+
+    // Back to the buttons, for @history. Whatever was typed as the name of a
+    // copy was the name of a copy of whatever this showed before.
+    reset(history = null) {
+        this._history = history;
+        this._entry.text = '';
+        this._entry.hide();
+        this._buttons.show();
+    }
+
+    focus() {
+        this._emptyButton.grab_key_focus();
+    }
+
+    _askBackupName() {
+        this._buttons.hide();
+        this._entry.show();
+        this._entry.text = `${this._history}_backup`;
+        this._entry.clutter_text.grab_key_focus();
+        // Selected, so typing replaces the offer rather than adding to it.
+        this._entry.clutter_text.set_selection(0, -1);
+    }
+
+    // The list the name is checked against has changed.
+    revalidate() {
+        this._updateMark();
+    }
+
+    // Escape on the name, as Cancel answers the graphical tool's dialog: back
+    // to the buttons, and to the one the keyboard came from, since hiding the
+    // entry drops the key focus with it. Only while the keyboard is in the
+    // entry; says whether that was the case.
+    cancelBackupName() {
+        const focus = global.stage.get_key_focus();
+
+        if (!this._entry.visible || focus === null || !this._entry.contains(focus))
+            return false;
+
+        this.reset(this._history);
+        this._backupButton.grab_key_focus();
+        return true;
+    }
+});
 
 const GPasteNewHistoryItem = GObject.registerClass({
     Signals: {'switch': {param_types: [GObject.TYPE_STRING]}},
@@ -292,7 +422,8 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             super.active = active;
     }
 
-    constructor(client) {
+    // @topMenu is the menu this row sits in, for the key it has to see first.
+    constructor(client, settings, topMenu) {
         // The row is the name of the history in use; expanding it is what offers
         // the others. No icon: the name is the whole of what it has to say.
         super('', false);
@@ -300,6 +431,7 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this.menu.actor.overlay_scrollbars = true;
 
         this._client = client;
+        this._settings = settings;
 
         // The history in use is deleted from the row naming it too, not only
         // from its row in the chooser, which takes expanding to reach. Ahead of
@@ -330,6 +462,42 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this._newItem.connect('switch', (item, history) => this._switch(history));
         this.menu.addMenuItem(this._newItem);
 
+        // One for whichever row was last right clicked, moved to sit under it
+        // and hidden the rest of the time, rather than one built per click: it
+        // is its own buttons that set off its going away, and an actor is not
+        // to be destroyed from inside its own child's handler. Built after the
+        // entry and moved ahead of it, so that once the rows are cleared it is
+        // right before the entry, and rows added at their own count still land
+        // ahead of both.
+        this._actions = new GPasteHistoryActionsItem(name => this._rows.some(row => row.history === name));
+        this._actions.connect('empty', (item, history) => this._empty(history));
+        this._actions.connect('backup', (item, history, name) => this._backup(history, name));
+        // The row's own path, dialog and all; closing the menu for the dialog
+        // is what folds the actions away.
+        this._actions.connect('delete', (item, history) => this._confirmDelete(history));
+        this.menu.addMenuItem(this._actions, 0);
+        this._actions.hide();
+
+        // Escape on the name of a backup goes back to the buttons rather than
+        // closing the whole menu. The menu manager closes it from a controller
+        // on the menu's actor -- the actor its grab is on, so the top of every
+        // key's path -- in the capture phase, which is ahead of anything the
+        // entry could install. Actions on one actor run in the order they were
+        // added, and the manager adds its controller afresh on every open, so
+        // one added here, for good, is ahead of it from the next open on.
+        this._escapeController = new Clutter.KeyController();
+        this._escapeController.connect('key-press', controller => {
+            const [, symbol] = controller.get_key();
+
+            if (symbol === Clutter.KEY_Escape && this._actions.cancelBackupName())
+                return Clutter.EVENT_STOP;
+
+            return Clutter.EVENT_PROPAGATE;
+        });
+        this._topMenu = topMenu;
+        this._topMenu.actor.add_action_full('gpaste-backup-name-escape',
+            Clutter.EventPhase.CAPTURE, this._escapeController);
+
         this._client.connectObject(
             // A backup or a delete changes the set of histories without changing
             // which one is current, which no notify::history can express. The
@@ -353,6 +521,7 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this._listing?.cancel();
             this._sizing?.cancel();
             this._dialog?.close();
+            this._topMenu.actor.remove_action(this._escapeController);
         });
 
         this._onHistoryChanged();
@@ -442,10 +611,21 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         if (!wanted)
             return;
 
+        // The actions actor owns the backup draft and focus independently of
+        // its row. Keep it while its source history still exists.
+        const actionsHistory = this._actions.visible ? this._actions.history : null;
+        const focus = global.stage.get_key_focus();
+        const actionsFocused = focus !== null && this._actions.contains(focus);
+
+        if (actionsHistory !== null && actionsHistory !== GPaste.DEFAULT_HISTORY &&
+            !histories.some(history => history.get_name() === actionsHistory))
+            this._hideActions();
+
+        this.menu.moveMenuItem(this._actions, this._rows.length);
+
         // Every row is rebuilt, and a destroyed actor takes the key focus with
         // it, stranding the keyboard on nothing: it goes back to the row for the
         // same history, or to this one if that history is gone.
-        const focus = global.stage.get_key_focus();
         const focused = this._rows.find(row => focus !== null && row.contains(focus))?.history;
 
         this._clearRows();
@@ -468,7 +648,20 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         if (this._current !== null && !histories.some(history => history.get_name() === this._current))
             this._sizeCurrent().catch(console.error);
 
-        if (focused !== undefined)
+        if (this._actions.visible) {
+            const index = this._rows.findIndex(row => row.history === actionsHistory);
+
+            this.menu.moveMenuItem(this._actions, index + 1);
+            // A name the rebuilt list takes, or gives back, changes what the
+            // mark offers while the name stays as it was typed.
+            this._actions.revalidate();
+        }
+
+        if (actionsFocused && this._actions.visible)
+            focus.grab_key_focus();
+        else if (actionsFocused)
+            this.grab_key_focus();
+        else if (focused !== undefined)
             (this._rows.find(row => row.history === focused) ?? this).grab_key_focus();
     }
 
@@ -486,6 +679,7 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
 
         row.connect('switch', (item, name) => this._switch(name));
         row.connect('delete', (item, name) => this._confirmDelete(name));
+        row.connect('actions', (item, name, fromKeyboard) => this._toggleActions(item, fromKeyboard));
         // Ahead of the entry, which stays last however many rows there are.
         this.menu.addMenuItem(row, this._rows.length);
         this._rows.push(row);
@@ -504,8 +698,9 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
     // list below, which the daemon announces with an update of its own once the
     // new history has loaded.
     _switch(history) {
-        this._client.switch_history(history, null, null);
+        this._client.switch_history(history, null, logFailure('switch_history_finish'));
         this._newItem.reset();
+        this._hideActions();
 
         // Folding hides whatever in the chooser holds the key focus, and Clutter
         // drops the focus of a hidden actor: it goes to this row, which names
@@ -519,15 +714,89 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this.setSubmenuShown(false);
     }
 
-    // A modal dialog cannot take its grab from under an open menu, so the menu
-    // goes first -- as it would have for any item that opens a dialog. Nothing
-    // is redrawn here once the answer is yes: the daemon announces the deletion,
-    // which is what refreshes the list, and deleting the current history
-    // switches to the default one, which is what renames the row.
+    // The same row again folds the actions away; another row takes them.
+    // Focused when the keyboard asked, which has nowhere else to reach them
+    // from; a click leaves the focus with the pointer.
+    _toggleActions(row, fromKeyboard) {
+        if (this._actions.visible && this._actions.history === row.history) {
+            this._hideActions();
+            return;
+        }
+
+        this._actions.reset(row.history);
+        // Counted without the actions item itself, so the row's own index plus
+        // one is right under it.
+        this.menu.moveMenuItem(this._actions, this._rows.indexOf(row) + 1);
+        this._actions.show();
+
+        if (fromKeyboard)
+            this._actions.focus();
+    }
+
+    // A focused actor that is hidden is one Clutter drops the key focus for,
+    // which would strand a keyboard that has just used one of the buttons: it
+    // goes back to the row the actions were for. Not when the menu is closing,
+    // where the focus is the menu's own to hand back.
+    _hideActions(refocus = true) {
+        const focus = global.stage.get_key_focus();
+
+        if (refocus && focus !== null && this._actions.contains(focus))
+            this._rows.find(row => row.history === this._actions.history)?.grab_key_focus();
+
+        this._actions.hide();
+        this._actions.reset();
+    }
+
+    // Asked the way a delete is, where the setting says to ask, rather than in
+    // the graphical tool's window: starting that tool for a question is a
+    // detour out of the shell for what the shell can ask itself. Without the
+    // setting nothing opens, and the menu stays on the history just emptied.
+    _empty(history) {
+        this._hideActions();
+
+        if (!this._settings.get_empty_history_confirmation()) {
+            this._client.empty_history(history, null, logFailure('empty_history_finish'));
+            return;
+        }
+
+        this._confirm(
+            // Translators: %s is the name of the history being emptied.
+            _('Empty “%s”?').format(history),
+            _('Every item it holds is deleted for good.'),
+            pgettext('verb', 'Empty'),
+            () => this._client.empty_history(history, null, logFailure('empty_history_finish')));
+    }
+
+    // The copy is a new history, which the daemon announces with
+    // histories-changed: that is what lists it. The entry has already held back
+    // a name the list holds.
+    _backup(history, name) {
+        this._hideActions();
+        this._client.backup_history(history, name, null, logFailure('backup_history_finish'));
+    }
+
+    // Nothing is redrawn here once the answer is yes: the daemon announces the
+    // deletion, which is what refreshes the list, and deleting the current
+    // history switches to the default one, which is what renames the row.
     _confirmDelete(history) {
+        this._confirm(
+            // Translators: %s is the name of the history being deleted.
+            _('Delete “%s”?').format(history),
+            _('The history and everything in it are deleted for good.'),
+            _('Delete'),
+            () => this._client.delete_history(history, null, logFailure('delete_history_finish')));
+    }
+
+    // A modal dialog cannot take its grab from under an open menu, so the menu
+    // goes first -- as it would have for any item that opens a dialog.
+    _confirm(title, description, label, action) {
         this._getTopMenu().close();
 
-        const dialog = this._dialog = new GPasteDeleteHistoryDialog(this._client, history);
+        const dialog = this._dialog = new GPasteHistoryConfirmationDialog(title, description, label, () => {
+            // A closing animation can leave its button reachable after name loss.
+            if (this._client.get_name_owner())
+                action();
+        });
 
         // Closing is what destroys it, which is when it stops being the
         // teardown's to close.
@@ -551,16 +820,17 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
     // the chooser is.
     collapse() {
         this._newItem.reset();
+        this._hideActions(false);
         this._fold();
     }
 
     // The submenu is a child of the menu in its own right rather than of this
     // row, so hiding the row leaves it standing: an expanded switcher hidden
     // with the daemon gone would leave its list on screen with nothing above it.
-    // Only the fold, and no reset: what the user typed is not this row's to
-    // discard for a daemon that went away, and a hide can also be a teardown --
-    // where the entry is on its way out and setting text on it reaches an actor
-    // that is being destroyed.
+    // Only the fold and hiding the actions, and no reset: what the user typed
+    // is not this row's to discard for a daemon that went away, and a hide can
+    // also be a teardown -- where the entries are on their way out and setting
+    // text on one reaches an actor that is being destroyed.
     vfunc_hide() {
         // The modal belongs to the Shell's dialog group, so hiding this row
         // alone cannot revoke a pending destructive action after daemon exit.
@@ -568,6 +838,7 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this._listing?.cancel();
         this._sizing?.cancel();
         this._fold();
+        this._actions.hide();
         super.vfunc_hide();
     }
 

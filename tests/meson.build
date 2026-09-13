@@ -18,6 +18,7 @@ gpaste_test_bus_dep = declare_dependency(
 subdir('clipboard')
 subdir('completions')
 subdir('global-shortcut-client')
+subdir('gnome-shell')
 subdir('history')
 subdir('i18n')
 subdir('settings')

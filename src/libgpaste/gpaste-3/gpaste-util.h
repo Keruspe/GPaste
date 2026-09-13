@@ -22,20 +22,17 @@ G_BEGIN_DECLS
  * owns, so a name carrying a path component names something else entirely. */
 gboolean g_paste_util_history_name_is_valid (const gchar *name);
 
-void     g_paste_util_spawn                   (const gchar *app);
-gboolean g_paste_util_spawn_sync              (const gchar *app,
-                                               GError     **error);
-void     g_paste_util_activate_ui             (const gchar *action,
-                                               GVariant    *arg);
-gboolean g_paste_util_activate_ui_sync        (const gchar *action,
-                                               GVariant    *arg,
-                                               GError     **error);
-void     g_paste_util_empty_with_confirmation (GPasteClient   *client,
-                                               GPasteSettings *settings,
-                                               const gchar    *history);
-gchar   *g_paste_util_one_line                (const gchar *text);
-gchar   *g_paste_util_display_string          (const gchar   *value,
-                                               GPasteItemKind kind);
+void     g_paste_util_spawn            (const gchar *app);
+gboolean g_paste_util_spawn_sync       (const gchar *app,
+                                        GError     **error);
+void     g_paste_util_activate_ui      (const gchar *action,
+                                        GVariant    *arg);
+gboolean g_paste_util_activate_ui_sync (const gchar *action,
+                                        GVariant    *arg,
+                                        GError     **error);
+gchar   *g_paste_util_one_line         (const gchar *text);
+gchar   *g_paste_util_display_string   (const gchar   *value,
+                                        GPasteItemKind kind);
 
 gboolean g_paste_util_has_gnome_shell                  (void);
 void     g_paste_util_has_gnome_shell_extension        (GCancellable       *cancellable,

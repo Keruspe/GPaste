@@ -18,35 +18,24 @@ import GPaste from 'gi://GPaste?version=3';
  *
  * About is not among them. A panel menu is not where an application's about
  * dialog belongs, and it cost a slot that Preferences -- which is what a user
- * actually reaches for there -- had none of.
+ * actually reaches for there -- had none of. Nor is emptying the history: that
+ * is done from a history's right click in the switcher, which can empty any of
+ * them rather than only the one in use.
  *
  * @param {PopupMenu} menu - the indicator's menu
  * @param {Extension} extension - the extension, which owns the preferences
- * @param {GPaste.Client} client - a connected client
- * @param {GPaste.Settings} settings - the settings the confirmation reads
- * @returns {object} the three items, by name
+ * @returns {object} the two items, by name
  */
-export function addGPasteFooter(menu, extension, client, settings) {
+export function addGPasteFooter(menu, extension) {
     const open = new PopupMenuItem(_('Open GPaste'));
     open.connect('activate', () => GPaste.util_spawn('Ui'));
-
-    const empty = new PopupMenuItem(_('Empty History'));
-    empty.connect('activate', () => {
-        // No name, no history to empty: the property is cached off the daemon,
-        // and reads back null while it is away.
-        const history = client.get_history_name();
-
-        if (history)
-            GPaste.util_empty_with_confirmation(client, settings, history);
-    });
 
     const preferences = new PopupMenuItem(_('Preferences'));
     preferences.connect('activate', () => extension.openPreferences());
 
     menu.addMenuItem(new PopupSeparatorMenuItem());
     menu.addMenuItem(open);
-    menu.addMenuItem(empty);
     menu.addMenuItem(preferences);
 
-    return {open, empty, preferences};
+    return {open, preferences};
 }

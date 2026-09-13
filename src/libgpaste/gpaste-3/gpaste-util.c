@@ -276,30 +276,6 @@ g_paste_util_activate_ui_sync (const gchar *action,
 }
 
 /**
- * g_paste_util_empty_with_confirmation:
- * @client: a #GPasteClient instance
- * @settings: a #GPasteSettings instance
- * @history: the name of the history to empty
- *
- * Empty a history after confirmation.
- * Confirmation is skipped if GPaste is configured to do so.
- */
-G_PASTE_VISIBLE void
-g_paste_util_empty_with_confirmation (GPasteClient   *client,
-                                      GPasteSettings *settings,
-                                      const gchar    *history)
-{
-    g_return_if_fail (G_PASTE_IS_CLIENT (client));
-    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
-    g_return_if_fail (g_utf8_validate (history, -1, NULL));
-
-    if (g_paste_settings_get_empty_history_confirmation (settings))
-        g_paste_util_activate_ui ("empty", g_variant_new_string (history));
-    else
-        g_paste_client_empty_history (client, history, NULL /* cancellable */, NULL, NULL);
-}
-
-/**
  * g_paste_util_history_name_is_valid:
  * @name: (nullable): the name of a history
  *
