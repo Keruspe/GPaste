@@ -7,11 +7,11 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 21:07+0200\n"
+"POT-Creation-Date: 2026-09-13 11:25+0200\n"
 "PO-Revision-Date: 2026-09-11 11:51+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
-"ru/>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
+">\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -54,7 +54,7 @@ msgstr ""
 "обмена;копировать;вырезать;вставить;менеджер;история;"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:17
-#: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:123
+#: src/gnome-shell/actions.js:33 src/ui/gpaste-ui-header.c:123
 msgid "Preferences"
 msgstr "Параметры"
 
@@ -327,18 +327,35 @@ msgstr ""
 "Комбинация клавиш для отправки первого элемента истории на сервис pastebin"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:253
+#, fuzzy
+msgid "The command uploading an item to a pastebin service"
+msgstr "Отправить активный элемент на сервис pastebin"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:254
+msgid ""
+"The item is written to the command's standard input, and the command must "
+"answer the url it uploaded it to -- and nothing else -- on its standard "
+"output. It is parsed as a shell command line, so it may carry arguments, but "
+"it is not run through a shell: no pipes, no redirections, no globs. "
+"wgetpaste, pastebinit and \"nc termbin.com 9999\" all fit this contract. The "
+"default needs nothing but curl, and asks it to keep quiet about its progress "
+"(-s) while still reporting errors (-S), since anything it writes on standard "
+"error ends up in the daemon's log."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:268
 msgid "Ask for confirmation before emptying a history"
 msgstr "Запрашивать подтверждение при очистке истории"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:254
+#: data/gsettings/org.gnome.GPaste.gschema.xml:269
 msgid "Enabled by default, because emptying a history cannot be undone."
 msgstr "Включено по умолчанию, поскольку очистку истории отменить невозможно."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:261
+#: data/gsettings/org.gnome.GPaste.gschema.xml:276
 msgid "Run the experimental in-shell (mutter) daemon"
 msgstr "Использовать экспериментальный запуск демона внутри оболочки (mutter)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:262
+#: data/gsettings/org.gnome.GPaste.gschema.xml:277
 msgid ""
 "Disabled by default: the GNOME Shell extension is a pure client and the "
 "standalone daemon does the work."
@@ -398,62 +415,68 @@ msgstr "Смена пароля прошла успешно"
 msgid "Cannot add non-UTF-8 data as text."
 msgstr "Невозможно добавить данные, отличные от UTF-8, в качестве текста."
 
-#: src/client/gpaste-client.c:732
+#: src/client/gpaste-client.c:741
 msgid "print the history with UUIDs"
 msgstr "выводить историю с UUID"
 
-#: src/client/gpaste-client.c:733
+#: src/client/gpaste-client.c:742
 msgid "print the size of the current history"
 msgstr "выводить размер текущей истории"
 
-#: src/client/gpaste-client.c:734
+#: src/client/gpaste-client.c:743
 msgid "print the items of the history matching <pattern>"
 msgstr "выводить элементы истории, соответствующие <pattern>"
 
-#: src/client/gpaste-client.c:735
+#: src/client/gpaste-client.c:744
 msgid "get the name of the current history"
 msgstr "получить имя текущей истории"
 
-#: src/client/gpaste-client.c:736
+#: src/client/gpaste-client.c:745
 msgid "back up the current history"
 msgstr "резервное копирование текущей истории"
 
-#: src/client/gpaste-client.c:737
+#: src/client/gpaste-client.c:746
 msgid "switch to another history"
 msgstr "переключиться на другую историю"
 
-#: src/client/gpaste-client.c:738
+#: src/client/gpaste-client.c:747
 msgid "delete a history"
 msgstr "удалить историю"
 
-#: src/client/gpaste-client.c:739
+#: src/client/gpaste-client.c:748
 msgid "list available histories"
 msgstr "список доступных историй"
 
-#: src/client/gpaste-client.c:740
+#: src/client/gpaste-client.c:749
 msgid "set text to clipboard"
 msgstr "установить текст в буфер обмена"
 
-#: src/client/gpaste-client.c:741
+#: src/client/gpaste-client.c:750
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "добавить пару имя - пароль в буфер обмена"
 
-#: src/client/gpaste-client.c:742
+#: src/client/gpaste-client.c:751
 msgid "get the item <uuid> from the history"
 msgstr "получить элемент <uuid> из истории"
 
-#: src/client/gpaste-client.c:743
+#: src/client/gpaste-client.c:752
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "установить элемент <uuid> из истории в буфер обмена"
 
-#: src/client/gpaste-client.c:744
+#: src/client/gpaste-client.c:753
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr ""
 "заменить содержимое элемента <uuid> из истории на предоставленный элемент"
 
-#: src/client/gpaste-client.c:745
+#: src/client/gpaste-client.c:754
+msgid ""
+"drop the rich text flavours of the item <uuid>, keeping the plain text it "
+"shows"
+msgstr ""
+
+#: src/client/gpaste-client.c:755
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
@@ -461,7 +484,7 @@ msgstr ""
 "объединить элементы, соответствующие UUID, из истории и поместить результат "
 "в буфер обмена"
 
-#: src/client/gpaste-client.c:746
+#: src/client/gpaste-client.c:756
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
 "that is"
@@ -469,166 +492,166 @@ msgstr ""
 "установить элемент <uuid> из истории в качестве пароля с именем <name> или "
 "обновить существующий пароль"
 
-#: src/client/gpaste-client.c:747
+#: src/client/gpaste-client.c:757
 msgid "delete item <uuid> from the history"
 msgstr "удалить элемент <uuid> из истории"
 
-#: src/client/gpaste-client.c:748
+#: src/client/gpaste-client.c:758
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:749
+#: src/client/gpaste-client.c:759
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:750
+#: src/client/gpaste-client.c:760
 msgid "delete the password <name> from the history"
 msgstr "удалить пароль <name> из истории"
 
-#: src/client/gpaste-client.c:751
+#: src/client/gpaste-client.c:761
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "поместить содержимое файла <path> в буфер обмена"
 
-#: src/client/gpaste-client.c:752
+#: src/client/gpaste-client.c:762
 msgid "empty the history"
 msgstr "очистить историю"
 
-#: src/client/gpaste-client.c:753
+#: src/client/gpaste-client.c:763
 msgid "start tracking clipboard changes"
 msgstr "начать отслеживать изменения в буфере обмена"
 
-#: src/client/gpaste-client.c:754
+#: src/client/gpaste-client.c:764
 msgid "stop tracking clipboard changes"
 msgstr "прекратить отслеживать изменения в буфере обмена"
 
-#: src/client/gpaste-client.c:755
+#: src/client/gpaste-client.c:765
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "перезапустить демон (после обновления ...)"
 
-#: src/client/gpaste-client.c:756
+#: src/client/gpaste-client.c:766
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:757
+#: src/client/gpaste-client.c:767
 msgid "change the passphrase of the encrypted history"
 msgstr "изменить пароль зашифрованной истории"
 
-#: src/client/gpaste-client.c:758
+#: src/client/gpaste-client.c:768
 msgid "launch the configuration tool"
 msgstr "запустить инструмент настройки"
 
-#: src/client/gpaste-client.c:759
+#: src/client/gpaste-client.c:769
 msgid "launch the graphical tool"
 msgstr "запустить графический интерфейс"
 
-#: src/client/gpaste-client.c:760
+#: src/client/gpaste-client.c:770
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "заставить апплет или расширение отображать историю"
 
-#: src/client/gpaste-client.c:761
+#: src/client/gpaste-client.c:771
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "загрузить элемент <uuid> на сервис pastebin"
 
-#: src/client/gpaste-client.c:762
+#: src/client/gpaste-client.c:772
 msgid "display the version"
 msgstr "показать версию"
 
-#: src/client/gpaste-client.c:763
+#: src/client/gpaste-client.c:773
 msgid "display the daemon version"
 msgstr "показать версию демона"
 
-#: src/client/gpaste-client.c:764
+#: src/client/gpaste-client.c:774
 msgid "display this help"
 msgstr "показать эту справку"
 
-#: src/client/gpaste-client.c:765
+#: src/client/gpaste-client.c:775
 msgid "display the about dialog"
 msgstr "показать «О программе»"
 
-#: src/client/gpaste-client.c:798
+#: src/client/gpaste-client.c:808
 #, c-format
 msgid "Usage:\n"
 msgstr "Использование:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:819
+#: src/client/gpaste-client.c:829
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:819
+#: src/client/gpaste-client.c:829
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "установить вывод чего-либо в буфер обмена"
 
-#: src/client/gpaste-client.c:822
+#: src/client/gpaste-client.c:832
 #, c-format
 msgid "Convenience options:"
 msgstr "Настройки удобства:"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:825
+#: src/client/gpaste-client.c:835
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:827
+#: src/client/gpaste-client.c:837
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:829
+#: src/client/gpaste-client.c:839
 msgid "use the index of the item instead of its UUID"
 msgstr "использовать индекс элемента вместо его UUID"
 
-#: src/client/gpaste-client.c:832
+#: src/client/gpaste-client.c:842
 #, c-format
 msgid "Display options:"
 msgstr "Параметры отображения:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:835
+#: src/client/gpaste-client.c:845
 msgid "display each item on only one line"
 msgstr "отображать каждый элемент только в одной строке"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:837
+#: src/client/gpaste-client.c:847
 msgid "display each item raw (without line numbers)"
 msgstr "отображать каждый элемент в необработанном виде (без номеров строк)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:839
+#: src/client/gpaste-client.c:849
 msgid "display the items in reverse order"
 msgstr "отображать элементы в обратном порядке"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:841
+#: src/client/gpaste-client.c:851
 msgid "use a NUL character instead of a new line between each item"
 msgstr "использовать символ NUL вместо новой строки между элементами"
 
-#: src/client/gpaste-client.c:844
+#: src/client/gpaste-client.c:854
 #, c-format
 msgid "Merge options:"
 msgstr "Параметры слияния:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:847 src/client/gpaste-client.c:849
+#: src/client/gpaste-client.c:857 src/client/gpaste-client.c:859
 msgid "string"
 msgstr "строка"
 
-#: src/client/gpaste-client.c:847
+#: src/client/gpaste-client.c:857
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 "добавить заданный декоратор в начало и конец каждого элемента перед слиянием"
 
-#: src/client/gpaste-client.c:849
+#: src/client/gpaste-client.c:859
 msgid "add the given separator between each item when merging"
 msgstr "добавить заданный разделитель между элементами при слиянии"
 
@@ -642,7 +665,7 @@ msgstr "Не удалось повторно запустить демона"
 msgid "Stop signal received, exiting"
 msgstr "Получен сигнал остановки, выходим"
 
-#: src/daemon/gpaste-daemon.c:295
+#: src/daemon/gpaste-daemon.c:302
 msgid "Could not export our objects on the session bus, exiting"
 msgstr ""
 
@@ -650,13 +673,13 @@ msgstr ""
 #. * --replace`): flush the history and release the lock so the successor
 #. * loads our final state, then exit successfully so the systemd unit
 #. * does not land in the failed state.
-#: src/daemon/gpaste-daemon.c:315
+#: src/daemon/gpaste-daemon.c:322
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr ""
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
-#: src/daemon/gpaste-daemon.c:323
+#: src/daemon/gpaste-daemon.c:330
 msgid ""
 "Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr ""
@@ -665,15 +688,11 @@ msgstr ""
 msgid "Open GPaste"
 msgstr "Открыть GPaste"
 
-#: src/gnome-shell/actions.js:33
-#, fuzzy
-msgid "Empty History"
-msgstr "Очистить историю"
-
 #. An icon names the button for the eye and for nothing else.
-#: src/gnome-shell/deleteButton.js:19 src/ui/gpaste-ui-item.c:968
-#: src/ui/gpaste-ui-item.c:1036 src/ui/gpaste-ui-panel.c:473
-#: src/ui/gpaste-ui-panel.c:642
+#: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:42
+#: src/gnome-shell/historySwitcher.js:178 src/ui/gpaste-ui-item.c:1024
+#: src/ui/gpaste-ui-item.c:1094 src/ui/gpaste-ui-panel.c:476
+#: src/ui/gpaste-ui-panel.c:645
 msgid "Delete"
 msgstr "Удалить"
 
@@ -689,28 +708,64 @@ msgstr "Загрузка…"
 msgid "GPaste daemon not running"
 msgstr "Демон GPaste не запущен"
 
-#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:92
+#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:99
 msgid "No Items"
 msgstr "Нет элементов"
 
-#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:499
+#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:523
 msgid "No Results"
 msgstr "Ничего не найдено"
 
-#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:502
+#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:526
 msgid "No Pinned Items"
 msgstr "Нет закреплённых элементов"
 
 #. The star shows a state and asks for the other one, so its name is
 #. what clicking it does.
-#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:195
+#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:198
 msgid "Unpin"
 msgstr "Открепить"
 
-#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:195
-#: src/ui/gpaste-ui-item.c:967
+#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:198
+#: src/ui/gpaste-ui-item.c:1023
 msgid "Pin"
 msgstr "Закрепить"
+
+#. Translators: %s is the name of the history being deleted.
+#: src/gnome-shell/historySwitcher.js:28 src/ui/gpaste-ui-panel.c:472
+#, c-format, javascript-format
+msgid "Delete “%s”?"
+msgstr "Удалить «%s»?"
+
+#: src/gnome-shell/historySwitcher.js:29 src/ui/gpaste-ui-panel.c:475
+msgid "The history and everything in it are deleted for good."
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:36
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
+#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:413
+msgid "Cancel"
+msgstr "Отмена"
+
+#: src/gnome-shell/historySwitcher.js:176
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:644
+#, fuzzy
+msgctxt "verb"
+msgid "Empty"
+msgstr "Пусто"
+
+#: src/gnome-shell/historySwitcher.js:177 src/ui/gpaste-ui-panel.c:413
+#: src/ui/gpaste-ui-panel.c:643
+#, fuzzy
+msgid "Back Up"
+msgstr "Резервное копирование"
+
+#: src/gnome-shell/historySwitcher.js:264
+#, fuzzy
+msgid "Switch to or create a history…"
+msgstr "переключиться на другую историю"
 
 #: src/gnome-shell/searchItem.js:27
 msgid "Type to search…"
@@ -813,41 +868,41 @@ msgstr "Синхронизировать основное выделение с 
 msgid "Sync Primary to Clipboard"
 msgstr "Синхронизировать первичный буфер выделения с буфером обмена"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:402
+#: src/libgpaste/gpaste-3/gpaste-util.c:439
 msgid "Image"
 msgstr "Изображение"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:404
+#: src/libgpaste/gpaste-3/gpaste-util.c:441
 msgid "Color"
 msgstr "Цвет"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:409
+#: src/libgpaste/gpaste-3/gpaste-util.c:446
 msgid "Files"
 msgstr "Файлы"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:414
+#: src/libgpaste/gpaste-3/gpaste-util.c:451
 #: src/ui/gpaste-ui-password-dialog.c:222
 msgid "Password"
 msgstr "Пароль"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:814
+#: src/libgpaste/gpaste-3/gpaste-util.c:858
 msgid "Weak"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:816
+#: src/libgpaste/gpaste-3/gpaste-util.c:860
 msgid "Fair"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:818
+#: src/libgpaste/gpaste-3/gpaste-util.c:862
 msgid "Good"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:820
+#: src/libgpaste/gpaste-3/gpaste-util.c:864
 msgid "Strong"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:219
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:234
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:187
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:202
 msgid "Could not create history dir"
 msgstr "Не удалось создать каталог истории"
 
@@ -1008,13 +1063,6 @@ msgstr ""
 msgid "Close"
 msgstr "Закрыть"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
-#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:411
-msgid "Cancel"
-msgstr "Отмена"
-
 #: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:644
 msgid "Wrong passphrase, please try again"
 msgstr "Неверная парольная фраза, попробуйте ещё раз"
@@ -1116,6 +1164,17 @@ msgid ""
 "password stay for as long as anything else would"
 msgstr ""
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:144
+msgid "Pastebin Upload Command"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:148
+msgid ""
+"The item is written to this command's standard input, and the command "
+"answers the url it uploaded it to, and nothing else, on its standard output. "
+"Arguments are allowed; pipes and redirections are not"
+msgstr ""
+
 #. A plain button that resets the key directly, like the suffix button does;
 #. * no GAction, so there is no action-muxer lookup to get wrong. Disabled
 #. * while the key is already at its default.
@@ -1124,66 +1183,66 @@ msgstr ""
 msgid "Reset to Default"
 msgstr "Сбросить к исходным"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:74
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:90
 #, fuzzy
 msgid "History Settings"
 msgstr "Настройки истории"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:78
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:94
 #, fuzzy
 msgid "Resource Limits"
 msgstr "Ограничения ресурсов"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:80
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:96
 #, fuzzy
 msgid "Max History Size"
 msgstr "Максимальный размер истории"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:85
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:101
 #, fuzzy
 msgid "Max Memory Usage (MB)"
 msgstr "Максимальное использование памяти (МБ)"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:91
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:107
 #, fuzzy
 msgid "Text Limits"
 msgstr "Ограничения текста"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:93
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:109
 #, fuzzy
 msgid "Min Text Item Length"
 msgstr "Минимальная длина текстового элемента"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:98
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:114
 #, fuzzy
 msgid "Max Text Item Length"
 msgstr "Максимальная длина текстового элемента"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:104
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:120
 #, fuzzy
 msgid "Display Settings"
 msgstr "Настройки отображения"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:122
 #, fuzzy
 msgid "Max Element Size When Displaying"
 msgstr "Максимальный размер элемента при отображении"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:112
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:128
 msgid "Storage"
 msgstr "Хранилище"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:114
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:130
 msgid "Choose how the history is stored on disk (plain or encrypted)."
 msgstr ""
 "Выбрать способ хранения истории на диске (в открытом или зашифрованном виде)."
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:116
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 #, fuzzy
 msgid "Change Storage Backend…"
 msgstr "Изменить бэкенд хранилища…"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:141
 msgid "Change Passphrase…"
 msgstr "Изменить парольную фразу…"
 
@@ -1253,33 +1312,27 @@ msgstr ""
 msgid "Every item it holds is deleted for good."
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:641
-#, fuzzy
-msgctxt "verb"
-msgid "Empty"
-msgstr "Пусто"
-
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:522
 #, fuzzy
 msgid "Password strength rating is not available in this build"
 msgstr "В этой сборке недоступна функция оценки надёжности парольной фразы"
 
-#: src/ui/gpaste-ui-edit-item.c:39
+#: src/ui/gpaste-ui-edit-item.c:40
 #, fuzzy
 msgid "Could not save the edited item"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-edit-item.c:63
+#: src/ui/gpaste-ui-edit-item.c:64
 #, fuzzy
 msgid "Could not read the item to edit"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-edit-item.c:76
+#: src/ui/gpaste-ui-edit-item.c:77
 #, fuzzy
 msgid "Edit Item"
 msgstr "Редактировать"
 
-#: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-password-dialog.c:306
+#: src/ui/gpaste-ui-edit-item.c:77 src/ui/gpaste-ui-password-dialog.c:306
 msgid "Save"
 msgstr "Сохранить"
 
@@ -1334,133 +1387,127 @@ msgstr "Поиск"
 msgid "Select Items to Merge"
 msgstr "Выберите элементы для объединения"
 
-#: src/ui/gpaste-ui-history.c:93
+#: src/ui/gpaste-ui-history.c:100
 msgid "Copy something to start building your history."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:500
+#: src/ui/gpaste-ui-history.c:524
 msgid "Try a different search."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:503
+#: src/ui/gpaste-ui-history.c:527
 msgid "Pin an item to keep it out of reach of the size and memory limits."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:579 src/ui/gpaste-ui-history.c:603
-#: src/ui/gpaste-ui-item.c:574
+#: src/ui/gpaste-ui-history.c:604 src/ui/gpaste-ui-history.c:628
+#: src/ui/gpaste-ui-item.c:603
 #, fuzzy
 msgid "Could not select the item"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-history.c:981
+#: src/ui/gpaste-ui-history.c:1006
 #, fuzzy
 msgid "Could not read the history"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-item.c:351
+#: src/ui/gpaste-ui-item.c:354
 msgid "The item was uploaded, and its address copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:352
+#: src/ui/gpaste-ui-item.c:355
 msgid "The item was uploaded, but its address could not be copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:374
+#: src/ui/gpaste-ui-item.c:377
 #, fuzzy
 msgid "Could not upload the item"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-item.c:402
+#: src/ui/gpaste-ui-item.c:409
+#, fuzzy
+msgid "Could not remove the rich text"
+msgstr "Не удалось удалить элемент"
+
+#: src/ui/gpaste-ui-item.c:423
 msgid "Could not delete the item"
 msgstr "Не удалось удалить элемент"
 
-#: src/ui/gpaste-ui-item.c:418
+#: src/ui/gpaste-ui-item.c:440
 msgid "Could not unpin the item"
 msgstr "Не удалось открепить элемент"
 
-#: src/ui/gpaste-ui-item.c:419
+#: src/ui/gpaste-ui-item.c:441
 msgid "Could not pin the item"
 msgstr "Не удалось закрепить элемент"
 
-#: src/ui/gpaste-ui-item.c:599
+#: src/ui/gpaste-ui-item.c:628
 msgid "Could not load an image preview"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1029
+#: src/ui/gpaste-ui-item.c:1086
 msgid "Edit…"
 msgstr "Редактировать…"
 
-#: src/ui/gpaste-ui-item.c:1030
+#: src/ui/gpaste-ui-item.c:1087
 msgid "Make Password…"
 msgstr "Создать пароль…"
 
-#: src/ui/gpaste-ui-item.c:1031
+#: src/ui/gpaste-ui-item.c:1088
+msgid "Remove Rich Text"
+msgstr ""
+
+#: src/ui/gpaste-ui-item.c:1089
 msgid "Upload"
 msgstr "Загрузить"
 
-#: src/ui/gpaste-ui-item.c:1035
+#: src/ui/gpaste-ui-item.c:1093
 msgid "Pinned"
 msgstr "Закреплено"
 
-#: src/ui/gpaste-ui-new-item.c:30
+#: src/ui/gpaste-ui-new-item.c:31
 msgid "Could not add the item"
 msgstr "Не удалось добавить элемент"
 
-#: src/ui/gpaste-ui-new-item.c:52
+#: src/ui/gpaste-ui-new-item.c:53
 msgid "Add New Item"
 msgstr "Добавить новый элемент"
 
-#: src/ui/gpaste-ui-new-item.c:52 src/ui/gpaste-ui-password-dialog.c:384
+#: src/ui/gpaste-ui-new-item.c:53 src/ui/gpaste-ui-password-dialog.c:384
 msgid "Add"
 msgstr "Добавить"
 
-#: src/ui/gpaste-ui-panel-history.c:36 src/ui/gpaste-ui-panel.c:325
+#: src/ui/gpaste-ui-panel-history.c:37 src/ui/gpaste-ui-panel.c:326
 #, fuzzy
 msgid "Could not switch history"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-panel.c:388
+#: src/ui/gpaste-ui-panel.c:390
 #, fuzzy
 msgid "Could not back up the history"
 msgstr "Не удалось создать каталог истории"
 
-#: src/ui/gpaste-ui-panel.c:406
+#: src/ui/gpaste-ui-panel.c:408
 #, fuzzy
 msgid "Back Up History"
 msgstr "История"
 
-#: src/ui/gpaste-ui-panel.c:407
+#: src/ui/gpaste-ui-panel.c:409
 msgid ""
 "Choose a name for the copy. The history being backed up is left as it is."
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:411 src/ui/gpaste-ui-panel.c:640
-#, fuzzy
-msgid "Back Up"
-msgstr "Резервное копирование"
-
-#: src/ui/gpaste-ui-panel.c:447
+#: src/ui/gpaste-ui-panel.c:450
 #, fuzzy
 msgid "Could not delete the history"
 msgstr "Не удалось создать каталог истории"
 
-#. Translators: %s is the name of the history being deleted.
-#: src/ui/gpaste-ui-panel.c:469
-#, c-format
-msgid "Delete “%s”?"
-msgstr "Удалить «%s»?"
-
-#: src/ui/gpaste-ui-panel.c:472
-msgid "The history and everything in it are deleted for good."
-msgstr ""
-
-#: src/ui/gpaste-ui-panel.c:550 src/ui/gpaste-ui-panel.c:562
-#: src/ui/gpaste-ui-panel.c:563
+#: src/ui/gpaste-ui-panel.c:553 src/ui/gpaste-ui-panel.c:565
+#: src/ui/gpaste-ui-panel.c:566
 #, fuzzy
 msgid "Switch or Create"
 msgstr "Переключиться на"
 
-#: src/ui/gpaste-ui-panel.c:555
+#: src/ui/gpaste-ui-panel.c:558
 msgid "Type the name of a history to switch to it, or a new name to create one"
 msgstr ""
 
@@ -1562,35 +1609,35 @@ msgstr "Это окно"
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:519
+#: src/ui/gpaste-ui-window.c:528
 msgid "Could not restart the daemon"
 msgstr "Не удалось перезапустить демон"
 
-#: src/ui/gpaste-ui-window.c:531
+#: src/ui/gpaste-ui-window.c:540
 msgid "Restart the GPaste Daemon?"
 msgstr "Перезапустить демон GPaste?"
 
-#: src/ui/gpaste-ui-window.c:532
+#: src/ui/gpaste-ui-window.c:541
 msgid "The clipboard is not recorded while it restarts."
 msgstr "Содержимое буфера обмена не сохраняется после перезагрузки."
 
-#: src/ui/gpaste-ui-window.c:533
+#: src/ui/gpaste-ui-window.c:542
 msgid "Restart"
 msgstr "Перезапустить"
 
-#: src/ui/gpaste-ui-window.c:554
+#: src/ui/gpaste-ui-window.c:564
 msgid "Could not start tracking the clipboard"
 msgstr "Не удалось начать отслеживание изменений в буфере обмена"
 
-#: src/ui/gpaste-ui-window.c:555
+#: src/ui/gpaste-ui-window.c:565
 msgid "Could not stop tracking the clipboard"
 msgstr "Не удалось остановить отслеживание изменений в буфере обмена"
 
-#: src/ui/gpaste-ui-window.c:579
+#: src/ui/gpaste-ui-window.c:589
 msgid "Stop Tracking the Clipboard?"
 msgstr "Остановить отслеживание изменений в буфере обмена?"
 
-#: src/ui/gpaste-ui-window.c:580
+#: src/ui/gpaste-ui-window.c:590
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
@@ -1598,65 +1645,69 @@ msgstr ""
 "Скопированные данные не будут добавлены в историю, пока отслеживание не "
 "будет снова запущено."
 
-#: src/ui/gpaste-ui-window.c:581
+#: src/ui/gpaste-ui-window.c:591
 msgid "Stop"
 msgstr "Остановить"
 
-#: src/ui/gpaste-ui-window.c:621
+#: src/ui/gpaste-ui-window.c:631
 msgid "Clipboard management system"
 msgstr "Система управления буфером обмена"
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:627
+#: src/ui/gpaste-ui-window.c:637
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:885
+#: src/ui/gpaste-ui-window.c:896
 msgid "Could not merge the selected items"
 msgstr "Не удалось объединить выбранные элементы"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:931
+#: src/ui/gpaste-ui-window.c:942
 msgid "New Line"
 msgstr "Новая линия"
 
-#: src/ui/gpaste-ui-window.c:932
+#: src/ui/gpaste-ui-window.c:943
 msgid "Space"
 msgstr "Пробел"
 
-#: src/ui/gpaste-ui-window.c:933
+#: src/ui/gpaste-ui-window.c:944
 msgid "Comma"
 msgstr "Запятая"
 
-#: src/ui/gpaste-ui-window.c:934
+#: src/ui/gpaste-ui-window.c:945
 msgid "Tab"
 msgstr "Табуляция"
 
-#: src/ui/gpaste-ui-window.c:942
+#: src/ui/gpaste-ui-window.c:953
 msgid "Custom separator"
 msgstr "Пользовательский разделитель"
 
-#: src/ui/gpaste-ui-window.c:947
+#: src/ui/gpaste-ui-window.c:958
 msgid "Merge with this separator"
 msgstr "Объединить с помощью этого разделителя"
 
-#: src/ui/gpaste-ui-window.c:958
+#: src/ui/gpaste-ui-window.c:969
 msgid "Merge"
 msgstr "Объединить"
 
-#: src/ui/gpaste-ui-window.c:1037
+#: src/ui/gpaste-ui-window.c:1048
 msgid "Quit"
 msgstr "Выход"
 
-#: src/ui/gpaste-ui-window.c:1081 src/ui/gpaste-ui-window.c:1082
+#: src/ui/gpaste-ui-window.c:1092 src/ui/gpaste-ui-window.c:1093
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Не удалось подключиться к демону GPaste"
 
-#: src/ui/gpaste-ui-window.c:1146
+#: src/ui/gpaste-ui-window.c:1157
 msgid "Histories"
 msgstr "История"
 
-#: src/ui/gpaste-ui-window.c:1147
+#: src/ui/gpaste-ui-window.c:1158
 msgid "History"
 msgstr "История"
+
+#, fuzzy
+#~ msgid "Empty History"
+#~ msgstr "Очистить историю"

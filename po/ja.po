@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 21:07+0200\n"
+"POT-Creation-Date: 2026-09-13 11:25+0200\n"
 "PO-Revision-Date: 2020-04-10 21:57-0400\n"
 "Last-Translator: Peniel Vargas <tsuneake.kaemitsu@gmail.com>\n"
 "Language-Team: Japanese\n"
@@ -53,7 +53,7 @@ msgid "Clipboard;Copy;Paste;History;Manager;"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:17
-#: src/gnome-shell/actions.js:43 src/ui/gpaste-ui-header.c:123
+#: src/gnome-shell/actions.js:33 src/ui/gpaste-ui-header.c:123
 #, fuzzy
 msgid "Preferences"
 msgstr "GPaste の設定"
@@ -312,18 +312,35 @@ msgid ""
 msgstr "<uuid> に一致する項目を Pastebin にアップロードする"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:253
+#, fuzzy
+msgid "The command uploading an item to a pastebin service"
+msgstr "Pastebin にアクティブな項目をアップロードする"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:254
+msgid ""
+"The item is written to the command's standard input, and the command must "
+"answer the url it uploaded it to -- and nothing else -- on its standard "
+"output. It is parsed as a shell command line, so it may carry arguments, but "
+"it is not run through a shell: no pipes, no redirections, no globs. "
+"wgetpaste, pastebinit and \"nc termbin.com 9999\" all fit this contract. The "
+"default needs nothing but curl, and asks it to keep quiet about its progress "
+"(-s) while still reporting errors (-S), since anything it writes on standard "
+"error ends up in the daemon's log."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:268
 msgid "Ask for confirmation before emptying a history"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:254
+#: data/gsettings/org.gnome.GPaste.gschema.xml:269
 msgid "Enabled by default, because emptying a history cannot be undone."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:261
+#: data/gsettings/org.gnome.GPaste.gschema.xml:276
 msgid "Run the experimental in-shell (mutter) daemon"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:262
+#: data/gsettings/org.gnome.GPaste.gschema.xml:277
 msgid ""
 "Disabled by default: the GNOME Shell extension is a pure client and the "
 "standalone daemon does the work."
@@ -381,242 +398,248 @@ msgstr "デーモンを正常に再実行しました"
 msgid "Cannot add non-UTF-8 data as text."
 msgstr "UTF-8 以外のデータはテキストとして追加できません。"
 
-#: src/client/gpaste-client.c:732
+#: src/client/gpaste-client.c:741
 #, fuzzy
 msgid "print the history with UUIDs"
 msgstr "インデックス付きの履歴を表示する"
 
-#: src/client/gpaste-client.c:733
+#: src/client/gpaste-client.c:742
 #, fuzzy
 msgid "print the size of the current history"
 msgstr "履歴の大きさを表示する"
 
-#: src/client/gpaste-client.c:734
+#: src/client/gpaste-client.c:743
 #, fuzzy
 msgid "print the items of the history matching <pattern>"
 msgstr "履歴の大きさを表示する"
 
-#: src/client/gpaste-client.c:735
+#: src/client/gpaste-client.c:744
 msgid "get the name of the current history"
 msgstr "現在の履歴の名前を取得する"
 
-#: src/client/gpaste-client.c:736
+#: src/client/gpaste-client.c:745
 msgid "back up the current history"
 msgstr "現在の履歴をバックアップする"
 
-#: src/client/gpaste-client.c:737
+#: src/client/gpaste-client.c:746
 msgid "switch to another history"
 msgstr "他の履歴に切り替える"
 
-#: src/client/gpaste-client.c:738
+#: src/client/gpaste-client.c:747
 msgid "delete a history"
 msgstr "履歴を削除する"
 
-#: src/client/gpaste-client.c:739
+#: src/client/gpaste-client.c:748
 msgid "list available histories"
 msgstr "利用可能な履歴を一覧表示する"
 
-#: src/client/gpaste-client.c:740
+#: src/client/gpaste-client.c:749
 msgid "set text to clipboard"
 msgstr "テキストをクリップボードに追加する"
 
-#: src/client/gpaste-client.c:741
+#: src/client/gpaste-client.c:750
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "クリップボードに名前とパスワードの組み合わせを追加する"
 
-#: src/client/gpaste-client.c:742
+#: src/client/gpaste-client.c:751
 #, fuzzy
 msgid "get the item <uuid> from the history"
 msgstr "この ID に一致する項目を履歴からクリップボードに設定する"
 
-#: src/client/gpaste-client.c:743
+#: src/client/gpaste-client.c:752
 #, fuzzy
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "この ID に一致する項目を履歴からクリップボードに設定する"
 
-#: src/client/gpaste-client.c:744
+#: src/client/gpaste-client.c:753
 #, fuzzy
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "履歴の <uuid> に一致する項目の内容を指定した項目で置き換える"
 
-#: src/client/gpaste-client.c:745
+#: src/client/gpaste-client.c:754
+msgid ""
+"drop the rich text flavours of the item <uuid>, keeping the plain text it "
+"shows"
+msgstr ""
+
+#: src/client/gpaste-client.c:755
 #, fuzzy
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr "履歴の <数字> 番目の項目をマージして、結果をクリップボードに追加する"
 
-#: src/client/gpaste-client.c:746
+#: src/client/gpaste-client.c:756
 #, fuzzy
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
 "that is"
 msgstr "履歴の <数字> 番目の項目を <名前> という名前のパスワードとして設定する"
 
-#: src/client/gpaste-client.c:747
+#: src/client/gpaste-client.c:757
 #, fuzzy
 msgid "delete item <uuid> from the history"
 msgstr "履歴からパスワード <名前> を削除する"
 
-#: src/client/gpaste-client.c:748
+#: src/client/gpaste-client.c:758
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:749
+#: src/client/gpaste-client.c:759
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:750
+#: src/client/gpaste-client.c:760
 msgid "delete the password <name> from the history"
 msgstr "履歴からパスワード <名前> を削除する"
 
-#: src/client/gpaste-client.c:751
+#: src/client/gpaste-client.c:761
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "<パス> にあるファイルの内容をクリップボードに追加"
 
-#: src/client/gpaste-client.c:752
+#: src/client/gpaste-client.c:762
 msgid "empty the history"
 msgstr "履歴を空にする"
 
-#: src/client/gpaste-client.c:753
+#: src/client/gpaste-client.c:763
 msgid "start tracking clipboard changes"
 msgstr "クリップボードの変更の追跡を開始する"
 
-#: src/client/gpaste-client.c:754
+#: src/client/gpaste-client.c:764
 msgid "stop tracking clipboard changes"
 msgstr "クリップボードの変更の追跡を停止する"
 
-#: src/client/gpaste-client.c:755
+#: src/client/gpaste-client.c:765
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "デーモンを再実行する (アップグレード後...)"
 
-#: src/client/gpaste-client.c:756
+#: src/client/gpaste-client.c:766
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:757
+#: src/client/gpaste-client.c:767
 #, fuzzy
 msgid "change the passphrase of the encrypted history"
 msgstr "現在の履歴の名前を取得する"
 
-#: src/client/gpaste-client.c:758
+#: src/client/gpaste-client.c:768
 msgid "launch the configuration tool"
 msgstr "設定ツールを起動する"
 
-#: src/client/gpaste-client.c:759
+#: src/client/gpaste-client.c:769
 msgid "launch the graphical tool"
 msgstr "GUI ツールを起動する"
 
-#: src/client/gpaste-client.c:760
+#: src/client/gpaste-client.c:770
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "アプレットまたは拡張機能に履歴を表示させる"
 
-#: src/client/gpaste-client.c:761
+#: src/client/gpaste-client.c:771
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "<uuid> に一致する項目を Pastebin にアップロードする"
 
-#: src/client/gpaste-client.c:762
+#: src/client/gpaste-client.c:772
 msgid "display the version"
 msgstr "バージョンを表示する"
 
-#: src/client/gpaste-client.c:763
+#: src/client/gpaste-client.c:773
 msgid "display the daemon version"
 msgstr "デーモンのバージョンを表示する"
 
-#: src/client/gpaste-client.c:764
+#: src/client/gpaste-client.c:774
 msgid "display this help"
 msgstr "ヘルプを表示する"
 
-#: src/client/gpaste-client.c:765
+#: src/client/gpaste-client.c:775
 msgid "display the about dialog"
 msgstr "GPaste についてのダイアログを表示する"
 
-#: src/client/gpaste-client.c:798
+#: src/client/gpaste-client.c:808
 #, c-format
 msgid "Usage:\n"
 msgstr "使い方:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:819
+#: src/client/gpaste-client.c:829
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:819
+#: src/client/gpaste-client.c:829
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "プログラムの出力をクリップボードに設定する"
 
-#: src/client/gpaste-client.c:822
+#: src/client/gpaste-client.c:832
 #, fuzzy, c-format
 msgid "Convenience options:"
 msgstr "マージオプション:"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:825
+#: src/client/gpaste-client.c:835
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:827
+#: src/client/gpaste-client.c:837
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:829
+#: src/client/gpaste-client.c:839
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
-#: src/client/gpaste-client.c:832
+#: src/client/gpaste-client.c:842
 #, c-format
 msgid "Display options:"
 msgstr "表示オプション:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:835
+#: src/client/gpaste-client.c:845
 msgid "display each item on only one line"
 msgstr "各項目を一行に表示する"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:837
+#: src/client/gpaste-client.c:847
 msgid "display each item raw (without line numbers)"
 msgstr "各項目を表示する (行番号なし)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:839
+#: src/client/gpaste-client.c:849
 msgid "display the items in reverse order"
 msgstr "項目を逆順で表示する"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:841
+#: src/client/gpaste-client.c:851
 msgid "use a NUL character instead of a new line between each item"
 msgstr "各項目の区切りに改行ではなくヌル文字を使用する"
 
-#: src/client/gpaste-client.c:844
+#: src/client/gpaste-client.c:854
 #, c-format
 msgid "Merge options:"
 msgstr "マージオプション:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:847 src/client/gpaste-client.c:849
+#: src/client/gpaste-client.c:857 src/client/gpaste-client.c:859
 msgid "string"
 msgstr "文字列"
 
-#: src/client/gpaste-client.c:847
+#: src/client/gpaste-client.c:857
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr "マージする前に各項目の最初と最後に指定した文字列を追加する"
 
-#: src/client/gpaste-client.c:849
+#: src/client/gpaste-client.c:859
 msgid "add the given separator between each item when merging"
 msgstr "マージする時に各項目の間に指定された区切り記号を追加する"
 
@@ -631,7 +654,7 @@ msgstr "デーモンを正常に再実行しました\n"
 msgid "Stop signal received, exiting"
 msgstr "停止シグナルを受信し、終了します"
 
-#: src/daemon/gpaste-daemon.c:295
+#: src/daemon/gpaste-daemon.c:302
 msgid "Could not export our objects on the session bus, exiting"
 msgstr ""
 
@@ -639,13 +662,13 @@ msgstr ""
 #. * --replace`): flush the history and release the lock so the successor
 #. * loads our final state, then exit successfully so the systemd unit
 #. * does not land in the failed state.
-#: src/daemon/gpaste-daemon.c:315
+#: src/daemon/gpaste-daemon.c:322
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr ""
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
-#: src/daemon/gpaste-daemon.c:323
+#: src/daemon/gpaste-daemon.c:330
 msgid ""
 "Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr ""
@@ -655,15 +678,11 @@ msgstr ""
 msgid "Open GPaste"
 msgstr "GPaste について"
 
-#: src/gnome-shell/actions.js:33
-#, fuzzy
-msgid "Empty History"
-msgstr "履歴を空にする"
-
 #. An icon names the button for the eye and for nothing else.
-#: src/gnome-shell/deleteButton.js:19 src/ui/gpaste-ui-item.c:968
-#: src/ui/gpaste-ui-item.c:1036 src/ui/gpaste-ui-panel.c:473
-#: src/ui/gpaste-ui-panel.c:642
+#: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:42
+#: src/gnome-shell/historySwitcher.js:178 src/ui/gpaste-ui-item.c:1024
+#: src/ui/gpaste-ui-item.c:1094 src/ui/gpaste-ui-panel.c:476
+#: src/ui/gpaste-ui-panel.c:645
 msgid "Delete"
 msgstr "削除"
 
@@ -680,29 +699,65 @@ msgstr ""
 msgid "GPaste daemon not running"
 msgstr "GPaste の設定"
 
-#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:92
+#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:99
 msgid "No Items"
 msgstr ""
 
-#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:499
+#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:523
 #, fuzzy
 msgid "No Results"
 msgstr "(検索結果はありません)"
 
-#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:502
+#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:526
 msgid "No Pinned Items"
 msgstr ""
 
 #. The star shows a state and asks for the other one, so its name is
 #. what clicking it does.
-#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:195
+#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:198
 msgid "Unpin"
 msgstr ""
 
-#: src/gnome-shell/favouriteButton.js:39 src/ui/gpaste-ui-item.c:195
-#: src/ui/gpaste-ui-item.c:967
+#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:198
+#: src/ui/gpaste-ui-item.c:1023
 msgid "Pin"
 msgstr ""
+
+#. Translators: %s is the name of the history being deleted.
+#: src/gnome-shell/historySwitcher.js:28 src/ui/gpaste-ui-panel.c:472
+#, c-format, javascript-format
+msgid "Delete “%s”?"
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:29 src/ui/gpaste-ui-panel.c:475
+msgid "The history and everything in it are deleted for good."
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:36
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
+#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:413
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: src/gnome-shell/historySwitcher.js:176
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:644
+#, fuzzy
+msgctxt "verb"
+msgid "Empty"
+msgstr "空にする"
+
+#: src/gnome-shell/historySwitcher.js:177 src/ui/gpaste-ui-panel.c:413
+#: src/ui/gpaste-ui-panel.c:643
+#, fuzzy
+msgid "Back Up"
+msgstr "バックアップ"
+
+#: src/gnome-shell/historySwitcher.js:264
+#, fuzzy
+msgid "Switch to or create a history…"
+msgstr "他の履歴に切り替える"
 
 #: src/gnome-shell/searchItem.js:27
 msgid "Type to search…"
@@ -812,41 +867,41 @@ msgstr "プライマリー選択からクリップボードに同期する"
 msgid "Sync Primary to Clipboard"
 msgstr "プライマリー選択からクリップボードに同期する"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:402
+#: src/libgpaste/gpaste-3/gpaste-util.c:439
 msgid "Image"
 msgstr "画像"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:404
+#: src/libgpaste/gpaste-3/gpaste-util.c:441
 msgid "Color"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:409
+#: src/libgpaste/gpaste-3/gpaste-util.c:446
 msgid "Files"
 msgstr "ファイル"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:414
+#: src/libgpaste/gpaste-3/gpaste-util.c:451
 #: src/ui/gpaste-ui-password-dialog.c:222
 msgid "Password"
 msgstr "パスワード"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:814
+#: src/libgpaste/gpaste-3/gpaste-util.c:858
 msgid "Weak"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:816
+#: src/libgpaste/gpaste-3/gpaste-util.c:860
 msgid "Fair"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:818
+#: src/libgpaste/gpaste-3/gpaste-util.c:862
 msgid "Good"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:820
+#: src/libgpaste/gpaste-3/gpaste-util.c:864
 msgid "Strong"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:219
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:234
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:187
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:202
 msgid "Could not create history dir"
 msgstr "履歴ディレクトリを作成できませんでした"
 
@@ -1007,13 +1062,6 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
-#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:411
-msgid "Cancel"
-msgstr "キャンセル"
-
 #: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:644
 msgid "Wrong passphrase, please try again"
 msgstr ""
@@ -1104,6 +1152,17 @@ msgid ""
 "password stay for as long as anything else would"
 msgstr ""
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:144
+msgid "Pastebin Upload Command"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:148
+msgid ""
+"The item is written to this command's standard input, and the command "
+"answers the url it uploaded it to, and nothing else, on its standard output. "
+"Arguments are allowed; pipes and redirections are not"
+msgstr ""
+
 #. A plain button that resets the key directly, like the suffix button does;
 #. * no GAction, so there is no action-muxer lookup to get wrong. Disabled
 #. * while the key is already at its default.
@@ -1111,62 +1170,62 @@ msgstr ""
 msgid "Reset to Default"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:74
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:90
 #, fuzzy
 msgid "History Settings"
 msgstr "履歴設定"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:78
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:94
 msgid "Resource Limits"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:80
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:96
 #, fuzzy
 msgid "Max History Size"
 msgstr "履歴の最大数"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:85
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:101
 #, fuzzy
 msgid "Max Memory Usage (MB)"
 msgstr "メモリの最大使用量 (MB)"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:91
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:107
 msgid "Text Limits"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:93
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:109
 #, fuzzy
 msgid "Min Text Item Length"
 msgstr "テキストの最小の長さ"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:98
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:114
 #, fuzzy
 msgid "Max Text Item Length"
 msgstr "テキストの最大の長さ"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:104
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:120
 #, fuzzy
 msgid "Display Settings"
 msgstr "履歴設定"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:122
 #, fuzzy
 msgid "Max Element Size When Displaying"
 msgstr "表示時の要素の最大サイズ"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:112
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:128
 msgid "Storage"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:114
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:130
 msgid "Choose how the history is stored on disk (plain or encrypted)."
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:116
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Change Storage Backend…"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:141
 msgid "Change Passphrase…"
 msgstr ""
 
@@ -1234,33 +1293,27 @@ msgstr ""
 msgid "Every item it holds is deleted for good."
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:641
-#, fuzzy
-msgctxt "verb"
-msgid "Empty"
-msgstr "空にする"
-
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:522
 #, fuzzy
 msgid "Password strength rating is not available in this build"
 msgstr "利用可能な履歴を一覧表示する"
 
-#: src/ui/gpaste-ui-edit-item.c:39
+#: src/ui/gpaste-ui-edit-item.c:40
 #, fuzzy
 msgid "Could not save the edited item"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-edit-item.c:63
+#: src/ui/gpaste-ui-edit-item.c:64
 #, fuzzy
 msgid "Could not read the item to edit"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-edit-item.c:76
+#: src/ui/gpaste-ui-edit-item.c:77
 #, fuzzy
 msgid "Edit Item"
 msgstr "編集"
 
-#: src/ui/gpaste-ui-edit-item.c:76 src/ui/gpaste-ui-password-dialog.c:306
+#: src/ui/gpaste-ui-edit-item.c:77 src/ui/gpaste-ui-password-dialog.c:306
 msgid "Save"
 msgstr ""
 
@@ -1312,138 +1365,132 @@ msgstr "検索"
 msgid "Select Items to Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:93
+#: src/ui/gpaste-ui-history.c:100
 msgid "Copy something to start building your history."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:500
+#: src/ui/gpaste-ui-history.c:524
 msgid "Try a different search."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:503
+#: src/ui/gpaste-ui-history.c:527
 msgid "Pin an item to keep it out of reach of the size and memory limits."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:579 src/ui/gpaste-ui-history.c:603
-#: src/ui/gpaste-ui-item.c:574
+#: src/ui/gpaste-ui-history.c:604 src/ui/gpaste-ui-history.c:628
+#: src/ui/gpaste-ui-item.c:603
 #, fuzzy
 msgid "Could not select the item"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-history.c:981
+#: src/ui/gpaste-ui-history.c:1006
 #, fuzzy
 msgid "Could not read the history"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-item.c:351
+#: src/ui/gpaste-ui-item.c:354
 msgid "The item was uploaded, and its address copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:352
+#: src/ui/gpaste-ui-item.c:355
 msgid "The item was uploaded, but its address could not be copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:374
+#: src/ui/gpaste-ui-item.c:377
 #, fuzzy
 msgid "Could not upload the item"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-item.c:402
+#: src/ui/gpaste-ui-item.c:409
+#, fuzzy
+msgid "Could not remove the rich text"
+msgstr "履歴ディレクトリを作成できませんでした"
+
+#: src/ui/gpaste-ui-item.c:423
 #, fuzzy
 msgid "Could not delete the item"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-item.c:418
+#: src/ui/gpaste-ui-item.c:440
 msgid "Could not unpin the item"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:419
+#: src/ui/gpaste-ui-item.c:441
 #, fuzzy
 msgid "Could not pin the item"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-item.c:599
+#: src/ui/gpaste-ui-item.c:628
 msgid "Could not load an image preview"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1029
+#: src/ui/gpaste-ui-item.c:1086
 #, fuzzy
 msgid "Edit…"
 msgstr "編集"
 
-#: src/ui/gpaste-ui-item.c:1030
+#: src/ui/gpaste-ui-item.c:1087
 #, fuzzy
 msgid "Make Password…"
 msgstr "パスワード"
 
-#: src/ui/gpaste-ui-item.c:1031
+#: src/ui/gpaste-ui-item.c:1088
+msgid "Remove Rich Text"
+msgstr ""
+
+#: src/ui/gpaste-ui-item.c:1089
 msgid "Upload"
 msgstr "アップロード"
 
-#: src/ui/gpaste-ui-item.c:1035
+#: src/ui/gpaste-ui-item.c:1093
 msgid "Pinned"
 msgstr ""
 
-#: src/ui/gpaste-ui-new-item.c:30
+#: src/ui/gpaste-ui-new-item.c:31
 #, fuzzy
 msgid "Could not add the item"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-new-item.c:52
+#: src/ui/gpaste-ui-new-item.c:53
 msgid "Add New Item"
 msgstr ""
 
-#: src/ui/gpaste-ui-new-item.c:52 src/ui/gpaste-ui-password-dialog.c:384
+#: src/ui/gpaste-ui-new-item.c:53 src/ui/gpaste-ui-password-dialog.c:384
 msgid "Add"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel-history.c:36 src/ui/gpaste-ui-panel.c:325
+#: src/ui/gpaste-ui-panel-history.c:37 src/ui/gpaste-ui-panel.c:326
 #, fuzzy
 msgid "Could not switch history"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-panel.c:388
+#: src/ui/gpaste-ui-panel.c:390
 #, fuzzy
 msgid "Could not back up the history"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#: src/ui/gpaste-ui-panel.c:406
+#: src/ui/gpaste-ui-panel.c:408
 #, fuzzy
 msgid "Back Up History"
 msgstr "履歴設定"
 
-#: src/ui/gpaste-ui-panel.c:407
+#: src/ui/gpaste-ui-panel.c:409
 msgid ""
 "Choose a name for the copy. The history being backed up is left as it is."
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:411 src/ui/gpaste-ui-panel.c:640
-#, fuzzy
-msgid "Back Up"
-msgstr "バックアップ"
-
-#: src/ui/gpaste-ui-panel.c:447
+#: src/ui/gpaste-ui-panel.c:450
 #, fuzzy
 msgid "Could not delete the history"
 msgstr "履歴ディレクトリを作成できませんでした"
 
-#. Translators: %s is the name of the history being deleted.
-#: src/ui/gpaste-ui-panel.c:469
-#, c-format
-msgid "Delete “%s”?"
-msgstr ""
-
-#: src/ui/gpaste-ui-panel.c:472
-msgid "The history and everything in it are deleted for good."
-msgstr ""
-
-#: src/ui/gpaste-ui-panel.c:550 src/ui/gpaste-ui-panel.c:562
-#: src/ui/gpaste-ui-panel.c:563
+#: src/ui/gpaste-ui-panel.c:553 src/ui/gpaste-ui-panel.c:565
+#: src/ui/gpaste-ui-panel.c:566
 #, fuzzy
 msgid "Switch or Create"
 msgstr "切り替え"
 
-#: src/ui/gpaste-ui-panel.c:555
+#: src/ui/gpaste-ui-panel.c:558
 msgid "Type the name of a history to switch to it, or a new name to create one"
 msgstr ""
 
@@ -1552,107 +1599,111 @@ msgstr ""
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:519
+#: src/ui/gpaste-ui-window.c:528
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "デーモンを再起動する"
 
-#: src/ui/gpaste-ui-window.c:531
+#: src/ui/gpaste-ui-window.c:540
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "デーモンを再起動する"
 
-#: src/ui/gpaste-ui-window.c:532
+#: src/ui/gpaste-ui-window.c:541
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:533
+#: src/ui/gpaste-ui-window.c:542
 msgid "Restart"
 msgstr "再起動"
 
-#: src/ui/gpaste-ui-window.c:554
+#: src/ui/gpaste-ui-window.c:564
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "クリップボードの変更の追跡を開始する"
 
-#: src/ui/gpaste-ui-window.c:555
+#: src/ui/gpaste-ui-window.c:565
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "クリップボードの変更の追跡を停止する"
 
-#: src/ui/gpaste-ui-window.c:579
+#: src/ui/gpaste-ui-window.c:589
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "クリップボードの変更の追跡を停止する"
 
-#: src/ui/gpaste-ui-window.c:580
+#: src/ui/gpaste-ui-window.c:590
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:581
+#: src/ui/gpaste-ui-window.c:591
 msgid "Stop"
 msgstr "停止"
 
-#: src/ui/gpaste-ui-window.c:621
+#: src/ui/gpaste-ui-window.c:631
 msgid "Clipboard management system"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:627
+#: src/ui/gpaste-ui-window.c:637
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:885
+#: src/ui/gpaste-ui-window.c:896
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "履歴ディレクトリを作成できませんでした"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:931
+#: src/ui/gpaste-ui-window.c:942
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:932
+#: src/ui/gpaste-ui-window.c:943
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:933
+#: src/ui/gpaste-ui-window.c:944
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:934
+#: src/ui/gpaste-ui-window.c:945
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:942
+#: src/ui/gpaste-ui-window.c:953
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:947
+#: src/ui/gpaste-ui-window.c:958
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:958
+#: src/ui/gpaste-ui-window.c:969
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1037
+#: src/ui/gpaste-ui-window.c:1048
 msgid "Quit"
 msgstr "終了"
 
-#: src/ui/gpaste-ui-window.c:1081 src/ui/gpaste-ui-window.c:1082
+#: src/ui/gpaste-ui-window.c:1092 src/ui/gpaste-ui-window.c:1093
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste デーモンに接続できませんでした"
 
-#: src/ui/gpaste-ui-window.c:1146
+#: src/ui/gpaste-ui-window.c:1157
 #, fuzzy
 msgid "Histories"
 msgstr "履歴設定"
 
-#: src/ui/gpaste-ui-window.c:1147
+#: src/ui/gpaste-ui-window.c:1158
 #, fuzzy
 msgid "History"
 msgstr "履歴設定"
+
+#, fuzzy
+#~ msgid "Empty History"
+#~ msgstr "履歴を空にする"
