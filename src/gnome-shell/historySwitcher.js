@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Dialog from 'resource:///org/gnome/shell/ui/dialog.js';
+import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import {Ornament, PopupBaseMenuItem, PopupMenuItem, PopupSubMenuMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
@@ -9,6 +11,7 @@ import GObject from 'gi://GObject';
 import GPaste from 'gi://GPaste?version=3';
 import St from 'gi://St';
 
+import {GPasteDeleteButton} from './deleteButton.js';
 import {awaitReply, replaceCancellable} from './dependencies.js';
 
 /**
@@ -50,21 +53,138 @@ function addConfirmMark(entry, iconName, acceptable, confirm) {
     return update;
 }
 
-const GPasteHistoryRow = GObject.registerClass({
-    // Activating a menu item closes the menu: PopupMenuBase answers 'activate'
-    // with itemActivated(). The menu is meant to stay open on the history just
-    // switched to -- that is the whole of what changed, and it is the list below
-    // that shows it -- so the row says it its own way, as the placeholder row
-    // does for 'retry', and the switcher listens for that instead.
-    Signals: {'switch': {param_types: [GObject.TYPE_STRING]}},
-}, class GPasteHistoryRow extends PopupMenuItem {
+/**
+ * The callback for a call nothing waits on: the menu has closed on it, or never
+ * needed its answer, so a refusal -- a daemon busy handing its store over, say --
+ * has nowhere to go but the log, and would otherwise be dropped without a trace.
+ *
+ * @param {string} finish - the name of the call's _finish method
+ * @returns {Function} the callback to pass the call
+ */
+function logFailure(finish) {
+    return (client, result) => {
+        try {
+            client[finish](result);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+}
+
+// Asks before a history goes: unlike an item, it takes everything it holds with
+// it, which is also why the graphical tool asks. The words are that tool's own,
+// so they arrive already translated.
+const GPasteDeleteHistoryDialog = GObject.registerClass(
+class GPasteDeleteHistoryDialog extends ModalDialog.ModalDialog {
+    constructor(client, history) {
+        super();
+
+        this.contentLayout.add_child(new Dialog.MessageDialogContent({
+            // Translators: %s is the name of the history being deleted.
+            title: _('Delete “%s”?').format(history),
+            description: _('The history and everything in it are deleted for good.'),
+        }));
+
+        // Cancel is what Escape answers and where the focus starts: the Delete
+        // key is one way here, and pressing Enter after it should not be all it
+        // takes to lose a history.
+        this.addButton({
+            label: _('Cancel'),
+            action: () => this.close(),
+            key: Clutter.KEY_Escape,
+            default: true,
+        });
+        this.addButton({
+            label: _('Delete'),
+            action: () => {
+                // A closing animation can leave its button reachable after name loss.
+                if (client.get_name_owner())
+                    client.delete_history(history, null, logFailure('delete_history_finish'));
+                this.close();
+            },
+        });
+    }
+});
+
+/**
+ * The bin on a row naming a history, shown on the row being looked at: the one
+ * under the pointer (`hover`) and the one the keyboard is on (`active`), the
+ * pointer being kept from setting `active` on these rows -- see
+ * GPasteHistoryRow and GPasteHistorySwitcher's `active`.
+ *
+ * Not focusable, where an item row's is: tabbing into it would clear `active` on
+ * the row and hide it under the keyboard, which GPasteItem answers with a watch
+ * on the stage's focus. Every row that wears it answers the Delete key with what
+ * the button does, so there is nothing the button would add there to be worth
+ * that.
+ *
+ * @param {PopupBaseMenuItem} row - the row the button sits on
+ * @param {Function} onClicked - what deleting from that row does
+ * @returns {GPasteDeleteButton} the button, for the row to place
+ */
+function newHistoryDeleteButton(row, onClicked) {
+    const button = new GPasteDeleteButton();
+
+    button.can_focus = false;
+    button.connect('clicked', onClicked);
+    const sync = () => {
+        button.visible = row.hover || row.active;
+    };
+
+    row.connect('notify::hover', sync);
+    row.connect('notify::active', sync);
+    sync();
+
+    return button;
+}
+
+class GPasteHistoryRow extends PopupMenuItem {
+    // Registered here rather than through GObject.registerClass (class ...) for
+    // the binding pool, as GPasteItem is.
+    static {
+        GObject.registerClass({
+            // Activating a menu item closes the menu: PopupMenuBase answers
+            // 'activate' with itemActivated(). The menu is meant to stay open on
+            // the history just switched to -- that is the whole of what changed,
+            // and it is the list below that shows it -- so the row says it its
+            // own way, as the placeholder row does for 'retry', and the switcher
+            // listens for that instead. 'delete' is the row asking for the same
+            // thing of its button and of its Delete key.
+            Signals: {
+                'switch': {param_types: [GObject.TYPE_STRING]},
+                'delete': {param_types: [GObject.TYPE_STRING]},
+            },
+        }, this);
+
+        const bindingPool = this.get_binding_pool();
+        const deleteHistory = obj => {
+            obj.emit('delete', obj._history);
+            return Clutter.EVENT_STOP;
+        };
+
+        bindingPool.install_closure('delete', Clutter.KEY_BackSpace, 0, deleteHistory);
+        bindingPool.install_closure('delete', Clutter.KEY_Delete, 0, deleteHistory);
+    }
+
     constructor(history, size) {
-        super(history);
+        // hover: false keeps the pointer from taking the key focus, as it does
+        // on an item row (Fix #435): crossing this row would take the keyboard
+        // from an entry being typed into, and BackSpace there would then delete
+        // this history.
+        super(history, {hover: false});
 
         this._history = history;
 
-        // The count at the end of the row, the name taking the room left over.
+        // The name takes the room left over, and so gives up what the button
+        // takes when it shows.
         this.label.set_x_expand(true);
+
+        // Ahead of the count rather than after it: shown and hidden with the
+        // hover, a button at the end of the row would push the count left and
+        // back on every row the pointer crosses.
+        this.add_child(newHistoryDeleteButton(this, () => this.emit('delete', this._history)));
+
+        // The count at the end of the row.
         this._size = new St.Label({
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
@@ -91,7 +211,7 @@ const GPasteHistoryRow = GObject.registerClass({
     activate(_event) {
         this.emit('switch', this._history);
     }
-});
+}
 
 const GPasteNewHistoryItem = GObject.registerClass({
     Signals: {'switch': {param_types: [GObject.TYPE_STRING]}},
@@ -135,8 +255,43 @@ const GPasteNewHistoryItem = GObject.registerClass({
     }
 });
 
-export const GPasteHistorySwitcher = GObject.registerClass(
-class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
+export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
+    // Registered here rather than through GObject.registerClass (class ...) for
+    // the binding pool, as GPasteHistoryRow is. The keys a history row deletes
+    // its history with delete the one this row names: the row wears the same
+    // bin, shown under the keyboard as much as under the pointer, and a button
+    // the keyboard is shown but cannot press is not one to leave it with.
+    static {
+        GObject.registerClass(this);
+
+        const bindingPool = this.get_binding_pool();
+        const deleteCurrent = obj => {
+            obj._deleteCurrent();
+            return Clutter.EVENT_STOP;
+        };
+
+        bindingPool.install_closure('delete', Clutter.KEY_BackSpace, 0, deleteCurrent);
+        bindingPool.install_closure('delete', Clutter.KEY_Delete, 0, deleteCurrent);
+    }
+
+    // `hover: false`, for the reason GPasteHistoryRow passes it, but
+    // PopupSubMenuMenuItem takes no parameters to pass it with: the shell's
+    // binding of `hover` to `active` is there, so it is `active` that refuses
+    // what does not match the key focus. That leaves `active` meaning what it
+    // means on the history rows -- where the keyboard is -- rather than turning
+    // on under the pointer, which would take the key focus or, with the grab
+    // held back, make the menu deactivate the row that does have it. Clutter
+    // records the focus before it emits key-focus-in and key-focus-out, so the
+    // row's own handlers always get through.
+    get active() {
+        return super.active;
+    }
+
+    set active(active) {
+        if (active === this.has_key_focus())
+            super.active = active;
+    }
+
     constructor(client) {
         // The row is the name of the history in use; expanding it is what offers
         // the others. No icon: the name is the whole of what it has to say.
@@ -145,6 +300,18 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this.menu.actor.overlay_scrollbars = true;
 
         this._client = client;
+
+        // The history in use is deleted from the row naming it too, not only
+        // from its row in the chooser, which takes expanding to reach. Ahead of
+        // the arrow, which stays where the shell puts it on every submenu row:
+        // right after the expander pushing that arrow to the end, found by the
+        // style class the theme knows it by rather than through a field private
+        // to the shell. Were it gone, the bin would still end the row instead
+        // of landing ahead of the name and moving it on every hover.
+        const expander = this.get_children().find(child => child.has_style_class_name('popup-menu-item-expander'));
+
+        this.insert_child_above(newHistoryDeleteButton(this, () => this._deleteCurrent()), expander ?? null);
+
         // The listing filling the submenu, cancelled and replaced by every pass
         // that starts one -- the chooser opening, a history appearing or going away.
         // Only the latest answer is worth drawing, and an overtaken one is worth
@@ -154,6 +321,8 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this._sizing = null;
         this._rows = [];
         this._current = null;
+        // The confirmation on screen, if any, for a teardown to take away.
+        this._dialog = null;
 
         // Last in the submenu, and not one of the rows: it is how a history the
         // list does not hold comes into being.
@@ -176,10 +345,14 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this);
 
         // The reply has nowhere to land once the row is gone, and listing for it
-        // is work the daemon is doing for a menu that has been torn down.
+        // is work the daemon is doing for a menu that has been torn down. A
+        // question still up is about that menu too: the dialog lives in the
+        // shell's modal group rather than under this row, so it would stay on
+        // screen, grab and all, still able to act for an extension that is gone.
         this.connect('destroy', () => {
             this._listing?.cancel();
             this._sizing?.cancel();
+            this._dialog?.close();
         });
 
         this._onHistoryChanged();
@@ -312,6 +485,7 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         const row = new GPasteHistoryRow(history, size);
 
         row.connect('switch', (item, name) => this._switch(name));
+        row.connect('delete', (item, name) => this._confirmDelete(name));
         // Ahead of the entry, which stays last however many rows there are.
         this.menu.addMenuItem(row, this._rows.length);
         this._rows.push(row);
@@ -345,6 +519,33 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this.setSubmenuShown(false);
     }
 
+    // A modal dialog cannot take its grab from under an open menu, so the menu
+    // goes first -- as it would have for any item that opens a dialog. Nothing
+    // is redrawn here once the answer is yes: the daemon announces the deletion,
+    // which is what refreshes the list, and deleting the current history
+    // switches to the default one, which is what renames the row.
+    _confirmDelete(history) {
+        this._getTopMenu().close();
+
+        const dialog = this._dialog = new GPasteDeleteHistoryDialog(this._client, history);
+
+        // Closing is what destroys it, which is when it stops being the
+        // teardown's to close.
+        dialog.connectObject('destroy', () => {
+            if (this._dialog === dialog)
+                this._dialog = null;
+        }, this);
+
+        dialog.open();
+    }
+
+    // No name, no history to delete: the property is cached off the daemon, and
+    // reads back null while it is away.
+    _deleteCurrent() {
+        if (this._current)
+            this._confirmDelete(this._current);
+    }
+
     // Fold the chooser away and drop what was half typed into it: the menu is
     // closing, and it reopens on the history in use rather than on the detour
     // the chooser is.
@@ -361,6 +562,9 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
     // where the entry is on its way out and setting text on it reaches an actor
     // that is being destroyed.
     vfunc_hide() {
+        // The modal belongs to the Shell's dialog group, so hiding this row
+        // alone cannot revoke a pending destructive action after daemon exit.
+        this._dialog?.close();
         this._listing?.cancel();
         this._sizing?.cancel();
         this._fold();
@@ -370,4 +574,4 @@ class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
     _fold() {
         this.menu.close({animate: false});
     }
-});
+}

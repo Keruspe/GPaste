@@ -87,10 +87,7 @@ export class GPasteItem extends PopupMenuItem {
 
         const bindingPool = this.get_binding_pool();
         const deleteItem = obj => {
-            // Nothing to delete until the row's fetch has landed (see activate).
-            if (obj._uuid)
-                obj._client.delete_item(obj._uuid, null, null);
-
+            obj._delete();
             return Clutter.EVENT_STOP;
         };
 
@@ -108,6 +105,10 @@ export class GPasteItem extends PopupMenuItem {
         this._client = client;
         this._index = -1;
         this._uuid = null;
+        // The uuid of the item the row is showing, which _uuid is not while a
+        // setUuid () fetch is out: that one is set before the item arrives. What
+        // the bin deletes is what the row shows, so it reads this one.
+        this._shownUuid = null;
         // The read filling this row, cancelled and replaced on every (re)binding.
         // The menu recycles its rows, so a reply for a binding the row has left
         // must not paint it -- and the read is worth stopping rather than merely
@@ -156,7 +157,8 @@ export class GPasteItem extends PopupMenuItem {
         // of the row keeps its place when the one before it appears. With the
         // star ahead of the bin, the badge would jump a button's width left the
         // moment the pointer arrives.
-        this._deleteItem = new GPasteDeleteButton(client, this._uuid);
+        this._deleteItem = new GPasteDeleteButton();
+        this._deleteItem.connect('clicked', () => this._delete());
         this.add_child(this._deleteItem);
 
         this._favouriteItem = new GPasteFavouriteButton(client, this._uuid);
@@ -294,13 +296,14 @@ export class GPasteItem extends PopupMenuItem {
         }
     }
 
-    // Both actions are addressed by uuid, and a button with none is inert. The
-    // star is more than inert: it is a badge on a pinned row, so a row that has
-    // stopped answering for its old item must stop showing that item's pin
-    // state too, or it claims one that belongs to something else.
+    // The star is addressed by uuid, and with none it is inert. It is more than
+    // inert: it is a badge on a pinned row, so a row that has stopped answering
+    // for its old item must stop showing that item's pin state too, or it
+    // claims one that belongs to something else. The bin goes through
+    // _delete (), which reads _shownUuid, so disarming it is clearing that.
     _disarmActions() {
         this._favouriteItem.setUuid(null);
-        this._deleteItem.setUuid(null);
+        this._shownUuid = null;
         this._favourited = false;
         this._updateActionsVisibility();
     }
@@ -341,7 +344,7 @@ export class GPasteItem extends PopupMenuItem {
 
         this._favouriteItem.setUuid(this._uuid);
         this._favouriteItem.setFavourite(favourite);
-        this._deleteItem.setUuid(this._uuid);
+        this._shownUuid = this._uuid;
 
         this._favourited = favourite;
         this._updateActionsVisibility();
@@ -445,6 +448,14 @@ export class GPasteItem extends PopupMenuItem {
             width: size,
             height: size,
         });
+    }
+
+    // The button and the Delete key both. Nothing to delete until the row's
+    // fetch has landed -- the item it is showing, not the one it was just
+    // rebound to (see _shownUuid).
+    _delete() {
+        if (this._shownUuid)
+            this._client.delete_item(this._shownUuid, null, null);
     }
 
     activate(event) {

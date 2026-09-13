@@ -1,7 +1,7 @@
 NEW in 51.0 (UNRELEASED)
 =============
 
-- Manage histories directly from the GNOME Shell menu: switch to and create histories
+- Manage histories directly from the GNOME Shell menu: switch, create and delete histories
 - API: clipboard providers require is_reading and the update callback's superseded argument; provider implementations must be rebuilt. The internal g_paste_clipboard_update_new() also takes the active-update slot and content cache. The published signal carries whether a publication is independent
 - API: reexecute-self handlers return gboolean: true accepts an in-process restart, false reports host failure. Reexecute waits for password classification and reports deadline failures; the CLI's SIGUSR1 fallback is only for UnknownMethod
 - Lay the GNOME Shell menu's rows out like the graphical tool's: the preview leads the row, pin and delete follow the text and show up when the pointer or the keyboard reaches it, and a pinned row keeps its star as a badge
