@@ -5,7 +5,6 @@
 
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
-#include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -37,10 +36,9 @@
  * no-ops) rather than corrupted.
  *
  * Like the plain XML backend, password items are never persisted (the file is
- * user-readable). Images are stored as blobs in the `items.image` column, so an
- * item read back from here needs no file on disk; the item value remains its
- * canonical per-history cache path, which is where an image materialized by
- * another flavor lives.
+ * user-readable). Images are stored as blobs in the `items.image` column, which
+ * is the whole of such a row: nothing on disk backs it, and its value is the
+ * image's checksum, which names no file.
  *
  * The encrypted flavor (g_paste_sqlite_backend_new_encrypted, ".dbs" extension)
  * encrypts every content column — items.value, items.name, items.image and
@@ -1186,17 +1184,11 @@ g_paste_sqlite_backend_built_item (GPasteItem *item,
  * value that does not decrypt or that its kind's constructor refuses, a kind it
  * does not know, an image whose stored blob does not decrypt or that no texture
  * can be made of -- as against the rows dropped on purpose, an image read with
- * images turned off or with no date, one whose image was never blobbed and whose
- * cache file has gone with it. The caller cannot tell those
- * apart from the %NULL alone, and it has to: what it does with a row it was
- * meant to read and could not is refuse the whole history, the same as for a
- * scan that stopped short, or the next save writes the rows that did come back
- * over the ones that did not.
- *
- * @stale_images collects the cache files of the image rows dropped for having
- * images turned off or no date, for the caller to unlink once it knows the read
- * came back whole -- unlinking one here would delete the picture of a row a
- * refused read then leaves in the store.
+ * images turned off, with no date, or with no blob to build it from. The caller
+ * cannot tell those apart from the %NULL alone, and it has to: what it does with
+ * a row it was meant to read and could not is refuse the whole history, the same
+ * as for a scan that stopped short, or the next save writes the rows that did
+ * come back over the ones that did not.
  *
  * Deliberately stricter than the file backend, which warns about an <item> it
  * cannot make sense of and reads the history around it. The two are not being
@@ -1212,7 +1204,6 @@ static GPasteItem *
 g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
                                   const guchar *key,
                                   gboolean      images_support,
-                                  GPtrArray    *stale_images,
                                   gboolean     *unreadable)
 {
     const gchar *kind_str = (const gchar *) sqlite3_column_text (stmt, 2);
@@ -1268,72 +1259,43 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         return g_paste_sqlite_backend_built_item (g_paste_color_item_new_from_str (value), unreadable);
     case G_PASTE_ITEM_KIND_IMAGE:
     {
-        if (images_support && sqlite3_column_type (stmt, 4) != SQLITE_NULL)
+        /* Images turned off, a row with no date, or one holding no blob: the
+         * blob is the whole of such a row, so an image that is not in it is
+         * nowhere -- a row names no file, its value being the checksum. Nothing
+         * this build failed at, and nothing left on disk to go looking for. */
+        if (!images_support ||
+            sqlite3_column_type (stmt, 4) == SQLITE_NULL ||
+            sqlite3_column_type (stmt, 7) == SQLITE_NULL)
+            return NULL;
+
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 4));
+        const gchar *checksum = (const gchar *) sqlite3_column_text (stmt, 5);
+        gsize length = 0;
+        guchar *data = g_paste_sqlite_backend_read_content (stmt, 7, key, &length);
+
+        if (!data)
         {
-            g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 4));
-            const gchar *checksum = (const gchar *) sqlite3_column_text (stmt, 5);
+            /* Nothing to fall back to: a row stores its image as a blob and its
+             * value as the checksum, which names no file. */
+            g_warning ("sqlite: failed to decrypt an image; dropping it");
+            *unreadable = TRUE;
 
-            /* The stored blob is the source of truth, and an item built from
-             * one holds no file: nothing on disk backs a row. The path-based
-             * fallback only covers a row whose image was never turned into a
-             * blob (a file import whose cache file had already gone), and whose
-             * value is therefore still the path it was imported with. */
-            if (sqlite3_column_type (stmt, 7) != SQLITE_NULL)
-            {
-                gsize length = 0;
-                guchar *data = g_paste_sqlite_backend_read_content (stmt, 7, key, &length);
-
-                if (data)
-                {
-                    g_autoptr (GBytes) png = g_bytes_new_take (data, length);
-                    GPasteItem *image = g_paste_image_item_new_from_bytes (png, date, checksum);
-
-                    /* Bytes that came back but that no texture could be made of
-                     * are the same answer as bytes that did not: a row this
-                     * build was meant to read and could not. */
-                    if (!image)
-                    {
-                        g_warning ("sqlite: failed to decode a stored image; dropping it");
-                        *unreadable = TRUE;
-                    }
-
-                    return image;
-                }
-
-                /* Nothing to fall back to: a row storing its image as a blob
-                 * stores the checksum as its value, which names no file. */
-                g_warning ("sqlite: failed to decrypt an image; dropping it");
-                *unreadable = TRUE;
-
-                return NULL;
-            }
-
-            GPasteItem *image = g_paste_image_item_new_from_file (value, date, checksum);
-
-            /* %NULL with that cache file gone is the image being gone rather
-             * than unread: a drop, and not a history to refuse. %NULL with the
-             * file still there is the answer a stored blob that would not decode
-             * gives -- a row this build was meant to read and could not -- and
-             * taking it for the first would rewrite the row away and delete a
-             * picture whose bytes are on disk. */
-            if (!image && g_file_test (value, G_FILE_TEST_EXISTS))
-            {
-                g_warning ("sqlite: failed to load an image from its file; dropping it");
-                *unreadable = TRUE;
-            }
-
-            return image;
+            return NULL;
         }
 
-        /* Images are disabled or the date is missing: whatever a file-backed
-         * row left on disk goes with it. Only such a row names a file at all --
-         * one written here
-         * stores its image as a blob and its value as the checksum, which is
-         * nobody's path. */
-        if (g_path_is_absolute (value))
-            g_ptr_array_add (stale_images, g_strdup (value));
+        g_autoptr (GBytes) png = g_bytes_new_take (data, length);
+        GPasteItem *image = g_paste_image_item_new_from_bytes (png, date, checksum);
 
-        return NULL;
+        /* Bytes that came back but that no texture could be made of are the
+         * same answer as bytes that did not: a row this build was meant to read
+         * and could not. */
+        if (!image)
+        {
+            g_warning ("sqlite: failed to decode a stored image; dropping it");
+            *unreadable = TRUE;
+        }
+
+        return image;
     }
     case G_PASTE_ITEM_KIND_INVALID:
         break;
@@ -1516,7 +1478,6 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
 
     gint rc = SQLITE_DONE;
     gboolean complete = TRUE;
-    g_autoptr (GPtrArray) stale_images = g_ptr_array_new_with_free_func (g_free);
     gboolean cancelled = FALSE;
 
     /* Row by row, this being a read that does stop halfway: what has been built
@@ -1532,7 +1493,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
            (rc = sqlite3_step (stmt)) == SQLITE_ROW)
     {
         gboolean unreadable = FALSE;
-        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support, stale_images, &unreadable);
+        GPasteItem *item = g_paste_sqlite_backend_read_item (stmt, key, images_support, &unreadable);
 
         if (!item)
         {
@@ -1588,13 +1549,6 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
 
         return FALSE;
     }
-
-    /* Only now the read has come back whole: the row an image was dropped for
-     * is taken off the store by the save that follows such a read, where a
-     * refused one leaves the row exactly where it is -- and a picture unlinked
-     * from under a row that stays is one nothing can bring back. */
-    for (guint i = 0; i < stale_images->len; ++i)
-        g_paste_file_backend_delete_image (g_ptr_array_index (stale_images, i));
 
     *history = g_list_reverse (*history);
 
