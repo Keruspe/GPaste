@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-13 11:25+0200\n"
-"PO-Revision-Date: 2026-08-16 14:51+0000\n"
+"PO-Revision-Date: 2026-09-13 09:29+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n % 10 != 1 || n % 100 == 11;\n"
-"X-Generator: Weblate 2026.9.dev0\n"
+"X-Generator: Weblate 2026.10.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -70,12 +70,10 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:23
-#, fuzzy
 msgid "Detect and replace growing lines"
-msgstr "Eru vaxandi línur greindar og þeim skipt út í ferilskráningu?"
+msgstr "Finna og skipta út vaxandi línum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:24
-#, fuzzy
 msgid ""
 "Copying \"Here is\", then \"Here is an example\", leaves two entries in the "
 "history. With this enabled, the second replaces the first instead."
@@ -93,18 +91,16 @@ msgid "The default name is \"history\""
 msgstr "Sjálfgefna heitið er \"ferill\""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
-#, fuzzy
 msgid "Save copied images to the history"
-msgstr "Eru vistaðar myndir sem hafa verið afritaðar eða einungis texti?"
+msgstr "Vista afritaðar myndir í vinnsluferilinn"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
 msgid "Enabled by default: images are kept alongside text."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:48
-#, fuzzy
 msgid "Show image previews in the history"
-msgstr "Birta forskoðun mynda í vinnsluferli?"
+msgstr "Birta forskoðun mynda í vinnsluferlinum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "Enabled by default: an image item shows a thumbnail of itself."
@@ -123,9 +119,8 @@ msgstr ""
 "yfirsvif bendils. Sjálfgefin stærð er 50 mynddílar."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:65
-#, fuzzy
 msgid "Close the UI after selecting an item"
-msgstr "Lokast viðmótið eftir að atriði er valið?"
+msgstr "Loka viðmóti eftir að atriði er valið"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:66
 #: data/gsettings/org.gnome.GPaste.gschema.xml:220
@@ -133,9 +128,8 @@ msgid "Enabled by default."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:73
-#, fuzzy
 msgid "Are the global keyboard shortcuts enabled?"
-msgstr "Flýtileiðir á lyklaborði"
+msgstr "Eru flýtileiðir á lyklaborði virkjaðar?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:74
 msgid ""
@@ -194,9 +188,8 @@ msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr "Lágmarksstærð textaatriða. Allt utan þessara marka er hunsað."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:135
-#, fuzzy
 msgid "Password timeout"
-msgstr "Lykilorð"
+msgstr "Tímamörk lykilorðs"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:136
 msgid ""
@@ -211,9 +204,8 @@ msgid "The keyboard shortcut to delete the first element in history"
 msgstr "Flýtilyklar til að eyða fyrstu einingunni í ferlinum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:154
-#, fuzzy
 msgid "Let the primary selection affect the history"
-msgstr "Hefur aðalval (primary - miðjuhnappur) áhrif á feril?"
+msgstr "Láta aðalval (primary - miðjuhnappur) hafa áhrif á feril"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:155
 #, fuzzy
@@ -269,9 +261,8 @@ msgstr ""
 "klippispjaldið"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:211
-#, fuzzy
 msgid "Keep the primary selection and the clipboard in sync"
-msgstr "Eru aðalval (primary - miðjuhnappur) og klippispjaldið samstillt?"
+msgstr "Halda aðalvali (primary - miðjuhnappur) og klippispjaldi samstilltu"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:212
 #, fuzzy
@@ -297,9 +288,8 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:236
-#, fuzzy
 msgid "Trim text items before adding them to the history"
-msgstr "Eru textaatriði stytt áður en þeim er bætt í ferilskrá?"
+msgstr "Stytta textaatriði áður en þeim er bætt í ferilskrá"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:237
 #, fuzzy
@@ -336,9 +326,8 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:268
-#, fuzzy
 msgid "Ask for confirmation before emptying a history"
-msgstr "Kalla eftir staðfestingu þegar ferill er tæmdur?"
+msgstr "Kalla eftir staðfestingu áður en ferill er tæmdur"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:269
 msgid "Enabled by default, because emptying a history cannot be undone."
@@ -387,9 +376,9 @@ msgstr "Stillingaviðmótið"
 
 #. Translators: %s is the program GPaste tried to start, then the reason it could not.
 #: src/client/gpaste-client.c:173
-#, fuzzy, c-format
+#, c-format
 msgid "Couldn't spawn %s: %s"
-msgstr "Gat ekki búið til nýtt"
+msgstr "Gat ekki ræst %s: %s"
 
 #: src/client/gpaste-client.c:305
 msgid "Successfully re-executed the daemon"
@@ -650,7 +639,7 @@ msgstr "bæta uppgefnum aðgreini milli allra atriða við sameiningu"
 #. * recording (g_paste_daemon_flush() stopped it above).
 #: src/daemon/gpaste-daemon.c:98
 msgid "Failed to reexecute the daemon"
-msgstr "Tókst að endurkeyra vaktarann"
+msgstr "Mistókst að endurkeyra vaktarann"
 
 #: src/daemon/gpaste-daemon.c:110
 msgid "Stop signal received, exiting"
@@ -1333,14 +1322,12 @@ msgid "Save"
 msgstr ""
 
 #: src/ui/gpaste-ui-header.c:88
-#, fuzzy
 msgid "New Item…"
-msgstr "Nýtt atriði"
+msgstr "Nýtt atriði…"
 
 #: src/ui/gpaste-ui-header.c:89
-#, fuzzy
 msgid "New Password…"
-msgstr "Lykilorð"
+msgstr "Nýtt lykilorð…"
 
 #: src/ui/gpaste-ui-header.c:95
 #, fuzzy
@@ -1446,14 +1433,12 @@ msgid "Could not load an image preview"
 msgstr ""
 
 #: src/ui/gpaste-ui-item.c:1086
-#, fuzzy
 msgid "Edit…"
-msgstr "Breyta"
+msgstr "Breyta…"
 
 #: src/ui/gpaste-ui-item.c:1087
-#, fuzzy
 msgid "Make Password…"
-msgstr "Lykilorð"
+msgstr "Gera lykilorð…"
 
 #: src/ui/gpaste-ui-item.c:1088
 msgid "Remove Rich Text"
@@ -1599,9 +1584,8 @@ msgid "Ctrl+0 through Ctrl+9, for the first ten items"
 msgstr ""
 
 #: src/ui/gpaste-ui-shortcuts-window.c:29
-#, fuzzy
 msgid "Show the preferences"
-msgstr "Kjörstillingar GPaste"
+msgstr "Birta kjörstillingar"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:30
 #, fuzzy
@@ -1628,9 +1612,8 @@ msgid "Could not restart the daemon"
 msgstr "Endurræsa vaktarann"
 
 #: src/ui/gpaste-ui-window.c:540
-#, fuzzy
 msgid "Restart the GPaste Daemon?"
-msgstr "Endurræsa vaktarann"
+msgstr "Endurræsa GPaste-vaktarann?"
 
 #: src/ui/gpaste-ui-window.c:541
 msgid "The clipboard is not recorded while it restarts."
@@ -1651,9 +1634,8 @@ msgid "Could not stop tracking the clipboard"
 msgstr "hætta að rekja breytingar á klippispjaldi"
 
 #: src/ui/gpaste-ui-window.c:589
-#, fuzzy
 msgid "Stop Tracking the Clipboard?"
-msgstr "hætta að rekja breytingar á klippispjaldi"
+msgstr "Hætta að rekja breytingar á klippispjaldi?"
 
 #: src/ui/gpaste-ui-window.c:590
 msgid ""
