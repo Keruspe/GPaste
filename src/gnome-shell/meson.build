@@ -6,6 +6,7 @@ shell_extension_files = [
   'dummyHistoryItem.js',
   'extension.js',
   'favouriteButton.js',
+  'historySwitcher.js',
   'indicator.js',
   'item.js',
   'prefs.js',

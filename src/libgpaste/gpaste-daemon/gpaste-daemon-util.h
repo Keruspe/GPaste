@@ -4,6 +4,7 @@
 #pragma once
 
 #include <gpaste-3/gpaste-macros.h>
+#include <gpaste-3/gpaste-util.h>
 
 #include <gio/gio.h>
 
@@ -23,13 +24,10 @@ gchar *g_paste_util_replace (const gchar *text,
 gchar *g_paste_util_xml_decode (const gchar *text);
 gchar *g_paste_util_xml_encode (const gchar *text);
 
-/* A history is named by the file it is stored in and by the images directory it
- * owns, so a name carrying a path component names something else entirely. Every
- * path built from a name goes through the two builders below, which refuse one
- * this rejects; the bus checks it itself, so a caller gets an error rather than
- * a critical. */
-gboolean g_paste_util_history_name_is_valid (const gchar *name);
-
+/* Every path built from a history name goes through the two builders below,
+ * which refuse one g_paste_util_history_name_is_valid () (gpaste-util.h)
+ * rejects; the bus checks it itself, so a caller gets an error rather than a
+ * critical. */
 gchar *g_paste_util_get_history_dir_path  (void);
 GFile *g_paste_util_get_history_dir       (void);
 gchar *g_paste_util_get_history_file_path (const gchar *name,

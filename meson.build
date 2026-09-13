@@ -125,7 +125,6 @@ add_project_arguments(
   '-DADW_VERSION_MIN_REQUIRED=ADW_VERSION_@0@_@1@'.format(adwaita_major, adwaita_minor),
   '-DADW_VERSION_MAX_ALLOWED=ADW_VERSION_@0@_@1@'.format(adwaita_major, adwaita_minor),
   '-DG_PASTE_COMPILATION',
-  '-DG_PASTE_DEFAULT_HISTORY="history"',
   '-DG_PASTE_EXTENSION_NAME="GPaste@gnome-shell-extensions.gnome.org"',
   '-DG_PASTE_ICON_NAME="edit-paste"',
   '-DGETTEXT_PACKAGE="GPaste"',

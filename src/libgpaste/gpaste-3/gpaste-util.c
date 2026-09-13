@@ -300,6 +300,43 @@ g_paste_util_empty_with_confirmation (GPasteClient   *client,
 }
 
 /**
+ * g_paste_util_history_name_is_valid:
+ * @name: (nullable): the name of a history
+ *
+ * Whether @name names a history and nothing else.
+ *
+ * The name goes straight into the file a history is stored in and into the
+ * images directory it owns, so one carrying a path component names something
+ * outside the history directory entirely: "../x" is a history file written
+ * wherever the traversal lands, and deleting that history sweeps every file of
+ * the directory it landed in. "." and ".." name the history directory itself.
+ * Names reach us from the bus, so this is a refusal, not an assertion.
+ *
+ * Installed and introspected, where the paths it guards are the daemon's alone:
+ * a client with nowhere to report a refusal -- the GNOME Shell extension's
+ * history chooser -- asks this before sending a name, and a copy of the rule
+ * there would drift from the one the daemon enforces.
+ *
+ * Returns: whether @name may be turned into a path
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_history_name_is_valid (const gchar *name)
+{
+    if (!name || !*name || g_paste_str_equal (name, ".") || g_paste_str_equal (name, ".."))
+        return FALSE;
+
+    /* Not G_IS_DIR_SEPARATOR alone: '/' separates paths wherever GLib builds,
+     * and a name carrying one has to be refused whichever platform wrote it. */
+    for (const gchar *c = name; *c; ++c)
+    {
+        if (*c == '/' || G_IS_DIR_SEPARATOR (*c))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+/**
  * g_paste_util_one_line:
  * @text: the initial text
  *

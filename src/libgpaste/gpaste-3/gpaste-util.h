@@ -12,6 +12,16 @@
 
 G_BEGIN_DECLS
 
+/* The history a daemon starts in, and the one a switch away from a deleted
+ * history lands in. A constant of the installed API rather than a compiler
+ * flag, so a binding reads it off the typelib (GPaste.DEFAULT_HISTORY) rather
+ * than spelling it again. */
+#define G_PASTE_DEFAULT_HISTORY "history"
+
+/* A history is named by the file it is stored in and by the images directory it
+ * owns, so a name carrying a path component names something else entirely. */
+gboolean g_paste_util_history_name_is_valid (const gchar *name);
+
 void     g_paste_util_spawn                   (const gchar *app);
 gboolean g_paste_util_spawn_sync              (const gchar *app,
                                                GError     **error);

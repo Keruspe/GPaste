@@ -18,6 +18,7 @@ import GPaste from 'gi://GPaste?version=3';
 import {addGPasteFooter} from './actions.js';
 import {awaitReply, replaceCancellable} from './dependencies.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
+import {GPasteHistorySwitcher} from './historySwitcher.js';
 import {GPasteItem} from './item.js';
 import {GPasteSearchItem} from './searchItem.js';
 import {GPasteStateSwitch} from './stateSwitch.js';
@@ -190,10 +191,16 @@ class GPasteIndicator extends Button {
         }
 
         this._switch = new GPasteStateSwitch(this._client);
+        this._historySwitcher = new GPasteHistorySwitcher(this._client);
 
         // Header, inserted before the dummy placeholder added in the constructor.
+        // The switch is global state and belongs to nothing under it; the
+        // history row names what everything under it -- the search and the list
+        // both -- is about. So the two read global then scoped, rather than the
+        // global one splitting the group the other three make.
         this.menu.addMenuItem(this._switch, 0);
-        this.menu.addMenuItem(this._searchItem, 1);
+        this.menu.addMenuItem(this._historySwitcher, 1);
+        this.menu.addMenuItem(this._searchItem, 2);
 
         // The lazily-filled, scrollable history lives in a PopupMenuSection
         // wrapped in an St.ScrollView, between the dummy and the footer.
@@ -910,6 +917,12 @@ class GPasteIndicator extends Button {
         if (this._switch)
             this._switch.visible = this._connected;
 
+        // Hidden for the same reason, and one of its own: it names a daemon's
+        // history, and switching is an ordinary method call -- which is also
+        // what bus-activates a daemon.
+        if (this._historySwitcher)
+            this._historySwitcher.visible = this._connected;
+
         if (!this._connected) {
             // A daemon that owns the bus name but has not answered yet is
             // starting, not missing: it owns the name before it exports
@@ -999,6 +1012,9 @@ class GPasteIndicator extends Button {
             GLib.Source.set_name_by_id(this._selectSearchId, '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);
+            // Never reopen expanded: the menu opens on the history it is already
+            // in, and the chooser is a detour from that.
+            this._historySwitcher?.collapse();
         }
         super._onOpenStateChanged(menu, state);
     }
