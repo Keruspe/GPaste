@@ -1118,13 +1118,51 @@ g_paste_client_merge_finish (GPasteClient *self,
 G_PASTE_CLIENT_METHOD (report_extension_state,
                        (gboolean state), (state))
 
+/* Reexecute is the one method whose success is the reply never coming: a daemon
+ * honouring it execs before it could answer, and the bus then reports the call
+ * as having gone unanswered. Only a re-exec that did not happen is answered.
+ * So that is read as success here, once, rather than by each caller -- a caller
+ * finishing it the ordinary way reports a failure for every restart that
+ * worked. Matched with its domain: G_DBUS_ERROR_NO_REPLY is 4, and so is
+ * G_IO_ERROR_NOT_DIRECTORY, which a bare code comparison would take for a
+ * successful re-exec. */
+static void
+g_paste_client_reexecute_propagate (GError  *err,
+                                    GError **error)
+{
+    if (err && !g_error_matches (err, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY))
+        g_propagate_error (error, err);
+    else
+        g_clear_error (&err);
+}
+
 /**
  * g_paste_client_reexecute_sync:
  * @self: a #GPasteClient instance
  * @error: return location for a #GError, or %NULL
  *
  * Reexecute the #GPasteDaemon
+ *
+ * The daemon answers only when it did not re-execute, so a call it left
+ * unanswered by going away is a success and leaves @error unset.
  */
+G_PASTE_VISIBLE void
+g_paste_client_reexecute_sync (GPasteClient *self,
+                               GError      **error)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (!error || !(*error));
+
+    GError *err = NULL;
+
+    g_paste_daemon3_call_reexecute_sync (G_PASTE_DAEMON3 (self),
+                                         G_DBUS_CALL_FLAGS_NONE,
+                                         -1, /* timeout */
+                                         NULL, /* cancellable */
+                                         &err);
+    g_paste_client_reexecute_propagate (err, error);
+}
+
 /**
  * g_paste_client_reexecute:
  * @self: a #GPasteClient instance
@@ -1135,6 +1173,22 @@ G_PASTE_CLIENT_METHOD (report_extension_state,
  *
  * Reexecute the #GPasteDaemon
  */
+G_PASTE_VISIBLE void
+g_paste_client_reexecute (GPasteClient       *self,
+                          GCancellable       *cancellable,
+                          GAsyncReadyCallback callback,
+                          gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon3_call_reexecute (G_PASTE_DAEMON3 (self),
+                                    G_DBUS_CALL_FLAGS_NONE,
+                                    -1, /* timeout */
+                                    cancellable,
+                                    callback,
+                                    user_data);
+}
+
 /**
  * g_paste_client_reexecute_finish:
  * @self: a #GPasteClient instance
@@ -1142,9 +1196,24 @@ G_PASTE_CLIENT_METHOD (report_extension_state,
  * @error: return location for a #GError, or %NULL
  *
  * Reexecute the #GPasteDaemon
+ *
+ * As in g_paste_client_reexecute_sync(), a call the daemon left unanswered by
+ * going away is a success and leaves @error unset.
  */
-G_PASTE_CLIENT_METHOD (reexecute,
-                       (), ())
+G_PASTE_VISIBLE void
+g_paste_client_reexecute_finish (GPasteClient *self,
+                                 GAsyncResult *result,
+                                 GError      **error)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (G_IS_ASYNC_RESULT (result));
+    g_return_if_fail (!error || !(*error));
+
+    GError *err = NULL;
+
+    g_paste_daemon3_call_reexecute_finish (G_PASTE_DAEMON3 (self), result, &err);
+    g_paste_client_reexecute_propagate (err, error);
+}
 
 /**
  * g_paste_client_replace_sync:
