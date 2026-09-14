@@ -983,6 +983,45 @@ test_unidentified_selection (gconstpointer user_data)
     }
 }
 
+/* A representation landing on an update that has moved on is dropped where it
+ * lands, rather than held until the update's last read reports -- which a read
+ * that never reports puts off for good (g_paste_clipboard_update_on_mime_read ()). */
+static void
+test_late_mime_read (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = g_object_new (TEST_TYPE_CLIPBOARD, NULL);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *first = clipboard->pending;
+    GPasteClipboardMimeCtx *html = g_paste_clipboard_update_add_mime_read (first, G_PASTE_SPECIAL_MIME_TEXT_HTML);
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *second = clipboard->pending;
+
+    assert_superseded (first);
+
+    g_autoptr (GBytes) late = g_bytes_new_static ("<b>older copy</b>", 17);
+
+    g_paste_clipboard_update_on_mime_read (html, late);
+    /* Its text read is still out, so the update is still there to look at. */
+    g_assert_null (first->mimes.special_mime[G_PASTE_SPECIAL_MIME_TEXT_HTML]);
+
+    text_ready (clipboard, settings, first, "older copy");
+    g_paste_clipboard_update_maybe_done (first);
+    text_ready (clipboard, settings, second, "new copy");
+    g_paste_clipboard_update_maybe_done (second);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "new copy");
+}
+
 static void
 test_restart_completion_window (void)
 {
@@ -1505,6 +1544,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/publish_pending_deadline", test_publish_pending_deadline);
     g_test_add_func ("/clipboard/timeout_edit/reenable_pending_timeout", test_reenable_pending_timeout);
     g_test_add_func ("/clipboard/trimmed_duplicate", test_trimmed_duplicate);
+    g_test_add_func ("/clipboard/late_mime_read", test_late_mime_read);
     const gchar *outcomes[] = { "too_short", "too_long", "failed", "timed_out", "duplicate_outside_policy", "duplicate" };
 
     for (guint i = 0; i < 12; ++i)

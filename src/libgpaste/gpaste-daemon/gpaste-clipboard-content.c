@@ -980,7 +980,12 @@ g_paste_clipboard_update_on_mime_read (GPasteClipboardMimeCtx *ctx,
     g_autofree GPasteClipboardMimeCtx *owned = ctx;
     GPasteClipboardUpdate *update = ctx->data;
 
-    g_paste_clipboard_mime_results_store (&update->mimes, ctx->mime, bytes);
+    /* As for the content reads (g_paste_clipboard_update_is_expired ()): an
+     * update that has moved on stores nothing more, or a sibling read that never
+     * reports would keep these bytes for the rest of the session. */
+    if (!g_paste_clipboard_update_is_expired (update))
+        g_paste_clipboard_mime_results_store (&update->mimes, ctx->mime, bytes);
+
     g_paste_clipboard_update_maybe_done (update);
 }
 
