@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-13 11:25+0200\n"
+"POT-Creation-Date: 2026-09-15 13:57+0200\n"
 "PO-Revision-Date: 2026-09-13 09:29+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
@@ -380,84 +380,84 @@ msgstr "Stillingaviðmótið"
 msgid "Couldn't spawn %s: %s"
 msgstr "Gat ekki ræst %s: %s"
 
-#: src/client/gpaste-client.c:305
+#: src/client/gpaste-client.c:306
 msgid "Successfully re-executed the daemon"
 msgstr "Tókst að endurkeyra vaktarann"
 
-#: src/client/gpaste-client.c:319
+#: src/client/gpaste-client.c:320
 msgid "Successfully triggered the storage migration"
 msgstr "Tókst að setja í gang yfirfærslu á geymslu"
 
-#: src/client/gpaste-client.c:336
+#: src/client/gpaste-client.c:337
 msgid "Successfully triggered the passphrase change"
 msgstr "Tókst að setja í gang breytingu á aðgangsorðum"
 
-#: src/client/gpaste-client.c:495
+#: src/client/gpaste-client.c:496
 msgid "Cannot add non-UTF-8 data as text."
 msgstr "Get ekki bætt við 'ekki-UTF-8' gögnum sem texta."
 
-#: src/client/gpaste-client.c:741
+#: src/client/gpaste-client.c:742
 msgid "print the history with UUIDs"
 msgstr "birta ferilinn með UUID-auðkennum"
 
-#: src/client/gpaste-client.c:742
+#: src/client/gpaste-client.c:743
 #, fuzzy
 msgid "print the size of the current history"
 msgstr "birta stærð ferilsins"
 
-#: src/client/gpaste-client.c:743
+#: src/client/gpaste-client.c:744
 msgid "print the items of the history matching <pattern>"
 msgstr "birta þau atriði ferilsins sem samsvara <pattern>"
 
-#: src/client/gpaste-client.c:744
+#: src/client/gpaste-client.c:745
 msgid "get the name of the current history"
 msgstr "sækja heiti fyrirliggjandi ferlis"
 
-#: src/client/gpaste-client.c:745
+#: src/client/gpaste-client.c:746
 msgid "back up the current history"
 msgstr "taka öryggisafrit af fyrirliggjandi ferli"
 
-#: src/client/gpaste-client.c:746
+#: src/client/gpaste-client.c:747
 msgid "switch to another history"
 msgstr "skipta í annan feril"
 
-#: src/client/gpaste-client.c:747
+#: src/client/gpaste-client.c:748
 msgid "delete a history"
 msgstr "eyða ferli"
 
-#: src/client/gpaste-client.c:748
+#: src/client/gpaste-client.c:749
 msgid "list available histories"
 msgstr "birta tiltæka ferla"
 
-#: src/client/gpaste-client.c:749
+#: src/client/gpaste-client.c:750
 msgid "set text to clipboard"
 msgstr "setja texta á klippispjald"
 
-#: src/client/gpaste-client.c:750
+#: src/client/gpaste-client.c:751
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "bæta pari af nafni-lykilorði á klippispjaldið"
 
-#: src/client/gpaste-client.c:751
+#: src/client/gpaste-client.c:752
 msgid "get the item <uuid> from the history"
 msgstr "ná í <uuid> atriðisins úr ferlinum"
 
-#: src/client/gpaste-client.c:752
+#: src/client/gpaste-client.c:753
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "setja <uuid> atriðisins úr ferlinum á klippispjaldið"
 
-#: src/client/gpaste-client.c:753
+#: src/client/gpaste-client.c:754
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "skipta út efni <uuid> atriðisins úr ferlinum með því uppgefna"
 
-#: src/client/gpaste-client.c:754
+#: src/client/gpaste-client.c:755
 msgid ""
 "drop the rich text flavours of the item <uuid>, keeping the plain text it "
 "shows"
 msgstr ""
 
-#: src/client/gpaste-client.c:755
+#: src/client/gpaste-client.c:756
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
@@ -465,187 +465,187 @@ msgstr ""
 "sameina atriðin sem samsvara UUID-auðkenninu úr ferlinum og setja útkomuna á "
 "klippispjaldið"
 
-#: src/client/gpaste-client.c:756
+#: src/client/gpaste-client.c:757
 #, fuzzy
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
 "that is"
 msgstr "setja <uuid> atriðisins úr ferlinum sem lykilorð með heitinu <name>"
 
-#: src/client/gpaste-client.c:757
+#: src/client/gpaste-client.c:758
 msgid "delete item <uuid> from the history"
 msgstr "eyða atriðinu <uuid> úr ferlinum"
 
-#: src/client/gpaste-client.c:758
+#: src/client/gpaste-client.c:759
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:759
+#: src/client/gpaste-client.c:760
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:760
+#: src/client/gpaste-client.c:761
 msgid "delete the password <name> from the history"
 msgstr "eyða lykilorðinu <name> úr ferlinum"
 
-#: src/client/gpaste-client.c:761
+#: src/client/gpaste-client.c:762
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "setja innihald skrárinnar á <path> inn í klippispjaldið"
 
-#: src/client/gpaste-client.c:762
+#: src/client/gpaste-client.c:763
 msgid "empty the history"
 msgstr "tæma ferilinn"
 
-#: src/client/gpaste-client.c:763
+#: src/client/gpaste-client.c:764
 msgid "start tracking clipboard changes"
 msgstr "byrja að rekja breytingar á klippispjaldi"
 
-#: src/client/gpaste-client.c:764
+#: src/client/gpaste-client.c:765
 msgid "stop tracking clipboard changes"
 msgstr "hætta að rekja breytingar á klippispjaldi"
 
-#: src/client/gpaste-client.c:765
+#: src/client/gpaste-client.c:766
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "endurkeyra vaktarann (eftir uppfærslu...)"
 
-#: src/client/gpaste-client.c:766
+#: src/client/gpaste-client.c:767
 msgid "migrate the history to a different storage backend"
 msgstr "yfirfæra ferilinn á annan geymslubakenda"
 
-#: src/client/gpaste-client.c:767
+#: src/client/gpaste-client.c:768
 msgid "change the passphrase of the encrypted history"
 msgstr "Breyta aðgangsorðum á dulritaða ferlinum"
 
-#: src/client/gpaste-client.c:768
+#: src/client/gpaste-client.c:769
 msgid "launch the configuration tool"
 msgstr "ræsa stillingaverkfærið"
 
-#: src/client/gpaste-client.c:769
+#: src/client/gpaste-client.c:770
 msgid "launch the graphical tool"
 msgstr "ræsa myndræna verkfærið"
 
-#: src/client/gpaste-client.c:770
+#: src/client/gpaste-client.c:771
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "láta smáforritið eða viðaukann birta ferilinn"
 
-#: src/client/gpaste-client.c:771
+#: src/client/gpaste-client.c:772
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "Senda <uuid> atriðið inn á úrklippuþjónustu (pastebin)"
 
-#: src/client/gpaste-client.c:772
+#: src/client/gpaste-client.c:773
 msgid "display the version"
 msgstr "birta útgáfunúmerið"
 
-#: src/client/gpaste-client.c:773
+#: src/client/gpaste-client.c:774
 msgid "display the daemon version"
 msgstr "birta útgáfu vaktarans"
 
-#: src/client/gpaste-client.c:774
+#: src/client/gpaste-client.c:775
 msgid "display this help"
 msgstr "birta þennan hjálpartexta"
 
-#: src/client/gpaste-client.c:775
+#: src/client/gpaste-client.c:776
 msgid "display the about dialog"
 msgstr "birta glugga með upplýsingum um forritið"
 
-#: src/client/gpaste-client.c:808
+#: src/client/gpaste-client.c:809
 #, c-format
 msgid "Usage:\n"
 msgstr "Notkun:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:829
+#: src/client/gpaste-client.c:830
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:829
+#: src/client/gpaste-client.c:830
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "setja úttak af hverju sem er á klippispjald"
 
-#: src/client/gpaste-client.c:832
+#: src/client/gpaste-client.c:833
 #, c-format
 msgid "Convenience options:"
 msgstr "Valkostir til þæginda:"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:835
+#: src/client/gpaste-client.c:836
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:837
+#: src/client/gpaste-client.c:838
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:839
+#: src/client/gpaste-client.c:840
 msgid "use the index of the item instead of its UUID"
 msgstr "nota atriðisvísi atriða í stað UUID-auðkennis þeirra"
 
-#: src/client/gpaste-client.c:842
+#: src/client/gpaste-client.c:843
 #, c-format
 msgid "Display options:"
 msgstr "Valkostir birtingar:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:845
+#: src/client/gpaste-client.c:846
 msgid "display each item on only one line"
 msgstr "birta hvert atriði á aðeins einni línu"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:847
+#: src/client/gpaste-client.c:848
 msgid "display each item raw (without line numbers)"
 msgstr "birta hvert atriði hrátt (án línunúmera)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:849
+#: src/client/gpaste-client.c:850
 msgid "display the items in reverse order"
 msgstr "birta atriðin í öfugri röð"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:851
+#: src/client/gpaste-client.c:852
 msgid "use a NUL character instead of a new line between each item"
 msgstr "nota NUL-staf í staðinn fyrir nýlínu milli atriða"
 
-#: src/client/gpaste-client.c:854
+#: src/client/gpaste-client.c:855
 #, c-format
 msgid "Merge options:"
 msgstr "Valkostir fyrir sameiningu:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:857 src/client/gpaste-client.c:859
+#: src/client/gpaste-client.c:858 src/client/gpaste-client.c:860
 msgid "string"
 msgstr "strengur"
 
-#: src/client/gpaste-client.c:857
+#: src/client/gpaste-client.c:858
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 "bæta uppgefinni skreytingu á byrjun og enda hvers atriðis fyrir sameiningu"
 
-#: src/client/gpaste-client.c:859
+#: src/client/gpaste-client.c:860
 msgid "add the given separator between each item when merging"
 msgstr "bæta uppgefnum aðgreini milli allra atriða við sameiningu"
 
 #. Reached only if both execs failed: keep this daemon running and resume
 #. * recording (g_paste_daemon_flush() stopped it above).
-#: src/daemon/gpaste-daemon.c:98
+#: src/daemon/gpaste-daemon.c:111
 msgid "Failed to reexecute the daemon"
 msgstr "Mistókst að endurkeyra vaktarann"
 
-#: src/daemon/gpaste-daemon.c:110
+#: src/daemon/gpaste-daemon.c:125
 msgid "Stop signal received, exiting"
 msgstr "Tók við stopp-merki, hætti núna"
 
-#: src/daemon/gpaste-daemon.c:302
+#: src/daemon/gpaste-daemon.c:316
 msgid "Could not export our objects on the session bus, exiting"
 msgstr "Gat ekki flutt út hlutina okkar á seturásinni, hættir"
 
@@ -653,13 +653,13 @@ msgstr "Gat ekki flutt út hlutina okkar á seturásinni, hættir"
 #. * --replace`): flush the history and release the lock so the successor
 #. * loads our final state, then exit successfully so the systemd unit
 #. * does not land in the failed state.
-#: src/daemon/gpaste-daemon.c:322
+#: src/daemon/gpaste-daemon.c:336
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr "Skipt út með öðrum GPaste-vaktara, hættir"
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
-#: src/daemon/gpaste-daemon.c:330
+#: src/daemon/gpaste-daemon.c:344
 msgid ""
 "Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr "Gat ekki fengið D-Bus-nafn. Er annar GPaste-vaktari þegar í gangi?"
@@ -670,8 +670,8 @@ msgid "Open GPaste"
 msgstr "GPaste"
 
 #. An icon names the button for the eye and for nothing else.
-#: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:42
-#: src/gnome-shell/historySwitcher.js:178 src/ui/gpaste-ui-item.c:1024
+#: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:260
+#: src/gnome-shell/historySwitcher.js:786 src/ui/gpaste-ui-item.c:1024
 #: src/ui/gpaste-ui-item.c:1094 src/ui/gpaste-ui-panel.c:476
 #: src/ui/gpaste-ui-panel.c:645
 msgid "Delete"
@@ -713,17 +713,7 @@ msgstr ""
 msgid "Pin"
 msgstr ""
 
-#. Translators: %s is the name of the history being deleted.
-#: src/gnome-shell/historySwitcher.js:28 src/ui/gpaste-ui-panel.c:472
-#, c-format, javascript-format
-msgid "Delete “%s”?"
-msgstr ""
-
-#: src/gnome-shell/historySwitcher.js:29 src/ui/gpaste-ui-panel.c:475
-msgid "The history and everything in it are deleted for good."
-msgstr ""
-
-#: src/gnome-shell/historySwitcher.js:36
+#: src/gnome-shell/historySwitcher.js:89
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
@@ -731,23 +721,46 @@ msgstr ""
 msgid "Cancel"
 msgstr "Hætta við"
 
-#: src/gnome-shell/historySwitcher.js:176
+#: src/gnome-shell/historySwitcher.js:258
+#: src/gnome-shell/historySwitcher.js:766
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:644
 #, fuzzy
 msgctxt "verb"
 msgid "Empty"
 msgstr "Tómt"
 
-#: src/gnome-shell/historySwitcher.js:177 src/ui/gpaste-ui-panel.c:413
+#: src/gnome-shell/historySwitcher.js:259 src/ui/gpaste-ui-panel.c:413
 #: src/ui/gpaste-ui-panel.c:643
 #, fuzzy
 msgid "Back Up"
 msgstr "Öryggisafrit"
 
-#: src/gnome-shell/historySwitcher.js:264
+#: src/gnome-shell/historySwitcher.js:366
 #, fuzzy
 msgid "Switch to or create a history…"
 msgstr "skipta í annan feril"
+
+#. Translators: %s is the name of the history being emptied.
+#: src/gnome-shell/historySwitcher.js:764
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
+#, c-format, javascript-format
+msgid "Empty “%s”?"
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:765
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
+msgid "Every item it holds is deleted for good."
+msgstr ""
+
+#. Translators: %s is the name of the history being deleted.
+#: src/gnome-shell/historySwitcher.js:784 src/ui/gpaste-ui-panel.c:472
+#, c-format, javascript-format
+msgid "Delete “%s”?"
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:785 src/ui/gpaste-ui-panel.c:475
+msgid "The history and everything in it are deleted for good."
+msgstr ""
 
 #: src/gnome-shell/searchItem.js:27
 msgid "Type to search…"
@@ -851,36 +864,36 @@ msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjaldið"
 msgid "Sync Primary to Clipboard"
 msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjald"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:439
+#: src/libgpaste/gpaste-3/gpaste-util.c:415
 msgid "Image"
 msgstr "mynd"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:441
+#: src/libgpaste/gpaste-3/gpaste-util.c:417
 msgid "Color"
 msgstr "Litur"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:446
+#: src/libgpaste/gpaste-3/gpaste-util.c:422
 msgid "Files"
 msgstr "Skrár"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:451
+#: src/libgpaste/gpaste-3/gpaste-util.c:427
 #: src/ui/gpaste-ui-password-dialog.c:222
 msgid "Password"
 msgstr "Lykilorð"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:858
+#: src/libgpaste/gpaste-3/gpaste-util.c:847
 msgid "Weak"
 msgstr "Veikt"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:860
+#: src/libgpaste/gpaste-3/gpaste-util.c:849
 msgid "Fair"
 msgstr "Þokkalegt"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:862
+#: src/libgpaste/gpaste-3/gpaste-util.c:851
 msgid "Good"
 msgstr "Gott"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:864
+#: src/libgpaste/gpaste-3/gpaste-util.c:853
 msgid "Strong"
 msgstr "Sterkt"
 
@@ -1287,16 +1300,6 @@ msgstr "Óvirkt"
 msgid "Could not empty the history"
 msgstr "tæma ferilinn"
 
-#. Translators: %s is the name of the history being emptied.
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
-#, c-format
-msgid "Empty “%s”?"
-msgstr ""
-
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
-msgid "Every item it holds is deleted for good."
-msgstr ""
-
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:522
 #, fuzzy
 msgid "Password strength rating is not available in this build"
@@ -1606,105 +1609,105 @@ msgstr ""
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:528
+#: src/ui/gpaste-ui-window.c:504
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "Endurræsa vaktarann"
 
-#: src/ui/gpaste-ui-window.c:540
+#: src/ui/gpaste-ui-window.c:516
 msgid "Restart the GPaste Daemon?"
 msgstr "Endurræsa GPaste-vaktarann?"
 
-#: src/ui/gpaste-ui-window.c:541
+#: src/ui/gpaste-ui-window.c:517
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:542
+#: src/ui/gpaste-ui-window.c:518
 msgid "Restart"
 msgstr "Endurræsa"
 
-#: src/ui/gpaste-ui-window.c:564
+#: src/ui/gpaste-ui-window.c:540
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "byrja að rekja breytingar á klippispjaldi"
 
-#: src/ui/gpaste-ui-window.c:565
+#: src/ui/gpaste-ui-window.c:541
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "hætta að rekja breytingar á klippispjaldi"
 
-#: src/ui/gpaste-ui-window.c:589
+#: src/ui/gpaste-ui-window.c:565
 msgid "Stop Tracking the Clipboard?"
 msgstr "Hætta að rekja breytingar á klippispjaldi?"
 
-#: src/ui/gpaste-ui-window.c:590
+#: src/ui/gpaste-ui-window.c:566
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:591
+#: src/ui/gpaste-ui-window.c:567
 msgid "Stop"
 msgstr "Stöðva"
 
-#: src/ui/gpaste-ui-window.c:631
+#: src/ui/gpaste-ui-window.c:607
 msgid "Clipboard management system"
 msgstr "Klippispjaldsstjórnunarkerfi"
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:637
+#: src/ui/gpaste-ui-window.c:613
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:896
+#: src/ui/gpaste-ui-window.c:872
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "Gat ekki búið til möppu undir feril"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:942
+#: src/ui/gpaste-ui-window.c:918
 #, fuzzy
 msgid "New Line"
 msgstr "Ný lína"
 
-#: src/ui/gpaste-ui-window.c:943
+#: src/ui/gpaste-ui-window.c:919
 msgid "Space"
 msgstr "Bil"
 
-#: src/ui/gpaste-ui-window.c:944
+#: src/ui/gpaste-ui-window.c:920
 msgid "Comma"
 msgstr "Komma"
 
-#: src/ui/gpaste-ui-window.c:945
+#: src/ui/gpaste-ui-window.c:921
 msgid "Tab"
 msgstr "Dálklyklar"
 
-#: src/ui/gpaste-ui-window.c:953
+#: src/ui/gpaste-ui-window.c:929
 msgid "Custom separator"
 msgstr "Sérsniðinn aðgreinir"
 
-#: src/ui/gpaste-ui-window.c:958
+#: src/ui/gpaste-ui-window.c:934
 msgid "Merge with this separator"
 msgstr "Sameina við þennan aðgreini"
 
-#: src/ui/gpaste-ui-window.c:969
+#: src/ui/gpaste-ui-window.c:945
 msgid "Merge"
 msgstr "Sameina"
 
-#: src/ui/gpaste-ui-window.c:1048
+#: src/ui/gpaste-ui-window.c:1024
 msgid "Quit"
 msgstr "Hætta"
 
-#: src/ui/gpaste-ui-window.c:1092 src/ui/gpaste-ui-window.c:1093
+#: src/ui/gpaste-ui-window.c:1068 src/ui/gpaste-ui-window.c:1069
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Ekki tókst að tengjast GPaste-vaktaranum"
 
-#: src/ui/gpaste-ui-window.c:1157
+#: src/ui/gpaste-ui-window.c:1133
 msgid "Histories"
 msgstr "Ferlar"
 
-#: src/ui/gpaste-ui-window.c:1158
+#: src/ui/gpaste-ui-window.c:1134
 msgid "History"
 msgstr "Ferill"
 

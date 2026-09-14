@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-13 11:25+0200\n"
+"POT-Creation-Date: 2026-09-15 13:57+0200\n"
 "PO-Revision-Date: 2026-03-16 04:09+0000\n"
 "Last-Translator: தமிழ்நேரம் <tamilneram247@gmail.com>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/"
@@ -384,87 +384,87 @@ msgstr "அமைப்புகள் இடைமுகம்"
 msgid "Couldn't spawn %s: %s"
 msgstr "ச்பான் செய்ய முடியவில்லை"
 
-#: src/client/gpaste-client.c:305
+#: src/client/gpaste-client.c:306
 msgid "Successfully re-executed the daemon"
 msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்"
 
-#: src/client/gpaste-client.c:319
+#: src/client/gpaste-client.c:320
 #, fuzzy
 msgid "Successfully triggered the storage migration"
 msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்"
 
-#: src/client/gpaste-client.c:336
+#: src/client/gpaste-client.c:337
 #, fuzzy
 msgid "Successfully triggered the passphrase change"
 msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்"
 
-#: src/client/gpaste-client.c:495
+#: src/client/gpaste-client.c:496
 msgid "Cannot add non-UTF-8 data as text."
 msgstr "UTF-8 அல்லாத தரவை உரையாகச் சேர்க்க முடியாது."
 
-#: src/client/gpaste-client.c:741
+#: src/client/gpaste-client.c:742
 msgid "print the history with UUIDs"
 msgstr "வரலாற்றை UUIDS உடன் அச்சிடுங்கள்"
 
-#: src/client/gpaste-client.c:742
+#: src/client/gpaste-client.c:743
 #, fuzzy
 msgid "print the size of the current history"
 msgstr "வரலாற்றின் அளவை அச்சிடுங்கள்"
 
-#: src/client/gpaste-client.c:743
+#: src/client/gpaste-client.c:744
 #, fuzzy
 msgid "print the items of the history matching <pattern>"
 msgstr "வரலாற்றின் அளவை அச்சிடுங்கள்"
 
-#: src/client/gpaste-client.c:744
+#: src/client/gpaste-client.c:745
 msgid "get the name of the current history"
 msgstr "தற்போதைய வரலாற்றின் பெயரைப் பெறுங்கள்"
 
-#: src/client/gpaste-client.c:745
+#: src/client/gpaste-client.c:746
 msgid "back up the current history"
 msgstr "தற்போதைய வரலாறு காப்புப்பிரதி"
 
-#: src/client/gpaste-client.c:746
+#: src/client/gpaste-client.c:747
 msgid "switch to another history"
 msgstr "மற்றொரு வரலாற்றுக்கு மாறவும்"
 
-#: src/client/gpaste-client.c:747
+#: src/client/gpaste-client.c:748
 msgid "delete a history"
 msgstr "ஒரு வரலாற்றை நீக்கு"
 
-#: src/client/gpaste-client.c:748
+#: src/client/gpaste-client.c:749
 msgid "list available histories"
 msgstr "கிடைக்கக்கூடிய வரலாறுகள் பட்டியல்"
 
-#: src/client/gpaste-client.c:749
+#: src/client/gpaste-client.c:750
 msgid "set text to clipboard"
 msgstr "இடைநிலைப்பலகைக்கு உரையை அமைக்கவும்"
 
-#: src/client/gpaste-client.c:750
+#: src/client/gpaste-client.c:751
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "கிளிப்போர்டில் பெயர் - கடவுச்சொல் இணை சேர்க்கவும்"
 
-#: src/client/gpaste-client.c:751
+#: src/client/gpaste-client.c:752
 msgid "get the item <uuid> from the history"
 msgstr "வரலாற்றிலிருந்து <uuid> உருப்படியைப் பெறுங்கள்"
 
-#: src/client/gpaste-client.c:752
+#: src/client/gpaste-client.c:753
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "உருப்படியை <uuid> வரலாற்றிலிருந்து இடைநிலைப்பலகைக்கு அமைக்கவும்"
 
-#: src/client/gpaste-client.c:753
+#: src/client/gpaste-client.c:754
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "வழங்கப்பட்ட ஒன்றோடு வரலாற்றிலிருந்து <uuid> உருப்படியின் உள்ளடக்கங்களை மாற்றவும்"
 
-#: src/client/gpaste-client.c:754
+#: src/client/gpaste-client.c:755
 msgid ""
 "drop the rich text flavours of the item <uuid>, keeping the plain text it "
 "shows"
 msgstr ""
 
-#: src/client/gpaste-client.c:755
+#: src/client/gpaste-client.c:756
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
@@ -472,167 +472,167 @@ msgstr ""
 "வரலாற்றிலிருந்து UUID களுடன் பொருந்தக்கூடிய உருப்படிகளை ஒன்றிணைத்து, முடிவை "
 "கிளிப்போர்டில் வைக்கவும்"
 
-#: src/client/gpaste-client.c:756
+#: src/client/gpaste-client.c:757
 #, fuzzy
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
 "that is"
 msgstr "வரலாற்றிலிருந்து <auuid> உருப்படியை <பெயர்> என்ற கடவுச்சொல்லாக அமைக்கவும்"
 
-#: src/client/gpaste-client.c:757
+#: src/client/gpaste-client.c:758
 msgid "delete item <uuid> from the history"
 msgstr "வரலாற்றிலிருந்து <uuid> உருப்படியை நீக்கு"
 
-#: src/client/gpaste-client.c:758
+#: src/client/gpaste-client.c:759
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:759
+#: src/client/gpaste-client.c:760
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:760
+#: src/client/gpaste-client.c:761
 msgid "delete the password <name> from the history"
 msgstr "வரலாற்றிலிருந்து கடவுச்சொல்லை <பெயர்> நீக்கவும்"
 
-#: src/client/gpaste-client.c:761
+#: src/client/gpaste-client.c:762
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "கோப்பின் உள்ளடக்கத்தை <athe> இல் கிளிப்போர்டில் வைக்கவும்"
 
-#: src/client/gpaste-client.c:762
+#: src/client/gpaste-client.c:763
 msgid "empty the history"
 msgstr "வரலாற்றை வெறுமை செய்யுங்கள்"
 
-#: src/client/gpaste-client.c:763
+#: src/client/gpaste-client.c:764
 msgid "start tracking clipboard changes"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிக்கத் தொடங்குங்கள்"
 
-#: src/client/gpaste-client.c:764
+#: src/client/gpaste-client.c:765
 msgid "stop tracking clipboard changes"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிப்பதை நிறுத்துங்கள்"
 
-#: src/client/gpaste-client.c:765
+#: src/client/gpaste-client.c:766
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "டீமனை மீண்டும் ஆராயுங்கள் (மேம்படுத்தப்பட்ட பிறகு ...)"
 
-#: src/client/gpaste-client.c:766
+#: src/client/gpaste-client.c:767
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:767
+#: src/client/gpaste-client.c:768
 #, fuzzy
 msgid "change the passphrase of the encrypted history"
 msgstr "தற்போதைய வரலாற்றின் பெயரைப் பெறுங்கள்"
 
-#: src/client/gpaste-client.c:768
+#: src/client/gpaste-client.c:769
 msgid "launch the configuration tool"
 msgstr "உள்ளமைவு கருவியைத் தொடங்கவும்"
 
-#: src/client/gpaste-client.c:769
+#: src/client/gpaste-client.c:770
 msgid "launch the graphical tool"
 msgstr "வரைகலை கருவியைத் தொடங்கவும்"
 
-#: src/client/gpaste-client.c:770
+#: src/client/gpaste-client.c:771
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "ஆப்லெட் அல்லது நீட்டிப்பு வரலாற்றைக் காண்பி"
 
-#: src/client/gpaste-client.c:771
+#: src/client/gpaste-client.c:772
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "உருப்படியை <uuid> ஒரு பேச்டெபின் சேவையில் பதிவேற்றவும்"
 
-#: src/client/gpaste-client.c:772
+#: src/client/gpaste-client.c:773
 msgid "display the version"
 msgstr "பதிப்பைக் காண்பி"
 
-#: src/client/gpaste-client.c:773
+#: src/client/gpaste-client.c:774
 msgid "display the daemon version"
 msgstr "டீமான் பதிப்பைக் காண்பி"
 
-#: src/client/gpaste-client.c:774
+#: src/client/gpaste-client.c:775
 msgid "display this help"
 msgstr "இந்த உதவியைக் காண்பி"
 
-#: src/client/gpaste-client.c:775
+#: src/client/gpaste-client.c:776
 msgid "display the about dialog"
 msgstr "பற்றி உரையாடலைக் காண்பி"
 
-#: src/client/gpaste-client.c:808
+#: src/client/gpaste-client.c:809
 #, c-format
 msgid "Usage:\n"
 msgstr "பயன்பாடு:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:829
+#: src/client/gpaste-client.c:830
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:829
+#: src/client/gpaste-client.c:830
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "இடைநிலைப்பலகைக்கு எதுவுமே வெளியீட்டை அமைக்கவும்"
 
-#: src/client/gpaste-client.c:832
+#: src/client/gpaste-client.c:833
 #, c-format
 msgid "Convenience options:"
 msgstr "வசதியான விருப்பங்கள்:"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:835
+#: src/client/gpaste-client.c:836
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:837
+#: src/client/gpaste-client.c:838
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:839
+#: src/client/gpaste-client.c:840
 msgid "use the index of the item instead of its UUID"
 msgstr "உருப்படியின் குறியீட்டை அதன் UUID க்கு பதிலாக பயன்படுத்தவும்"
 
-#: src/client/gpaste-client.c:842
+#: src/client/gpaste-client.c:843
 #, c-format
 msgid "Display options:"
 msgstr "காட்சி விருப்பங்கள்:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:845
+#: src/client/gpaste-client.c:846
 msgid "display each item on only one line"
 msgstr "ஒவ்வொரு உருப்படியையும் ஒரே வரியில் மட்டுமே காண்பி"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:847
+#: src/client/gpaste-client.c:848
 msgid "display each item raw (without line numbers)"
 msgstr "ஒவ்வொரு உருப்படியையும் ராவைக் காண்பி (வரி எண்கள் இல்லாமல்)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:849
+#: src/client/gpaste-client.c:850
 msgid "display the items in reverse order"
 msgstr "உருப்படிகளை தலைகீழ் வரிசையில் காண்பி"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:851
+#: src/client/gpaste-client.c:852
 msgid "use a NUL character instead of a new line between each item"
 msgstr "ஒவ்வொரு பொருளுக்கும் ஒரு புதிய வரிக்கு பதிலாக ஒரு NUL எழுத்தை பயன்படுத்தவும்"
 
-#: src/client/gpaste-client.c:854
+#: src/client/gpaste-client.c:855
 #, c-format
 msgid "Merge options:"
 msgstr "விருப்பங்களை ஒன்றிணைத்தல்:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:857 src/client/gpaste-client.c:859
+#: src/client/gpaste-client.c:858 src/client/gpaste-client.c:860
 msgid "string"
 msgstr "சரம்"
 
-#: src/client/gpaste-client.c:857
+#: src/client/gpaste-client.c:858
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -640,22 +640,22 @@ msgstr ""
 "ஒன்றிணைவதற்கு முன் ஒவ்வொரு பொருளின் தொடக்கத்திலும் முடிவிலும் கொடுக்கப்பட்ட அலங்காரத்தை "
 "சேர்க்கவும்"
 
-#: src/client/gpaste-client.c:859
+#: src/client/gpaste-client.c:860
 msgid "add the given separator between each item when merging"
 msgstr "ஒன்றிணைக்கும் போது ஒவ்வொரு பொருளுக்கும் இடையில் கொடுக்கப்பட்ட பிரிப்பான் சேர்க்கவும்"
 
 #. Reached only if both execs failed: keep this daemon running and resume
 #. * recording (g_paste_daemon_flush() stopped it above).
-#: src/daemon/gpaste-daemon.c:98
+#: src/daemon/gpaste-daemon.c:111
 #, fuzzy
 msgid "Failed to reexecute the daemon"
 msgstr "டீமனை வெற்றிகரமாக மறுபரிசீலனை செய்தார்\n"
 
-#: src/daemon/gpaste-daemon.c:110
+#: src/daemon/gpaste-daemon.c:125
 msgid "Stop signal received, exiting"
 msgstr "சிக்னல் பெறப்பட்ட நிறுத்த, வெளியேறுதல்"
 
-#: src/daemon/gpaste-daemon.c:302
+#: src/daemon/gpaste-daemon.c:316
 msgid "Could not export our objects on the session bus, exiting"
 msgstr ""
 
@@ -663,13 +663,13 @@ msgstr ""
 #. * --replace`): flush the history and release the lock so the successor
 #. * loads our final state, then exit successfully so the systemd unit
 #. * does not land in the failed state.
-#: src/daemon/gpaste-daemon.c:322
+#: src/daemon/gpaste-daemon.c:336
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr ""
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
-#: src/daemon/gpaste-daemon.c:330
+#: src/daemon/gpaste-daemon.c:344
 msgid ""
 "Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr ""
@@ -680,8 +680,8 @@ msgid "Open GPaste"
 msgstr "Gpaste"
 
 #. An icon names the button for the eye and for nothing else.
-#: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:42
-#: src/gnome-shell/historySwitcher.js:178 src/ui/gpaste-ui-item.c:1024
+#: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:260
+#: src/gnome-shell/historySwitcher.js:786 src/ui/gpaste-ui-item.c:1024
 #: src/ui/gpaste-ui-item.c:1094 src/ui/gpaste-ui-panel.c:476
 #: src/ui/gpaste-ui-panel.c:645
 msgid "Delete"
@@ -724,17 +724,7 @@ msgstr ""
 msgid "Pin"
 msgstr ""
 
-#. Translators: %s is the name of the history being deleted.
-#: src/gnome-shell/historySwitcher.js:28 src/ui/gpaste-ui-panel.c:472
-#, c-format, javascript-format
-msgid "Delete “%s”?"
-msgstr ""
-
-#: src/gnome-shell/historySwitcher.js:29 src/ui/gpaste-ui-panel.c:475
-msgid "The history and everything in it are deleted for good."
-msgstr ""
-
-#: src/gnome-shell/historySwitcher.js:36
+#: src/gnome-shell/historySwitcher.js:89
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
@@ -742,23 +732,46 @@ msgstr ""
 msgid "Cancel"
 msgstr "ரத்துசெய்"
 
-#: src/gnome-shell/historySwitcher.js:176
+#: src/gnome-shell/historySwitcher.js:258
+#: src/gnome-shell/historySwitcher.js:766
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:644
 #, fuzzy
 msgctxt "verb"
 msgid "Empty"
 msgstr "காலி"
 
-#: src/gnome-shell/historySwitcher.js:177 src/ui/gpaste-ui-panel.c:413
+#: src/gnome-shell/historySwitcher.js:259 src/ui/gpaste-ui-panel.c:413
 #: src/ui/gpaste-ui-panel.c:643
 #, fuzzy
 msgid "Back Up"
 msgstr "காப்புப்பிரதி"
 
-#: src/gnome-shell/historySwitcher.js:264
+#: src/gnome-shell/historySwitcher.js:366
 #, fuzzy
 msgid "Switch to or create a history…"
 msgstr "மற்றொரு வரலாற்றுக்கு மாறவும்"
+
+#. Translators: %s is the name of the history being emptied.
+#: src/gnome-shell/historySwitcher.js:764
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
+#, c-format, javascript-format
+msgid "Empty “%s”?"
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:765
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
+msgid "Every item it holds is deleted for good."
+msgstr ""
+
+#. Translators: %s is the name of the history being deleted.
+#: src/gnome-shell/historySwitcher.js:784 src/ui/gpaste-ui-panel.c:472
+#, c-format, javascript-format
+msgid "Delete “%s”?"
+msgstr ""
+
+#: src/gnome-shell/historySwitcher.js:785 src/ui/gpaste-ui-panel.c:475
+msgid "The history and everything in it are deleted for good."
+msgstr ""
 
 #: src/gnome-shell/searchItem.js:27
 msgid "Type to search…"
@@ -867,36 +880,36 @@ msgstr "முதன்மை தேர்வை கிளிப்போர்�
 msgid "Sync Primary to Clipboard"
 msgstr "முதன்மை தேர்வை கிளிப்போர்டுடன் ஒத்திசைக்கவும்"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:439
+#: src/libgpaste/gpaste-3/gpaste-util.c:415
 msgid "Image"
 msgstr "படம்"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:441
+#: src/libgpaste/gpaste-3/gpaste-util.c:417
 msgid "Color"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:446
+#: src/libgpaste/gpaste-3/gpaste-util.c:422
 msgid "Files"
 msgstr "கோப்புகள்"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:451
+#: src/libgpaste/gpaste-3/gpaste-util.c:427
 #: src/ui/gpaste-ui-password-dialog.c:222
 msgid "Password"
 msgstr "கடவுச்சொல்"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:858
+#: src/libgpaste/gpaste-3/gpaste-util.c:847
 msgid "Weak"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:860
+#: src/libgpaste/gpaste-3/gpaste-util.c:849
 msgid "Fair"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:862
+#: src/libgpaste/gpaste-3/gpaste-util.c:851
 msgid "Good"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:864
+#: src/libgpaste/gpaste-3/gpaste-util.c:853
 msgid "Strong"
 msgstr ""
 
@@ -1288,16 +1301,6 @@ msgstr ""
 msgid "Could not empty the history"
 msgstr "வரலாற்றை வெறுமை செய்யுங்கள்"
 
-#. Translators: %s is the name of the history being emptied.
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
-#, c-format
-msgid "Empty “%s”?"
-msgstr ""
-
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
-msgid "Every item it holds is deleted for good."
-msgstr ""
-
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:522
 #, fuzzy
 msgid "Password strength rating is not available in this build"
@@ -1606,107 +1609,107 @@ msgstr ""
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:528
+#: src/ui/gpaste-ui-window.c:504
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "டீமனை மறுதொடக்கம் செய்யுங்கள்"
 
-#: src/ui/gpaste-ui-window.c:540
+#: src/ui/gpaste-ui-window.c:516
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "டீமனை மறுதொடக்கம் செய்யுங்கள்"
 
-#: src/ui/gpaste-ui-window.c:541
+#: src/ui/gpaste-ui-window.c:517
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:542
+#: src/ui/gpaste-ui-window.c:518
 msgid "Restart"
 msgstr "மறுதொடக்கம்"
 
-#: src/ui/gpaste-ui-window.c:564
+#: src/ui/gpaste-ui-window.c:540
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிக்கத் தொடங்குங்கள்"
 
-#: src/ui/gpaste-ui-window.c:565
+#: src/ui/gpaste-ui-window.c:541
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிப்பதை நிறுத்துங்கள்"
 
-#: src/ui/gpaste-ui-window.c:589
+#: src/ui/gpaste-ui-window.c:565
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிப்பதை நிறுத்துங்கள்"
 
-#: src/ui/gpaste-ui-window.c:590
+#: src/ui/gpaste-ui-window.c:566
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:591
+#: src/ui/gpaste-ui-window.c:567
 msgid "Stop"
 msgstr "நிறுத்து"
 
-#: src/ui/gpaste-ui-window.c:631
+#: src/ui/gpaste-ui-window.c:607
 msgid "Clipboard management system"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:637
+#: src/ui/gpaste-ui-window.c:613
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:896
+#: src/ui/gpaste-ui-window.c:872
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "வரலாற்றை உருவாக்க முடியவில்லை"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:942
+#: src/ui/gpaste-ui-window.c:918
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:943
+#: src/ui/gpaste-ui-window.c:919
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:944
+#: src/ui/gpaste-ui-window.c:920
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:945
+#: src/ui/gpaste-ui-window.c:921
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:953
+#: src/ui/gpaste-ui-window.c:929
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:958
+#: src/ui/gpaste-ui-window.c:934
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:969
+#: src/ui/gpaste-ui-window.c:945
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1048
+#: src/ui/gpaste-ui-window.c:1024
 msgid "Quit"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1092 src/ui/gpaste-ui-window.c:1093
+#: src/ui/gpaste-ui-window.c:1068 src/ui/gpaste-ui-window.c:1069
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Gpaste டீமனுடன் இணைக்க முடியவில்லை"
 
-#: src/ui/gpaste-ui-window.c:1157
+#: src/ui/gpaste-ui-window.c:1133
 #, fuzzy
 msgid "Histories"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/ui/gpaste-ui-window.c:1158
+#: src/ui/gpaste-ui-window.c:1134
 #, fuzzy
 msgid "History"
 msgstr "வரலாற்று அணுகல்"
