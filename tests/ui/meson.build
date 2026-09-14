@@ -9,16 +9,7 @@ ui_shortcuts_test = executable(
   'gpaste-ui-shortcuts-test',
   sources: ui_test_sources,
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
-test('test-ui-shortcuts', ui_shortcuts_test,
-  depends: gpaste_schemas,
-  env: {
-    'GSETTINGS_BACKEND': 'memory',
-    'GSETTINGS_SCHEMA_DIR': meson.project_build_root() / 'data/gsettings',
-    'GTK_A11Y': 'none',
-    'GIO_USE_VFS': 'local',
-    'ADW_DISABLE_PORTAL': '1',
-  },
-)
+test('test-ui-shortcuts', ui_shortcuts_test, depends: [gpaste_schemas, test_bus_supervisor])

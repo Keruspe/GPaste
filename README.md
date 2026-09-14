@@ -238,6 +238,15 @@ Run the test suite from the build directory:
 ninja -C build test
 ```
 
+Each C test binary runs on its own in-memory settings and private D-Bus, so it
+needs `dbus-daemon`; a supervisor reaps that bus even if a test crashes. The UI
+tests open their windows on a private `Xvfb` and are skipped without it. The
+`history-switcher` JavaScript test uses Node.js and actor doubles to check draft
+preservation, dialog lifecycle, the current history's count and keyboard focus
+on the switcher row, and is omitted when Node.js is unavailable.
+The script tests touch no settings, bus or display. None of the tests touches
+the desktop session.
+
 [`AGENTS.md`](AGENTS.md) documents the architecture, coding style and
 repository conventions in more detail.
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-test-bus.h>
+#include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-keybinder.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 
@@ -1360,6 +1361,7 @@ main (int argc, char **argv)
     if (argc == 2 && g_str_equal (argv[1], "--activated-portal"))
         return activated_portal ();
 
+    g_paste_test_env_setup (G_PASTE_TEST_ENV_OWN_BUS);
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add ("/keybinder/switch-enabled", Fixture, GINT_TO_POINTER (TRUE), setup, keybinder_switch, teardown);
     g_test_add ("/keybinder/switch-disabled", Fixture, GINT_TO_POINTER (FALSE), setup, keybinder_switch, teardown);
@@ -1432,5 +1434,5 @@ main (int argc, char **argv)
     g_test_add ("/portal/retired-method-denied", Fixture, NULL, setup, retired_method_denied, teardown);
     g_test_add ("/portal/stale-method-after-exhaustion", Fixture, GUINT_TO_POINTER (2), setup, retry_exhaustion, teardown);
     g_test_add ("/portal/retired-create-handoff-pending-method", Fixture, GUINT_TO_POINTER (1), setup, retired_create_handoff, teardown);
-    return g_test_run ();
+    return g_paste_test_env_run ();
 }

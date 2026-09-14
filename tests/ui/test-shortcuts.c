@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-env.h>
+
 /* Access the dialog lifecycle without starting the asynchronous daemon client. */
 #include <gpaste-ui-window.c>
 
@@ -27,7 +29,7 @@ shortcuts_changed (gconstpointer user_data)
 {
     if (!have_display)
     {
-        g_test_skip ("A GTK display is required");
+        g_test_skip ("A private Xvfb display is required");
         return;
     }
 
@@ -64,12 +66,12 @@ shortcuts_changed (gconstpointer user_data)
 int
 main (int argc, char **argv)
 {
-    /* Display sockets live in the runtime directory that isolation replaces. */
-    have_display = gtk_init_check ();
+    g_paste_test_env_setup (G_PASTE_TEST_ENV_DISPLAY);
+    have_display = g_paste_test_env_has_display () && gtk_init_check ();
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     if (have_display)
         adw_init ();
     g_test_add_data_func ("/ui/shortcuts/master-switch", GINT_TO_POINTER (TRUE), shortcuts_changed);
     g_test_add_data_func ("/ui/shortcuts/accelerator", GINT_TO_POINTER (FALSE), shortcuts_changed);
-    return g_test_run ();
+    return g_paste_test_env_run ();
 }

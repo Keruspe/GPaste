@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -1455,6 +1456,7 @@ test_independent_publication_copy_order (gconstpointer user_data)
 int
 main (int argc, char *argv[])
 {
+    g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add_func ("/clipboard/expiry/history_before_restart", test_restart_waits_for_history);
     g_test_add_func ("/clipboard/expiry/independent_deadlines", test_expiry_independent_deadlines);
@@ -1521,5 +1523,5 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/expiry/head_with_other_reading", test_expiry_retires_head_with_other_reading);
     g_test_add_func ("/clipboard/expiry/rechecks_new_read", test_expiry_rechecks_new_read);
     g_test_add_func ("/clipboard/expiry/changing_owner_deadline", test_expiry_deadline_with_changing_owner);
-    return g_test_run ();
+    return g_paste_test_env_run ();
 }

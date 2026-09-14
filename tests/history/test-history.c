@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <glib/gstdio.h>
+#include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
@@ -3543,6 +3544,8 @@ test_history_dir_is_private (void)
 int
 main (int argc, char *argv[])
 {
+    g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
+
     /* Keep any persistence the model schedules out of the real user data dir. */
     g_autofree gchar *tmp = g_dir_make_tmp ("gpaste-test-XXXXXX", NULL);
     if (tmp)
@@ -3632,5 +3635,5 @@ main (int argc, char *argv[])
 #endif
 #endif
 
-    return g_test_run ();
+    return g_paste_test_env_run ();
 }

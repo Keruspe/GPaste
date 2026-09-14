@@ -12,7 +12,7 @@ portal_provider_test_exe = executable(
     '-DG_PASTE_PORTAL_RETIRED_REQUEST_TIMEOUT=1000',
     '-DG_PASTE_PORTAL_BIND_RETRY_DELAY=50',
   ],
-  dependencies: [ gio_dep, gtk4_dep, gpaste_test_bus_dep, gpaste_daemon_internal_dep ],
+  dependencies: [ gio_dep, gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, gpaste_daemon_internal_dep ],
 )
 
 configure_file(
@@ -23,10 +23,6 @@ configure_file(
 
 test('test-portal-provider', portal_provider_test_exe,
   timeout: 120,
-  depends: gpaste_schemas,
-  env: {
-    'G_TEST_BUILDDIR': meson.current_build_dir(),
-    'GSETTINGS_BACKEND': 'memory',
-    'GSETTINGS_SCHEMA_DIR': meson.project_build_root() / 'data/gsettings',
-  },
+  depends: [gpaste_schemas, test_bus_supervisor],
+  env: { 'G_TEST_BUILDDIR': meson.current_build_dir() },
 )

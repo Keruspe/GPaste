@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-settings.h>
 
 typedef struct
@@ -41,8 +42,9 @@ rebind_key (void)
 int
 main (int argc, char **argv)
 {
+    g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     /* Isolate the optional keyfile backend as well as using memory GSettings. */
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add_func ("/settings/rebind-key", rebind_key);
-    return g_test_run ();
+    return g_paste_test_env_run ();
 }
