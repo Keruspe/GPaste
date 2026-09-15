@@ -70,6 +70,17 @@ The test infrastructure and what each suite covers are documented in [`tests/AGE
 - **State is a property, an occurrence is a signal.** Something the object *is* (`GPasteScreensaverClient:active`, `GPasteUiHistory:selection-mode`) is a property with `notify::`; something that *happens* (`name-lost`, `reexecute-self`, `keybinding-activated`, `GPasteHistory::update`) stays a signal. Install properties with the `g_object_class_install_properties` array form and `G_PARAM_EXPLICIT_NOTIFY`, so the setter decides whether anything actually moved. Do not add a property that merely restates a signal already carrying the same value in-band.
 - **Never emit under `G_PASTE_LOCK_HISTORY`.** Handlers call back into `GPasteHistory`, and the lock is not recursive — this is why the `selected` emission is deferred until the lock is released. The same applies to `g_object_notify*`.
 
+**GObject type macros** — use these in `.c` files:
+
+| Macro | Use when |
+|---|---|
+| `G_PASTE_DEFINE_TYPE` | Concrete type — this is the normal case |
+| `G_PASTE_DEFINE_TYPE_WITH_INTERFACE` | Concrete type implementing an interface |
+| `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` | **Derivable** type with a `Private` struct |
+| `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE` | Abstract base class with private data |
+
+**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types (`GPasteItem`, `GPasteStorageBackend`, `GPasteBusObject`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` and the `_g_paste_x_get_instance_private()` const shim it emits.
+
 ### Documenting errors
 
 GIR cannot express *which* domain a function throws: the format only has a boolean `throws="1"` per callable, plus `glib:error-domain` on the enumeration (which `GPasteError` carries). A `@error:` parameter line does not survive into the GIR at all — introspection drops the throws parameter — so anything a binding consumer needs to know has to be in the function's *description*, not on its `@error:` line.
