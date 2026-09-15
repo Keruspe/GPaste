@@ -6,8 +6,8 @@
 
   The interface the GPaste daemon exports on /org/gnome/GPaste, and the single
   source of truth for both sides of it: gdbus-codegen turns this file into the
-  GPasteDaemon3 GInterface, the proxy GPasteClient derives from, and the skeleton
-  GPasteDaemon exports.
+  GPasteDaemon3 GInterface, which GPasteClient implements on top of its own
+  GDBusProxy, and the skeleton GPasteDaemon exports.
 
   Also installed to $datadir/dbus-1/interfaces so that anything speaking to the
   daemon can read the contract without building GPaste.
