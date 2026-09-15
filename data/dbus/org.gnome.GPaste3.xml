@@ -261,17 +261,21 @@
       @timeout is in seconds, and is how long the password may stay on the
       clipboard once it is the active item: when it runs out the daemon selects
       the next non-password item, or clears the selection if the history holds
-      none. 0 means no timeout. It is armed afresh every time the password is
-      selected, and cancelled by anything else being selected. Its range is 0 to
-      65535, the same one the "password-timeout" setting is declared with.
+      none. 0 means no timeout. It is armed when the password is selected, and
+      cancelled by anything else being selected. Selecting the same password
+      again while its countdown runs keeps that countdown rather than starting a
+      new one, or a selection re-taken every few seconds would keep the password
+      on the clipboard for as long as that went on; once the countdown has run
+      out, selecting the password starts a new one. Its range is 0 to 65535, the
+      same one the "password-timeout" setting is declared with.
 
       0xffffffff, which is above that range and so collides with no timeout
       anything can ask for, writes no timeout at all: a password keeps the one it
       carries and the countdown already running for it, and a text item becoming
       one takes the "password-timeout" default. That is what a caller changing
       only the name sends, rather than reading the timeout back with
-      GetPasswordTimeout first and echoing it here: anything else it sends
-      replaces a running countdown, and 0 cancels it outright.
+      GetPasswordTimeout first and echoing it here: a different timeout replaces
+      a running countdown, and 0 cancels it outright.
 
       What comes back depends on what @uuid named. A text item is REPLACED by a
       password item, which is an item of its own, so a new uuid comes back and

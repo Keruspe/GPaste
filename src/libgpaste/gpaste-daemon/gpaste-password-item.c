@@ -89,8 +89,9 @@ g_paste_password_item_get_timeout (GPastePasswordItem *self)
  * callers -- a D-Bus method, a keyboard shortcut and both storage backends
  * reading one back -- since it is the item the range is a fact about.
  *
- * The countdown itself belongs to #GPasteClipboardsManager, which arms it every
- * time the item is selected; this only says how long it runs for.
+ * The countdown itself belongs to #GPasteClipboardsManager, which arms it when
+ * the item is selected and keeps it running when the same item is selected
+ * again; this only says how long it runs for.
  */
 G_PASTE_VISIBLE void
 g_paste_password_item_set_timeout (GPastePasswordItem *self,
