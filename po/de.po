@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 13:57+0200\n"
+"POT-Creation-Date: 2026-09-15 23:41+0200\n"
 "PO-Revision-Date: 2026-09-09 17:42+0000\n"
 "Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/"
@@ -699,8 +699,8 @@ msgstr "GPaste"
 
 #. An icon names the button for the eye and for nothing else.
 #: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:260
-#: src/gnome-shell/historySwitcher.js:786 src/ui/gpaste-ui-item.c:1024
-#: src/ui/gpaste-ui-item.c:1094 src/ui/gpaste-ui-panel.c:476
+#: src/gnome-shell/historySwitcher.js:785 src/ui/gpaste-ui-item.c:1022
+#: src/ui/gpaste-ui-item.c:1092 src/ui/gpaste-ui-panel.c:476
 #: src/ui/gpaste-ui-panel.c:645
 msgid "Delete"
 msgstr "Löschen"
@@ -718,26 +718,26 @@ msgstr ""
 msgid "GPaste daemon not running"
 msgstr "GPaste-Daemon-Einstellungen"
 
-#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:99
+#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:98
 msgid "No Items"
 msgstr ""
 
-#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:523
+#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:522
 msgid "No Results"
 msgstr "Kein Ergebnisse"
 
-#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:526
+#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:525
 msgid "No Pinned Items"
 msgstr ""
 
 #. The star shows a state and asks for the other one, so its name is
 #. what clicking it does.
-#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:198
+#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:196
 msgid "Unpin"
 msgstr ""
 
-#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:198
-#: src/ui/gpaste-ui-item.c:1023
+#: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:196
+#: src/ui/gpaste-ui-item.c:1021
 msgid "Pin"
 msgstr ""
 
@@ -750,7 +750,7 @@ msgid "Cancel"
 msgstr "Abbrechen"
 
 #: src/gnome-shell/historySwitcher.js:258
-#: src/gnome-shell/historySwitcher.js:766
+#: src/gnome-shell/historySwitcher.js:765
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:644
 #, fuzzy
 msgctxt "verb"
@@ -769,24 +769,24 @@ msgid "Switch to or create a history…"
 msgstr "Zu einer anderen Chronik wechseln"
 
 #. Translators: %s is the name of the history being emptied.
-#: src/gnome-shell/historySwitcher.js:764
+#: src/gnome-shell/historySwitcher.js:763
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
 #, c-format, javascript-format
 msgid "Empty “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:765
+#: src/gnome-shell/historySwitcher.js:764
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
 msgid "Every item it holds is deleted for good."
 msgstr ""
 
 #. Translators: %s is the name of the history being deleted.
-#: src/gnome-shell/historySwitcher.js:784 src/ui/gpaste-ui-panel.c:472
+#: src/gnome-shell/historySwitcher.js:783 src/ui/gpaste-ui-panel.c:472
 #, c-format, javascript-format
 msgid "Delete “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:785 src/ui/gpaste-ui-panel.c:475
+#: src/gnome-shell/historySwitcher.js:784 src/ui/gpaste-ui-panel.c:475
 msgid "The history and everything in it are deleted for good."
 msgstr ""
 
@@ -1396,84 +1396,84 @@ msgstr "Suchen"
 msgid "Select Items to Merge"
 msgstr "Elemente zum Zusammenführen auswählen"
 
-#: src/ui/gpaste-ui-history.c:100
+#: src/ui/gpaste-ui-history.c:99
 msgid "Copy something to start building your history."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:524
+#: src/ui/gpaste-ui-history.c:523
 msgid "Try a different search."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:527
+#: src/ui/gpaste-ui-history.c:526
 msgid "Pin an item to keep it out of reach of the size and memory limits."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:604 src/ui/gpaste-ui-history.c:628
-#: src/ui/gpaste-ui-item.c:603
+#: src/ui/gpaste-ui-history.c:603 src/ui/gpaste-ui-history.c:627
+#: src/ui/gpaste-ui-item.c:601
 #, fuzzy
 msgid "Could not select the item"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
-#: src/ui/gpaste-ui-history.c:1006
+#: src/ui/gpaste-ui-history.c:1005
 #, fuzzy
 msgid "Could not read the history"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
-#: src/ui/gpaste-ui-item.c:354
+#: src/ui/gpaste-ui-item.c:352
 msgid "The item was uploaded, and its address copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:355
+#: src/ui/gpaste-ui-item.c:353
 msgid "The item was uploaded, but its address could not be copied"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:377
+#: src/ui/gpaste-ui-item.c:375
 #, fuzzy
 msgid "Could not upload the item"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
-#: src/ui/gpaste-ui-item.c:409
+#: src/ui/gpaste-ui-item.c:407
 #, fuzzy
 msgid "Could not remove the rich text"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
-#: src/ui/gpaste-ui-item.c:423
+#: src/ui/gpaste-ui-item.c:421
 #, fuzzy
 msgid "Could not delete the item"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
-#: src/ui/gpaste-ui-item.c:440
+#: src/ui/gpaste-ui-item.c:438
 msgid "Could not unpin the item"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:441
+#: src/ui/gpaste-ui-item.c:439
 #, fuzzy
 msgid "Could not pin the item"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
-#: src/ui/gpaste-ui-item.c:628
+#: src/ui/gpaste-ui-item.c:626
 msgid "Could not load an image preview"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1086
+#: src/ui/gpaste-ui-item.c:1084
 #, fuzzy
 msgid "Edit…"
 msgstr "Bearbeiten"
 
-#: src/ui/gpaste-ui-item.c:1087
+#: src/ui/gpaste-ui-item.c:1085
 #, fuzzy
 msgid "Make Password…"
 msgstr "Passwort"
 
-#: src/ui/gpaste-ui-item.c:1088
+#: src/ui/gpaste-ui-item.c:1086
 msgid "Remove Rich Text"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1089
+#: src/ui/gpaste-ui-item.c:1087
 msgid "Upload"
 msgstr "Hochladen"
 
-#: src/ui/gpaste-ui-item.c:1093
+#: src/ui/gpaste-ui-item.c:1091
 msgid "Pinned"
 msgstr ""
 
@@ -1631,110 +1631,106 @@ msgstr "Dieses Fenster"
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:504
+#: src/ui/gpaste-ui-window.c:505
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "Den Daemon neu starten"
 
-#: src/ui/gpaste-ui-window.c:516
+#: src/ui/gpaste-ui-window.c:517
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "Den Daemon neu starten"
 
-#: src/ui/gpaste-ui-window.c:517
+#: src/ui/gpaste-ui-window.c:518
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:518
+#: src/ui/gpaste-ui-window.c:519
 msgid "Restart"
 msgstr "Neustart"
 
-#: src/ui/gpaste-ui-window.c:540
+#: src/ui/gpaste-ui-window.c:541
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "Änderungen in der Zwischenablage verfolgen"
 
-#: src/ui/gpaste-ui-window.c:541
+#: src/ui/gpaste-ui-window.c:542
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "Änderungen in der Zwischenablage nicht mehr verfolgen"
 
-#: src/ui/gpaste-ui-window.c:565
+#: src/ui/gpaste-ui-window.c:566
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "Änderungen in der Zwischenablage nicht mehr verfolgen"
 
-#: src/ui/gpaste-ui-window.c:566
+#: src/ui/gpaste-ui-window.c:567
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:567
+#: src/ui/gpaste-ui-window.c:568
 msgid "Stop"
 msgstr "Aufhören"
 
-#: src/ui/gpaste-ui-window.c:607
+#: src/ui/gpaste-ui-window.c:608
 msgid "Clipboard management system"
 msgstr "Zwischenablage-Verwaltungssystem"
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:613
+#: src/ui/gpaste-ui-window.c:614
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:872
+#: src/ui/gpaste-ui-window.c:873
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:918
+#: src/ui/gpaste-ui-window.c:919
 #, fuzzy
 msgid "New Line"
 msgstr "Neue Zeile"
 
-#: src/ui/gpaste-ui-window.c:919
+#: src/ui/gpaste-ui-window.c:920
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:920
+#: src/ui/gpaste-ui-window.c:921
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:921
+#: src/ui/gpaste-ui-window.c:922
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:929
+#: src/ui/gpaste-ui-window.c:930
 msgid "Custom separator"
 msgstr "Benutzerdefiniertes Trennzeichen"
 
-#: src/ui/gpaste-ui-window.c:934
+#: src/ui/gpaste-ui-window.c:935
 msgid "Merge with this separator"
 msgstr "Mit diesem Trennzeichen zusammenführen"
 
-#: src/ui/gpaste-ui-window.c:945
+#: src/ui/gpaste-ui-window.c:946
 msgid "Merge"
 msgstr "Zusammenführen"
 
-#: src/ui/gpaste-ui-window.c:1024
+#: src/ui/gpaste-ui-window.c:1025
 msgid "Quit"
 msgstr "Beenden"
 
-#: src/ui/gpaste-ui-window.c:1068 src/ui/gpaste-ui-window.c:1069
+#: src/ui/gpaste-ui-window.c:1069 src/ui/gpaste-ui-window.c:1070
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste-Daemon konnte nicht hergestellt werden"
 
-#: src/ui/gpaste-ui-window.c:1133
+#: src/ui/gpaste-ui-window.c:1134
 msgid "Histories"
 msgstr "Chroniken"
 
-#: src/ui/gpaste-ui-window.c:1134
+#: src/ui/gpaste-ui-window.c:1135
 msgid "History"
 msgstr "Chronik"
-
-#, fuzzy
-#~ msgid "Empty History"
-#~ msgstr "Chronik leeren"

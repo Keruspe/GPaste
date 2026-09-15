@@ -1,5 +1,5 @@
-libgpaste_soversion = '0.0.0'
-libgpaste_gtk4_soversion = '2.0.0'
+libgpaste_soversion = '1.0.0'
+libgpaste_gtk4_soversion = '2.1.0'
 
 pkg = import('pkgconfig')
 
@@ -199,7 +199,7 @@ if get_option('vapi')
   )
 endif
 
-libgpaste_daemon_soversion = '0.0.0'
+libgpaste_daemon_soversion = '1.0.0'
 
 # What this library promises to the outside world. The gnome-shell extension is
 # its only external consumer and reaches it through the GPasteDaemon-1 typelib:

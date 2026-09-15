@@ -265,13 +265,9 @@ GPaste is what a hundred or so people have made it: thanks to
 
 ## Releases
 
-The latest release for GNOME 50 is
-[GPaste 50.10](https://www.imagination-land.org/posts/2026-09-08-gpaste-50.10-released.html)
-([tarball](https://www.imagination-land.org/files/gpaste/GPaste-50.10.tar.xz)).
-
-GNOME 51 is being prepared:
-[GPaste 51.beta](https://www.imagination-land.org/posts/2026-08-25-gpaste-51.beta-released.html)
-([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.beta.tar.xz)).
+The latest release for GNOME 51 is
+[GPaste 51.0](https://www.imagination-land.org/posts/2026-09-15-gpaste-51.0-released.html)
+([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.0.tar.xz)).
 
 Release announcements and everything else about GPaste are
 [on my blog](https://www.imagination-land.org/tags/GPaste.html). See

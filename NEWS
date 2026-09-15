@@ -1,4 +1,4 @@
-NEW in 51.0 (UNRELEASED)
+NEW in 51.0 (15/09/2026)
 =============
 
 - Manage histories from the GNOME Shell menu: switch, create, delete, empty and back up
@@ -9,11 +9,21 @@ NEW in 51.0 (UNRELEASED)
 - Add a setting to turn every global keyboard shortcut off (#501)
 - Only offer the GNOME Shell preferences where the extension is installed
 - Give GPaste an icon of its own
+- Keep a single entry for a password copied twice
+- Refuse a new password whose name is already taken
+- Make scrolling through a history full of images lighter
 - Fix two quick copies sometimes landing in the history in the wrong order
 - Fix the global shortcuts under the portal not picking up edited accelerators or Super
 - Fix a damaged SQLite history being loaded partially and then saved over
 - Fix a stuck upload never timing out
-- Make scrolling through a history full of images lighter
+- Fix restarting the daemon leaving none running, or being reported as a failure
+- Fix the GNOME Shell menu staying empty after the daemon comes back
+- Fix keyboard navigation in the GNOME Shell menu on GNOME 51
+- Fix the graphical tool's rows moving under the pointer and its header buttons being cut off
+- Fix a password staying on the clipboard once the daemon inside GNOME Shell stops
+- Fix a remembered empty passphrase skipping the unlock prompt
+- Fix the daemon crashing when copying files right after something else
+- Fix gpaste-client exiting silently on an unknown command
 - Build: require GTK 4.23.4
 
 NEW in 51.beta (25/08/2026)
