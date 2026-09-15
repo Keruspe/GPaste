@@ -247,8 +247,9 @@ on the switcher row, and is omitted when Node.js is unavailable.
 The script tests touch no settings, bus or display. None of the tests touches
 the desktop session.
 
-[`AGENTS.md`](AGENTS.md) documents the architecture, coding style and
-repository conventions in more detail.
+[`AGENTS.md`](AGENTS.md) documents the coding style and repository
+conventions in more detail, and each part of the tree has an `AGENTS.md` of its
+own beside its code.
 
 ## Contributing
 
