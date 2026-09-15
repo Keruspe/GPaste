@@ -21,8 +21,8 @@ G_BEGIN_DECLS
  * nothing in the tree writes to it or reads anything out of it. It is here
  * because a note is something a row draws, which is what puts it in the struct
  * rather than behind a getter of its own -- and every client would have to be
- * rebuilt for the day it arrives. Spending that break once, on a release that
- * is breaking the interface anyway, costs less than spending it twice. */
+ * rebuilt for the day it arrives, where a slot already on the wire breaks
+ * nothing then. */
 #define G_PASTE_ITEM_VARIANT_STRING  "(ssubas)"
 #define G_PASTE_ITEMS_VARIANT_STRING "a" G_PASTE_ITEM_VARIANT_STRING
 

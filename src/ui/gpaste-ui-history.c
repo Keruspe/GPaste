@@ -36,9 +36,8 @@ struct _GPasteUiHistory
 
     /* The call listing the rows, cancelled and replaced by every refresh and
      * every search. Refresh and filter write the same rows (indices vs. uuids),
-     * so whichever went out last is the one that may land -- and the listing it
-     * replaced is worth stopping, a search over the whole history being work the
-     * daemon does for a view that has moved on. */
+     * so whichever went out last is the one that may land. What cancelling the
+     * listing it replaced buys is display_callback_data_new ()'s to say. */
     GCancellable         *display;
 
     gboolean              selection_mode; /* merge mode: rows are multi-selectable */

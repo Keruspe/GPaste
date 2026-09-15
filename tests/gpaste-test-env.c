@@ -70,7 +70,8 @@ start_xvfb (void)
         g_error ("Could not create the Xvfb display pipe: %s", error->message);
 
     /* The launcher owns the write end and closes it when freed, so a server that
-     * dies before announcing its display ends the read below instead of hanging it. */
+     * dies before announcing its display ends the read below instead of hanging
+     * it. */
     g_autoptr (GSubprocessLauncher) launcher = g_subprocess_launcher_new (G_SUBPROCESS_FLAGS_STDOUT_SILENCE);
     g_subprocess_launcher_take_fd (launcher, fds[1], 3);
     g_subprocess_launcher_set_child_setup (launcher, die_with_parent, NULL, NULL);
@@ -138,7 +139,8 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
     for (guint i = 0; i < G_N_ELEMENTS (session); ++i)
         g_unsetenv (session[i]);
 
-    /* GIO looks for a session bus at $XDG_RUNTIME_DIR/bus when no address is set. */
+    /* GIO looks for a session bus at $XDG_RUNTIME_DIR/bus when no address is
+     * set. */
     g_autoptr (GError) error = NULL;
     runtime_dir = g_dir_make_tmp ("gpaste-test-runtime-XXXXXX", &error);
     if (!runtime_dir)

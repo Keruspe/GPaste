@@ -57,9 +57,7 @@ struct _GPasteUiItem
 
     /* The reads filling this row, cancelled and replaced on every (re)binding.
      * GtkListView recycles row widgets, so a reply for a previous binding must
-     * not overwrite the content the widget has since been rebound to -- and the
-     * read itself is worth stopping, an image row costing its bytes over the bus
-     * for content nothing will draw. */
+     * not overwrite the content the widget has since been rebound to. */
     GCancellable       *fill;
 };
 
@@ -171,10 +169,10 @@ g_paste_ui_item_update_actions (GPasteUiItem *self)
  * They are hidden by their revealer rather than by their own visibility: a
  * button is taller than the text beside it, so a row that stops measuring one
  * altogether is as tall as its text without the buttons and as tall as a button
- * with them, and every row below it moved as the pointer went by. A collapsed
- * horizontal revealer still measures its child's height, so the row keeps a
- * button's height whether it is showing one or not -- and, unlike a button
- * merely faded out, it takes none of the row's width while hidden. */
+ * with them, and every row below it would move as the pointer went by. A
+ * collapsed horizontal revealer still measures its child's height, so the row
+ * keeps a button's height whether it is showing one or not -- and, unlike a
+ * button merely faded out, it takes none of the row's width while hidden. */
 static void
 g_paste_ui_item_update_actions_visibility (GPasteUiItem *self)
 {
@@ -1010,9 +1008,9 @@ g_paste_ui_item_init (GPasteUiItem *self)
     /* Preview first, then the text: the label is the only child that expands, so
      * it is the only one whose width the pin and delete buttons take when they
      * appear under the pointer, and everything before it stays where it is. With
-     * the preview after the label instead, the buttons pushed it left the moment
-     * the pointer arrived -- and the preview is what the eye is on. It is also
-     * where a list row puts an image: a thumbnail leads the row, the text
+     * the preview after the label instead, the buttons would push it left the
+     * moment the pointer arrived -- and the preview is what the eye is on. It is
+     * also where a list row puts an image: a thumbnail leads the row, the text
      * follows it, and the row's own actions sit at the end. */
     gtk_box_append (GTK_BOX (hbox), thumbnail_container);
 
@@ -1028,9 +1026,9 @@ g_paste_ui_item_init (GPasteUiItem *self)
      * the buttons take their width from: a pinned row shows its star whether the
      * pointer is on it or not, and only the last child of the row keeps its
      * place when the one before it is revealed. With the star ahead of the bin,
-     * the badge slid a button's width left the moment the pointer arrived --
-     * the row keeping its shape everywhere except on the one part of it that is
-     * always there to be looked at. */
+     * the badge would slide a button's width left the moment the pointer
+     * arrived -- the row keeping its shape everywhere except on the one part of
+     * it that is always there to be looked at. */
     gtk_box_append (GTK_BOX (hbox), self->remove_revealer);
     gtk_box_append (GTK_BOX (hbox), self->favourite_revealer);
 }

@@ -289,13 +289,13 @@ typedef struct
  *
  * And only when there is still a window to put it on: the daemon answers a read
  * whether or not the window that asked for it is still up, and a dialog
- * presented on one the user has closed is parented to nothing. A #GPasteClient
- * call cannot be taken back, so the reference held here is what keeps the window
- * addressable until the answers land, and its visibility is what says whether
- * they are still worth anything.
+ * presented on one the user has closed is parented to nothing. Nothing cancels
+ * the two reads, so the reference held here is what keeps the window addressable
+ * until the answers land, and its visibility is what says whether they are
+ * still worth anything.
  *
- * FIXME: cancel the two reads instead, once #GPasteClient's methods take a
- * #GCancellable. */
+ * FIXME: cancel the two reads instead, on a #GCancellable the window cancels
+ * when it closes. */
 static void
 edit_data_reply (EditData *data)
 {

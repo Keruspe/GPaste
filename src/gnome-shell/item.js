@@ -111,9 +111,7 @@ export class GPasteItem extends PopupMenuItem {
         this._shownUuid = null;
         // The read filling this row, cancelled and replaced on every (re)binding.
         // The menu recycles its rows, so a reply for a binding the row has left
-        // must not paint it -- and the read is worth stopping rather than merely
-        // dropping, an image row otherwise costing its bytes over the bus for a
-        // thumbnail nothing will draw.
+        // must not paint it (see replaceCancellable ()).
         this._fill = null;
         // The image preview has a cancellable of its own: a settings change asks
         // for a new one without the row being refilled, so the row's would not

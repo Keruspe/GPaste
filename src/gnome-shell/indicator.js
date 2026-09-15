@@ -59,9 +59,9 @@ class GPasteIndicator extends Button {
         this._loading = false;
         // The reads repopulating the list, cancelled and replaced by every pass
         // that starts one -- a reload, a search, a refresh. The list only ever
-        // shows one of them, so the others are worth stopping rather than merely
-        // dropping: the search entry asks again on every keystroke, and a term
-        // the user has typed past is one the daemon need not go on matching.
+        // shows one of them, and the search entry asks again on every
+        // keystroke: cancelling the others is what keeps a term the user has
+        // typed past from painting the list (see replaceCancellable ()).
         this._listing = null;
 
         // Whether there is a daemon to talk to, and the reconnect ladder we
@@ -1083,9 +1083,9 @@ class GPasteIndicator extends Button {
         // otherwise resume past this and schedule a reconnect nothing is left to
         // cancel.
         this._destroyed = true;
-        // And the reads still out go with it: nothing is left to show them, so a
-        // search still being matched is work the daemon is doing for a menu that
-        // has gone.
+        // And the reads still out go with it: nothing is left to show them, and
+        // what awaits them stops at the reply rather than reaching for a menu
+        // that has gone.
         this._listing?.cancel();
         this._probe?.cancel();
         this._cancelReconnect();

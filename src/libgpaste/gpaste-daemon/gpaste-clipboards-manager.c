@@ -540,7 +540,8 @@ g_paste_clipboards_manager_selection_holds (GPasteClipboardProvider *clipboard,
 
 /* Retiring the history's active password does not establish ownership of any
  * selection. Move the fallback without publishing it, even while reads are
- * pending, so a flush followed by a new daemon cannot restore the expired head. */
+ * pending, so a flush followed by a new daemon cannot restore the expired
+ * head. */
 static void
 g_paste_clipboards_manager_retire_password (GPasteClipboardsManager *self,
                                             GPasteItem              *password)
@@ -618,7 +619,8 @@ g_paste_clipboards_manager_arm_password_at (_Clipboard *clip,
     /* Armed for what is left until @deadline rather than for @timeout: an edit
      * resolved after a read kept the deadline it was made under, and a whole
      * duration handed out again there would be exposure the user did not ask
-     * for. Milliseconds, since that remainder is not a round number of seconds. */
+     * for. Milliseconds, since that remainder is not a round number of
+     * seconds. */
     clip->password_timeout_id = g_timeout_add_once ((deadline - now) / 1000,
                                                     g_paste_clipboards_manager_on_password_timeout,
                                                     clip);
@@ -681,7 +683,8 @@ g_paste_clipboards_manager_ensure_not_empty (_Clipboard *clip)
 /* Take the password @clip's countdown was armed for back off its selection, if
  * that selection still carries it. One that has moved on holds what replaced it,
  * which is the user's and not ours to overwrite. History retirement is separate:
- * an expired head must not be restored when an unrelated selection falls empty. */
+ * an expired head must not be restored when an unrelated selection falls
+ * empty. */
 static void
 g_paste_clipboards_manager_deselect_password (_Clipboard *clip)
 {
@@ -800,9 +803,9 @@ g_paste_clipboards_manager_expire_password_async (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     /* No source object: g_task_new () would reference the very manager whose own
-     * list holds the task, and a manager holding itself is one whose teardown --
-     * the teardown this task is waiting for -- can never run. The callback is
-     * handed the manager by whatever it kept a reference to instead. */
+     * list holds the task, and a manager holding itself is one whose dispose ()
+     * -- one of the things that answers this task -- can never run. The callback
+     * is handed the manager by whatever it kept a reference to instead. */
     g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
 
     g_task_set_static_name (task, "gpaste-password-expiry");

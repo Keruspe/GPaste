@@ -46,8 +46,7 @@ typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *
  *
  * Every vfunc is required, including is_reading: an asynchronous provider must
  * hide its committed cache until classification finishes. A default FALSE
- * would mistake stale password text for the current owner. Providers must be
- * rebuilt for the 51.0 API/ABI, including the superseded callback argument.
+ * would mistake stale password text for the current owner.
  */
 struct _GPasteClipboardProviderInterface
 {

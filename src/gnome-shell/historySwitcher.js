@@ -445,9 +445,9 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this.insert_child_above(newHistoryDeleteButton(this, () => this._deleteCurrent()), expander ?? null);
 
         // The listing filling the submenu, cancelled and replaced by every pass
-        // that starts one -- the chooser opening, a history appearing or going away.
-        // Only the latest answer is worth drawing, and an overtaken one is worth
-        // stopping rather than merely dropping.
+        // that starts one -- the chooser opening, a history appearing or going
+        // away. Only the latest answer is worth drawing (see
+        // replaceCancellable ()).
         this._listing = null;
         // The same for the count of the history in use, asked on its own.
         this._sizing = null;
@@ -512,11 +512,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             'update', this._onUpdate.bind(this),
             this);
 
-        // The reply has nowhere to land once the row is gone, and listing for it
-        // is work the daemon is doing for a menu that has been torn down. A
-        // question still up is about that menu too: the dialog lives in the
-        // shell's modal group rather than under this row, so it would stay on
-        // screen, grab and all, still able to act for an extension that is gone.
+        // The reply has nowhere to land once the row is gone. A question still
+        // up is about that menu too: the dialog lives in the shell's modal group
+        // rather than under this row, so it would stay on screen, grab and all,
+        // still able to act for an extension that is gone.
         this.connect('destroy', () => {
             this._listing?.cancel();
             this._sizing?.cancel();

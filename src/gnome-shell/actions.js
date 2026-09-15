@@ -12,15 +12,15 @@ import GPaste from 'gi://GPaste?version=3';
  * lists.
  *
  * Plain menu items rather than a row of buttons: an item is focusable and the
- * menu walks between them on its own, where the row that held the buttons was
- * non-reactive, so no key event ever bubbled through it and every arrow had to
- * be answered by hand from the menu actor.
+ * menu walks between them on its own, where a non-reactive row holding buttons
+ * lets no key event bubble through it, and every arrow would have to be
+ * answered by hand from the menu actor.
  *
  * About is not among them. A panel menu is not where an application's about
- * dialog belongs, and it cost a slot that Preferences -- which is what a user
- * actually reaches for there -- had none of. Nor is emptying the history: that
- * is done from a history's right click in the switcher, which can empty any of
- * them rather than only the one in use.
+ * dialog belongs, and the slot goes to Preferences, which is what a user
+ * actually reaches for there. Nor is emptying the history: that is done from a
+ * history's right click in the switcher, which can empty any of them rather
+ * than only the one in use.
  *
  * @param {PopupMenu} menu - the indicator's menu
  * @param {Extension} extension - the extension, which owns the preferences

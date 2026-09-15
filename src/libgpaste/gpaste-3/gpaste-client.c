@@ -1125,9 +1125,10 @@ g_paste_client_merge_finish (GPasteClient *self,
 G_PASTE_CLIENT_METHOD (report_extension_state,
                        (gboolean state), (state))
 
-/* Reexecute is the one method whose success is the reply never coming: a daemon
- * honouring it execs before it could answer, and the bus then reports the call
- * as having gone unanswered. Only a re-exec that did not happen is answered.
+/* Reexecute is the one method whose success can be the reply never coming: a
+ * standalone daemon honouring it execs before it could answer, and the bus then
+ * reports the call as having gone unanswered -- where an in-process host answers
+ * once it has accepted the restart, and a refusal is answered as an error.
  * So that is read as success here, once, rather than by each caller -- a caller
  * finishing it the ordinary way reports a failure for every restart that
  * worked. Matched with its domain: G_DBUS_ERROR_NO_REPLY is 4, and so is
@@ -1150,8 +1151,8 @@ g_paste_client_reexecute_propagate (GError  *err,
  *
  * Reexecute the #GPasteDaemon
  *
- * The daemon answers only when it did not re-execute, so a call it left
- * unanswered by going away is a success and leaves @error unset.
+ * A standalone daemon that re-executes goes away without answering, so a call
+ * left unanswered that way is a success and leaves @error unset.
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_sync (GPasteClient *self,

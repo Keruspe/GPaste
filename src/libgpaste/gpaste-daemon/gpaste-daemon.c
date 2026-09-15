@@ -343,9 +343,9 @@ g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
  *
  * Re-execute the daemon the way the Reexecute method does, for a request that
  * did not come over the bus -- SIGUSR1, which is also what gpaste-client falls
- * back on only when that method reports UnknownMethod. It has to go through the same
- * wait: an exec straight away hands the successor whatever password the reads
- * still being classified were about to take off, unmonitored.
+ * back on only when that method reports UnknownMethod. It has to go through
+ * the same wait: an exec straight away hands the successor whatever password
+ * the reads still being classified were about to take off, unmonitored.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_reexecute (GPasteDaemon *self)

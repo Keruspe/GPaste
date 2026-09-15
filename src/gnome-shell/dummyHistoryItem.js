@@ -22,7 +22,7 @@ export const GPasteDummyHistoryItem = GObject.registerClass({
         // the state's: the two are not one sentence -- one says what happened,
         // the other what activating the row does -- and a translation of
         // "GPaste daemon not running" stops being one the moment something else
-        // is stuck on its end, which is how the translations it had were lost.
+        // is stuck on its end.
         // Not a button either: the row itself is what activates, and a second
         // focus target inside it would take over the keyboard navigation a menu
         // item gives us for free.

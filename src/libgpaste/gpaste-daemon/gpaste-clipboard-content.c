@@ -223,8 +223,8 @@ g_paste_clipboard_content_classify_text (const GPasteClipboardContent *content,
         length > g_paste_settings_get_max_text_item_size (settings))
         return unchanged ? G_PASTE_CLIPBOARD_TEXT_UNCHANGED : G_PASTE_CLIPBOARD_TEXT_REJECT;
 
-    /* Trimming changed the clipboard's own text: re-own it with the stripped form,
-     * duplicate or not -- the padded form is what is on the selection. */
+    /* Trimming changed the clipboard's own text: re-own it with the stripped
+     * form, duplicate or not -- the padded form is what is on the selection. */
     if (trim_items && is_clipboard && !g_paste_str_equal (text, stripped))
     {
         *out_value = g_steal_pointer (&stripped);
@@ -556,7 +556,8 @@ g_paste_clipboard_mime_results_clear (GPasteClipboardMimeResults *results)
  * @file_list: (nullable): the files, for %CLIPBOARD_CONTENT_FILE_LIST
  * @rgba: (nullable): the colour, for %CLIPBOARD_CONTENT_COLOR
  * @special_mimes: (array fixed-size=5): the alternative representations, one
- *                 slot per #GPasteSpecialMime (%G_PASTE_SPECIAL_MIME_LAST of them)
+ *                 slot per #GPasteSpecialMime (%G_PASTE_SPECIAL_MIME_LAST of
+ *                 them)
  *
  * Build the item a finished clipboard read describes. Both backends end their
  * update here, which is what keeps them agreeing on what each kind produces and
@@ -729,8 +730,9 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     }
     else if (!update->unchanged)
     {
-        /* Rejection and read failure establish no match with the previous owner.
-         * Keep an unidentified selection non-empty so it cannot be restored over. */
+        /* Rejection and read failure establish no match with the previous
+         * owner. Keep an unidentified selection non-empty so it cannot be
+         * restored over. */
         g_paste_clipboard_content_clear (update->cache);
         update->cache->kind = CLIPBOARD_CONTENT_IGNORED;
     }
@@ -756,7 +758,8 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
 
     /* Re-own trimmed text or a GDK image only after its reads are complete, so
      * replacing the owner cannot abort the remaining MIME transfers. Publishing
-     * the item also preserves a password's sensitive hint and an image's texture. */
+     * the item also preserves a password's sensitive hint and an image's
+     * texture. */
     if (reselect && item)
         g_paste_clipboard_provider_select_item_full (provider, item, FALSE);
 
@@ -838,7 +841,8 @@ g_paste_clipboard_update_supersede (GPasteClipboardUpdate **slot)
  * @provider: the #GPasteClipboardProvider being read
  * @content_kind: the kind the content read is for
  * @slot: where the backend keeps the update in flight on this selection
- * @cache: the provider's committed content, written only when this update completes
+ * @cache: the provider's committed content, written only when this update
+ *         completes
  * @callback: (scope async) (nullable): who to hand the item to
  * @user_data: what to hand it with
  *
@@ -936,8 +940,7 @@ g_paste_clipboard_update_add_read (GPasteClipboardUpdate *update)
 /**
  * g_paste_clipboard_update_add_mime_read:
  * @update: the #GPasteClipboardUpdate the read counts into
- * @mime: which entry of which list it is being fired for
- * @sensitive: whether that list is the sensitive one
+ * @mime: which entry it is being fired for
  *
  * Count one mime read into @update and build what it has to carry
  *

@@ -819,9 +819,9 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
 {
     GPasteClipboardUpdate *update = user_data;
 
-    /* Superseded or timed out, the cache is the only place this could reach. Asked
-     * before the deserialisation rather than only in its callback, there being
-     * nothing left for it to deserialise for. */
+    /* Superseded or timed out, the cache is the only place this could reach.
+     * Asked before the deserialisation rather than only in its callback, there
+     * being nothing left for it to deserialise for. */
     if (g_paste_clipboard_update_is_expired (update) || !bytes)
     {
         g_paste_clipboard_update_maybe_done (update);

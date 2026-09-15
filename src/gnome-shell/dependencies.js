@@ -30,9 +30,10 @@ Gio._promisify(GPaste.Client.prototype, 'get_image', 'get_image_finish');
  * goes out on, so a caller keeps one field for "the request that is current".
  *
  * Every read the extension makes is one a newer binding, keystroke or reload may
- * replace, and cancelling is what makes replacing cheap: the client fails the
- * call, so the daemon stops carrying an image's bytes over the bus, or matching a
- * search term, for a reply that was going to be dropped on arrival.
+ * replace, and cancelling is what lets go of the one replaced: the client fails
+ * the call at once, so whatever awaits it resumes and releases what it holds.
+ * The daemon is not told -- D-Bus has no way to call off a method already sent
+ * -- so it still answers, and that reply is dropped on arrival.
  *
  * @param {?Gio.Cancellable} cancellable - the one being replaced, if any
  * @returns {Gio.Cancellable} the one to issue the next request on

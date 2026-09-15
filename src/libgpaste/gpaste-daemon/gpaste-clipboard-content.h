@@ -88,12 +88,13 @@ gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
  * Here rather than in each backend, so a stuck owner is given the same rope
  * whichever one is reading it.
  *
- * Silence and not elapsed time, which is what g_paste_clipboard_read_guard_touch()
- * is for: how long a batch takes is the owner's to decide -- a large image or a
- * long file list over a forwarded display services its INCR chunks at whatever
- * pace it manages -- and cutting off a transfer that is demonstrably still
- * arriving loses a copy that was working. A read coming in says the batch is
- * moving and hands the rest of it the deadline again.
+ * Silence and not elapsed time, which is what
+ * g_paste_clipboard_read_guard_touch() is for: how long a batch takes is the
+ * owner's to decide -- a large image or a long file list over a forwarded
+ * display services its INCR chunks at whatever pace it manages -- and cutting
+ * off a transfer that is demonstrably still arriving loses a copy that was
+ * working. A read coming in says the batch is moving and hands the rest of it
+ * the deadline again.
  *
  * Wide enough that one read which cannot report progress -- a single big
  * transfer, the only thing this batch is waiting on, so nothing lands to say it

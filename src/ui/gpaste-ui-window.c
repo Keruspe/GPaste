@@ -11,7 +11,8 @@
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
-/* The delay the daemon coalesces a rebind burst over, for the same reason. */
+/* G_PASTE_KEYBINDER_REBIND_DELAY, the delay the daemon coalesces a rebind burst
+ * over: a close is coalesced over that same burst (on_shortcuts_obsolete ()). */
 #define G_PASTE_UI_WINDOW_SHORTCUTS_CLOSE_DELAY 250 /* ms */
 
 struct _GPasteUiWindow

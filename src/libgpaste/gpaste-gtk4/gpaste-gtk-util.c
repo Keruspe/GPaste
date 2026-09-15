@@ -548,9 +548,9 @@ g_paste_gtk_util_password_strength_row_new (const gchar *title,
  * @row: (transfer none): a row from g_paste_gtk_util_password_strength_row_new ()
  * @source: (transfer none): the editable the password is being typed into
  *
- * Show what @source holds rates, in the meter and in the subtitle. What is shown
- * is always what it holds latest, but shortly after the call rather than within
- * it: see %G_PASTE_UTIL_STRENGTH_RATING_DELAY.
+ * Show how what @source holds rates, in the meter and in the subtitle. What is
+ * shown is always what it holds latest, but shortly after the call rather than
+ * within it: see %G_PASTE_UTIL_STRENGTH_RATING_DELAY.
  *
  * The editable rather than its text: rating a password means holding it until
  * the rating runs, and the entry is already holding it -- where a string handed

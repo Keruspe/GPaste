@@ -608,7 +608,8 @@ pump_for (guint milliseconds)
 /* Whether @milliseconds after @start is still ahead. A "has not fired yet"
  * assertion only means something while it is: a test process stalled past the
  * deadline would otherwise read a countdown firing on time as one firing early,
- * so such an assertion is skipped rather than failed once the deadline is gone. */
+ * so such an assertion is skipped rather than failed once the deadline is
+ * gone. */
 static gboolean
 still_before (gint64 start,
               guint  milliseconds)
@@ -971,7 +972,8 @@ test_unidentified_selection (gconstpointer user_data)
 
     if (outcome >= 4)
     {
-        /* An exact duplicate remains identifiable even outside the size policy. */
+        /* An exact duplicate remains identifiable even outside the size
+         * policy. */
         g_assert_cmpuint (clipboard->publications, ==, publications + 1);
         g_assert_cmpstr (clipboard->content.str, ==, expiry ? "replacement" : "same secret");
     }
@@ -985,7 +987,8 @@ test_unidentified_selection (gconstpointer user_data)
 
 /* A representation landing on an update that has moved on is dropped where it
  * lands, rather than held until the update's last read reports -- which a read
- * that never reports puts off for good (g_paste_clipboard_update_on_mime_read ()). */
+ * that never reports puts off for good
+ * (g_paste_clipboard_update_on_mime_read ()). */
 static void
 test_late_mime_read (void)
 {
@@ -1128,7 +1131,8 @@ test_sync_copy_order (gconstpointer user_data)
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "newer copy");
     /* Synchronizing the newer copy replaces the older owner. Its incomplete
      * read is cleanup-only, just like a read overtaken on the same selection;
-     * completed copies are retained, but capture of every owner is not promised. */
+     * completed copies are retained, but capture of every owner is not
+     * promised. */
     g_assert_cmpuint (g_paste_history_get_length (history), ==, newest_first ? 1 : 2);
 }
 
@@ -1475,7 +1479,8 @@ test_independent_publication_copy_order (gconstpointer user_data)
     GPasteClipboardUpdate *old = primary->pending;
 
     /* Publish to one selection only, leaving the other's read live. A manager
-     * select writes both and supersedes that read, masking an incorrect serial. */
+     * select writes both and supersedes that read, masking an incorrect
+     * serial. */
     if (publish_item)
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("explicit selection");

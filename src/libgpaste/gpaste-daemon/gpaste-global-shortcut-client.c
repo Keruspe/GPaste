@@ -33,9 +33,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 /* How long a retired CreateSession is waited on before it is given up for lost.
  * A portal that takes the call, replies to it and then never says another word
- * would otherwise keep the request and its connection and subscriptions
- * for the rest of the process. Long enough that one merely slow to get an
- * answer out of the user is not given up on. */
+ * would otherwise keep the request and its connection and subscriptions for
+ * the rest of the process. Long enough that one merely slow to get an answer
+ * out of the user is not given up on. */
 #ifndef G_PASTE_PORTAL_RETIRED_REQUEST_TIMEOUT
 #define G_PASTE_PORTAL_RETIRED_REQUEST_TIMEOUT 600000 /* ms */
 #endif
@@ -299,10 +299,10 @@ portal_request_data_new (GPasteGlobalShortcutClient *client,
     data->cancellable = g_cancellable_new ();
     data->request_path = NULL;
     /* Which portal is being asked, so that one replacing it can be told from it:
-     * a CreateSession may outlive a well-known name handoff, but not the
-     * unique connection that must answer it. %NULL while nobody
-     * owns the name -- this very call is what D-Bus-activates the portal -- and
-     * filled in by the owner that turns up. */
+     * a CreateSession may outlive a well-known name handoff, but not the unique
+     * connection that must answer it. %NULL while nobody owns the name -- this
+     * very call is what D-Bus-activates the portal -- and filled in by the owner
+     * that turns up. */
     data->owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (client));
     /* Initial proxy construction need not emit notify::g-name-owner. */
     if (!client->portal_owner)
@@ -988,8 +988,8 @@ start_bind_async (GPasteGlobalShortcutClient *self,
      * close_session_handle () addresses the Close to, and for the same reason:
      * the well-known name may have been handed to a replacement since
      * on_session_created () recorded the owner, and this handle would mean
-     * nothing to it. The request data takes the name owner the proxy has now,
-     * which is that replacement. */
+     * nothing to it. portal_request_data_new () gave the request the name owner
+     * the proxy has now, which may be that replacement. */
     g_set_str (&data->owner, self->session_owner);
     portal_request_watch_owner (data);
 
@@ -1147,11 +1147,11 @@ on_create_session_method_done (GObject      *source,
 
         /* Any other failure says nothing about whether the portal took the
          * call -- a backend held up behind a dialog of its own answers the
-         * request long after the method timeout -- and the
-         * handle of the session it may go on to create appears in that Response
-         * and nowhere else. Dropping the subscription here would leave that
-         * session holding whatever it binds for the rest of the process, so
-         * keep listening, under the deadline a retired request is given. */
+         * request long after the method timeout -- and the handle of the
+         * session it may go on to create appears in that Response and nowhere
+         * else. Dropping the subscription here would leave that session holding
+         * whatever it binds for the rest of the process, so keep listening,
+         * under the deadline a retired request is given. */
         data->awaiting_response = TRUE;
         retire_one_request (data, FALSE);
         return;
