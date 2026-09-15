@@ -1,50 +1,37 @@
 NEW in 51.0 (UNRELEASED)
 =============
 
-- Manage histories directly from the GNOME Shell menu: switch, create, delete, empty and back up histories
-- API: clipboard providers require is_reading and the update callback's superseded argument; provider implementations must be rebuilt. The internal g_paste_clipboard_update_new() also takes the active-update slot and content cache. The published signal carries whether a publication is independent
-- API: reexecute-self handlers return gboolean: true accepts an in-process restart, false reports host failure. Reexecute waits for password classification and reports deadline failures; the CLI's SIGUSR1 fallback is only for UnknownMethod
-- Lay the GNOME Shell menu's rows out like the graphical tool's: the preview leads the row, pin and delete follow the text and show up when the pointer or the keyboard reaches it, and a pinned row keeps its star as a badge
-- Add a password straight from the graphical tool: the New button in its header is now a split button whose menu offers a New Password composer, with the password itself hidden as it is typed and rated as the encryption passphrase is
-- API: every asynchronous GPasteClient method takes a GCancellable, so a caller can abandon a call still in flight -- a thumbnail read for a row that has scrolled away, a search the next keystroke has replaced -- rather than only discard its answer once it lands. The synchronous methods keep their shape
-- API: an item travels as (uuid, value, kind, favourite, notes) rather than (uuid, value, kind, favourite). The notes are reserved and always empty -- nothing attaches one yet -- and the slot is on the wire now because a note is something a row draws, so adding it later would break every client a second time
-- API: drop g_paste_util_empty_with_confirmation() and the graphical tool's "empty" action behind it: all they did was start the graphical tool to ask before emptying, for the GNOME Shell menu, which now asks for itself
-- Drop the rich text of an item and keep its plain text: Remove Rich Text in a row's menu in the graphical tool, "gpaste-client strip-rich-text", and a StripRichText method behind both, for a copy out of a browser or an office suite that should paste as text everywhere. The item keeps its place and its uuid, editing one or making it a password having always dropped the same thing on the way to a new item
-- Choose what uploads an item to a pastebin: "upload-command" holds a command line -- the item on its standard input, the url on its standard output -- defaulting to curl against paste.rs, so wgetpaste, pastebinit or "nc termbin.com 9999" are a preference away rather than a shim named wgetpaste on the PATH, and an answer that is not a url is reported as the failure it is instead of landing in the history as an address
-- Only offer the GNOME Shell preferences where the extension is actually installed: the switches used to appear wherever gnome-shell was, so enabling one on a machine without the extension wrote GPaste into the shell's extension list and did nothing else
-- Add a master switch that turns every global keyboard shortcut off, from the Keyboard Shortcuts preferences: GPaste then takes no global grab at all, and the shortcuts window says so while still listing the chords (#501)
-- Give the pastebin upload a deadline: an "upload-command" that never exits used to hold the request, the process it spawned and the item being uploaded -- a password's cleartext included -- for as long as the daemon lived, where it is now killed after nine minutes and reported as the timeout it is
-- Fix the graphical tool and the GNOME Shell menu fetching image previews for rows that have already scrolled away: a row's reads are now abandoned when it is rebound, so scrolling a history full of images no longer queues a transfer per row it went past
-- Fix two copies made in quick succession landing in the wrong order: the reads they fire run against their own owners and answer at their own pace, so a slow first owner had its text added to the history above the second one's, put back on the selection if it had been trimmed, and left in the record of what that selection carries -- from where every later copy of it was deduped away and a synchronisation republished it
-- Fix a copy that was overtaken, or given up on, holding the rich text its reads brought back for the rest of the session when one of its other reads never answered
-- Fix the global shortcuts under the portal: an edited accelerator never reached it, Super went out under a name it doesn't know, a dismissed permission dialog was reported as a successful bind, and a session closed by the compositor left them bound to nothing with nothing to ask for another
-- Fix an SQLite history whose read stopped short, on a corrupt page, an I/O error or a row this build could make nothing of, being installed as a complete history, which had the next clipboard change write that truncation back over the rows still in the store
-- Build: require GTK 4.23.4, for a string serializer that closes its own converter stream: below it, serving a large text off the clipboard can hang the daemon against its own main loop
+- Manage histories from the GNOME Shell menu: switch, create, delete, empty and back up
+- Give the GNOME Shell menu rows the graphical tool's layout, with pin and delete shown on hover or focus
+- Add passwords directly from the graphical tool's New button
+- Strip the rich text from an item, keeping its plain text
+- Choose the command used to upload an item to a pastebin
+- Add a setting to turn every global keyboard shortcut off (#501)
+- Only offer the GNOME Shell preferences where the extension is installed
+- Fix two quick copies sometimes landing in the history in the wrong order
+- Fix the global shortcuts under the portal not picking up edited accelerators or Super
+- Fix a damaged SQLite history being loaded partially and then saved over
+- Fix a stuck upload never timing out
+- Make scrolling through a history full of images lighter
+- Build: require GTK 4.23.4
 
 NEW in 51.beta (25/08/2026)
 =============
 
-- Rewrite the history as a scrollable, lazily-loaded list in both the GNOME Shell extension and the graphical tool: they fill the window at runtime and load more as you scroll, so max-displayed-history-size is gone
-- Pin items as favourites: neither the history size limit nor the memory one may evict a pinned item, so the history grows past its cap rather than let one go, and the graphical tool, the extension and "gpaste-client --favourites" can list only those
-- Add a merge mode to combine several history items
-- Rework the graphical tool's window: it collapses to a single pane on a narrow screen, gathers Settings, About and Restart behind one menu, keeps a row's Edit and Upload in a context menu with Pin and Delete inline, asks its questions in the dialog's own heading, remembers its geometry across sessions, and says in a toast when something did not work
-- Show image thumbnails and colour swatches on the rows, in the GNOME Shell menu as well as in the graphical tool, and enlarge an image preview when the pointer rests on it
-- Rework the extension's panel menu: its footer is made of real menu items the keyboard can reach, and the shell's extensions window is handed GPaste's preference pages directly instead of nesting them all inside a single row
-- Document the graphical tool's own shortcuts in its shortcuts window, beside the global ones
-- Encrypt the history at rest: an optional encrypted file backend (libsodium secretstream) keeps the history, the images it references and its password entries unreadable without a passphrase, which libsecret can remember for you, and which can be changed from the preferences or with "gpaste-client change-passphrase"
-- Add SQLite storage backends, plain and encrypted, that persist the history incrementally in a per-history database and keep images as blobs rather than as files on disk
-- Choose where the history is stored, and move it there: a migration dialog on upgrade, or on demand from the preferences and "gpaste-client migrate", with a "Keep as is" button for those who want none of it, which changes nothing and does not ask again
-- Take a password back off the clipboard: a password carries a timeout, in seconds, after which the daemon stops publishing it, set from a Make Password composer in the graphical tool, from "gpaste-client make-password --timeout", or as the "password-timeout" default they both start from
-- Optionally run the daemon inside the GNOME Shell extension, watching the clipboard through mutter rather than as an X11 client (experimental and opt-in, with a clean bus-name handover to and from the standalone daemon)
-- Publish copied colours as text on the clipboard as well, so they paste into plain text fields too
-- Capture keyboard shortcuts in the preferences instead of typing them, and reset any preference from a right-click menu, in an embeddable widget that is now adaptive
-- Track images by default, raise the default retention, element and memory limits, and drop "open-centered", a preference nothing has been able to honour since the GTK4 port
-- Drop the internal X11 keybinder and the GNOME Shell keybinding client: keyboard shortcuts now go through the XDG GlobalShortcuts portal alone, and a portal dialog the user rejects is reported as the failure it is rather than silently leaving them unbound
-- Fix the graphical tool crashing on startup, opening with the keyboard focus in the sidebar instead of the history, and showing a search's results over a newer one's
-- Fix every GNOME Shell overview result disappearing when a single item had been evicted from the history between the search and the results being described
-- Fix lowering the history size or memory limit dropping items without saving or announcing it, which left every open client showing rows the daemon no longer had
-- Fix "gpaste-client --oneline" emitting literal tabulations, which broke parsing its output on a colon
-- API: this is a major release and both libraries break API and ABI: the D-Bus interface is org.gnome.GPaste3, an item travels as its own content rather than as a decorated string, and the daemon's objects and its interface definition are installed for others to build on. See the git log for the full list
+- Rewrite the history view of the GNOME Shell extension and the graphical tool: scrollable, loaded as you go, with image thumbnails and colour swatches
+- Pin favourite items so they are never dropped, and filter the history down to them
+- Merge several items into one
+- Redesign the graphical tool, now adaptive
+- Make the GNOME Shell menu fully keyboard-reachable, and show GPaste's own pages in the shell's extension preferences
+- Optionally encrypt the history, with the passphrase kept in the keyring
+- Add SQLite storage, plain or encrypted, and a way to move an existing history to it
+- Take passwords back off the clipboard once their timeout has passed
+- Optionally run the daemon inside GNOME Shell (experimental)
+- Let copied colours paste as text too
+- Record keyboard shortcuts by pressing them, and reset any preference from its right-click menu
+- Track images by default, with higher default history limits
+- Route global keyboard shortcuts through the XDG portal only
+- Move to the org.gnome.GPaste3 D-Bus interface: third-party clients need updating
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
 NEW in 50.10 (08/09/2026)
