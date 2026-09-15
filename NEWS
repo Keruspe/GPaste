@@ -8,6 +8,7 @@ NEW in 51.0 (UNRELEASED)
 - Choose the command used to upload an item to a pastebin
 - Add a setting to turn every global keyboard shortcut off (#501)
 - Only offer the GNOME Shell preferences where the extension is installed
+- Give GPaste an icon of its own
 - Fix two quick copies sometimes landing in the history in the wrong order
 - Fix the global shortcuts under the portal not picking up edited accelerators or Super
 - Fix a damaged SQLite history being loaded partially and then saved over

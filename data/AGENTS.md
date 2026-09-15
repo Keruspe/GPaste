@@ -1,6 +1,6 @@
 # `data/`
 
-Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings schemas (`gsettings/`), systemd user units, AppStream metadata, shell completions (`completions/`).
+Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings schemas (`gsettings/`), the application icons (`icons/`), systemd user units, AppStream metadata, shell completions (`completions/`).
 
 **The release notes live outside the translated metainfo.** `data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in` carries `<releases type="external"/>` and the notes themselves sit in `data/metainfo/org.gnome.GPaste.Ui.releases.xml`, installed to `$datadir/metainfo/releases/`, where AppStream looks for `<component-id>.releases.xml`. That file is deliberately absent from `POTFILES.in`: the notes of a version nobody runs are never shown to anyone, yet every one of them sat in the catalog forever and fuzzied across every language the moment an old entry was touched. A new release adds its `<release>` there and nowhere else.
 

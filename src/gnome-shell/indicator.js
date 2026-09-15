@@ -41,7 +41,7 @@ class GPasteIndicator extends Button {
 
         this._statusIcon = new St.BoxLayout({style_class: 'panel-status-menu-box'});
         this._statusIcon.add_child(new St.Icon({
-            icon_name: 'edit-paste-symbolic',
+            icon_name: 'org.gnome.GPaste.Ui-symbolic',
             style_class: 'system-status-icon',
         }));
         this.add_child(this._statusIcon);

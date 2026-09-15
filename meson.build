@@ -126,7 +126,7 @@ add_project_arguments(
   '-DADW_VERSION_MAX_ALLOWED=ADW_VERSION_@0@_@1@'.format(adwaita_major, adwaita_minor),
   '-DG_PASTE_COMPILATION',
   '-DG_PASTE_EXTENSION_NAME="GPaste@gnome-shell-extensions.gnome.org"',
-  '-DG_PASTE_ICON_NAME="edit-paste"',
+  '-DG_PASTE_ICON_NAME="org.gnome.GPaste.Ui"',
   '-DGETTEXT_PACKAGE="GPaste"',
   '-DLOCALEDIR="' + (get_option('prefix') / get_option('datadir') / 'locale') + '"',
   '-DPACKAGE="gpaste"',
@@ -191,5 +191,6 @@ subdir('tests')
 
 gnome.post_install(
   glib_compile_schemas: true,
+  gtk_update_icon_cache: true,
   update_desktop_database: true,
 )

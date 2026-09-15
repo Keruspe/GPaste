@@ -96,7 +96,7 @@ g_paste_ui_history_show_list (GPasteUiHistory *self)
 static void
 g_paste_ui_history_show_empty (GPasteUiHistory *self)
 {
-    g_paste_ui_history_show_status (self, "edit-paste-symbolic", _("No Items"),
+    g_paste_ui_history_show_status (self, G_PASTE_ICON_NAME "-symbolic", _("No Items"),
                                     _("Copy something to start building your history."));
 }
 

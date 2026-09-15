@@ -4,6 +4,7 @@ subdir('control-center')
 subdir('dbus')
 subdir('desktop')
 subdir('gsettings')
+subdir('icons')
 
 if get_option('gnome-shell')
   subdir('search-provider')

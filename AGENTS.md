@@ -189,7 +189,7 @@ Each part documents itself in an `AGENTS.md` beside its code. Read the one for t
 | `src/ui/` | `gpaste-ui` | [`src/ui/AGENTS.md`](src/ui/AGENTS.md) |
 | `src/preferences/` | `gpaste-preferences` | [`src/preferences/AGENTS.md`](src/preferences/AGENTS.md) |
 | `src/gnome-shell/` | the GNOME Shell extension, and its JavaScript conventions | [`src/gnome-shell/AGENTS.md`](src/gnome-shell/AGENTS.md) |
-| `data/` | D-Bus, desktop, GSettings, systemd, AppStream, shell completions | [`data/AGENTS.md`](data/AGENTS.md) |
+| `data/` | D-Bus, desktop, GSettings, icons, systemd, AppStream, shell completions | [`data/AGENTS.md`](data/AGENTS.md) |
 | `po/` | translations | [`po/AGENTS.md`](po/AGENTS.md) |
 | `tests/` | the test environment and suites | [`tests/AGENTS.md`](tests/AGENTS.md) |
 
