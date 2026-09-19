@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-15 23:41+0200\n"
-"PO-Revision-Date: 2026-09-11 11:51+0000\n"
+"PO-Revision-Date: 2026-09-20 12:51+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
-">\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1588,7 +1588,7 @@ msgstr ""
 
 #: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Ctrl+0 through Ctrl+9, for the first ten items"
-msgstr ""
+msgstr "Комбинации Ctrl+0 – Ctrl+9 для первых десяти элементов"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:29
 msgid "Show the preferences"
@@ -1610,7 +1610,7 @@ msgstr "Это окно"
 #: src/ui/gpaste-ui-shortcuts-window.c:104
 #, c-format
 msgid "⚠ %s — GPaste is not listening for these"
-msgstr ""
+msgstr "⚠ %s — GPaste не отслеживает эти запросы"
 
 #: src/ui/gpaste-ui-window.c:505
 msgid "Could not restart the daemon"
