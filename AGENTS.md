@@ -204,6 +204,7 @@ CLI tool for scripting and shell integration. Talks to the daemon via `GpasteCli
 - GCR (`gcr-4`) ≥ 4.0 (password item storage; also the secure-memory allocator for encryption secrets)
 - gjs ≥ 1.78 (GNOME Shell extension runtime)
 - gtk4-x11 (the daemon forces the GDK x11 backend at startup)
+- libXfixes (the GDK backend converts the selections it cannot read through GTK itself, and ICCCM has those conversions carry the ownership timestamp `XFixesSelectionNotify` brings; it goes with `src/daemon/gpaste-clipboard-x11-hints.c`)
 - libsodium (optional; gated by the `encryption` meson feature, `auto` by default — history-encryption converter)
 - libsecret (optional; gated by the `libsecret` meson feature, `auto` by default, and only used together with encryption — remembers the history passphrase in the keyring)
 - libpwquality (optional; gated by the `pwquality` meson feature, `auto` by default — rates a password on `libgpaste`'s 0-4 scale, for the new-encrypted-history prompt's passphrase and the graphical tool's new-password composer alike)
@@ -213,4 +214,4 @@ CLI tool for scripting and shell integration. Talks to the daemon via `GpasteCli
 
 Image items use `GdkTexture` from GTK4 directly — there is no longer a GdkPixbuf dependency.
 
-On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel gjs-devel`
+On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel gjs-devel libXfixes-devel`

@@ -1324,6 +1324,156 @@ g_paste_clipboard_update_add_sensitive_mime_read (GPasteClipboardUpdate *update,
 }
 
 /**
+ * g_paste_clipboard_update_add_sensitive_offer_read:
+ * @update: the #GPasteClipboardUpdate the read counts into
+ *
+ * Count into @update the read that asks which hints the selection offers
+ *
+ * For a backend that has to make a round trip of its own to learn that before
+ * it can hand g_paste_clipboard_update_read_sensitive_mimes () an answer; one
+ * whose formats already say has no use for this. Only worth making when
+ * g_paste_clipboard_update_wants_sensitive_mimes () says so.
+ *
+ * Counted among the hint reads and not merely among the reads, because it is out
+ * after the same thing they are: a deadline this one outlasts leaves every hint
+ * it would have fired unfired, which is the update having learned nothing about
+ * the selection rather than the selection saying its content is ordinary.
+ * Reported with g_paste_clipboard_update_on_sensitive_offer_read ().
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_add_sensitive_offer_read (GPasteClipboardUpdate *update)
+{
+    g_return_if_fail (update);
+
+    g_paste_clipboard_update_add_read (update);
+    ++update->sensitive_pending;
+}
+
+/**
+ * g_paste_clipboard_update_on_sensitive_offer_read:
+ * @update: the #GPasteClipboardUpdate the read counted into
+ * @answered: whether the selection said what it offers
+ *
+ * Count the offer-list read out of @update, as a hint read and as a read
+ *
+ * Called once the hint reads it fires have been added, so the batch is never
+ * momentarily empty and concluded from under them -- and, for the same reason,
+ * never momentarily out of hint reads either.
+ *
+ * A read that got no answer is not a selection offering no hint, and leaves the
+ * update's secrecy unknown: see #GPasteClipboardMimeResults.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_on_sensitive_offer_read (GPasteClipboardUpdate *update,
+                                                  gboolean               answered)
+{
+    g_return_if_fail (update);
+
+    if (!answered)
+        update->mimes.sensitive_unknown = TRUE;
+
+    --update->sensitive_pending;
+    g_paste_clipboard_update_maybe_done (update);
+}
+
+/**
+ * g_paste_clipboard_update_read_special_mimes:
+ * @update: the #GPasteClipboardUpdate the reads count into
+ * @offer: what @offered consults to answer, opaque here
+ * @offered: (scope call): whether the selection offers a mimetype
+ * @backend: what @read fires the read on
+ * @read: (scope async): fires the read of one mimetype
+ *
+ * Fire, on top of the content read, every special value @update wants and the
+ * selection offers.
+ *
+ * They ride along with a file list, and with a text only where rich text is
+ * wanted -- turning that setting off is asking for the text and nothing dressed
+ * on top of it.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_read_special_mimes (GPasteClipboardUpdate         *update,
+                                             gconstpointer                  offer,
+                                             GPasteClipboardMimeOfferedFunc offered,
+                                             gpointer                       backend,
+                                             GPasteClipboardMimeReadFunc    read)
+{
+    g_return_if_fail (update);
+    g_return_if_fail (offered);
+    g_return_if_fail (read);
+
+    if (update->content_kind != CLIPBOARD_CONTENT_FILE_LIST &&
+        (update->content_kind != CLIPBOARD_CONTENT_TEXT || !g_paste_settings_get_rich_text_support (update->settings)))
+        return;
+
+    for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
+    {
+        const gchar *mimetype = g_paste_special_mime_get (mime);
+
+        if (offered (offer, mimetype))
+            read (backend, mimetype, update->guard.cancellable, g_paste_clipboard_update_add_special_mime_read (update, mime));
+    }
+}
+
+/**
+ * g_paste_clipboard_update_wants_sensitive_mimes:
+ * @update: a #GPasteClipboardUpdate
+ *
+ * Whether @update reads the hints saying its content is a secret
+ *
+ * A text update does, whatever rich-text support says, a hint that a text is a
+ * password being no more rich text than the text is: see #GPasteSensitiveMime.
+ * Asked by g_paste_clipboard_update_read_sensitive_mimes (), and by a backend
+ * deciding whether to ask the selection which hints it offers at all.
+ *
+ * Returns: whether the sensitive mimes are read for @update
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_update_wants_sensitive_mimes (const GPasteClipboardUpdate *update)
+{
+    g_return_val_if_fail (update, FALSE);
+
+    return update->content_kind == CLIPBOARD_CONTENT_TEXT;
+}
+
+/**
+ * g_paste_clipboard_update_read_sensitive_mimes:
+ * @update: the #GPasteClipboardUpdate the reads count into
+ * @offer: what @offered consults to answer, opaque here
+ * @offered: (scope call): whether the selection offers a mimetype
+ * @backend: what @read fires the read on
+ * @read: (scope async): fires the read of one mimetype
+ *
+ * Fire every hint @update wants and the selection offers.
+ *
+ * Callable on its own by a backend that learns which hints are on offer only
+ * once its other reads are out: see
+ * g_paste_clipboard_update_add_sensitive_offer_read ().
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_read_sensitive_mimes (GPasteClipboardUpdate         *update,
+                                               gconstpointer                  offer,
+                                               GPasteClipboardMimeOfferedFunc offered,
+                                               gpointer                       backend,
+                                               GPasteClipboardMimeReadFunc    read)
+{
+    g_return_if_fail (update);
+    g_return_if_fail (offered);
+    g_return_if_fail (read);
+
+    if (!g_paste_clipboard_update_wants_sensitive_mimes (update))
+        return;
+
+    for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
+    {
+        const gchar *mimetype = g_paste_sensitive_mime_get (mime);
+
+        if (offered (offer, mimetype))
+            read (backend, mimetype, update->guard.cancellable, g_paste_clipboard_update_add_sensitive_mime_read (update, mime));
+    }
+}
+
+/**
  * g_paste_clipboard_update_read_mimes:
  * @update: the #GPasteClipboardUpdate the reads count into
  * @offer: what @offered consults to answer, opaque here
@@ -1332,18 +1482,15 @@ g_paste_clipboard_update_add_sensitive_mime_read (GPasteClipboardUpdate *update,
  * @read: (scope async): fires the read of one mimetype
  *
  * Fire, on top of the content read, every representation @update wants and the
- * selection offers.
+ * selection offers: g_paste_clipboard_update_read_special_mimes () and
+ * g_paste_clipboard_update_read_sensitive_mimes () against the same @offer.
  *
- * Two families, on two conditions. The special values ride along with a file
- * list, and with a text only where rich text is wanted -- turning that setting
- * off is asking for the text and nothing dressed on top of it. The sensitive
- * ones are read whatever it says, a hint that a text is a password being no more
- * rich text than the text is: see #GPasteSensitiveMime.
- *
- * Which is the whole of the policy, and it is here rather than in either backend
- * because it is not theirs: they differ in how a selection is asked what it
- * offers and in how bytes are fetched, in nothing else, and a condition written
- * once per backend is a condition one of them will be missing.
+ * Those two are the whole of the policy, and it is here rather than in either
+ * backend because it is not theirs: they differ in how a selection is asked
+ * what it offers and in how bytes are fetched, in nothing else, and a condition
+ * written once per backend is a condition one of them will be missing. A backend
+ * with no single @offer answering for both families -- the GDK one, whose
+ * formats leave the hints out -- calls the two halves with two answers instead.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_update_read_mimes (GPasteClipboardUpdate         *update,
@@ -1352,32 +1499,8 @@ g_paste_clipboard_update_read_mimes (GPasteClipboardUpdate         *update,
                                      gpointer                       backend,
                                      GPasteClipboardMimeReadFunc    read)
 {
-    g_return_if_fail (update);
-    g_return_if_fail (offered);
-    g_return_if_fail (read);
-
-    if (update->content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
-        (update->content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (update->settings)))
-    {
-        for (GPasteSpecialMime mime = G_PASTE_SPECIAL_MIME_FIRST; mime < G_PASTE_SPECIAL_MIME_LAST; ++mime)
-        {
-            const gchar *mimetype = g_paste_special_mime_get (mime);
-
-            if (offered (offer, mimetype))
-                read (backend, mimetype, update->guard.cancellable, g_paste_clipboard_update_add_special_mime_read (update, mime));
-        }
-    }
-
-    if (update->content_kind == CLIPBOARD_CONTENT_TEXT)
-    {
-        for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
-        {
-            const gchar *mimetype = g_paste_sensitive_mime_get (mime);
-
-            if (offered (offer, mimetype))
-                read (backend, mimetype, update->guard.cancellable, g_paste_clipboard_update_add_sensitive_mime_read (update, mime));
-        }
-    }
+    g_paste_clipboard_update_read_special_mimes (update, offer, offered, backend, read);
+    g_paste_clipboard_update_read_sensitive_mimes (update, offer, offered, backend, read);
 }
 
 /**

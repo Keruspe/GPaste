@@ -197,11 +197,11 @@ void                     g_paste_clipboard_sync_data_free       (GPasteClipboard
  * @sensitive_unknown is that same silence read the other way, for the one reader
  * that needs it: an answer that never came is not a selection saying its content
  * is ordinary, and a record already kept for that selection has to survive it.
- * Set where nothing could be learned -- a hint the selection offers whose read
- * failed, or was still out when the deadline ran -- and turned into the
- * #GPasteClipboardSecret a provider's callers are handed, proof still being what
- * makes a password. A hint served empty is not that: the owner answered, with a
- * value that does not match. */
+ * Set where nothing could be learned -- an offer-list read failed, or a hint
+ * the selection offers whose read failed, or was still out when the deadline
+ * ran -- and turned into the #GPasteClipboardSecret a provider's callers are
+ * handed, proof still being what makes a password. A hint served empty is not
+ * that: the owner answered, with a value that does not match. */
 typedef struct
 {
     gboolean          sensitive;
@@ -260,9 +260,9 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * the rest of the session.
  *
  * @pending counts the reads still out and @sensitive_pending how many of those
- * are hint reads, which is what tells a hint that answered "no" from one that
- * never answered at all; @concluded says the item was already built, the guard
- * having run out with some of them still going. @mime is the mimetype the
+ * are hint or sensitive-offer reads, which is what tells a hint that answered
+ * "no" from one that never answered at all; @concluded says the item was already
+ * built, the guard having run out with some of them still going. @mime is the mimetype the
  * content is being read under, for a backend that reads by mimetype rather than
  * by type -- %NULL for one that does not.
  *
@@ -337,8 +337,12 @@ struct _GPasteClipboardUpdate
  *
  * Which mimetypes are worth asking about, and for which kind of content, is not
  * one of the questions: that is the same policy for either backend, and it lives
- * in g_paste_clipboard_update_read_mimes () so that a mimetype gained, or a
- * condition put on one, is written once rather than once per backend. */
+ * in g_paste_clipboard_update_read_special_mimes () and
+ * g_paste_clipboard_update_read_sensitive_mimes () so that a mimetype gained, or
+ * a condition put on one, is written once rather than once per backend. A
+ * backend may answer the two against different @offer -- the GDK one answers
+ * for the hints from the selection's TARGETS rather than from its formats -- but
+ * every answer is still whether the selection offers @mimetype. */
 typedef gboolean (*GPasteClipboardMimeOfferedFunc) (gconstpointer           offer,
                                                     const gchar            *mimetype);
 typedef void     (*GPasteClipboardMimeReadFunc)    (gpointer                backend,
@@ -346,27 +350,41 @@ typedef void     (*GPasteClipboardMimeReadFunc)    (gpointer                back
                                                     GCancellable           *cancellable,
                                                     GPasteClipboardMimeCtx *ctx);
 
-void                    g_paste_clipboard_update_supersede               (GPasteClipboardUpdate               **slot);
-GPasteClipboardUpdate  *g_paste_clipboard_update_new                     (GPasteClipboardProvider              *provider,
-                                                                          GPasteSettings                       *settings,
-                                                                          GPasteClipboardContentKind            content_kind,
-                                                                          GPasteClipboardUpdate               **slot,
-                                                                          GPasteClipboardContent               *cache,
-                                                                          GPasteClipboardProviderUpdateCallback callback,
-                                                                          gpointer                              user_data);
-void                    g_paste_clipboard_update_add_read                (GPasteClipboardUpdate                *update);
-GPasteClipboardMimeCtx *g_paste_clipboard_update_add_special_mime_read   (GPasteClipboardUpdate                *update,
-                                                                          GPasteSpecialMime                     mime);
-GPasteClipboardMimeCtx *g_paste_clipboard_update_add_sensitive_mime_read (GPasteClipboardUpdate                *update,
-                                                                          GPasteSensitiveMime                   mime);
-void                    g_paste_clipboard_update_read_mimes              (GPasteClipboardUpdate                *update,
-                                                                          gconstpointer                         offer,
-                                                                          GPasteClipboardMimeOfferedFunc        offered,
-                                                                          gpointer                              backend,
-                                                                          GPasteClipboardMimeReadFunc           read);
-void                    g_paste_clipboard_update_on_mime_read            (GPasteClipboardMimeCtx               *ctx,
-                                                                          GBytes                               *bytes);
-gboolean                g_paste_clipboard_update_is_expired              (const GPasteClipboardUpdate          *update);
-void                    g_paste_clipboard_update_maybe_done              (GPasteClipboardUpdate                *update);
+void                    g_paste_clipboard_update_supersede                (GPasteClipboardUpdate               **slot);
+GPasteClipboardUpdate  *g_paste_clipboard_update_new                      (GPasteClipboardProvider              *provider,
+                                                                           GPasteSettings                       *settings,
+                                                                           GPasteClipboardContentKind            content_kind,
+                                                                           GPasteClipboardUpdate               **slot,
+                                                                           GPasteClipboardContent               *cache,
+                                                                           GPasteClipboardProviderUpdateCallback callback,
+                                                                           gpointer                              user_data);
+void                    g_paste_clipboard_update_add_read                 (GPasteClipboardUpdate                *update);
+GPasteClipboardMimeCtx *g_paste_clipboard_update_add_special_mime_read    (GPasteClipboardUpdate                *update,
+                                                                           GPasteSpecialMime                     mime);
+GPasteClipboardMimeCtx *g_paste_clipboard_update_add_sensitive_mime_read  (GPasteClipboardUpdate                *update,
+                                                                           GPasteSensitiveMime                   mime);
+void                    g_paste_clipboard_update_add_sensitive_offer_read (GPasteClipboardUpdate                *update);
+void                    g_paste_clipboard_update_on_sensitive_offer_read  (GPasteClipboardUpdate                *update,
+                                                                           gboolean                              answered);
+void                    g_paste_clipboard_update_read_special_mimes       (GPasteClipboardUpdate                *update,
+                                                                           gconstpointer                         offer,
+                                                                           GPasteClipboardMimeOfferedFunc        offered,
+                                                                           gpointer                              backend,
+                                                                           GPasteClipboardMimeReadFunc           read);
+gboolean                g_paste_clipboard_update_wants_sensitive_mimes    (const GPasteClipboardUpdate          *update);
+void                    g_paste_clipboard_update_read_sensitive_mimes     (GPasteClipboardUpdate                *update,
+                                                                           gconstpointer                         offer,
+                                                                           GPasteClipboardMimeOfferedFunc        offered,
+                                                                           gpointer                              backend,
+                                                                           GPasteClipboardMimeReadFunc           read);
+void                    g_paste_clipboard_update_read_mimes               (GPasteClipboardUpdate                *update,
+                                                                           gconstpointer                         offer,
+                                                                           GPasteClipboardMimeOfferedFunc        offered,
+                                                                           gpointer                              backend,
+                                                                           GPasteClipboardMimeReadFunc           read);
+void                    g_paste_clipboard_update_on_mime_read             (GPasteClipboardMimeCtx               *ctx,
+                                                                           GBytes                               *bytes);
+gboolean                g_paste_clipboard_update_is_expired               (const GPasteClipboardUpdate          *update);
+void                    g_paste_clipboard_update_maybe_done               (GPasteClipboardUpdate                *update);
 
 G_END_DECLS

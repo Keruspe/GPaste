@@ -24,9 +24,11 @@ explains what clipboard managers are for.
   and the clipboard stops handing it out once that runs out. A text a password
   manager marks as a secret (KDE's `x-kde-passwordManagerHint`) is taken in as a
   password on its own, and GPaste marks the passwords it puts on the clipboard
-  the same way, so other clipboard managers leave them alone. Deleting a
-  password entry clears its selection, including after a rename; a separate
-  named entry with the same value is kept distinct.
+  the same way, so other clipboard managers can recognise them. Current GTK
+  advertises the marker on X11 but cannot serve its value, so other managers
+  may not recognise GPaste passwords there. Deleting a password entry clears
+  its selection, including after a rename; a separate named entry with the same
+  value is kept distinct.
 - **Favourites**: pin an item and the history never drops it on its own — the
   size and memory limits give way instead. Filter the list down to the pinned
   items from the UI, the extension or `gpaste-client --favourites`.
@@ -87,7 +89,7 @@ On Fedora and other rpm-based distributions:
 # Build dependencies
 sudo dnf install meson ninja-build gcc gettext-devel \
                  glib2-devel gtk4-devel libadwaita-devel gcr-devel \
-                 dbus-devel gnome-control-center
+                 libXfixes-devel dbus-devel gnome-control-center
 
 # Optional, but on by default when found
 sudo dnf install libsodium-devel sqlite-devel libsecret-devel \
@@ -100,7 +102,7 @@ On Debian, Ubuntu and other deb-based distributions:
 # Build dependencies
 sudo apt install meson ninja-build build-essential pkg-config gettext \
                  libglib2.0-dev libgtk-4-dev libadwaita-1-dev libgcr-4-dev \
-                 libdbus-1-dev systemd-dev gnome-control-center
+                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center
 
 # Optional, but on by default when found
 sudo apt install libsodium-dev libsqlite3-dev libsecret-1-dev \

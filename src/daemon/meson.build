@@ -6,11 +6,12 @@ executable(
   'gpaste-daemon',
   sources: [
     'gpaste-clipboard-gdk.c',
+    'gpaste-clipboard-x11-hints.c',
     'gpaste-daemon.c',
     'gpaste-prompt-adw.c',
     'gpaste-text-content-provider.c',
   ],
   install: true,
-  dependencies: [ gpaste_daemon_internal_dep, gtk4x11_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gtk4x11_dep, libadwaita_dep, libgpaste_gtk4_internal_dep, xfixes_dep ],
   install_dir: pkglibexecdir_rel,
 )

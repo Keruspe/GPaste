@@ -10,6 +10,7 @@ enum
 {
     CHANGED,
     PUBLISHED,
+    REIDENTIFY,
 
     LAST_SIGNAL
 };
@@ -52,6 +53,22 @@ g_paste_clipboard_provider_default_init (GPasteClipboardProviderInterface *iface
                                        0, NULL, NULL,
                                        g_cclosure_marshal_VOID__BOOLEAN,
                                        G_TYPE_NONE, 1, G_TYPE_BOOLEAN);
+
+    /**
+     * GPasteClipboardProvider::reidentify:
+     * @provider: the object on which the signal was emitted
+     *
+     * What the selection carries has become readable after a read asked only to
+     * identify it -- not to record a copy -- gave up and answered it unknown.
+     * The owner is the one that read was about, so this is no copy either: the
+     * listener asks for another identifying read rather than recording one.
+     */
+    signals[REIDENTIFY] = g_signal_new ("reidentify",
+                                        G_PASTE_TYPE_CLIPBOARD_PROVIDER,
+                                        G_SIGNAL_RUN_FIRST,
+                                        0, NULL, NULL,
+                                        g_cclosure_marshal_VOID__VOID,
+                                        G_TYPE_NONE, 0);
 }
 
 /**
@@ -344,6 +361,20 @@ g_paste_clipboard_provider_emit_changed (GPasteClipboardProvider *self)
     g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
 
     g_signal_emit (self, signals[CHANGED], 0);
+}
+
+/**
+ * g_paste_clipboard_provider_emit_reidentify:
+ * @self: a #GPasteClipboardProvider instance
+ *
+ * Emit the #GPasteClipboardProvider::reidentify signal.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_provider_emit_reidentify (GPasteClipboardProvider *self)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+
+    g_signal_emit (self, signals[REIDENTIFY], 0);
 }
 
 /**

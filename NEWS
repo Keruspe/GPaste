@@ -10,6 +10,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard
 - Fix a failed storage backend change being reported nowhere and retried on the next start
+- Build: require libXfixes
 
 NEW in 51.0 (15/09/2026)
 =============

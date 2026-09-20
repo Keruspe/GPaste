@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include "gpaste-clipboard-gdk.h"
+#include "gpaste-clipboard-x11-hints.h"
 #include "gpaste-text-content-provider.h"
 
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
+#include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -43,6 +45,20 @@ struct _GPasteClipboardGdk
      * formats wait knows whether a change is what asked for it: see
      * @after_change on #GPasteClipboardGdkFormatsWait. */
     gboolean                       emitting_change;
+    /* A wait a change asked for concluded with the selection still owned, so the
+     * copy that change announced was never read: its targets, whenever they come,
+     * are that copy and not the answer to some later read. See
+     * on_real_changed (). */
+    gboolean                       copy_owed;
+    /* The mirror of @copy_owed: a wait no change asked for -- the manager's
+     * bootstrap read, or one asked to identify the selection -- concluded with
+     * the selection still owned, so what that owner carries was never identified.
+     * Its targets, whenever they come, answer that question and are no copy. See
+     * on_real_changed (). */
+    gboolean                       identify_owed;
+
+    /* Reads the hints GDK cannot: see gpaste-clipboard-x11-hints.c. */
+    GPasteClipboardX11Hints       *hints;
 
     gulong                         c_signals[C_LAST_SIGNAL];
 };
@@ -63,7 +79,7 @@ typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
                                                    gpointer            user_data);
 
 /* How long a selection whose formats came back empty is given to say what it
- * carries, in seconds.
+ * carries, in milliseconds.
  *
  * Deliberately not G_PASTE_CLIPBOARD_READ_TIMEOUT: that one is the rope a stuck
  * *transfer* is given, where this bounds the silence between one owner letting
@@ -74,8 +90,54 @@ typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
  * times this without any of it firing. Short on purpose: the wait counts as
  * is_reading (), which holds synchronization, password expiry and the Reexecute
  * waiting on it, so a selection nobody owns must not park any of them for as
- * long as a transfer may take. */
-#define G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT 5
+ * long as a transfer may take.
+ *
+ * This is the length for a selection whose owner may yet publish. One the server
+ * has already announced a release of waits %G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE
+ * instead, having nothing left to find out.
+ *
+ * A daemon standing down inside that window leaves the wait unanswered, and the
+ * record its selection holds is then not acted on -- the same shape a content
+ * read has, and the same answer: the caller awaits
+ * g_paste_clipboards_manager_expire_password_async () rather than this deadline
+ * being tightened. Nothing is left behind by it either way. Empty formats are
+ * another client's doing -- a selection this daemon owns offers what it
+ * published -- so the copy a wait is pending over is one somebody else has
+ * already taken away or is in the middle of replacing, and what would outlive
+ * the daemon there is that owner's content and not ours. */
+#define G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT 5000
+
+/* How long that same wait is when X already says nobody owns the selection, in
+ * milliseconds.
+ *
+ * The deadline above exists to find out which of a release and a slow owner a
+ * set of empty formats is, and that question has an answer the moment they
+ * arrive: the server knows who owns the selection, and is asked
+ * (g_paste_clipboard_x11_hints_get_owner ()). The full deadline would hold an
+ * answer already in hand for five seconds, and with it synchronization,
+ * password expiry and the Reexecute waiting on them -- five seconds of a
+ * selection pasting nothing, the head being what goes back on it.
+ *
+ * Asked of the server and not of the last ownership notification, although that
+ * notification carries the same thing and costs nothing: GDK connects its own
+ * GdkDisplay::xevent handler when it creates its clipboards, which is before
+ * this daemon has one to connect, and that handler claims empty formats from
+ * inside itself -- so by the time the change reaches here, our handler has not
+ * seen the notification for the very change that brought it. What it holds is
+ * the *previous* one, which on the release this grace is written for still names
+ * the application that has just closed. A round trip per owner change is what
+ * that costs, and it is the one question whose answer cannot be one event stale.
+ *
+ * A grace and not zero, because no owner is an instant and not a state: a copy
+ * in progress passes through it between one client letting go and the next
+ * claiming, and the head going back there competes with the owner about to
+ * arrive. Long enough for that claim to have been made, short enough that
+ * closing the application you copied from puts the copy back within a blink.
+ *
+ * Nothing else about the wait differs. It ends in the same question asked of the
+ * same server, so a claim that landed inside the grace is an owner like any
+ * other and is held as one. */
+#define G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE 300
 
 /* An unresolved owner owes notify () an answer even if TARGETS never arrives.
  * No content is read here: only a callback and its deadline are needed.
@@ -111,6 +173,7 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
     g_autoptr (GPasteClipboardGdk) self = g_weak_ref_get (&wait->self);
     GPasteClipboardProviderUpdateCallback callback = wait->callback;
     gpointer user_data = wait->user_data;
+    gboolean after_change = wait->after_change;
 
     g_paste_clipboard_gdk_formats_wait_free (wait);
 
@@ -118,9 +181,9 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
      * callback only releases its state then. */
     superseded |= !self;
 
-    /* A whole G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT with no TARGETS reply is a
-     * selection nobody owns -- a release, which GTK announces with the same
-     * empty formats as a new owner -- or an owner nothing can paste from either.
+    /* A whole wait with no TARGETS reply is a selection nobody owns -- a release,
+     * which GTK announces with the same empty formats as a new owner -- or an
+     * owner nothing can paste from either.
      * Neither holds what a record names, so the answer is a no, retiring it
      * rather than leaving it unconfirmed until the next copy
      * (/gdk/formats/deadline).
@@ -132,12 +195,59 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
      * the wait buys is *delaying* it past the window where empty formats are a
      * new owner still publishing its targets, never dropping it (the same test).
      * An ignored cache here would leave the selection empty for the rest of the
-     * session. */
-    if (!superseded)
+     * session.
+     *
+     * The deadline alone does not say which of the two it is, which is why it is
+     * not taken for a release on its own: an owner slow to serve TARGETS -- a busy
+     * application, a forwarded display -- is still there, and restoring the head
+     * over it replaces the copy the user has just made and retires the record for
+     * a password still sitting there. X is asked who owns the selection, the one
+     * thing that tells the two apart, and an owner that is there answers nothing:
+     * the deadline is then this selection going unidentified, which every reader
+     * of %CLIPBOARD_SECRET_UNKNOWN already knows how to hold
+     * (/gdk/formats/deadline-slow-owner). It is asked here rather than when the
+     * formats came back empty, so the milliseconds a local owner takes to publish
+     * its targets cost nothing.
+     *
+     * Only %G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE is a release, never the
+     * absence of an answer: a display that could not be asked is held like a slow
+     * owner (/gdk/formats/deadline-unknown-owner). Releasing is the half that
+     * overwrites a live copy, so it takes the server saying there is no owner --
+     * which a display with no XFixes still says, the atoms the question needs
+     * being interned ahead of the check that stops the rest of the workaround.
+     *
+     * Unidentified means the cache holds no value either, which is what
+     * set_ignored () is for: the owner that has the selection is not the one this
+     * cache was filled for, so a value kept here is one the provider reports for
+     * content its selection has already replaced -- and every route asking what
+     * this selection carries reads that cache. A standing password record would
+     * be confirmed against the previous owner's text
+     * (g_paste_clipboards_manager_confirm_password ()), which is the one answer
+     * no reader of an unknown is meant to get. Ignored rather than cleared: the
+     * selection has an owner, so it is not empty and the head must not go back on
+     * it. */
+    gboolean released = !superseded &&
+                        g_paste_clipboard_x11_hints_get_owner (self->hints) == G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
+
+    if (released)
         g_paste_clipboard_content_clear (&self->content);
+    /* A superseded wait says nothing about the selection, and the read that took
+     * over answers for the cache. */
+    else if (!superseded)
+        g_paste_clipboard_content_set_ignored (&self->content);
+
+    /* A slow owner is still owed its copy, or its identification, whichever the
+     * wait was asked for: see @copy_owed and @identify_owed. */
+    if (!released && !superseded)
+    {
+        if (after_change)
+            self->copy_owed = TRUE;
+        else
+            self->identify_owed = TRUE;
+    }
 
     if (callback)
-        callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded, (superseded) ? CLIPBOARD_SECRET_UNKNOWN : CLIPBOARD_SECRET_NO, user_data);
+        callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded, (released) ? CLIPBOARD_SECRET_NO : CLIPBOARD_SECRET_UNKNOWN, user_data);
 }
 
 static void
@@ -159,7 +269,11 @@ g_paste_clipboard_gdk_formats_wait_superseded (gpointer user_data)
 
 /* As g_paste_clipboard_update_supersede () does for a read: no longer reading
  * from here on, but answered on the next main-loop turn, never under the
- * notify () or the publication that took over. */
+ * notify () or the publication that took over. Disposal preserves this ordering:
+ * the callback can re-enter its manager, whose teardown may still be on the
+ * stack. In a continuing process the idle delivers cleanup; process exit/exec
+ * releases the address space. A caller needing completion before stopping its
+ * loop must await expiry, as documented beside the formats timeout. */
 static void
 g_paste_clipboard_gdk_supersede_formats_wait (GPasteClipboardGdk *self)
 {
@@ -175,16 +289,18 @@ g_paste_clipboard_gdk_supersede_formats_wait (GPasteClipboardGdk *self)
 
 static void
 g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *self,
+                                        gboolean                              released,
                                         GPasteClipboardProviderUpdateCallback callback,
                                         gpointer                              user_data)
 {
     GPasteClipboardGdkFormatsWait *wait = g_new (GPasteClipboardGdkFormatsWait, 1);
+    guint timeout = (released) ? G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE : G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT;
 
     g_weak_ref_init (&wait->self, self);
     wait->callback = callback;
     wait->user_data = user_data;
     wait->after_change = self->emitting_change;
-    wait->source_id = g_timeout_add_seconds_once (G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT, g_paste_clipboard_gdk_formats_wait_timed_out, wait);
+    wait->source_id = g_timeout_add_once (timeout, g_paste_clipboard_gdk_formats_wait_timed_out, wait);
     g_source_set_name_by_id (wait->source_id, "[GPaste] clipboard formats wait");
     self->formats_wait = wait;
 }
@@ -857,10 +973,20 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
 
         /* Empty formats identify neither a release nor the new owner's value.
          * Keep expiry and sync waiting for TARGETS; reporting empty would let
-         * ensure_not_empty () overwrite the copy being negotiated. A deadline
-         * with no formats answers a no, and restores no history either
-         * (g_paste_clipboard_gdk_formats_wait_answer ()). */
-        g_paste_clipboard_gdk_wait_for_formats (self, callback, user_data);
+         * ensure_not_empty () overwrite the copy being negotiated. What the
+         * deadline answers is g_paste_clipboard_gdk_formats_wait_answer ()'s: a
+         * selection nobody owns is a release, answered no with the cache
+         * cleared so the history's head goes back; an owner that is slow, or
+         * that X could not be asked about, is answered unknown with the cache
+         * ignored, so nothing is published over it.
+         *
+         * How long it waits is what the server decides: a selection nobody owns
+         * has already told the two apart, leaving only the gap a release and the
+         * claim after it pass through (%G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE). */
+        gboolean released = (g_paste_clipboard_x11_hints_get_owner (self->hints) ==
+                             G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE);
+
+        g_paste_clipboard_gdk_wait_for_formats (self, released, callback, user_data);
         return;
     }
     else
@@ -922,11 +1048,49 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_assert_not_reached ();
     }
 
-    /* Every representation asked for on top of the content, the formats saying
-     * which are there to ask for -- which for a sensitive name that is not a
-     * mimetype rests on GDK keeping such atoms in a selection's formats. */
-    g_paste_clipboard_update_read_mimes (update, formats, g_paste_clipboard_gdk_offers_mime,
-                                         self, g_paste_clipboard_gdk_read_mime);
+    /* Every special value asked for on top of the content, the formats saying
+     * which are there to ask for. The hints are not among them -- GDK leaves
+     * those names out of the formats -- and are read by the workaround, or off
+     * those formats where it cannot run (below).
+     *
+     * On the primary selection as much as on the clipboard, which is a TARGETS
+     * conversion per mouse selection: a password is copied with the mouse like
+     * anything else, and a primary the hints were never read for is one every
+     * route reads as ordinary text -- the sync out of it above all, which would
+     * then publish the cleartext onto the clipboard stripped of what says it is
+     * a secret. The round trip rides along with the content read already out for
+     * the same change and holds the update open no longer than that read does,
+     * so what it costs is one request beside a transfer, not a wait of its
+     * own. */
+    if (g_paste_clipboard_x11_hints_available (self->hints))
+    {
+        g_paste_clipboard_update_read_special_mimes (update, formats, g_paste_clipboard_gdk_offers_mime,
+                                                     self, g_paste_clipboard_gdk_read_mime);
+        g_paste_clipboard_x11_hints_read (self->hints, update);
+    }
+    else
+    {
+        /* Nothing here can convert the selection -- no XFixes, an atom that could
+         * not be interned -- so the hints are asked of the formats, like the
+         * special values beside them. GDK leaves their names out of those, so what
+         * this costs is recognising a password another application copied: a
+         * feature lost where the workaround cannot run.
+         *
+         * The alternative is not "no hints" but "no answer": asking the
+         * workaround anyway has every text read come back with its secrecy
+         * unknown, for the rest of the session and on both selections, and an
+         * unknown is kept rather than acted on everywhere it lands -- a strip the
+         * user asked for is refused by every later read
+         * (g_paste_clipboards_manager_finish_refresh ()), a trimmed clipboard is
+         * never re-owned with the stripped text
+         * (g_paste_clipboard_update_conclude ()), every sync out of a selection
+         * whose record went unconfirmed is refused, and every plain copy of a
+         * recorded password's value is taken for that password
+         * (g_paste_clipboards_manager_preserve_password ()). A silence that never
+         * ends is not the silence any of those are written for. */
+        g_paste_clipboard_update_read_mimes (update, formats, g_paste_clipboard_gdk_offers_mime,
+                                             self, g_paste_clipboard_gdk_read_mime);
+    }
 
     g_paste_clipboard_update_maybe_done (update);
 }
@@ -994,11 +1158,20 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
      * these keeps it out of its own history. Only we can say it: a password
      * travels as ordinary text, and nothing about the text says so.
      *
-     * Offered and served: the hint reaches every client's TARGETS, and a request
-     * for its value is answered from this provider -- which rests on GDK
-     * resolving a requested target against the formats by its raw name as well
-     * as through gdk_intern_mime_type (), the latter answering %NULL for a name
-     * with no '/' in it. */
+     * Offered here and served by nobody, on this backend as it stands: the hint
+     * reaches every client's TARGETS, gdk_x11_clipboard_formats_to_targets ()
+     * (gdk/x11/gdkclipboard-x11.c) passing every mimetype in the formats through
+     * as an atom, but the request that comes back for its value is refused.
+     * gdk_x11_selection_output_streams_request () resolves the target through
+     * gdk_intern_mime_type (), which answers %NULL for a name with no '/' in it,
+     * and the branch that would consult the provider is skipped -- so the reply
+     * is property None, and the manager that asked records the password like any
+     * other text. Reading the hint has no such hole (gpaste-clipboard-x11-hints.c
+     * goes around GTK for it) and the mutter backend publishes it through a
+     * source of its own, so this is the one half of the feature that waits on
+     * GTK. It is still published: the value is what decides, the same
+     * key being how an owner says its content is *not* a secret, so the day the
+     * refusal goes away this starts working with nothing here to change. */
     if (G_PASTE_IS_PASSWORD_ITEM (item))
     {
         for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
@@ -1049,9 +1222,8 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
      *
      * What the empty change does here is retire the previous owner's read and
      * suspend the cache's consumers -- a password deadline must not overwrite a
-     * new copy while its TARGETS reply is pending -- and start the wait that holds
-     * the restoration back until empty formats are known not to be a new owner
-     * still publishing.
+     * new copy while its TARGETS reply is pending -- and start the wait that
+     * tells a release from an owner that has yet to publish.
      *
      * Holding that change back and raising one of our own once the wait has
      * concluded is a different proposal from filtering it out, and it is the open
@@ -1075,15 +1247,26 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
      * the one the empty formats announced, and the copy path is where it goes
      * (/gdk/formats/bootstrap-then-copy). A new owner claiming the selection
      * while an identifying wait is out announces itself with empty formats of
-     * its own first, which supersedes that wait through the ordinary route. */
+     * its own first, which supersedes that wait through the ordinary route.
+     *
+     * Nor while a copy is owed (@copy_owed): an owner slow enough that the wait
+     * its change asked for timed out with it still there has had that change
+     * announced and never read, and an identifying read the manager asks for in
+     * the meantime -- a countdown, an expiry wait, a strip -- waits on the very
+     * same targets. Those are that owner's copy, and continuing the identifying
+     * read with them would identify it without ever recording it: nothing
+     * entering the history, nothing synchronized
+     * (/gdk/formats/owed-copy). They get their change instead, which
+     * supersedes the identifying wait as any change does. */
     GPasteClipboardGdkFormatsWait *wait = self->formats_wait;
 
-    if (wait && !wait->after_change && !gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
+    if (wait && !wait->after_change && !self->copy_owed && !gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
     {
         GPasteClipboardProviderUpdateCallback callback = wait->callback;
         gpointer user_data = wait->user_data;
 
         g_debug ("%s: targets for the read that was waiting on them", g_paste_clipboard_provider_target_name (self->is_clipboard));
+        self->identify_owed = FALSE;
         self->formats_wait = NULL;
         g_source_remove (wait->source_id);
         g_paste_clipboard_gdk_formats_wait_free (wait);
@@ -1091,7 +1274,27 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
         return;
     }
 
+    /* And with no wait out at all, the targets of an owner whose identification is
+     * owed (@identify_owed) answer that identification: the read that asked has
+     * given up already, so the manager is asked for another one rather than told
+     * of a copy -- which would record what was already sitting on the selection,
+     * over the history's head and, with synchronization on, onto the other
+     * selection (/gdk/formats/bootstrap-late). A new owner announces itself with
+     * empty formats first, and takes the ordinary route below. */
+    if (self->identify_owed && !self->copy_owed && !self->formats_wait && !self->update &&
+        !gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
+    {
+        g_debug ("%s: targets for an identification owed", g_paste_clipboard_provider_target_name (self->is_clipboard));
+        self->identify_owed = FALSE;
+        g_paste_clipboard_provider_emit_reidentify (G_PASTE_CLIPBOARD_PROVIDER (self));
+        return;
+    }
+
     g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (self->is_clipboard));
+    /* Raised now, whether it is the owed copy or a new owner's, which owes the
+     * previous owner nothing either. */
+    self->copy_owed = FALSE;
+    self->identify_owed = FALSE;
     self->emitting_change = TRUE;
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
     self->emitting_change = FALSE;
@@ -1113,6 +1316,7 @@ g_paste_clipboard_gdk_dispose (GObject *object)
          * out, each of which holds the object being cleared below. */
         g_paste_clipboard_gdk_supersede (self);
         g_signal_handler_disconnect (self->real, self->c_signals[C_CHANGED]);
+        g_clear_object (&self->hints);
         g_clear_object (&self->real);
         g_clear_object (&self->settings);
     }
@@ -1155,6 +1359,7 @@ _g_paste_clipboard_gdk_new (GPasteSettings *settings,
                                             : gdk_display_get_primary_clipboard (display));
     self->is_clipboard = is_clipboard;
     self->settings = g_object_ref (settings);
+    self->hints = g_paste_clipboard_x11_hints_new (self->real, is_clipboard);
 
     self->c_signals[C_CHANGED] = g_signal_connect_swapped (self->real,
                                                            "changed",

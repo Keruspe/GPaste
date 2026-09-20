@@ -861,6 +861,17 @@ g_paste_clipboards_manager_published (GPasteClipboardProvider *clipboard G_GNUC_
     }
 }
 
+/* The provider could not identify its selection when asked -- its owner too slow
+ * to say what it offers -- and can now: ask again, with the read that identifies
+ * and records nothing, as the question being answered is still that one
+ * (/gdk/formats/bootstrap-late). A read already out is that answer on its way. */
+static void
+g_paste_clipboards_manager_reidentify (GPasteClipboardProvider *clipboard G_GNUC_UNUSED,
+                                       gpointer                 user_data)
+{
+    g_paste_clipboards_manager_identify (user_data);
+}
+
 /**
  * g_paste_clipboards_manager_add_clipboard:
  * @self: a #GPasteClipboardsManager instance
@@ -882,10 +893,10 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     clip->signal_group = g_signal_group_new (G_PASTE_TYPE_CLIPBOARD_PROVIDER);
     g_signal_group_connect (clip->signal_group, "changed", G_CALLBACK (g_paste_clipboards_manager_notify), clip);
     g_signal_group_connect (clip->signal_group, "published", G_CALLBACK (g_paste_clipboards_manager_published), clip);
+    g_signal_group_connect (clip->signal_group, "reidentify", G_CALLBACK (g_paste_clipboards_manager_reidentify), clip);
 
     self->clipboards = g_slist_prepend (self->clipboards, clip);
-    g_paste_clipboard_provider_update (clipboard, g_paste_clipboards_manager_identify_ready,
-                                       g_paste_clipboards_manager_update_data_new (clip, FALSE));
+    g_paste_clipboards_manager_identify (clip);
 }
 
 /* A sync read has landed: the text goes on the destination the way everything
