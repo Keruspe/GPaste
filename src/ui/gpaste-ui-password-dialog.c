@@ -274,7 +274,8 @@ password_dialog (GPasteClient *client,
 typedef struct
 {
     GPasteClient *client;
-    GtkWindow    *rootwin;
+    GWeakRef      rootwin;
+    GCancellable *cancellable;
     gchar        *uuid;
     gchar        *name;
     guint         timeout;
@@ -287,26 +288,31 @@ typedef struct
  * over the one the password actually carries -- the dialog having no state that
  * says "unknown" and no way to refuse what the user then confirms.
  *
- * And only when there is still a window to put it on: the daemon answers a read
- * whether or not the window that asked for it is still up, and a dialog
- * presented on one the user has closed is parented to nothing. Nothing cancels
- * the two reads, so the reference held here is what keeps the window addressable
- * until the answers land, and its visibility is what says whether they are
- * still worth anything.
+ * And only when there is still a window to put it on: a dialog presented on one
+ * the user has closed is parented to nothing. Both reads go out on one
+ * cancellable the window cancels when it is destroyed, so what says the answers
+ * are worth nothing is that cancellable and not the window's visibility -- a
+ * window hidden for any other reason is one the dialog still belongs on.
  *
- * FIXME: cancel the two reads instead, on a #GCancellable the window cancels
- * when it closes. */
+ * Asked of the cancellable rather than of the error each reply carries, as in
+ * gpaste-ui-item.c: cancelling is this side letting go, not the daemon stopping,
+ * so a reply already on its way still lands. The parent is held weakly:
+ * GtkWindow's destroy signal waits for outstanding references, so retaining it
+ * through these reads would prevent the cancellation they depend on. */
 static void
 edit_data_reply (EditData *data)
 {
     if (--data->pending)
         return;
 
-    if (!data->failed && gtk_widget_get_visible (GTK_WIDGET (data->rootwin)))
-        password_dialog (data->client, data->rootwin, data->uuid, _("Edit Password"), _("Save"), data->name, data->timeout);
+    g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
+
+    if (rootwin && !data->failed && !g_cancellable_is_cancelled (data->cancellable))
+        password_dialog (data->client, rootwin, data->uuid, _("Edit Password"), _("Save"), data->name, data->timeout);
 
     g_clear_object (&data->client);
-    g_clear_object (&data->rootwin);
+    g_weak_ref_clear (&data->rootwin);
+    g_clear_object (&data->cancellable);
     g_clear_pointer (&data->uuid, g_free);
     g_clear_pointer (&data->name, g_free);
     g_free (data);
@@ -318,13 +324,27 @@ on_timeout_ready (GObject      *source_object,
                   gpointer      user_data)
 {
     EditData *data = user_data;
+    g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
     g_autoptr (GError) error = NULL;
     guint timeout = g_paste_client_get_password_timeout_finish (G_PASTE_CLIENT (source_object), res, &error);
+
+    /* Finished before anything is done with it, cancelled or not: the call is
+     * the client's to complete, and a reply left unfinished is one nothing ever
+     * takes the value or the error out of.
+     *
+     * The window this was read for being gone, there is then no dialog to put up,
+     * and a failure has nothing left to be reported to, the toast overlay having
+     * gone with it. */
+    if (!rootwin || g_cancellable_is_cancelled (data->cancellable))
+    {
+        edit_data_reply (data);
+        return;
+    }
 
     if (error)
     {
         g_warning ("Could not read the password's timeout: %s", error->message);
-        g_paste_gtk_util_toast (GTK_WIDGET (data->rootwin), _("Could not read the password's timeout"));
+        g_paste_gtk_util_toast (GTK_WIDGET (rootwin), _("Could not read the password's timeout"));
         data->failed = TRUE;
     }
     else
@@ -339,15 +359,23 @@ on_item_ready (GObject      *source_object,
                gpointer      user_data)
 {
     EditData *data = user_data;
+    g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClientItem) item = g_paste_client_get_item_finish (G_PASTE_CLIENT (source_object), res, &error);
+
+    /* As in on_timeout_ready (). */
+    if (!rootwin || g_cancellable_is_cancelled (data->cancellable))
+    {
+        edit_data_reply (data);
+        return;
+    }
 
     if (!item)
     {
         /* As in g_paste_ui_edit_item_show ()'s own reader, a reply that parsed
          * into no item sets no error. */
         g_warning ("Could not read the password to edit: %s", (error) ? error->message : "the daemon answered with no usable item");
-        g_paste_gtk_util_toast (GTK_WIDGET (data->rootwin), _("Could not read the password to edit"));
+        g_paste_gtk_util_toast (GTK_WIDGET (rootwin), _("Could not read the password to edit"));
         data->failed = TRUE;
     }
     else
@@ -436,10 +464,19 @@ g_paste_ui_password_dialog_edit (GPasteClient *client,
     EditData *data = g_new0 (EditData, 1);
 
     data->client = g_object_ref (client);
-    data->rootwin = g_object_ref (rootwin);
+    g_weak_ref_init (&data->rootwin, rootwin);
+    data->cancellable = g_cancellable_new ();
     data->uuid = g_strdup (uuid);
     data->pending = 2;
 
-    g_paste_client_get_item (client, uuid, NULL /* cancellable */, on_item_ready, data);
-    g_paste_client_get_password_timeout (client, uuid, NULL /* cancellable */, on_timeout_ready, data);
+    /* Connected on the window for as long as the reads are out:
+     * g_signal_connect_object () takes the handlers down with the cancellable,
+     * which the last reply frees. Unrealize covers a shown window being
+     * destroyed while another operation holds a reference and delays destroy;
+     * merely hiding the window does not unrealize it. */
+    g_signal_connect_object (rootwin, "destroy", G_CALLBACK (g_cancellable_cancel), data->cancellable, G_CONNECT_SWAPPED);
+    g_signal_connect_object (rootwin, "unrealize", G_CALLBACK (g_cancellable_cancel), data->cancellable, G_CONNECT_SWAPPED);
+
+    g_paste_client_get_item (client, uuid, data->cancellable, on_item_ready, data);
+    g_paste_client_get_password_timeout (client, uuid, data->cancellable, on_timeout_ready, data);
 }

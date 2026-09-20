@@ -61,3 +61,14 @@ addressed to the server's *unique* name: a reply behind the calls on the client'
 connection makes a no-op assertion deterministic, the later rounds drain what a
 reply's own callback issues, and the unique name is what answers while the
 well-known one is unowned or has just changed hands.
+
+`test-ui-password` controls the edit dialog's two asynchronous replies while using
+real GTK on the private Xvfb. It checks both late-reply orders, closure between
+replies, a closed parent retained by another operation, and an intentionally
+hidden parent. The edit must not hold the window alive and thereby prevent the
+`destroy` signal cancelling its reads. `test-ui-edit-item` holds Edit Item's one
+read to the same: a closed parent and a retained closed one get no dialog, an
+open one does, and a window closed under the dialog goes and frees what the edit
+held, even while something else holds the dialog; a text dialog refuses a
+parent libadwaita would not host it in, answering once as a cancellation, and
+Edit Item refuses such a window before its read goes out.

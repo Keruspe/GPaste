@@ -34,7 +34,7 @@ on_new_item (const gchar *text,
 /**
  * g_paste_ui_new_item_show:
  * @client: a #GPasteClient
- * @rootwin: the root #GtkWindow
+ * @rootwin: the root window, one g_paste_gtk_util_can_host_dialog () accepts
  *
  * Ask the user for the text of a new item, and add it
  */
@@ -43,7 +43,7 @@ g_paste_ui_new_item_show (GPasteClient *client,
                           GtkWindow    *rootwin)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (client));
-    g_return_if_fail (GTK_IS_WINDOW (rootwin));
+    g_return_if_fail (g_paste_gtk_util_can_host_dialog (rootwin));
 
     NewItemData *data = g_new (NewItemData, 1);
 

@@ -313,14 +313,30 @@ g_paste_gtk_util_form_dialog (const gchar  *heading,
 
 /* Kept on the dialog, so it lives exactly as long as the dialog does. @answer
  * is what the user wrote, set only when they confirmed: the result is delivered
- * from "closed", which is the one place every way out of the dialog goes
- * through. */
+ * from "closed", which is the way out of the dialog every choice of the user's
+ * goes through.
+ *
+ * Not the only way out, though: a dialog whose window is destroyed under it goes
+ * without emitting "closed". The callback is then answered as a cancellation, so
+ * it is answered exactly once whatever happens -- which is what lets a caller
+ * hand its state over to @user_data and free it there, holding nothing else, its
+ * window above all (/ui/edit_item/closed_with_dialog_up).
+ *
+ * Answered from the window's "destroy", and from the dialog's own for a dialog
+ * that goes any other way; never from this being freed with the dialog's data,
+ * which happens at finalize. Nor is the dialog's "destroy" alone enough: a
+ * dialog something else still holds -- an accessible, a pending animation, the
+ * inspector -- is only unparented when its window goes, not disposed, and emits
+ * nothing until that reference is dropped, the caller's state waiting on it. The
+ * first answer sets @answered, whichever route gives it, and every later one is
+ * a no-op. A callback answered from either must not reach back for the dialog. */
 typedef struct
 {
     GPasteGtkTextDialogCallback callback;
     gpointer                    user_data;
     GtkTextBuffer              *buffer;
     gchar                      *answer;
+    gboolean                    answered;
 } GPasteGtkTextDialogData;
 
 static void
@@ -332,13 +348,33 @@ g_paste_gtk_text_dialog_data_free (gpointer user_data)
     g_free (data);
 }
 
+/* Exactly once: see the struct. */
+static void
+g_paste_gtk_text_dialog_answer (AdwDialog *dialog,
+                                gboolean   cancelled)
+{
+    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), "text-dialog-data");
+
+    if (!data || data->answered)
+        return;
+
+    data->answered = TRUE;
+    data->callback ((cancelled) ? NULL : data->answer, data->user_data);
+}
+
+/* Connected straight to the dialog's "destroy" and, swapped, to its parent's:
+ * both hand it the dialog first and something it ignores after. */
+static void
+g_paste_gtk_text_dialog_cancel (AdwDialog *dialog)
+{
+    g_paste_gtk_text_dialog_answer (dialog, TRUE);
+}
+
 static void
 on_text_dialog_closed (AdwDialog *dialog,
                        gpointer   user_data G_GNUC_UNUSED)
 {
-    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), "text-dialog-data");
-
-    data->callback (data->answer, data->user_data);
+    g_paste_gtk_text_dialog_answer (dialog, FALSE);
 }
 
 static void
@@ -360,13 +396,31 @@ on_text_dialog_confirm (GtkButton *button,
 }
 
 /**
+ * g_paste_gtk_util_can_host_dialog:
+ * @window: (nullable): a #GtkWindow
+ *
+ * Whether libadwaita puts a dialog presented over @window inside it: an
+ * #AdwWindow or #AdwApplicationWindow that can be resized. Over anything else,
+ * %NULL included, it gives the dialog a window of its own instead.
+ *
+ * Returns: whether @window can be the parent of g_paste_gtk_util_text_dialog ()
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gtk_util_can_host_dialog (GtkWindow *window)
+{
+    return (ADW_IS_WINDOW (window) || ADW_IS_APPLICATION_WINDOW (window)) && gtk_window_get_resizable (window);
+}
+
+/**
  * g_paste_gtk_util_text_dialog:
- * @parent: (nullable): the parent #GtkWindow
+ * @parent: the parent window, one g_paste_gtk_util_can_host_dialog () accepts
  * @heading: what the dialog is for
  * @confirm_label: the label of the confirm button
  * @text: (nullable): what the text view starts with
  * @callback: (closure user_data) (scope async): handed what the user wrote,
- *            or %NULL if they cancelled
+ *            or %NULL if they cancelled -- called exactly once, a dialog whose
+ *            window is destroyed under it and a call that is refused both
+ *            answering %NULL
  *
  * The dialog for composing an item: a wrapping, scrollable text view in the shell
  * g_paste_gtk_util_form_dialog () puts up. Both adding a new item and editing an
@@ -380,10 +434,26 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
                               GPasteGtkTextDialogCallback callback,
                               gpointer                    user_data)
 {
-    g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
-    g_return_if_fail (heading);
-    g_return_if_fail (confirm_label);
     g_return_if_fail (callback);
+
+    /* A parent the dialog can live in, and nothing else. A window of its own
+     * would have a life of its own: it outlives its parent, goes before it, and
+     * is freed under libadwaita's own close when an answer takes the parent
+     * down -- each a way to answer twice, not at all, or to use freed memory.
+     *
+     * Hand-rolled where the check above uses g_return_if_fail (), as in
+     * g_paste_clipboard_provider_sync_text (): the answer is what frees the
+     * caller's state, so a refused call still gives it
+     * (/ui/text_dialog_answer/foreign_parent_refused,
+     * /ui/text_dialog_answer/fixed_size_parent_refused). */
+    if (!g_paste_gtk_util_can_host_dialog (parent) || !heading || !confirm_label)
+    {
+        g_critical ("%s: assertion failed: a @parent g_paste_gtk_util_can_host_dialog () accepts, a @heading and a @confirm_label", G_STRFUNC);
+
+        callback (NULL, user_data);
+
+        return;
+    }
 
     GtkWidget *view = gtk_text_view_new ();
     GtkTextView *tv = GTK_TEXT_VIEW (view);
@@ -416,6 +486,9 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
 
     g_object_set_data_full (G_OBJECT (dialog), "text-dialog-data", data, g_paste_gtk_text_dialog_data_free);
     g_signal_connect (dialog, "closed", G_CALLBACK (on_text_dialog_closed), NULL);
+    g_signal_connect (dialog, "destroy", G_CALLBACK (g_paste_gtk_text_dialog_cancel), NULL);
+    /* Gone with the dialog, g_signal_connect_object () disconnecting it then. */
+    g_signal_connect_object (parent, "destroy", G_CALLBACK (g_paste_gtk_text_dialog_cancel), dialog, G_CONNECT_SWAPPED);
 
     adw_dialog_present (dialog, GTK_WIDGET (parent));
     gtk_widget_grab_focus (view);

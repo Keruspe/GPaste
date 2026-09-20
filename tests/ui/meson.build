@@ -13,3 +13,21 @@ ui_shortcuts_test = executable(
 )
 
 test('test-ui-shortcuts', ui_shortcuts_test, depends: [gpaste_schemas, test_bus_supervisor])
+
+ui_password_test = executable(
+  'gpaste-ui-password-test',
+  sources: ['test-password-dialog.c'],
+  include_directories: include_directories('../../src/ui'),
+  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+)
+
+test('test-ui-password', ui_password_test, depends: [gpaste_schemas, test_bus_supervisor])
+
+ui_edit_item_test = executable(
+  'gpaste-ui-edit-item-test',
+  sources: ['test-edit-item.c'],
+  include_directories: include_directories('../../src/ui'),
+  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+)
+
+test('test-ui-edit-item', ui_edit_item_test, depends: [gpaste_schemas, test_bus_supervisor])
