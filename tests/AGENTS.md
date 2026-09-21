@@ -47,6 +47,11 @@ missing. It covers the re-exec fallback, the migration gate across it,
 verb and so have the verb-less add's shape, and the listing's own flags
 included.
 
+`test-ui-panel-history` puts one sidebar history row on the private Xvfb and
+drives its state flags directly: the delete button shows for the pointer and for
+a visible keyboard focus, but not for the focus a click leaves, and the row's
+shortcut is Delete without BackSpace.
+
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of
 characters spread over many lines opens, and a line that long cannot be pasted
@@ -87,7 +92,12 @@ A test that needs a fake service on a private bus links `gpaste_test_bus_dep`
 puts a second connection on the bus with an object registered on it — a connection
 of its own being what lets a test hand the well-known name over the way a restart
 does — `g_paste_test_bus_name_call()` drives `RequestName`/`ReleaseName`, and
-`g_paste_test_bus_barrier()` synchronizes both ends. The barrier is three rounds
+`g_paste_test_bus_barrier()` synchronizes both ends. `g_paste_test_bus_connect()` is
+that second connection alone, to any address -- the bus `gpaste-test-env` set up
+included, for a stand-in daemon under a client that follows it -- and
+`g_paste_test_bus_wait_until()`, `_wait_for_enum()` and `_wait_for_count()` iterate
+the main context until a condition, a property or a counter a fake service keeps
+gets there, failing after `G_PASTE_TEST_BUS_WAIT_SECONDS`. The barrier is three rounds
 addressed to the server's *unique* name: a reply behind the calls on the client's
 connection makes a no-op assertion deterministic, the later rounds drain what a
 reply's own callback issues, and the unique name is what answers while the

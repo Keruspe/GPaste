@@ -198,6 +198,9 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
     g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item), GTK_WIDGET (self));
 }
 
+static void on_history_delete (GPasteUiPanelHistory *item,
+                               gpointer              user_data);
+
 /* @length is what the listing said this history holds, or %NULL when whoever
  * calls has no size to give -- a switch says which history is current, not how
  * much it holds, and a row already showing its size must not be blanked by
@@ -227,6 +230,7 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
     else
     {
         h = g_paste_ui_panel_history_new (self->client, history, (length) ? *length : 0);
+        g_signal_connect_object (h, "delete", G_CALLBACK (on_history_delete), self, 0);
         adw_sidebar_section_append (self->section, ADW_SIDEBAR_ITEM (h));
 
         self->histories = g_list_prepend (self->histories, h);
@@ -451,18 +455,13 @@ on_delete_confirmed (gboolean confirmed,
     }
 }
 
+/* Asked for from the context menu, from a row's own delete button and from its
+ * Delete key alike: three ways to the one question, which is asked here so the
+ * three cannot come to word it differently. */
 static void
-on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
-                          GVariant      *parameter G_GNUC_UNUSED,
-                          gpointer       user_data)
+g_paste_ui_panel_delete_history (GPasteUiPanel *self,
+                                 const gchar   *history)
 {
-    GPasteUiPanel *self = user_data;
-    GPasteUiPanelHistory *item = g_paste_ui_panel_get_menu_history (self);
-
-    if (!item)
-        return;
-
-    const gchar *history = g_paste_ui_panel_history_get_history (item);
     DeleteHistoryData *data = g_new (DeleteHistoryData, 1);
 
     data->client = g_object_ref (self->client);
@@ -477,6 +476,27 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
                                      ADW_RESPONSE_DESTRUCTIVE,
                                      on_delete_confirmed,
                                      data);
+}
+
+static void
+on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
+                          GVariant      *parameter G_GNUC_UNUSED,
+                          gpointer       user_data)
+{
+    GPasteUiPanel *self = user_data;
+    GPasteUiPanelHistory *item = g_paste_ui_panel_get_menu_history (self);
+
+    if (!item)
+        return;
+
+    g_paste_ui_panel_delete_history (self, g_paste_ui_panel_history_get_history (item));
+}
+
+static void
+on_history_delete (GPasteUiPanelHistory *item,
+                   gpointer              user_data)
+{
+    g_paste_ui_panel_delete_history (user_data, g_paste_ui_panel_history_get_history (item));
 }
 
 static void

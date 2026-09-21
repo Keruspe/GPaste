@@ -48,3 +48,19 @@ ui_text_dialog_test = executable(
 )
 
 test('test-ui-text-dialog', ui_text_dialog_test, depends: [gpaste_schemas, test_bus_supervisor])
+
+ui_panel_history_test_sources = ['test-panel-history.c']
+foreach source : gpaste_ui_sources
+  if source != 'gpaste-ui.c' and source != 'gpaste-ui-panel-history.c'
+    ui_panel_history_test_sources += '../../src/ui' / source
+  endif
+endforeach
+
+ui_panel_history_test = executable(
+  'gpaste-ui-panel-history-test',
+  sources: ui_panel_history_test_sources,
+  include_directories: include_directories('../../src/ui'),
+  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+)
+
+test('test-ui-panel-history', ui_panel_history_test, depends: [gpaste_schemas, test_bus_supervisor])

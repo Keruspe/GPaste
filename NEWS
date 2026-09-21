@@ -1,6 +1,7 @@
 NEW in 51.1 (UNRELEASED)
 =============
 
+- Delete a history from the graphical tool's sidebar, with a button on hover or the Delete key
 - Recognise a password copied from another clipboard manager, and mark the ones GPaste puts back as secrets
 - Take a password left on the clipboard by another application back off it once its timeout runs out
 - Keep a password with no timeout on the clipboard when the daemon restarts
