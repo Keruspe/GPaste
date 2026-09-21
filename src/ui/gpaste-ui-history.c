@@ -26,6 +26,7 @@ struct _GPasteUiHistory
     GPasteUiPanel        *panel;
 
     AdwStatusPage        *status_page;
+    GtkWidget            *retry_button;
     GtkScrolledWindow    *scroll;
     GtkListView          *list_view;
     GPasteUiHistoryModel *model;
@@ -54,6 +55,10 @@ struct _GPasteUiHistory
 
     gchar                *search;
     gboolean              favourites; /* show only the pinned items */
+
+    /* Whether the list had the focus before a daemon change hid it, and gets it
+     * back once rows are shown again, including after a failed load and retry. */
+    gboolean              refocus;
 };
 
 enum
@@ -83,6 +88,10 @@ g_paste_ui_history_show_status (GPasteUiHistory *self,
                                 const gchar     *title,
                                 const gchar     *description)
 {
+    /* A spinner left there by g_paste_ui_history_show_starting () would win
+     * over the icon. */
+    adw_status_page_set_paintable (self->status_page, NULL);
+    gtk_widget_set_visible (self->retry_button, FALSE);
     adw_status_page_set_icon_name (self->status_page, icon);
     adw_status_page_set_title (self->status_page, title);
     adw_status_page_set_description (self->status_page, description);
@@ -90,11 +99,47 @@ g_paste_ui_history_show_status (GPasteUiHistory *self,
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
 }
 
+/* A daemon on its way, or the rows a retry asked for: the page says only
+ * that something is being loaded. */
+static void
+g_paste_ui_history_show_starting (GPasteUiHistory *self)
+{
+    g_autoptr (AdwSpinnerPaintable) spinner = adw_spinner_paintable_new (GTK_WIDGET (self->status_page));
+
+    g_paste_ui_history_show_status (self, NULL, "", NULL);
+    adw_status_page_set_paintable (self->status_page, GDK_PAINTABLE (spinner));
+}
+
 static void
 g_paste_ui_history_show_list (GPasteUiHistory *self)
 {
+    /* A focused Retry button may stay the root's focus after its page is
+     * hidden. Record that focus before hiding it, even when no retry was
+     * clicked; leave focus on another widget where the user put it. */
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
+    GtkWidget *focus = (root) ? gtk_root_get_focus (root) : NULL;
+    gboolean focus_status = focus && gtk_widget_is_ancestor (focus, GTK_WIDGET (self->status_page));
+    gboolean refocus = focus_status || (self->refocus && !focus);
+
+    self->refocus = FALSE;
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), FALSE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), TRUE);
+
+    if (root && refocus)
+        gtk_widget_grab_focus (GTK_WIDGET (self->list_view));
+}
+
+/* A page saying there are no rows, unlike a spinner or an error: nothing more
+ * is coming that the focus would be waiting for, so a list filled later does
+ * not take it. Every such page goes through here. */
+static void
+g_paste_ui_history_show_answer (GPasteUiHistory *self,
+                                const gchar     *icon_name,
+                                const gchar     *title,
+                                const gchar     *description)
+{
+    g_paste_ui_history_show_status (self, icon_name, title, description);
+    self->refocus = FALSE;
 }
 
 /* What the history says of itself before it has said anything: the state the
@@ -103,8 +148,23 @@ g_paste_ui_history_show_list (GPasteUiHistory *self)
 static void
 g_paste_ui_history_show_empty (GPasteUiHistory *self)
 {
-    g_paste_ui_history_show_status (self, G_PASTE_ICON_NAME "-symbolic", _("No Items"),
+    g_paste_ui_history_show_answer (self, G_PASTE_ICON_NAME "-symbolic", _("No Items"),
                                     _("Copy something to start building your history."));
+}
+
+/* The list's focus stays owed, as on every page that waits for rows rather
+ * than answering that there are none (g_paste_ui_history_show_answer ()): a
+ * retry, or an update, that brings the rows back hands it over. It counts only
+ * where GTK's own move -- at the next paint of a window left without a focus,
+ * to whatever comes first -- lands elsewhere than the list -- a sidebar row, at
+ * times, after another window -- which nothing makes it do reliably, so no test
+ * shows it. Above the function rather than the call: xgettext hands a comment
+ * just before a translatable string to the translators. */
+static void
+g_paste_ui_history_show_load_error (GPasteUiHistory *self)
+{
+    g_paste_ui_history_show_status (self, "dialog-warning-symbolic", _("Could Not Load History"), NULL);
+    gtk_widget_set_visible (self->retry_button, TRUE);
 }
 
 /* Take the initial focus the first time the list makes it on screen. Left alone,
@@ -343,11 +403,19 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     self->loading = FALSE;
 
-    /* A failed size reads back as 0, which would blank the list and tell the
-     * panel the history is empty. Keep showing what is there instead. */
+    /* A failed size says nothing about the rows already shown. With none, show
+     * an error and a way to retry rather than leaving a loading page up. */
     if (error)
     {
+        /* Its daemon gone, the presence says so and lists again: no failure
+         * to report, the page staying as it is until then
+         * (g_paste_client_is_daemon_gone_error ()). */
+        if (g_paste_client_is_daemon_gone_error (error))
+            return;
+
         g_warning ("Could not get the size of history \"%s\": %s", cdata->name, error->message);
+        if (!self->size)
+            g_paste_ui_history_show_load_error (self);
         return;
     }
 
@@ -385,6 +453,21 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
 {
     if (!self->client)
         return;
+
+    /* Nothing is asked of a daemon that is not there, whichever view is up: the
+     * call is what the bus would start one on (see
+     * g_paste_ui_history_on_daemon_presence ()). A search typed, a filter
+     * toggled, a search bar emptying on its way out and a deferred app.search
+     * all come through here, so this holds them all back at once; a daemon
+     * turning up refreshes the list itself. What is dropped is what the
+     * nameless history below drops, for the same reasons. */
+    if (g_paste_client_get_daemon_presence (self->client) != G_PASTE_DAEMON_PRESENCE_READY)
+    {
+        g_paste_clear_cancellable (&self->display);
+        self->loading = FALSE;
+
+        return;
+    }
 
     /* Both filters list uuids rather than positions, so they share a path. */
     if (self->search || self->favourites)
@@ -427,6 +510,21 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
     cdata->name = g_steal_pointer (&name);
 
     g_paste_client_get_history_size (self->client, cdata->cancellable, g_paste_ui_history_refresh_history, cdata);
+}
+
+static void
+on_retry_load_clicked (GtkButton *button G_GNUC_UNUSED,
+                       gpointer   user_data)
+{
+    GPasteUiHistory *self = user_data;
+
+    if (!self->client)
+        return;
+
+    /* A focused Retry hands the focus to the rows through
+     * g_paste_ui_history_show_list (), the page it is on holding it. */
+    g_paste_ui_history_show_starting (self);
+    g_paste_ui_history_refresh (self, 0);
 }
 
 static gboolean
@@ -504,9 +602,18 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
     if (g_cancellable_is_cancelled (cdata->cancellable))
         return;
 
+    g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) items = (cdata->searched)
-        ? g_paste_client_search_finish (self->client, res, NULL /* error */)
-        : g_paste_client_get_favourites_finish (self->client, res, NULL /* error */);
+        ? g_paste_client_search_finish (self->client, res, &error)
+        : g_paste_client_get_favourites_finish (self->client, res, &error);
+
+    /* Its daemon gone, no answer that nothing matched: the page stays as it is
+     * until the presence lists again (g_paste_client_is_daemon_gone_error ();
+     * /ui/daemon-presence/listing-daemon-gone). Any other failure reads as no
+     * match: the daemon answered, and what it said was not a list. */
+    if (g_paste_client_is_daemon_gone_error (error))
+        return;
+
     g_autoptr (GStrvBuilder) uuids = g_strv_builder_new ();
 
     for (const GList *i = items; i; i = i->next)
@@ -530,11 +637,15 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
     if (self->size)
         g_paste_ui_history_show_list (self);
     else if (cdata->searched)
-        g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"),
+    {
+        g_paste_ui_history_show_answer (self, "edit-find-symbolic", _("No Results"),
                                         _("Try a different search."));
+    }
     else
-        g_paste_ui_history_show_status (self, "non-starred-symbolic", _("No Pinned Items"),
+    {
+        g_paste_ui_history_show_answer (self, "non-starred-symbolic", _("No Pinned Items"),
                                         _("Pin an item to keep it out of reach of the size and memory limits."));
+    }
 }
 
 /* List by uuid rather than by position: a search asks the daemon to match, the
@@ -580,6 +691,52 @@ g_paste_ui_history_search (GPasteUiHistory *self,
         g_set_str (&self->search, search);
 
     g_paste_ui_history_refresh (self, 0);
+}
+
+static void
+g_paste_ui_history_clear_display (GPasteUiHistory *self,
+                                  gboolean         waiting)
+{
+    /* Hiding the list takes the focus off it, leaving the window with none,
+     * and nothing would give it back: Enter would no longer paste the top
+     * item. So whether it had it is noted first, and it is handed back once
+     * the list shows rows again (g_paste_ui_history_show_list ()), however
+     * many presence changes come in between. */
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (self));
+    GtkWidget *focus = (root) ? gtk_root_get_focus (root) : NULL;
+
+    if (focus && gtk_widget_is_ancestor (focus, GTK_WIDGET (self)))
+        self->refocus = TRUE;
+
+    g_paste_clear_cancellable (&self->display);
+    self->loading = FALSE;
+    self->size = 0;
+    self->available = 0;
+    g_paste_ui_history_model_set_size (self->model, 0);
+
+    /* The banner says why a daemon is unavailable. */
+    if (waiting)
+        g_paste_ui_history_show_starting (self);
+    else
+        g_paste_ui_history_show_status (self, G_PASTE_ICON_NAME "-symbolic", _("History Unavailable"), NULL);
+}
+
+/* A daemon that is there is listed afresh: it announces itself rather than
+ * replaying the updates that filled the old rows. One that is not is shown no
+ * rows at all -- a bound row asks for its item, which could bus-activate a
+ * daemon the user just stopped. */
+static void
+g_paste_ui_history_on_daemon_presence (GPasteClient *client,
+                                       GParamSpec   *pspec G_GNUC_UNUSED,
+                                       gpointer      user_data)
+{
+    GPasteUiHistory *self = user_data;
+    GPasteDaemonPresence presence = g_paste_client_get_daemon_presence (client);
+
+    if (presence == G_PASTE_DAEMON_PRESENCE_READY)
+        g_paste_ui_history_refresh (self, 0);
+    else
+        g_paste_ui_history_clear_display (self, presence == G_PASTE_DAEMON_PRESENCE_STARTING);
 }
 
 /**
@@ -924,6 +1081,20 @@ on_selection_changed (GtkSelectionModel *model,
 }
 
 /**
+ * g_paste_ui_history_get_selection_mode:
+ * @self: a #GPasteUiHistory instance
+ *
+ * Returns: whether the merge selection mode is on
+ */
+gboolean
+g_paste_ui_history_get_selection_mode (GPasteUiHistory *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
+
+    return self->selection_mode;
+}
+
+/**
  * g_paste_ui_history_set_selection_mode:
  * @self: a #GPasteUiHistory instance
  * @selection_mode: whether to enter the multi-selection "merge" mode
@@ -1060,6 +1231,7 @@ g_paste_ui_history_dispose (GObject *object)
     g_clear_weak_pointer (&self->panel);
     g_clear_weak_pointer (&self->rootwin);
     self->status_page = NULL;
+    self->retry_button = NULL;
     self->scroll = NULL;
     self->list_view = NULL;
     self->selection_model = NULL;
@@ -1182,6 +1354,13 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     GtkWidget *status_page = adw_status_page_new ();
     self->status_page = ADW_STATUS_PAGE (status_page);
+    GtkWidget *retry_button = gtk_button_new_with_label (_("Retry"));
+
+    self->retry_button = retry_button;
+    gtk_widget_set_halign (retry_button, GTK_ALIGN_CENTER);
+    gtk_widget_add_css_class (retry_button, "suggested-action");
+    adw_status_page_set_child (self->status_page, retry_button);
+    g_signal_connect_object (retry_button, "clicked", G_CALLBACK (on_retry_load_clicked), self, 0);
     gtk_widget_set_hexpand (status_page, TRUE);
     gtk_widget_set_vexpand (status_page, TRUE);
     gtk_box_append (box, status_page);
@@ -1225,8 +1404,12 @@ g_paste_ui_history_new (GPasteClient   *client,
                              "update",
                              G_CALLBACK (g_paste_ui_history_on_update),
                              self, 0);
+    g_signal_connect_object (client,
+                             "notify::daemon-presence",
+                             G_CALLBACK (g_paste_ui_history_on_daemon_presence),
+                             self, 0);
 
-    g_paste_ui_history_on_update (client, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0, self);
+    g_paste_ui_history_on_daemon_presence (client, NULL, self);
 
     return widget;
 }

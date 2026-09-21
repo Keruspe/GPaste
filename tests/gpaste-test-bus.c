@@ -167,10 +167,75 @@ g_paste_test_bus_wait_for_enum (gpointer     object,
 }
 
 static gboolean
+owner_reached (gconstpointer proxy,
+               gconstpointer owner)
+{
+    g_autofree gchar *current = g_dbus_proxy_get_name_owner ((GDBusProxy *) proxy);
+
+    return g_strcmp0 (current, owner) == 0;
+}
+
+/* Until @proxy has learnt that @server owns its name: for an owner arriving
+ * after the proxy's init, it learns it once its GetAll on that owner answered,
+ * which can be after the daemon's own PropertiesChanged has made a
+ * GPasteClient ready. */
+void
+g_paste_test_bus_wait_for_owner (GDBusProxy      *proxy,
+                                 GDBusConnection *server)
+{
+    const gchar *owner = g_dbus_connection_get_unique_name (server);
+
+    g_paste_test_bus_wait_until (owner_reached, proxy, owner);
+    g_assert_true (owner_reached (proxy, owner));
+}
+
+static gboolean
 count_reached (gconstpointer count,
                gconstpointer at_least)
 {
     return *(const guint *) count >= GPOINTER_TO_UINT (at_least);
+}
+
+/* The main context run for @ms: for what happens on a later frame or timer
+ * that nothing announces -- above all a warning *not* coming, which is what a
+ * test aborting on warnings checks by waiting. Anything with a state to wait
+ * on goes through g_paste_test_bus_wait_until () instead. */
+void
+g_paste_test_bus_pump (guint ms)
+{
+    gboolean done = FALSE;
+
+    g_source_set_name_by_id (g_timeout_add (ms, on_wait_timeout, &done), "[GPaste] test pump");
+    while (!done)
+        g_main_context_iteration (NULL, TRUE);
+}
+
+/* Every reply @server has sent on @connection is ahead of this one, so once it
+ * is back their callbacks are waiting on the main context, and the drain runs
+ * them. A Peer.Ping, which every GDBusConnection answers, rather than
+ * g_paste_test_bus_barrier ()'s Barrier method, so that a server with nothing
+ * but a generated skeleton on it serves as well. */
+void
+g_paste_test_bus_round_trip (GDBusConnection *connection,
+                             GDBusConnection *server)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GVariant) pong = g_dbus_connection_call_sync (connection, g_dbus_connection_get_unique_name (server),
+                                                             "/", "org.freedesktop.DBus.Peer", "Ping",
+                                                             NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
+
+    g_assert_no_error (error);
+
+    while (g_main_context_iteration (NULL, FALSE));
+}
+
+/* A signal handler counting its emissions into @count, for any signal when
+ * connected with g_signal_connect_swapped (): the arguments past the first are
+ * not read. */
+void
+g_paste_test_bus_count_emission (guint *count)
+{
+    ++*count;
 }
 
 /* For a fake service counting the calls it answers. */

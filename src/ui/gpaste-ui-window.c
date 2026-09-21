@@ -21,6 +21,7 @@ struct _GPasteUiWindow
 
     AdwHeaderBar           *header;
     GPasteUiHistory        *history;
+    GtkWidget              *panel;
     GPasteClient           *client;
     GPasteSettings         *settings;
 
@@ -49,6 +50,11 @@ struct _GPasteUiWindow
     /* Actions asked for before the daemon connection concluded, run in order
      * once it has. */
     GSList                 *deferred;
+
+    /* Whether a g_paste_client_new () is still on its way: until it lands
+     * there is no client to follow the daemon (see
+     * g_paste_client_follow_daemon ()). */
+    gboolean                connecting;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -679,7 +685,10 @@ add_window_actions (GPasteUiWindow *self)
     }
 }
 
-static void exit_selection_mode (GPasteUiWindow *self);
+static void exit_selection_mode                  (GPasteUiWindow *self);
+static void g_paste_ui_window_update_key_capture (GPasteUiWindow *self);
+static void g_paste_ui_window_release_focus      (GPasteUiWindow *self,
+                                                  GtkWidget      *widget);
 
 /* Ctrl+0-9 activates the item displayed at that index, mirroring the GNOME
  * Shell extension (the index is shown to the left of each item). Only once
@@ -705,10 +714,18 @@ on_escape (GtkWidget *widget,
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (widget);
 
-    /* The search bar closes itself on Escape; let it. A window presented for
-     * the connection-failure banner alone has none. */
+    /* Escape reaching the window is one the focus did not take: the bar closes
+     * itself only through its entry, and while no daemon is there the list,
+     * the panel and the search button are insensitive, so the focus may be on
+     * none of them (g_paste_ui_window_update_sensitivity ()). The bar is the
+     * first thing it closes, rather than the window under it, and the toggle
+     * is not there to do it then (/ui/daemon-presence/follow). A window
+     * presented for the connection-failure banner alone has no bar. */
     if (self->search_bar && gtk_search_bar_get_search_mode (self->search_bar))
-        return FALSE;
+    {
+        gtk_search_bar_set_search_mode (self->search_bar, FALSE);
+        return TRUE;
+    }
 
     if (self->merge_bar && gtk_action_bar_get_revealed (self->merge_bar))
     {
@@ -770,13 +787,110 @@ on_search (GtkSearchEntry *entry,
     g_paste_ui_history_search (self->history, gtk_editable_get_text (GTK_EDITABLE (entry)));
 }
 
+/* The banner says what is keeping the window from showing a history, and its
+ * button is an offer only where there is one to make. Hidden, it keeps the
+ * words it had, so it slides away still saying them. */
 static void
-on_banner_quit (AdwBanner *banner G_GNUC_UNUSED,
-                gpointer   user_data)
+g_paste_ui_window_update_banner (GPasteUiWindow *self)
+{
+    GPasteDaemonPresence presence = (self->client) ? g_paste_client_get_daemon_presence (self->client)
+                                                   : G_PASTE_DAEMON_PRESENCE_ABSENT;
+
+    if (presence == G_PASTE_DAEMON_PRESENCE_READY)
+    {
+        adw_banner_set_revealed (self->banner, FALSE);
+        return;
+    }
+
+    /* A g_paste_client_new () still out is a daemon on its way with nothing to
+     * ask it of yet, and a retry offered there is one on_banner_retry () would
+     * refuse. */
+    gboolean starting = self->connecting || presence == G_PASTE_DAEMON_PRESENCE_STARTING;
+
+    adw_banner_set_title (self->banner, (starting) ? _("Connecting to GPaste…") : _("Couldn’t connect to GPaste"));
+    adw_banner_set_button_label (self->banner, (starting) ? NULL : _("Retry"));
+    adw_banner_set_revealed (self->banner, TRUE);
+}
+
+/* What acts on a daemon, taken away while there is none to act on, for the
+ * reason the list empties itself (g_paste_ui_history_on_daemon_presence ()).
+ * What the window offers of its own -- the preferences, the shortcuts, About,
+ * closing -- stays. */
+static void
+g_paste_ui_window_update_sensitivity (GPasteUiWindow *self)
+{
+    static const gchar * const daemon_actions[] = { "new-item", "new-password", "restart-daemon", "toggle-search", "track-changes" };
+    gboolean ready = g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY;
+
+    for (guint i = 0; i < G_N_ELEMENTS (daemon_actions); ++i)
+        g_simple_action_set_enabled (G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (self), daemon_actions[i])), ready);
+
+    /* The list lets go of the focus on its own, being hidden first; the Merge
+     * button's entry is released by on_selection_changed (), the list's
+     * emptying having dropped the picks. */
+    if (!ready)
+        g_paste_ui_window_release_focus (self, self->panel);
+
+    gtk_widget_set_sensitive (self->panel, ready);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->history), ready);
+    gtk_widget_set_sensitive (GTK_WIDGET (g_paste_ui_header_get_search_button (self->header)), ready);
+    gtk_widget_set_sensitive (GTK_WIDGET (g_paste_ui_header_get_favourites_button (self->header)), ready);
+    gtk_widget_set_sensitive (g_paste_ui_header_get_merge_button (self->header), ready);
+
+    g_paste_ui_window_update_key_capture (self);
+
+    /* The picks go: they name the old list's rows, which the next daemon's
+     * listing rebuilds. The search stays, entry and all -- a daemon away for a
+     * moment, a handoff to another or a re-exec, would otherwise throw away
+     * what the user typed -- and only asks again once a daemon is there
+     * (g_paste_ui_history_refresh ()), which is what lists the new one's
+     * matches (/ui/daemon-presence/follow). */
+    if (!ready)
+        exit_selection_mode (self);
+}
+
+/* The list and the sidebar follow the daemon on their own; the window says so
+ * and takes away what would act on one that is not there. */
+static void
+on_daemon_presence_changed (GPasteClient *client G_GNUC_UNUSED,
+                            GParamSpec   *pspec  G_GNUC_UNUSED,
+                            gpointer      user_data)
 {
     GPasteUiWindow *self = user_data;
 
-    g_application_quit (G_APPLICATION (gtk_window_get_application (GTK_WINDOW (self))));
+    g_paste_ui_window_update_banner (self);
+    g_paste_ui_window_update_sensitivity (self);
+}
+
+static void on_client_ready (GObject      *source_object,
+                             GAsyncResult *res,
+                             gpointer      user_data);
+
+/* The banner's button, an offer only while there is no daemon: ask for one now,
+ * this being the user asking, and wait for it from the start again. */
+static void
+on_banner_retry (AdwBanner *banner G_GNUC_UNUSED,
+                 gpointer   user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    /* A connection still in flight owns the setup that follows it; a second one
+     * started here would build the window's content twice over. */
+    if (self->connecting)
+        return;
+
+    /* No proxy at all (see on_client_ready ()), so what it takes is asking for
+     * one again. */
+    if (!self->client)
+    {
+        self->connecting = TRUE;
+        /* The callback owns this ref (see on_client_ready). */
+        g_paste_client_new (on_client_ready, g_object_ref (self));
+        g_paste_ui_window_update_banner (self);
+        return;
+    }
+
+    g_paste_client_retry_daemon (self->client);
 }
 
 /* Which history is in use is a property, so the subtitle follows its notify
@@ -803,15 +917,44 @@ on_history_changed (GPasteClient *client,
         adw_navigation_split_view_set_show_content (self->split_view, TRUE);
 }
 
+/* The focus taken off @widget while that still reaches whatever holds it, ahead
+ * of @widget going insensitive: GTK drops the focus of an insensitive widget
+ * without telling it, and an entry in there -- the sidebar's "Switch or
+ * Create", the Merge popover's separator -- would go on believing it has it,
+ * its input method never released and a later click never focusing it again.
+ * GTK warns about it the next time the entry is shown. */
+static void
+g_paste_ui_window_release_focus (GPasteUiWindow *self,
+                                 GtkWidget      *widget)
+{
+    GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (self));
+
+    if (focus && gtk_widget_is_ancestor (focus, widget))
+        gtk_window_set_focus (GTK_WINDOW (self), NULL);
+}
+
+/* Typing is how the search bar opens itself, which is an offer only while
+ * there is a daemon to search and no items are being picked -- keys belong to
+ * the list then. */
+static void
+g_paste_ui_window_update_key_capture (GPasteUiWindow *self)
+{
+    if (!self->search_bar)
+        return;
+
+    gboolean capture = !g_paste_ui_history_get_selection_mode (self->history) &&
+                       g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY;
+
+    gtk_search_bar_set_key_capture_widget (self->search_bar, (capture) ? GTK_WIDGET (self) : NULL);
+}
+
 static void
 exit_selection_mode (GPasteUiWindow *self)
 {
     g_paste_ui_history_set_selection_mode (self->history, FALSE);
     g_paste_ui_header_set_selection_mode (self->header, FALSE);
     gtk_action_bar_set_revealed (self->merge_bar, FALSE);
-
-    if (self->search_bar)
-        gtk_search_bar_set_key_capture_widget (self->search_bar, GTK_WIDGET (self));
+    g_paste_ui_window_update_key_capture (self);
 }
 
 static void
@@ -825,11 +968,9 @@ on_enter_selection_mode (GtkButton *button G_GNUC_UNUSED,
     g_paste_ui_header_set_selection_count (self->header, 0);
     gtk_action_bar_set_revealed (self->merge_bar, TRUE);
 
-    /* Typing is how the search bar opens itself, and the header just took the
-     * toggle that would close it again off the bar: while items are being
-     * picked, keys belong to the list. */
-    if (self->search_bar)
-        gtk_search_bar_set_key_capture_widget (self->search_bar, NULL);
+    /* The header just took the search toggle off the bar as well, so nothing
+     * would close a search typed now. */
+    g_paste_ui_window_update_key_capture (self);
 }
 
 static void
@@ -847,7 +988,18 @@ on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
     GPasteUiWindow *self = user_data;
 
     g_paste_ui_header_set_selection_count (self->header, count);
-    /* Merging is only meaningful with at least two items. */
+
+    /* Merging is only meaningful with at least two items. Fewer, and the
+     * popover has nothing left to merge either: closed, and the focus off its
+     * entry before the button goes insensitive (see
+     * g_paste_ui_window_release_focus ()). The picks drop to none with the
+     * daemon going too, the list emptying. */
+    if (count < 2)
+    {
+        gtk_menu_button_popdown (GTK_MENU_BUTTON (self->merge_button));
+        g_paste_ui_window_release_focus (self, self->merge_button);
+    }
+
     gtk_widget_set_sensitive (self->merge_button, count >= 2);
 }
 
@@ -965,6 +1117,10 @@ g_paste_ui_window_dispose (GObject *object)
 
     g_clear_object (&self->search_signals);
     g_clear_object (&self->client_signals);
+    /* The panel and the list hold the client too, until the widgets below go:
+     * its wait for a daemon is ours to stop. */
+    if (self->client)
+        g_paste_client_unfollow_daemon (self->client);
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
     g_clear_handle_id (&self->shortcuts_source, g_source_remove);
@@ -981,6 +1137,7 @@ g_paste_ui_window_dispose (GObject *object)
      * that is NULL is the test the rest of the file already makes. */
     self->header = NULL;
     self->history = NULL;
+    self->panel = NULL;
     self->split_view = NULL;
     self->search_bar = NULL;
     self->search_entry = NULL;
@@ -1024,8 +1181,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     GtkWidget *banner = adw_banner_new ("");
     self->banner = ADW_BANNER (banner);
-    adw_banner_set_button_label (self->banner, _("Quit"));
-    g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_quit), self, 0);
+    g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_retry), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
 
     /* The banner is the only thing above the split view, and the header bars,
@@ -1040,6 +1196,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (self->client_signals, "notify::history", G_CALLBACK (on_history_changed), self);
+    g_signal_group_connect (self->client_signals, "notify::daemon-presence", G_CALLBACK (on_daemon_presence_changed), self);
     g_signal_group_connect (self->client_signals, "tracking", G_CALLBACK (on_tracking_changed), self);
 
     add_shortcuts (self);
@@ -1049,47 +1206,25 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     gtk_widget_set_size_request (GTK_WIDGET (self), 360, 294);
 }
 
+/* Everything the window shows of a history, built once there is a proxy to
+ * build it on -- whether or not a daemon is there yet, which the parts follow
+ * on their own -- and so built from here rather than from init (), which runs
+ * before there is one. A proxy that failed to build and was asked for again
+ * reaches this with the window already presented, which is what @initialized
+ * keeps straight. */
 static void
-on_client_ready (GObject      *source_object G_GNUC_UNUSED,
-                 GAsyncResult *res,
-                 gpointer      user_data)
+g_paste_ui_window_setup (GPasteUiWindow *self,
+                         GPasteClient   *client)
 {
-    /* The window is only presented at the end of this function, so nothing else
-     * would keep it alive if the application quit while we were connecting. */
-    g_autoptr (GPasteUiWindow) self = user_data;
-    GtkWindow *win = GTK_WINDOW (user_data);
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
-
-    /* The window was destroyed (the application quit) while we were connecting:
-     * our ref keeps it allocated, but its widgets are gone. Nothing to set up. */
-    if (!self->banner)
-        return;
-
-    if (error)
-    {
-        g_critical ("%s: %s", _("Couldn't connect to GPaste daemon"), error->message);
-        adw_banner_set_title (self->banner, _("Couldn't connect to GPaste daemon"));
-        adw_banner_set_revealed (self->banner, TRUE);
-        add_daemonless_window_actions (self);
-        /* Present anyway: the banner explaining what went wrong is the whole
-         * point, and a window that is never shown leaves the application
-         * running with nothing on screen at all. Before the deferred actions,
-         * so the one that survives a failed connection has a presented window
-         * to put its dialog over. */
-        gtk_window_present (win);
-        self->initialized = TRUE;
-        g_paste_ui_window_run_deferred_actions (self);
-        return;
-    }
-
+    GtkWindow *win = GTK_WINDOW (self);
     GPasteSettings *settings = self->settings;
     GtkWidget *header = g_paste_ui_header_new ();
 
     /* Built here rather than in init(): there is nothing to search through
-     * until the daemon has answered, and a window presented for the
-     * connection-failure banner alone would only be offering a search bar that
-     * could ignore whatever was typed into it. */
+     * without a proxy, and a window presented for a proxy that failed to build
+     * would only be offering a search bar that could ignore whatever was typed
+     * into it. With a proxy but no daemon yet, it is there and typing does not
+     * reach it (g_paste_ui_window_update_key_capture ()). */
     GtkWidget *search_bar = gtk_search_bar_new ();
     GtkWidget *search_entry = gtk_search_entry_new ();
 
@@ -1109,16 +1244,17 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     self->header = ADW_HEADER_BAR (header);
     self->history = G_PASTE_UI_HISTORY (history);
+    self->panel = panel;
     self->client = g_object_ref (client);
 
     add_window_actions (self);
 
     g_signal_connect_object (g_paste_ui_header_get_merge_button (self->header), "clicked",
-                             G_CALLBACK (on_enter_selection_mode), user_data, 0);
+                             G_CALLBACK (on_enter_selection_mode), self, 0);
     g_signal_connect_object (g_paste_ui_header_get_cancel_button (self->header), "clicked",
-                             G_CALLBACK (on_cancel_selection_mode), user_data, 0);
+                             G_CALLBACK (on_cancel_selection_mode), self, 0);
     g_signal_connect_object (self->history, "selection-changed",
-                             G_CALLBACK (on_selection_changed), user_data, 0);
+                             G_CALLBACK (on_selection_changed), self, 0);
 
     /* A header bar apiece, which is what the pages need to stand on their own
      * once the split view collapses them into a navigation stack: the sidebar's
@@ -1131,7 +1267,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (content_view), header);
     adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (content_view), search_bar);
     adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (content_view), history);
-    adw_toolbar_view_add_bottom_bar (ADW_TOOLBAR_VIEW (content_view), build_merge_bar (user_data));
+    adw_toolbar_view_add_bottom_bar (ADW_TOOLBAR_VIEW (content_view), build_merge_bar (self));
 
     AdwNavigationPage *sidebar_page = adw_navigation_page_new (sidebar_view, _("Histories"));
     AdwNavigationPage *content_page = adw_navigation_page_new (content_view, _("History"));
@@ -1164,11 +1300,70 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_signal_group_set_target (self->client_signals, self->client);
 
+    /* Opening the window is the user asking for a daemon, so one is asked for
+     * outright if there is none rather than waited for, which is all the
+     * client does on its own. Read after the handlers above are watching, so a daemon moving
+     * in between is announced rather than missed -- and read whatever it says,
+     * ready included: a retry into a window presented for a failed connection
+     * has a banner up that no change of presence would come to take down. */
+    g_paste_client_follow_daemon (self->client, TRUE);
+    on_daemon_presence_changed (self->client, NULL, self);
     on_history_changed (self->client, NULL, self);
+
+    /* A retry into a window already presented for the banner: it is filling in
+     * behind that banner, and the deferred actions ran the moment it went up. */
+    if (self->initialized)
+        return;
 
     gtk_window_present (win);
     self->initialized = TRUE;
     g_paste_ui_window_run_deferred_actions (self);
+}
+
+static void
+on_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                 GAsyncResult *res,
+                 gpointer      user_data)
+{
+    /* The window is not presented yet on a first connection -- that is done
+     * below, by the setup or the failure alike -- so nothing else would keep it
+     * alive if the application quit while we were connecting. */
+    g_autoptr (GPasteUiWindow) self = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
+
+    /* The window was destroyed (the application quit) while we were connecting:
+     * our ref keeps it allocated, but its widgets are gone. Nothing to set up. */
+    if (!self->banner)
+        return;
+
+    self->connecting = FALSE;
+
+    if (error)
+    {
+        g_critical ("Couldn't connect to GPaste: %s", error->message);
+        /* No wait here, unlike a daemon that merely went away: building the
+         * proxy is what failed -- the session bus unreachable, or a daemon it
+         * could not start -- so there is none to follow a daemon with. The
+         * banner's button is the whole of the way back. */
+        g_paste_ui_window_update_banner (self);
+
+        if (self->initialized)
+            return;
+
+        add_daemonless_window_actions (self);
+        /* Present anyway: the banner explaining what went wrong is the whole
+         * point, and a window that is never shown leaves the application
+         * running with nothing on screen at all. Before the deferred actions,
+         * so the one that survives a failed connection has a presented window
+         * to put its dialog over. */
+        gtk_window_present (GTK_WINDOW (self));
+        self->initialized = TRUE;
+        g_paste_ui_window_run_deferred_actions (self);
+        return;
+    }
+
+    g_paste_ui_window_setup (self, client);
 }
 
 /**
@@ -1192,6 +1387,7 @@ g_paste_ui_window_new (GtkApplication *app)
                                       "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
 
+    G_PASTE_UI_WINDOW (self)->connecting = TRUE;
     /* The callback owns this ref (see on_client_ready). */
     g_paste_client_new (on_client_ready, g_object_ref (self));
 

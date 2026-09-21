@@ -33,6 +33,12 @@ struct _GPasteClient
      * the wait is the latest one's to start, an older one having been
      * overtaken. */
     GCancellable        *probe;
+
+    /* The bus's own NameOwnerChanged, for the handoffs the proxy learns of
+     * late (on_name_owner_changed ()), and the owner the last one handed the
+     * name to. */
+    guint                owner_watch;
+    gchar               *successor;
 };
 
 /**
@@ -1705,6 +1711,19 @@ g_paste_daemon_presence_get_type (void)
     return etype;
 }
 
+/* Whether the bus has handed the name straight to another owner that the
+ * proxy does not address yet (on_name_owner_changed ()). */
+static gboolean
+g_paste_client_handing_off (GPasteClient *self)
+{
+    if (!self->successor)
+        return FALSE;
+
+    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self));
+
+    return !g_paste_str_equal (owner, self->successor);
+}
+
 /* Which history is in use is the daemon's own property, cached off the proxy,
  * and it reads back %NULL while there is no daemon: whether it has a value is
  * therefore the honest answer to "is there one to ask".
@@ -1718,10 +1737,15 @@ g_paste_daemon_presence_get_type (void)
 static GPasteDaemonPresence
 g_paste_client_compute_presence (GPasteClient *self)
 {
-    g_autofree gchar *history = g_paste_client_get_history_name (self);
+    /* Mid-handoff, the history cached is the old daemon's
+     * (on_name_owner_changed ()). */
+    if (!g_paste_client_handing_off (self))
+    {
+        g_autofree gchar *history = g_paste_client_get_history_name (self);
 
-    if (history)
-        return G_PASTE_DAEMON_PRESENCE_READY;
+        if (history)
+            return G_PASTE_DAEMON_PRESENCE_READY;
+    }
 
     /* One that owns the name and never served a history is not starting any
      * more once the wait has run out on it. */
@@ -2052,6 +2076,24 @@ g_paste_client_set_property (GObject      *object,
     }
 }
 
+/* The daemon's signals are forwarded as they come, whatever the presence.
+ *
+ * Mid-handoff the proxy still addresses the daemon standing down for the calls
+ * it makes, which is why a consumer asks the presence before one
+ * (GPasteClient:daemon-presence). A signal needs no such gate: it is matched on
+ * the well-known name, and a daemon that has lost the name no longer delivers
+ * any -- the bus drops them (checked on dbus-daemon; dbus-broker is assumed to
+ * match), and GDBus drops one whose sender is not the owner it last saw in a
+ * NameOwnerChanged (schedule_callbacks () in gdbusconnection.c), which holds
+ * for any bus. One sent before the name was lost arrives before the
+ * NameOwnerChanged that starts the handoff, or not at all.
+ *
+ * So the gates a consumer puts on the signals it follows are a rule kept
+ * rather than a case the bus lets through, and no test can send one past
+ * them: /ui/daemon-presence/listing-handoff emits them on the client itself.
+ * Dropping the signals here instead would leave the consumers' calls
+ * ungated -- a menu opening, a switcher refreshing -- and change what a
+ * third-party client sees of a library it links. */
 static void
 g_paste_client_g_signal (GDBusProxy  *proxy,
                          const gchar *sender_name G_GNUC_UNUSED,
@@ -2139,11 +2181,12 @@ g_paste_client_g_properties_changed (GDBusProxy          *proxy,
 
 /* The other half of a daemon restart. The proxy empties its property cache when
  * the name loses its owner (announced above) and fills it again with a GetAll on
- * the next owner -- that one it announces to nobody, "g-name-owner" being all it
- * emits, and only once the new values are in. So this is where the properties
- * are said to have moved: a daemon that comes back on another history, or
- * tracking where it was not, is otherwise mirrored by rows that never heard of
- * it. */
+ * the next owner, announcing what that found as a change -- but one that
+ * answers nothing, a daemon that has not exported its object yet, leaves the
+ * cache emptied without a word, "g-name-owner" being all it emits. So this is
+ * where the properties are said to have moved as well: a daemon that comes back
+ * on another history, or tracking where it was not, is otherwise mirrored by
+ * rows that never heard of it. */
 static void
 g_paste_client_notify (GObject    *object,
                        GParamSpec *pspec)
@@ -2183,6 +2226,76 @@ g_paste_client_notify (GObject    *object,
         parent_class->notify (object, pspec);
 }
 
+/* GDBusProxy follows the name to a new owner only once its GetAll there has
+ * answered, and until then its calls still go to the old one. When the name
+ * goes straight from one owner to another -- `gpaste-daemon --replace`, the
+ * Shell's own daemon taking over or handing back -- that is a daemon standing
+ * down, and whatever a consumer asks it in the meantime fails or answers for
+ * the wrong daemon. The bus says so first, with this signal: the presence
+ * leaves ready on it, and comes back once the proxy addresses the successor
+ * and has read its history. Every consumer thus lets go of the old daemon on
+ * the presence edge it already follows, cancelling what it had out before the
+ * old daemon's answers can land, and lists the new one when it is ready
+ * (/client/presence/handoff). */
+static void
+on_name_owner_changed (GDBusConnection *connection     G_GNUC_UNUSED,
+                       const gchar     *sender_name    G_GNUC_UNUSED,
+                       const gchar     *object_path    G_GNUC_UNUSED,
+                       const gchar     *interface_name G_GNUC_UNUSED,
+                       const gchar     *signal_name    G_GNUC_UNUSED,
+                       GVariant        *parameters,
+                       gpointer         user_data)
+{
+    g_autoptr (GPasteClient) self = g_weak_ref_get (user_data);
+
+    if (!self)
+        return;
+
+    const gchar *old_owner;
+    const gchar *new_owner;
+
+    g_variant_get (parameters, "(&s&s&s)", NULL, &old_owner, &new_owner);
+
+    /* An owner the proxy already addresses is one its init found, the signal
+     * having been on its way meanwhile: nothing left to follow. */
+    g_autofree gchar *addressed = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self));
+
+    if (*old_owner && *new_owner && !g_paste_str_equal (new_owner, addressed))
+        g_set_str (&self->successor, new_owner);
+    else
+        g_clear_pointer (&self->successor, g_free);
+
+    g_paste_client_sync_presence (self);
+}
+
+/**
+ * g_paste_client_is_daemon_gone_error:
+ * @error: an error a call on a #GPasteClient failed with
+ *
+ * Whether @error says the daemon the call went to left the bus rather than
+ * refused it: it disconnected without answering, or the name had no owner by
+ * the time the call reached the bus. Such a call says nothing about the
+ * history, and #GPasteClient:daemon-presence announces what comes next, so a
+ * caller reporting failures can leave this one out. A bus answers NoReply for
+ * a recipient gone; it would also for a reply timing out on the bus, which
+ * neither dbus-broker nor dbus-daemon's default configuration does, a slow
+ * daemon failing on the caller's own timeout instead.
+ *
+ * An unknown method is not one of these, whatever the daemon: a daemon handing
+ * the name over moves the presence before any call it fails can be answered
+ * (see #GPasteClient:daemon-presence), and an unknown method otherwise is an
+ * older daemon that lacks it.
+ *
+ * Returns: whether @error is a daemon having gone
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_client_is_daemon_gone_error (const GError *error)
+{
+    return g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY) ||
+           g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_SERVICE_UNKNOWN) ||
+           g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+}
+
 static void
 g_paste_client_dispose (GObject *object)
 {
@@ -2190,7 +2303,23 @@ g_paste_client_dispose (GObject *object)
 
     g_paste_client_stop_waiting (self);
 
+    if (self->owner_watch)
+    {
+        g_dbus_connection_signal_unsubscribe (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)), self->owner_watch);
+        self->owner_watch = 0;
+    }
+
     G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
+}
+
+static void
+g_paste_client_finalize (GObject *object)
+{
+    GPasteClient *self = G_PASTE_CLIENT (object);
+
+    g_free (self->successor);
+
+    G_OBJECT_CLASS (g_paste_client_parent_class)->finalize (object);
 }
 
 static void
@@ -2208,6 +2337,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
     g_paste_error_quark ();
 
     object_class->dispose = g_paste_client_dispose;
+    object_class->finalize = g_paste_client_finalize;
     object_class->get_property = g_paste_client_get_property;
     object_class->set_property = g_paste_client_set_property;
     object_class->notify = g_paste_client_notify;
@@ -2235,6 +2365,12 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * One that does not follow has neither timer: absent the moment nobody
      * owns the name, and starting for as long as an owner serves nothing.
      * Either kind turns ready by itself when a daemon comes back.
+     *
+     * A daemon taking the name over straight from another is no exception: the
+     * presence leaves ready the moment the bus hands the name over, and comes
+     * back once the new daemon serves its history. Whatever was read from the
+     * daemon before -- its histories, its items, its version -- is the old
+     * one's, and anything still out to it is best given up on that edge.
      *
      * Calls made while it is not ready start a daemon: the bus activates one on
      * the first call to reach it. A caller that must not do that behind the
@@ -2348,6 +2484,24 @@ g_paste_client_init (GPasteClient *self)
 static void
 g_paste_client_seed_presence (GPasteClient *self)
 {
+    /* Only now: the connection is the init's to find. A handoff landing while
+     * the init was out is one the proxy follows all the same, only without the
+     * presence leaving ready for it. The name is the proxy's own, which a
+     * client built through the initables chooses (/client/presence/handoff-other-name). */
+    if (!self->owner_watch)
+    {
+        self->owner_watch = g_dbus_connection_signal_subscribe (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
+                                                                "org.freedesktop.DBus",
+                                                                "org.freedesktop.DBus",
+                                                                "NameOwnerChanged",
+                                                                "/org/freedesktop/DBus",
+                                                                g_dbus_proxy_get_name (G_DBUS_PROXY (self)),
+                                                                G_DBUS_SIGNAL_FLAGS_NONE,
+                                                                on_name_owner_changed,
+                                                                g_paste_weak_ref_new (self),
+                                                                g_paste_weak_ref_free);
+    }
+
     g_paste_client_update_presence (self);
 }
 

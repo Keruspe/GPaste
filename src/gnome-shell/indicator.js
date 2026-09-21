@@ -561,11 +561,11 @@ class GPasteIndicator extends Button {
     //
     // Returns whether the caller may carry on.
     async _fetchAvailable(cancellable) {
-        // Sizing asks about the current history, whichever that is. Its name is
-        // only read here to tell a live daemon from one off the bus: the
-        // property's cache is empty while there is none, and there is nothing
-        // to size then.
-        if (!this._client.get_history_name())
+        // Sizing asks about the current history, whichever that is, of a
+        // daemon that is there: the presence says so, not the history the
+        // proxy has cached, which mid-handoff is still the old daemon's -- the
+        // one the call would reach.
+        if (!this._daemonReady())
             return false;
 
         let wanted, available;
@@ -749,6 +749,14 @@ class GPasteIndicator extends Button {
     }
 
     _update(client, action, target, uuid, position) {
+        // Nothing to apply an update to while the daemon is away, the rows
+        // having gone with it, and the next one is listed afresh. The client
+        // forwards no update from a daemon that has lost the name
+        // (g_paste_client_g_signal ()), so this keeps one rule -- a daemon to
+        // ask is the presence being ready -- rather than leaning on that.
+        if (!this._connected)
+            return;
+
         // A filtered list maps its rows to uuids rather than to history
         // positions, so a position says nothing to it. One item changing in
         // place is still worth catching by uuid; anything else means re-running

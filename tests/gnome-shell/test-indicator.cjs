@@ -177,6 +177,23 @@ function row(uuid) {
     assert.equal(lateNotifies, 0);
     assert.equal(placeholder._client, null);
 
+    // While the daemon is away, an update is not applied, nor is a size read:
+    // mid-handoff the old daemon, standing down, is the one it reaches, and
+    // the history the proxy has cached is its too.
+    const handoff = indicator();
+    let reads = 0;
+    handoff._connected = false;
+    handoff._refresh = async () => { ++reads; };
+    handoff._client = {
+        daemon_presence: DaemonPresence.STARTING,
+        get_history_name: () => 'history',
+        get_history_size: () => { ++reads; return Promise.resolve(1); },
+    };
+    handoff._update(handoff._client, 0, 0, '', 0);
+    assert.equal(reads, 0);
+    assert.equal(await context.Indicator.prototype._fetchAvailable.call(handoff, null), false);
+    assert.equal(reads, 0);
+
     assert.deepEqual(errors, []);
     console.log('Indicator: teardown and daemon presence passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

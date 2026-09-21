@@ -22,6 +22,7 @@ gboolean g_paste_ui_history_activate_index (GPasteUiHistory *self,
 
 void g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
                                             gboolean         selection_mode);
+gboolean g_paste_ui_history_get_selection_mode (GPasteUiHistory *self);
 GStrv g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
                                              guint64         *length);
 

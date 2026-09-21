@@ -41,6 +41,7 @@ const context = vm.createContext({
     Clutter: {}, St: {}, Ornament: {}, GPasteDeleteButton: Actor,
     GPaste: {
         DEFAULT_HISTORY: 'default',
+        DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
     },
@@ -62,7 +63,7 @@ vm.runInContext(`${source}\nthis.Switcher = GPasteHistorySwitcher;`, context);
 
 function switcher() {
     const item = Object.create(context.Switcher.prototype);
-    item._client = {get_name_owner: () => ':1.42'};
+    item._client = {daemon_presence: 2};
     item._current = null;
     item.menu = {isOpen: true, moveMenuItem() { focus = null; }, close() {}};
     item._getTopMenu = () => ({close() {}});
@@ -117,10 +118,18 @@ function switcher() {
     item._confirm('Delete?', 'Contents', 'Delete', () => ++calls);
     const dialog = item._dialog;
     assert.ok(dialog);
-    item._client.get_name_owner = () => null;
+    // Mid-handoff: the name still has an owner, the daemon standing down.
+    item._client.get_name_owner = () => ':1.42';
+    item._client.daemon_presence = 1;
+    item._sizing = {cancel() { this.cancelled = true; }};
     item.vfunc_hide();
     assert.equal(dialog.closed, true);
+    // The daemon going -- a handoff to another included, the presence leaving
+    // ready for it -- hides the row, and that is all that gives up the answers
+    // still due from the old daemon: a late size would land on the new one's
+    // current row.
     assert.equal(item._listing.cancelled, true);
+    assert.equal(item._sizing.cancelled, true);
     // A queued click can still reach the closure during dialog teardown.
     dialog.buttons[1].action();
     assert.equal(calls, 0);
@@ -187,6 +196,25 @@ function switcher() {
     sized._onUpdate(null, UpdateAction.REMOVE, UpdateTarget.ALL);
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(sizeCalls, 3);
+    // Nor while another daemon takes the name over, the old one, which still
+    // owns it, being the one the call would reach.
+    sized.menu.isOpen = true;
+    sized._client.get_name_owner = () => ':1.42';
+    sized._client.daemon_presence = 1;
+    sized._onUpdate(null, UpdateAction.REMOVE, UpdateTarget.ALL);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(sizeCalls, 3);
+    // The chooser's listing, asked on opening the submenu, waits for a daemon
+    // to ask as well.
+    let refreshes = 0;
+    sized.refresh = async () => { ++refreshes; };
+    sized._client.daemon_presence = 1;
+    sized._refreshIfOpen();
+    assert.equal(refreshes, 0);
+    sized._client.daemon_presence = 2;
+    sized._refreshIfOpen();
+    assert.equal(refreshes, 1);
+    delete sized.refresh;
 
     // An overtaken size is dropped rather than drawn over the newer one.
     sized.menu.isOpen = true;

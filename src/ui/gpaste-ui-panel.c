@@ -44,6 +44,9 @@ struct _GPasteUiPanel
     GtkWindow         *rootwin;
     GtkWidget         *search_entry;
     gboolean           inhibit_switch;
+    /* The listing out, the one whose answer the sidebar takes: see
+     * g_paste_ui_panel_refresh (). */
+    GCancellable      *listing;
 
     gulong             c_signals[C_LAST_SIGNAL];
 };
@@ -88,12 +91,9 @@ g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
 }
 
 static void
-on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
-                    const gchar  *history,
-                    gpointer      user_data)
+g_paste_ui_panel_remove_history (GPasteUiPanel *self,
+                                 const gchar   *history)
 {
-    GPasteUiPanel *self = user_data;
-
     GList *h = history_find (self->histories, history);
 
     if (!h)
@@ -119,6 +119,14 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
     self->inhibit_switch = FALSE;
 
     g_list_free_1 (h);
+}
+
+static void
+on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
+                    const gchar  *history,
+                    gpointer      user_data)
+{
+    g_paste_ui_panel_remove_history (user_data, history);
 }
 
 static void
@@ -170,13 +178,59 @@ on_histories_changed (GPasteClient *client G_GNUC_UNUSED,
     g_paste_ui_panel_refresh (self);
 }
 
+/* Whether a row can be clicked. The rows stay while there is no daemon, so
+ * the sidebar does not empty and refill around a daemon that is only away for
+ * a moment, but what they name is the last daemon's: until the next one's
+ * listing says which it has, a click on one it lacks would create that history
+ * there. So every row but the default -- always there to land on -- waits for
+ * the listing naming it (g_paste_ui_panel_add_history ()), and the prune in
+ * on_histories_ready () drops the rest (/ui/daemon-presence/listing-handoff). */
+static void
+g_paste_ui_panel_set_rows_enabled (GPasteUiPanel *self,
+                                   gboolean       enabled)
+{
+    for (const GList *h = self->histories; h; h = h->next)
+    {
+        if (!g_paste_str_equal (g_paste_ui_panel_history_get_history (h->data), G_PASTE_DEFAULT_HISTORY))
+            adw_sidebar_item_set_enabled (ADW_SIDEBAR_ITEM (h->data), enabled);
+    }
+}
+
+/* Listed whenever a daemon becomes ready: it announces its history, not the
+ * set of them. A daemon taking the name over from another is one becoming
+ * ready too, the presence leaving ready in between. */
+static void
+on_daemon_presence_changed (GPasteClient *client,
+                            GParamSpec   *pspec G_GNUC_UNUSED,
+                            gpointer      user_data)
+{
+    GPasteUiPanel *self = user_data;
+
+    if (g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_READY)
+        g_paste_ui_panel_refresh (self);
+    else
+    {
+        g_paste_clear_cancellable (&self->listing);
+        g_paste_ui_panel_set_rows_enabled (self, FALSE);
+    }
+}
+
 /* The item a context menu was opened on, which the menu actions all act upon:
  * "setup-menu" hands it to us when the sidebar opens the menu, and hands us NULL
- * again once it closes, so this is only ever set while a menu is up. */
+ * again once it closes, so this is only ever set while a menu is up.
+ *
+ * A row that cannot be clicked has no actions either: the menu is the sidebar's
+ * and stays up when its row is disabled under it, and an action reaching the
+ * daemon now there for a history it may not have would create it
+ * (g_paste_ui_panel_set_rows_enabled (), /ui/daemon-presence/listing-handoff). */
 static GPasteUiPanelHistory *
 g_paste_ui_panel_get_menu_history (GPasteUiPanel *self)
 {
-    return G_PASTE_IS_UI_PANEL_HISTORY (self->menu_item) ? G_PASTE_UI_PANEL_HISTORY (self->menu_item) : NULL;
+    if (!G_PASTE_IS_UI_PANEL_HISTORY (self->menu_item) ||
+        !adw_sidebar_item_get_enabled (self->menu_item))
+        return NULL;
+
+    return G_PASTE_UI_PANEL_HISTORY (self->menu_item);
 }
 
 static void
@@ -226,6 +280,8 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
 
         if (length)
             g_paste_ui_panel_history_set_length (h, *length);
+        /* Named by the daemon there now: see g_paste_ui_panel_set_rows_enabled (). */
+        adw_sidebar_item_set_enabled (ADW_SIDEBAR_ITEM (h), TRUE);
     }
     else
     {
@@ -242,26 +298,55 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
     self->inhibit_switch = FALSE;
 }
 
+/* The panel held weakly, as a listing it tracks for its dispose () to give up
+ * (g_paste_ui_panel_refresh ()): a reference of the listing's own would keep
+ * the panel from ever being disposed while one is out. */
 typedef struct
 {
-    GPasteUiPanel *self;
-    gchar         *name;
+    GWeakRef self;
+    gchar   *name;
 } HistoriesData;
 
 static void
-on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
+histories_data_free (HistoriesData *data)
+{
+    g_weak_ref_clear (&data->self);
+    g_free (data->name);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (HistoriesData, histories_data_free)
+
+static void
+on_histories_ready (GObject      *source_object,
                     GAsyncResult *res,
                     gpointer      user_data)
 {
-    g_autofree HistoriesData *data = user_data;
-    g_autoptr (GPasteUiPanel) self = data->self;
-    g_autofree gchar *current = data->name;
+    g_autoptr (HistoriesData) data = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_finish (G_PASTE_CLIENT (source_object), res, &error);
 
-    if (!self->client) /* panel was disposed while the call was in flight */
+    /* Given up on, overtaken, its daemon gone or the panel disposed: it says
+     * nothing of the rows the sidebar has now. */
+    if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
         return;
 
-    g_autoptr (GError) error = NULL;
-    g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_finish (self->client, res, &error);
+    /* Opened after the finish rather than first, as other callbacks do: the
+     * reply is finished on the client it came from whatever became of the
+     * panel, and a cancelled one needs no panel at all. */
+    g_autoptr (GPasteUiPanel) self = g_weak_ref_get (&data->self);
+
+    if (!self || !self->client)
+        return;
+
+    const gchar *current = data->name;
+
+    /* The row to select is the history current now, not when the listing was
+     * asked for: a switch landing while it was out has selected its own row
+     * already, and this must not move it back. The listing's name stands in
+     * only while the daemon has none to say. */
+    g_autofree gchar *now = g_paste_client_get_history_name (self->client);
+    const gchar *selected = (now) ? now : current;
 
     /* The default history is always drawn, listed or not: it is where a switch
      * away from a deleted history lands. Zero until the loop below names it,
@@ -269,18 +354,31 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
      * when there is a listing for it to be absent from. A failed one says
      * nothing about any history's size, so the row keeps the length it is
      * already showing rather than being blanked by a call that answered
-     * nothing: the daemon is briefly off the bus on every upgrade, which is
-     * exactly when a refresh runs. */
+     * nothing -- a daemon that could not read its storage, say, or one too
+     * slow to answer. */
     guint64 none = 0;
 
     g_paste_ui_panel_add_history (self, G_PASTE_DEFAULT_HISTORY, (error) ? NULL : &none,
-                                  g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
+                                  g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, selected));
 
     if (error)
     {
+        /* Its daemon gone, the presence says so and lists again: nothing to
+         * report (g_paste_client_is_daemon_gone_error ()). */
+        if (g_paste_client_is_daemon_gone_error (error))
+            return;
+
+        /* A daemon that is there and could not list: the rows stay as they
+         * are, clickable again -- what they name is the best there is, and
+         * the next listing prunes what it does not have. No test shows it:
+         * the critical is fatal in the suite, and g_test_expect_message ()
+         * does not catch it under structured logging. */
         g_critical ("Error while listing available histories: %s", error->message);
+        g_paste_ui_panel_set_rows_enabled (self, TRUE);
         return;
     }
+
+    g_autoptr (GHashTable) listed = g_hash_table_new (g_str_hash, g_str_equal);
 
     for (const GList *h = histories; h; h = h->next)
     {
@@ -288,8 +386,36 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
         const gchar *name = g_paste_client_history_get_name (history);
         guint64 length = g_paste_client_history_get_size (history);
 
-        g_paste_ui_panel_add_history (self, name, &length, g_paste_str_equal (name, current));
+        g_hash_table_add (listed, (gpointer) name);
+        g_paste_ui_panel_add_history (self, name, &length, g_paste_str_equal (name, selected));
     }
+
+    /* What the listing no longer names is gone. HistoryDeleted says so one at
+     * a time, but a daemon coming back announces nothing of what went while
+     * it was away -- a migration run without importing leaves only the default
+     * history -- and a row left standing for one would create it anew when
+     * clicked. The default row stays, as above, and so does the current one,
+     * which a storage keeping nothing does not list -- the one this listing
+     * was asked under and the one now, a switch landing while it was out. Named
+     * first and dropped after, since dropping one edits the list being
+     * walked. */
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    for (const GList *h = self->histories; h; h = h->next)
+    {
+        const gchar *name = g_paste_ui_panel_history_get_history (h->data);
+
+        if (!g_hash_table_contains (listed, name) &&
+            !g_paste_str_equal (name, G_PASTE_DEFAULT_HISTORY) &&
+            !g_paste_str_equal (name, current) &&
+            !g_paste_str_equal (name, now))
+            g_strv_builder_add (builder, name);
+    }
+
+    g_auto (GStrv) gone = g_strv_builder_end (builder);
+
+    for (GStrv name = gone; *name; ++name)
+        g_paste_ui_panel_remove_history (self, *name);
 }
 
 /* Rebuild the list. The listing answers each history's size along with its name,
@@ -305,9 +431,19 @@ g_paste_ui_panel_refresh (GPasteUiPanel *self)
     if (!self->client)
         return;
 
+    /* Only a daemon that is there is listed: one becoming ready lists itself
+     * (on_daemon_presence_changed ()). Mid-handoff the proxy still addresses
+     * the daemon standing down, which a listing would reach
+     * (/ui/daemon-presence/listing-handoff has the client announce a change
+     * then). What reaches here from the daemon is guarded as
+     * g_paste_client_g_signal () says; this keeps the rule the list follows
+     * (g_paste_ui_history_refresh ()) for what reaches it from elsewhere. */
+    if (g_paste_client_get_daemon_presence (self->client) != G_PASTE_DAEMON_PRESENCE_READY)
+        return;
+
     HistoriesData *data = g_new (HistoriesData, 1);
 
-    data->self = g_object_ref (self);
+    g_weak_ref_init (&data->self, self);
     data->name = g_paste_client_get_history_name (self->client);
 
     /* Not fatal -- the list is still worth showing -- but with no current name
@@ -315,7 +451,16 @@ g_paste_ui_panel_refresh (GPasteUiPanel *self)
     if (!data->name)
         g_warning ("Could not get the current history name.");
 
-    g_paste_client_list_histories (self->client, NULL /* cancellable */, on_histories_ready, data);
+    /* Only the latest listing may say which rows still exist: an earlier one
+     * answering after it would prune what it added, and one answering after
+     * its daemon went, what the next daemon lists. So a listing gives up the
+     * one before it, and the daemon going gives up the one out
+     * (on_daemon_presence_changed (); /ui/daemon-presence/listing-overtaken and
+     * listing-abandoned), as does dispose ()
+     * (/ui/daemon-presence/listing-after-close). */
+    g_paste_clear_cancellable (&self->listing);
+    self->listing = g_cancellable_new ();
+    g_paste_client_list_histories (self->client, self->listing, on_histories_ready, data);
 }
 
 static void
@@ -531,6 +676,7 @@ g_paste_ui_panel_dispose (GObject *object)
     g_clear_object (&self->items);
 
     g_clear_object (&self->client_signals);
+    g_paste_clear_cancellable (&self->listing);
     g_clear_object (&self->client);
 
     g_clear_object (&self->settings);
@@ -682,6 +828,10 @@ g_paste_ui_panel_new (GPasteClient   *client,
                             "histories-changed",
                             G_CALLBACK (on_histories_changed),
                             self);
+    g_signal_group_connect (client_signals,
+                            "notify::daemon-presence",
+                            G_CALLBACK (on_daemon_presence_changed),
+                            self);
     g_signal_group_set_target (client_signals, client);
 
     self->c_signals[C_SETUP_MENU] = g_signal_connect (self->sidebar,
@@ -689,7 +839,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
                                                        G_CALLBACK (on_setup_menu),
                                                        self);
 
-    g_paste_ui_panel_refresh (self);
+    on_daemon_presence_changed (client, NULL, self);
 
     return widget;
 }

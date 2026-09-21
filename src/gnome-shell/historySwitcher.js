@@ -548,8 +548,18 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         }
     }
 
+    // A daemon to ask is the client's presence being ready, not the name having
+    // an owner: mid-handoff the name has one, and the proxy still sends what
+    // is asked to the daemon standing down (GPasteClient:daemon-presence).
+    _daemonReady() {
+        return this._client.daemon_presence === GPaste.DaemonPresence.READY;
+    }
+
+    // Opening the submenu is the user's, at any moment of a handoff, so the
+    // listing waits for a daemon to ask here as well as on a signal
+    // (g_paste_client_g_signal ()) (test-history-switcher.cjs).
     _refreshIfOpen() {
-        if (this.menu.isOpen && this._client.get_name_owner())
+        if (this.menu.isOpen && this._daemonReady())
             this.refresh().catch(console.error);
     }
 
@@ -569,7 +579,7 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
     // a listing land in the order they were asked, the daemon answering both
     // from its main loop, so whichever landed last is the newer count.
     async _sizeCurrent() {
-        if (!this.menu.isOpen || !this._client.get_name_owner())
+        if (!this.menu.isOpen || !this._daemonReady())
             return;
 
         const cancellable = this._sizing = replaceCancellable(this._sizing);
@@ -792,8 +802,9 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this._getTopMenu().close();
 
         const dialog = this._dialog = new GPasteHistoryConfirmationDialog(title, description, label, () => {
-            // A closing animation can leave its button reachable after name loss.
-            if (this._client.get_name_owner())
+            // A closing animation can leave its button reachable after the
+            // daemon went, or while another takes the name over.
+            if (this._daemonReady())
                 action();
         });
 

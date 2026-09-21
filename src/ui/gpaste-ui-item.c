@@ -622,8 +622,16 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (!texture)
     {
-        g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
-        g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not load an image preview"));
+        /* Its daemon gone, the presence says so and the rows are bound
+         * afresh: nothing to report for a read the user did not ask
+         * for (g_paste_client_is_daemon_gone_error ()). The list's own reads
+         * follow the same rule (/ui/daemon-presence/listing-daemon-gone); no
+         * test reaches this one, the stand-in daemon serving text items only. */
+        if (!g_paste_client_is_daemon_gone_error (error))
+        {
+            g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
+            g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not load an image preview"));
+        }
 
         /* Rather than leave the row showing an image that is not the one it is
          * now bound to. */

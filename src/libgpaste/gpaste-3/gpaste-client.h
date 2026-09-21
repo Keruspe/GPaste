@@ -420,6 +420,8 @@ gchar               *g_paste_client_get_history_name    (GPasteClient *self);
 gchar               *g_paste_client_get_version         (GPasteClient *self);
 GPasteDaemonPresence g_paste_client_get_daemon_presence (GPasteClient *self);
 
+gboolean g_paste_client_is_daemon_gone_error (const GError *error);
+
 /**********************/
 /* Following a daemon */
 /**********************/

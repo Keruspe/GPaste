@@ -24,7 +24,10 @@ and, for an indicator built through its real constructor (`_setup()` stubbed),
 through the one `destroy` connection the button's double makes -- stopping the
 client's wait once its handlers are off it, and what the placeholder row says of each
 `GPasteClient:daemon-presence` -- a retry offered only once the daemon is
-absent, and handed to `retry_daemon()`.
+absent, and handed to `retry_daemon()`. `history-switcher` checks that hiding
+the switcher -- which the daemon going does, a handoff to another included --
+gives up both its listing and its size read, and that nothing is sized while
+the presence is not `READY`, the name still having an owner.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers a
@@ -60,12 +63,81 @@ starts out with the right presence, a handler connected before a two-step init
 hearing of it once -- the GetAll reply saying so of a daemon that serves, the
 seed alone of an owner that serves nothing yet (`seed-announced`), and one dropped while its request for a
 daemon is still out -- to a stand-in registered by hand, which never answers --
-is finalized there and then.
+is finalized there and then. A serving stand-in taking the name over from
+another makes the client starting at once, and ready again only once its proxy
+addresses the successor (`handoff`); built after a stand-in already serves
+(asynchronously, the stand-in answering on the same context), the client
+follows a handoff too, a successor owning the name before it serves keeping it
+starting until it does, and one replacing that making it ready once
+(`handoff-after-init`); one built through the initables for a name of its own
+follows that name alone, GPaste's own changing hands leaving it ready
+(`handoff-other-name`). What `g_paste_client_is_daemon_gone_error()` counts as a
+daemon gone is checked error by error, an unknown method left out.
 
 `test-ui-panel-history` puts one sidebar history row on the private Xvfb and
 drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace.
+
+`test-ui-daemon-presence` sets the window up on the private Xvfb against the
+same kind of stand-in daemon, answering `ListHistories`, `GetHistorySize` and
+`GetItemAtIndex`: with none there the banner says it is connecting then offers
+Retry, the daemon's actions, the sidebar and the list are insensitive and the
+list shows a spinner then says the history is unavailable; a daemon turning up
+has the sidebar and the list ask it again and the banner slide away still
+worded; one going away takes the offers back but not the search, read from
+inside the notify that says so, since the end of the client's grace second may
+come first. A
+filter on the client's own connection counts the Search and GetFavourites that
+leave it, which is the one place to see them while nobody owns the name: none
+does while the daemon is away, whether a search reaches the list or Escape
+closes the search bar kept open (`search-closed-away`: emptying the entry is a
+search of its own, an empty entry closing emitting none, and the next daemon
+is asked none), and typing does not open the search. The sidebar's entry holding the focus when the daemon
+goes is let go of before the sidebar turns insensitive: GTK would otherwise
+warn, which the test aborts on. So is the Merge popover's entry when the picks
+drop below two, checked on the entry's own focus controller -- the popover
+itself making GDK warn about frame timings on Xvfb, warnings are not fatal
+while it is up. A listing answered after a switch keeps the row of the history
+current now selected. A
+daemon back with fewer histories drops the others' rows, and a list that had
+the focus has it again once its rows are back -- but not from a widget the
+focus was moved to meanwhile. Two overlapping history listings answer in reverse
+order; only the newer one may keep or remove sidebar rows, one still out when
+its daemon goes is given up on rather than reported, and one out when the
+window closes lets the sidebar go. A window presented
+for a failed connection and set up again into a daemon already there takes its
+banner down.
+A window closed and let go of while the list's size request is out leaves the
+list standing, held by the reply, and the reply lands without reaching for the
+sidebar that went with the window.
+A direct bus-name handoff goes through a successor that owns the name and sits
+on the proxy's `GetAll`, which holds the client in the handoff window: there
+the old daemon's listing, answered late, prunes nothing, what the old daemon
+emits reaches nobody and the client announcing the same changes itself asks
+it nothing, a context menu up on a disabled row acts on nothing, and every
+sidebar row bar the default is disabled -- the current history's of the
+successor, named by its `History`, bar nothing but its listing. A
+serving successor then takes the name over and is listed and sized once; a
+history it lists again keeps its sidebar row -- held by reference, so that a
+row dropped and re-added cannot pass for it -- enabled once listed. The item
+list starts with two rows, drops
+them while the successor's size answer is held, then shows its one row when
+that answer arrives. A search open when
+the daemon goes stays open with its text and is asked of the next daemon, once
+(`follow`). A refused successor size answer shows an error page with
+Retry; another refusal shows it again, and a successful retry restores the row
+and keyboard focus to the visible list. A daemon whose owner the client learns
+only once it is ready is asked once. A daemon answering the list's size read
+and the sidebar's listing with NoReply, as the bus answers for a recipient gone,
+gets neither a warning nor a critical nor the error page, the page waiting for
+rows staying as it was, and a pinned-items read answered so is no "No Pinned
+Items". A stand-in stops by
+closing its connection first, as a real daemon goes: unexported while still
+owning the name, it would answer a call with an error no real daemon gives.
+One allowing its replacement is not queued for the name once replaced, a real
+daemon quitting then. The focus restoration case
+checks that its wait predicate rejects focus still on the list.
 
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of
@@ -110,13 +182,21 @@ does — `g_paste_test_bus_name_call()` drives `RequestName`/`ReleaseName`, and
 `g_paste_test_bus_barrier()` synchronizes both ends. `g_paste_test_bus_connect()` is
 that second connection alone, to any address -- the bus `gpaste-test-env` set up
 included, for a stand-in daemon under a client that follows it -- and
-`g_paste_test_bus_wait_until()`, `_wait_for_enum()` and `_wait_for_count()` iterate
-the main context until a condition, a property or a counter a fake service keeps
-gets there, failing after `G_PASTE_TEST_BUS_WAIT_SECONDS`. The barrier is three rounds
-addressed to the server's *unique* name: a reply behind the calls on the client's
-connection makes a no-op assertion deterministic, the later rounds drain what a
-reply's own callback issues, and the unique name is what answers while the
-well-known one is unowned or has just changed hands.
+`g_paste_test_bus_wait_until()`, `_wait_for_enum()`, `_wait_for_count()` and
+`_wait_for_owner()` iterate the main context until a condition, a property, a
+counter a fake service keeps or a proxy's name owner gets there, failing after
+`G_PASTE_TEST_BUS_WAIT_SECONDS`; `g_paste_test_bus_count_emission()`, connected
+swapped, is the counter for a signal.
+`g_paste_test_bus_barrier()` is three rounds addressed to the server's *unique*
+name: a reply behind the calls on the client's connection makes a no-op
+assertion deterministic, the later rounds drain what a reply's own callback
+issues, and the unique name is what answers while the well-known one is
+unowned or has just changed hands. `g_paste_test_bus_round_trip()` is a lighter
+one, for a server with nothing but a generated skeleton on it: a single
+`Peer.Ping` behind its replies, then a drain, without those later rounds.
+`g_paste_test_bus_pump()` runs the main context for a fixed time, for what
+nothing announces -- a warning *not* coming, or a timer the code under test
+runs on its own; anything with a state to wait for waits on it instead.
 
 `test-ui-password` controls the edit dialog's two asynchronous replies while using
 real GTK on the private Xvfb. It checks both late-reply orders, closure between

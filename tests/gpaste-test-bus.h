@@ -39,5 +39,11 @@ void             g_paste_test_bus_wait_for_enum  (gpointer                    ob
                                                   gint                        value);
 void             g_paste_test_bus_wait_for_count (const guint                *count,
                                                   guint                       at_least);
+void             g_paste_test_bus_count_emission (guint                      *count);
+void             g_paste_test_bus_wait_for_owner (GDBusProxy                 *proxy,
+                                                  GDBusConnection            *server);
+void             g_paste_test_bus_pump           (guint                       ms);
+void             g_paste_test_bus_round_trip     (GDBusConnection            *connection,
+                                                  GDBusConnection            *server);
 
 G_END_DECLS

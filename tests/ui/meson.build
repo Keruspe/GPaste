@@ -1,9 +1,13 @@
-ui_test_sources = ['test-shortcuts.c']
+# Every graphical tool source bar its entry point and the window, which a test
+# #includes to reach what the window keeps to itself.
+ui_sources_but_window = []
 foreach source : gpaste_ui_sources
   if source != 'gpaste-ui.c' and source != 'gpaste-ui-window.c'
-    ui_test_sources += '../../src/ui' / source
+    ui_sources_but_window += '../../src/ui' / source
   endif
 endforeach
+
+ui_test_sources = ['test-shortcuts.c'] + ui_sources_but_window
 
 ui_shortcuts_test = executable(
   'gpaste-ui-shortcuts-test',
@@ -64,3 +68,12 @@ ui_panel_history_test = executable(
 )
 
 test('test-ui-panel-history', ui_panel_history_test, depends: [gpaste_schemas, test_bus_supervisor])
+
+ui_daemon_presence_test = executable(
+  'gpaste-ui-daemon-presence-test',
+  sources: ['test-daemon-presence.c'] + ui_sources_but_window,
+  include_directories: include_directories('../../src/ui'),
+  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+)
+
+test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schemas, test_bus_supervisor])
