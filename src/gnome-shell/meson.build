@@ -1,4 +1,5 @@
 shell_extension_files = [
+  'actionButton.js',
   'actions.js',
   'daemon.js',
   'deleteButton.js',
@@ -9,6 +10,7 @@ shell_extension_files = [
   'historySwitcher.js',
   'indicator.js',
   'item.js',
+  'itemActions.js',
   'prefs.js',
   'prompt.js',
   'searchItem.js',

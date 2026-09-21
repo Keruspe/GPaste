@@ -4,6 +4,7 @@
 import './dependencies.js';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {Button} from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -16,12 +17,36 @@ import St from 'gi://St';
 import GPaste from 'gi://GPaste?version=3';
 
 import {addGPasteFooter} from './actions.js';
-import {awaitReply, replaceCancellable} from './dependencies.js';
+import {awaitReply, logFailure, replaceCancellable} from './dependencies.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
 import {GPasteHistorySwitcher} from './historySwitcher.js';
 import {GPasteItem} from './item.js';
+import {GPasteItemActionsItem} from './itemActions.js';
 import {GPasteSearchItem} from './searchItem.js';
 import {GPasteStateSwitch} from './stateSwitch.js';
+
+// Kept outside the indicator's method: the pending D-Bus call holds this
+// callback until its reply, and its scope carries only the weak handle.
+function onUploadDone(indicator, client, result) {
+    try {
+        client.upload_and_copy_finish(result);
+    } catch (e) {
+        // Logged whatever became of the menu; shown only while the extension
+        // is still there, like every path resuming after a call.
+        console.error(e);
+        const current = indicator.deref();
+        if (current && !current._destroyed)
+            Main.notifyError(_('Could not upload the item'), e.message);
+        return;
+    }
+
+    // Said without the address, as the graphical tool's toast is: a paste's
+    // can carry the key to it (PrivateBin puts it in the fragment), and the
+    // daemon has already put it where the user can paste it.
+    const current = indicator.deref();
+    if (current && !current._destroyed)
+        Main.notify(_('The item was uploaded, and its address copied'));
+}
 
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
@@ -59,6 +84,9 @@ class GPasteIndicator extends Button {
         // keystroke: cancelling the others is what keeps a term the user has
         // typed past from painting the list (see replaceCancellable ()).
         this._listing = null;
+        // The row the keyboard was on when the daemon went, handed back once
+        // the next one's rows are there: see _parkRowFocus (). -1 for none.
+        this._owedRowFocus = -1;
 
         // Whether there is a daemon to talk to. The client follows it while
         // there is none (g_paste_client_follow_daemon ()).
@@ -193,6 +221,19 @@ class GPasteIndicator extends Button {
             overlay_scrollbars: true,
         });
         this._scrollView.child = this._historySection.actor;
+
+        // One row of actions for every item row, moved under whichever asked
+        // for it rather than one built per row: the list holds as many rows as
+        // the menu is scrolled through, and only ever one of them is asked.
+        this._itemActions = new GPasteItemActionsItem();
+        this._itemActions.connect('strip-rich-text', (item, uuid) => this._stripRichText(uuid));
+        this._itemActions.connect('upload', (item, uuid) => this._upload(uuid));
+        this._historySection.addMenuItem(this._itemActions);
+        this._itemActions.hide();
+        // The row they are open under: rows are recycled, so which item it
+        // shows can change under them, and rebinding it folds them (_refresh ()).
+        this._itemActionsRow = null;
+
         // Fade the history out near the top/bottom edges rather than hard-clipping
         // it against the dummy row and the footer separator.
         this._scrollView.update_fade_effect(new Clutter.Margin({top: 16, bottom: 16}));
@@ -352,6 +393,8 @@ class GPasteIndicator extends Button {
     }
 
     _onDaemonGone() {
+        const focusIndex = this._focusedRowIndex();
+
         this._connected = false;
         // A reply about the history that just went away must not land on the
         // rows the next daemon fills. Cancelled and no more: every path that
@@ -359,6 +402,7 @@ class GPasteIndicator extends Button {
         // installed here would be replaced before a request could go out on it.
         this._listing?.cancel();
         this._forgetHistory();
+        this._parkRowFocus(focusIndex);
     }
 
     // The placeholder row was activated: try again now -- asking for a daemon
@@ -474,14 +518,138 @@ class GPasteIndicator extends Button {
         // arrow-key navigation never lands on a row clipped outside the
         // viewport (and so Up from the actions reveals the last row).
         item.connect('key-focus-in', () => ensureActorVisibleInScrollView(this._scrollView, item));
+        item.connect('actions', (row, shown, fromKeyboard) => this._toggleItemActions(row, shown, fromKeyboard));
+        // Appended at the end, which leaves open actions under their row.
         this._historySection.addMenuItem(item);
         this._history.push(item);
         return item;
     }
 
     _clearRows() {
+        // Before the rows go, and without handing the focus back: the row it
+        // would go to is among them (see _hideItemActions ()).
+        this._hideItemActions(false);
         this._history.forEach(i => i.destroy());
         this._history = [];
+    }
+
+    // The same row again folds the actions away; another row takes them.
+    // Focused when the keyboard asked, which has nowhere else to reach them
+    // from; a click leaves the focus with the pointer.
+    _toggleItemActions(row, uuid, fromKeyboard) {
+        if (this._itemActions.visible && this._itemActionsRow === row) {
+            this._hideItemActions();
+            return;
+        }
+
+        const index = this._history.indexOf(row);
+
+        if (index < 0)
+            return;
+
+        this._itemActionsRow = row;
+        this._itemActions.reset(uuid);
+        this._historySection.moveMenuItem(this._itemActions, index + 1);
+        this._itemActions.show();
+        // The list is scrolled, and the row that asked may be the last one in
+        // view: the actions would otherwise open below the viewport.
+        ensureActorVisibleInScrollView(this._scrollView, this._itemActions);
+
+        if (fromKeyboard)
+            this._itemActions.focus();
+    }
+
+    // A focused actor that is hidden is one Clutter drops the key focus for,
+    // which would strand a keyboard that has just used one of the buttons: it
+    // goes back to the row the actions were for. _refresh() and _rebuild()
+    // pick a surviving focus target after changing the rows. Reached from teardown
+    // as well, which may come before _setup () has built any of this.
+    _hideItemActions(refocus = true) {
+        if (!this._itemActions)
+            return;
+
+        const focus = global.stage.get_key_focus();
+
+        if (refocus && focus !== null && this._itemActions.contains(focus))
+            this._itemActionsRow?.grab_key_focus();
+
+        this._itemActions.hide();
+        this._itemActions.reset();
+        this._itemActionsRow = null;
+    }
+
+    // Whether @focus is where the focus a row is owed waits: the menu's actor,
+    // or the placeholder row, which the Shell hands the focus of a menu with no
+    // active item to once it turns sensitive (popupMenu.js, notify::sensitive)
+    // -- after the grace second, when the presence reads absent.
+    _holdsOwedFocus(focus) {
+        return this._owedRowFocus >= 0 && (focus === this.menu.actor || focus === this._dummyHistoryItem);
+    }
+
+    // Which row the keyboard is on, the actions under one counting as that
+    // row, and its pin and delete buttons too: -1 for none. Where the focus a
+    // row is owed waits counts as that row.
+    _focusedRowIndex() {
+        const focus = global.stage.get_key_focus();
+
+        if (focus === null || focus === global.stage)
+            return -1;
+        if (focus === this.menu.actor || this._holdsOwedFocus(focus))
+            return this._owedRowFocus;
+        if (this._itemActions.contains(focus))
+            return this._history.indexOf(this._itemActionsRow);
+
+        return this._history.findIndex(row => row === focus || row.contains(focus));
+    }
+
+    // After a pass that may have dropped the row @index was the keyboard on,
+    // or hidden the actions under it: the focus goes to the nearest row left,
+    // or the history switcher when none is -- but only if it was lost, Clutter
+    // handing a destroyed or hidden actor's focus to the stage.
+    _restoreRowFocus(index) {
+        const focus = global.stage.get_key_focus();
+        const parked = this._holdsOwedFocus(focus);
+
+        if (index < 0 || (focus !== null && focus !== global.stage && !parked))
+            return;
+
+        this._owedRowFocus = -1;
+        (this._history[Math.min(index, this._history.length - 1)] ?? this._historySwitcher).grab_key_focus();
+    }
+
+    // The rows go with the daemon, and the switch, the history switcher and
+    // the search with them, which leaves nothing in the menu to take a focus
+    // that was on a row: Clutter would hand it to the stage, and the keyboard
+    // would reach nothing until the menu reopened. So the menu itself holds
+    // it, and the row is owed it back once the next daemon's rows are there
+    // (_rebuild ()) -- however briefly the daemon was away, a handoff to
+    // another being one such spell. The graphical tool's list does the same
+    // (g_paste_ui_history_clear_display ()).
+    _parkRowFocus(index) {
+        const focus = global.stage.get_key_focus();
+
+        if (index < 0 || (focus !== null && focus !== global.stage))
+            return;
+
+        this._owedRowFocus = index;
+        this.menu.actor.grab_key_focus();
+    }
+
+    _stripRichText(uuid) {
+        this._hideItemActions();
+        this._client.strip_rich_text(uuid, null, logFailure('strip_rich_text_finish'));
+    }
+
+    // Uploaded, and the address put where the user can paste it, daemon-side
+    // (UploadAndCopy's doc in the D-Bus XML says why there): the address
+    // arrives in the list as an item of its own, through the update the daemon
+    // raises for it, unless the history refused it. This only tells the user
+    // how it went.
+    _upload(uuid) {
+        this._hideItemActions();
+        // An upload may outlive a destroyed indicator until the D-Bus call's
+        // ten-minute deadline; its callback only needs the indicator to notify.
+        this._client.upload_and_copy(uuid, null, onUploadDone.bind(null, new WeakRef(this)));
     }
 
     _scrollToTop() {
@@ -629,7 +797,12 @@ class GPasteIndicator extends Button {
         if (this._onDaemonStateChanged())
             return;
 
+        // The search and the switcher staying, unlike the rows: the keyboard
+        // on a row goes to what is left, as after a _rebuild ().
+        const focusIndex = this._focusedRowIndex();
+
         this._forgetHistory();
+        this._restoreRowFocus(focusIndex);
     }
 
     // A search asks the daemon to match; the favourites filter asks it for the
@@ -673,6 +846,14 @@ class GPasteIndicator extends Button {
     // rebuilding the whole list on every search keystroke and when entering or
     // leaving search. Shared by the full reload and the search paths.
     _rebuild(empty) {
+        // The rows are about to be rebound, dropped and added: which of them
+        // shows the item the actions are open for is not known again until
+        // those rebindings land, and the list has moved under whoever opened
+        // them anyway.
+        const focusIndex = this._focusedRowIndex();
+
+        this._hideItemActions(false);
+
         // Hold off lazy loading while the row count (and thus the scroll
         // adjustment) is in flux, so a re-entrant _maybeLoadMore() can't fire.
         this._loading = true;
@@ -705,6 +886,7 @@ class GPasteIndicator extends Button {
 
         this._updateVisibility(empty);
         this._scrollToTop();
+        this._restoreRowFocus(focusIndex);
     }
 
     _reloadCurrent() {
@@ -738,6 +920,14 @@ class GPasteIndicator extends Button {
 
         const available = this._available;
 
+        // The rows from @from on are about to show other items, and those past
+        // the new size to go: actions open under one of them would be under a
+        // row that no longer shows what they act on.
+        const focusIndex = this._focusedRowIndex();
+
+        if (this._history.indexOf(this._itemActionsRow) >= from)
+            this._hideItemActions(false);
+
         while (this._history.length > available)
             this._history.pop().destroy();
 
@@ -745,6 +935,7 @@ class GPasteIndicator extends Button {
             this._history[i].setIndex(i).catch(console.error);
 
         this._updateVisibility(available === 0);
+        this._restoreRowFocus(focusIndex);
         this._maybeLoadMore();
     }
 
@@ -889,6 +1080,12 @@ class GPasteIndicator extends Button {
             // Never reopen expanded: the menu opens on the history it is already
             // in, and the chooser is a detour from that.
             this._historySwitcher?.collapse();
+            // Nor reopen on the actions of a row: the focus is the menu's own
+            // to hand back here, so they are folded without taking it.
+            this._hideItemActions(false);
+            // The focus goes with the menu, and a row owed it is not owed it
+            // on the next opening.
+            this._owedRowFocus = -1;
         }
         super._onOpenStateChanged(menu, state);
     }

@@ -14,8 +14,9 @@ history entry leaving is taken off, and password expiry across a persisted hando
 `history-switcher` runs the shipped Shell controller under Node.js with actor
 and bus doubles. It checks backup drafts and focus across refresh, source
 removal, dialog closure after daemon loss, the current history's count (a
-listing that omits it, which updates ask, overtaken replies), and that only the
-key focus sets the switcher row's `active`. It is omitted when Node.js is
+listing that omits it, which updates ask, overtaken replies), that only the
+key focus sets the switcher row's `active`, and that a call nothing waits on
+reports its refusal to the log. It is omitted when Node.js is
 unavailable and exercises no real Shell rendering or session.
 
 `indicator` runs the shipped indicator the same way: its teardown, run once and
@@ -24,10 +25,27 @@ and, for an indicator built through its real constructor (`_setup()` stubbed),
 through the one `destroy` connection the button's double makes -- stopping the
 client's wait once its handlers are off it, and what the placeholder row says of each
 `GPasteClient:daemon-presence` -- a retry offered only once the daemon is
-absent, and handed to `retry_daemon()`. `history-switcher` checks that hiding
-the switcher -- which the daemon going does, a handoff to another included --
-gives up both its listing and its size read, and that nothing is sized while
-the presence is not `READY`, the name still having an owner.
+absent, and handed to `retry_daemon()`. An item row's actions open under the row
+that asked and fold when it asks again, when a refresh rebinds or drops that
+row but not one after it, handing a focus inside them back to the row; a failed
+upload is a notification, a done one is announced in one, without the address, the menu
+writes no clipboard of its own -- `UploadAndCopy` leaves that to the daemon --
+and nothing reaches the screen from an indicator torn down while the upload was
+out.
+
+The indicator double also clears focus when a row is destroyed: keyboard-opened
+actions on a removed last row must focus a surviving row, as must the row
+itself or one of its buttons, or the history switcher when a rebuild empties
+the list, and so must a fetch giving up on a daemon still there, the rows going
+without a change of presence. The daemon going parks the focus of a row on the
+menu and gives it back to that row once the next daemon's rows are built, and
+while it is away an update applies nothing and no size is read.
+`history-switcher` checks that hiding the switcher -- which the daemon going
+does, a handoff to another included -- gives up both its listing and its size
+read, and that nothing is sized while the presence is not `READY`, the name
+still having an owner. A revocable weak-reference double
+models collection during an upload, so its reply is finished without a
+notification from an indicator that is gone.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers a

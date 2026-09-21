@@ -46,6 +46,14 @@ const context = vm.createContext({
         UpdateTarget: {ALL: 1, ITEM: 2},
     },
     global: {stage: {get_key_focus: () => focus}},
+    // As the real one does: the call finished, a refusal logged.
+    logFailure: finish => (client, result) => {
+        try {
+            client[finish](result);
+        } catch (e) {
+            errors.push(e.message);
+        }
+    },
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }};
@@ -229,6 +237,14 @@ function switcher() {
     await first;
     assert.equal(sized._rows.find(r => r.history === 'default').size, 5);
 
+    // A backup nothing waits on reports a refusal to the log.
+    const backup = switcher();
+    backup._actions.hide = () => {};
+    backup._client.backup_history = (history, name, cancellable, callback) => callback(backup._client, null);
+    backup._client.backup_history_finish = () => { throw new Error('already exists'); };
+    backup._backup('work', 'work_backup');
+    assert.deepEqual(errors.splice(0), ['already exists']);
+
     assert.deepEqual(errors, []);
-    console.log('History switcher: draft refresh, source deletion, daemon loss, current count and row focus passed');
+    console.log('History switcher: draft refresh, source deletion, daemon loss, current count, row focus and call reporting passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

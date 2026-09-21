@@ -1,6 +1,7 @@
 NEW in 51.1 (UNRELEASED)
 =============
 
+- Remove the rich text from an item, or upload it, from the GNOME Shell menu's right-click actions
 - Upload an item and copy its address from the command line
 - Delete a history from the graphical tool's sidebar, with a button on hover or the Delete key
 - Recognise a password copied from another clipboard manager, and mark the ones GPaste puts back as secrets

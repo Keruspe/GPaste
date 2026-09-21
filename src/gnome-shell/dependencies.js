@@ -26,6 +26,24 @@ Gio._promisify(GPaste.Client.prototype, 'get_item', 'get_item_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_image', 'get_image_finish');
 
 /**
+ * The callback for a call nothing waits on: the menu has closed on it, or never
+ * needed its answer, so a refusal -- a daemon busy handing its store over, say --
+ * has nowhere to go but the log, and would otherwise be dropped without a trace.
+ *
+ * @param {string} finish - the name of the call's _finish method
+ * @returns {Function} the callback to pass the call
+ */
+export function logFailure(finish) {
+    return (client, result) => {
+        try {
+            client[finish](result);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+}
+
+/**
  * Cancel the request still in flight and hand back the cancellable its successor
  * goes out on, so a caller keeps one field for "the request that is current".
  *

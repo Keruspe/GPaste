@@ -83,7 +83,14 @@ export class GPasteItem extends PopupMenuItem {
     // has one, and that controller walks the chain from this class up, so these
     // are consulted before the space/Return PopupBaseMenuItem installs.
     static {
-        GObject.registerClass(this);
+        // 'actions' is what else can be done to the item this row shows: it
+        // names that item by its uuid, and says whether the keyboard asked (the
+        // menu key) or the pointer did (a right click) -- as a history row does.
+        GObject.registerClass({
+            Signals: {
+                'actions': {param_types: [GObject.TYPE_STRING, GObject.TYPE_BOOLEAN]},
+            },
+        }, this);
 
         const bindingPool = this.get_binding_pool();
         const deleteItem = obj => {
@@ -194,6 +201,20 @@ export class GPasteItem extends PopupMenuItem {
         this.connect('notify::hover', () => this._updateActionsVisibility());
         this.connect('notify::active', () => this._updateActionsVisibility());
         this._updateActionsVisibility();
+
+        // Recognised on press, as the shell's own right clicks are. A gesture
+        // that recognises cancels the others on the same points, so the row's
+        // own click gesture -- which takes any button -- never gets to the
+        // release it would select on.
+        const rightClick = new Clutter.ClickGesture({
+            required_button: Clutter.BUTTON_SECONDARY,
+            recognize_on_press: true,
+        });
+        rightClick.connect('recognize', () => this._askActions(false));
+        this.add_action(rightClick);
+
+        // What St emits for the menu key and Shift+F10.
+        this.connect('popup-menu', () => this._askActions(true));
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this.setTextSize(size);
@@ -446,6 +467,15 @@ export class GPasteItem extends PopupMenuItem {
             width: size,
             height: size,
         });
+    }
+
+    // Both actions the row can offer want a text item, as they do in the
+    // graphical tool, so a row showing anything else has nothing to open and
+    // says nothing -- and one still waiting for its item has no kind yet.
+    // _shownUuid, not _uuid: what the actions act on is what the row shows.
+    _askActions(fromKeyboard) {
+        if (this._shownUuid && this._kind === GPaste.ItemKind.TEXT)
+            this.emit('actions', this._shownUuid, fromKeyboard);
     }
 
     // The button and the Delete key both. Nothing to delete until the row's

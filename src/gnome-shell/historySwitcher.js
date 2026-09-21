@@ -11,8 +11,9 @@ import GObject from 'gi://GObject';
 import GPaste from 'gi://GPaste?version=3';
 import St from 'gi://St';
 
+import {addActionButton} from './actionButton.js';
 import {GPasteDeleteButton} from './deleteButton.js';
-import {awaitReply, replaceCancellable} from './dependencies.js';
+import {awaitReply, logFailure, replaceCancellable} from './dependencies.js';
 
 /**
  * Makes an entry of the chooser act on the name typed into it on Enter, or on a
@@ -51,24 +52,6 @@ function addConfirmMark(entry, iconName, acceptable, confirm) {
     entry.connect('secondary-icon-clicked', onConfirm);
 
     return update;
-}
-
-/**
- * The callback for a call nothing waits on: the menu has closed on it, or never
- * needed its answer, so a refusal -- a daemon busy handing its store over, say --
- * has nowhere to go but the log, and would otherwise be dropped without a trace.
- *
- * @param {string} finish - the name of the call's _finish method
- * @returns {Function} the callback to pass the call
- */
-function logFailure(finish) {
-    return (client, result) => {
-        try {
-            client[finish](result);
-        } catch (e) {
-            console.error(e);
-        }
-    };
 }
 
 // Asks before a history goes or loses what it holds: unlike an item, that is
@@ -255,9 +238,9 @@ const GPasteHistoryActionsItem = GObject.registerClass({
             x_expand: true,
             style: 'spacing: 6px;',
         });
-        this._emptyButton = this._addButton(pgettext('verb', 'Empty'), () => this.emit('empty', this._history));
-        this._backupButton = this._addButton(_('Back Up'), () => this._askBackupName());
-        this._addButton(_('Delete'), () => this.emit('delete', this._history));
+        this._emptyButton = addActionButton(this._buttons, pgettext('verb', 'Empty'), () => this.emit('empty', this._history));
+        this._backupButton = addActionButton(this._buttons, _('Back Up'), () => this._askBackupName());
+        addActionButton(this._buttons, _('Delete'), () => this.emit('delete', this._history));
         this.add_child(this._buttons);
 
         // The name of the copy, asked for in place of the buttons, as the
@@ -280,20 +263,6 @@ const GPasteHistoryActionsItem = GObject.registerClass({
         this.add_child(this._entry);
 
         this.reset();
-    }
-
-    _addButton(label, action) {
-        const button = new St.Button({
-            style_class: 'button',
-            label,
-            x_expand: true,
-            can_focus: true,
-        });
-
-        button.connect('clicked', action);
-        this._buttons.add_child(button);
-
-        return button;
     }
 
     get history() {
