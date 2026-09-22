@@ -143,12 +143,72 @@ test_daemon_version (gconstpointer user_data)
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
 }
 
+/* Which command lines go near stdin at all. extract_pipe_data () reads it to
+ * its end, and a script that leaves its own stdin open never provides one, so a
+ * verb answered without a pipe must never be waiting behind one -- the flag
+ * actions above all, which are answered before any verb is looked at. */
+static void
+test_reads_stdin (void)
+{
+    Context ctx = { 0 };
+
+    /* Nothing but a pipe, and the three verbs whose last argument it stands in
+     * for when that argument is missing. */
+    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    g_assert_true (dispatch_reads_stdin (1, "add", &ctx));
+    g_assert_true (dispatch_reads_stdin (1, "a", &ctx));
+    g_assert_true (dispatch_reads_stdin (2, "add-password", &ctx));
+    g_assert_true (dispatch_reads_stdin (2, "replace", &ctx));
+
+    /* The argument is there, so there is nothing to take from a pipe. */
+    g_assert_false (dispatch_reads_stdin (2, "add", &ctx));
+    g_assert_false (dispatch_reads_stdin (3, "add-password", &ctx));
+    g_assert_false (dispatch_reads_stdin (3, "replace", &ctx));
+    g_assert_false (dispatch_reads_stdin (1, "history", &ctx));
+    g_assert_false (dispatch_reads_stdin (1, "version", &ctx));
+
+    /* --help and --version carry no verb, which is the shape the verb-less add
+     * has too -- and they are answered before it. */
+    ctx.help = TRUE;
+    g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
+
+    ctx.help = FALSE;
+    ctx.version = TRUE;
+    g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
+
+    /* Each flag only the listing reads -- listing_flags_given ()'s list --
+     * makes a verb-less line the listing, and leaves a verb's own pipe alone,
+     * --use-index with replace <index> above all. */
+    gboolean *listing_flags[] = { &ctx.favourites, &ctx.oneline, &ctx.raw, &ctx.reverse, &ctx.use_index, &ctx.zero };
+
+    ctx.version = FALSE;
+    for (guint i = 0; i < G_N_ELEMENTS (listing_flags); ++i)
+    {
+        *listing_flags[i] = TRUE;
+        g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
+        g_assert_true (dispatch_reads_stdin (1, "add", &ctx));
+        g_assert_true (dispatch_reads_stdin (2, "replace", &ctx));
+        *listing_flags[i] = FALSE;
+    }
+
+    /* A flag the listing does not own leaves a verb-less line the pipe's. */
+    ctx.timeout_given = TRUE;
+    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    ctx.timeout_given = FALSE;
+    ctx.decoration = "-";
+    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    ctx.decoration = NULL;
+    ctx.separator = ",";
+    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+}
+
 int
 main (int argc, char **argv)
 {
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/client/reexec/refusal", test_refusal);
+    g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
     g_test_add_data_func ("/client/daemon_version/answered", "51.1", test_daemon_version);
     g_test_add_data_func ("/client/daemon_version/unanswered", NULL, test_daemon_version);

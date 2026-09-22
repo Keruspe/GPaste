@@ -41,9 +41,8 @@ function __gpaste_histories
 end
 
 # "<uuid>\t<item>" so the item's text shows up as the completion's description.
-# gpaste-client reads stdin whenever it is not a tty (that is how "foo |
-# gpaste-client" works), so feed it /dev/null: completion is not always run with
-# a terminal on stdin, and it would otherwise block waiting for EOF.
+# Fed /dev/null for an older gpaste-client first on PATH: see the bash
+# completion's _gpaste_client_uuids.
 function __gpaste_items
     __gpaste_daemon_running; or return
 

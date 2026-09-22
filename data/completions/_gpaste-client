@@ -39,10 +39,9 @@ _gpaste-client_histories() {
 }
 
 # "<uuid>: <item>" lines, which is exactly the value:description form _describe
-# wants, so the item's text shows up next to its uuid. gpaste-client reads stdin
-# whenever it is not a tty (that is how "foo | gpaste-client" works), so feed it
-# /dev/null: completion is not always run with a terminal on stdin, and it would
-# otherwise block waiting for EOF.
+# wants, so the item's text shows up next to its uuid. Fed /dev/null for an
+# older gpaste-client first on PATH: see the bash completion's
+# _gpaste_client_uuids.
 (( $+functions[_gpaste-client_uuids] )) ||
 _gpaste-client_uuids() {
     local -a items

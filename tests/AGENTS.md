@@ -36,8 +36,11 @@ handler directly. Anything that would leave the test — `kill ()`, the re-exec
 call, the pid file, the version the proxy caches — is a `#define` over the name
 the file uses, which is how the empty cases (a daemon that has not answered for
 its version, one that refused a re-exec) are reached without a daemon to go
-missing. It covers the re-exec fallback, the migration gate across it, and
-`daemon-version` with and without an answer.
+missing. It covers the re-exec fallback, the migration gate across it,
+`daemon-version` with and without an answer, and which command lines
+`dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
+verb and so have the verb-less add's shape, and the listing's own flags
+included.
 
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and

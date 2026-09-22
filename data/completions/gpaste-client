@@ -45,9 +45,9 @@ _gpaste_client_histories()
 }
 
 # Both of these ask the daemon for the history and keep only its first column.
-# gpaste-client reads stdin whenever it is not a tty (that is how "foo |
-# gpaste-client" works), so feed it /dev/null: completion is not always run with
-# a terminal on stdin, and it would otherwise block waiting for EOF.
+# `history` reads nothing from stdin, but an older gpaste-client first on PATH
+# (a local build, say) read it whenever it was not a tty, and would block on it
+# where completion runs without a terminal: fed /dev/null, it cannot.
 _gpaste_client_uuids()
 {
     _gpaste_client_daemon_running || return

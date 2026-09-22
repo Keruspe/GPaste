@@ -6,11 +6,35 @@
 GPaste \- A lightweight clipboard manager for the Gnome desktop
 
 .SH "SYNOPSIS"
-.B [command |] gpaste-client [options...]
+.B gpaste-client [options...] [command [arguments...]]
+.br
+.B command | gpaste-client [add | add-password <name> | replace <uuid>]
 
 .SH "DESCRIPTION"
 GPaste is a modular clipboard management system with a fully
 DBus-based daemon, a \s-1CLI\s0 client and a gtk+ tray icon.
+
+With no command,
+.B gpaste-client
+adds what is piped into it, or displays the history when nothing is.
+.BR add ,
+.B add-password
+and
+.B replace
+take their last argument from what is piped when it is not given. No other
+command reads what is piped. With no command,
+.B \%--help
+and
+.B \%--version
+do not read it either, and neither do the options that change how the history
+is displayed, which then display it without adding what is piped:
+.BR \%--favourites ,
+.BR \%--oneline ,
+.BR \%--raw ,
+.BR \%--reverse ,
+.B \%--use-index
+or
+.BR \%--zero .
 
 .SH "COMMANDS"
 
