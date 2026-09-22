@@ -168,14 +168,25 @@ test_clipboard_dispose (GObject *object)
      * has to remember to: the data owns a guard, a cancellable and the refs
      * behind its destroy notify. */
     g_clear_pointer (&self->sync, g_paste_clipboard_sync_data_free);
-    g_paste_clipboard_content_clear (&self->content);
     G_OBJECT_CLASS (test_clipboard_parent_class)->dispose (object);
+}
+
+/* The cached value is a plain allocation, and a disposed provider still answers
+ * get_text () for it, as the GDK backend does. */
+static void
+test_clipboard_finalize (GObject *object)
+{
+    g_paste_clipboard_content_clear (&TEST_CLIPBOARD (object)->content);
+    G_OBJECT_CLASS (test_clipboard_parent_class)->finalize (object);
 }
 
 static void
 test_clipboard_class_init (TestClipboardClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = test_clipboard_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = test_clipboard_dispose;
+    object_class->finalize = test_clipboard_finalize;
 }
 
 static void
