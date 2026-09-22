@@ -353,9 +353,17 @@ g_paste_change_passphrase (Context *ctx,
 
 static gint
 g_paste_daemon_version (Context *ctx,
-                        GError **error G_GNUC_UNUSED)
+                        GError **error)
 {
+    /* As in current_history (): the cached property is empty until the daemon
+     * has answered for it, and again once it leaves the bus. */
     g_autofree gchar *v = g_paste_client_get_version (ctx->client);
+
+    if (!v)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "Couldn't get the version of the daemon.");
+        return EXIT_FAILURE;
+    }
 
     printf ("%s\n", v);
 

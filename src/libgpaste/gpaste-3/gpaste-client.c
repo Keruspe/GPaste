@@ -1633,7 +1633,7 @@ g_paste_client_get_history_name (GPasteClient *self)
  *
  * Get the version of the running gpaste daemon
  *
- * Returns: the version of the daemon
+ * Returns: (transfer full) (nullable): the version of the daemon
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_version (GPasteClient *self)
