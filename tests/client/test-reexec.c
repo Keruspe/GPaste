@@ -43,12 +43,25 @@ fake_kill (GPid pid,
     return 0;
 }
 
+static gchar *daemon_version;
+
+/* The cached Version property, which is empty until the daemon has answered for
+ * it and again once it leaves the bus. Faked rather than read off a real proxy,
+ * so the empty case needs no daemon to go missing. */
+static gchar *
+fake_get_version (GPasteClient *client G_GNUC_UNUSED)
+{
+    return g_strdup (daemon_version);
+}
+
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
 #define kill fake_kill
 #define g_paste_util_read_pid_file fake_pid
 #define g_paste_util_reexecute_daemon fake_reexecute_daemon
+#define g_paste_client_get_version fake_get_version
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_client_get_version
 #undef g_paste_util_reexecute_daemon
 #undef g_paste_util_read_pid_file
 #undef kill
@@ -111,6 +124,25 @@ test_migrate_gate (gconstpointer user_data)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
 }
 
+/* A daemon that has not answered for its version yet, or that is not on the bus
+ * at all, leaves the cached property empty, and the verb has to report that
+ * rather than print it: gcc compiles its printf ("%s\n", ...) into a puts (),
+ * which unlike printf () does not spell a %NULL out. */
+static void
+test_daemon_version (gconstpointer user_data)
+{
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    daemon_version = (gchar *) user_data;
+
+    g_assert_cmpint (g_paste_daemon_version (&ctx, &error), ==, (daemon_version) ? EXIT_SUCCESS : EXIT_FAILURE);
+    if (daemon_version)
+        g_assert_no_error (error);
+    else
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -118,6 +150,8 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/client/reexec/refusal", test_refusal);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
+    g_test_add_data_func ("/client/daemon_version/answered", "51.1", test_daemon_version);
+    g_test_add_data_func ("/client/daemon_version/unanswered", NULL, test_daemon_version);
     g_test_add_data_func ("/client/migrate/gate_survives_fallback", GINT_TO_POINTER (TRUE), test_migrate_gate);
     g_test_add_data_func ("/client/migrate/gate_closed_on_refusal", GINT_TO_POINTER (FALSE), test_migrate_gate);
     return g_paste_test_env_run ();

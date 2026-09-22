@@ -30,6 +30,15 @@ The portal suite also exercises `GPasteKeybinder` with real settings changes:
 starting enabled or disabled, toggling both ways, preserving unchanged sessions,
 and disposal with a rebind pending.
 
+`test-client-reexec` covers the command line tool by `#include`-ing
+`src/client/gpaste-client.c` with `main` renamed, so a case calls a verb's own
+handler directly. Anything that would leave the test — `kill ()`, the re-exec
+call, the pid file, the version the proxy caches — is a `#define` over the name
+the file uses, which is how the empty cases (a daemon that has not answered for
+its version, one that refused a re-exec) are reached without a daemon to go
+missing. It covers the re-exec fallback, the migration gate across it, and
+`daemon-version` with and without an answer.
+
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and
 detail filtering, without reading or writing user preferences.
