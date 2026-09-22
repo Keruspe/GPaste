@@ -311,6 +311,155 @@ g_paste_gtk_util_form_dialog (const gchar  *heading,
     return dialog;
 }
 
+/* The longest line the composer will put in a #GtkTextView, in characters.
+ *
+ * A #GtkTextView lays a line out again whenever that line changes, so what an
+ * edit costs is the length of the line it lands in and not the size of the
+ * text: a megabyte spread over ordinary lines answers a keystroke in about
+ * twenty milliseconds, a single line of that size in more than a second.
+ *
+ * The cost is linear in the length of the line, at roughly a microsecond per
+ * character in a 600x400 view -- 10k characters to a keystroke of 10ms, 20k to
+ * 20ms, 40k to 42ms, 80k to 93ms, 300k to 578ms. The wrap mode only scales it:
+ * GTK_WRAP_NONE is the cheapest at a third of the cost and still 172ms at 300k,
+ * and GTK_WRAP_CHAR is four times dearer than the GTK_WRAP_WORD used below, so
+ * there is no way to lay such a line out and keep up with typing.
+ *
+ * 50000 is the last round number whose keystroke still fits in a few frames,
+ * and the curve above it has no second knee to aim at: what is workable and
+ * what is not are the same thing at different speeds, so the number is a
+ * judgement about the slowest edit worth offering rather than a preference
+ * anyone can hold, and it stays a constant for that reason. Moving it is one
+ * line, and the measurements that say where to move it are made by typing into
+ * a view, not by the person doing the typing.
+ */
+#define MAX_COMPOSABLE_LINE 50000
+
+/* Whether inserting @text between the @before characters a line already has
+ * ahead of the caret and the @after ones behind it would put any line past the
+ * limit.
+ *
+ * Every line the insertion makes is measured: the first segment of @text
+ * continues the line it lands in, the last is continued by the caret's own tail,
+ * and each segment between them is a whole line of its own. A paste is the case
+ * this exists for, and a paste of several lines is one whose long line is as
+ * likely to be its third as its first.
+ *
+ * Lines are split where GtkTextBuffer splits them, which is at every paragraph
+ * delimiter pango knows -- "\n", "\r", "\r\n" and U+2029 alike -- and not at
+ * "\n" alone: the cost MAX_COMPOSABLE_LINE bounds is the view's, per line it
+ * lays out, so text broken by carriage returns is as many short lines to the
+ * view as text broken by newlines, and splitting on "\n" only would refuse it as
+ * one long line (/ui/text_dialog/cr_lines_opened). */
+static gboolean
+insertion_has_uncomposable_line (const gchar *text,
+                                 gsize        size,
+                                 glong        before,
+                                 glong        after)
+{
+    const gchar *end = text + size;
+
+    for (const gchar *line = text; ; )
+    {
+        gint delimiter;
+        gint next;
+
+        pango_find_paragraph_boundary (line, end - line, &delimiter, &next);
+
+        /* No delimiter left: the boundary is the end of @text itself. */
+        gboolean last = (delimiter == next);
+        glong length = g_utf8_strlen (line, delimiter);
+
+        if (line == text)
+            length += before;
+        if (last)
+            length += after;
+
+        if (length > MAX_COMPOSABLE_LINE)
+            return TRUE;
+
+        if (last)
+            return FALSE;
+
+        line += next;
+    }
+}
+
+/* Whether any line of @text is longer than MAX_COMPOSABLE_LINE: an insertion
+ * into an empty view. Answered rather than measured -- stopping at the first
+ * line over the limit is what keeps this off the length of the text. */
+static gboolean
+text_has_uncomposable_line (const gchar *text)
+{
+    return insertion_has_uncomposable_line (text, strlen (text), 0, 0);
+}
+
+/* The characters behind @iter up to its line's delimiter -- the half of the line
+ * an edit at @iter is continued by; the half ahead of it is
+ * gtk_text_iter_get_line_offset (). Shared by the insertion and the deletion
+ * check below, so the two cannot come to disagree on where a line ends -- which
+ * is GtkTextBuffer's own answer, at every delimiter it breaks on. */
+static glong
+chars_after_on_line (const GtkTextIter *iter)
+{
+    GtkTextIter end = *iter;
+
+    if (!gtk_text_iter_ends_line (&end))
+        gtk_text_iter_forward_to_line_end (&end);
+
+    return gtk_text_iter_get_offset (&end) - gtk_text_iter_get_offset (iter);
+}
+
+/* Refuse an insertion that would take a line past the limit -- a paste, above
+ * all, which is how a line that long gets into a view that refused to open with
+ * one. The bell is what says so: a toast would come up behind the dialog it is
+ * about. */
+static void
+on_text_dialog_insert_text (GtkTextBuffer *buffer,
+                            GtkTextIter   *location,
+                            gchar         *text,
+                            gint           len,
+                            gpointer       user_data)
+{
+    GtkWidget *view = user_data;
+    gsize size = (len < 0) ? strlen (text) : (gsize) len;
+    glong before = gtk_text_iter_get_line_offset (location);
+    glong after = chars_after_on_line (location);
+
+    if (!insertion_has_uncomposable_line (text, size, before, after))
+        return;
+
+    gtk_widget_error_bell (view);
+    g_signal_stop_emission_by_name (buffer, "insert-text");
+}
+
+/* Refuse a deletion that would join two lines into one past the limit.
+ *
+ * Deleting across a line break makes one line out of the text ahead of @start on
+ * its line and the text behind @end on its own, and two lines each under the
+ * limit can add up to one well past it: the insertion check above never sees
+ * that, nothing being inserted, and without this the limit is one Delete key
+ * away from the freeze it exists to prevent. Refused the way an insertion is
+ * (/ui/text_dialog/joined_line_refused). */
+static void
+on_text_dialog_delete_range (GtkTextBuffer *buffer,
+                             GtkTextIter   *start,
+                             GtkTextIter   *end,
+                             gpointer       user_data)
+{
+    GtkWidget *view = user_data;
+
+    /* Within one line, a deletion only ever shortens it. */
+    if (gtk_text_iter_get_line (start) == gtk_text_iter_get_line (end))
+        return;
+
+    if (gtk_text_iter_get_line_offset (start) + chars_after_on_line (end) <= MAX_COMPOSABLE_LINE)
+        return;
+
+    gtk_widget_error_bell (view);
+    g_signal_stop_emission_by_name (buffer, "delete-range");
+}
+
 /* Kept on the dialog, so it lives exactly as long as the dialog does. @answer
  * is what the user wrote, set only when they confirmed: the result is delivered
  * from "closed", which is the way out of the dialog every choice of the user's
@@ -455,6 +604,19 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
         return;
     }
 
+    /* Never opened over a line the view cannot lay out at typing speed (see
+     * MAX_COMPOSABLE_LINE): showing it is already seconds of frozen window, and
+     * every edit after that is another one. Answered like a cancellation, which
+     * is what the caller is built for. */
+    if (text && text_has_uncomposable_line (text))
+    {
+        g_paste_gtk_util_toast (GTK_WIDGET (parent), _("This item has a line too long to edit"));
+
+        callback (NULL, user_data);
+
+        return;
+    }
+
     GtkWidget *view = gtk_text_view_new ();
     GtkTextView *tv = GTK_TEXT_VIEW (view);
     GtkWidget *scroll = gtk_scrolled_window_new ();
@@ -469,6 +631,9 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
 
     if (text)
         gtk_text_buffer_set_text (buffer, text, -1);
+
+    g_signal_connect (buffer, "insert-text", G_CALLBACK (on_text_dialog_insert_text), view);
+    g_signal_connect (buffer, "delete-range", G_CALLBACK (on_text_dialog_delete_range), view);
 
     gtk_scrolled_window_set_child (sw, view);
     gtk_widget_set_vexpand (scroll, TRUE);

@@ -12,6 +12,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix a failed storage backend change being reported nowhere and retried on the next start
 - Fix gpaste-client crashing on daemon-version when the daemon is not answering
 - Fix gpaste-client waiting on its input for commands that read none
+- Fix the graphical tool freezing on an item made of one very long line
 - Build: require libXfixes
 
 NEW in 51.0 (15/09/2026)

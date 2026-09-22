@@ -42,6 +42,15 @@ missing. It covers the re-exec fallback, the migration gate across it,
 verb and so have the verb-less add's shape, and the listing's own flags
 included.
 
+`test-ui-text-dialog` covers what the item composer will open: a line past
+`MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of
+characters spread over many lines opens, and a line that long cannot be pasted
+into a view that did open -- whether it is the first line of the paste or one
+below it, while a paste of many short lines still goes in. Lines broken by
+`\r`, `\r\n` or U+2029 count as lines, the way the view breaks them, and
+deleting the break between two lines is refused when the line it would make is
+past the limit. It uses real GTK on the private Xvfb and skips without one.
+
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and
 detail filtering, without reading or writing user preferences.
