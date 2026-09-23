@@ -98,6 +98,9 @@ open one does, and a window closed under the dialog goes and frees what the edit
 held, even while something else holds the dialog; a text dialog refuses a
 parent libadwaita would not host it in, answering once as a cancellation, and
 Edit Item refuses such a window before its read goes out.
+`test-ui-new-item` checks that a window closed under the New Item composer
+goes and frees what the composer held, and that a window the dialog would
+refuse is refused on the way in.
 
 Clipboard regressions also cover synchronous password eviction invalidating a
 source cache during synchronization, distinct named passwords sharing a value,
