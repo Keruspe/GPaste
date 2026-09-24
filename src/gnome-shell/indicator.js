@@ -102,12 +102,6 @@ class GPasteIndicator extends Button {
             this);
         this._resetElementSize();
 
-        // Connected here rather than at the end of _setup (): the settings
-        // above are already connected and a reconnect may already be pending
-        // by the time _setup () gives up, and a teardown before it finishes
-        // has to take those with it too.
-        this.connect('destroy', this._onDestroy.bind(this));
-
         this._setup().catch(console.error);
     }
 
@@ -307,8 +301,7 @@ class GPasteIndicator extends Button {
         if (reported)
             this._onStateChanged(false);
 
-        // destroy() fires the 'destroy' signal connected in the constructor,
-        // which runs _onDestroy(); don't call it a second time here.
+        // destroy() runs _onDestroy(); don't call it a second time here.
         this.destroy();
 
         return reported;
@@ -1077,6 +1070,11 @@ class GPasteIndicator extends Button {
         this._scrollView.style = `max-height: ${Math.floor(workArea.height * 0.6)}px`;
     }
 
+    // An override of PanelMenu's own, which its constructor connects to
+    // 'destroy' before ours has run a line: a teardown before _setup () has
+    // finished, settings connected and a reconnect perhaps pending, reaches it
+    // all the same. Chained up last, since that is what destroys the menu the
+    // rows are in.
     _onDestroy() {
         // Set here and not only in shutdown (): the actor can be destroyed by
         // other routes, and a _probeDaemon () suspended on its call would
@@ -1094,11 +1092,9 @@ class GPasteIndicator extends Button {
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();
-
-        if (!this._client)
-            return;
-
-        this._client.disconnectObject(this);
+        this._client?.disconnectObject(this);
         this._client = null;
+
+        super._onDestroy();
     }
 });

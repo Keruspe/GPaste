@@ -18,6 +18,11 @@ listing that omits it, which updates ask, overtaken replies), and that only the
 key focus sets the switcher row's `active`. It is omitted when Node.js is
 unavailable and exercises no real Shell rendering or session.
 
+`indicator` runs the shipped indicator the same way: its teardown, run once and
+chained up to `PanelMenu.Button`'s even before `_setup()` has built anything --
+and, for an indicator built through its real constructor (`_setup()` stubbed),
+through the one `destroy` connection the button's double makes.
+
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers a
 refused storage migration, both with the preferences window still up (an alert

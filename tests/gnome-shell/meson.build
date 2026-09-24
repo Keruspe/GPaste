@@ -3,4 +3,7 @@ if node.found()
   test('history-switcher', node,
     args: [files('test-history-switcher.cjs'), meson.project_source_root() / 'src/gnome-shell/historySwitcher.js'],
   )
+  test('indicator', node,
+    args: [files('test-indicator.cjs'), meson.project_source_root() / 'src/gnome-shell/indicator.js'],
+  )
 endif
