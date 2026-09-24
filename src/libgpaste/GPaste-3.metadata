@@ -1,0 +1,9 @@
+// SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+// SPDX-License-Identifier: BSD-2-Clause
+
+// The ShowHistory signal and method share a name on purpose (see the D-Bus
+// XML), and Vala has one namespace for both: left alone, vapigen keeps the
+// signal and drops the method. The method takes the name here instead, beside
+// its show_history_sync twin, which keeps the signal where Vala code already
+// connects to it.
+Client.show_history#method name="show_history_async"
