@@ -7,6 +7,10 @@
     "version-name": "@version@",
     "description": "Clipboard management system",
     "url": "https://github.com/Keruspe/GPaste",
+    "donations": {
+        "github": "Keruspe",
+        "paypal": "keruspe"
+    },
     "gettext-domain": "@gettext_domain@"
 }
 

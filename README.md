@@ -270,6 +270,12 @@ every translator on the project page.
 GPaste is what a hundred or so people have made it: thanks to
 [everyone who has contributed](https://github.com/Keruspe/GPaste/graphs/contributors).
 
+## Supporting GPaste
+
+GPaste is developed in my spare time. If it is useful to you, you can support
+its development through [GitHub Sponsors](https://github.com/sponsors/Keruspe),
+or through [PayPal](https://paypal.me/keruspe/) if you are not on GitHub.
+
 ## Releases
 
 The latest release for GNOME 51 is

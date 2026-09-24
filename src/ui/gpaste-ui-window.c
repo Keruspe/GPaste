@@ -609,6 +609,8 @@ on_about (GSimpleAction *action    G_GNUC_UNUSED,
     adw_about_dialog_set_website (dialog, "https://www.imagination-land.org/tags/GPaste.html");
     adw_about_dialog_set_issue_url (dialog, "https://github.com/Keruspe/GPaste/issues");
     adw_about_dialog_set_support_url (dialog, "https://github.com/Keruspe/GPaste/issues");
+    adw_about_dialog_add_link (dialog, _("Sponsor on GitHub"), "https://github.com/sponsors/Keruspe");
+    adw_about_dialog_add_link (dialog, _("Donate with PayPal"), "https://paypal.me/keruspe/");
     /* Translators: put your names here, one per line, and they show up in the
      * about dialog's credits. */
     adw_about_dialog_set_translator_credits (dialog, _("translator-credits"));
