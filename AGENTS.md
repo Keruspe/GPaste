@@ -76,6 +76,7 @@ The test infrastructure and what each suite covers are documented in [`tests/AGE
 |---|---|
 | `G_PASTE_DEFINE_TYPE` | Concrete type — this is the normal case |
 | `G_PASTE_DEFINE_TYPE_WITH_INTERFACE` | Concrete type implementing an interface |
+| `G_DEFINE_TYPE_WITH_CODE` | Concrete type implementing several interfaces (`GPasteClient`): a wrapper cannot pass a `G_IMPLEMENT_INTERFACE ()` list through, its commas splitting it into arguments |
 | `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` | **Derivable** type with a `Private` struct |
 | `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE` | Abstract base class with private data |
 
@@ -162,10 +163,14 @@ so they stay hand-written and `tests/completions` checks them against
 `commands[]` instead — every verb and alias has to be offered by all three
 shells and every canonical verb documented in the man page.
 
-An enumeration exposed to a binding needs a GType: `GPasteItemKind`,
-`GPasteStorage` and `GPasteUpdateAction` each register one, which is what lets a
-setting like `storage-backend` be a `g_param_spec_enum` rather than a widened
-integer.
+An enumeration that has to back a `GValue` needs a GType: `GPasteItemKind`,
+`GPasteStorage`, `GPasteUpdateAction`, `GPasteUpdateTarget` and
+`GPasteDaemonPresence` register one, which is what lets a setting like
+`storage-backend` be a `g_param_spec_enum` rather than a widened integer and
+`GPasteClient:daemon-presence` a property. Not every exposed enum does:
+`GPasteError` is an error domain, and `GPasteStorageRemember`, `GPasteItemState`
+and `GPasteClipboardSecret` are in `GPasteDaemon-1.gir` without one -- `prompt.js`
+reading the first as plain values, no binding reading the other two.
 
 ## Maintenance rules
 

@@ -13,6 +13,28 @@
 
 G_BEGIN_DECLS
 
+/**
+ * GPasteDaemonPresence:
+ * @G_PASTE_DAEMON_PRESENCE_ABSENT: there is no daemon to talk to, nor one on
+ *   its way: nobody owns the bus name, or -- for a client following the daemon
+ *   -- its owner has not served a history in two minutes. Any client turns
+ *   ready by itself should one come back
+ * @G_PASTE_DAEMON_PRESENCE_STARTING: there is no daemon to talk to yet, but one
+ *   is on its way
+ * @G_PASTE_DAEMON_PRESENCE_READY: a daemon is there and serving a history
+ *
+ * Whether a #GPasteClient has a daemon to talk to: see
+ * #GPasteClient:daemon-presence.
+ */
+typedef enum {
+    G_PASTE_DAEMON_PRESENCE_ABSENT,
+    G_PASTE_DAEMON_PRESENCE_STARTING,
+    G_PASTE_DAEMON_PRESENCE_READY
+} GPasteDaemonPresence;
+
+#define G_PASTE_TYPE_DAEMON_PRESENCE (g_paste_daemon_presence_get_type ())
+GType g_paste_daemon_presence_get_type (void);
+
 #define G_PASTE_TYPE_CLIENT (g_paste_client_get_type ())
 
 G_PASTE_FINAL_TYPE (Client, client, CLIENT, GDBusProxy)
@@ -393,9 +415,19 @@ GPasteClientItem *g_paste_client_get_item_at_index_finish (GPasteClient *self,
 /* Properties */
 /**************/
 
-gboolean g_paste_client_is_active        (GPasteClient *self);
-gchar   *g_paste_client_get_history_name (GPasteClient *self);
-gchar   *g_paste_client_get_version      (GPasteClient *self);
+gboolean             g_paste_client_is_active           (GPasteClient *self);
+gchar               *g_paste_client_get_history_name    (GPasteClient *self);
+gchar               *g_paste_client_get_version         (GPasteClient *self);
+GPasteDaemonPresence g_paste_client_get_daemon_presence (GPasteClient *self);
+
+/**********************/
+/* Following a daemon */
+/**********************/
+
+void g_paste_client_follow_daemon   (GPasteClient *self,
+                                     gboolean      activate);
+void g_paste_client_unfollow_daemon (GPasteClient *self);
+void g_paste_client_retry_daemon    (GPasteClient *self);
 
 /****************/
 /* Constructors */

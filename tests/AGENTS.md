@@ -21,7 +21,10 @@ unavailable and exercises no real Shell rendering or session.
 `indicator` runs the shipped indicator the same way: its teardown, run once and
 chained up to `PanelMenu.Button`'s even before `_setup()` has built anything --
 and, for an indicator built through its real constructor (`_setup()` stubbed),
-through the one `destroy` connection the button's double makes.
+through the one `destroy` connection the button's double makes -- stopping the
+client's wait once its handlers are off it, and what the placeholder row says of each
+`GPasteClient:daemon-presence` -- a retry offered only once the daemon is
+absent, and handed to `retry_daemon()`.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers a
@@ -46,6 +49,18 @@ missing. It covers the re-exec fallback, the migration gate across it,
 `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
 verb and so have the verb-less add's shape, and the listing's own flags
 included.
+
+`test-client-presence` follows `GPasteClient:daemon-presence` on the private
+bus, which has nothing to activate, with the generated skeleton standing in for
+a daemon on a connection of its own: owning the name before it exports anything
+reads as starting, a `History` as ready, and a daemon going away as starting for
+the grace second and absent after it -- as does a retry the bus cannot answer. A
+client built through `GInitable`/`GAsyncInitable` rather than its constructors
+starts out with the right presence, a handler connected before a two-step init
+hearing of it once -- the GetAll reply saying so of a daemon that serves, the
+seed alone of an owner that serves nothing yet (`seed-announced`), and one dropped while its request for a
+daemon is still out -- to a stand-in registered by hand, which never answers --
+is finalized there and then.
 
 `test-ui-panel-history` puts one sidebar history row on the private Xvfb and
 drives its state flags directly: the delete button shows for the pointer and for

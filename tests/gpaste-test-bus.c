@@ -118,6 +118,15 @@ g_paste_test_bus_wait_until (GPasteTestBusDone done,
         g_source_remove (source);
 }
 
+/* A GPasteTestBusDone for a pointer that something fills in: @pointer is the
+ * address of it, @arg unused. */
+gboolean
+g_paste_test_bus_is_set (gconstpointer pointer,
+                         gconstpointer arg G_GNUC_UNUSED)
+{
+    return *((gconstpointer const *) pointer) != NULL;
+}
+
 static gint
 read_enum (gconstpointer object,
            const gchar  *property)

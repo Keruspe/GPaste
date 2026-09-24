@@ -32,6 +32,8 @@ void             g_paste_test_bus_barrier        (GDBusConnection            *co
 void             g_paste_test_bus_wait_until     (GPasteTestBusDone           done,
                                                   gconstpointer               data,
                                                   gconstpointer               arg);
+gboolean         g_paste_test_bus_is_set         (gconstpointer               pointer,
+                                                  gconstpointer               arg);
 void             g_paste_test_bus_wait_for_enum  (gpointer                    object,
                                                   const gchar                *property,
                                                   gint                        value);

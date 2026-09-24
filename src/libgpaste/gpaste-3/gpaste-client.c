@@ -7,9 +7,32 @@
 #include <gpaste-3/gpaste-util.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
+/* How long a followed client waits on a daemon that is not there: a grace
+ * second before a name nobody owns reads as missing -- what an upgrade takes to
+ * put one back -- and two minutes before an owner that never serves stops
+ * reading as starting -- long enough for a re-exec, an upgrade or a manual
+ * restart. Past that, trying again is the user's call. */
+#define G_PASTE_CLIENT_GRACE_SECONDS   1
+#define G_PASTE_CLIENT_GIVE_UP_SECONDS 127
+
 struct _GPasteClient
 {
     GDBusProxy parent_instance;
+
+    /* What was last announced of #GPasteClient:daemon-presence, which is what
+     * tells a change from a repeat. */
+    GPasteDaemonPresence presence;
+
+    /* See g_paste_client_follow_daemon (). */
+    gboolean             following;
+    /* Whether the wait has run out with nothing served. */
+    gboolean             spent;
+    guint                grace_source;
+    guint                give_up_source;
+    /* The request for a daemon in flight, cancelled and replaced by the next:
+     * the wait is the latest one's to start, an older one having been
+     * overtaken. */
+    GCancellable        *probe;
 };
 
 /**
@@ -32,9 +55,22 @@ struct _GPasteClient
  * there" should therefore check the domain with g_error_matches(), not the bare
  * code: the numbering of the two overlaps.
  */
-static void g_paste_client_daemon3_iface_init (GPasteDaemon3Iface *iface);
+static void g_paste_client_daemon3_iface_init        (GPasteDaemon3Iface  *iface);
+static void g_paste_client_initable_iface_init       (GInitableIface      *iface);
+static void g_paste_client_async_initable_iface_init (GAsyncInitableIface *iface);
 
-G_PASTE_DEFINE_TYPE_WITH_INTERFACE (Client, client, G_TYPE_DBUS_PROXY, G_TYPE_PASTE_DAEMON3, g_paste_client_daemon3_iface_init)
+/* GDBusProxy implements both initables already; ours wrap its own, so that
+ * however a client is built the presence is read once it is (see
+ * g_paste_client_seed_presence ()). Three interfaces are more than
+ * G_PASTE_DEFINE_TYPE_WITH_INTERFACE takes, and a wrapper passing the
+ * G_IMPLEMENT_INTERFACE () list through would expand it into bare commas. */
+G_DEFINE_TYPE_WITH_CODE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY,
+                         G_IMPLEMENT_INTERFACE (G_TYPE_PASTE_DAEMON3, g_paste_client_daemon3_iface_init)
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, g_paste_client_initable_iface_init)
+                         G_IMPLEMENT_INTERFACE (G_TYPE_ASYNC_INITABLE, g_paste_client_async_initable_iface_init))
+
+static GInitableIface      *g_paste_client_parent_initable_iface;
+static GAsyncInitableIface *g_paste_client_parent_async_initable_iface;
 
 /* The ids g_paste_daemon3_override_properties() hands out, in the order the
  * interface declares them. */
@@ -43,7 +79,11 @@ enum
     PROP_ACTIVE = 1,
     PROP_HISTORY,
     PROP_VERSION,
+    /* Ours, after the interface's. */
+    PROP_DAEMON_PRESENCE,
 };
+
+static GParamSpec *daemon_presence_pspec = NULL;
 
 enum
 {
@@ -1647,6 +1687,312 @@ g_paste_client_get_version (GPasteClient *self)
     return (version) ? g_variant_dup_string (version, NULL) : NULL;
 }
 
+G_PASTE_VISIBLE GType
+g_paste_daemon_presence_get_type (void)
+{
+    static GType etype = 0;
+    if (!etype)
+    {
+        static const GEnumValue values[] = {
+            { G_PASTE_DAEMON_PRESENCE_ABSENT,   "G_PASTE_DAEMON_PRESENCE_ABSENT",   "absent"   },
+            { G_PASTE_DAEMON_PRESENCE_STARTING, "G_PASTE_DAEMON_PRESENCE_STARTING", "starting" },
+            { G_PASTE_DAEMON_PRESENCE_READY,    "G_PASTE_DAEMON_PRESENCE_READY",    "ready"    },
+            { 0,                                NULL,                               NULL       }
+        };
+        etype = g_enum_register_static (g_intern_static_string ("GPasteDaemonPresence"), values);
+        g_type_class_ref (etype);
+    }
+    return etype;
+}
+
+/* Which history is in use is the daemon's own property, cached off the proxy,
+ * and it reads back %NULL while there is no daemon: whether it has a value is
+ * therefore the honest answer to "is there one to ask".
+ *
+ * The bus name is not that answer. Both daemons own the name *before* building
+ * the object that serves it, so the proxy's GetAll on a new owner finds nothing
+ * at that path and leaves the cache empty; what fills it is the daemon's own
+ * PropertiesChanged a moment later. A name owner with no history is therefore a
+ * daemon starting -- and a migration or passphrase dialog can hold it there for
+ * as long as the user takes to answer. */
+static GPasteDaemonPresence
+g_paste_client_compute_presence (GPasteClient *self)
+{
+    g_autofree gchar *history = g_paste_client_get_history_name (self);
+
+    if (history)
+        return G_PASTE_DAEMON_PRESENCE_READY;
+
+    /* One that owns the name and never served a history is not starting any
+     * more once the wait has run out on it. */
+    if (self->spent)
+        return G_PASTE_DAEMON_PRESENCE_ABSENT;
+
+    /* A probe out is a daemon asked for, and one gone for less than the grace
+     * second is not yet one worth calling missing. */
+    if (self->probe || self->grace_source)
+        return G_PASTE_DAEMON_PRESENCE_STARTING;
+
+    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self));
+
+    return (owner) ? G_PASTE_DAEMON_PRESENCE_STARTING : G_PASTE_DAEMON_PRESENCE_ABSENT;
+}
+
+static void
+g_paste_client_update_presence (GPasteClient *self)
+{
+    GPasteDaemonPresence presence = g_paste_client_compute_presence (self);
+
+    if (presence == self->presence)
+        return;
+
+    self->presence = presence;
+    g_object_notify_by_pspec (G_OBJECT (self), daemon_presence_pspec);
+}
+
+/**
+ * g_paste_client_get_daemon_presence:
+ * @self: a #GPasteClient instance
+ *
+ * Get whether there is a daemon to talk to
+ *
+ * Returns: the #GPasteClient:daemon-presence
+ */
+G_PASTE_VISIBLE GPasteDaemonPresence
+g_paste_client_get_daemon_presence (GPasteClient *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    return self->presence;
+}
+
+/* Neither timer asks anything of the bus. A call without an owner is what
+ * would start a daemon behind the user's back, and one with an owner has
+ * nothing to learn: a daemon owning the name is starting already, and what says
+ * it is ready is its history turning up, never a reply. So each only moves the
+ * presence along. */
+static gboolean
+on_grace_over (gpointer user_data)
+{
+    g_autoptr (GPasteClient) self = g_weak_ref_get (user_data);
+
+    if (self)
+    {
+        self->grace_source = 0;
+        g_paste_client_update_presence (self);
+    }
+
+    return G_SOURCE_REMOVE;
+}
+
+static gboolean
+on_give_up (gpointer user_data)
+{
+    g_autoptr (GPasteClient) self = g_weak_ref_get (user_data);
+
+    if (self)
+    {
+        self->give_up_source = 0;
+        self->spent = TRUE;
+        g_paste_client_update_presence (self);
+    }
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Called off, whatever it was waiting on: a request out included. */
+static void
+g_paste_client_stop_waiting (GPasteClient *self)
+{
+    g_clear_handle_id (&self->grace_source, g_source_remove);
+    g_clear_handle_id (&self->give_up_source, g_source_remove);
+    g_paste_clear_cancellable (&self->probe);
+    self->spent = FALSE;
+}
+
+/* Waited for from the start. The caller announces what that did to the
+ * presence. */
+static void
+g_paste_client_start_waiting (GPasteClient *self)
+{
+    g_clear_handle_id (&self->grace_source, g_source_remove);
+    g_clear_handle_id (&self->give_up_source, g_source_remove);
+    self->spent = FALSE;
+
+    self->grace_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, G_PASTE_CLIENT_GRACE_SECONDS, on_grace_over,
+                                                     g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    g_source_set_name_by_id (self->grace_source, "[GPaste] daemon grace");
+    self->give_up_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, G_PASTE_CLIENT_GIVE_UP_SECONDS, on_give_up,
+                                                       g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    g_source_set_name_by_id (self->give_up_source, "[GPaste] daemon give up");
+}
+
+/* Tracked in @self->probe so that dispose () can cancel it, so it holds @self
+ * weakly: see AGENTS.md. That also rules out the proxy's own call, whose task
+ * would take @self as its source object. */
+typedef struct
+{
+    GWeakRef      self;
+    GCancellable *cancellable;
+} ProbeData;
+
+static void
+probe_data_free (ProbeData *data)
+{
+    g_weak_ref_clear (&data->self);
+    g_object_unref (data->cancellable);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (ProbeData, probe_data_free)
+
+/* The reply is not the answer, and a failure is not one either: a daemon that
+ * has just been activated owns the name before it exports anything, so the call
+ * that started it is as likely as not to come back "object does not exist".
+ * What says it worked is the history turning up, which stops the wait and
+ * cancels this probe with it. */
+static void
+on_probe_ready (GObject      *source_object,
+                GAsyncResult *res,
+                gpointer      user_data)
+{
+    g_autoptr (ProbeData) data = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GVariant) reply = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
+
+    g_autoptr (GPasteClient) self = g_weak_ref_get (&data->self);
+
+    /* A cancel does not unqueue a reply already on its way, so it is asked of
+     * the cancellable this probe went out on. */
+    if (!self || g_cancellable_is_cancelled (data->cancellable))
+        return;
+
+    g_clear_object (&self->probe);
+    g_paste_client_start_waiting (self);
+    g_paste_client_update_presence (self);
+}
+
+/* The daemon is bus-activatable, so an ordinary method call is what brings it
+ * back -- which is why only the user gets to make this one (see
+ * on_grace_over ()). */
+static void
+g_paste_client_probe_daemon (GPasteClient *self)
+{
+    g_paste_clear_cancellable (&self->probe);
+    self->probe = g_cancellable_new ();
+
+    ProbeData *data = g_new (ProbeData, 1);
+    GDBusProxy *proxy = G_DBUS_PROXY (self);
+
+    g_weak_ref_init (&data->self, self);
+    data->cancellable = g_object_ref (self->probe);
+
+    g_dbus_connection_call (g_dbus_proxy_get_connection (proxy),
+                            g_dbus_proxy_get_name (proxy),
+                            g_dbus_proxy_get_object_path (proxy),
+                            g_dbus_proxy_get_interface_name (proxy),
+                            "GetHistorySize",
+                            NULL, /* parameters */
+                            NULL, /* reply type */
+                            G_DBUS_CALL_FLAGS_NONE,
+                            -1, /* timeout */
+                            self->probe,
+                            on_probe_ready,
+                            data);
+    g_paste_client_update_presence (self);
+}
+
+/* Both edges of the connection come through here: the proxy invalidates every
+ * cached property the moment the name loses its owner, and fills them again
+ * once there is a daemon to fill them from. */
+static void
+g_paste_client_sync_presence (GPasteClient *self)
+{
+    gboolean ready = g_paste_client_compute_presence (self) == G_PASTE_DAEMON_PRESENCE_READY;
+
+    if (self->following && ready != (self->presence == G_PASTE_DAEMON_PRESENCE_READY))
+    {
+        g_paste_client_stop_waiting (self);
+
+        if (!ready)
+            g_paste_client_start_waiting (self);
+    }
+
+    g_paste_client_update_presence (self);
+}
+
+/**
+ * g_paste_client_follow_daemon:
+ * @self: a #GPasteClient instance
+ * @activate: whether to ask for a daemon now, starting one if there is none
+ *
+ * Keep looking for the daemon whenever there is none
+ *
+ * A daemon going away -- an upgrade, a re-exec, a crash -- is waited for
+ * without calling it, so that none is ever started behind the user's back: one
+ * coming back is found through its history turning up. What that says, and
+ * when the wait gives up, is #GPasteClient:daemon-presence;
+ * g_paste_client_retry_daemon() starts it over.
+ *
+ * With @activate, a client that has no daemon now asks for one straight away,
+ * which starts it: for a caller the user has just opened, whose own calls would
+ * be starting one anyway. Without it, the wait starts from its beginning.
+ */
+G_PASTE_VISIBLE void
+g_paste_client_follow_daemon (GPasteClient *self,
+                              gboolean      activate)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    self->following = TRUE;
+
+    if (self->presence == G_PASTE_DAEMON_PRESENCE_READY)
+        return;
+
+    g_paste_client_stop_waiting (self);
+
+    if (activate)
+        g_paste_client_probe_daemon (self);
+    else
+    {
+        g_paste_client_start_waiting (self);
+        g_paste_client_update_presence (self);
+    }
+}
+
+/**
+ * g_paste_client_unfollow_daemon:
+ * @self: a #GPasteClient instance
+ *
+ * Stop looking for the daemon, for a caller going away while something else
+ * may still hold @self
+ */
+G_PASTE_VISIBLE void
+g_paste_client_unfollow_daemon (GPasteClient *self)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    self->following = FALSE;
+    g_paste_client_stop_waiting (self);
+    g_paste_client_update_presence (self);
+}
+
+/**
+ * g_paste_client_retry_daemon:
+ * @self: a #GPasteClient instance
+ *
+ * Ask for a daemon now, starting one if there is none, and wait for it from
+ * the start again -- for the user asking, which is the one case where
+ * starting a daemon is not going behind their back
+ */
+G_PASTE_VISIBLE void
+g_paste_client_retry_daemon (GPasteClient *self)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_client_follow_daemon (self, TRUE);
+}
+
 static void
 g_paste_client_daemon3_iface_init (GPasteDaemon3Iface *iface G_GNUC_UNUSED)
 {
@@ -1674,6 +2020,9 @@ g_paste_client_get_property (GObject    *object,
         break;
     case PROP_VERSION:
         g_value_take_string (value, g_paste_client_get_version (self));
+        break;
+    case PROP_DAEMON_PRESENCE:
+        g_value_set_enum (value, self->presence);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -1800,6 +2149,7 @@ g_paste_client_notify (GObject    *object,
                        GParamSpec *pspec)
 {
     GObjectClass *parent_class = G_OBJECT_CLASS (g_paste_client_parent_class);
+    GPasteClient *self = G_PASTE_CLIENT (object);
 
     if (g_paste_str_equal (pspec->name, "g-name-owner"))
     {
@@ -1807,17 +2157,40 @@ g_paste_client_notify (GObject    *object,
 
         if (owner)
         {
-            GPasteClient *self = G_PASTE_CLIENT (object);
-
             g_object_notify (object, "active");
             g_signal_emit (self, signals[TRACKING], 0 /* detail */, g_paste_client_is_active (self));
             g_object_notify (object, "history");
             g_object_notify (object, "version");
         }
+
+        /* A new owner is a daemon started since the last one went, which gets
+         * a wait of its own rather than what is left of its predecessor's --
+         * two minutes to serve, whether it took the name partway through that
+         * wait or after it ran out. */
+        if (owner && self->following && self->presence != G_PASTE_DAEMON_PRESENCE_READY)
+            g_paste_client_start_waiting (self);
+
+        /* An owner coming or going is a daemon starting or not, whatever the
+         * history says. */
+        g_paste_client_update_presence (self);
     }
+    /* Ahead of the handlers of "notify::history" themselves, this being the
+     * class handler: one that reads the presence finds it already moved. */
+    else if (g_paste_str_equal (pspec->name, "history"))
+        g_paste_client_sync_presence (self);
 
     if (parent_class->notify)
         parent_class->notify (object, pspec);
+}
+
+static void
+g_paste_client_dispose (GObject *object)
+{
+    GPasteClient *self = G_PASTE_CLIENT (object);
+
+    g_paste_client_stop_waiting (self);
+
+    G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
 }
 
 static void
@@ -1834,6 +2207,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * The daemon side registers through the same call when it throws. */
     g_paste_error_quark ();
 
+    object_class->dispose = g_paste_client_dispose;
     object_class->get_property = g_paste_client_get_property;
     object_class->set_property = g_paste_client_set_property;
     object_class->notify = g_paste_client_notify;
@@ -1844,6 +2218,35 @@ g_paste_client_class_init (GPasteClientClass *klass)
     /* Installs the interface's "Active", "History" and "Version" on us, in the
      * PROP_* order declared above. */
     g_paste_daemon3_override_properties (object_class, PROP_ACTIVE);
+
+    /**
+     * GPasteClient:daemon-presence:
+     *
+     * Whether there is a daemon to talk to. %G_PASTE_DAEMON_PRESENCE_READY
+     * once one serves a history; %G_PASTE_DAEMON_PRESENCE_STARTING while one
+     * owns the bus name without serving anything yet, or while a client that
+     * follows it (g_paste_client_follow_daemon()) has asked for one, or saw
+     * one go within the last second or so; %G_PASTE_DAEMON_PRESENCE_ABSENT
+     * otherwise.
+     *
+     * A client that follows the daemon reports absent about a second after a
+     * daemon leaves nobody owning the name, and two minutes into an owner that
+     * never serves a history, each new owner getting two minutes of its own.
+     * One that does not follow has neither timer: absent the moment nobody
+     * owns the name, and starting for as long as an owner serves nothing.
+     * Either kind turns ready by itself when a daemon comes back.
+     *
+     * Calls made while it is not ready start a daemon: the bus activates one on
+     * the first call to reach it. A caller that must not do that behind the
+     * user's back holds off until it is.
+     */
+    /* Installed on its own rather than through an array, the ids before it
+     * being the interface's. */
+    daemon_presence_pspec = g_param_spec_enum ("daemon-presence", NULL, NULL,
+                                               G_PASTE_TYPE_DAEMON_PRESENCE,
+                                               G_PASTE_DAEMON_PRESENCE_ABSENT,
+                                               G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+    g_object_class_install_property (object_class, PROP_DAEMON_PRESENCE, daemon_presence_pspec);
 
     /**
      * GPasteClient::history-deleted:
@@ -1930,6 +2333,64 @@ g_paste_client_init (GPasteClient *self)
     /* Straight out of the generated binding, so the wire format this proxy
      * expects and the one the daemon serves cannot drift apart. */
     g_dbus_proxy_set_interface_info (G_DBUS_PROXY (self), g_paste_daemon3_interface_info ());
+}
+
+/* What the presence starts as, read once initialising the proxy has settled
+ * its name owner and filled its cache, and announced like any other change: a
+ * client built with g_object_new () and initialised after may have a handler
+ * watching it already.
+ *
+ * For a daemon that serves, this announces nothing: GDBusProxy's init, the
+ * synchronous and the asynchronous alike, emits g-properties-changed with the
+ * GetAll reply, which notifies the history and moves the presence to ready
+ * first. An owner that serves nothing yet fills no history, though, and only
+ * this says it is starting (/client/presence/initables). */
+static void
+g_paste_client_seed_presence (GPasteClient *self)
+{
+    g_paste_client_update_presence (self);
+}
+
+static gboolean
+g_paste_client_initable_init (GInitable    *initable,
+                              GCancellable *cancellable,
+                              GError      **error)
+{
+    if (!g_paste_client_parent_initable_iface->init (initable, cancellable, error))
+        return FALSE;
+
+    g_paste_client_seed_presence (G_PASTE_CLIENT (initable));
+
+    return TRUE;
+}
+
+static void
+g_paste_client_initable_iface_init (GInitableIface *iface)
+{
+    g_paste_client_parent_initable_iface = g_type_interface_peek_parent (iface);
+    iface->init = g_paste_client_initable_init;
+}
+
+/* Only the finish: the parent's init_async, which the vtable inherits, is what
+ * does the work, and this is where its outcome is known. */
+static gboolean
+g_paste_client_async_initable_init_finish (GAsyncInitable *initable,
+                                           GAsyncResult   *res,
+                                           GError        **error)
+{
+    if (!g_paste_client_parent_async_initable_iface->init_finish (initable, res, error))
+        return FALSE;
+
+    g_paste_client_seed_presence (G_PASTE_CLIENT (initable));
+
+    return TRUE;
+}
+
+static void
+g_paste_client_async_initable_iface_init (GAsyncInitableIface *iface)
+{
+    g_paste_client_parent_async_initable_iface = g_type_interface_peek_parent (iface);
+    iface->init_finish = g_paste_client_async_initable_init_finish;
 }
 
 /**
