@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 17:03+0200\n"
+"POT-Creation-Date: 2026-10-05 23:14+0200\n"
 "PO-Revision-Date: 2026-02-27 19:09+0000\n"
 "Last-Translator: ayasa520 <ayasa0520@gmail.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
@@ -400,241 +400,246 @@ msgstr "重启守护进程成功"
 msgid "Cannot add non-UTF-8 data as text."
 msgstr "无法添加非UTF-8内容。"
 
-#: src/client/gpaste-client.c:774
+#: src/client/gpaste-client.c:790
 msgid "print the history with UUIDs"
 msgstr "打印历史记录（带 UUID）"
 
-#: src/client/gpaste-client.c:775
+#: src/client/gpaste-client.c:791
 #, fuzzy
 msgid "print the size of the current history"
 msgstr "输出记录的大小"
 
-#: src/client/gpaste-client.c:776
+#: src/client/gpaste-client.c:792
 #, fuzzy
 msgid "print the items of the history matching <pattern>"
 msgstr "输出记录的大小"
 
-#: src/client/gpaste-client.c:777
+#: src/client/gpaste-client.c:793
 msgid "get the name of the current history"
 msgstr "获取当前记录名"
 
-#: src/client/gpaste-client.c:778
+#: src/client/gpaste-client.c:794
 msgid "back up the current history"
 msgstr "备份当前记录"
 
-#: src/client/gpaste-client.c:779
+#: src/client/gpaste-client.c:795
 msgid "switch to another history"
 msgstr "切换到另一个记录"
 
-#: src/client/gpaste-client.c:780
+#: src/client/gpaste-client.c:796
 msgid "delete a history"
 msgstr "删除记录"
 
-#: src/client/gpaste-client.c:781
+#: src/client/gpaste-client.c:797
 msgid "list available histories"
 msgstr "列出可用记录"
 
-#: src/client/gpaste-client.c:782
+#: src/client/gpaste-client.c:798
 msgid "set text to clipboard"
 msgstr "保存文本到剪切板"
 
-#: src/client/gpaste-client.c:783
+#: src/client/gpaste-client.c:799
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "添加“名称 - 密码”到剪切板"
 
-#: src/client/gpaste-client.c:784
+#: src/client/gpaste-client.c:800
 msgid "get the item <uuid> from the history"
 msgstr "通过 <uuid> 从记录获取项"
 
-#: src/client/gpaste-client.c:785
+#: src/client/gpaste-client.c:801
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "通过 <uuid> 将项从记录放置到剪切板"
 
-#: src/client/gpaste-client.c:786
+#: src/client/gpaste-client.c:802
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "通过 <uuid> 和内容替换记录中的项"
 
-#: src/client/gpaste-client.c:787
+#: src/client/gpaste-client.c:803
 msgid ""
 "drop the rich text flavours of the item <uuid>, keeping the plain text it "
 "shows"
 msgstr ""
 
-#: src/client/gpaste-client.c:788
+#: src/client/gpaste-client.c:804
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr "合并与历史记录中的 UUID 匹配的项，并将结果放在剪贴板中"
 
-#: src/client/gpaste-client.c:789
+#: src/client/gpaste-client.c:805
 #, fuzzy
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
 "that is"
 msgstr "通过 <uuid> 来设置记录中的密码名称 <name>"
 
-#: src/client/gpaste-client.c:790
+#: src/client/gpaste-client.c:806
 msgid "delete item <uuid> from the history"
 msgstr "通过 <uuid> 删除记录中的项"
 
-#: src/client/gpaste-client.c:791
+#: src/client/gpaste-client.c:807
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:792
+#: src/client/gpaste-client.c:808
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:793
+#: src/client/gpaste-client.c:809
 msgid "delete the password <name> from the history"
 msgstr "删除记录中的密码 <name>"
 
-#: src/client/gpaste-client.c:794
+#: src/client/gpaste-client.c:810
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "将 <path> 的文件内容放置到剪切板"
 
-#: src/client/gpaste-client.c:795
+#: src/client/gpaste-client.c:811
 msgid "empty the history"
 msgstr "清空记录"
 
-#: src/client/gpaste-client.c:796
+#: src/client/gpaste-client.c:812
 msgid "start tracking clipboard changes"
 msgstr "开始跟踪剪切板变化"
 
-#: src/client/gpaste-client.c:797
+#: src/client/gpaste-client.c:813
 msgid "stop tracking clipboard changes"
 msgstr "结束跟踪剪切板变化"
 
-#: src/client/gpaste-client.c:798
+#: src/client/gpaste-client.c:814
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "重启守护进程（更新之后. . .）"
 
-#: src/client/gpaste-client.c:799
+#: src/client/gpaste-client.c:815
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:800
+#: src/client/gpaste-client.c:816
 #, fuzzy
 msgid "change the passphrase of the encrypted history"
 msgstr "获取当前记录名"
 
-#: src/client/gpaste-client.c:801
+#: src/client/gpaste-client.c:817
 msgid "launch the configuration tool"
 msgstr "启动配置工具"
 
-#: src/client/gpaste-client.c:802
+#: src/client/gpaste-client.c:818
 msgid "launch the graphical tool"
 msgstr "启动界面"
 
-#: src/client/gpaste-client.c:803
+#: src/client/gpaste-client.c:819
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "让applet或扩展显示历史"
 
-#: src/client/gpaste-client.c:804
+#: src/client/gpaste-client.c:820
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "上传项<uuid>到pastebin服务"
 
-#: src/client/gpaste-client.c:805
+#: src/client/gpaste-client.c:821
+#, fuzzy
+msgid "upload the item <uuid> to a pastebin service, and copy its address"
+msgstr "上传项<uuid>到pastebin服务"
+
+#: src/client/gpaste-client.c:822
 msgid "display the version"
 msgstr "显示版本"
 
-#: src/client/gpaste-client.c:806
+#: src/client/gpaste-client.c:823
 msgid "display the daemon version"
 msgstr "显示守护进程版本"
 
-#: src/client/gpaste-client.c:807
+#: src/client/gpaste-client.c:824
 msgid "display this help"
 msgstr "显示“帮助”"
 
-#: src/client/gpaste-client.c:808
+#: src/client/gpaste-client.c:825
 msgid "display the about dialog"
 msgstr "显示“关于”"
 
-#: src/client/gpaste-client.c:879
+#: src/client/gpaste-client.c:896
 #, c-format
 msgid "Usage:\n"
 msgstr "使用:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:900
+#: src/client/gpaste-client.c:917
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:900
+#: src/client/gpaste-client.c:917
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "将任何输出内容都放置到剪切板"
 
-#: src/client/gpaste-client.c:903
+#: src/client/gpaste-client.c:920
 #, c-format
 msgid "Convenience options:"
 msgstr "快捷选项："
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:906
+#: src/client/gpaste-client.c:923
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:908
+#: src/client/gpaste-client.c:925
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:910
+#: src/client/gpaste-client.c:927
 msgid "use the index of the item instead of its UUID"
 msgstr "使用项目的索引而不是它的 UUID"
 
-#: src/client/gpaste-client.c:913
+#: src/client/gpaste-client.c:930
 #, c-format
 msgid "Display options:"
 msgstr "显示选项："
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:916
+#: src/client/gpaste-client.c:933
 msgid "display each item on only one line"
 msgstr "每项只显示一行"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:918
+#: src/client/gpaste-client.c:935
 msgid "display each item raw (without line numbers)"
 msgstr "显示每项的原内容（无行号）"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:920
+#: src/client/gpaste-client.c:937
 msgid "display the items in reverse order"
 msgstr "反序显示"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:922
+#: src/client/gpaste-client.c:939
 msgid "use a NUL character instead of a new line between each item"
 msgstr "每项都使用NUL代替换行"
 
-#: src/client/gpaste-client.c:925
+#: src/client/gpaste-client.c:942
 #, c-format
 msgid "Merge options:"
 msgstr "合并选项："
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:928 src/client/gpaste-client.c:930
+#: src/client/gpaste-client.c:945 src/client/gpaste-client.c:947
 msgid "string"
 msgstr "字符串"
 
-#: src/client/gpaste-client.c:928
+#: src/client/gpaste-client.c:945
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr "添加既定内容到每个将合并项"
 
-#: src/client/gpaste-client.c:930
+#: src/client/gpaste-client.c:947
 msgid "add the given separator between each item when merging"
 msgstr "添加既定分割符到每个将合并项"
 
@@ -676,14 +681,15 @@ msgstr "GPaste"
 #. An icon names the button for the eye and for nothing else.
 #. An icon gives no accessible name, and a tooltip becomes a description.
 #: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:243
-#: src/gnome-shell/historySwitcher.js:754 src/ui/gpaste-ui-item.c:1051
-#: src/ui/gpaste-ui-item.c:1121 src/ui/gpaste-ui-panel-history.c:216
-#: src/ui/gpaste-ui-panel-history.c:218 src/ui/gpaste-ui-panel.c:531
-#: src/ui/gpaste-ui-panel.c:721
+#: src/gnome-shell/historySwitcher.js:764 src/ui/gpaste-ui-item.c:1011
+#: src/ui/gpaste-ui-item.c:1081 src/ui/gpaste-ui-panel-history.c:216
+#: src/ui/gpaste-ui-panel-history.c:218 src/ui/gpaste-ui-panel.c:620
+#: src/ui/gpaste-ui-panel.c:811
 msgid "Delete"
 msgstr "删除"
 
-#: src/gnome-shell/dummyHistoryItem.js:31 src/ui/gpaste-ui-window.c:803
+#: src/gnome-shell/dummyHistoryItem.js:31 src/ui/gpaste-ui-history.c:1357
+#: src/ui/gpaste-ui-window.c:836
 msgid "Retry"
 msgstr ""
 
@@ -696,16 +702,16 @@ msgstr ""
 msgid "GPaste daemon not running"
 msgstr "GPaste设置"
 
-#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:137
+#: src/gnome-shell/dummyHistoryItem.js:72 src/ui/gpaste-ui-history.c:151
 msgid "No Items"
 msgstr ""
 
-#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:579
+#: src/gnome-shell/dummyHistoryItem.js:76 src/ui/gpaste-ui-history.c:641
 #, fuzzy
 msgid "No Results"
 msgstr "(无内容)"
 
-#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:582
+#: src/gnome-shell/dummyHistoryItem.js:83 src/ui/gpaste-ui-history.c:646
 msgid "No Pinned Items"
 msgstr ""
 
@@ -716,28 +722,28 @@ msgid "Unpin"
 msgstr ""
 
 #: src/gnome-shell/favouriteButton.js:40 src/ui/gpaste-ui-item.c:196
-#: src/ui/gpaste-ui-item.c:1050
+#: src/ui/gpaste-ui-item.c:1010
 msgid "Pin"
 msgstr ""
 
 #: src/gnome-shell/historySwitcher.js:72
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:305
-#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:473
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
+#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:562
 msgid "Cancel"
 msgstr "取消"
 
 #: src/gnome-shell/historySwitcher.js:241
-#: src/gnome-shell/historySwitcher.js:734
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:236 src/ui/gpaste-ui-panel.c:720
+#: src/gnome-shell/historySwitcher.js:744
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:810
 #, fuzzy
 msgctxt "verb"
 msgid "Empty"
 msgstr "清空"
 
-#: src/gnome-shell/historySwitcher.js:242 src/ui/gpaste-ui-panel.c:473
-#: src/ui/gpaste-ui-panel.c:719
+#: src/gnome-shell/historySwitcher.js:242 src/ui/gpaste-ui-panel.c:562
+#: src/ui/gpaste-ui-panel.c:809
 #, fuzzy
 msgid "Back Up"
 msgstr "备份"
@@ -748,42 +754,41 @@ msgid "Switch to or create a history…"
 msgstr "切换到另一个记录"
 
 #. Translators: %s is the name of the history being emptied.
-#: src/gnome-shell/historySwitcher.js:732
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:232
+#: src/gnome-shell/historySwitcher.js:742
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
 #, c-format, javascript-format
 msgid "Empty “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:733
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:235
+#: src/gnome-shell/historySwitcher.js:743
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
 msgid "Every item it holds is deleted for good."
 msgstr ""
 
 #. Translators: %s is the name of the history being deleted.
-#: src/gnome-shell/historySwitcher.js:752 src/ui/gpaste-ui-panel.c:527
+#: src/gnome-shell/historySwitcher.js:762 src/ui/gpaste-ui-panel.c:616
 #, c-format, javascript-format
 msgid "Delete “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:753 src/ui/gpaste-ui-panel.c:530
+#: src/gnome-shell/historySwitcher.js:763 src/ui/gpaste-ui-panel.c:619
 msgid "The history and everything in it are deleted for good."
 msgstr ""
 
-#: src/gnome-shell/indicator.js:575 src/ui/gpaste-ui-item.c:379
+#: src/gnome-shell/indicator.js:39 src/ui/gpaste-ui-item.c:361
 #, fuzzy
 msgid "Could not upload the item"
 msgstr "无法新建记录目录"
 
-#: src/gnome-shell/indicator.js:594 src/ui/gpaste-ui-item.c:386
-#: src/ui/gpaste-ui-item.c:399
+#: src/gnome-shell/indicator.js:48 src/ui/gpaste-ui-item.c:360
 msgid "The item was uploaded, and its address copied"
 msgstr ""
 
-#: src/gnome-shell/itemActions.js:48 src/ui/gpaste-ui-item.c:1115
+#: src/gnome-shell/itemActions.js:48 src/ui/gpaste-ui-item.c:1075
 msgid "Remove Rich Text"
 msgstr ""
 
-#: src/gnome-shell/itemActions.js:49 src/ui/gpaste-ui-item.c:1116
+#: src/gnome-shell/itemActions.js:49 src/ui/gpaste-ui-item.c:1076
 msgid "Upload"
 msgstr "上传"
 
@@ -1314,16 +1319,16 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:179
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:158
 #, fuzzy
 msgid "Could not empty the history"
 msgstr "清空记录"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:634
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:613
 msgid "This item has a line too long to edit"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:781
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:760
 #, fuzzy
 msgid "Password strength rating is not available in this build"
 msgstr "列出可用记录"
@@ -1395,76 +1400,69 @@ msgstr "搜索"
 msgid "Select Items to Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:138
+#: src/ui/gpaste-ui-history.c:152
 msgid "Copy something to start building your history."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:580
+#: src/ui/gpaste-ui-history.c:166
+#, fuzzy
+msgid "Could Not Load History"
+msgstr "无法新建记录目录"
+
+#: src/ui/gpaste-ui-history.c:642
 msgid "Try a different search."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:583
+#: src/ui/gpaste-ui-history.c:647
 msgid "Pin an item to keep it out of reach of the size and memory limits."
 msgstr ""
 
-#: src/ui/gpaste-ui-history.c:670
+#: src/ui/gpaste-ui-history.c:721
 #, fuzzy
 msgid "History Unavailable"
 msgstr "记录访问"
 
-#: src/ui/gpaste-ui-history.c:704 src/ui/gpaste-ui-history.c:730
-#: src/ui/gpaste-ui-item.c:630
+#: src/ui/gpaste-ui-history.c:771 src/ui/gpaste-ui-history.c:797
+#: src/ui/gpaste-ui-item.c:584
 #, fuzzy
 msgid "Could not select the item"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-history.c:1122
+#: src/ui/gpaste-ui-history.c:1189
 #, fuzzy
 msgid "Could not read the history"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:403
-msgid "The item was uploaded, but the history did not keep its address"
-msgstr ""
-
-#: src/ui/gpaste-ui-item.c:405
-msgid "Copy Address"
-msgstr ""
-
-#: src/ui/gpaste-ui-item.c:436
+#: src/ui/gpaste-ui-item.c:390
 #, fuzzy
 msgid "Could not remove the rich text"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:450
+#: src/ui/gpaste-ui-item.c:404
 #, fuzzy
 msgid "Could not delete the item"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:467
+#: src/ui/gpaste-ui-item.c:421
 msgid "Could not unpin the item"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:468
+#: src/ui/gpaste-ui-item.c:422
 #, fuzzy
 msgid "Could not pin the item"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-item.c:655
-msgid "Could not load an image preview"
-msgstr ""
-
-#: src/ui/gpaste-ui-item.c:1113
+#: src/ui/gpaste-ui-item.c:1073
 #, fuzzy
 msgid "Edit…"
 msgstr "编辑"
 
-#: src/ui/gpaste-ui-item.c:1114
+#: src/ui/gpaste-ui-item.c:1074
 #, fuzzy
 msgid "Make Password…"
 msgstr "密码"
 
-#: src/ui/gpaste-ui-item.c:1120
+#: src/ui/gpaste-ui-item.c:1080
 msgid "Pinned"
 msgstr ""
 
@@ -1481,38 +1479,38 @@ msgstr ""
 msgid "Add"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel-history.c:65 src/ui/gpaste-ui-panel.c:386
+#: src/ui/gpaste-ui-panel-history.c:65 src/ui/gpaste-ui-panel.c:475
 #, fuzzy
 msgid "Could not switch history"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-panel.c:450
+#: src/ui/gpaste-ui-panel.c:539
 #, fuzzy
 msgid "Could not back up the history"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-panel.c:468
+#: src/ui/gpaste-ui-panel.c:557
 #, fuzzy
 msgid "Back Up History"
 msgstr "记录访问"
 
-#: src/ui/gpaste-ui-panel.c:469
+#: src/ui/gpaste-ui-panel.c:558
 msgid ""
 "Choose a name for the copy. The history being backed up is left as it is."
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:510
+#: src/ui/gpaste-ui-panel.c:599
 #, fuzzy
 msgid "Could not delete the history"
 msgstr "无法新建记录目录"
 
-#: src/ui/gpaste-ui-panel.c:629 src/ui/gpaste-ui-panel.c:641
-#: src/ui/gpaste-ui-panel.c:642
+#: src/ui/gpaste-ui-panel.c:719 src/ui/gpaste-ui-panel.c:731
+#: src/ui/gpaste-ui-panel.c:732
 #, fuzzy
 msgid "Switch or Create"
 msgstr "切换到"
 
-#: src/ui/gpaste-ui-panel.c:634
+#: src/ui/gpaste-ui-panel.c:724
 msgid "Type the name of a history to switch to it, or a new name to create one"
 msgstr ""
 
@@ -1630,117 +1628,121 @@ msgstr ""
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:511
+#: src/ui/gpaste-ui-window.c:536
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "重启守护进程"
 
-#: src/ui/gpaste-ui-window.c:523
+#: src/ui/gpaste-ui-window.c:548
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "重启守护进程"
 
-#: src/ui/gpaste-ui-window.c:524
+#: src/ui/gpaste-ui-window.c:549
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:525
+#: src/ui/gpaste-ui-window.c:550 src/ui/gpaste-ui-window.c:1018
 msgid "Restart"
 msgstr "重启"
 
-#: src/ui/gpaste-ui-window.c:547
+#: src/ui/gpaste-ui-window.c:572
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "开始跟踪剪切板变化"
 
-#: src/ui/gpaste-ui-window.c:548
+#: src/ui/gpaste-ui-window.c:573
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "结束跟踪剪切板变化"
 
-#: src/ui/gpaste-ui-window.c:572
+#: src/ui/gpaste-ui-window.c:597
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "结束跟踪剪切板变化"
 
-#: src/ui/gpaste-ui-window.c:573
+#: src/ui/gpaste-ui-window.c:598
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:574
+#: src/ui/gpaste-ui-window.c:599
 msgid "Stop"
 msgstr "停止"
 
-#: src/ui/gpaste-ui-window.c:614
+#: src/ui/gpaste-ui-window.c:639
 msgid "Clipboard management system"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:618
+#: src/ui/gpaste-ui-window.c:643
 msgid "Sponsor on GitHub"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:619
+#: src/ui/gpaste-ui-window.c:644
 msgid "Donate with PayPal"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:622
+#: src/ui/gpaste-ui-window.c:647
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:802
+#: src/ui/gpaste-ui-window.c:835
 #, fuzzy
 msgid "Connecting to GPaste…"
 msgstr "无法连接GPaste守护进程"
 
-#: src/ui/gpaste-ui-window.c:802
+#: src/ui/gpaste-ui-window.c:835
 #, fuzzy
 msgid "Couldn’t connect to GPaste"
 msgstr "无法连接GPaste守护进程"
 
 #: src/ui/gpaste-ui-window.c:1016
+msgid "The GPaste daemon is out of date"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:1259
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "无法新建记录目录"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:1062
+#: src/ui/gpaste-ui-window.c:1305
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1063
+#: src/ui/gpaste-ui-window.c:1306
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1064
+#: src/ui/gpaste-ui-window.c:1307
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1065
+#: src/ui/gpaste-ui-window.c:1308
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1073
+#: src/ui/gpaste-ui-window.c:1316
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1078
+#: src/ui/gpaste-ui-window.c:1321
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1089
+#: src/ui/gpaste-ui-window.c:1332
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1261
+#: src/ui/gpaste-ui-window.c:1533
 #, fuzzy
 msgid "Histories"
 msgstr "记录访问"
 
-#: src/ui/gpaste-ui-window.c:1262
+#: src/ui/gpaste-ui-window.c:1534
 #, fuzzy
 msgid "History"
 msgstr "记录访问"
