@@ -344,7 +344,7 @@ on_timeout_ready (GObject      *source_object,
     if (error)
     {
         g_warning ("Could not read the password's timeout: %s", error->message);
-        g_paste_gtk_util_toast (GTK_WIDGET (rootwin), _("Could not read the password's timeout"));
+        g_paste_gtk_util_toast (GTK_WIDGET (rootwin), _("Could not read the password’s timeout"));
         data->failed = TRUE;
     }
     else

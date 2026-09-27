@@ -82,11 +82,11 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), GTK_WIDGET (extension_enabled_switch));
 
     AdwSwitchRow *track_extension_state_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
-                                                                                                    _("Match the Daemon State to the Extension's"),
+                                                                                                    _("Match the Daemon State to the Extension’s"),
                                                                                                     G_PASTE_TRACK_EXTENSION_STATE_SETTING,
                                                                                                     settings);
     adw_action_row_set_subtitle (ADW_ACTION_ROW (track_extension_state_switch),
-                                 _("When enabled, the daemon automatically starts or stops tracking clipboard changes to match the GNOME Shell extension's enabled state"));
+                                 _("When enabled, the daemon automatically starts or stops tracking clipboard changes to match the GNOME Shell extension’s enabled state"));
 
     AdwSwitchRow *experimental_meta_daemon_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
                                                                                                        _("Use the Experimental In-Shell Daemon"),
@@ -145,7 +145,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                                                         G_PASTE_UPLOAD_COMMAND_SETTING,
                                                                                         settings);
     gtk_widget_set_tooltip_text (GTK_WIDGET (upload_command_entry),
-                                 _("The item is written to this command's standard input, and the command answers the url it uploaded it to, and nothing else, on its standard output. Arguments are allowed; pipes and redirections are not"));
+                                 _("The item is written to this command’s standard input, and the command answers the url it uploaded it to, and nothing else, on its standard output. Arguments are allowed; pipes and redirections are not"));
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     return self;

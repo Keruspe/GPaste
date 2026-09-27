@@ -7,8 +7,8 @@
       <p>The first stable release of GPaste 51. Changes since 51.beta:</p>
       <ul>
         <li>Manage histories from the GNOME Shell menu: switch, create, delete, empty and back up</li>
-        <li>Give the GNOME Shell menu rows the graphical tool's layout, with pin and delete shown on hover or focus</li>
-        <li>Add passwords directly from the graphical tool's New button</li>
+        <li>Give the GNOME Shell menu rows the graphical tool’s layout, with pin and delete shown on hover or focus</li>
+        <li>Add passwords directly from the graphical tool’s New button</li>
         <li>Strip the rich text from an item, keeping its plain text</li>
         <li>Choose the command used to upload an item to a pastebin</li>
         <li>Add a setting to turn every global keyboard shortcut off</li>
@@ -24,7 +24,7 @@
         <li>Fix restarting the daemon leaving none running, or being reported as a failure</li>
         <li>Fix the GNOME Shell menu staying empty after the daemon comes back</li>
         <li>Fix keyboard navigation in the GNOME Shell menu on GNOME 51</li>
-        <li>Fix the graphical tool's rows moving under the pointer and its header buttons being cut off</li>
+        <li>Fix the graphical tool’s rows moving under the pointer and its header buttons being cut off</li>
         <li>Fix a password staying on the clipboard once the daemon inside GNOME Shell stops</li>
         <li>Fix a remembered empty passphrase skipping the unlock prompt</li>
         <li>Fix the daemon crashing when copying files right after something else</li>
@@ -40,7 +40,7 @@
         <li>Pin favourite items so they are never dropped, and filter the history down to them</li>
         <li>Merge several items into one</li>
         <li>Redesign the graphical tool, now adaptive</li>
-        <li>Make the GNOME Shell menu fully keyboard-reachable, and show GPaste's own pages in the shell's extension preferences</li>
+        <li>Make the GNOME Shell menu fully keyboard-reachable, and show GPaste’s own pages in the shell’s extension preferences</li>
         <li>Optionally encrypt the history, with the passphrase kept in the keyring</li>
         <li>Add SQLite storage, plain or encrypted, and a way to move an existing history to it</li>
         <li>Take passwords back off the clipboard once their timeout has passed</li>
@@ -56,9 +56,9 @@
       <p>This release adds a setting to disable the global keyboard shortcuts. Changes:</p>
       <ul>
         <li>New setting to disable the global keyboard shortcuts entirely</li>
-        <li>Fix gnome-shell being left holding GPaste's grabs for the rest of the session, and GPaste giving up on them for good after a slow login</li>
+        <li>Fix gnome-shell being left holding GPaste’s grabs for the rest of the session, and GPaste giving up on them for good after a slow login</li>
         <li>Fix the daemon crashing on a shortcut activation arriving after its gnome-shell client was disposed</li>
-        <li>Fix the global shortcuts under the portal: an edited accelerator never reached it, Super went out under a name it doesn't know, and a dismissed permission dialog was reported as a successful bind</li>
+        <li>Fix the global shortcuts under the portal: an edited accelerator never reached it, Super went out under a name it doesn’t know, and a dismissed permission dialog was reported as a successful bind</li>
         <li>Fix the behaviour, images and history preferences pages acting on a settings change before their rows exist</li>
       </ul>
     </description>
@@ -77,7 +77,7 @@
     <description>
       <p>This is a maintenance release. Changes:</p>
       <ul>
-        <li>Fix selecting a history in the UI sidebar doing nothing, and, when a history's context menu was open, switching to that one instead of the one clicked</li>
+        <li>Fix selecting a history in the UI sidebar doing nothing, and, when a history’s context menu was open, switching to that one instead of the one clicked</li>
       </ul>
     </description>
   </release>
@@ -86,7 +86,7 @@
       <p>This is a maintenance release. Changes:</p>
       <ul>
         <li>Fix the daemon deadlocking against itself when copying, most often on larger items (text selections are now served by a dedicated content provider instead of being serialized by GTK)</li>
-        <li>text/plain is now served as UTF-8, where GTK's serializer encoded it as ASCII and replaced anything else with '?'</li>
+        <li>text/plain is now served as UTF-8, where GTK’s serializer encoded it as ASCII and replaced anything else with '?'</li>
         <li>Fix a deadlock when selecting an item that turns out to be invalid</li>
         <li>Fix the daemon crashing when searching from the GNOME Shell overview with a term containing an unbalanced bracket or parenthesis</li>
         <li>Fix the history file being destroyed when it had been written by a newer version of GPaste</li>

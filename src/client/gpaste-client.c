@@ -170,7 +170,7 @@ spawn (const gchar *app)
     if (!g_paste_util_spawn_sync (app, &error))
     {
         /* Translators: %s is the program GPaste tried to start, then the reason it could not. */
-        g_critical (_("Couldn't spawn %s: %s"), app, error->message);
+        g_critical (_("Couldn’t spawn %s: %s"), app, error->message);
         return EXIT_FAILURE;
     }
 

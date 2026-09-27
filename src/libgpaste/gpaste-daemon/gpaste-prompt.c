@@ -636,7 +636,7 @@ g_paste_prompt_storage_label (GPasteStorage storage_kind)
     case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
         return _("Store the history in an encrypted database");
     case G_PASTE_STORAGE_NOOP:
-        return _("Don't store anything");
+        return _("Don’t store anything");
     default:
         return "";
     }
