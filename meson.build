@@ -1,6 +1,6 @@
 project('GPaste', 'c',
   version: '51.0',
-  meson_version: '>=1.1',
+  meson_version: '>=1.9',
   default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )
 
@@ -10,10 +10,10 @@ i18n = import('i18n')
 
 apiversion = '3'
 
-adwaita_req_version = '1.10.alpha'
+adwaita_req_version = '1.10.0'
 gcr_req_version = '4.0.0'
-glib_req_version = '2.89.0'
-gtk4_req_version = '4.23.4'
+glib_req_version = '2.90.0'
+gtk4_req_version = '4.24.0'
 
 gcr_dep = dependency('gcr-4', version: '>= ' + gcr_req_version)
 gio_dep = dependency('gio-2.0', version: '>= ' + glib_req_version)

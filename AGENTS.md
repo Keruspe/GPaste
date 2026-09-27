@@ -201,8 +201,9 @@ CLI tool for scripting and shell integration. Talks to the daemon via `GpasteCli
 
 ## Key dependencies
 
-- GLib/GObject/Gio ≥ 2.90 (declared as `2.89.0` in `meson.build` so it configures against the development releases)
-- GTK4 ≥ 4.24 + libadwaita ≥ 1.10 (UI and preferences; GTK4 declared as `4.23.4` for the same reason)
+- Meson ≥ 1.9 (`pkgconfig.generate()` naming an internal dependency as a requirement)
+- GLib/GObject/Gio ≥ 2.90
+- GTK4 ≥ 4.24 + libadwaita ≥ 1.10 (UI and preferences)
 - GCR (`gcr-4`) ≥ 4.0 (password item storage; also the secure-memory allocator for encryption secrets)
 - gjs ≥ 1.78 (GNOME Shell extension runtime)
 - gtk4-x11 (the daemon forces the GDK x11 backend at startup)
