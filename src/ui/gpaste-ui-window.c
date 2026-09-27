@@ -15,6 +15,19 @@
  * over: a close is coalesced over that same burst (on_shortcuts_obsolete ()). */
 #define G_PASTE_UI_WINDOW_SHORTCUTS_CLOSE_DELAY 250 /* ms */
 
+/* Below this width the two panes become two pages the user navigates between.
+ * Uncollapsed, the sidebar's 240 and the history page's header need about 653
+ * with minimize, maximize and close (the wide layouts g_paste_ui_window_init ()
+ * sizes the minimum for), so the panes collapse before they would overflow,
+ * with room to spare. Both in px and in sp, whichever is wider: the text scale
+ * widens the sidebar, which libadwaita sizes in sp, and the header's labels
+ * with it, so above 1 (Large Text) a breakpoint in px would let the band above
+ * it overflow; below 1, the window's buttons and the header's icons, sized in
+ * px, do not shrink with the text, and a breakpoint in sp would.
+ * /ui/daemon-presence/collapse-width checks both sides of it, at text scales
+ * below and above 1. */
+#define G_PASTE_UI_WINDOW_COLLAPSE_WIDTH 680
+
 struct _GPasteUiWindow
 {
     AdwApplicationWindow parent_instance;
@@ -949,6 +962,15 @@ g_paste_ui_window_update_key_capture (GPasteUiWindow *self)
 }
 
 static void
+on_split_view_uncollapsed (AdwNavigationSplitView *split_view,
+                           GParamSpec             *pspec     G_GNUC_UNUSED,
+                           gpointer                user_data G_GNUC_UNUSED)
+{
+    if (!adw_navigation_split_view_get_collapsed (split_view))
+        adw_navigation_split_view_set_show_content (split_view, TRUE);
+}
+
+static void
 exit_selection_mode (GPasteUiWindow *self)
 {
     g_paste_ui_history_set_selection_mode (self->history, FALSE);
@@ -1202,8 +1224,21 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     add_shortcuts (self);
 
     gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
-    /* The narrowest the HIG asks an application window to survive. */
-    gtk_widget_set_size_request (GTK_WIDGET (self), 360, 294);
+    /* Not the 360px the HIG asks of an application that means to fit a phone
+     * held upright: GPaste is a desktop clipboard manager, its daemon needing
+     * an X11 or GNOME Shell clipboard. What sets the width is the history
+     * page's header -- New, the title, search, pinned, merge, the menu and the
+     * window's own buttons -- which takes about 380px with GNOME's close-only
+     * layout, 460px with minimize and maximize too (Ubuntu's, or a Tweaks
+     * toggle), and 500px with the window's icon before them as well (KDE
+     * Plasma's, "icon:minimize,maximize,close", which is also what GNOME's
+     * settings daemon makes of a layout naming the window menu). The window
+     * icon grows with the text scale, to about 520px at 1.5, past Large Text's
+     * 1.25; 520 fits each layout up to there. Hiding the title below some
+     * width instead would hide the selection count along with it. The height
+     * is the HIG's: nothing needs more, and a short landscape screen still fits
+     * the window. /ui/daemon-presence/minimum-width holds it to this. */
+    gtk_widget_set_size_request (GTK_WIDGET (self), 520, 294);
 }
 
 /* Everything the window shows of a history, built once there is a proxy to
@@ -1278,11 +1313,28 @@ g_paste_ui_window_setup (GPasteUiWindow *self,
     adw_navigation_split_view_set_content (self->split_view, content_page);
     adw_navigation_split_view_set_min_sidebar_width (self->split_view, 240);
 
-    /* Below this, the two panes become two pages the user navigates between,
-     * so the window still works at the 360px the HIG asks for. */
-    AdwBreakpoint *breakpoint = adw_breakpoint_new (adw_breakpoint_condition_parse ("max-width: 600px"));
+    /* See G_PASTE_UI_WINDOW_COLLAPSE_WIDTH. */
+    AdwBreakpointCondition *below_px = adw_breakpoint_condition_new_length (ADW_BREAKPOINT_CONDITION_MAX_WIDTH,
+                                                                            G_PASTE_UI_WINDOW_COLLAPSE_WIDTH,
+                                                                            ADW_LENGTH_UNIT_PX);
+    AdwBreakpointCondition *below_sp = adw_breakpoint_condition_new_length (ADW_BREAKPOINT_CONDITION_MAX_WIDTH,
+                                                                            G_PASTE_UI_WINDOW_COLLAPSE_WIDTH,
+                                                                            ADW_LENGTH_UNIT_SP);
+    AdwBreakpoint *breakpoint = adw_breakpoint_new (adw_breakpoint_condition_new_or (below_px, below_sp));
     adw_breakpoint_add_setters (breakpoint, G_OBJECT (nav_split_view), "collapsed", TRUE, NULL);
     adw_application_window_add_breakpoint (ADW_APPLICATION_WINDOW (self), breakpoint);
+
+    /* The history is what the window is for, so it is the page a collapsed
+     * window shows -- one opened narrow included, whose on_history_changed ()
+     * ran before the breakpoint applied. Set here, where it does nothing until
+     * the view collapses, and again whenever it uncollapses
+     * (on_split_view_uncollapsed ()), the user having perhaps gone back to the
+     * histories before. Never on collapsing: set then, it would push the
+     * history page after the sidebar had been shown, and libadwaita would move
+     * the focus into the pushed page's header, off the list
+     * (/ui/daemon-presence/minimum-width and /ui/daemon-presence/resize). */
+    adw_navigation_split_view_set_show_content (self->split_view, TRUE);
+    g_signal_connect (nav_split_view, "notify::collapsed", G_CALLBACK (on_split_view_uncollapsed), NULL);
 
     gtk_widget_set_hexpand (nav_split_view, TRUE);
     gtk_widget_set_vexpand (nav_split_view, TRUE);

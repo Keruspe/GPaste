@@ -130,7 +130,18 @@ for a failed connection and set up again into a daemon already there takes its
 banner down.
 A window closed and let go of while the list's size request is out leaves the
 list standing, held by the reply, and the reply lands without reaching for the
-sidebar that went with the window. The stand-in also
+sidebar that went with the window. With the widest window buttons (KDE's
+icon, minimize, maximize and close), the window at its minimum width opens on
+the history page, the list keeping the focus, and fits in each of its states --
+selection mode, the search bar, the banner -- and at text scales up to 1.5; it
+is collapsed at the collapse width and fits side by side one pixel above, at a
+text scale below 1 and at Large Text's -- libadwaita's warning of content wider
+than its window being fatal. On Xvfb, with no window manager, a window takes
+the size asked of it once its first frame is painted, so these tests resize it
+for real, measuring its frame rather than assuming the theme's: narrowed with
+the list focused, it keeps the
+focus on the history page, and narrowed again after the user went back to the
+histories, it shows the history once more. The stand-in also
 answers `UploadAndCopy`, which is all a row's upload calls -- what the daemon
 keeps of the address is its own business, `/clipboard/copy_uploaded`'s -- and
 the window toasts how it went, even for a row taken off the list while its

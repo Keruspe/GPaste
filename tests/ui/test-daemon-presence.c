@@ -1540,6 +1540,253 @@ test_upload (void)
     fake_daemon_stop (&daemon);
 }
 
+static gboolean
+showing_history (gconstpointer window,
+                 gconstpointer arg G_GNUC_UNUSED)
+{
+    AdwNavigationSplitView *split_view = ((GPasteUiWindow *) window)->split_view;
+
+    return adw_navigation_split_view_get_collapsed (split_view) && adw_navigation_split_view_get_show_content (split_view);
+}
+
+/* The widest window buttons g_paste_ui_window_init () sizes the minimum for:
+ * the window's icon, then minimize, maximize and close (KDE Plasma's). The
+ * icon only shows for a window that names one, as the application's does. */
+#define WIDE_LAYOUT "icon:minimize,maximize,close"
+
+static GPasteUiWindow *
+wide_buttons_window (void)
+{
+    GPasteUiWindow *window = test_window ();
+
+    gtk_window_set_icon_name (GTK_WINDOW (window), G_PASTE_ICON_NAME);
+
+    return window;
+}
+
+static gboolean
+collapsed_is (gconstpointer window,
+              gconstpointer collapsed)
+{
+    return adw_navigation_split_view_get_collapsed (((GPasteUiWindow *) window)->split_view) == GPOINTER_TO_INT (collapsed);
+}
+
+static gboolean
+first_frame_painted (gconstpointer window,
+                     gconstpointer arg G_GNUC_UNUSED)
+{
+    GdkFrameClock *clock = gtk_widget_get_frame_clock (GTK_WIDGET (window));
+
+    return clock && gdk_frame_clock_get_frame_counter (clock) >= 1;
+}
+
+/* Waits for the window's first frame to be painted: a size asked of it before
+ * then is lost. Returns its frame, what the default size has over the width the
+ * breakpoint measures -- client-side decorations, whose size is the theme's. */
+static gint
+settle (GPasteUiWindow *window)
+{
+    gint width;
+
+    g_paste_test_bus_wait_until (first_frame_painted, window, NULL);
+    g_assert_true (first_frame_painted (window, NULL));
+    gtk_window_get_default_size (GTK_WINDOW (window), &width, NULL);
+
+    return width - gtk_widget_get_width (GTK_WIDGET (window));
+}
+
+/* Resized to a content width of @content, the window being settle ()d with a
+ * frame of @frame: on Xvfb, with no window manager, it takes the size asked of
+ * it. Waited for until the split view says @collapsed, which is asserted; what
+ * then has to fit is checked by the pump that follows, libadwaita warning --
+ * fatally, in a test -- when it does not, and nothing announcing that it will
+ * not. */
+static void
+resize_to_content (GPasteUiWindow *window,
+                   gint            frame,
+                   gint            content,
+                   gboolean        collapsed)
+{
+    gtk_window_set_default_size (GTK_WINDOW (window), content + frame, 400);
+    g_paste_test_bus_wait_until (collapsed_is, window, GINT_TO_POINTER (collapsed));
+    g_assert_cmpint (adw_navigation_split_view_get_collapsed (window->split_view), ==, collapsed);
+    g_paste_test_bus_pump (300);
+}
+
+/* The text scale, as GNOME's Large Text and Tweaks' Scaling Factor set it. */
+static void
+set_text_scale (gdouble scale)
+{
+    g_object_set (gtk_settings_get_default (), "gtk-xft-dpi", (gint) (96 * 1024 * scale), NULL);
+}
+
+/* The window at its minimum width (see g_paste_ui_window_init ()), with the
+ * widest window buttons, showing the history page, which a window opened that
+ * narrow collapses to: nothing in it asks for more width than that, in any of
+ * its states, nor at the text scales up to the 1.5 the minimum is sized for --
+ * which libadwaita warns about otherwise, a warning the test aborts on. What is
+ * measured is only measured once shown, hence the history page asserted first,
+ * and the fixed pumps after each state change: nothing announces the warning
+ * not coming. */
+static void
+test_minimum_width (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = wide_buttons_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 3 };
+    GtkSettings *settings = gtk_settings_get_default ();
+    g_autofree gchar *layout = NULL;
+    gint min_width, min_height, dpi;
+
+    g_assert_no_error (error);
+    gtk_widget_get_size_request (GTK_WIDGET (window), &min_width, &min_height);
+    g_object_get (settings, "gtk-decoration-layout", &layout, "gtk-xft-dpi", &dpi, NULL);
+    g_object_set (settings, "gtk-decoration-layout", WIDE_LAYOUT, NULL);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    gtk_window_set_default_size (GTK_WINDOW (window), min_width, min_height);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_until (showing_history, window, NULL);
+    g_assert_true (showing_history (window, NULL));
+    g_assert_true (adw_header_bar_get_show_title (window->header));
+    g_paste_test_bus_pump (300);
+
+    /* Collapsed from the start, the list keeps the initial focus rather than
+     * losing it to the history page's header. */
+    g_paste_test_bus_wait_until (focus_returned, window, NULL);
+    g_assert_true (history_has_focus (window));
+
+    /* Large Text, and past it. */
+    set_text_scale (1.25);
+    g_paste_test_bus_pump (300);
+    set_text_scale (1.5);
+    g_paste_test_bus_pump (300);
+    set_text_scale (1);
+
+    /* The other states the window has at that width: picking items to merge,
+     * the search bar up, and the banner offering a retry with no daemon. */
+    on_enter_selection_mode (NULL, window);
+    g_paste_test_bus_pump (300);
+    on_cancel_selection_mode (NULL, window);
+    gtk_search_bar_set_search_mode (window->search_bar, TRUE);
+    g_paste_test_bus_pump (300);
+    fake_daemon_stop (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+    g_paste_test_bus_pump (300);
+    g_assert_true (adw_banner_get_revealed (window->banner));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    g_object_set (settings, "gtk-decoration-layout", layout, "gtk-xft-dpi", dpi, NULL);
+}
+
+/* Both sides of G_PASTE_UI_WINDOW_COLLAPSE_WIDTH with the widest window
+ * buttons: collapsed at it, side by side one pixel above, where the sidebar
+ * and the history page's header have to fit together -- at a text scale below
+ * 1, where the breakpoint is the one in px, and at Large Text's, where it is
+ * the one in sp. */
+static void
+test_collapse_width (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = wide_buttons_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 3 };
+    GtkSettings *settings = gtk_settings_get_default ();
+    g_autofree gchar *layout = NULL;
+    gint dpi;
+
+    g_assert_no_error (error);
+    g_object_get (settings, "gtk-decoration-layout", &layout, "gtk-xft-dpi", &dpi, NULL);
+    g_object_set (settings, "gtk-decoration-layout", WIDE_LAYOUT, NULL);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    gtk_window_set_default_size (GTK_WINDOW (window), 900, 400);
+    g_paste_ui_window_setup (window, client);
+
+    gint frame = settle (window);
+
+    resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH, TRUE);
+    resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH + 1, FALSE);
+
+    set_text_scale (0.9);
+    resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH, TRUE);
+    resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH + 1, FALSE);
+
+    set_text_scale (1.25);
+    resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH * 5 / 4, TRUE);
+    resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH * 5 / 4 + 1, FALSE);
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+    g_object_set (settings, "gtk-decoration-layout", layout, "gtk-xft-dpi", dpi, NULL);
+}
+
+/* A window narrowed while the list has the focus keeps it there, the history
+ * page shown; and one narrowed again after the user went back to the
+ * histories shows the history once more (on_split_view_uncollapsed ()). */
+static void
+test_resize (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 3 };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    gtk_window_set_default_size (GTK_WINDOW (window), 900, 400);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_until (list_shown, window, NULL);
+    g_assert_true (gtk_widget_grab_focus (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW)));
+
+    gint frame = settle (window);
+
+    resize_to_content (window, frame, 550, TRUE);
+    g_assert_true (showing_history (window, NULL));
+    g_assert_true (history_has_focus (window));
+
+    /* Back to the histories, wider, then narrow again. The transition back is
+     * let finish first: uncollapsed halfway through it, libadwaita warns of a
+     * page snapshotted with no allocation. */
+    guint hidden = 0;
+    AdwNavigationPage *content = adw_navigation_split_view_get_content (window->split_view);
+    gulong handler = g_signal_connect_swapped (content, "hidden", G_CALLBACK (g_paste_test_bus_count_emission), &hidden);
+
+    adw_navigation_split_view_set_show_content (window->split_view, FALSE);
+    g_paste_test_bus_wait_for_count (&hidden, 1);
+    g_assert_cmpuint (hidden, ==, 1);
+    g_signal_handler_disconnect (content, handler);
+    resize_to_content (window, frame, 890, FALSE);
+    resize_to_content (window, frame, 550, TRUE);
+    g_assert_true (showing_history (window, NULL));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1576,5 +1823,8 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/upload", test_upload);
     g_test_add_func ("/ui/daemon-presence/upload-after-row-removed", test_upload_after_row_removed);
     g_test_add_func ("/ui/daemon-presence/focus-restored", test_focus_restored);
+    g_test_add_func ("/ui/daemon-presence/minimum-width", test_minimum_width);
+    g_test_add_func ("/ui/daemon-presence/collapse-width", test_collapse_width);
+    g_test_add_func ("/ui/daemon-presence/resize", test_resize);
     return g_paste_test_env_run ();
 }
