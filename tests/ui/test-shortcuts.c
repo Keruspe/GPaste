@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 
 /* Access the dialog lifecycle without starting the asynchronous daemon client. */
@@ -21,20 +22,10 @@ migration_reexecute_finish (GPasteClient *client G_GNUC_UNUSED,
 #undef g_paste_gtk_preferences_history_settings_page_new
 #undef g_paste_client_reexecute_finish
 
-static gboolean
-elapsed (gpointer user_data)
-{
-    *(gboolean *) user_data = TRUE;
-    return G_SOURCE_REMOVE;
-}
-
 static void
 wait_for_close (void)
 {
-    gboolean done = FALSE;
-    g_timeout_add (350, elapsed, &done);
-    while (!done)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_bus_pump (350);
 }
 
 static gboolean have_display;

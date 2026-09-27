@@ -798,20 +798,10 @@ trigger_format (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
 
 /* These waits exercise timers, not D-Bus ordering; barriers do the latter.
  * The test target builds the client with a 50 ms retry and 1 s retirement. */
-static gboolean
-wait_elapsed (gpointer user_data)
-{
-    *(gboolean *) user_data = TRUE;
-    return G_SOURCE_REMOVE;
-}
-
 static void
 wait_for_timers (Fixture *f, guint milliseconds)
 {
-    gboolean elapsed = FALSE;
-    g_timeout_add (milliseconds, wait_elapsed, &elapsed);
-    while (!elapsed)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_bus_pump (milliseconds);
     barrier (f);
 }
 
