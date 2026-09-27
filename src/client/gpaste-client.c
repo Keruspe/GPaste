@@ -719,6 +719,22 @@ g_paste_upload (Context *ctx,
     return EXIT_SUCCESS;
 }
 
+/* What the keyboard shortcut does, and prints the url as upload does: see
+ * UploadAndCopy in the D-Bus XML. */
+static gint
+g_paste_upload_and_copy (Context *ctx,
+                         GError **error)
+{
+    g_autofree gchar *url = g_paste_client_upload_and_copy_sync (ctx->client, ctx->uuid, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    printf ("%s\n", url);
+
+    return EXIT_SUCCESS;
+}
+
 static gint
 g_paste_make_password (Context *ctx,
                        GError **error)
@@ -802,6 +818,7 @@ static const Command commands[] = {
         { 1, "ui",                NULL,              0,        FALSE, FALSE, NULL,                    N_ ("launch the graphical tool"),                                                               g_paste_ui },
         { 1, "show-history",      NULL,              0,        TRUE,  FALSE, NULL,                    N_ ("make the GNOME Shell extension display the history"),                                      g_paste_show_history },
         { 2, "upload",            "u",               0,        TRUE,  FALSE, "<uuid>",                N_ ("upload the item <uuid> to a pastebin service"),                                            g_paste_upload },
+        { 2, "upload-and-copy",   "uc",              0,        TRUE,  FALSE, "<uuid>",                N_ ("upload the item <uuid> to a pastebin service, and copy its address"),                      g_paste_upload_and_copy },
         { 1, "version",           "v",               0,        FALSE, FALSE, NULL,                    N_ ("display the version"),                                                                     g_paste_version },
         { 1, "daemon-version",    "dv",              0,        TRUE,  FALSE, NULL,                    N_ ("display the daemon version"),                                                              g_paste_daemon_version },
         { 1, "help",              NULL,              0,        FALSE, FALSE, NULL,                    N_ ("display this help"),                                                                       g_paste_help },

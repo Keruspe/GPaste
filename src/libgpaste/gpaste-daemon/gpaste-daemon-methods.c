@@ -146,6 +146,28 @@ g_paste_daemon_methods_do_add (const GPasteDaemonMethods *self,
     return g_paste_daemon_methods_do_add_item (self, g_paste_text_item_new (to_add), error);
 }
 
+/* Where an uploaded address goes for the user to paste it: the history, which
+ * puts it on the clipboard, or the clipboard alone when the history refuses it
+ * -- UploadAndCopy's doc in the D-Bus XML says why, and why in the daemon. A
+ * message rather than a warning, the refusal being an outcome this handles,
+ * and one without the address: a paste's can carry the key to it (PrivateBin
+ * puts it in the fragment), which the journal has no business keeping, and the
+ * daemon never quotes what the upload command wrote (g_paste_daemon_upload ()).
+ * /clipboard/copy_uploaded holds it to both. */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_copy_uploaded (const GPasteDaemonMethods *self,
+                                      const gchar               *url)
+{
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *uuid = g_paste_daemon_methods_do_add (self, url, strlen (url), &error);
+
+    if (uuid)
+        return;
+
+    g_message ("The history did not keep the uploaded address: %s", error->message);
+    g_paste_clipboards_manager_select_text (self->clipboards_manager, url);
+}
+
 G_PASTE_VISIBLE gchar *
 g_paste_daemon_methods_add_text (const GPasteDaemonMethods *self,
                                  const gchar               *text,

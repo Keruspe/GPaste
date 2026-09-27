@@ -117,6 +117,7 @@ __gpaste_subcommand switch-history sh                  'Switch to another histor
 __gpaste_subcommand ui                                 'Launch the graphical tool'
 __gpaste_subcommand unfavourite unfav                  'Unpin an item, letting the history drop it again'
 __gpaste_subcommand upload u                           'Upload an item to a pastebin service'
+__gpaste_subcommand upload-and-copy uc                 'Upload an item to a pastebin service and copy its address'
 __gpaste_subcommand version v                          'Display the version'
 
 # Arguments. backup-history takes <history> <backup name>, the history being
@@ -126,5 +127,5 @@ complete -c gpaste-client -n '__fish_seen_subcommand_from empty e delete-history
 
 complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
 
-complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u replace strip-rich-text srt make-password mp merge m favourite fav unfavourite unfav' \
+complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u upload-and-copy uc replace strip-rich-text srt make-password mp merge m favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'

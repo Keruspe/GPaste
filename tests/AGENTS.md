@@ -8,7 +8,7 @@ leaving it) against an in-memory `GSettings` and a
 throwaway `XDG_DATA_HOME`. The `eslint`
 test lints the GNOME Shell extension JS, and `completions` checks the shell
 completions and the man page against `gpaste-client`'s own list of verbs. The
-last two are scripts that touch no settings, bus or display. `tests/clipboard/` exercises the shared update lifecycle and the clipboards manager with a mock provider, including overlapping reads, superseded callbacks, typed cache commits, cross-selection copy ordering, rich-text refreshes, the selections a password's
+last two are scripts that touch no settings, bus or display. `tests/clipboard/` exercises the shared update lifecycle and the clipboards manager with a mock provider, including text put on every selection without becoming an item (`select_text`), overlapping reads, superseded callbacks, typed cache commits, cross-selection copy ordering, rich-text refreshes, the selections a password's
 history entry leaving is taken off, and password expiry across a persisted handover; it needs no display or desktop session bus; the common test environment still requires `dbus-daemon` for isolation. Its password countdowns are real GLib timeouts, so the suite runs under a 120-second Meson timeout. The test advances the ready time of the production manager’s forced-expiry source, exercising the shipped object under owner churn without waiting sixty seconds. The timeout-edit table names each scenario alongside its timings and expected contents. Its configuration and data directories are isolated, including the file-backend handover test. Every case starts from the schema's defaults (`make_settings()`): the memory backend is shared by the whole binary, so a key one case sets would otherwise reach every case after it. `test-clipboard-gdk` drives the GDK backend's own ownership and read callbacks behind GTK mocks, with no display or live clipboard -- the formats deadline telling a released selection from an owner merely slow to serve `TARGETS` -- and from a display that could not be asked which -- included, the shorter grace a selection X already says nobody owns waits with too, and the fallback that reads the hints off the formats where the workaround cannot convert the selection at all -- `test-clipboard-hints` covers the update API the X11 hints workaround reads through -- the sensitive offer read and the special and sensitive halves of the MIME-reading policy -- and `test-clipboard-x11-hints` covers the workaround itself, compiling `src/daemon/gpaste-clipboard-x11-hints.c` in (it belongs to the daemon executable, not to a library) and running it against the private Xvfb and a selection owner of the suite's own on a second connection, driven from the same pump as the main loop: what the selection answers about the hint and what each non-answer -- a refusal, an INCR reply, a silence -- is read as, the ownership query, the requestor window a conversion given up on leaves standing for a late reply, and the timestamps ICCCM has an owner judge a conversion by, the bootstrap case included, which is the one the server's clock is read for. Both go when that workaround does. The least an update needs of a provider is shared by the two as `gpaste-test-clipboard-provider.c`.
 
 `history-switcher` runs the shipped Shell controller under Node.js with actor
@@ -47,8 +47,10 @@ handler directly. Anything that would leave the test — `kill ()`, the re-exec
 call, the pid file, the version the proxy caches — is a `#define` over the name
 the file uses, which is how the empty cases (a daemon that has not answered for
 its version, one that refused a re-exec) are reached without a daemon to go
-missing. It covers the re-exec fallback, the migration gate across it,
-`daemon-version` with and without an answer, and which command lines
+missing, and so is `g_paste_client_upload_and_copy_sync ()`, recorded rather
+than sent. It covers the re-exec fallback, the migration gate across it,
+`daemon-version` with and without an answer, `upload-and-copy` making
+`UploadAndCopy` and not `Upload`, and which command lines
 `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
 verb and so have the verb-less add's shape, and the listing's own flags
 included.
@@ -110,7 +112,12 @@ for a failed connection and set up again into a daemon already there takes its
 banner down.
 A window closed and let go of while the list's size request is out leaves the
 list standing, held by the reply, and the reply lands without reaching for the
-sidebar that went with the window.
+sidebar that went with the window. The stand-in also
+answers `UploadAndCopy`, which is all a row's upload calls -- what the daemon
+keeps of the address is its own business, `/clipboard/copy_uploaded`'s -- and
+the window toasts how it went, even for a row taken off the list while its
+upload is out, the outcome going through the window the upload started from
+rather than through the row.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

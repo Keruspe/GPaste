@@ -2982,6 +2982,75 @@ test_automatic_head_clears_every_selection (void)
     g_assert_cmpstr (primary->content.str, ==, "");
 }
 
+/* Text the history refused to keep -- a refused upload address, which
+ * g_paste_daemon_methods_copy_uploaded () puts here -- goes on every selection
+ * without becoming an item: the history is left as it was, and the write is
+ * ours, so it is not read back as a copy to add. */
+static void
+test_select_text_bypasses_history (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+
+    g_paste_clipboards_manager_select_text (manager, "https://paste.rs/x");
+
+    g_assert_cmpstr (clipboard->content.str, ==, "https://paste.rs/x");
+    g_assert_cmpstr (primary->content.str, ==, "https://paste.rs/x");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "head");
+}
+
+/* An uploaded address goes where the user can paste it, whether or not the
+ * history keeps it: into the history, which puts it on the selections, or --
+ * refused, as min-text-item-size refuses an address shorter than it -- on the
+ * selections alone, the history left as it was, and the refusal logged without
+ * the address -- run in a subprocess, the log being what is checked. @user_data
+ * says which. */
+static void
+test_copy_uploaded (gconstpointer user_data)
+{
+    gboolean refused = GPOINTER_TO_INT (user_data);
+
+    if (refused && !g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*did not keep the uploaded address*");
+        g_test_trap_assert_stderr_unmatched ("*paste.rs*");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const gchar *url = "https://paste.rs/x";
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_min_text_item_size (settings, (refused) ? strlen (url) + 1 : 1);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+
+    g_paste_daemon_methods_copy_uploaded (&methods, url);
+
+    g_assert_cmpstr (clipboard->content.str, ==, url);
+    g_assert_cmpstr (primary->content.str, ==, url);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, (refused) ? 1 : 2);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, (refused) ? "head" : url);
+}
+
 /* Removing the only item leaves no head to publish over what it left on the
  * selections, and no head to withhold either, so a password goes off them
  * because its *entry* left the history -- announced from whatever position it
@@ -3930,6 +3999,9 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/automatic_head/refusal", GUINT_TO_POINTER (1), test_automatic_head_skips_password);
     g_test_add_data_func ("/clipboard/automatic_head/removed_password", GUINT_TO_POINTER (2), test_automatic_head_skips_password);
     g_test_add_func ("/clipboard/automatic_head/every_selection", test_automatic_head_clears_every_selection);
+    g_test_add_func ("/clipboard/select_text", test_select_text_bypasses_history);
+    g_test_add_data_func ("/clipboard/copy_uploaded/kept", GINT_TO_POINTER (FALSE), test_copy_uploaded);
+    g_test_add_data_func ("/clipboard/copy_uploaded/refused", GINT_TO_POINTER (TRUE), test_copy_uploaded);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_password", GINT_TO_POINTER (TRUE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_text", GINT_TO_POINTER (FALSE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/emptied_password", GINT_TO_POINTER (TRUE), test_emptied_history_clears_password);

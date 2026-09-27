@@ -1792,7 +1792,9 @@ g_paste_clipboards_manager_publish_over_password (_Clipboard *clip)
     }
 
     /* With no item to put there the empty string goes on instead, through
-     * select_text () rather than by dropping the content: a provider reports
+     * publish_text () -- the maintenance write, not the independent
+     * g_paste_clipboards_manager_select_text (), which would retire the
+     * record -- rather than by dropping the content: a provider reports
      * emptiness by the *kind* it holds, so an empty string still counts as
      * something and ensure_not_empty () leaves it alone, where a genuinely empty
      * selection would have it re-select the history's head -- the very password
@@ -2181,11 +2183,33 @@ g_paste_clipboards_manager_store (GPasteClipboardsManager *self)
 static void
 g_paste_clipboards_manager_clear (GPasteClipboardsManager *self)
 {
+    g_paste_clipboards_manager_select_text (self, "");
+}
+
+/**
+ * g_paste_clipboards_manager_select_text:
+ * @self: a #GPasteClipboardsManager instance
+ * @text: the text to put on every selection
+ *
+ * Put @text on every selection without it being an item of the history: what
+ * the history refused to keep but the user still has to be able to paste --
+ * an uploaded address shorter than min-text-item-size, say. The write is ours,
+ * as select ()'s is, so it is not read back as a copy to add; and it is the
+ * user choosing what the selections carry, ending whatever copy, password
+ * included, was on them. Emptying every selection is this with "".
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_select_text (GPasteClipboardsManager *self,
+                                        const gchar             *text)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (text && g_utf8_validate (text, -1, NULL));
+
     for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *clip = clipboard->data;
 
-        g_paste_clipboards_manager_publish_text (clip, "", TRUE);
+        g_paste_clipboards_manager_publish_text (clip, text, TRUE);
         g_paste_clipboards_manager_arm_password (clip, NULL, FALSE);
     }
 

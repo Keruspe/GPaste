@@ -104,6 +104,7 @@ _gpaste-client_subcommands() {
         {switch-history,sh}:"Switch to another history"
         ui:"Launch the graphical tool"
         {upload,u}:"Upload an item to a pastebin service"
+        {upload-and-copy,uc}:"Upload an item to a pastebin service and copy its address"
         {version,v}:"Display the version"
     )
 
@@ -132,7 +133,7 @@ _gpaste-client_arguments() {
             _arguments -s : \
                 '*:file:_files'
             ;;
-        (get|g|select|set|s|delete|del|d|remove|rm|upload|u|strip-rich-text|srt|favourite|fav|unfavourite|unfav)
+        (get|g|select|set|s|delete|del|d|remove|rm|upload|u|upload-and-copy|uc|strip-rich-text|srt|favourite|fav|unfavourite|unfav)
             _arguments -s : \
                 "1:item:${item}"
             ;;

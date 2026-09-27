@@ -394,9 +394,9 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
  * G_PASTE_PASSWORD_ITEM_NO_NAME -- the cleartext is get_real_value ()'s and
  * nothing on this path asks for it.
  *
- * Comfortably inside the ten minutes GPasteClient allows this one call, so what
- * the caller is told is the deadline that ran out rather than a proxy giving up
- * on a daemon that never answered.
+ * Comfortably inside the ten minutes GPasteClient allows either upload call, so
+ * what the caller is told is the deadline that ran out rather than a proxy
+ * giving up on a daemon that never answered.
  *
  * Elapsed time and not silence, unlike the clipboard read guard: an upload
  * reports nothing until it is done, so there is no progress to measure. */
@@ -759,16 +759,11 @@ on_keybinding_upload_done (GObject      *source_object,
         return;
     }
 
-    /* A shortcut has nobody to hand a url back to, so the history is where it
-     * goes: putting it on the clipboard is the whole of what pressing the
-     * shortcut does. The D-Bus method answers its caller instead, and adds
-     * nothing. */
+    /* A shortcut has nobody to hand a url back to: putting it where the user
+     * can paste it is the whole of what pressing the shortcut does. */
     const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
-    g_autoptr (GError) add_error = NULL;
-    g_autofree gchar *uuid = g_paste_daemon_methods_do_add (&methods, url, strlen (url), &add_error);
 
-    if (!uuid)
-        g_warning ("Failed to add the uploaded url: %s", add_error->message);
+    g_paste_daemon_methods_copy_uploaded (&methods, url);
 }
 
 static void
@@ -1048,23 +1043,43 @@ G_PASTE_DAEMON_HANDLER_ERR (strip_rich_text, (const gchar *uuid), (uuid))
 
 G_PASTE_DAEMON_HANDLER_ERR (switch_history, (const gchar *name), (name))
 
-/* The one method that cannot answer from its handler: the url exists only once
- * the upload command has finished, so the invocation is carried along and
- * answered from the callback. */
+/* The methods that cannot answer from their handler, Upload and UploadAndCopy:
+ * the url exists only once the upload command has finished, so the invocation
+ * is carried along and answered from the callback -- the url, and for
+ * UploadAndCopy the address kept as the shortcut keeps it first. */
+static void
+g_paste_daemon_answer_upload (GPasteDaemon          *self,
+                              GAsyncResult          *res,
+                              GDBusMethodInvocation *invocation,
+                              gboolean               copy)
+{
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = g_paste_daemon_upload_finish (self, res, &error);
+
+    if (!url)
+    {
+        g_dbus_method_invocation_take_error (invocation, g_steal_pointer (&error));
+        return;
+    }
+
+    if (!copy)
+    {
+        g_paste_daemon3_complete_upload (self->skeleton, invocation, url);
+        return;
+    }
+
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_copy_uploaded (&methods, url);
+    g_paste_daemon3_complete_upload_and_copy (self->skeleton, invocation, url);
+}
+
 static void
 on_upload_done (GObject      *source_object,
                 GAsyncResult *res,
                 gpointer      user_data)
 {
-    GPasteDaemon *self = G_PASTE_DAEMON (source_object);
-    GDBusMethodInvocation *invocation = user_data;
-    g_autoptr (GError) error = NULL;
-    g_autofree gchar *url = g_paste_daemon_upload_finish (self, res, &error);
-
-    if (!url)
-        g_dbus_method_invocation_take_error (invocation, g_steal_pointer (&error));
-    else
-        g_paste_daemon3_complete_upload (self->skeleton, invocation, url);
+    g_paste_daemon_answer_upload (G_PASTE_DAEMON (source_object), res, user_data, FALSE);
 }
 
 static gboolean
@@ -1073,6 +1088,24 @@ g_paste_daemon_handle_upload (GPasteDaemon          *self,
                               const gchar           *uuid)
 {
     g_paste_daemon_upload (self, uuid, on_upload_done, invocation);
+
+    return TRUE;
+}
+
+static void
+on_upload_and_copy_done (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+    g_paste_daemon_answer_upload (G_PASTE_DAEMON (source_object), res, user_data, TRUE);
+}
+
+static gboolean
+g_paste_daemon_handle_upload_and_copy (GPasteDaemon          *self,
+                                       GDBusMethodInvocation *invocation,
+                                       const gchar           *uuid)
+{
+    g_paste_daemon_upload (self, uuid, on_upload_and_copy_done, invocation);
 
     return TRUE;
 }
@@ -1122,6 +1155,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-strip-rich-text",             G_CALLBACK (g_paste_daemon_handle_strip_rich_text)             },
         { "handle-switch-history",              G_CALLBACK (g_paste_daemon_handle_switch_history)              },
         { "handle-upload",                      G_CALLBACK (g_paste_daemon_handle_upload)                      },
+        { "handle-upload-and-copy",             G_CALLBACK (g_paste_daemon_handle_upload_and_copy)             },
     };
 
     for (guint64 i = 0; i < G_N_ELEMENTS (handlers); ++i)

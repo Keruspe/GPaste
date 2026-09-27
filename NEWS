@@ -1,12 +1,14 @@
 NEW in 51.1 (UNRELEASED)
 =============
 
+- Upload an item and copy its address from the command line
 - Delete a history from the graphical tool's sidebar, with a button on hover or the Delete key
 - Recognise a password copied from another clipboard manager, and mark the ones GPaste puts back as secrets
 - Take a password left on the clipboard by another application back off it once its timeout runs out
 - Keep a password with no timeout on the clipboard when the daemon restarts
 - Put the last thing you copied back on the clipboard when the application you copied it from closes
 - Fix the graphical tool staying empty after the daemon comes back, with no way to ask it to try again
+- Fix an uploaded item's address being lost when the history refuses to keep it
 - Fix a password staying on the clipboard when its history entry is deleted or the history emptied
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection

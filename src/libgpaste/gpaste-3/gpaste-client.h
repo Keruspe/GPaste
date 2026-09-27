@@ -138,6 +138,9 @@ void     g_paste_client_set_active_sync                 (GPasteClient  *self,
 gchar   *g_paste_client_upload_sync                     (GPasteClient  *self,
                                                          const gchar   *uuid,
                                                          GError       **error);
+gchar   *g_paste_client_upload_and_copy_sync            (GPasteClient  *self,
+                                                         const gchar   *uuid,
+                                                         GError       **error);
 
 GPasteClientItem *g_paste_client_get_item_at_index_sync (GPasteClient  *self,
                                                          guint64        index,
@@ -308,6 +311,11 @@ void g_paste_client_upload                     (GPasteClient       *self,
                                                 GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_upload_and_copy            (GPasteClient       *self,
+                                                const gchar        *uuid,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 
 /****************************/
 /* Methods / Async - Finish */
@@ -404,6 +412,9 @@ void     g_paste_client_set_active_finish                 (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 gchar   *g_paste_client_upload_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+gchar   *g_paste_client_upload_and_copy_finish            (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 

@@ -54,18 +54,47 @@ fake_get_version (GPasteClient *client G_GNUC_UNUSED)
     return g_strdup (daemon_version);
 }
 
+static gchar *uploaded_and_copied;
+
+/* What `upload-and-copy` has the daemon do, recorded rather than sent: the
+ * verb is a thin call, and what matters is that it is UploadAndCopy it makes,
+ * not Upload, and with the item it was given. */
+static gchar *
+fake_upload_and_copy_sync (GPasteClient *client G_GNUC_UNUSED,
+                           const gchar  *uuid,
+                           GError      **error G_GNUC_UNUSED)
+{
+    g_set_str (&uploaded_and_copied, uuid);
+
+    return g_strdup ("https://paste.rs/x");
+}
+
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
 #define kill fake_kill
 #define g_paste_util_read_pid_file fake_pid
 #define g_paste_util_reexecute_daemon fake_reexecute_daemon
 #define g_paste_client_get_version fake_get_version
+#define g_paste_client_upload_and_copy_sync fake_upload_and_copy_sync
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_client_upload_and_copy_sync
 #undef g_paste_client_get_version
 #undef g_paste_util_reexecute_daemon
 #undef g_paste_util_read_pid_file
 #undef kill
 #undef main
+
+static void
+test_upload_and_copy (void)
+{
+    Context ctx = { .uuid = "item" };
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpint (g_paste_upload_and_copy (&ctx, &error), ==, EXIT_SUCCESS);
+    g_assert_no_error (error);
+    g_assert_cmpstr (uploaded_and_copied, ==, "item");
+    g_clear_pointer (&uploaded_and_copied, g_free);
+}
 
 static void
 test_refusal (void)
@@ -208,6 +237,7 @@ main (int argc, char **argv)
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/client/reexec/refusal", test_refusal);
+    g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
     g_test_add_data_func ("/client/daemon_version/answered", "51.1", test_daemon_version);

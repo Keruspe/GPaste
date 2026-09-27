@@ -332,52 +332,33 @@ on_make_password (GSimpleAction *action    G_GNUC_UNUSED,
     g_paste_ui_password_dialog_make (self->client, self->settings, self->rootwin, self->uuid);
 }
 
-/* The address is only copied once the daemon has taken it: an add can be refused
- * (a url shorter than min-text-item-size, say), and saying it was copied when it
- * was not is worse than saying nothing. */
-static void
-on_upload_address_copied (GObject      *source_object,
-                          GAsyncResult *res,
-                          gpointer      user_data)
-{
-    g_autoptr (GPasteUiItem) self = user_data;
-    g_autoptr (GError) error = NULL;
-    g_autofree gchar *uuid = g_paste_client_add_text_finish (G_PASTE_CLIENT (source_object), res, &error);
-
-    if (!uuid)
-        g_warning ("Could not copy the address of the uploaded item: %s",
-                   (error) ? error->message : "the daemon kept nothing");
-
-    g_paste_gtk_util_toast (GTK_WIDGET (self),
-                            (uuid) ? _("The item was uploaded, and its address copied")
-                                   : _("The item was uploaded, but its address could not be copied"));
-}
-
-/* Upload answers the url it made and adds nothing itself, so the url is this
- * caller's to keep: put on the clipboard, which is what the keyboard shortcut's
- * own handler does with it daemon-side, and where a user who just uploaded
- * something wants it. Reporting the string generically would drop it -- the
- * report helper finishes a call answering a uuid, whose item comes back as an
- * update of its own, and a url is not that. */
+/* Uploaded, and the address put where the user can paste it, daemon-side
+ * (UploadAndCopy's doc in the D-Bus XML says why there): this only tells the
+ * user how it went. Through the window the upload was started from, held
+ * weakly since then, and never through the row: a refresh, a deletion or the
+ * daemon going can take the row off the list while the upload is out, and a
+ * row off the list has no window to toast in. A window closed meanwhile has
+ * nobody left to tell. */
 static void
 on_upload_done (GObject      *source_object,
                 GAsyncResult *res,
                 gpointer      user_data)
 {
-    g_autoptr (GPasteUiItem) self = user_data;
-    GPasteClient *client = G_PASTE_CLIENT (source_object);
+    g_autoptr (GtkWindow) window = g_weak_ref_get (user_data);
+
+    g_paste_weak_ref_free (user_data);
+
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *url = g_paste_client_upload_finish (client, res, &error);
+    g_autofree gchar *url = g_paste_client_upload_and_copy_finish (G_PASTE_CLIENT (source_object), res, &error);
 
     if (!url)
-    {
-        g_warning ("Could not upload the item: %s", (error) ? error->message : "the daemon answered with no url");
-        g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not upload the item"));
+        g_warning ("Could not upload the item: %s", error->message);
 
+    if (!window)
         return;
-    }
 
-    g_paste_client_add_text (client, url, NULL /* cancellable */, on_upload_address_copied, g_object_ref (self));
+    g_paste_gtk_util_toast (GTK_WIDGET (window), (url) ? _("The item was uploaded, and its address copied")
+                                                       : _("Could not upload the item"));
 }
 
 static void
@@ -387,7 +368,9 @@ on_upload (GSimpleAction *action    G_GNUC_UNUSED,
 {
     GPasteUiItem *self = user_data;
 
-    g_paste_client_upload (self->client, self->uuid, NULL /* cancellable */, on_upload_done, g_object_ref (self));
+    /* The window, not the row: see on_upload_done (). */
+    g_paste_client_upload_and_copy (self->client, self->uuid, NULL /* cancellable */, on_upload_done,
+                                    g_paste_weak_ref_new (gtk_widget_get_root (GTK_WIDGET (self))));
 }
 
 /* Offered on every text row rather than only on one that carries rich text:

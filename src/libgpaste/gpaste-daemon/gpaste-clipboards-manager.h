@@ -18,6 +18,8 @@ void     g_paste_clipboards_manager_sync_from_to           (GPasteClipboardsMana
 void     g_paste_clipboards_manager_activate               (GPasteClipboardsManager *self);
 gboolean g_paste_clipboards_manager_select                 (GPasteClipboardsManager *self,
                                                             GPasteItem              *item);
+void     g_paste_clipboards_manager_select_text            (GPasteClipboardsManager *self,
+                                                            const gchar             *text);
 void     g_paste_clipboards_manager_store                  (GPasteClipboardsManager *self);
 void     g_paste_clipboards_manager_expire_password        (GPasteClipboardsManager *self);
 void     g_paste_clipboards_manager_expire_password_async  (GPasteClipboardsManager *self,

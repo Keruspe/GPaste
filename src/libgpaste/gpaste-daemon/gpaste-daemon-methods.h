@@ -51,6 +51,8 @@ gchar    *g_paste_daemon_methods_do_add                     (const GPasteDaemonM
                                                              const gchar               *text,
                                                              guint64                    length,
                                                              GError                   **error);
+void      g_paste_daemon_methods_copy_uploaded              (const GPasteDaemonMethods *self,
+                                                             const gchar               *url);
 gchar    *g_paste_daemon_methods_add_text                   (const GPasteDaemonMethods *self,
                                                              const gchar               *text,
                                                              GError                   **error);

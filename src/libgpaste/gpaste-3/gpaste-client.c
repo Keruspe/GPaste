@@ -208,12 +208,12 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), result, error);           \
     }
 
-/* Every method but two is answered out of what the daemon already holds, so the
- * GDBusProxy default is as much time as any of them can need. Upload is one
- * exception: it answers only once the pastebin has taken the paste, a network
- * round trip a large item or a loaded service pushes well past those 25
- * seconds -- and a call that times out reports a failure the upload did not
- * have, having already succeeded on the daemon's side.
+/* Every method but three is answered out of what the daemon already holds, so
+ * the GDBusProxy default is as much time as any of them can need. Upload and
+ * UploadAndCopy are one exception: they answer only once the pastebin has
+ * taken the paste, a network round trip a large item or a loaded service pushes
+ * well past those 25 seconds -- and a call that times out reports a failure the
+ * upload did not have, having already succeeded on the daemon's side.
  *
  * Reexecute is the other: expiry waits for the selections to be identified.
  * Each wait has a sixty-second deadline and completion revalidation retries
@@ -1618,6 +1618,50 @@ G_PASTE_CLIENT_METHOD (set_active,
  * Returns: (transfer full): the url the item was uploaded to
  */
 G_PASTE_CLIENT_METHOD_RET_FULL (upload, G_PASTE_CLIENT_TIMEOUT_UPLOAD,
+                                gchar *, NULL,
+                                g_autofree gchar *url = NULL, &url, g_steal_pointer (&url),
+                                (const gchar *uuid), (uuid))
+
+/**
+ * g_paste_client_upload_and_copy_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to upload
+ * @error: return location for a #GError, or %NULL
+ *
+ * Upload an item to a pastebin service, then have the daemon put the address
+ * it answers where the user can paste it -- added to the history, or on the
+ * clipboard alone should the history refuse it -- and answer it: what an
+ * upload offered to the user does. An empty @uuid uploads the current item.
+ * It fails as g_paste_client_upload() does; a refused add is not a failure.
+ * The D-Bus XML says why the daemon does it.
+ *
+ * Returns: (transfer full): the url the item was uploaded to
+ */
+/**
+ * g_paste_client_upload_and_copy:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to upload
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
+ *            satisfied, or %NULL to ignore the result
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Upload an item to a pastebin service, then have the daemon put the address
+ * it answers where the user can paste it: see
+ * g_paste_client_upload_and_copy_sync().
+ */
+/**
+ * g_paste_client_upload_and_copy_finish:
+ * @self: a #GPasteClient instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Finish g_paste_client_upload_and_copy(): see
+ * g_paste_client_upload_and_copy_sync().
+ *
+ * Returns: (transfer full): the url the item was uploaded to
+ */
+G_PASTE_CLIENT_METHOD_RET_FULL (upload_and_copy, G_PASTE_CLIENT_TIMEOUT_UPLOAD,
                                 gchar *, NULL,
                                 g_autofree gchar *url = NULL, &url, g_steal_pointer (&url),
                                 (const gchar *uuid), (uuid))

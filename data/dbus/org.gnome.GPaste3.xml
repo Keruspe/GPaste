@@ -418,6 +418,25 @@
     </method>
 
     <!--
+      Upload one item to a pastebin service, then put the address it answers
+      where the user can paste it, and answer it too: what the keyboard shortcut
+      does, for a client offering an upload to the user.
+
+      The address is added to the history, which puts it on the clipboard; one
+      the history refuses to keep (shorter than min-text-item-size, say) goes on
+      the clipboard all the same, without the history, the paste being made
+      either way. A method of the daemon's rather than Upload and AddText from
+      the client, because the daemon can set the clipboard at any time: a client
+      running on Wayland can only while it has the keyboard focus, which an
+      upload of minutes invites it to lose. An empty @uuid means the current
+      item, as for Upload. Fails as Upload does; a refused add is not a failure.
+    -->
+    <method name="UploadAndCopy">
+      <arg type="s" direction="in"  name="uuid"/>
+      <arg type="s" direction="out" name="url"/>
+    </method>
+
+    <!--
       Every signal below is generated under a "Raw" C name, hence a "raw-*"
       GObject signal on the proxy. GPasteClient re-emits each one under its
       public name: that keeps the public signal free to carry a richer payload

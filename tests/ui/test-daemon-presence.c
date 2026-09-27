@@ -6,6 +6,7 @@
 
 /* Reach the window's banner, actions and setup. */
 #include <gpaste-ui-window.c>
+#include <gpaste-ui-item.h>
 
 #include <gpaste-3/gpaste-daemon3.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
@@ -40,6 +41,9 @@ typedef struct
     GDBusMethodInvocation *held_size;
     gboolean               hold_listings;
     GDBusMethodInvocation *held_listing;
+    gboolean               hold_upload;
+    GDBusMethodInvocation *held_upload;
+    guint                  uploads;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -115,6 +119,29 @@ on_fake_search (GPasteDaemon3         *skeleton,
     return on_get_favourites (skeleton, invocation, user_data);
 }
 
+#define UPLOADED_URL "https://paste.rs/x"
+
+/* What the daemon keeps of the address -- the history, or the clipboard alone --
+ * is its own business (g_paste_daemon_methods_copy_uploaded ()), which nothing
+ * here stands in for: the window only reports how the upload went. */
+static gboolean
+on_upload_and_copy (GPasteDaemon3         *skeleton,
+                    GDBusMethodInvocation *invocation,
+                    const gchar           *uuid G_GNUC_UNUSED,
+                    gpointer               user_data)
+{
+    FakeDaemon *daemon = user_data;
+
+    ++daemon->uploads;
+
+    if (daemon->hold_upload)
+        daemon->held_upload = invocation;
+    else
+        g_paste_daemon3_complete_upload_and_copy (skeleton, invocation, UPLOADED_URL);
+
+    return TRUE;
+}
+
 static gboolean
 on_get_item_at_index (GPasteDaemon3         *skeleton,
                       GDBusMethodInvocation *invocation,
@@ -154,6 +181,7 @@ fake_daemon_start (FakeDaemon *daemon)
     g_signal_connect (daemon->skeleton, "handle-get-history-size", G_CALLBACK (on_get_history_size), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-item-at-index", G_CALLBACK (on_get_item_at_index), daemon);
     g_signal_connect (daemon->skeleton, "handle-search", G_CALLBACK (on_fake_search), daemon);
+    g_signal_connect (daemon->skeleton, "handle-upload-and-copy", G_CALLBACK (on_upload_and_copy), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-favourites", G_CALLBACK (on_get_favourites), daemon);
     g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (daemon->skeleton), daemon->connection,
                                       G_PASTE_DAEMON_OBJECT_PATH, &error);
@@ -1386,6 +1414,132 @@ test_focus_restored (void)
     fake_daemon_stop (&daemon);
 }
 
+static gboolean
+shows_text (GtkWidget   *widget,
+            const gchar *text)
+{
+    if (GTK_IS_INSCRIPTION (widget) && g_paste_str_equal (gtk_inscription_get_text (GTK_INSCRIPTION (widget)), text))
+        return TRUE;
+    if (GTK_IS_LABEL (widget) && g_paste_str_equal (gtk_label_get_text (GTK_LABEL (widget)), text))
+        return TRUE;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
+    {
+        if (shows_text (child, text))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* A row's upload is armed once it shows a text item, which is what its fetch
+ * lands with. */
+static gboolean
+upload_armed (gconstpointer window,
+              gconstpointer arg G_GNUC_UNUSED)
+{
+    GtkWidget *row = find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), G_PASTE_TYPE_UI_ITEM);
+
+    return row && shows_text (row, "value 0");
+}
+
+/* The toast saying how the upload went, which is all the window does with it. */
+static gboolean
+upload_toasted (gconstpointer window,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return shows_text (GTK_WIDGET (window), _("The item was uploaded, and its address copied"));
+}
+
+static gboolean
+upload_row_unparented (gconstpointer row,
+                       gconstpointer arg G_GNUC_UNUSED)
+{
+    return gtk_widget_get_root (GTK_WIDGET (row)) == NULL;
+}
+
+static gboolean
+upload_held (gconstpointer daemon,
+             gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((const FakeDaemon *) daemon)->held_upload != NULL;
+}
+
+/* A history refresh may replace the row while its upload is still out: the
+ * outcome is the window's to report all the same, the row off the list having
+ * no window to toast in. */
+static void
+test_upload_after_row_removed (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1, .hold_upload = TRUE };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_until (upload_armed, window, NULL);
+
+    g_autoptr (GPasteUiItem) row = g_object_ref (G_PASTE_UI_ITEM (find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM)));
+
+    g_assert_true (gtk_widget_activate_action (GTK_WIDGET (row), "item.upload", NULL));
+    g_paste_test_bus_wait_until (upload_held, &daemon, NULL);
+
+    daemon.size = 0;
+    g_paste_daemon3_emit_raw_update (daemon.skeleton, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0);
+    g_paste_test_bus_wait_until (upload_row_unparented, row, NULL);
+    g_assert_null (gtk_widget_get_root (GTK_WIDGET (row)));
+
+    g_paste_daemon3_complete_upload_and_copy (daemon.skeleton, g_steal_pointer (&daemon.held_upload), UPLOADED_URL);
+    g_paste_test_bus_wait_until (upload_toasted, window, NULL);
+    g_assert_true (upload_toasted (window, NULL));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
+/* An upload offered from a row goes through UploadAndCopy, the daemon keeping
+ * the address, and the window says so. */
+static void
+test_upload (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_until (upload_armed, window, NULL);
+    g_assert_true (upload_armed (window, NULL));
+
+    g_assert_true (gtk_widget_activate_action (find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM), "item.upload", NULL));
+    g_paste_test_bus_wait_for_count (&daemon.uploads, 1);
+    g_paste_test_bus_wait_until (upload_toasted, window, NULL);
+    g_assert_true (upload_toasted (window, NULL));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1419,6 +1573,8 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/listing-owner-size-error", test_listing_owner_size_error);
     g_test_add_func ("/ui/daemon-presence/owner-learned", test_owner_learned);
     g_test_add_func ("/ui/daemon-presence/listing-daemon-gone", test_listing_daemon_gone);
+    g_test_add_func ("/ui/daemon-presence/upload", test_upload);
+    g_test_add_func ("/ui/daemon-presence/upload-after-row-removed", test_upload_after_row_removed);
     g_test_add_func ("/ui/daemon-presence/focus-restored", test_focus_restored);
     return g_paste_test_env_run ();
 }
