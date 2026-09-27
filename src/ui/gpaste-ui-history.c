@@ -19,6 +19,10 @@ struct _GPasteUiHistory
 
     GPasteClient         *client;
     GPasteSettings       *settings;
+    /* Both weak: a reply still out holds a reference on us, and a window going
+     * away only unparents its children, so we can outlive the panel and the
+     * window -- our dispose () waiting on that reply's reference, not on the
+     * window. Each reply reaching for either checks it is still there. */
     GPasteUiPanel        *panel;
 
     AdwStatusPage        *status_page;
@@ -27,6 +31,10 @@ struct _GPasteUiHistory
     GPasteUiHistoryModel *model;
     GtkSelectionModel    *selection_model; /* borrowed: the list view owns it */
 
+    /* Weak too, for the same reason as the panel, though no test shows the
+     * difference: GTK keeps a destroyed window's memory past such a reply, and
+     * gtk_window_close () on it does nothing. Held weakly all the same rather
+     * than trusting that to last. */
     GtkWindow            *rootwin;
 
     guint64               size;       /* number of rows currently in the model */
@@ -155,6 +163,8 @@ g_paste_ui_history_setup_item (GtkListItemFactory *factory G_GNUC_UNUSED,
                                gpointer            user_data)
 {
     GPasteUiHistory *self = user_data;
+    /* The window is there: a list its window let go of is on no screen, and
+     * the factory builds no row for it (see the rootwin field). */
     GtkWidget *item = g_paste_ui_item_new (self->client, self->settings, self->rootwin, (guint64) -1);
     GtkGesture *gesture = gtk_gesture_click_new ();
 
@@ -354,7 +364,8 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     else
         g_paste_ui_history_show_empty (self);
 
-    g_paste_ui_panel_update_history_length (self->panel, cdata->name, new_size);
+    if (self->panel)
+        g_paste_ui_panel_update_history_length (self->panel, cdata->name, new_size);
 
     gboolean rebuilt = g_paste_ui_history_model_set_size (self->model, self->size);
 
@@ -602,7 +613,9 @@ g_paste_ui_history_select_uuid (GPasteUiHistory *self,
                            g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
                                                    _("Could not select the item")));
 
-    if (g_paste_settings_get_close_on_select (self->settings))
+    /* Reached from a reply too (on_activate_element_ready ()), which the
+     * window may not have waited for. */
+    if (g_paste_settings_get_close_on_select (self->settings) && self->rootwin)
         gtk_window_close (self->rootwin); /* Exit the application */
 }
 
@@ -1039,12 +1052,13 @@ g_paste_ui_history_dispose (GObject *object)
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
 
-    /* All borrowed: the panel and root window outlive us, and chaining up
-     * destroys the children (and with them the selection model). A callback that
-     * survives us checks the client above, but g_paste_ui_history_refresh_history()
-     * also reaches for these, so leave nothing behind that still looks alive. */
-    self->panel = NULL;
-    self->rootwin = NULL;
+    /* All borrowed but the panel and the window, which are weak (see their
+     * fields), and chaining up destroys the children (and with them the
+     * selection model). A callback that survives us checks the client above,
+     * but g_paste_ui_history_refresh_history() also reaches for these, so leave
+     * nothing behind that still looks alive. */
+    g_clear_weak_pointer (&self->panel);
+    g_clear_weak_pointer (&self->rootwin);
     self->status_page = NULL;
     self->scroll = NULL;
     self->list_view = NULL;
@@ -1162,8 +1176,8 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     self->client = g_object_ref (client);
     self->settings = g_object_ref (settings);
-    self->panel = panel;
-    self->rootwin = rootwin;
+    g_set_weak_pointer (&self->panel, panel);
+    g_set_weak_pointer (&self->rootwin, rootwin);
     self->limit = G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 
     GtkWidget *status_page = adw_status_page_new ();
