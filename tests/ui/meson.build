@@ -72,8 +72,11 @@ test('test-ui-panel-history', ui_panel_history_test, depends: [gpaste_schemas, t
 ui_daemon_presence_test = executable(
   'gpaste-ui-daemon-presence-test',
   sources: ['test-daemon-presence.c'] + ui_sources_but_window,
+  c_args: ['-DG_PASTE_TEST_PRE_RELEASES="@0@"'.format(','.join(pre_releases_ranked))],
   include_directories: include_directories('../../src/ui'),
   dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
-test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schemas, test_bus_supervisor])
+# Some twenty seconds of real daemons coming and going and windows resizing:
+# the default thirty would leave a loaded builder little room.
+test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)

@@ -174,6 +174,28 @@ owning the name, it would answer a call with an error no real daemon gives.
 One allowing its replacement is not queued for the name once replaced, a real
 daemon quitting then. The focus restoration case
 checks that its wait predicate rejects focus still on the list.
+The version offer is checked across a current-to-old-to-current handoff, the
+last read answered before teardown so it
+cannot outlive the case, and is made only once the proxy knows the daemon's
+owner -- an in-shell daemon's restart and toast stay withheld while it does
+not. A direct comparison case orders every pair both
+ways, and checks equality, across older three-component versions, a bare major after
+its prereleases and equal to its `.0`, two-digit numeric minors, all named
+prereleases from `meson.build`, and the stable `51.0` and later releases; it
+also reads `meson.build`'s prerelease table itself, in the order it ranks the
+names (`G_PASTE_TEST_PRE_RELEASES`), so a name added there is checked too.
+A daemon of another version than the window's gets a toast offering to restart
+it, whether it was there first or the window watched it start -- the stand-in
+setting its version once exported, as the real daemon does -- which times out as
+any toast does and is dismissed early with that daemon; a `51.beta` daemon gets
+one in a `51.0` window, while one of the window's own gets none, nor does one
+newer than the window, nor the experimental in-shell
+daemon -- a stand-in owning the Shell's name on its own connection -- whose
+restart the menu withholds too, while a Shell owning its name apart leaves the
+standalone daemon its offer. Both paths assert that the watch's first answer
+has not arrived just after setup: no toast is offered yet, and the in-shell
+daemon's Restart action is disabled then. Some twenty seconds of it all, the
+suite runs under a 120-second Meson timeout.
 
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of

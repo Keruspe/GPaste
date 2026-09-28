@@ -1309,6 +1309,16 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
      * history took its name from (g_paste_history_load_async (history, NULL)). */
     g_paste_daemon3_set_history (daemon->skeleton, g_paste_settings_get_history_name (daemon->settings));
 
+    /* And "Version", though it never changes, for a reason of its own: a
+     * client already running when this daemon took the name asked for every
+     * property before the export and got nothing, so it learns them only from
+     * the PropertiesChanged a set announces -- which the skeleton sends only
+     * for one made while exported. Set in init () instead, the window would
+     * never know which version a daemon it watched start is
+     * (g_paste_ui_window_update_version_toast ()). No test builds a whole
+     * daemon; the UI suite's stand-in sets it here too. */
+    g_paste_daemon3_set_version (daemon->skeleton, VERSION);
+
     daemon->registered = TRUE;
 
     g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed_once, g_object_ref (self)), "[GPaste] Startup - changed");
@@ -1403,11 +1413,9 @@ static void
 g_paste_daemon_init (GPasteDaemon *self)
 {
     /* The skeleton owns the marshalling and the property store; the daemon owns
-     * the skeleton. "Version" never changes, so it is set once here; "Active"
-     * follows the track-changes setting, and is seeded from it when the
-     * interface is exported (see g_paste_daemon_tracking()). */
+     * the skeleton. Its properties are all seeded once the interface is
+     * exported (g_paste_daemon_register_on_connection ()). */
     self->skeleton = G_PASTE_DAEMON3 (g_paste_daemon3_skeleton_new ());
-    g_paste_daemon3_set_version (self->skeleton, VERSION);
 
     g_paste_daemon_connect_handlers (self);
 

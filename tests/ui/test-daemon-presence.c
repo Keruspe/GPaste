@@ -18,7 +18,9 @@ static GtkApplication *app;
 
 /* A daemon stood in for by the generated skeleton on a connection of its own,
  * owning the name before it exports anything, as both real daemons do. It
- * lists what @listing says, and holds @size items of text. */
+ * lists what @listing says, holds @size items of text, and is of @version, or
+ * of the window's own when that is %NULL. With @in_shell, it owns the Shell's
+ * name too, on the same connection, as the in-shell daemon does. */
 typedef struct
 {
     GDBusConnection       *connection;
@@ -26,12 +28,15 @@ typedef struct
     guint                  owner;
     const gchar           *listing;
     guint64                size;
+    const gchar           *version;
+    gboolean               in_shell;
     /* Answer the pinned items and searches as a daemon gone would: unlike the
      * holds below, there is no invocation the test could answer later, a
      * search going out each time the filter changes. */
     gboolean               filters_gone;
     gboolean               allow_replacement;
     gboolean               replace;
+    guint                  shell_owner;
     guint                  listings;
     guint                  sizings;
     guint                  filters;
@@ -167,6 +172,11 @@ fake_daemon_start (FakeDaemon *daemon)
         daemon->listing = LISTING_TWO;
 
     daemon->connection = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    if (daemon->in_shell)
+    {
+        daemon->shell_owner = g_bus_own_name_on_connection (daemon->connection, "org.gnome.Shell", G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                            NULL, NULL, NULL, NULL);
+    }
     /* Not queued for the name once replaced: a real daemon quits then
      * (on_name_lost () in src/daemon/gpaste-daemon.c), so it never gets the
      * name back from its successor going. */
@@ -186,6 +196,9 @@ fake_daemon_start (FakeDaemon *daemon)
     g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (daemon->skeleton), daemon->connection,
                                       G_PASTE_DAEMON_OBJECT_PATH, &error);
     g_assert_no_error (error);
+    /* After the export, as g_paste_daemon_register_on_connection () sets it:
+     * only a set made then reaches a client that watched the daemon start. */
+    g_paste_daemon3_set_version (daemon->skeleton, (daemon->version) ? daemon->version : PACKAGE_VERSION);
     g_paste_daemon3_set_history (daemon->skeleton, G_PASTE_DEFAULT_HISTORY);
 }
 
@@ -200,6 +213,7 @@ fake_daemon_stop (FakeDaemon *daemon)
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (daemon->skeleton));
     g_clear_object (&daemon->skeleton);
     g_clear_handle_id (&daemon->owner, g_bus_unown_name);
+    g_clear_handle_id (&daemon->shell_owner, g_bus_unown_name);
     g_clear_object (&daemon->connection);
 }
 
@@ -1787,6 +1801,291 @@ test_resize (void)
     fake_daemon_stop (&daemon);
 }
 
+/* The daemon replaced by one of @version, which the client watches start: a
+ * Version it learns only from what the daemon announces once exported. The
+ * old one gone is enough, the client's grace second not needed. */
+static void
+restart_daemon_as (FakeDaemon   *daemon,
+                   GPasteClient *client,
+                   const gchar  *version)
+{
+    fake_daemon_stop (daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    daemon->version = version;
+    fake_daemon_start (daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+}
+
+static gboolean
+shell_owner_known (gconstpointer window,
+                   gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((GPasteUiWindow *) window)->shell_owner_known;
+}
+
+/* g_paste_ui_window_compare_versions () over every release shape meson.build
+ * names, both ways round: a series' named prereleases before its .0, numeric
+ * runs by value however long, leading zeros ignored, a bare major as its own
+ * .0 -- after its prereleases. */
+static void
+test_version_comparison (void)
+{
+    static const gchar * const versions[] = {
+        "3.42.9", "3.42.10", "45.alpha", "45", "45.1",
+        "50.alpha", "50.beta", "50.rc", "50.0", "50.1", "50.9", "50.10",
+        "51.alpha", "51.alpha1", "51.alpha2", "51.beta", "51.beta1", "51.beta2",
+        "51.rc", "51.rc1", "51.rc2", "51.0", "51.0.1", "51.1", "51.10"
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (versions); ++i)
+    {
+        g_assert_cmpint (g_paste_ui_window_compare_versions (versions[i], versions[i]), ==, 0);
+
+        for (guint j = i + 1; j < G_N_ELEMENTS (versions); ++j)
+        {
+            g_assert_cmpint (g_paste_ui_window_compare_versions (versions[i], versions[j]), <, 0);
+            g_assert_cmpint (g_paste_ui_window_compare_versions (versions[j], versions[i]), >, 0);
+        }
+    }
+
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51.184467440737095516160", "51.184467440737095516161"), <, 0);
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51.00010", "51.10"), ==, 0);
+    /* A bare major is its own .0. */
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51", "51.0"), ==, 0);
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51.0", "51"), ==, 0);
+    /* Padded as often as a side runs out: 51 = 51.0 = 51.0.0. */
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51", "51.0.0"), ==, 0);
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51.0.0", "51"), ==, 0);
+    g_assert_cmpint (g_paste_ui_window_compare_versions ("51", "51.0.1"), <, 0);
+
+    /* And meson.build's own table of prereleases, as it ranks them: one added
+     * there is checked here with the rest, between the major before and the
+     * .0 after. */
+    g_auto (GStrv) ranked = g_strsplit (G_PASTE_TEST_PRE_RELEASES, ",", -1);
+    guint n_ranked = g_strv_length (ranked);
+
+    g_assert_cmpuint (n_ranked, >, 0);
+    for (guint i = 0; i < n_ranked; ++i)
+    {
+        g_autofree gchar *version = g_strconcat ("52.", ranked[i], NULL);
+
+        g_assert_cmpint (g_paste_ui_window_compare_versions ("51.9", version), <, 0);
+        g_assert_cmpint (g_paste_ui_window_compare_versions (version, "52.0"), <, 0);
+
+        if (i + 1 < n_ranked)
+        {
+            g_autofree gchar *next = g_strconcat ("52.", ranked[i + 1], NULL);
+
+            g_assert_cmpint (g_paste_ui_window_compare_versions (version, next), <, 0);
+            g_assert_cmpint (g_paste_ui_window_compare_versions (next, version), >, 0);
+        }
+    }
+}
+
+/* A daemon of another version gets an offer to restart it, whether it was
+ * there before the window or the window watched it start, and the offer goes
+ * with that daemon -- dismissed as its presence leaves ready, well before the
+ * timeout it has as any toast does, so as not to hold back the ones queued
+ * behind it. One of the window's own version gets none, nor one newer than
+ * the window, which is the side out of date. Each check is made the
+ * moment the presence moves once the Shell watch has answered, the window
+ * deciding inside that callback: waited for instead, a toast wrongly up would
+ * have timed out by then. */
+static void
+test_version_toast (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1, .version = "0.0" };
+    guint dismissals = 0;
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_assert_false (window->shell_owner_known);
+    g_assert_null (window->version_toast);
+    g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
+    g_assert_nonnull (window->version_toast);
+    g_assert_cmpstr (adw_toast_get_action_name (window->version_toast), ==, "win.restart-daemon");
+    g_assert_cmpuint (adw_toast_get_timeout (window->version_toast), >, 0);
+    g_signal_connect_swapped (window->version_toast, "dismissed", G_CALLBACK (g_paste_test_bus_count_emission), &dismissals);
+
+    fake_daemon_stop (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    g_assert_cmpuint (dismissals, ==, 1);
+    g_assert_null (window->version_toast);
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+    daemon.version = NULL;
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
+    g_assert_null (window->version_toast);
+
+    restart_daemon_as (&daemon, client, "0.0");
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
+    g_assert_nonnull (window->version_toast);
+
+    /* A prerelease of this series is older than its stable release. */
+    restart_daemon_as (&daemon, client, "51.beta");
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
+    g_assert_nonnull (window->version_toast);
+
+    /* Newer than the window: a restart would bring it back as it is. */
+    restart_daemon_as (&daemon, client, "9999");
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
+    g_assert_null (window->version_toast);
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
+/* The offer belongs to the daemon it was made to: on a direct handoff an older
+ * owner taking over gets its own, and a current one taking over from it takes
+ * it down, the presence leaving ready in between (/client/presence/handoff). */
+static void
+test_version_toast_owner_replaced (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon current = { .version = PACKAGE_VERSION, .allow_replacement = TRUE };
+    FakeDaemon older = { .version = "0.0", .allow_replacement = TRUE, .replace = TRUE };
+    FakeDaemon replacement = { .version = PACKAGE_VERSION, .replace = TRUE };
+    guint dismissals = 0;
+
+    g_assert_no_error (error);
+    fake_daemon_start (&current);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), current.connection);
+    g_assert_true (window->version_offered);
+    g_assert_null (window->version_toast);
+
+    fake_daemon_start (&older);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), older.connection);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_READY);
+    g_assert_nonnull (window->version_toast);
+    g_signal_connect_swapped (window->version_toast, "dismissed", G_CALLBACK (g_paste_test_bus_count_emission), &dismissals);
+
+    fake_daemon_start (&replacement);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), replacement.connection);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_READY);
+    g_assert_null (window->version_toast);
+    g_assert_cmpuint (dismissals, ==, 1);
+
+    /* The list's read of the new owner answered before anything goes: left
+     * out, it would outlive the window into the next case. */
+    g_paste_test_bus_wait_for_count (&replacement.sizings, 1);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), replacement.connection);
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&replacement);
+    fake_daemon_stop (&older);
+    fake_daemon_stop (&current);
+}
+
+static gboolean
+restart_enabled (GPasteUiWindow *window)
+{
+    return g_action_group_get_action_enabled (G_ACTION_GROUP (window), "restart-daemon");
+}
+
+/* Waited for alone, the toast then checked at once: the window takes both
+ * away in the one callback, and a toast wrongly up would have timed out by the
+ * end of a wait for the two. */
+static gboolean
+restart_withheld (gconstpointer window,
+                  gconstpointer arg G_GNUC_UNUSED)
+{
+    return !restart_enabled ((GPasteUiWindow *) window);
+}
+
+static gboolean
+shell_owner_is (gconstpointer window,
+                gconstpointer owner)
+{
+    return g_paste_str_equal (((GPasteUiWindow *) window)->shell_owner, owner);
+}
+
+/* Nor for the experimental in-shell daemon, whose Reexecute restarts nothing
+ * (g_paste_ui_window_restart_can_help ()): the menu's restart goes with the
+ * toast, whether the window learns the Shell's owner before the daemon is
+ * ready or after. A Shell owning its name apart from the daemon changes
+ * nothing, the standalone daemon being offered its restart. */
+static void
+test_version_toast_in_shell (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1, .version = "0.0", .in_shell = TRUE };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_assert_false (window->shell_owner_known);
+    g_assert_false (restart_enabled (window));
+    g_assert_null (window->version_toast);
+    g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    g_paste_test_bus_wait_until (restart_withheld, window, NULL);
+    g_assert_false (restart_enabled (window));
+    g_assert_null (window->version_toast);
+
+    /* Ready, its owner perhaps not learnt yet: unknown is not elsewhere, so
+     * neither is offered then either. */
+    restart_daemon_as (&daemon, client, "0.0");
+    g_assert_false (restart_enabled (window));
+    g_assert_null (window->version_toast);
+    g_paste_test_bus_wait_until (restart_withheld, window, NULL);
+    g_assert_false (restart_enabled (window));
+    g_assert_null (window->version_toast);
+
+    fake_daemon_stop (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+
+    g_autoptr (GDBusConnection) shell = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    guint shell_name = g_bus_own_name_on_connection (shell, "org.gnome.Shell", G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                     NULL, NULL, NULL, NULL);
+
+    g_paste_test_bus_wait_until (shell_owner_is, window, g_dbus_connection_get_unique_name (shell));
+    daemon.in_shell = FALSE;
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
+    g_assert_nonnull (window->version_toast);
+    g_assert_true (restart_enabled (window));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+    g_bus_unown_name (shell_name);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1823,6 +2122,10 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/upload", test_upload);
     g_test_add_func ("/ui/daemon-presence/upload-after-row-removed", test_upload_after_row_removed);
     g_test_add_func ("/ui/daemon-presence/focus-restored", test_focus_restored);
+    g_test_add_func ("/ui/daemon-presence/version-comparison", test_version_comparison);
+    g_test_add_func ("/ui/daemon-presence/version-toast", test_version_toast);
+    g_test_add_func ("/ui/daemon-presence/version-toast-owner-replaced", test_version_toast_owner_replaced);
+    g_test_add_func ("/ui/daemon-presence/version-toast-in-shell", test_version_toast_in_shell);
     g_test_add_func ("/ui/daemon-presence/minimum-width", test_minimum_width);
     g_test_add_func ("/ui/daemon-presence/collapse-width", test_collapse_width);
     g_test_add_func ("/ui/daemon-presence/resize", test_resize);

@@ -11,6 +11,8 @@
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
+#include <string.h>
+
 /* G_PASTE_KEYBINDER_REBIND_DELAY, the delay the daemon coalesces a rebind burst
  * over: a close is coalesced over that same burst (on_shortcuts_obsolete ()). */
 #define G_PASTE_UI_WINDOW_SHORTCUTS_CLOSE_DELAY 250 /* ms */
@@ -44,6 +46,16 @@ struct _GPasteUiWindow
     GtkBox                 *content_box;
     AdwToastOverlay        *toast_overlay;
     AdwBanner              *banner;
+    /* Weak, the overlay owning it: the offer to restart a daemon older than
+     * the window (g_paste_ui_window_update_version_toast ()), made once for
+     * each daemon. */
+    AdwToast               *version_toast;
+    gboolean                version_offered;
+    /* A NULL owner can mean either no Shell or a watch awaiting its first
+     * answer; only the latter withholds the restart offer. */
+    guint                   shell_watch;
+    gchar                  *shell_owner;
+    gboolean                shell_owner_known;
 
     GtkActionBar           *merge_bar;
     GtkWidget              *merge_button;
@@ -825,6 +837,36 @@ g_paste_ui_window_update_banner (GPasteUiWindow *self)
     adw_banner_set_revealed (self->banner, TRUE);
 }
 
+/* Whether restarting the daemon could do anything: one is there, and it is
+ * known not to be the experimental in-shell one. That one owns its name on the
+ * Shell's own connection, so the two names share their owner, and a restart
+ * has nothing to offer there -- its Reexecute answers without restarting
+ * anything, the Shell being unable to reload the extension's code short of a
+ * new session -- so neither the menu nor the version toast offers one. The
+ * owner rather than the experimental-meta-daemon setting, which the extension
+ * reads only as it is enabled, so the two disagree until it restarts. Not
+ * before both owners are known: the Shell's watch has to answer once. */
+static gboolean
+g_paste_ui_window_restart_can_help (GPasteUiWindow *self)
+{
+    if (g_paste_client_get_daemon_presence (self->client) != G_PASTE_DAEMON_PRESENCE_READY || !self->shell_owner_known)
+        return FALSE;
+
+    /* Unknown is not elsewhere: the proxy can learn its daemon's owner only
+     * after that daemon's history made it ready, and until then the in-shell
+     * daemon would read as not in the Shell (/ui/daemon-presence/version-toast-in-shell). */
+    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
+
+    return owner && !g_paste_str_equal (owner, self->shell_owner);
+}
+
+static void
+g_paste_ui_window_update_restart (GPasteUiWindow *self)
+{
+    g_simple_action_set_enabled (G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (self), "restart-daemon")),
+                                 g_paste_ui_window_restart_can_help (self));
+}
+
 /* What acts on a daemon, taken away while there is none to act on, for the
  * reason the list empties itself (g_paste_ui_history_on_daemon_presence ()).
  * What the window offers of its own -- the preferences, the shortcuts, About,
@@ -832,11 +874,12 @@ g_paste_ui_window_update_banner (GPasteUiWindow *self)
 static void
 g_paste_ui_window_update_sensitivity (GPasteUiWindow *self)
 {
-    static const gchar * const daemon_actions[] = { "new-item", "new-password", "restart-daemon", "toggle-search", "track-changes" };
+    static const gchar * const daemon_actions[] = { "new-item", "new-password", "toggle-search", "track-changes" };
     gboolean ready = g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY;
 
     for (guint i = 0; i < G_N_ELEMENTS (daemon_actions); ++i)
         g_simple_action_set_enabled (G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (self), daemon_actions[i])), ready);
+    g_paste_ui_window_update_restart (self);
 
     /* The list lets go of the focus on its own, being hidden first; the Merge
      * button's entry is released by on_selection_changed (), the list's
@@ -862,6 +905,172 @@ g_paste_ui_window_update_sensitivity (GPasteUiWindow *self)
         exit_selection_mode (self);
 }
 
+/* GPaste versions have numeric runs and named prereleases (see meson.build).
+ * Compare each digit run by value without overflowing an integer, and put
+ * letters before digits so a series' alpha, beta and rc precede its .0, and
+ * one another as their names compare -- letters one by one, digit runs by
+ * value -- which has to be the order meson.build ranks them in
+ * (/ui/daemon-presence/version-comparison checks its table). A bare major is
+ * its own .0, as meson.build encodes it: a side running out while the other
+ * goes on reads on as ".0", as often as it runs out, so "51", "51.0" and
+ * "51.0.0" are all one version and the order stays transitive. That ends: a
+ * pad matches only what the other side has left, ".0" by ".0", so both run
+ * out together. */
+static gint
+g_paste_ui_window_compare_versions (const gchar *left,
+                                    const gchar *right)
+{
+    static const gchar *zero = ".0";
+
+    for (;;)
+    {
+        if (!*left && !*right)
+            return 0;
+        if (!*left)
+            left = zero;
+        else if (!*right)
+            right = zero;
+
+        gboolean left_digit = g_ascii_isdigit (*left);
+        gboolean right_digit = g_ascii_isdigit (*right);
+
+        if (left_digit && right_digit)
+        {
+            const gchar *left_end = left;
+            const gchar *right_end = right;
+
+            while (g_ascii_isdigit (*left_end))
+                ++left_end;
+            while (g_ascii_isdigit (*right_end))
+                ++right_end;
+
+            while (left < left_end && *left == '0')
+                ++left;
+            while (right < right_end && *right == '0')
+                ++right;
+
+            gsize left_length = left_end - left;
+            gsize right_length = right_end - right;
+
+            if (left_length != right_length)
+                return left_length < right_length ? -1 : 1;
+
+            gint difference = strncmp (left, right, left_length);
+
+            if (difference)
+                return difference < 0 ? -1 : 1;
+
+            left = left_end;
+            right = right_end;
+            continue;
+        }
+
+        if (left_digit != right_digit)
+            return left_digit ? 1 : -1;
+
+        if (*left != *right)
+            return (guchar) *left < (guchar) *right ? -1 : 1;
+
+        ++left;
+        ++right;
+    }
+}
+
+/* A daemon of another version than the window's -- the one an update
+ * replaced, still running until something restarts it -- can lack what the
+ * window asks of it, a method added since, so the window offers to restart it.
+ * Once per daemon, and for the toasts' usual time -- one kept up until the user
+ * dismissed it would hold back every toast queued behind it, an upload's
+ * outcome included -- going early with the daemon it was about, or with its
+ * restart becoming one that could not help. */
+static void
+g_paste_ui_window_withdraw_version_toast (GPasteUiWindow *self)
+{
+    if (self->version_toast)
+        adw_toast_dismiss (self->version_toast);
+    g_clear_weak_pointer (&self->version_toast);
+    self->version_offered = FALSE;
+}
+
+static void
+g_paste_ui_window_update_version_toast (GPasteUiWindow *self)
+{
+    if (!g_paste_ui_window_restart_can_help (self))
+    {
+        g_paste_ui_window_withdraw_version_toast (self);
+        return;
+    }
+
+    if (self->version_offered)
+        return;
+    self->version_offered = TRUE;
+
+    g_autofree gchar *version = g_paste_client_get_version (self->client);
+
+    /* Only for a daemon older than the window: a newer one is what a restart
+     * would bring back, the window being what is out of date, and the offer
+     * would come back with it after every restart. */
+    if (!version || g_paste_ui_window_compare_versions (version, PACKAGE_VERSION) >= 0)
+        return;
+
+    AdwToast *toast = adw_toast_new (_("The GPaste daemon is out of date"));
+
+    adw_toast_set_button_label (toast, _("Restart"));
+    adw_toast_set_action_name (toast, "win.restart-daemon");
+    g_set_weak_pointer (&self->version_toast, toast);
+    adw_toast_overlay_add_toast (self->toast_overlay, toast);
+}
+
+/* Either name changing hands can make a restart one that could help, or one
+ * that could not, with no change of presence to say so: the proxy can learn
+ * its daemon's owner after the history that makes it ready, and the Shell's is
+ * watched apart. Only what a restart is offered through is touched. */
+static void
+g_paste_ui_window_on_daemon_host (GPasteUiWindow *self)
+{
+    if (!self->client)
+        return;
+
+    g_paste_ui_window_update_restart (self);
+    g_paste_ui_window_update_version_toast (self);
+}
+
+static void
+on_daemon_owner_changed (GPasteClient *client G_GNUC_UNUSED,
+                         GParamSpec   *pspec  G_GNUC_UNUSED,
+                         gpointer      user_data)
+{
+    g_paste_ui_window_on_daemon_host (user_data);
+}
+
+/* The watch is dropped in dispose (), after which no callback runs, so @self
+ * is borrowed. */
+static void
+g_paste_ui_window_on_shell_owner (GPasteUiWindow *self,
+                                  const gchar    *owner)
+{
+    g_set_str (&self->shell_owner, owner);
+    self->shell_owner_known = TRUE;
+    g_paste_ui_window_on_daemon_host (self);
+}
+
+static void
+on_shell_appeared (GDBusConnection *connection G_GNUC_UNUSED,
+                   const gchar     *name       G_GNUC_UNUSED,
+                   const gchar     *name_owner,
+                   gpointer         user_data)
+{
+    g_paste_ui_window_on_shell_owner (user_data, name_owner);
+}
+
+static void
+on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
+                   const gchar     *name       G_GNUC_UNUSED,
+                   gpointer         user_data)
+{
+    g_paste_ui_window_on_shell_owner (user_data, NULL);
+}
+
 /* The list and the sidebar follow the daemon on their own; the window says so
  * and takes away what would act on one that is not there. */
 static void
@@ -873,6 +1082,7 @@ on_daemon_presence_changed (GPasteClient *client G_GNUC_UNUSED,
 
     g_paste_ui_window_update_banner (self);
     g_paste_ui_window_update_sensitivity (self);
+    g_paste_ui_window_update_version_toast (self);
 }
 
 static void on_client_ready (GObject      *source_object,
@@ -1143,6 +1353,7 @@ g_paste_ui_window_dispose (GObject *object)
      * its wait for a daemon is ours to stop. */
     if (self->client)
         g_paste_client_unfollow_daemon (self->client);
+    g_clear_handle_id (&self->shell_watch, g_bus_unwatch_name);
     g_clear_object (&self->client);
     g_clear_object (&self->settings);
     g_clear_handle_id (&self->shortcuts_source, g_source_remove);
@@ -1150,6 +1361,7 @@ g_paste_ui_window_dispose (GObject *object)
      * would have GObject write into freed memory should one outlive us. */
     g_clear_weak_pointer (&self->shortcuts);
     g_clear_weak_pointer (&self->preferences);
+    g_clear_weak_pointer (&self->version_toast);
     g_clear_slist (&self->deferred, deferred_action_free);
 
     /* Chaining up unparents (and frees) every widget below, so every pointer to
@@ -1174,9 +1386,22 @@ g_paste_ui_window_dispose (GObject *object)
 }
 
 static void
+g_paste_ui_window_finalize (GObject *object)
+{
+    GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
+
+    g_free (self->shell_owner);
+
+    G_OBJECT_CLASS (g_paste_ui_window_parent_class)->finalize (object);
+}
+
+static void
 g_paste_ui_window_class_init (GPasteUiWindowClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_window_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_ui_window_dispose;
+    object_class->finalize = g_paste_ui_window_finalize;
 }
 
 static void
@@ -1219,6 +1444,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     self->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
     g_signal_group_connect (self->client_signals, "notify::history", G_CALLBACK (on_history_changed), self);
     g_signal_group_connect (self->client_signals, "notify::daemon-presence", G_CALLBACK (on_daemon_presence_changed), self);
+    g_signal_group_connect (self->client_signals, "notify::g-name-owner", G_CALLBACK (on_daemon_owner_changed), self);
     g_signal_group_connect (self->client_signals, "tracking", G_CALLBACK (on_tracking_changed), self);
 
     add_shortcuts (self);
@@ -1351,6 +1577,20 @@ g_paste_ui_window_setup (GPasteUiWindow *self,
                               G_CALLBACK (on_favourites_toggled), self);
 
     g_signal_group_set_target (self->client_signals, self->client);
+
+    /* On the client's own connection, the one the daemon's owner is read off
+     * (g_paste_ui_window_restart_can_help ()). Set up again with a retried
+     * client. */
+    g_clear_handle_id (&self->shell_watch, g_bus_unwatch_name);
+    g_clear_pointer (&self->shell_owner, g_free);
+    self->shell_owner_known = FALSE;
+    self->shell_watch = g_bus_watch_name_on_connection (g_dbus_proxy_get_connection (G_DBUS_PROXY (self->client)),
+                                                        "org.gnome.Shell",
+                                                        G_BUS_NAME_WATCHER_FLAGS_NONE,
+                                                        on_shell_appeared,
+                                                        on_shell_vanished,
+                                                        self,
+                                                        NULL);
 
     /* Opening the window is the user asking for a daemon, so one is asked for
      * outright if there is none rather than waited for, which is all the

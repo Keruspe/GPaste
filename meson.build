@@ -150,6 +150,36 @@ conf.set('version', meson.project_version())
 # of one it already has: the major alone would make 51.0 and 51.1 the same
 # number, so no point release in a series could be published as an update. The
 # string it shows the user is "version-name".
+#
+# A pre-release names its minor rather than numbering it ('51.beta'), so there
+# is no integer to add. Each takes one of the ten numbers just below the release
+# it leads to: every one of them compares lower than each point release in the
+# series -- which is what a pre-release is, and leaves .0 free to be published
+# over them -- and they run in the order the pre-releases themselves do, so each
+# is an update over the last rather than the same number twice. A name not
+# listed here is refused: silently sharing a number would have the shell keep
+# the code of the pre-release before it.
+pre_releases = {
+  'alpha': 0, 'alpha1': 1, 'alpha2': 2,
+  'beta': 3, 'beta1': 4, 'beta2': 5,
+  'rc': 6, 'rc1': 7, 'rc2': 8,
+}
+# The same names in the order they rank, for
+# /ui/daemon-presence/version-comparison to check the graphical tool's own
+# ordering of them (g_paste_ui_window_compare_versions ()) against: a name
+# added above is checked with the rest.
+# Ranks run 0..9, which is what keeps each below the release it leads to
+# (rank - 10 is negative). A pre-release ranked higher is very unlikely in this
+# project, and would both number like a point release and be left out of this
+# list: acceptable for a pre-release, so nothing enforces it.
+pre_releases_ranked = []
+foreach rank : range(10)
+  foreach name, value : pre_releases
+    if value == rank
+      pre_releases_ranked += name
+    endif
+  endforeach
+endforeach
 version_parts = meson.project_version().split('.')
 extension_version = version_parts[0].to_int() * 100
 if version_parts.length() > 1
@@ -157,19 +187,6 @@ if version_parts.length() > 1
   if minor.version_compare('>=0')
     extension_version += minor.to_int()
   else
-    # A pre-release names its minor rather than numbering it ('51.beta'), so
-    # there is no integer to add. Each takes one of the ten numbers just below
-    # the release it leads to: every one of them compares lower than each point
-    # release in the series -- which is what a pre-release is, and leaves .0 free
-    # to be published over them -- and they run in the order the pre-releases
-    # themselves do, so each is an update over the last rather than the same
-    # number twice. A name not listed here is refused: silently sharing a number
-    # would have the shell keep the code of the pre-release before it.
-    pre_releases = {
-      'alpha': 0, 'alpha1': 1, 'alpha2': 2,
-      'beta': 3, 'beta1': 4, 'beta2': 5,
-      'rc': 6, 'rc1': 7, 'rc2': 8,
-    }
     if not pre_releases.has_key(minor)
       error('Cannot number the pre-release "@0@": name it @1@.'.format(minor, ', '.join(pre_releases.keys())))
     endif
