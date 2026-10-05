@@ -605,16 +605,14 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (!texture)
     {
-        /* Its daemon gone, the presence says so and the rows are bound
-         * afresh: nothing to report for a read the user did not ask
-         * for (g_paste_client_is_daemon_gone_error ()). The list's own reads
-         * follow the same rule (/ui/daemon-presence/listing-daemon-gone); no
-         * test reaches this one, the stand-in daemon serving text items only. */
-        if (!g_paste_client_is_daemon_gone_error (error))
-        {
-            g_warning ("Failed to retrieve image: %s", error ? error->message : "no image returned");
-            g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not load an image preview"));
-        }
+        /* A read the user did not ask for, made again each time the row is
+         * bound -- each time it scrolls back into view -- so nothing the user
+         * sees, toast or warning, whatever went wrong: one per binding would
+         * queue ahead of what the user cares about, or fill the journal. The
+         * reads filling the rest of the row stay quiet too
+         * (g_paste_ui_item_on_index_ready ()); this one leaves a debug line
+         * (/ui/daemon-presence/image-preview-unreadable). */
+        g_debug ("Failed to retrieve image: %s", error ? error->message : "no image returned");
 
         /* Rather than leave the row showing an image that is not the one it is
          * now bound to. */

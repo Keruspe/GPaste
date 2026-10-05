@@ -20,6 +20,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix gpaste-client crashing on daemon-version when the daemon is not answering
 - Fix gpaste-client waiting on its input for commands that read none
 - Fix the graphical tool freezing on an item made of one very long line
+- Fix a failed image preview in the graphical tool repeating a toast as you scroll
 - Build: require libXfixes and Meson 1.9
 
 NEW in 51.0 (15/09/2026)

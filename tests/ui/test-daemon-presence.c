@@ -49,6 +49,9 @@ typedef struct
     gboolean               hold_upload;
     GDBusMethodInvocation *held_upload;
     guint                  uploads;
+    /* Serve image items, whose image cannot be read. */
+    gboolean               images;
+    guint                  image_reads;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -151,14 +154,31 @@ static gboolean
 on_get_item_at_index (GPasteDaemon3         *skeleton,
                       GDBusMethodInvocation *invocation,
                       guint64                index,
-                      gpointer               user_data G_GNUC_UNUSED)
+                      gpointer               user_data)
 {
+    FakeDaemon *daemon = user_data;
     g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index);
     g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT, index);
+    GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
 
     g_paste_daemon3_complete_get_item_at_index (skeleton, invocation,
-                                                g_variant_new ("(ssub@as)", uuid, value, G_PASTE_ITEM_KIND_TEXT, FALSE,
+                                                g_variant_new ("(ssub@as)", uuid, value, kind, FALSE,
                                                                g_variant_new_strv (NULL, 0)));
+
+    return TRUE;
+}
+
+/* An image the daemon cannot read back, as one whose cache file went. */
+static gboolean
+on_get_image (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
+              GDBusMethodInvocation *invocation,
+              const gchar           *uuid G_GNUC_UNUSED,
+              gpointer               user_data)
+{
+    FakeDaemon *daemon = user_data;
+
+    ++daemon->image_reads;
+    g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "no image");
 
     return TRUE;
 }
@@ -190,6 +210,7 @@ fake_daemon_start (FakeDaemon *daemon)
     g_signal_connect (daemon->skeleton, "handle-list-histories", G_CALLBACK (on_list_histories), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-history-size", G_CALLBACK (on_get_history_size), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-item-at-index", G_CALLBACK (on_get_item_at_index), daemon);
+    g_signal_connect (daemon->skeleton, "handle-get-image", G_CALLBACK (on_get_image), daemon);
     g_signal_connect (daemon->skeleton, "handle-search", G_CALLBACK (on_fake_search), daemon);
     g_signal_connect (daemon->skeleton, "handle-upload-and-copy", G_CALLBACK (on_upload_and_copy), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-favourites", G_CALLBACK (on_get_favourites), daemon);
@@ -1219,6 +1240,42 @@ test_listing_handoff (void)
     fake_daemon_stop (&old);
 }
 
+/* An image preview that cannot be read is a read the user did not ask for,
+ * made again each time its row is bound: it says nothing, warning or toast,
+ * however often that is (g_paste_ui_item_on_image_ready ()). Warnings being
+ * fatal, one would abort the case. */
+static void
+test_image_preview_unreadable (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1, .images = TRUE };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_for_count (&daemon.image_reads, 1);
+
+    /* The row bound afresh, its item having changed in place. */
+    g_paste_daemon3_emit_raw_update (daemon.skeleton, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM,
+                                     "00000000-0000-4000-8000-000000000000", 0);
+    g_paste_test_bus_wait_for_count (&daemon.image_reads, 2);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
 /* A read failing because its daemon left without answering -- a crash with
  * the call out -- is no failure to report: no warning, no "Could Not Load
  * History", no "No Pinned Items", no critical from the sidebar, the presence
@@ -2116,6 +2173,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/listing-after-close", test_listing_after_close);
     g_test_add_func ("/ui/daemon-presence/listing-pruned", test_listing_pruned);
     g_test_add_func ("/ui/daemon-presence/listing-handoff", test_listing_handoff);
+    g_test_add_func ("/ui/daemon-presence/image-preview-unreadable", test_image_preview_unreadable);
     g_test_add_func ("/ui/daemon-presence/listing-owner-size-error", test_listing_owner_size_error);
     g_test_add_func ("/ui/daemon-presence/owner-learned", test_owner_learned);
     g_test_add_func ("/ui/daemon-presence/listing-daemon-gone", test_listing_daemon_gone);

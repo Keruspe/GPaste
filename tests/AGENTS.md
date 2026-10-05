@@ -159,7 +159,8 @@ history it lists again keeps its sidebar row -- held by reference, so that a
 row dropped and re-added cannot pass for it -- enabled once listed. The item
 list starts with two rows, drops
 them while the successor's size answer is held, then shows its one row when
-that answer arrives. A search open when
+that answer arrives. An image item whose image cannot be read is read again on
+each binding without a warning (`image-preview-unreadable`). A search open when
 the daemon goes stays open with its text and is asked of the next daemon, once
 (`follow`). A refused successor size answer shows an error page with
 Retry; another refusal shows it again, and a successful retry restores the row
