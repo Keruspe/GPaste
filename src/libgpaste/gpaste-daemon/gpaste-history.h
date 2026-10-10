@@ -47,6 +47,9 @@ gboolean            g_paste_history_delete_password (GPasteHistory *self,
 void         g_paste_history_empty       (GPasteHistory *self);
 void         g_paste_history_flush       (GPasteHistory *self);
 void         g_paste_history_resume      (GPasteHistory *self);
+gboolean     g_paste_history_sync        (GPasteHistory *self,
+                                          const gchar   *name,
+                                          GError       **error);
 void         g_paste_history_reload_backend (GPasteHistory *self);
 void     g_paste_history_save       (GPasteHistory *self,
                                      const gchar   *name);

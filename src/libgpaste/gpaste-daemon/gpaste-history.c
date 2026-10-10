@@ -1470,9 +1470,18 @@ g_paste_history_save (GPasteHistory *self,
      * g_paste_util_get_history_file_path (), which answers %NULL for one that is
      * a path -- and a save that builds no path writes nothing at all, where a
      * load would have fallen back to the default. */
-    g_paste_storage_backend_write_history (self->backend,
-                                           g_paste_history_resolve_name (self, (name) ? name : self->name),
-                                           snapshot);
+    const gchar *target = g_paste_history_resolve_name (self, (name) ? name : self->name);
+
+    /* Another history is written through a backend of its own. The SQLite
+     * flavours keep one connection per backend, and opening another history
+     * through ours would close the one the saver writes this history through,
+     * for its next write to open it again -- an Argon2id pass on an encrypted
+     * store (/history/sqlite_save_elsewhere_keeps_connection). */
+    g_autoptr (GPasteStorageBackend) elsewhere = (g_paste_str_equal (target, self->name))
+        ? NULL
+        : g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
+
+    g_paste_storage_backend_write_history ((elsewhere) ? elsewhere : self->backend, target, snapshot);
 }
 
 /**
@@ -1510,6 +1519,66 @@ g_paste_history_resume (GPasteHistory *self)
     G_PASTE_LOCK_HISTORY;
 
     self->stopped = FALSE;
+}
+
+/* The store has been handed over: either to a successor daemon, or -- for the
+ * in-shell one, which keeps answering the bus right through its migration --
+ * to a migration that is reading and rewriting it as we speak. Reading or
+ * writing a history behind its back would race that rewrite (and lose to it),
+ * so every synchronous operation on a store refuses rather than half-do it. */
+static gboolean
+g_paste_history_check_owned (GPasteHistory *self,
+                             const gchar   *name,
+                             GError       **error)
+{
+    if (!self->stopped)
+        return TRUE;
+
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,
+                 "The history storage is being handed over, cannot touch “%s” right now",
+                 name);
+    return FALSE;
+}
+
+/**
+ * g_paste_history_sync:
+ * @self: a #GPasteHistory instance
+ * @name: the history about to be read or written outside the model
+ * @error: return location for a #GError, or %NULL
+ *
+ * Bring the store of another history than the one the model holds up to date
+ * with every change recorded for it, before something reads or replaces that
+ * store outside the model: the writes still out for @name land, the one in
+ * flight waited for and the queued ones applied. Those of every other history
+ * carry on in the background, and recording goes on. The writes of the history
+ * the model holds are left where they are: what reads it reads the model, and
+ * what replaces it records a write of its own, queued behind the ones already
+ * out.
+ *
+ * Fails with %G_IO_ERROR_BUSY, having done nothing, when the store has been
+ * handed over (see g_paste_history_flush()).
+ *
+ * Returns: whether @name may be read or replaced: for another history, its
+ *          store being up to date; for the one the model holds, its store
+ *          not having been handed over, with its writes possibly still out
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_sync (GPasteHistory *self,
+                      const gchar   *name,
+                      GError       **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (name, FALSE);
+
+    G_PASTE_LOCK_HISTORY;
+
+    if (!g_paste_history_check_owned (self, name, error))
+        return FALSE;
+
+    if (!g_paste_str_equal (name, self->name))
+        g_paste_history_saver_drain_history (self->saver, name);
+
+    return TRUE;
 }
 
 /* Read a history in, synchronously, and install it as the model.
@@ -1760,18 +1829,8 @@ g_paste_history_delete (GPasteHistory *self,
 
     const gchar *history_name = (name) ? name : self->name;
 
-    /* We have handed the store over: either to a successor daemon, or — for the
-     * in-shell one, which keeps answering the bus right through its migration —
-     * to a migration that is reading and rewriting it as we speak. Deleting an
-     * entry from underneath it would race that rewrite (and lose to it), so
-     * refuse rather than half-do it. */
-    if (self->stopped)
-    {
-        g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,
-                     "The history storage is being handed over, cannot delete “%s” right now",
-                     history_name);
+    if (!g_paste_history_check_owned (self, history_name, error))
         return FALSE;
-    }
 
     if (g_paste_str_equal (history_name, self->name))
     {
@@ -2226,6 +2285,14 @@ g_paste_history_get_size (GPasteHistory *self,
 
     if (g_paste_str_equal (name, g_paste_history_get_current (self)))
         return g_paste_history_get_length (self);
+
+    /* A history just switched away from can still have writes out, which a
+     * count of its store would not see yet: what they say it holds comes first
+     * (/history-ordering/count-pending). */
+    guint64 count;
+
+    if (g_paste_history_saver_count_pending (self->saver, name, &count))
+        return count;
 
     return g_paste_storage_backend_count_history (self->backend, name);
 }

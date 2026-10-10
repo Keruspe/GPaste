@@ -3502,6 +3502,59 @@ test_sqlite_no_rewrite_on_switch (void)
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 7);
 }
 
+/* The read-write connections opened on @counted_path, by any thread. */
+static const gchar *counted_path = NULL;
+static gint counted_opens = 0;
+
+int
+sqlite3_open_v2 (const char *filename,
+                 sqlite3   **db,
+                 int         flags,
+                 const char *vfs)
+{
+    typedef int (*Open) (const char *, sqlite3 **, int, const char *);
+    Open original = (Open) dlsym (RTLD_NEXT, "sqlite3_open_v2");
+
+    g_assert_nonnull (original);
+    if ((flags & SQLITE_OPEN_READWRITE) && g_paste_str_equal (filename, counted_path))
+        g_atomic_int_inc (&counted_opens);
+    return original (filename, db, flags, vfs);
+}
+
+/* Saving the history under another name -- a backup of the current one --
+ * leaves the connection its later writes go through alone: opened again, on an
+ * encrypted store, it would take an Argon2id pass. */
+static void
+test_sqlite_save_elsewhere_keeps_connection (void)
+{
+    const gchar *name = "sqlite-kept-connection";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+    g_paste_settings_set_max_history_size (settings, 100);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+
+    g_paste_history_load (history, name);
+    g_paste_history_add (history, g_paste_text_item_new ("before"));
+    g_paste_history_flush (history);
+    g_paste_history_resume (history);
+
+    counted_path = path;
+    g_atomic_int_set (&counted_opens, 0);
+    g_paste_history_save (history, "sqlite-kept-connection-copy");
+    g_paste_history_add (history, g_paste_text_item_new ("after"));
+    g_paste_history_flush (history);
+    counted_path = NULL;
+
+    g_assert_cmpint (g_atomic_int_get (&counted_opens), ==, 0);
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+}
+
 /* A database created by a newer GPaste (higher user_version) must be left
  * alone: reads come back empty and writes are dropped instead of clobbering. */
 static void
@@ -4211,6 +4264,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
     g_test_add_func ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
+    g_test_add_func ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
     g_test_add_func ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

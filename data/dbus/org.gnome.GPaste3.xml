@@ -32,6 +32,12 @@
     EmptyHistory, DeleteHistory and SwitchHistory. Inspecting another history
     means switching to it.
 
+    BackupHistory, EmptyHistory and DeleteHistory reach the stores themselves,
+    so a daemon handing its storage over (restarting, or migrating it inside
+    GNOME Shell) refuses them with GIO's G_IO_ERROR_BUSY, which travels as
+    org.gtk.GDBus.UnmappedGError.Quark._g_2dio_2derror_2dquark.Code26 and comes
+    back to a GDBus client as that error. They work again once it is done.
+
     An item travels as (uuid, value, kind, favourite, notes): everything a client
     needs to draw a row, in one reply. @kind is the GPasteItemKind value, the
     numeric one rather than its nick, which is now the storage backends'
@@ -112,6 +118,11 @@
       Refuses with .Error.AlreadyExists rather than overwrite a history already
       called @backup: a backup silently destroying an older one of the same name
       is a loss noticed far too late.
+
+      The backup holds every change the daemon has accepted for @history, those
+      still on their way to the disk included. The current history cannot be
+      backed up while it is loading, which is refused with the same
+      G_IO_ERROR_BUSY as a storage handover (see above).
     -->
     <method name="BackupHistory">
       <arg type="s" direction="in" name="history"/>

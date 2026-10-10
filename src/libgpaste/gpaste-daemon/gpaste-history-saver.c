@@ -342,6 +342,103 @@ g_paste_history_saver_drain_history (GPasteHistorySaver *self,
     }
 }
 
+/* How many of @history the store answers for once it holds it, which is what
+ * its count_history () counts: a plain flavour keeps none of its passwords, as
+ * its writes leave them out, and a count takes no image while images-support
+ * is off and, past the favourites, at most max-history-size items -- the
+ * SQLite flavours' cap taking in the images it then leaves out, the file
+ * flavours' not. */
+static guint64
+g_paste_history_saver_count_stored (GPasteHistorySaver *self,
+                                    const GList        *history)
+{
+    GPasteSettings *settings = g_paste_storage_backend_get_settings (self->backend);
+    gboolean encrypted = g_paste_storage_backend_is_encrypted (self->backend);
+    gboolean images = g_paste_settings_get_images_support (settings);
+    gboolean capped_images = g_paste_storage_backend_is_incremental (self->backend);
+    guint64 max = g_paste_settings_get_max_history_size (settings);
+    guint64 capped = 0;
+    guint64 count = 0;
+
+    for (const GList *h = history; h; h = h->next)
+    {
+        GPasteItemKind kind = g_paste_item_get_kind (h->data);
+        gboolean favourite = g_paste_item_is_favourite (h->data);
+        gboolean image = kind == G_PASTE_ITEM_KIND_IMAGE;
+
+        if (!encrypted && kind == G_PASTE_ITEM_KIND_PASSWORD)
+            continue;
+        if (!favourite && (capped_images || images || !image) && capped++ >= max)
+            continue;
+        if (!images && image)
+            continue;
+
+        ++count;
+    }
+
+    return count;
+}
+
+/**
+ * g_paste_history_saver_count_pending:
+ * @self: a #GPasteHistorySaver
+ * @name: a history name
+ * @count: (out): how many items @name holds once its writes have landed
+ *
+ * How many items the store of @name is about to hold, when the latest write
+ * recorded for it says: a snapshot of the whole history, which every write of a
+ * non-incremental backend is, or an emptying. An incremental backend's other
+ * operations carry no count of their own, and neither does a history nothing
+ * is recorded for: its store then answers for it.
+ *
+ * Returns: whether @count was set
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_saver_count_pending (GPasteHistorySaver *self,
+                                     const gchar        *name,
+                                     guint64            *count)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY_SAVER (self), FALSE);
+    g_return_val_if_fail (count, FALSE);
+
+    const GPasteHistorySaverWrite *latest = NULL;
+
+    for (const GList *link = self->pending.tail; link && !latest; link = link->prev)
+    {
+        const GPasteHistorySaverWrite *pending = link->data;
+
+        if (g_paste_str_equal (pending->name, name))
+            latest = pending;
+    }
+
+    if (!latest && self->writing && g_paste_str_equal (self->writing->name, name))
+        latest = self->writing;
+
+    if (!latest)
+        return FALSE;
+
+    switch (latest->op)
+    {
+    case G_PASTE_HISTORY_SAVE_FULL:
+        *count = g_paste_history_saver_count_stored (self, latest->history);
+        return TRUE;
+    case G_PASTE_HISTORY_SAVE_CLEAR:
+        *count = 0;
+        return TRUE;
+    case G_PASTE_HISTORY_SAVE_ADD:
+        /* What rides along with an add, when anything does, is the whole
+         * history it reconciles the store down to, never empty. */
+        if (!latest->history)
+            return FALSE;
+        *count = g_paste_history_saver_count_stored (self, latest->history);
+        return TRUE;
+    case G_PASTE_HISTORY_SAVE_REMOVE:
+    case G_PASTE_HISTORY_SAVE_REPLACE:
+    default:
+        return FALSE;
+    }
+}
+
 /**
  * g_paste_history_saver_detach:
  * @self: a #GPasteHistorySaver

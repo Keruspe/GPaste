@@ -283,6 +283,17 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_HISTORY_NAME (history);
     G_PASTE_DBUS_ASSERT_HISTORY_NAME (backup);
 
+    gboolean current = g_paste_str_equal (history, g_paste_history_get_current (self->history));
+
+    /* The current history is backed up from its model, which a load has yet to
+     * fill -- and whose store is not ours to read before the load has taken
+     * the storage lock, a previous daemon possibly still writing it. */
+    if (current && g_paste_history_is_loading (self->history))
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_BUSY, "The history is still loading");
+        return;
+    }
+
     /* Refused rather than overwritten: a backup quietly destroying an older one
      * of the same name is a loss noticed far too late to undo. A store we cannot
      * enumerate is refused too -- not knowing is not the same as knowing there
@@ -294,15 +305,22 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
 
     G_PASTE_DBUS_ASSERT (!exists, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
 
+    if (!g_paste_history_sync (self->history, history, error))
+        return;
+
     GPasteSettings *settings = self->settings;
 
-    /* A history of its own, so the backup never disturbs the current one: the
-     * current history is not switched away from, and no UI has to be told it
-     * was. What did change is the set of histories, which has a signal of its
-     * own precisely because a new one appearing is not a switch. */
-    g_autoptr (GPasteHistory) _history = g_paste_history_new (settings);
+    /* The current history from its model, which holds every change accepted
+     * for it whether or not it has reached the store yet; another from its
+     * store, which the sync above brought up to date, through a history of its
+     * own. Either way the current history is not switched away from, and no UI
+     * has to be told it was. What did change is the set of histories, which has
+     * a signal of its own precisely because a new one appearing is not a
+     * switch. */
+    g_autoptr (GPasteHistory) _history = (current) ? g_object_ref (self->history) : g_paste_history_new (settings);
 
-    g_paste_history_load (_history, history);
+    if (!current)
+        g_paste_history_load (_history, history);
 
     /* A history that did not read back leaves an empty model behind, which
      * saved as-is is a valid, empty backup answering OK -- the one answer that
@@ -367,6 +385,11 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to empty");
     G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
+
+    /* Another history is written over below: what is still out for it has to
+     * land first, or land afterwards and bring back what was emptied. */
+    if (!g_paste_history_sync (self->history, name, error))
+        return;
 
     /* Emptying a history there is none of writes one, empty: that is the set of
      * histories growing, which anything listing them has to hear about. Asked

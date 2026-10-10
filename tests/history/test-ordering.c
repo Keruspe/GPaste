@@ -4,7 +4,9 @@
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
+#include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-history.h>
+#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
@@ -353,6 +355,295 @@ test_switch_other (void)
     g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "second pending");
 }
 
+/* A history left with its writes out, switched to another one which loads and
+ * saves itself meanwhile: what the switch leaves the case to act on. */
+static void
+leave_with_write_out (GPasteHistory *history,
+                      const gchar   *next)
+{
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+    wait_worker ();
+    g_paste_history_switch (history, next);
+    wait_load (history);
+}
+
+/* The current history is backed up from its model, which holds what is still
+ * on its way to the store, without waiting for it to get there. */
+static void
+test_backup_current (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-current");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+    wait_worker ();
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GThread) release = g_thread_new ("release-current-write", release_eventually, NULL);
+
+    g_paste_daemon_methods_backup_history (&methods, "backup-current", "backup-current-copy", &error);
+    g_assert_no_error (error);
+    g_assert_false (is_released ());
+    release_worker ();
+    g_thread_join (g_steal_pointer (&release));
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "backup-current-copy");
+
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
+}
+
+/* Another history is backed up from its store, once its writes still out have
+ * landed there. */
+static void
+test_backup_other (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-left");
+    leave_with_write_out (history, "backup-reached");
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GThread) release = g_thread_new ("release-left-write", release_later, NULL);
+
+    g_paste_daemon_methods_backup_history (&methods, "backup-left", "backup-left-copy", &error);
+    g_thread_join (g_steal_pointer (&release));
+    g_assert_no_error (error);
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "backup-left-copy");
+
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
+}
+
+/* The current history has no model to back up from while it loads -- here
+ * waiting for its own write to land, having been switched away from and back. */
+static void
+test_backup_loading (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-loading");
+    leave_with_write_out (history, "backup-loading-elsewhere");
+    g_paste_history_switch (history, "backup-loading");
+    g_assert_true (g_paste_history_is_loading (history));
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_backup_history (&methods, "backup-loading", "backup-loading-copy", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    release_worker ();
+    wait_load (history);
+    finish_history (history);
+
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "backup-loading-copy");
+
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+}
+
+/* Emptying the current history goes through its model, its write queued behind
+ * the one out: nothing to wait for. */
+static void
+test_empty_current (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "empty-current");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+    wait_worker ();
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GThread) release = g_thread_new ("release-current-write", release_eventually, NULL);
+
+    g_paste_daemon_methods_empty_history (&methods, "empty-current", &error);
+    g_assert_no_error (error);
+    g_assert_false (is_released ());
+    release_worker ();
+    g_thread_join (g_steal_pointer (&release));
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "empty-current");
+
+    g_assert_null (items);
+}
+
+/* Another history is written over empty once its writes still out have landed:
+ * landing afterwards, they would bring back what was emptied. */
+static void
+test_empty_other (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "empty-left");
+    leave_with_write_out (history, "empty-reached");
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GThread) release = g_thread_new ("release-left-write", release_later, NULL);
+
+    g_paste_daemon_methods_empty_history (&methods, "empty-left", &error);
+    g_thread_join (g_steal_pointer (&release));
+    g_assert_no_error (error);
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "empty-left");
+
+    g_assert_null (items);
+}
+
+/* Once the store has been handed over, neither a backup nor an emptying
+ * touches it. */
+static void
+test_stopped (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "stopped-target");
+    g_paste_history_load (history, "stopped-current");
+    finish_history (history);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_daemon_methods_empty_history (&methods, "stopped-target", &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    }
+
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_daemon_methods_backup_history (&methods, "stopped-target", "stopped-copy", &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    }
+
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "stopped-copy");
+    g_autolist (GPasteItem) items = read_items (backend, "stopped-target");
+
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "old stored item");
+}
+
+/* A history just left counts what its writes still out are about to store,
+ * not what its store holds yet. */
+static void
+test_count_pending (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "count-left");
+    leave_with_write_out (history, "count-reached");
+
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-left"), ==, 2);
+    release_worker ();
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-left"), ==, 2);
+}
+
+/* What the store answers for of a history just left is what it is counted by
+ * from settings changed since the snapshot was taken, too: no image with
+ * images-support off, and no more than max-history-size items. */
+static void
+test_count_pending_settings (gconstpointer data)
+{
+    gboolean images = GPOINTER_TO_INT (data);
+    const gchar *name = (images) ? "count-images" : "count-capped";
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, name);
+    g_paste_settings_set_images_support (settings, TRUE);
+    if (images)
+    {
+        const guchar pixel[] = { 50, 51, 52, 255 };
+        g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+        g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+
+        g_paste_history_add (history, g_paste_image_item_new (texture));
+    }
+    else
+    {
+        for (guint i = 0; i < 6; ++i)
+        {
+            g_autofree gchar *text = g_strdup_printf ("text %u", i);
+
+            g_paste_history_add (history, g_paste_text_item_new (text));
+        }
+    }
+    finish_history (history);
+    g_paste_history_resume (history);
+    leave_with_write_out (history, (images) ? "count-images-reached" : "count-capped-reached");
+
+    /* 3 items, the image left out; 8, capped at 5. */
+    if (images)
+        g_paste_settings_set_images_support (settings, FALSE);
+    else
+        g_paste_settings_set_max_history_size (settings, 5);
+
+    guint64 expected = (images) ? 2 : 5;
+
+    g_assert_cmpuint (g_paste_history_get_size (history, name), ==, expected);
+    release_worker ();
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, name), ==, expected);
+}
+
+/* What a plain store keeps of a history just left is what it is counted by: its
+ * passwords, which that store's write leaves out, are not counted. */
+static void
+test_count_pending_passwords (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "count-passwords");
+    g_paste_history_add (history, g_paste_password_item_new ("left out", "secret", 0));
+    /* Landed before the write held next is queued: queued behind one still in
+     * flight, it would start only from the main loop, which nothing iterates
+     * while the case waits for it. */
+    finish_history (history);
+    g_paste_history_resume (history);
+    leave_with_write_out (history, "count-passwords-reached");
+
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-passwords"), ==, 2);
+    release_worker ();
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-passwords"), ==, 2);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -370,6 +661,16 @@ main (int    argc,
     g_test_add_func ("/history-ordering/delete-other", test_delete_other);
     g_test_add_func ("/history-ordering/switch-pending", test_switch_pending);
     g_test_add_func ("/history-ordering/switch-other", test_switch_other);
+    g_test_add_func ("/history-ordering/backup-current", test_backup_current);
+    g_test_add_func ("/history-ordering/backup-other", test_backup_other);
+    g_test_add_func ("/history-ordering/backup-loading", test_backup_loading);
+    g_test_add_func ("/history-ordering/empty-current", test_empty_current);
+    g_test_add_func ("/history-ordering/empty-other", test_empty_other);
+    g_test_add_func ("/history-ordering/stopped", test_stopped);
+    g_test_add_func ("/history-ordering/count-pending", test_count_pending);
+    g_test_add_func ("/history-ordering/count-pending-passwords", test_count_pending_passwords);
+    g_test_add_data_func ("/history-ordering/count-pending-images-off", GINT_TO_POINTER (TRUE), test_count_pending_settings);
+    g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (FALSE), test_count_pending_settings);
 
     return g_paste_test_env_run ();
 }
