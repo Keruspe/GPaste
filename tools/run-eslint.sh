@@ -5,8 +5,14 @@
 
 srcdir=$(dirname -- "$0")
 
-cd $srcdir
+# Quoted for a checkout path with spaces, and with CDPATH cleared so that a
+# relative directory such as `tools` is looked up where this was started, never
+# under a CDPATH entry.
+CDPATH= cd -- "$srcdir"
 [ ! -d node_modules ] && npm clean-install
-# Link in project root to make imports work properly
-[ ! -e ../node_modules ] && ln -s $srcdir/node_modules ../node_modules
+# Link in project root to make imports work properly. The target is relative
+# to the root, so the link survives the checkout moving, and a link that does
+# not resolve -- absolute into a checkout since moved, or pointing at itself --
+# is replaced.
+[ -e ../node_modules ] || ln -sfn tools/node_modules ../node_modules
 npm run lint -- "$@"
