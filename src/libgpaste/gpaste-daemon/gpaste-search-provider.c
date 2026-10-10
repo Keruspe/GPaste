@@ -3,6 +3,7 @@
 
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
+#include <gpaste-3/gpaste-update-enums.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-search-provider.h>
@@ -25,9 +26,10 @@ struct _GPasteSearchProvider
      * from here is what keeps GetResultMetas from asking for the same items a
      * second time. The items rather than their values: what a result is called
      * depends on its kind too. Replaced wholesale by each search, and emptied by
-     * any update to the history, so what is answered from here was true as of
-     * the last thing that happened to it; a uuid it does not hold falls back to
-     * GetItems. */
+     * any update to the history but an item's removal
+     * (g_paste_search_provider_forget_results ()), so what is answered from here
+     * describes each item it holds as it is, or as it was when removed; a uuid it
+     * does not hold falls back to GetItems. */
     GHashTable                 *last_results;
 
     /* The search in flight, cancelled and replaced by the next one. The shell
@@ -199,11 +201,9 @@ append_dict_entry (GVariantBuilder *dict,
 
 typedef struct
 {
-    /* Same ownership as SearchData, plus the uuids: they are what the call was
-     * made with, and what the fallback picks back out of the history. */
+    /* Same ownership as SearchData. */
     GPasteSearchProvider  *provider;
     GDBusMethodInvocation *invocation;
-    GStrv                  uuids;
 } GetResultMetasData;
 
 /* What the shell shows of a result, and what it puts on the clipboard if the
@@ -230,48 +230,10 @@ static void
 get_result_metas_data_free (GetResultMetasData *data)
 {
     g_object_unref (data->provider);
-    g_strfreev (data->uuids);
     g_free (data);
 }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GetResultMetasData, get_result_metas_data_free)
-
-/* The fallback path: describe the identifiers that are still in the history and
- * quietly drop the ones that are not. Reached when the batch below failed, which
- * it does as a whole as soon as one uuid has gone. */
-static void
-on_history_ready (GObject      *source_object G_GNUC_UNUSED,
-                  GAsyncResult *res,
-                  gpointer      user_data)
-{
-    g_autoptr (GetResultMetasData) data = user_data;
-    GPasteSearchProvider *self = data->provider;
-    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("aa{sv}"));
-    g_autoptr (GError) error = NULL;
-    g_autolist (GPasteClientItem) history = g_paste_client_get_history_finish (self->client, res, &error);
-
-    if (error)
-        g_warning ("GPaste get history failed: %s", error->message);
-
-    /* Indexed rather than scanned per uuid: this runs on GetResultMetas, which
-     * the shell calls on every keystroke once one identifier has gone, and a
-     * full history against a screenful of results is tens of thousands of
-     * comparisons each time. The items belong to @history throughout. */
-    g_autoptr (GHashTable) items = g_hash_table_new (g_str_hash, g_str_equal);
-
-    for (const GList *i = history; i; i = i->next)
-        g_hash_table_insert (items, (gpointer) g_paste_client_item_get_uuid (i->data), i->data);
-
-    for (GStrv uuid = data->uuids; *uuid; ++uuid)
-    {
-        GPasteClientItem *item = g_hash_table_lookup (items, *uuid);
-
-        if (item)
-            append_meta (&builder, item);
-    }
-
-    g_paste_shell_search_provider2_complete_get_result_metas (self->skeleton, data->invocation, g_variant_builder_end (&builder));
-}
 
 static void
 on_items_ready (GObject      *source_object G_GNUC_UNUSED,
@@ -288,30 +250,17 @@ on_items_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) results = g_paste_client_get_items_finish (self->client, res, &error);
 
-    /* GetItems is all-or-nothing: one uuid the history no longer holds (it was
-     * capped away between the search and this call) fails the lot with
-     * %G_PASTE_ERROR_INVALID_INDEX. Describing none of them would drop every
-     * result the shell is about to show, so fall back to picking out of the
-     * history whatever survives.
-     *
-     * Only for that one error: a daemon that has gone away, or a call that timed
-     * out, would otherwise have every GetResultMetas pull the whole history over
-     * the bus to build the very empty answer we can complete with right now. */
-    if (!results)
-    {
-        if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX))
-        {
-            g_paste_client_get_history (self->client, NULL /* cancellable */, on_history_ready, g_steal_pointer (&data));
+    /* GetItems is all-or-nothing: one uuid the history no longer holds fails
+     * the lot with %G_PASTE_ERROR_NOT_FOUND. Nothing describes that one any
+     * more -- @last_results would have, had no update but a removal come in
+     * between (g_paste_search_provider_forget_results ()) -- and the shell
+     * takes no answer short of one meta per identifier, so it gets the empty
+     * one: a race with the history, not a failure to report. */
+    if (error && !g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND))
+        g_warning ("GPaste get items failed: %s", error->message);
 
-            return;
-        }
-
-        if (error)
-            g_warning ("GPaste get items failed: %s", error->message);
-    }
-
-    /* Each item names itself, so nothing here depends on the reply coming back
-     * in the order the uuids were asked in. */
+    /* In the order the uuids were asked in, which GetItems keeps: the shell
+     * pairs each meta with the identifier at its position. */
     for (const GList *i = results; i; i = i->next)
         append_meta (&builder, i->data);
 
@@ -371,11 +320,8 @@ g_paste_search_provider_handle_get_result_metas (GPasteSearchProvider  *self,
 
     data->provider = g_object_ref (self);
     data->invocation = invocation;
-    /* Deep-copy: the strings must outlive @identifiers, since the call reads
-     * them and the fallback matches on them once it comes back. */
-    data->uuids = g_strdupv ((GStrv) identifiers);
 
-    g_paste_client_get_items (self->client, (const gchar * const *) data->uuids, NULL /* cancellable */, on_items_ready, data);
+    g_paste_client_get_items (self->client, identifiers, NULL /* cancellable */, on_items_ready, data);
 
     return TRUE;
 }
@@ -473,12 +419,28 @@ g_paste_search_provider_class_init (GPasteSearchProviderClass *klass)
     G_PASTE_BUS_OBJECT_CLASS (klass)->unregister_on_connection = g_paste_search_provider_unregister_on_connection;
 }
 
-/* Swapped, so @self leads: the payload of the "update" signal says nothing this
- * needs -- any change at all is a reason to stop answering from the values the
- * last search handed us. */
+/* Swapped, so @self leads. An item's removal leaves the kept values be: it
+ * changes nothing about the items still there, and the one gone may still be
+ * asked about, the last search having returned it. The shell takes one meta per
+ * identifier, paired by position, and throws a shorter answer away along with
+ * every GPaste result (gnome-shell's js/ui/search.js, _ensureResultActors ());
+ * GetItems fails the whole batch over the gone one, so what the search found it
+ * with is all that is left to describe it by.
+ *
+ * Only for a removal: any other update may have replaced an item under a new
+ * uuid -- a text item made a password, say -- and the shell itself puts a
+ * result's clipboardText on the clipboard when it is activated, so describing
+ * the uuid gone from before the change could hand the cleartext back. An add
+ * evicting a result is such an update too, and the batch it breaks is answered
+ * empty (on_items_ready ()). */
 static void
-g_paste_search_provider_forget_results (GPasteSearchProvider *self)
+g_paste_search_provider_forget_results (GPasteSearchProvider *self,
+                                        GPasteUpdateAction    action,
+                                        GPasteUpdateTarget    target)
 {
+    if (action == G_PASTE_UPDATE_ACTION_REMOVE && target == G_PASTE_UPDATE_TARGET_ITEM)
+        return;
+
     g_hash_table_remove_all (self->last_results);
 }
 
@@ -495,11 +457,12 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     self->client = g_paste_client_new_finish (res, &error);
 
-    /* Anything at all changing in the history is enough to drop the kept
-     * values: they are a snapshot of one reply, and an item edited, renamed or
-     * turned into a password since would otherwise be described by the snapshot
-     * rather than by what it now holds. Dropping them costs one GetItems on the
-     * next GetResultMetas. */
+    /* Anything changing in the history but an item's removal is enough to drop
+     * the kept values (g_paste_search_provider_forget_results ()): they are a
+     * snapshot of one reply, and an item edited, renamed or turned into a
+     * password since would otherwise be described by the snapshot rather than by
+     * what it now holds. Dropping them costs one GetItems on the next
+     * GetResultMetas. */
     if (self->client)
         g_signal_connect_object (self->client, "update", G_CALLBACK (g_paste_search_provider_forget_results), self, G_CONNECT_SWAPPED);
 

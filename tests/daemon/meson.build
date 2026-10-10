@@ -16,3 +16,11 @@ test_prompt_adw = executable(
 
 test('prompt-adw', test_prompt_adw, depends: [gpaste_schemas, test_bus_supervisor])
 test('daemon-teardown', test_daemon_teardown, depends: [gpaste_schemas, test_bus_supervisor])
+
+test_search_provider = executable(
+  'test-search-provider',
+  sources: 'test-search-provider.c',
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep ],
+)
+
+test('search-provider', test_search_provider, depends: [gpaste_schemas, test_bus_supervisor])
