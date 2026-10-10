@@ -1175,7 +1175,7 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
         }
 
         gsize length = 0;
-        guchar *data = g_paste_sqlite_backend_read_content (stmt, 1, key, &length);
+        g_autofree guchar *data = g_paste_sqlite_backend_read_content (stmt, 1, key, &length);
 
         if (!data)
         {
@@ -1184,7 +1184,13 @@ g_paste_sqlite_backend_read_special_values (sqlite3_stmt *stmt,
             continue;
         }
 
-        g_paste_item_add_special_value (item, g_paste_binary_data_new (gev->value, g_bytes_new_take (data, length)));
+        /* As in the file backend: an empty blob is no representation. */
+        if (!length)
+            continue;
+
+        GBytes *bytes = g_bytes_new_take (g_steal_pointer (&data), length);
+
+        g_paste_item_add_special_value (item, g_paste_binary_data_new (gev->value, bytes));
     }
 
     /* Said before the reset, which is what replaces the message the connection

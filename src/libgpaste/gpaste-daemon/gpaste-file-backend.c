@@ -973,9 +973,17 @@ on_text (GMarkupParseContext *context,
                 else
                 {
                     gsize raw_length;
-                    guchar *raw = (guchar *) g_base64_decode (value, &raw_length);
-                    GPasteBinaryData *sv = g_paste_binary_data_new (data->mime, g_bytes_new_take (raw, raw_length));
-                    data->special_values = g_slist_prepend (data->special_values, sv);
+                    g_autofree guchar *raw = g_base64_decode (value, &raw_length);
+
+                    /* Base64 decoding to nothing (a damaged file) is no
+                     * representation, which GPasteBinaryData refuses; the item
+                     * is still read from its plain value. */
+                    if (raw_length)
+                    {
+                        GBytes *bytes = g_bytes_new_take (g_steal_pointer (&raw), raw_length);
+
+                        data->special_values = g_slist_prepend (data->special_values, g_paste_binary_data_new (data->mime, bytes));
+                    }
                 }
             }
         }

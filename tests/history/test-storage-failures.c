@@ -1016,6 +1016,51 @@ test_verification_waits_for_busy_database (void)
 }
 #endif
 
+/* An alternative representation that decodes to nothing -- base64 a corrupt
+ * file cut to nothing, an empty blob in a database -- is no representation:
+ * the item is read without it, from its plain value, and written back so. */
+static void
+test_empty_alternative (gconstpointer data)
+{
+    GPasteStorage kind = GPOINTER_TO_UINT (data);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (kind, settings);
+    const gchar *name = "empty-alternative";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+
+    if (kind == G_PASTE_STORAGE_FILE)
+    {
+        g_assert_true (g_paste_util_ensure_history_dir_exists ());
+        g_assert_true (g_file_set_contents (path,
+                                            "<history version=\"2.0\">"
+                                            "<item kind=\"Text\"><value><![CDATA[plain]]></value>"
+                                            "<value mime=\"text-html\"><![CDATA[!!!!]]></value></item>"
+                                            "</history>",
+                                            -1, NULL));
+    }
+#ifdef G_PASTE_ENABLE_SQLITE
+    else
+    {
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("plain"));
+        g_autoptr (sqlite3) db = NULL;
+
+        g_paste_item_add_special_value (items->data, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_static ("<b>plain</b>", 12)));
+        g_paste_storage_backend_write_history (backend, name, items);
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "UPDATE special_values SET data = X'';", NULL, NULL, NULL), ==, SQLITE_OK);
+    }
+#endif
+
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "plain");
+    g_assert_null (g_paste_item_get_special_values (items->data));
+    g_paste_storage_backend_write_history (backend, name, items);
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* An encrypted file history called @name holding an image, whose history file
  * and image side file are handed back through @history and @image. */
@@ -1599,6 +1644,10 @@ main (int    argc,
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
 
+    g_test_add_data_func ("/storage/empty-alternative/file", GUINT_TO_POINTER (G_PASTE_STORAGE_FILE), test_empty_alternative);
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_data_func ("/storage/empty-alternative/sqlite", GUINT_TO_POINTER (G_PASTE_STORAGE_SQLITE), test_empty_alternative);
+#endif
     g_test_add_data_func ("/storage/migration/encrypted-file-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_migration_keeps_unopenable_identity);
     g_test_add_data_func ("/storage/migration/sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_SQLITE), test_migration_keeps_unopenable_identity);
     g_test_add_data_func ("/storage/migration/encrypted-sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_SQLITE), test_migration_keeps_unopenable_identity);
