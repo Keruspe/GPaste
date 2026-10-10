@@ -23,6 +23,7 @@ struct _GPasteDaemon
 
     GPasteDaemon3           *skeleton;
     gboolean                 registered;
+    guint                    startup_changed_id;
 
     GPasteHistory           *history;
     GPasteSettings          *settings;
@@ -1162,6 +1163,9 @@ g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
     if (!daemon->registered)
         return;
 
+    /* The startup update tells this export's clients to read everything again:
+     * with the export gone, it has nobody left to tell. */
+    g_clear_handle_id (&daemon->startup_changed_id, g_source_remove);
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (daemon->skeleton));
 
     g_signal_group_set_target (daemon->settings_signals, NULL);
@@ -1235,14 +1239,21 @@ _g_paste_daemon_changed (gpointer data)
     g_paste_daemon_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0);
 }
 
-/* One-shot startup nudge: owns a ref (taken at the call site) so the daemon
- * cannot be finalized before the timeout fires, which would update freed memory. */
-static void
+/* One-shot startup nudge. Unregistering cancels it, and it holds the daemon
+ * weakly for the reason g_paste_weak_ref_new () gives: dispose () is what
+ * unregisters. */
+static gboolean
 _g_paste_daemon_changed_once (gpointer data)
 {
-    g_autoptr (GPasteDaemon) self = data;
+    g_autoptr (GPasteDaemon) self = g_weak_ref_get (data);
 
+    if (!self)
+        return G_SOURCE_REMOVE;
+
+    self->startup_changed_id = 0;
     _g_paste_daemon_changed (self);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -1309,7 +1320,11 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
 
     daemon->registered = TRUE;
 
-    g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed_once, g_object_ref (self)), "[GPaste] Startup - changed");
+    daemon->startup_changed_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, 1,
+                                                             _g_paste_daemon_changed_once,
+                                                             g_paste_weak_ref_new (self),
+                                                             g_paste_weak_ref_free);
+    g_source_set_name_by_id (daemon->startup_changed_id, "[GPaste] Startup - changed");
 
     return TRUE;
 }

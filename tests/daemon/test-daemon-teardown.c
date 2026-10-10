@@ -87,6 +87,82 @@ test_dispose_twice (Fixture      *fixture,
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
 }
 
+/* The startup update, looked up through the field the daemon tracks it in. */
+static GSource *
+startup_update (GPasteDaemon *daemon)
+{
+    g_assert_cmpuint (daemon->startup_changed_id, !=, 0);
+
+    return g_main_context_find_source_by_id (NULL, daemon->startup_changed_id);
+}
+
+/* Unregistering cancels the startup update. Asked of the source rather than
+ * through a dispose: disposing clears the daemon's weak references first, and
+ * a source left running would then find no daemon and do nothing, which looks
+ * the same as a source that is gone. */
+static void
+test_unregister_cancels_startup (Fixture      *fixture,
+                                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GSource) startup = g_source_ref (startup_update (fixture->daemon));
+
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+    g_assert_true (g_source_is_destroyed (startup));
+}
+
+/* The startup update holds the daemon weakly: a daemon let go of while the
+ * update is pending goes then, not once the update has run. */
+static void
+test_release_pending_startup (Fixture      *fixture,
+                              gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteDaemon *daemon = fixture->daemon;
+
+    g_assert_nonnull (startup_update (daemon));
+    g_object_add_weak_pointer (G_OBJECT (daemon), (gpointer *) &daemon);
+    g_clear_object (&fixture->daemon);
+    g_assert_null (daemon);
+}
+
+static void
+on_update (GDBusConnection *connection G_GNUC_UNUSED,
+           const gchar     *sender G_GNUC_UNUSED,
+           const gchar     *path G_GNUC_UNUSED,
+           const gchar     *interface G_GNUC_UNUSED,
+           const gchar     *signal G_GNUC_UNUSED,
+           GVariant        *parameters G_GNUC_UNUSED,
+           gpointer         user_data)
+{
+    guint *updates = user_data;
+
+    ++*updates;
+}
+
+/* The startup update reaches the export's clients once it runs, and leaves
+ * unregistering nothing of its own to cancel. */
+static void
+test_startup_update (Fixture      *fixture,
+                     gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) listener = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    guint updates = 0;
+    guint subscription = g_dbus_connection_signal_subscribe (listener, NULL, G_PASTE_DAEMON_INTERFACE_NAME, "Update",
+                                                             G_PASTE_DAEMON_OBJECT_PATH, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
+                                                             on_update, &updates, NULL);
+
+    /* Looked up before the round trip, which runs whatever is due: a setup that
+     * took over a second would otherwise have the update fire there and leave
+     * nothing to look up. */
+    g_autoptr (GSource) startup = g_source_ref (startup_update (fixture->daemon));
+
+    g_paste_test_bus_round_trip (listener, fixture->connection);
+    if (!g_source_is_destroyed (startup))
+        g_source_set_ready_time (startup, 0);
+    g_paste_test_bus_wait_for_count (&updates, 1);
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+    g_dbus_connection_signal_unsubscribe (listener, subscription);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -94,6 +170,9 @@ main (int argc, char *argv[])
     g_test_init (&argc, &argv, NULL);
 
     g_test_add ("/daemon/teardown/dispose-twice", Fixture, NULL, fixture_set_up, test_dispose_twice, fixture_tear_down);
+    g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
+    g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
+    g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
 
     return g_paste_test_env_run ();
 }
