@@ -91,15 +91,16 @@ than sent. It covers the re-exec fallback, the migration gate across it,
 `UploadAndCopy` and not `Upload`, and which command lines
 `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
 verb and so have the verb-less add's shape, and the listing's own flags
-included. The client's constructor and the daemon's lookups are `#define`d too,
-the lookups answering from a history the case sets, for what `--use-index`
+included. The client's constructor is `#define`d too, counting the clients
+built: none for help, version or a verb nobody knows. So are the daemon's
+lookups, answering from a history the case sets, for what `--use-index`
 resolves: a malformed index -- a sign, a space or a vertical tab in front,
-anything after the digits, past `guint64` -- refused before any lookup, a
-single index on its own, every argument of a merge off one listing even when a
-copy lands after the first answer, a merge index past the end refused with the
-error the daemon gives a single one, and text and patterns left alone on an
-empty history. A case that succeeds runs its command line through
-`gpaste_client_main ()`, `optind` rewound; a refusal goes through
+anything after the digits, past `guint64` -- refused before any lookup or
+client, a single index on its own, every argument of a merge off one listing
+even when a copy lands after the first answer, a merge index past the end
+refused with the error the daemon gives a single one, and text and patterns
+left alone on an empty history. A case that succeeds runs its command line
+through `gpaste_client_main ()`, `optind` rewound; a refusal goes through
 `g_paste_dispatch ()`, where its error comes back to the case rather than out
 of `main ()` as a critical, which `g_test` makes fatal.
 

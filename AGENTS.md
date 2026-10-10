@@ -137,7 +137,7 @@ now written down once; add to the list, not to its consumers.
 | List | Lives in | Drives |
 |---|---|---|
 | The keyboard shortcuts | `G_PASTE_FOR_EACH_KEYBINDING` in `gpaste-3/gpaste-keybindings.h` | the shortcuts dialog, the preferences' shortcuts page, `data/control-center/42-gpaste.xml` (generated at build time by `tools/gen-keybindings-xml.py`), and the daemon's own bindings. Each carries two names: the sentence the shortcut UIs show and the few words the desktop portal lists it under |
-| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, `show_help()` printed straight from it, which command lines are read from stdin (`reads_pipe`, bar a verb-less line carrying one of the listing's own flags: `listing_flags_given()`), and which leading arguments name items (`item_args`) |
+| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, `show_help()` printed straight from it, which command lines are read from stdin (`reads_pipe`, bar a verb-less line carrying one of the listing's own flags: `listing_flags_given()`), which leading arguments name items (`item_args`), and whether dispatch constructs a daemon client (`needs_client`) |
 | A `GPasteItem`'s kind | `GPasteItemKind` in `gpaste-3/gpaste-item-enums.h` | the item classes and both storage backends, through `g_paste_item_kind_to_string()` / `_from_string()`. The wire carries the enum *value*, not its nick, so the nicks are the on-disk format's business alone |
 | The prompts' wording | `GPastePromptText` in `gpaste-daemon/gpaste-prompt.h` | both passphrase/migration dialogs -- the Adwaita one out of process and the St one in the shell |
 | The D-Bus methods | `data/dbus/org.gnome.GPaste3.xml` | both halves of the wire, via gdbus-codegen |
@@ -210,7 +210,7 @@ Each part documents itself in an `AGENTS.md` beside its code. Read the one for t
 
 ### `src/client/` — `gpaste-client`
 
-CLI tool for scripting and shell integration. Talks to the daemon via `GPasteClient`. `commands[].item_args` selects which arguments `--use-index` resolves: one for item verbs, all for merge, none for text, patterns, paths or history names. Indexes must be complete unsigned decimal values within `guint64`, all checked before any is looked up. Entry point for subcommands like `ui` (launches the GTK UI), `daemon-reexec` and `migrate` (resets the backend revision and re-execs the daemon to run an on-demand storage migration).
+CLI tool for scripting and shell integration. Talks to the daemon via `GPasteClient`, constructed only when the selected command needs it. `commands[].item_args` selects which arguments `--use-index` resolves: one for item verbs, all for merge, none for text, patterns, paths or history names. Indexes must be complete unsigned decimal values within `guint64`, all checked before any is looked up. Entry point for subcommands like `ui` (launches the GTK UI), `daemon-reexec` and `migrate` (resets the backend revision and re-execs the daemon to run an on-demand storage migration).
 
 ## Key dependencies
 

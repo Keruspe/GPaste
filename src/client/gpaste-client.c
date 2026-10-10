@@ -1094,19 +1094,31 @@ g_paste_dispatch (gint         argc,
 
         if (command_matches_line (c, argc, verb))
         {
-            if (c->needs_client && !ctx->client)
-                return EXIT_FAILURE;
-
-            Context command_ctx = *ctx;
             g_autoptr (GArray) indexes = NULL;
-            g_auto (GStrv) resolved = NULL;
 
             if (ctx->use_index && c->item_args && ctx->argc)
             {
                 indexes = item_indexes (c, ctx, error);
                 if (!indexes)
                     return EXIT_FAILURE;
+            }
 
+            /* Building the client is what has D-Bus start the daemon, so it is
+             * built for the commands that talk to it alone -- not for help,
+             * version or a launcher -- and only once their indexes are known
+             * to be well formed: refusing a malformed one needs no daemon. */
+            if (c->needs_client && !ctx->client)
+            {
+                ctx->client = g_paste_client_new_sync (error);
+                if (!ctx->client)
+                    return EXIT_FAILURE;
+            }
+
+            Context command_ctx = *ctx;
+            g_auto (GStrv) resolved = NULL;
+
+            if (indexes)
+            {
                 resolved = resolve_item_args (ctx, indexes, error);
                 if (!resolved)
                     return EXIT_FAILURE;
@@ -1139,7 +1151,6 @@ main (gint argc, gchar *argv[])
 
     if (parse_cmdline (&argc, &argv, &ctx))
     {
-        g_autoptr (GPasteClient) client = ctx.client = g_paste_client_new_sync (&error);
         g_autofree gchar *pipe_data = NULL;
 
         /* Only where a pipe is what the command line is for: extract_pipe_data ()
@@ -1148,30 +1159,19 @@ main (gint argc, gchar *argv[])
         if (dispatch_reads_stdin (argc, (argc > 0) ? argv[0] : NULL, &ctx))
             ctx.pipe_data = pipe_data = extract_pipe_data ();
 
-        /* Failing to reach the daemon is not fatal for every verb: "help",
-         * "version" and the launchers are marked as needing no client. Move that
-         * failure out of @error rather than carrying it into what follows: every
-         * client call opens with g_return_val_if_fail (!error || !(*error)), so a
-         * live one would trip the assert of whatever runs next. */
-        g_autoptr (GError) connect_error = (ctx.client) ? NULL : g_steal_pointer (&error);
-
         status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
+        g_autoptr (GPasteClient) client = ctx.client;
 
         /* Nothing matched the command line at all: a verb we do not know, or one
          * we do with the wrong number of arguments after it. Say so the way a
-         * bad option already does, and before the connection failure below,
-         * which is not what went wrong here. Left alone, g_paste_dispatch ()'s
-         * "not mine" sentinel travels out of main () as a status of its own --
-         * 255 to a shell, and not a word printed. */
+         * bad option already does. Left alone, g_paste_dispatch ()'s "not mine"
+         * sentinel travels out of main () as a status of its own -- 255 to a
+         * shell, and not a word printed. */
         if (status < 0)
         {
             show_help ();
             status = EXIT_FAILURE;
         }
-        /* Nothing ran, or what ran needed the daemon we never reached: now the
-         * connection failure is the one worth reporting. */
-        else if (!error && status != EXIT_SUCCESS && connect_error)
-            error = g_steal_pointer (&connect_error);
 
         if (error)
         {
