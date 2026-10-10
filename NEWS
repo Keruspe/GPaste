@@ -25,7 +25,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix changes to a locked or unsaveable setting looking applied when they were not
 - Fix storage migrations losing the history under a locked setting
 - Fix gpaste-client misreading --use-index, starting the daemon needlessly, and replacing non-UTF-8 input with a placeholder
-- Fix the memory limit removing items it should keep
+- Fix the memory limit removing items it should keep, or ignoring edited ones
 - Fix histories and backups missing recent copies, and deleted or emptied histories coming back
 - Build: require libXfixes and Meson 1.9
 

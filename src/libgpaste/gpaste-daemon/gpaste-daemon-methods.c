@@ -724,10 +724,16 @@ g_paste_daemon_methods_replace (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND, "attempted to replace an item other than GPasteTextItem", NULL);
     G_PASTE_DBUS_ASSERT_FULL (contents && *contents, G_PASTE_ERROR_INVALID_ARGUMENT, "no contents given", NULL);
 
-    /* The checks above make this unreachable, but the reply is built from what
-     * comes back and a %NULL there is not a reply at all. */
     gchar *new_uuid = g_paste_history_replace (self->history, uuid, contents);
 
+    /* The history refuses contents weighing more than max-memory-usage on their
+     * own, as an add of them is refused, and the item it matched is then still
+     * there: that is what tells the refusal from an item gone since the lookup
+     * above, which is unlocked. */
+    G_PASTE_DBUS_ASSERT_FULL (new_uuid || !g_paste_history_get_by_uuid (self->history, uuid),
+                              G_PASTE_ERROR_REJECTED,
+                              "the content is larger than max-memory-usage",
+                              NULL);
     G_PASTE_DBUS_ASSERT_FULL (new_uuid, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
 
     return new_uuid;
@@ -791,7 +797,8 @@ g_paste_daemon_methods_make_password (const GPasteDaemonMethods *self,
                               "another password with that name already exists",
                               NULL);
 
-    /* As in g_paste_daemon_methods_replace(): unreachable, and not a reply. */
+    /* The checks above make this unreachable, but the reply is built from what
+     * comes back and a %NULL there is not a reply at all. */
     gchar *new_uuid = g_paste_history_make_password (self->history, uuid, name, timeout);
 
     G_PASTE_DBUS_ASSERT_FULL (new_uuid, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);

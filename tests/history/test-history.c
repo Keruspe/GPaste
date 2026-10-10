@@ -1409,6 +1409,101 @@ test_memory_cap_after_head_removal (void)
     g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
 }
 
+/* A replacement weighing more than what it replaced runs the memory cap there
+ * and then, and the cap evicts what it may to make room for it -- never the
+ * replacement itself, here the biggest item there is, which would answer the
+ * edit with its loss. */
+static void
+test_memory_cap_after_replacement (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *medium = g_strnfill (2 * 1024 * 1024, 'M');
+    g_autofree gchar *large = g_strnfill (4 * 1024 * 1024, 'L');
+
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_paste_history_add (history, g_paste_text_item_new ("old"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new (medium));
+
+    g_autofree gchar *medium_uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *replacement = g_paste_history_replace (history, uuid, large);
+
+    g_assert_nonnull (replacement);
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, replacement));
+    g_assert_null (g_paste_history_get_by_uuid (history, medium_uuid));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "head");
+}
+
+/* Contents weighing more than the cap on their own are refused, as adding them
+ * is, and the item stays as it was: through the D-Bus method, that refusal is
+ * .Error.Rejected, the item being still there. */
+static void
+test_replace_refused_over_cap (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *huge = g_strnfill (6 * 1024 * 1024, 'H');
+
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_paste_history_add (history, g_paste_text_item_new ("old"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_assert_null (g_paste_history_replace (history, uuid, huge));
+
+    const GPasteDaemonMethods methods = { .history = history };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *refused = g_paste_daemon_methods_replace (&methods, uuid, huge, &error);
+
+    g_assert_null (refused);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get_by_uuid (history, uuid)), ==, "old");
+}
+
+/* The replacement is spared by the cap its own replace runs, and only by that
+ * one: the next copy calling for an eviction takes the biggest item there is,
+ * the replacement here, rather than something smaller. */
+static void
+test_memory_cap_after_replacement_spares_once (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *medium = g_strnfill (1536 * 1024, 'M');
+    g_autofree gchar *large = g_strnfill (2560 * 1024, 'L');
+    g_autofree gchar *copied = g_strnfill (1536 * 1024, 'C');
+
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_paste_history_add (history, g_paste_text_item_new (medium));
+
+    g_autofree gchar *medium_uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("small"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *replacement = g_paste_history_replace (history, uuid, large);
+
+    g_assert_nonnull (replacement);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+
+    g_paste_history_add (history, g_paste_text_item_new (copied));
+
+    g_assert_null (g_paste_history_get_by_uuid (history, replacement));
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, medium_uuid));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+}
+
 /* The memory cap evicts the biggest item it *may* evict, and a favourite is
  * never one -- so the election has to skip it and take the runner-up. */
 static void
@@ -3526,6 +3621,45 @@ test_sqlite_no_rewrite_on_switch (void)
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 7);
 }
 
+/* Evictions a replacement brings along go as a rewrite of the whole history: a
+ * replace operation alone would leave their rows in an incremental store, to
+ * come back on the next load. */
+static void
+test_sqlite_replace_evictions (void)
+{
+    const gchar *name = "sqlite-replace-evictions";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_paste_settings_set_max_history_size (settings, 100);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autofree gchar *medium = g_strnfill (2 * 1024 * 1024, 'M');
+    g_autofree gchar *large = g_strnfill (4 * 1024 * 1024, 'L');
+
+    g_paste_history_load (history, name);
+    g_paste_history_add (history, g_paste_text_item_new ("old"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new (medium));
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *replacement = g_paste_history_replace (history, uuid, large);
+
+    g_assert_nonnull (replacement);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_paste_history_flush (history);
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+
+    g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+    g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
+}
+
 /* The read-write connections opened on @counted_path, by any thread. */
 static const gchar *counted_path = NULL;
 static gint counted_opens = 0;
@@ -4228,6 +4362,9 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     g_test_add_func ("/history/select_counts_image_once", test_select_counts_image_once);
     g_test_add_func ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
+    g_test_add_func ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
+    g_test_add_func ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
+    g_test_add_func ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
     g_test_add_func ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
     g_test_add_func ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
     g_test_add_func ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);
@@ -4290,6 +4427,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
+    g_test_add_func ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
     g_test_add_func ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

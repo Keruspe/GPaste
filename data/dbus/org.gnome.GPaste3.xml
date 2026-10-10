@@ -339,6 +339,11 @@
 
       The replacement is an item of its own, with a uuid of its own: that is what
       comes back, and why the Update this raises names no item.
+
+      Contents weighing more than "max-memory-usage" on their own are refused
+      with .Error.Rejected, as adding them is, and the item is left as it was.
+      Otherwise the memory limit makes room for the replacement, evicting other
+      items if it has to but never the replacement itself.
     -->
     <method name="Replace">
       <arg type="s" direction="in"  name="uuid"/>

@@ -152,8 +152,11 @@ g_paste_history_emit_pending (GPasteHistorySelectionScope *scope)
 
 G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (GPasteHistorySelectionScope, g_paste_history_emit_pending)
 
+/* @spared is left out of the running too, for the one change it was just the
+ * subject of: see _g_paste_history_replace (). */
 static void
-g_paste_history_private_elect_new_biggest (GPasteHistory *self)
+g_paste_history_private_elect_new_biggest_sparing (GPasteHistory *self,
+                                                   GPasteItem    *spared)
 {
     g_debug ("history: elect biggest");
 
@@ -168,7 +171,7 @@ g_paste_history_private_elect_new_biggest (GPasteHistory *self)
     {
         GPasteItem *item = g_ptr_array_index (self->history, i);
 
-        if (g_paste_item_is_favourite (item))
+        if (item == spared || g_paste_item_is_favourite (item))
             continue;
 
         guint64 size = g_paste_item_get_size (item);
@@ -179,6 +182,12 @@ g_paste_history_private_elect_new_biggest (GPasteHistory *self)
             self->biggest_size = size;
         }
     }
+}
+
+static void
+g_paste_history_private_elect_new_biggest (GPasteHistory *self)
+{
+    g_paste_history_private_elect_new_biggest_sparing (self, NULL);
 }
 
 /* The item goes, and with it whatever the storage backend materialized outside
@@ -435,8 +444,11 @@ g_paste_history_private_get_indexed_by_uuid (GPasteHistory *self,
     return item;
 }
 
+/* @spared is left out of every election, as in
+ * g_paste_history_private_elect_new_biggest_sparing (). */
 static void
-g_paste_history_private_check_memory_usage (GPasteHistory *self)
+g_paste_history_private_check_memory_usage_sparing (GPasteHistory *self,
+                                                    GPasteItem    *spared)
 {
     guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
 
@@ -449,8 +461,14 @@ g_paste_history_private_check_memory_usage (GPasteHistory *self)
 
         /* Also re-points biggest_uuid, which borrowed its string from the item
          * just freed. */
-        g_paste_history_private_elect_new_biggest (self);
+        g_paste_history_private_elect_new_biggest_sparing (self, spared);
     }
+}
+
+static void
+g_paste_history_private_check_memory_usage (GPasteHistory *self)
+{
+    g_paste_history_private_check_memory_usage_sparing (self, NULL);
 }
 
 static void
@@ -961,7 +979,7 @@ _g_paste_history_replace (GPasteHistory *self,
 {
     GPasteItem *old = g_ptr_array_index (self->history, index);
     g_autofree gchar *old_uuid = g_strdup (g_paste_item_get_uuid (old));
-    gboolean was_biggest = g_paste_str_equal (self->biggest_uuid, old_uuid);
+    guint length_before = self->history->len;
 
     /* The pin belongs to the entry, not to the object holding its contents:
      * editing a pinned item, or turning one into a password, changes what it
@@ -982,8 +1000,30 @@ _g_paste_history_replace (GPasteHistory *self,
     g_ptr_array_insert (self->history, index, new);
     g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (new), new);
 
-    if (was_biggest)
-        g_paste_history_private_elect_new_biggest (self);
+    /* The replacement can weigh more than what it replaced, so the memory cap
+     * runs now: left to the next copy, the eviction this one calls for would
+     * be blamed on that instead. It leaves the replacement alone this once, as
+     * an add leaves the item it adds, and is back in the running right after:
+     * evicting it would answer the edit with its loss, the original gone with
+     * it, under a uuid the caller has just been told about, while a tracker
+     * left without it would have the next cap evict something smaller first.
+     * Replace refuses contents weighing more than the cap on their own before
+     * getting here (g_paste_history_replace ()), and what the other callers
+     * swap in weighs less than what it replaces. The first election runs
+     * either way: the replaced item may have been the elected one. */
+    g_paste_history_private_elect_new_biggest_sparing (self, new);
+    g_paste_history_private_check_memory_usage_sparing (self, new);
+    g_paste_history_private_elect_new_biggest (self);
+
+    if (self->history->len != length_before)
+    {
+        /* As in g_paste_history_set_favourite (): evictions rode along, and a
+         * replace carries no snapshot for an incremental backend to reconcile
+         * against, so the history is rewritten outright. What moved is every
+         * position below the evictions, which only ALL says. */
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+        return;
+    }
 
     /* A replacement that keeps the uuid can update one row. With a new uuid,
      * one identifier cannot say both which item went and which arrived. */
@@ -1006,8 +1046,11 @@ _g_paste_history_replace (GPasteHistory *self,
  * _g_paste_history_replace()) and a caller would otherwise have no way to reach
  * what it just created.
  *
+ * Contents weighing more than "max-memory-usage" on their own are refused, the
+ * item being left as it was, as an add of them would be refused.
+ *
  * Returns: (transfer full) (nullable): the new item's uuid, or %NULL when @uuid
- *          matched nothing
+ *          matched nothing or the contents were refused
  */
 G_PASTE_VISIBLE gchar *
 g_paste_history_replace (GPasteHistory *self,
@@ -1026,9 +1069,14 @@ g_paste_history_replace (GPasteHistory *self,
 
     g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (item), NULL);
 
-    GPasteItem *new = g_paste_text_item_new (contents);
+    g_autoptr (GPasteItem) new = g_paste_text_item_new (contents);
 
-    _g_paste_history_replace (self, index, new);
+    /* Refused as an add of the same contents is (_g_paste_history_add ()):
+     * kept, it would evict everything else and still not fit. */
+    if (g_paste_item_get_size (new) > g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024)
+        return NULL;
+
+    _g_paste_history_replace (self, index, g_object_ref (new));
 
     if (!index)
         g_paste_history_selected (self, new);
