@@ -2004,13 +2004,21 @@ g_paste_clipboards_manager_rearm_password (GPasteClipboardsManager *self,
             guint timeout = g_paste_clipboards_manager_password_timeout (item);
             PendingPassword *pending = NULL;
 
+            /* By uuid rather than by object: updating a password puts a new
+             * object in its place under the same uuid
+             * (g_paste_history_make_password ()), and an edit waiting for this
+             * selection is that entry's whichever object it was made on. The
+             * newest object is the one to arm. */
             for (GSList *l = clip->pending_passwords; l; l = l->next)
             {
                 PendingPassword *candidate = l->data;
 
-                if (candidate->item == item)
+                if (g_paste_str_equal (g_paste_item_get_uuid (candidate->item), g_paste_item_get_uuid (item)))
                     pending = candidate;
             }
+
+            if (pending)
+                g_set_object (&pending->item, item);
 
             if (pending && pending->timeout == timeout)
                 continue;
@@ -2362,10 +2370,16 @@ on_password_dropped (GPasteClipboardsManager *self,
         if (clip->password && g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)))
             continue;
 
-        /* Capture/merge twins are equal nameless items. Named entries remain
-         * distinct even when their cleartext matches an unlisted twin. */
+        /* The record may hold an earlier object of the very entry that went:
+         * updating a password puts a new one in its place under the same uuid
+         * (g_paste_history_make_password ()), and a record whose selection was
+         * being read then is left on the old one until a read identifies it
+         * (/clipboard/dropped_password/renamed_twin). Capture/merge twins are
+         * equal nameless items. Named entries remain distinct even when their
+         * cleartext matches an unlisted twin. */
         if (clip->password &&
-            g_paste_item_equals (clip->password, item))
+            (g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
+             g_paste_item_equals (clip->password, item)))
         {
             g_paste_clipboards_manager_deselect_password (clip);
             dropped = TRUE;

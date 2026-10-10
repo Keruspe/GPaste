@@ -797,11 +797,11 @@ g_paste_daemon_methods_make_password (const GPasteDaemonMethods *self,
                               "another password with that name already exists",
                               NULL);
 
-    /* The checks above make this unreachable, but the reply is built from what
-     * comes back and a %NULL there is not a reply at all. */
+    /* The checks above leave one refusal: a password its name makes heavier
+     * than the memory cap, which Replace refuses for contents as heavy. */
     gchar *new_uuid = g_paste_history_make_password (self->history, uuid, name, timeout);
 
-    G_PASTE_DBUS_ASSERT_FULL (new_uuid, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (new_uuid, G_PASTE_ERROR_REJECTED, "the password, its name included, weighs more than max-memory-usage", NULL);
 
     /* @timeout is how long the password may stay on a selection, so a countdown
      * armed from the old one is now running for the wrong duration. The history

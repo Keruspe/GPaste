@@ -1601,12 +1601,38 @@ test_favourite_survives_replace (void)
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 
-/* MakePassword handed a password's own uuid updates it where it stands rather
- * than minting a replacement: the uuid that went in comes back, the name and the
- * timeout are written and the value is not. That is the branch Edit Password
- * drives on every save. */
+/* MakePassword handed a password's own uuid keeps the entry where it stands,
+ * under that uuid, rather than minting a new one: the uuid that went in comes
+ * back, the name and the timeout are written and the value is not. That is
+ * what Edit Password drives on every save. */
+/* A name heavy enough to put a password past the memory cap is refused, nothing
+ * changed, as Replace refuses contents that heavy: spared by the cap, it would
+ * evict every other entry to make room for itself. */
 static void
-test_make_password_updates_in_place (void)
+test_make_password_heavy_name (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autofree gchar *name = g_strnfill (3 * 1024 * 1024, 'n');
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_paste_history_add (history, g_paste_text_item_new ("kept"));
+    g_paste_history_add (history, g_paste_text_item_new ("secret"));
+
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 0)));
+
+    g_assert_null (g_paste_history_make_password (history, uuid, name, 0));
+    g_assert_null (g_paste_daemon_methods_make_password (&methods, uuid, name, 0, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_true (G_PASTE_IS_TEXT_ITEM (g_paste_history_get (history, 0)));
+    g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
+}
+
+static void
+test_make_password_keeps_uuid (void)
 {
     g_autoptr (GPasteSettings) settings = NULL;
     g_autoptr (GPasteHistory) history = make_history (&settings, 5);
@@ -1776,11 +1802,11 @@ test_named_passwords_never_match (void)
     g_assert_false (g_paste_item_equals (text, nameless));
 }
 
-/* The name is part of what a password weighs, so renaming one where it stands has
- * to move the history's own total with it. Left out, the longer name is
- * subtracted once more than it was ever added when the item goes -- and that
- * total is unsigned, so it wraps and the memory cap starts evicting everything
- * that arrives afterwards. */
+/* The name is part of what a password weighs, so renaming one has to move the
+ * history's own total with it. Left out, the longer name is subtracted once
+ * more than it was ever added when the item goes -- and that total is unsigned,
+ * so it wraps and the memory cap starts evicting everything that arrives
+ * afterwards. */
 static void
 test_rename_keeps_history_size (void)
 {
@@ -4380,7 +4406,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/migration_locked_backend_is_current", test_migration_locked_backend_is_current);
     g_test_add_func ("/history/migration_unstored_backend_is_current", test_migration_unstored_backend_is_current);
 #endif
-    g_test_add_func ("/history/make_password_updates_in_place", test_make_password_updates_in_place);
+    g_test_add_func ("/history/make_password_keeps_uuid", test_make_password_keeps_uuid);
+    g_test_add_func ("/history/make_password_heavy_name", test_make_password_heavy_name);
     g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
     g_test_add_func ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);
     g_test_add_func ("/history/nameless_password_dedup_past_the_head", test_nameless_password_dedup_past_the_head);

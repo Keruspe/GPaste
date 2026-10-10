@@ -1086,6 +1086,39 @@ test_reenable_pending_timeout (void)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
+/* The same through the history: each MakePassword puts a new object in the
+ * entry's place under its uuid, and the edit waiting for the selection is that
+ * entry's whichever object it was made on -- going back to the duration the
+ * countdown ran with is still an edit, the countdown starting over. */
+static void
+test_reenable_pending_timeout_through_history (void)
+{
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    const gchar *uuid = g_paste_item_get_uuid (fixture->password);
+
+    g_paste_history_add (fixture->history, g_object_ref (fixture->password));
+    pump_for (1100);
+
+    gint64 reenabled = 0;
+
+    for (guint timeout = 0; timeout < 2; ++timeout)
+    {
+        reenabled = g_get_monotonic_time ();
+
+        g_autofree gchar *kept = g_paste_history_make_password (fixture->history, uuid, NULL, timeout);
+
+        g_assert_cmpstr (kept, ==, uuid);
+        g_paste_clipboards_manager_rearm_password (fixture->manager, g_paste_history_get_by_uuid (fixture->history, kept));
+    }
+    password_read_ready (fixture, "same secret");
+
+    if (still_before (reenabled, 1000))
+        g_assert_cmpstr (fixture->clipboard->content.str, ==, "same secret");
+    pump_for (1100);
+
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
+}
+
 /* The record converges on the same-value twin a later publication carries, so a
  * rename of the original during a read changes no duration and keeps the
  * countdown running rather than restarting it. */
@@ -3605,7 +3638,7 @@ test_dropped_password_merge_twin (gconstpointer user_data)
         g_autofree gchar *renamed = g_paste_history_make_password (history, g_paste_item_get_uuid (anonymous), "captured", 0);
 
         g_assert_nonnull (renamed);
-        g_paste_clipboards_manager_rearm_password (manager, anonymous);
+        g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, renamed));
     }
     g_paste_history_remove_by_uuid (history, g_paste_item_get_uuid (anonymous));
     if (rename)
@@ -4070,6 +4103,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/timeout_edit/publish_pending_deadline", GINT_TO_POINTER (FALSE), test_publish_pending_deadline);
     g_test_add_data_func ("/clipboard/timeout_edit/publish_pending_twin_deadline", GINT_TO_POINTER (TRUE), test_publish_pending_deadline);
     g_test_add_func ("/clipboard/timeout_edit/reenable_pending_timeout", test_reenable_pending_timeout);
+    g_test_add_func ("/clipboard/timeout_edit/reenable_through_history", test_reenable_pending_timeout_through_history);
     g_test_add_func ("/clipboard/timeout_edit/rename_twin", test_rename_twin_during_read);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/select", GINT_TO_POINTER (FALSE), test_forced_expiry_without_countdown);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/edit", GINT_TO_POINTER (TRUE), test_forced_expiry_without_countdown);

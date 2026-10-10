@@ -27,6 +27,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix gpaste-client misreading --use-index, starting the daemon needlessly, and replacing non-UTF-8 input with a placeholder
 - Fix the memory limit removing items it should keep, or ignoring edited ones
 - Fix histories and backups missing recent copies, and deleted or emptied histories coming back
+- Fix a rare crash when renaming a password
 - Build: require libXfixes and Meson 1.9
 
 NEW in 51.0 (15/09/2026)

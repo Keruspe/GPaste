@@ -44,8 +44,9 @@ struct _GPasteHistory
      * item's own uuid string and the value is the item the array owns — so an
      * entry is only ever valid while the item is in the array, and the two are
      * updated together. That is safe because a uuid never changes once its item
-     * is in the history: only the storage backends call
-     * g_paste_item_set_uuid(), while loading, before the item gets here. */
+     * is in the history: g_paste_item_set_uuid() is only called by the storage
+     * backends while loading, and on an item about to take another's place
+     * under its uuid, before either gets here. */
     GPtrArray            *history;
     GHashTable           *by_uuid;
     gsize                 size;
@@ -1008,9 +1009,10 @@ _g_paste_history_replace (GPasteHistory *self,
      * it, under a uuid the caller has just been told about, while a tracker
      * left without it would have the next cap evict something smaller first.
      * Replace refuses contents weighing more than the cap on their own before
-     * getting here (g_paste_history_replace ()), and what the other callers
-     * swap in weighs less than what it replaces. The first election runs
-     * either way: the replaced item may have been the elected one. */
+     * getting here (g_paste_history_replace ()), and MakePassword a password
+     * its name makes that heavy (g_paste_history_make_password ()). The first
+     * election runs either way: the replaced item may have been the elected
+     * one. */
     g_paste_history_private_elect_new_biggest_sparing (self, new);
     g_paste_history_private_check_memory_usage_sparing (self, new);
     g_paste_history_private_elect_new_biggest (self);
@@ -1276,11 +1278,15 @@ _g_paste_history_private_get_password (GPasteHistory *self,
  *
  * The two hand back different uuids. A text item is *replaced*: a password item
  * is an item of its own, with a uuid of its own, for the same reason
- * g_paste_history_replace() hands one back. A password item is updated where it
- * stands -- its name and its timeout, never its value -- so what comes back is
- * the uuid that went in.
+ * g_paste_history_replace() hands one back. A password item keeps its place and
+ * its uuid -- a password carrying the new name and timeout, never another
+ * value, takes its place under it -- so what comes back is the uuid that went
+ * in.
  *
- * Returns: (transfer full): the uuid of the item this left in the history
+ * Returns: (transfer full) (nullable): the uuid of the item this left in the
+ *          history, or %NULL with nothing changed when @name is another
+ *          password's, or when the password, its name included, would weigh
+ *          more than max-memory-usage
  */
 G_PASTE_VISIBLE gchar *
 g_paste_history_make_password (GPasteHistory *self,
@@ -1324,85 +1330,35 @@ g_paste_history_make_password (GPasteHistory *self,
                 : (guint) g_paste_settings_get_password_timeout (self->settings);
     }
 
-    /* Our own copy: the memory cap the in-place branch runs can evict the very
-     * item being renamed. */
-    g_autofree gchar *new_uuid = NULL;
+    /* A password is never written in place, a new one taking its place under
+     * its uuid instead: the saver's snapshots hold the live items, and a worker
+     * may be writing this one's name out while the main thread would free it
+     * (/history-ordering/rename-during-write). The pin, the memory total and
+     * the cap follow through _g_paste_history_replace (), as for a text item
+     * becoming a password. */
+    const gchar *keep = (!name && G_PASTE_IS_PASSWORD_ITEM (item)) ? g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)) : name;
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (keep, g_paste_item_get_real_value (item), timeout);
 
     if (G_PASTE_IS_PASSWORD_ITEM (item))
-    {
-        gboolean was_biggest = g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (item));
-        guint length_before = self->history->len;
+        g_paste_item_set_uuid (password, g_paste_item_get_uuid (item));
 
-        new_uuid = g_strdup (g_paste_item_get_uuid (item));
+    /* Its name weighs in, twice over (the display string carries it too), and
+     * nothing else bounds it: the replacement is spared by the cap, which
+     * would evict everything else to make room for it, as Replace refuses
+     * contents that heavy (g_paste_history_replace ()). */
+    if (g_paste_item_get_size (password) > g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024)
+        return NULL;
 
-        /* The name is part of what the item weighs, so the history's own total
-         * has to follow it out and back in. Left out, a rename that lengthens
-         * the name is subtracted once more than it was ever added when the item
-         * goes, and self->size is unsigned. */
-        self->size -= g_paste_item_get_size (item);
-        /* A password already carries a name of its own, so %NULL is nothing to
-         * write over it: the placeholder every nameless one reads as is not a
-         * name the caller asked for, and putting it here would leave this one
-         * unreachable by the name the user gave it. */
-        if (name)
-            g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), name);
-        g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (item), timeout);
-        self->size += g_paste_item_get_size (item);
-
-        if (was_biggest)
-        {
-            /* A shorter name may have taken it below the runner-up, which only
-             * a full election can name. */
-            g_paste_history_private_elect_new_biggest (self);
-        }
-        else
-        {
-            /* A longer one may have taken it past the item elected, which one
-             * comparison places, the same way _g_paste_history_add places an
-             * item leaving the active slot. Index 0 and favourites stay
-             * untracked, as ever. */
-            guint64 size = g_paste_item_get_size (item);
-
-            if (index && !g_paste_item_is_favourite (item) && size >= self->biggest_size)
-            {
-                self->biggest_uuid = g_paste_item_get_uuid (item);
-                self->biggest_size = size;
-            }
-        }
-
-        /* A longer name weighs more, so the total this cap watches has just
-         * moved and the sweep has to run here -- left to whatever is added next,
-         * the eviction it calls for would be blamed on that instead. The item
-         * count did not change, which is what leaves the other cap out. */
-        g_paste_history_private_check_memory_usage (self);
-
-        if (self->history->len != length_before)
-        {
-            /* As in g_paste_history_set_favourite (): evictions rode along, a
-             * replace carries no snapshot for an incremental backend to
-             * reconcile against, and @item may be among them -- hence neither it
-             * nor @index is touched from here on. */
-            g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
-        }
-        else
-            g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REPLACE, item, new_uuid, FALSE);
-    }
-    else
-    {
-        GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item), timeout);
-
-        _g_paste_history_replace (self, index, password);
-        new_uuid = g_strdup (g_paste_item_get_uuid (password));
-    }
+    _g_paste_history_replace (self, index, g_object_ref (password));
 
     /* Nothing is selected, wherever the item sits: a password is published as
-     * g_paste_item_get_real_value (), which neither branch touches, and the item
+     * g_paste_item_get_real_value (), which this never changes, and the item
      * at the front is not necessarily what a selection holds -- selecting would
      * be writing its cleartext over whatever the user has copied since. Arming
      * the countdown the new timeout calls for is
      * g_paste_clipboards_manager_rearm_password ()'s job, the clipboards being
      * what the history has no reach into. */
-    return g_steal_pointer (&new_uuid);
+    return g_strdup (g_paste_item_get_uuid (password));
 }
 
 /**

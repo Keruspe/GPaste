@@ -7,6 +7,7 @@
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
@@ -19,7 +20,8 @@
  * GMutex and GCond need no initialisation.
  *
  * With @require_written, a worker reading that history asserts the held write
- * has landed first. */
+ * has landed first. @password_name and @password_timeout are what the held
+ * write found on the first password it was handed, once released. */
 typedef struct
 {
     GMutex       mutex;
@@ -31,6 +33,8 @@ typedef struct
     gboolean     released;
     gboolean     require_written;
     gboolean     written;
+    gchar       *password_name;
+    guint        password_timeout;
 } Barrier;
 
 static Barrier barrier;
@@ -56,6 +60,16 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
             g_cond_broadcast (&barrier.cond);
             while (!barrier.released)
                 g_cond_wait (&barrier.cond, &barrier.mutex);
+
+            for (const GList *item = items; item; item = item->next)
+            {
+                if (G_PASTE_IS_PASSWORD_ITEM (item->data))
+                {
+                    g_set_str (&barrier.password_name, g_paste_password_item_get_name (item->data));
+                    barrier.password_timeout = g_paste_password_item_get_timeout (item->data);
+                    break;
+                }
+            }
         }
         g_mutex_unlock (&barrier.mutex);
     }
@@ -205,6 +219,8 @@ fixture (GPasteSettings       **settings,
     barrier.released = FALSE;
     barrier.require_written = FALSE;
     barrier.written = FALSE;
+    g_clear_pointer (&barrier.password_name, g_free);
+    barrier.password_timeout = 0;
     g_mutex_unlock (&barrier.mutex);
 }
 
@@ -644,6 +660,40 @@ test_count_pending_passwords (void)
     g_assert_cmpuint (g_paste_history_get_size (history, "count-passwords"), ==, 2);
 }
 
+/* A password renamed while a write holding it is out: the write stores the
+ * name and timeout it was recorded with, the rename putting a new item in its
+ * place rather than writing over the one a worker reads. */
+static void
+test_rename_during_write (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "rename-during-write");
+
+    GPasteItem *password = g_paste_password_item_new ("original", "secret", 42);
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (password));
+
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, password);
+    wait_worker ();
+
+    g_autofree gchar *renamed = g_paste_history_make_password (history, uuid, "renamed", 7);
+
+    g_assert_cmpstr (renamed, ==, uuid);
+    release_worker ();
+    finish_history (history);
+
+    g_assert_cmpstr (barrier.password_name, ==, "original");
+    g_assert_cmpuint (barrier.password_timeout, ==, 42);
+
+    GPasteItem *kept = g_paste_history_get_by_uuid (history, uuid);
+
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (kept)), ==, "renamed");
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (kept)), ==, 7);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -671,6 +721,7 @@ main (int    argc,
     g_test_add_func ("/history-ordering/count-pending-passwords", test_count_pending_passwords);
     g_test_add_data_func ("/history-ordering/count-pending-images-off", GINT_TO_POINTER (TRUE), test_count_pending_settings);
     g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (FALSE), test_count_pending_settings);
+    g_test_add_func ("/history-ordering/rename-during-write", test_rename_during_write);
 
     return g_paste_test_env_run ();
 }
