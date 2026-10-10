@@ -2981,8 +2981,11 @@ test_encrypted_rekey (void)
             }
 
             /* The limit drops well below what is stored, as it would after the
-             * user lowered it in the preferences. */
-            g_paste_settings_set_max_history_size (settings, 2);
+             * user lowered it in the preferences: to the schema's minimum,
+             * which a lower value would be refused for, leaving the limit
+             * where it was. */
+            g_paste_settings_set_max_history_size (settings, 5);
+            g_assert_cmpuint (g_paste_settings_get_max_history_size (settings), ==, 5);
 
             {
                 g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
