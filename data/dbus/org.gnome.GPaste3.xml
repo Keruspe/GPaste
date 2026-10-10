@@ -346,7 +346,13 @@
       <arg type="s" direction="in" name="uuid"/>
     </method>
 
-    <!-- Start or stop tracking clipboard changes; reads back as the Active property -->
+    <!--
+      Start or stop tracking clipboard changes; reads back as the Active property.
+
+      Fails, leaving the tracking as it was, when the "track-changes" setting
+      cannot be written: a locked key, or a settings file the daemon cannot
+      rewrite. Asking for the state it already has never fails.
+    -->
     <method name="SetActive">
       <arg type="b" direction="in" name="active"/>
     </method>

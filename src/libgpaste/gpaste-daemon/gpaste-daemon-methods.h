@@ -134,7 +134,8 @@ void      g_paste_daemon_methods_switch_history             (const GPasteDaemonM
                                                              const gchar               *name,
                                                              GError                   **error);
 void      g_paste_daemon_methods_set_active                 (const GPasteDaemonMethods *self,
-                                                             gboolean                   active);
+                                                             gboolean                   active,
+                                                             GError                   **error);
 void      g_paste_daemon_methods_extension_state_changed    (const GPasteDaemonMethods *self,
                                                              gboolean                   state);
 

@@ -840,14 +840,14 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
  * set, or the reply its matching completion builds. Returning %TRUE says the
  * method was handled, which is what stops the skeleton from replying itself.
  *
- * They come in four shapes, by whether the method answers anything and whether
- * it can fail. PARAMS is what the interface adds after the invocation and ARGS
- * the matching arguments to forward; both are parenthesized so the preprocessor
- * takes each as one macro argument, and ARGLIST supplies the comma joining them
- * -- disappearing when the list is empty.
+ * They come in three shapes, by whether the method answers anything and
+ * whether it can fail. PARAMS is what the interface adds after the invocation
+ * and ARGS the matching arguments to forward; both are parenthesized so the
+ * preprocessor takes each as one macro argument, and ARGLIST supplies the comma
+ * joining them -- disappearing when the list is empty.
  *
  * A handler's signature is not checked against the vfunc it is connected to, so
- * concentrating them here is also what keeps that hazard in four places rather
+ * concentrating them here is also what keeps that hazard in three places rather
  * than thirty-three: compare these against struct _GPasteDaemon3Iface by hand
  * when a method changes. */
 #define ARGLIST(...) , ##__VA_ARGS__
@@ -865,18 +865,6 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
     static gboolean                                                                   \
     g_paste_daemon_handle_##name (GPasteDaemon          *self,                        \
                                   GDBusMethodInvocation *invocation ARGLIST PARAMS)
-
-/* Answers nothing, cannot fail. */
-#define G_PASTE_DAEMON_HANDLER(name, PARAMS, ARGS)                                    \
-    G_PASTE_DAEMON_HANDLER_HEAD (name, PARAMS)                                        \
-    {                                                                                 \
-        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);            \
-                                                                                      \
-        g_paste_daemon_methods_##name (&methods ARGLIST ARGS);                        \
-        g_paste_daemon3_complete_##name (self->skeleton, invocation);                 \
-                                                                                      \
-        return TRUE;                                                                  \
-    }
 
 /* Answers nothing, may fail. */
 #define G_PASTE_DAEMON_HANDLER_ERR(name, PARAMS, ARGS)                                        \
@@ -1024,7 +1012,7 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (search,
 
 G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 
-G_PASTE_DAEMON_HANDLER (set_active, (gboolean active), (active))
+G_PASTE_DAEMON_HANDLER_ERR (set_active, (gboolean active), (active))
 
 G_PASTE_DAEMON_HANDLER_ERR (set_favourite, (const gchar *uuid, gboolean favourite), (uuid, favourite))
 

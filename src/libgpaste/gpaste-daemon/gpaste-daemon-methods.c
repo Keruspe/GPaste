@@ -616,17 +616,26 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
     return g_paste_daemon_methods_do_add (self, str->str, str->len, error);
 }
 
+/* GSettings refusing the write -- a locked key, a settings file it cannot
+ * rewrite -- leaves the tracking as it was, so the setting is read back: the
+ * caller showing the state it asked for has to hear that it did not take. */
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_set_active (const GPasteDaemonMethods *self,
-                                   gboolean                   active)
+                                   gboolean                   active,
+                                   GError                   **error)
 {
     g_paste_settings_set_track_changes (self->settings, active);
+    g_paste_settings_sync_key (self->settings, G_PASTE_TRACK_CHANGES_SETTING);
+
+    G_PASTE_DBUS_ASSERT (!g_paste_settings_get_track_changes (self->settings) == !active, G_PASTE_ERROR_FAILED, "the track-changes setting cannot be changed");
 }
 
 /* The policy itself, in one place: whether the extension coming or going should
  * drive the tracking is the "track-extension-state" key's business. Reached both
  * from the D-Bus method and, without a bus round trip, from a host running the
- * daemon in its own process (see g_paste_daemon_extension_state_changed()). */
+ * daemon in its own process (see g_paste_daemon_extension_state_changed()).
+ * A write GSettings refuses is reported to nobody: the extension states a fact
+ * and has nothing that shows the tracking to put right. */
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
                                                 gboolean                   state)

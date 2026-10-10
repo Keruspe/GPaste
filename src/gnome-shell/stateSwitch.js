@@ -14,6 +14,9 @@ class GPasteStateSwitch extends PopupSwitchMenuItem {
         this._client = client;
 
         this.connect('toggled', this._onToggle.bind(this));
+        this.connect('destroy', () => {
+            this._destroyed = true;
+        });
     }
 
     // The daemon telling us where it is, not the user asking it to move. Not
@@ -33,6 +36,16 @@ class GPasteStateSwitch extends PopupSwitchMenuItem {
         if (this._fromDaemon)
             return;
 
-        this._client.set_active(state, null, null);
+        // A refused call leaves the daemon's Active where it was, so no
+        // 'tracking' comes to move the switch back: its reply has to.
+        this._client.set_active(state, null, (client, result) => {
+            try {
+                client.set_active_finish(result);
+            } catch (e) {
+                console.error(e);
+                if (!this._destroyed)
+                    this.syncState(client.is_active());
+            }
+        });
     }
 });

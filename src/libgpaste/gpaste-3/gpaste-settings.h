@@ -119,6 +119,8 @@ void g_paste_settings_reset (GPasteSettings *self,
                              const gchar    *key);
 void g_paste_settings_sync (GPasteSettings *self);
 void g_paste_settings_reload (GPasteSettings *self);
+void g_paste_settings_sync_key (GPasteSettings *self,
+                                const gchar    *key);
 gboolean g_paste_settings_is_default (GPasteSettings *self,
                                       const gchar    *key);
 

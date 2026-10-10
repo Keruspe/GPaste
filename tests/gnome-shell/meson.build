@@ -6,4 +6,7 @@ if node.found()
   test('indicator', node,
     args: [files('test-indicator.cjs'), meson.project_source_root() / 'src/gnome-shell/indicator.js'],
   )
+  test('state-switch', node,
+    args: [files('test-state-switch.cjs'), meson.project_source_root() / 'src/gnome-shell/stateSwitch.js'],
+  )
 endif

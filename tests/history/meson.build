@@ -1,7 +1,7 @@
 test_history = executable(
   'test-history',
   sources: [ 'test-history.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
 )
 
 # The encrypted cases derive an Argon2id key (at libsodium's MODERATE limits)

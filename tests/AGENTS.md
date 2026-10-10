@@ -47,6 +47,21 @@ still having an owner. A revocable weak-reference double
 models collection during an upload, so its reply is finished without a
 notification from an indicator that is gone.
 
+`state-switch` runs the shipped tracking switch over a `PopupSwitchMenuItem`
+double that clicks through `toggle()`, as GNOME Shell's does: a `SetActive` the
+daemon refuses puts it back where the daemon still is, without asking again on
+the way, an accepted one leaves it where the click put it, the daemon moving it
+asks nothing back, and a refusal reaching a switch the menu has destroyed is
+only logged.
+`test-history`'s `/history/set_active_refused` refuses the `track-changes` write
+the way a locked key does, by interposing `g_settings_set_boolean()`: the
+daemon's side of that call has to fail, the tracking left as it was, unless it
+was asked for the state it already has. `/history/set_active_unstored` takes
+the write instead and gives it back once `g_settings_sync()` waits for it, from
+another thread while the main context is held, as dconf does with a database it
+cannot write: the read-back has to see the setting given back before the main
+loop announces it.
+
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers a
 refused storage migration, both with the preferences window still up (an alert
@@ -209,7 +224,17 @@ past the limit. It uses real GTK on the private Xvfb and skips without one.
 
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and
-detail filtering, without reading or writing user preferences.
+detail filtering, and that a write GSettings refuses leaves a non-default value
+in place and announces nothing -- a property write announcing the setting again
+once it is over -- without reading or writing user preferences.
+
+`test-shell-settings` supplies a minimal test-local Shell schema and real memory
+and non-writable GSettings backends. It compiles the shipped settings source,
+substituting only the optional Shell detection and settings construction, and
+checks effective extension membership after accepted and refused writes, that
+other extensions' changes do not notify `extension-enabled`, and that a row
+bound to it comes back after a refused flip. This settings-only suite uses
+`G_PASTE_TEST_ENV_OWN_BUS` to leave both bus addresses unreachable.
 
 `test-portal-provider` runs the GlobalShortcuts client against a fake portal on
 private buses, without GTK initialization or a desktop session. It controls

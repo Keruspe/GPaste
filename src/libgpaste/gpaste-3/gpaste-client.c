@@ -1556,7 +1556,9 @@ G_PASTE_CLIENT_METHOD (switch_history,
  * @state: the new tracking state of the #GPasteDaemon
  * @error: return location for a #GError, or %NULL
  *
- * Change the tracking state of the #GPasteDaemon
+ * Change the tracking state of the #GPasteDaemon. The daemon refuses with
+ * %G_PASTE_ERROR_FAILED, tracking as it was, when it cannot store the new state:
+ * a locked "track-changes" setting.
  */
 /**
  * g_paste_client_set_active:
@@ -1575,7 +1577,9 @@ G_PASTE_CLIENT_METHOD (switch_history,
  * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
- * Change the tracking state of the #GPasteDaemon
+ * Change the tracking state of the #GPasteDaemon. The daemon refuses with
+ * %G_PASTE_ERROR_FAILED, tracking as it was, when it cannot store the new state:
+ * a locked "track-changes" setting.
  */
 G_PASTE_CLIENT_METHOD (set_active,
                        (gboolean state), (state))

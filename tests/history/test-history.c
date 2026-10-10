@@ -3,6 +3,7 @@
 
 #include <glib/gstdio.h>
 #include <gpaste-test-env.h>
+#include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
@@ -16,6 +17,7 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
+#include <dlfcn.h>
 #include <string.h>
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -72,6 +74,119 @@ make_history (GPasteSettings **out_settings,
         g_object_unref (settings);
 
     return history;
+}
+
+/* GSettings refusing a write, as it does for a locked key: nothing stored,
+ * nothing announced. Only the key named here is refused.
+ *
+ * Or, with @unstored, dconf with a database it cannot write: the write is
+ * taken and announced, then given back once g_settings_sync () waits for it,
+ * with a "changed" that comes later, from the main loop -- dconf's worker
+ * thread announces it there, as give_back () does. */
+static const gchar *refused_key = NULL;
+static gboolean unstored = FALSE;
+static GVariant *unstored_value = NULL;
+
+static gboolean
+refuse_write (GSettings   *settings,
+              const gchar *key)
+{
+    if (!g_paste_str_equal (key, refused_key))
+        return FALSE;
+    if (!unstored)
+        return TRUE;
+    if (!unstored_value)
+        unstored_value = g_settings_get_value (settings, key);
+    return FALSE;
+}
+
+gboolean
+g_settings_set_boolean (GSettings   *settings,
+                        const gchar *key,
+                        gboolean     value)
+{
+    typedef gboolean (*SetBoolean) (GSettings *, const gchar *, gboolean);
+    SetBoolean original = (SetBoolean) dlsym (RTLD_NEXT, "g_settings_set_boolean");
+
+    g_assert_nonnull (original);
+    if (refuse_write (settings, key))
+        return FALSE;
+    return original (settings, key, value);
+}
+
+static gpointer
+give_back (gpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GSettings) settings = g_settings_new (G_PASTE_SETTINGS_NAME);
+
+    g_settings_set_value (settings, refused_key, unstored_value);
+
+    return NULL;
+}
+
+void
+g_settings_sync (void)
+{
+    typedef void (*Sync) (void);
+    Sync original = (Sync) dlsym (RTLD_NEXT, "g_settings_sync");
+
+    g_assert_nonnull (original);
+    original ();
+    if (!unstored_value)
+        return;
+
+    /* Owned here, the main context is where the worker's "changed" is queued
+     * rather than run on the worker at once. */
+    g_main_context_acquire (NULL);
+    g_thread_join (g_thread_new ("give-back", give_back, NULL));
+    g_main_context_release (NULL);
+    g_clear_pointer (&unstored_value, g_variant_unref);
+}
+
+/* What dconf announces once it gives a write back, run. */
+static void
+drain (void)
+{
+    while (g_main_context_iteration (NULL, FALSE));
+}
+
+static void
+test_set_active_refused (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const GPasteDaemonMethods methods = { .settings = settings };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_track_changes (settings, TRUE);
+    refused_key = G_PASTE_TRACK_CHANGES_SETTING;
+
+    /* Asking for the state it already has is no refusal, locked or not. */
+    g_paste_daemon_methods_set_active (&methods, TRUE, &error);
+    g_assert_no_error (error);
+
+    g_paste_daemon_methods_set_active (&methods, FALSE, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_true (g_paste_settings_get_track_changes (settings));
+    g_clear_error (&error);
+    drain ();
+    g_assert_true (g_paste_settings_get_track_changes (settings));
+
+    refused_key = NULL;
+    g_paste_daemon_methods_set_active (&methods, FALSE, &error);
+    g_assert_no_error (error);
+    g_assert_false (g_paste_settings_get_track_changes (settings));
+
+    g_paste_settings_reset (settings, G_PASTE_TRACK_CHANGES_SETTING);
+}
+
+/* A write dconf takes but cannot store is as much a refusal, though it is
+ * announced first and given back only once the daemon waits for it. */
+static void
+test_set_active_unstored (void)
+{
+    unstored = TRUE;
+    test_set_active_refused ();
+    unstored = FALSE;
 }
 
 static void
@@ -3687,6 +3802,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/favourite_roundtrip", test_favourite_roundtrip);
     g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
     g_test_add_func ("/history/add_password_name_conflict", test_add_password_name_conflict);
+    g_test_add_func ("/history/set_active_refused", test_set_active_refused);
+    g_test_add_func ("/history/set_active_unstored", test_set_active_unstored);
     g_test_add_func ("/history/make_password_updates_in_place", test_make_password_updates_in_place);
     g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
     g_test_add_func ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);

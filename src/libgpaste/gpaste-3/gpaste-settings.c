@@ -51,6 +51,17 @@ struct _GPasteSettings
     gboolean      extension_enabled;
 };
 
+/**
+ * GPasteSettings:
+ *
+ * GPaste's settings, each one a property named after its GSettings key.
+ *
+ * A setter asks GSettings to store the value, and a getter answers what
+ * GSettings holds: a write it refuses -- a locked key, a value out of range --
+ * leaves the setting as it was, and one dconf takes but cannot store is given
+ * back a moment later, so read it back after g_paste_settings_sync_key() to
+ * know whether it took.
+ */
 G_PASTE_DEFINE_TYPE (Settings, settings, G_TYPE_OBJECT)
 
 enum
@@ -62,38 +73,45 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-/* How a setting's cached value is replaced. GSettings hands out a fresh string,
- * so the dconf path consumes it, while the public setter only borrows its
- * argument -- which it also has to hand to GSettings afterwards. */
+/* The cache holds what GSettings holds, and its "changed" handler writes it: a
+ * backend announces a write it takes before g_settings_set_*() returns, and
+ * GSettings runs the handler right there when the caller is on the thread this
+ * object was created on, as every caller is. A write GSettings refuses -- a
+ * locked key, a value out of range -- changes nothing and announces nothing.
+ * dconf takes a write before storing it, though, and gives it back if storing
+ * fails -- a database it cannot write -- with a "changed" that comes only
+ * later, from the main loop. So a caller that has to know whether a write took
+ * reads the setting back after g_paste_settings_sync_key (), which waits for
+ * the backend and re-reads the key ahead of that announcement
+ * (g_paste_daemon_methods_set_active ()). GSettings hands out a fresh string,
+ * which the cache takes. */
 #define ASSIGN(dest, src)      (dest) = (src)
 #define ASSIGN_TAKE(dest, src) g_set_str_take (&(dest), (src))
-#define ASSIGN_DUP(dest, src)  g_set_str (&(dest), (src))
 
-#define SETTING(name, key, type, setting_type, fail, guards, assign_owned, assign_borrowed)            \
-    G_PASTE_VISIBLE type                                                                               \
-    g_paste_settings_get_##name (GPasteSettings *self)                                                 \
-    {                                                                                                  \
-        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                                       \
-        return self->name;                                                                             \
-    }                                                                                                  \
-    static void                                                                                        \
-    g_paste_settings_private_set_##name##_from_dconf (GPasteSettings *self)                            \
-    {                                                                                                  \
-        assign_owned (self->name, g_settings_get_##setting_type (self->settings,                       \
-                                                                 G_PASTE_##key##_SETTING));            \
-    }                                                                                                  \
-    G_PASTE_VISIBLE void                                                                               \
-    g_paste_settings_set_##name (GPasteSettings *self,                                                 \
-                                 type            value)                                                \
-    {                                                                                                  \
-        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                 \
-        guards                                                                                         \
-        assign_borrowed (self->name, value);                                                           \
-        g_settings_set_##setting_type (self->settings, G_PASTE_##key##_SETTING, value);                \
+#define SETTING(name, key, type, setting_type, fail, guards, assign_owned)                  \
+    G_PASTE_VISIBLE type                                                                    \
+    g_paste_settings_get_##name (GPasteSettings *self)                                      \
+    {                                                                                       \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                            \
+        return self->name;                                                                  \
+    }                                                                                       \
+    static void                                                                             \
+    g_paste_settings_private_set_##name##_from_dconf (GPasteSettings *self)                 \
+    {                                                                                       \
+        assign_owned (self->name, g_settings_get_##setting_type (self->settings,            \
+                                                                 G_PASTE_##key##_SETTING)); \
+    }                                                                                       \
+    G_PASTE_VISIBLE void                                                                    \
+    g_paste_settings_set_##name (GPasteSettings *self,                                      \
+                                 type            value)                                     \
+    {                                                                                       \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                      \
+        guards                                                                              \
+        g_settings_set_##setting_type (self->settings, G_PASTE_##key##_SETTING, value);     \
     }
 
 #define TRIVIAL_SETTING(name, key, type, setting_type, fail) \
-    SETTING (name, key, type, setting_type, fail, {}, ASSIGN, ASSIGN)
+    SETTING (name, key, type, setting_type, fail, {}, ASSIGN)
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
 #define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, uint64, 0)
@@ -102,7 +120,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
                                            g_return_if_fail (value);                              \
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
-                                           ASSIGN_TAKE, ASSIGN_DUP)
+                                           ASSIGN_TAKE)
 
 /* "rebind" is the only signal this class carries; every other change
  * notification is the property one. */
@@ -667,19 +685,19 @@ g_paste_settings_private_get_enabled_extensions (GPasteSettings *self)
     return (self->shell_settings) ? g_settings_get_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
 }
 
+/* Announced only when GPaste's own membership moves: the list changes with
+ * every other extension enabled or disabled. */
 static void
 g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettings *self)
 {
     g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (self);
-    for (GStrv e = extensions; *e; ++e)
-    {
-        if (g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
-        {
-            self->extension_enabled = TRUE;
-            return;
-        }
-    }
-    self->extension_enabled = FALSE;
+    gboolean enabled = g_strv_contains ((const gchar * const *) extensions, G_PASTE_EXTENSION_NAME);
+
+    if (self->extension_enabled == enabled)
+        return;
+
+    self->extension_enabled = enabled;
+    g_object_notify (G_OBJECT (self), G_PASTE_EXTENSION_ENABLED_SETTING);
 }
 
 /**
@@ -695,36 +713,25 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
-    g_auto (GStrv) extensions = NULL;
-
     if (!self->shell_settings || (value == self->extension_enabled))
         return;
 
-    extensions = g_paste_settings_private_get_enabled_extensions (self);
-    guint64 nb = g_strv_length (extensions);
-    if (value)
-    {
-        extensions = g_realloc (extensions, (nb + 2) * sizeof (gchar *));
-        extensions[nb] = g_strdup (G_PASTE_EXTENSION_NAME);
-        extensions[nb+1] = NULL;
-    }
-    else
-    {
-        gboolean found = FALSE;
-        for (guint64 i = 0; i < nb; ++i)
-        {
-            if (!found && g_paste_str_equal (extensions[i], G_PASTE_EXTENSION_NAME))
-            {
-                found = TRUE;
-                g_free (extensions[i]);
-            }
-            if (found)
-                extensions[i] = extensions[i+1];
-        }
-    }
+    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (self);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
-    self->extension_enabled = value;
-    g_settings_set_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) extensions);
+    for (GStrv e = extensions; *e; ++e)
+    {
+        if (!g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
+            g_strv_builder_add (builder, *e);
+    }
+    if (value)
+        g_strv_builder_add (builder, G_PASTE_EXTENSION_NAME);
+
+    g_auto (GStrv) updated = g_strv_builder_end (builder);
+
+    /* As for the other settings, the "changed"
+     * handler is what moves the cache. */
+    g_settings_set_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) updated);
 }
 
 static void
@@ -735,7 +742,6 @@ g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
 
     g_paste_settings_private_set_extension_enabled_from_dconf (self);
-    g_object_notify (G_OBJECT (self), G_PASTE_EXTENSION_ENABLED_SETTING);
 }
 
 static void
@@ -832,7 +838,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
  * GSettings key (e.g. "track-changes"), so UI widgets can bind to it with
  * g_object_bind_property() rather than wiring getters/setters by hand. The
  * property accessors delegate to the typed get/set above (keeping their
- * validation), and external changes notify through the "changed" handler. */
+ * validation), and every change notifies through the "changed" handler. */
 #define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR, ENUM)                             \
     BOOL (close_on_select,            CLOSE_ON_SELECT)                                    \
     UINT (element_size,               ELEMENT_SIZE)                                       \
@@ -908,6 +914,66 @@ g_paste_settings_get_property (GObject    *object,
     }
 }
 
+typedef struct
+{
+    GWeakRef    settings;
+    GParamSpec *pspec;
+} RefusedWrite;
+
+static void
+refused_write_free (gpointer data)
+{
+    RefusedWrite *refused = data;
+
+    g_weak_ref_clear (&refused->settings);
+    g_free (refused);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RefusedWrite, refused_write_free)
+
+static gboolean
+announce_refused_write (gpointer user_data)
+{
+    RefusedWrite *refused = user_data;
+    g_autoptr (GObject) self = g_weak_ref_get (&refused->settings);
+
+    if (self)
+        g_object_notify_by_pspec (self, refused->pspec);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* A refused write announces nothing (see SETTING), which suits a C caller that
+ * reads the setting back. Whoever set the property may be showing the value it
+ * asked for, though, and GBinding ignores the notify of the object it is
+ * writing to: a preferences row bound to a locked key would keep the user's
+ * flip. So announce the setting once that write is over, for a binding to read
+ * back what it holds. Not from the C setters: a notify::history-name, for one,
+ * reloads the history. */
+static void
+g_paste_settings_private_check_written (GPasteSettings *self,
+                                        guint           prop_id,
+                                        const GValue   *value,
+                                        GParamSpec     *pspec)
+{
+    g_auto (GValue) effective = G_VALUE_INIT;
+
+    g_value_init (&effective, G_PARAM_SPEC_VALUE_TYPE (pspec));
+    g_paste_settings_get_property (G_OBJECT (self), prop_id, &effective, pspec);
+
+    if (!g_param_values_cmp (pspec, value, &effective))
+        return;
+
+    RefusedWrite *refused = g_new0 (RefusedWrite, 1);
+
+    g_weak_ref_init (&refused->settings, self);
+    refused->pspec = pspec;
+
+    guint source = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, announce_refused_write, refused, refused_write_free);
+
+    g_source_set_name_by_id (source, "[GPaste] refused settings write");
+}
+
 static void
 g_paste_settings_set_property (GObject      *object,
                                guint         prop_id,
@@ -932,7 +998,10 @@ g_paste_settings_set_property (GObject      *object,
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        return;
     }
+
+    g_paste_settings_private_check_written (self, prop_id, value, pspec);
 }
 
 /**
@@ -1016,6 +1085,41 @@ g_paste_settings_reload (GPasteSettings *self)
         setting_entries[i].from_dconf (self);
 }
 
+/**
+ * g_paste_settings_sync_key:
+ * @self: a #GPasteSettings instance
+ * @key: the GSettings key (also the property name) written
+ *
+ * Wait for what was written to @key to be stored, then have its getter answer
+ * what was. A backend may take a write and give it back once storing it fails
+ * -- dconf does, with a database it cannot write -- and the "changed" saying so
+ * comes later, from the main loop: until then the getter answers what was
+ * asked for. A caller that has to know whether a write took calls this before
+ * reading the setting back. It blocks until the backend answers, as
+ * g_paste_settings_sync() does.
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_sync_key (GPasteSettings *self,
+                           const gchar    *key)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    g_settings_sync ();
+
+    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
+    {
+        /* Quietly, as g_paste_settings_reload () does: the "changed" on its
+         * way is what announces it. */
+        if (g_paste_str_equal (setting_entries[i].key, key))
+        {
+            setting_entries[i].from_dconf (self);
+            return;
+        }
+    }
+
+    g_return_if_reached ();
+}
+
 static void
 g_paste_settings_dispose (GObject *object)
 {
@@ -1058,8 +1162,9 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     object_class->set_property = g_paste_settings_set_property;
 
     /* One bindable property per setting, named after its GSettings key.
-     * G_PARAM_EXPLICIT_NOTIFY: the only notify comes from the "changed" handler,
-     * once the stored value has actually been refreshed. */
+     * G_PARAM_EXPLICIT_NOTIFY: a setting is announced by the "changed" handlers
+     * once its cached value has been refreshed, and again after a property
+     * write GSettings refused (g_paste_settings_private_check_written ()). */
 #define _INSTALL_BOOL(name, KEY) properties[PROP_##name] = g_param_spec_boolean (G_PASTE_##KEY##_SETTING, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 #define _INSTALL_UINT(name, KEY) properties[PROP_##name] = g_param_spec_uint64 (G_PASTE_##KEY##_SETTING, NULL, NULL, 0, G_MAXUINT64, 0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 #define _INSTALL_STR(name, KEY)  properties[PROP_##name] = g_param_spec_string (G_PASTE_##KEY##_SETTING, NULL, NULL, NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
