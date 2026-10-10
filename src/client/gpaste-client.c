@@ -521,12 +521,6 @@ g_paste_add (Context *ctx,
     if (!data)
         return -1;
 
-    if (!g_utf8_validate (data, -1, NULL))
-    {
-        g_critical (_("Cannot add non-UTF-8 data as text."));
-        return EXIT_FAILURE;
-    }
-
     g_autofree gchar *uuid = g_paste_client_add_text_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
@@ -991,6 +985,31 @@ dispatch_reads_stdin (gint           argc,
     return FALSE;
 }
 
+/* Whether every string a command line carries -- its arguments, what is
+ * piped in for one, merge's decoration and separator -- is UTF-8, as a D-Bus
+ * string has to be. GLib would otherwise send "[Invalid UTF-8]" in its place,
+ * and the daemon act on that: switch to a history of that name, or store a
+ * password under it. A path is no exception: AddFile takes it as a string and
+ * opens the file the string names, so one that is not UTF-8 cannot reach the
+ * daemon at all, and converting it would name a file that is not there. */
+static gboolean
+check_utf8 (const Context *ctx,
+            GError       **error)
+{
+    const gchar *options[] = { ctx->pipe_data, ctx->decoration, ctx->separator };
+    gboolean valid = TRUE;
+
+    for (gint i = 0; valid && i < ctx->argc; ++i)
+        valid = g_utf8_validate (ctx->args[i], -1, NULL);
+    for (guint i = 0; valid && i < G_N_ELEMENTS (options); ++i)
+        valid = !options[i] || g_utf8_validate (options[i], -1, NULL);
+
+    if (!valid)
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, _("Cannot use arguments or input that are not valid UTF-8."));
+
+    return valid;
+}
+
 /* The positions @command's leading item arguments name under --use-index,
  * every one of them checked before any is looked up.
  *
@@ -1096,6 +1115,12 @@ g_paste_dispatch (gint         argc,
         {
             g_autoptr (GArray) indexes = NULL;
 
+            /* Only a command that talks to the daemon has its strings checked:
+             * the launchers and the flag actions send nothing, and --help with
+             * something stray after it still answers. */
+            if (c->needs_client && !check_utf8 (ctx, error))
+                return EXIT_FAILURE;
+
             if (ctx->use_index && c->item_args && ctx->argc)
             {
                 indexes = item_indexes (c, ctx, error);
@@ -1105,8 +1130,9 @@ g_paste_dispatch (gint         argc,
 
             /* Building the client is what has D-Bus start the daemon, so it is
              * built for the commands that talk to it alone -- not for help,
-             * version or a launcher -- and only once their indexes are known
-             * to be well formed: refusing a malformed one needs no daemon. */
+             * version or a launcher -- and only once what they would send is
+             * known to be well formed: refusing a malformed index or a string
+             * that is not UTF-8 needs no daemon. */
             if (c->needs_client && !ctx->client)
             {
                 ctx->client = g_paste_client_new_sync (error);

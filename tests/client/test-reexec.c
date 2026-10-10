@@ -363,6 +363,87 @@ test_nonitem_arguments (void)
     g_clear_pointer (&search_pattern, g_free);
 }
 
+/* Every string a command could send the daemon has to be UTF-8, and is checked
+ * before a client is even built: each argument of each verb that talks to the
+ * daemon, the text piped in for one, and merge's decoration and separator. */
+static void
+test_utf8_refused (void)
+{
+    gchar invalid[] = { (gchar) 0xff, '\0' };
+    Context piped = { .pipe_data = invalid };
+    Context decorated = { .argc = 2, .args = (const gchar *[]) { "0", "1", NULL }, .decoration = invalid };
+    Context separated = { .argc = 2, .args = (const gchar *[]) { "0", "1", NULL }, .separator = invalid };
+
+    clients_created = 0;
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (commands); ++i)
+    {
+        const Command *c = &commands[i];
+        gint count = c->argc - 1 + ((c->extra_args == G_MAXINT) ? 0 : c->extra_args);
+
+        if (!c->verb || !c->needs_client)
+            continue;
+
+        /* Each argument in turn, the others valid, at the most arguments the
+         * verb takes, and at the fewest with a pipe standing in for the last. */
+        for (gint position = 0; position < count; ++position)
+        {
+            g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+            for (gint j = 0; j < count; ++j)
+                g_strv_builder_add (builder, (j == position) ? invalid : "0");
+
+            g_auto (GStrv) args = g_strv_builder_end (builder);
+            Context ctx = { .argc = count, .args = (const gchar **) args };
+            g_autoptr (GError) error = NULL;
+
+            g_assert_cmpint (g_paste_dispatch (count + 1, c->verb, &ctx, &error), ==, EXIT_FAILURE);
+            g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        }
+
+        if (c->reads_pipe)
+        {
+            Context ctx = { .argc = c->argc - 1, .args = (const gchar *[]) { "0", NULL }, .pipe_data = invalid };
+            g_autoptr (GError) error = NULL;
+
+            g_assert_cmpint (g_paste_dispatch (c->argc, c->verb, &ctx, &error), ==, EXIT_FAILURE);
+            g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        }
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpint (g_paste_dispatch (0, NULL, &piped, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_clear_error (&error);
+
+    g_assert_cmpint (g_paste_dispatch (3, "merge", &decorated, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_clear_error (&error);
+
+    g_assert_cmpint (g_paste_dispatch (3, "merge", &separated, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+
+    g_assert_cmpuint (clients_created, ==, 0);
+}
+
+/* What is UTF-8 goes through, from an argument or a pipe alike. */
+static void
+test_utf8_accepted (void)
+{
+    Context piped = { .pipe_data = (gchar *) "pipé" };
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpint (run_client ((const gchar *[]) { "add", "héllo", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpstr (added_text, ==, "héllo");
+
+    g_assert_cmpint (g_paste_dispatch (0, NULL, &piped, &error), ==, EXIT_SUCCESS);
+    g_assert_no_error (error);
+    g_assert_cmpstr (added_text, ==, "pipé");
+    g_clear_object (&piped.client);
+    g_clear_pointer (&added_text, g_free);
+}
+
 static void
 test_upload_and_copy (void)
 {
@@ -519,6 +600,8 @@ main (int argc, char **argv)
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
+    g_test_add_func ("/client/utf8/refused", test_utf8_refused);
+    g_test_add_func ("/client/utf8/accepted", test_utf8_accepted);
     g_test_add_func ("/client/index/item", test_item_index);
     g_test_add_func ("/client/index/malformed", test_malformed_index);
     g_test_add_func ("/client/index/merge", test_merge_indexes);
