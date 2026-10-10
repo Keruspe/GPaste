@@ -47,9 +47,9 @@ static GPasteHistory *
 make_history (GPasteSettings **out_settings,
               guint64          max_history_size)
 {
-    /* A distinct history name per call keeps each test's on-disk file (under our
-     * throwaway XDG_DATA_HOME) separate, so the model's async persistence can't
-     * leak state from one test into the next. */
+    /* A distinct history name per call keeps each test's on-disk file (under the
+     * test environment's private XDG_DATA_HOME) separate, so the model's async
+     * persistence can't leak state from one test into the next. */
     static guint counter = 0;
     g_autofree gchar *name = g_strdup_printf ("test-%u", counter++);
 
@@ -3661,16 +3661,6 @@ int
 main (int argc, char *argv[])
 {
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
-
-    /* Keep any persistence the model schedules out of the real user data dir. */
-    g_autofree gchar *tmp = g_dir_make_tmp ("gpaste-test-XXXXXX", NULL);
-    if (tmp)
-    {
-        g_setenv ("XDG_DATA_HOME", tmp, TRUE);
-        g_setenv ("XDG_CONFIG_HOME", tmp, TRUE);
-        g_setenv ("XDG_CACHE_HOME", tmp, TRUE);
-    }
-
     g_test_init (&argc, &argv, NULL);
 
     g_test_add_func ("/history/image_capture_does_not_write", test_image_capture_does_not_write);
