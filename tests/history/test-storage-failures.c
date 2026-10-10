@@ -9,11 +9,14 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 
 #include <dlfcn.h>
+#include <string.h>
 
-/* Writes through a backend of this kind leave the history's first item out,
- * as a destination that took a write and does not give it back would: -1 for
- * none. */
+/* Writes through a backend of the first kind leave the history's first item
+ * out, as a destination that took a write and does not give it back would;
+ * file writes through one of the second kind lose the document's footer, as an
+ * interrupted one would. -1 for none. */
 static gint shortened_kind = -1;
+static gint truncated_kind = -1;
 
 void
 g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
@@ -22,11 +25,25 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
 {
     typedef void (*Write) (GPasteStorageBackend *, const gchar *, const GList *);
     Write original = (Write) dlsym (RTLD_NEXT, "g_paste_storage_backend_write_history");
+    gint kind = g_paste_storage_backend_get_kind (backend);
 
     g_assert_nonnull (original);
-    if (items && (gint) g_paste_storage_backend_get_kind (backend) == shortened_kind)
+    if (items && kind == shortened_kind)
         items = items->next;
     original (backend, name, items);
+
+    if (kind != truncated_kind)
+        return;
+
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autofree gchar *contents = NULL;
+
+    g_assert_true (g_file_get_contents (path, &contents, NULL, NULL));
+
+    const gchar *footer = strstr (contents, "</history>");
+
+    g_assert_nonnull (footer);
+    g_assert_true (g_file_set_contents (path, contents, footer - contents, NULL));
 }
 
 /* The migration's own static helpers, detect_current_backend() and
@@ -170,6 +187,60 @@ test_import_failure_leaves_no_copy (void)
     g_assert_true (detect_current_backend (settings, &current));
     g_assert_cmpint (current, ==, G_PASTE_STORAGE_FILE);
 }
+
+/* A destination that does not read back is no copy, however many of its items
+ * the read got through before stopping: the source has to outlive it, even
+ * with the cleanup asked for. */
+static void
+test_import_needs_readable_copy (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*could not be read back once written*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    g_autoptr (GPasteStorageBackend) database = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+    g_paste_storage_backend_write_history (database, name, items);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_FILE;
+    prompt->import = TRUE;
+    prompt->cleanup = TRUE;
+    truncated_kind = G_PASTE_STORAGE_FILE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+    truncated_kind = -1;
+
+    g_assert_cmpuint (prompt->reports, ==, 1);
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_SQLITE);
+
+    g_autolist (GPasteItem) kept = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (database, name, NULL, &kept, &size));
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (kept->data), ==, "precious");
+
+    /* And the copy that did not read back is taken back. */
+    g_autofree gchar *copy = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_FILE));
+
+    g_assert_false (g_file_test (copy, G_FILE_TEST_EXISTS));
+}
 #endif
 
 int
@@ -181,6 +252,7 @@ main (int    argc,
 
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
+    g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
 #endif
 
     return g_paste_test_env_run ();

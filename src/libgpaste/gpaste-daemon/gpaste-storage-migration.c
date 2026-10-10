@@ -371,7 +371,17 @@ import_histories (GPasteSettings *settings,
         g_autolist (GPasteItem) written = NULL;
         gsize written_size = 0;
 
-        g_paste_storage_backend_read_history (next, *name, NULL /* cancellable */, &written, &written_size);
+        /* Unreadable is what a truncated or undecryptable destination answers,
+         * with whatever it got through before stopping, which may well be every
+         * item: matching those would let the caller delete the originals of a
+         * copy no read will accept. */
+        if (!g_paste_storage_backend_read_history (next, *name, NULL /* cancellable */, &written, &written_size))
+        {
+            g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         "The history “%s” could not be read back once written", *name);
+            ok = FALSE;
+            break;
+        }
 
         const GList *w = written;
 
