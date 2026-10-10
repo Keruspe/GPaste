@@ -2350,6 +2350,49 @@ test_sync_during_classification (gconstpointer user_data)
 }
 
 static void
+test_sync_after_make_password (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    GPasteItem *plain = g_paste_text_item_new ("ordinary source");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (plain));
+
+    g_paste_history_add (history, plain);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_sync = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboard_content_set_text (&clipboard->content, "ordinary source");
+    g_paste_clipboard_content_set_text (&primary->content, "destination");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_sync_from_to (manager, TRUE);
+    g_assert_nonnull (clipboard->sync);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *password_uuid = g_paste_daemon_methods_make_password (&methods, uuid, "new password", 37, &error);
+
+    g_assert_no_error (error);
+    g_assert_nonnull (password_uuid);
+    g_assert_cmpuint (primary->publications, ==, 0);
+    g_autoptr (GPasteClipboardSyncData) late = g_steal_pointer (&clipboard->sync);
+
+    g_paste_clipboard_sync_data_deliver (late, "ordinary source");
+    g_assert_cmpstr (primary->content.str, ==, "ordinary source");
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (primary->published));
+    g_assert_cmpstr (g_paste_item_get_uuid (primary->published), ==, password_uuid);
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (primary->published)), ==, 37);
+    g_paste_clipboards_manager_expire_password (manager);
+    g_assert_cmpstr (clipboard->content.str, ==, "");
+    g_assert_cmpstr (primary->content.str, ==, "");
+}
+
+static void
 test_stale_sync_reply (gconstpointer user_data)
 {
     gboolean source_changed = GPOINTER_TO_INT (user_data);
@@ -4164,5 +4207,6 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/sync_source_changed", GINT_TO_POINTER (TRUE), test_stale_sync_reply);
     g_test_add_data_func ("/clipboard/sync_destination_changed", GINT_TO_POINTER (FALSE), test_stale_sync_reply);
     g_test_add_func ("/clipboard/sync_reply_after_trimmed_reown", test_sync_reply_after_trimmed_reown);
+    g_test_add_func ("/clipboard/sync_after_make_password", test_sync_after_make_password);
     return g_paste_test_env_run ();
 }

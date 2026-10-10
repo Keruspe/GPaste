@@ -326,6 +326,9 @@ source cache during synchronization, distinct named passwords sharing a value,
 strips requested after an inconclusive read, provider refusals, and release of
 refused strips on disposal. An empty marked-sensitive selection stays excluded
 from bare-text synchronization until an ordinary read identifies new content.
+A plain-text sync whose reply lands after MakePassword turned the source's text
+into a password puts the password, countdown included, on the other selection,
+and its expiry takes it off both.
 
 The clipboard suite also checks unlisted password capture/merge twins against
 unrelated named entries, strips and automatic synchronization after an

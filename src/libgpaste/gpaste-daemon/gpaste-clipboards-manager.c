@@ -919,9 +919,15 @@ g_paste_clipboards_manager_sync_ready (GPasteClipboardProvider *other G_GNUC_UNU
 
     /* A source that moved still owes the destination the sync that was asked
      * for, of what it holds now: it is requested again, as sync_from_to () does
-     * for a source being read (/clipboard/sync_source_changed). */
+     * for a source being read (/clipboard/sync_source_changed). So does a source
+     * that may carry a secret by the time the reply lands: MakePassword turns
+     * the text it holds into a password without the selection moving. Asked
+     * again, sync_from_to () carries the password over as one, with its
+     * countdown, or refuses; this reply would publish the bare text
+     * (/clipboard/sync_after_make_password). */
     if (data->source->generation != data->source_generation ||
-        g_paste_clipboard_provider_is_reading (data->source->clipboard))
+        g_paste_clipboard_provider_is_reading (data->source->clipboard) ||
+        g_paste_clipboards_manager_may_carry_secret (data->source))
     {
         data->source->sync_requested = TRUE;
         g_paste_clipboards_manager_resume_sync (data->source);
