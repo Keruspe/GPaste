@@ -151,8 +151,10 @@ void g_paste_prompt_report (GPastePrompt *self,
 
 /* The backends the migration prompt should offer, in display order: whichever
  * flavors this build can actually construct. Shared so the feature gating and
- * the labels live here rather than in each prompt backend. */
+ * the labels live here rather than in each prompt backend; whether one kind is
+ * among them is what decides whether this build can open it. */
 const GPasteStorage *g_paste_prompt_list_storage_backends (guint *n_offered);
+gboolean             g_paste_prompt_storage_is_offered    (GPasteStorage storage_kind);
 const gchar         *g_paste_prompt_storage_label         (GPasteStorage storage_kind);
 
 /* Every word the prompts put in front of the user. The dialogs themselves are
@@ -213,7 +215,8 @@ const gchar *g_paste_prompt_text (GPastePromptText text);
 /* The migration prompt's live rules, shared for the same reason: "import" only
  * makes sense when moving from a backend that stored something into a different
  * one that also stores something, and there is only old data to delete once we
- * actually leave a backend that stored something. */
+ * actually leave a backend that stored something. Neither is offered for a
+ * backend this build cannot open. */
 gboolean g_paste_prompt_can_import      (GPasteStorage current,
                                          GPasteStorage chosen);
 gboolean g_paste_prompt_backend_changes (GPasteStorage current,

@@ -6,6 +6,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
+#include <gpaste-daemon/gpaste-prompt.h>
 
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
@@ -947,7 +948,10 @@ _g_paste_storage_backend_new (GPasteStorage   storage_kind,
 
         /* Without a passphrase (or the flavor's support built in) we must not
          * fall back to plaintext on disk; keep the history in memory only. */
-        g_warning ("No passphrase for the encrypted storage backend; not storing the history");
+        if (g_paste_prompt_storage_is_offered (storage_kind))
+            g_warning ("No passphrase for the encrypted storage backend; not storing the history");
+        else
+            g_warning ("This build cannot open the encrypted storage backend; not storing the history");
 #else
         g_warning ("Encrypted storage is not built in; not storing the history");
 #endif
@@ -992,6 +996,7 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
      * actually decrypts the history, so a stale entry can never be used (which
      * would overwrite the real data with an empty, wrongly-encrypted one). */
     if (!passphrase && g_paste_storage_is_encrypted (storage_kind) &&
+        g_paste_prompt_storage_is_offered (storage_kind) &&
         g_paste_storage_keyring_apply_verified (storage_kind, settings))
         passphrase = g_paste_storage_backend_get_passphrase ();
 #endif

@@ -615,6 +615,32 @@ g_paste_prompt_list_storage_backends (guint *n_offered)
 }
 
 /**
+ * g_paste_prompt_storage_is_offered:
+ * @storage_kind: a #GPasteStorage
+ *
+ * Whether g_paste_prompt_list_storage_backends() offers @storage_kind, which is
+ * whether this build can open it at all. A history on disk in a format this
+ * build lacks is still recognised as what it is, but nothing can be read from
+ * it or deleted through it here.
+ *
+ * Returns: whether this build can construct a backend of @storage_kind
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_storage_is_offered (GPasteStorage storage_kind)
+{
+    guint n_offered;
+    const GPasteStorage *offered = g_paste_prompt_list_storage_backends (&n_offered);
+
+    for (guint i = 0; i < n_offered; ++i)
+    {
+        if (offered[i] == storage_kind)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/**
  * g_paste_prompt_storage_label:
  * @storage_kind: a #GPasteStorage
  *
@@ -650,7 +676,8 @@ g_paste_prompt_storage_label (GPasteStorage storage_kind)
  * Whether importing makes sense: only when moving from a backend that has
  * stored data into a different one that also stores something. Copying
  * file -> file, importing into "no storage", or importing from an empty "no
- * storage" source are all pointless.
+ * storage" source are all pointless, and a source this build cannot open (see
+ * g_paste_prompt_storage_is_offered()) cannot be read.
  *
  * Returns: whether the "import existing data" toggle should be offered
  */
@@ -660,7 +687,8 @@ g_paste_prompt_can_import (GPasteStorage current,
 {
     return current != G_PASTE_STORAGE_NOOP &&
            chosen != G_PASTE_STORAGE_NOOP &&
-           chosen != current;
+           chosen != current &&
+           g_paste_prompt_storage_is_offered (current);
 }
 
 /**
@@ -670,7 +698,10 @@ g_paste_prompt_can_import (GPasteStorage current,
  *
  * Whether there is "old data" to delete afterwards: only once we actually leave
  * a backend that stored something, otherwise deleting it would throw away what
- * we kept.
+ * we kept. Not for a backend this build cannot open either (see
+ * g_paste_prompt_storage_is_offered()): what stands in for it here lists
+ * nothing of its histories, or the histories of the flavour it degrades to,
+ * which are not the old data at all.
  *
  * Returns: whether the "delete old data" toggle should be offered
  */
@@ -678,7 +709,9 @@ G_PASTE_VISIBLE gboolean
 g_paste_prompt_backend_changes (GPasteStorage current,
                                 GPasteStorage chosen)
 {
-    return current != G_PASTE_STORAGE_NOOP && chosen != current;
+    return current != G_PASTE_STORAGE_NOOP &&
+           chosen != current &&
+           g_paste_prompt_storage_is_offered (current);
 }
 
 /**

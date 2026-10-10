@@ -62,18 +62,23 @@ detect_current_backend (GPasteSettings *settings,
                         GPasteStorage  *current)
 {
     /* The storing flavours in tie-break precedence order: encrypted over plain,
-     * file over database. Extensions come from g_paste_storage_get_extension(),
-     * so a new flavour only needs adding here. */
+     * then the encrypted file over the encrypted database but the plain
+     * database over the plain file. Extensions come from
+     * g_paste_storage_get_extension(), so a new flavour only needs adding here.
+     *
+     * Every one of them, whether or not this build can open it: what is on disk
+     * is what the history is, and what can be done with it is the prompt's
+     * rules' business (g_paste_prompt_can_import() and
+     * g_paste_prompt_backend_changes() refuse a source this build cannot open).
+     * Detected as the plain file such a build degrades it to, or as nothing,
+     * it would be recorded as that in storage-backend, and forgotten by the
+     * build that can open it. Only a build lacking a feature can tell this list
+     * from one gated on the features built in: with every feature, the two are
+     * the same. */
     static const GPasteStorage flavours[] = {
-#ifdef G_PASTE_ENABLE_ENCRYPTION
         G_PASTE_STORAGE_ENCRYPTED_FILE,
-#ifdef G_PASTE_ENABLE_SQLITE
         G_PASTE_STORAGE_ENCRYPTED_SQLITE,
-#endif
-#endif
-#ifdef G_PASTE_ENABLE_SQLITE
         G_PASTE_STORAGE_SQLITE,
-#endif
         G_PASTE_STORAGE_FILE,
     };
 
@@ -954,12 +959,18 @@ on_migration_reply (GObject      *source,
         return;
     }
 
-    /* Both toggles are clamped rather than trusted: a prompt backend is a
+    /* The storage chosen is one the prompt was offered:
+     * g_paste_prompt_request_reply_migration (), which every prompt answers
+     * through, dismisses any other (/storage/migration/unoffered-choice).
+     *
+     * Both toggles are clamped rather than trusted: a prompt backend is a
      * public, introspectable interface, and "delete the old data" answered for
      * a migration that is not moving anywhere would wipe the current history
-     * with nothing imported to replace it. Clamping the fields, as the answer
-     * comes in, is also what keeps continue_apply() from making the user unlock
-     * an encrypted history for an import and a cleanup that will not happen. */
+     * with nothing imported to replace it -- as would one answered for a format
+     * this build cannot open, through the backend standing in for it. Clamping
+     * the fields, as the answer comes in, is also what keeps continue_apply()
+     * from making the user unlock an encrypted history for an import and a
+     * cleanup that will not happen. */
     self->import = self->import && g_paste_prompt_can_import (self->current, self->chosen);
     self->cleanup = self->cleanup && g_paste_prompt_backend_changes (self->current, self->chosen);
 
@@ -1057,8 +1068,14 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* Only an encrypted history that is not already unlocked needs decrypting. */
-    if (!g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (settings)) ||
+    GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
+
+    /* Only an encrypted history that is not already unlocked needs decrypting,
+     * and only in a build that can open it: one that cannot keeps nothing at
+     * all instead, and could verify no passphrase -- every one would be
+     * accepted, then used for nothing. */
+    if (!g_paste_storage_is_encrypted (storage_kind) ||
+        !g_paste_prompt_storage_is_offered (storage_kind) ||
         g_paste_storage_backend_get_passphrase ())
         return FALSE;
 
@@ -1066,7 +1083,7 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
     /* A keyring passphrase that unlocks the history is applied here, so no prompt
      * is needed at all: the caller can load straight away with the passphrase now
      * set in this process. */
-    if (g_paste_storage_keyring_apply_verified (g_paste_settings_get_storage_backend (settings), settings))
+    if (g_paste_storage_keyring_apply_verified (storage_kind, settings))
         return FALSE;
 #endif
 

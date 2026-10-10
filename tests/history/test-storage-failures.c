@@ -46,6 +46,37 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
     g_assert_true (g_file_set_contents (path, contents, footer - contents, NULL));
 }
 
+/* The offered backends less this kind, standing for a build without the
+ * feature it needs: -1 for none. The library asks through its own exported
+ * symbol, which this one takes the place of. */
+static gint hidden_kind = -1;
+
+const GPasteStorage *
+g_paste_prompt_list_storage_backends (guint *n_offered)
+{
+    typedef const GPasteStorage *(*List) (guint *);
+    List original = (List) dlsym (RTLD_NEXT, "g_paste_prompt_list_storage_backends");
+    static GPasteStorage kept[G_PASTE_N_STORAGE];
+
+    g_assert_nonnull (original);
+
+    const GPasteStorage *offered = original (n_offered);
+    guint n_kept = 0;
+
+    if (hidden_kind < 0)
+        return offered;
+
+    for (guint i = 0; i < *n_offered; ++i)
+    {
+        if ((gint) offered[i] != hidden_kind)
+            kept[n_kept++] = offered[i];
+    }
+
+    *n_offered = n_kept;
+
+    return kept;
+}
+
 /* The migration's own static helpers, detect_current_backend() and
  * import_histories() among them, are what these cases drive. */
 #include "../../src/libgpaste/gpaste-daemon/gpaste-storage-migration.c"
@@ -59,6 +90,7 @@ struct _TestMigrationPrompt
 {
     GObject parent_instance;
 
+    gboolean      dismiss;
     GPasteStorage chosen;
     gboolean      import;
     gboolean      cleanup;
@@ -76,7 +108,10 @@ test_migration_prompt_migration (GPastePrompt        *prompt,
 {
     TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
 
-    g_paste_prompt_request_reply_migration (request, self->chosen, self->import, self->cleanup);
+    if (self->dismiss)
+        g_paste_prompt_request_dismiss (request);
+    else
+        g_paste_prompt_request_reply_migration (request, self->chosen, self->import, self->cleanup);
 }
 
 static void
@@ -128,7 +163,163 @@ run_migration (GPasteSettings      *settings,
     return g_paste_storage_migration_finish (result, error);
 }
 
+/* A history in a format this build cannot open is still recognised as that
+ * format: a dismissed migration leaves storage-backend naming it and the file
+ * where it is, for a build that can open it. With every feature built, this
+ * holds whatever detection lists; it is the builds lacking one that it is
+ * about. */
+static void
+test_migration_keeps_unopenable_identity (gconstpointer data)
+{
+    GPasteStorage kind = GPOINTER_TO_UINT (data);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    guint64 revision = G_PASTE_STORAGE_BACKEND_REVISION - 1;
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (kind));
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, revision);
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_true (g_file_set_contents (path, "not read by anything here", -1, NULL));
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->dismiss = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, kind);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, revision);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An encrypted flavour this build cannot open asks for no passphrase, which
+ * nothing could verify, and its backend says why it stores nothing. */
+static void
+test_unlock_skips_unopenable_flavour (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*This build cannot open the encrypted storage backend*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    hidden_kind = G_PASTE_STORAGE_ENCRYPTED_FILE;
+    g_assert_false (g_paste_storage_decryption_needed (settings));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_ENCRYPTED_FILE, settings);
+
+    hidden_kind = -1;
+    g_assert_cmpint (g_paste_storage_backend_get_kind (backend), ==, G_PASTE_STORAGE_NOOP);
+}
+#endif
+
 #ifdef G_PASTE_ENABLE_SQLITE
+/* A reply choosing a storage it was not offered -- one this build cannot open,
+ * a value out of range -- answers nothing, as a dismissal does: the backend
+ * standing in for it would import over the files the cleanup deletes. The
+ * request it is answered through refuses it, before the migration sees it. */
+static void
+test_migration_refuses_unoffered_choice (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*was not offered; dismissing it*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    const GPasteStorage unoffered[] = { G_PASTE_STORAGE_SQLITE, G_PASTE_N_STORAGE + 1 };
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+    g_paste_storage_backend_write_history (file, name, items);
+
+    for (guint i = 0; i < G_N_ELEMENTS (unoffered); ++i)
+    {
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+        g_autoptr (GError) error = NULL;
+        g_autolist (GPasteItem) kept = NULL;
+        gsize size;
+
+        hidden_kind = G_PASTE_STORAGE_SQLITE;
+        prompt->chosen = unoffered[i];
+        prompt->import = TRUE;
+        prompt->cleanup = TRUE;
+        g_assert_true (run_migration (settings, prompt, &error));
+        g_assert_no_error (error);
+        hidden_kind = -1;
+
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+        g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+        g_assert_true (g_paste_storage_backend_read_history (file, name, NULL, &kept, &size));
+        g_assert_cmpuint (g_list_length (kept), ==, 1);
+    }
+}
+
+/* Neither toggle is offered for a source this build cannot open, and a reply
+ * ticking them anyway is clamped: reading the source through the backend that
+ * stands in for it would import nothing, and deleting through it would delete
+ * another flavour's histories. */
+static void
+test_migration_clamps_unopenable_source (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    g_autoptr (GPasteStorageBackend) database = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+    g_paste_storage_backend_write_history (database, name, items);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    hidden_kind = G_PASTE_STORAGE_SQLITE;
+    g_assert_false (g_paste_prompt_can_import (G_PASTE_STORAGE_SQLITE, G_PASTE_STORAGE_FILE));
+    g_assert_false (g_paste_prompt_backend_changes (G_PASTE_STORAGE_SQLITE, G_PASTE_STORAGE_FILE));
+
+    prompt->chosen = G_PASTE_STORAGE_FILE;
+    prompt->import = TRUE;
+    prompt->cleanup = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+    hidden_kind = -1;
+
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+
+    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) imported = NULL;
+    g_autolist (GPasteItem) kept = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (file, name, NULL, &imported, &size));
+    g_assert_null (imported);
+    g_assert_true (g_paste_storage_backend_read_history (database, name, NULL, &kept, &size));
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
+}
+
 /* An import that stops after writing to the destination takes that copy back
  * and says so: the next start would detect the database before the file, and
  * read the copy instead of the history the session went on writing. */
@@ -250,7 +441,15 @@ main (int    argc,
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
 
+    g_test_add_data_func ("/storage/migration/encrypted-file-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_migration_keeps_unopenable_identity);
+    g_test_add_data_func ("/storage/migration/sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_SQLITE), test_migration_keeps_unopenable_identity);
+    g_test_add_data_func ("/storage/migration/encrypted-sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_SQLITE), test_migration_keeps_unopenable_identity);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/unlock/unopenable-flavour", test_unlock_skips_unopenable_flavour);
+#endif
 #ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
+    g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
 #endif
