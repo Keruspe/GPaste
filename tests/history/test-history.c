@@ -14,6 +14,7 @@
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
+#include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -148,6 +149,20 @@ static void
 drain (void)
 {
     while (g_main_context_iteration (NULL, FALSE));
+}
+
+gboolean
+g_settings_set_enum (GSettings   *settings,
+                     const gchar *key,
+                     gint         value)
+{
+    typedef gboolean (*SetEnum) (GSettings *, const gchar *, gint);
+    SetEnum original = (SetEnum) dlsym (RTLD_NEXT, "g_settings_set_enum");
+
+    g_assert_nonnull (original);
+    if (refuse_write (settings, key))
+        return FALSE;
+    return original (settings, key, value);
 }
 
 static void
@@ -292,7 +307,9 @@ pump_until_length (GPasteHistory *history,
  * test warn, and with structured logging (G_LOG_USE_STRUCTURED)
  * g_test_expect_message cannot swallow them, so the child drops warning
  * fatality -- a critical still aborts it -- and the parent matches them on the
- * child's stderr instead. */
+ * child's stderr instead. A child
+ * run only for directories of its own, expecting no warning, leaves this out,
+ * so that one still fails it. */
 #define G_PASTE_TEST_IN_SUBPROCESS  g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR)
 
 #define G_PASTE_TEST_TRAP_SUBPROCESS(stderr_glob)                    \
@@ -301,6 +318,209 @@ pump_until_length (GPasteHistory *history,
         g_test_trap_assert_passed ();                                \
         g_test_trap_assert_stderr (stderr_glob);                     \
     } while (FALSE)
+
+/* A migration prompt answered at once, with what the test put in it. */
+#define TEST_TYPE_MIGRATION_PROMPT (test_migration_prompt_get_type ())
+G_DECLARE_FINAL_TYPE (TestMigrationPrompt, test_migration_prompt, TEST, MIGRATION_PROMPT, GObject)
+
+struct _TestMigrationPrompt
+{
+    GObject parent_instance;
+
+    GPasteStorage chosen;
+    gboolean      import;
+    gboolean      cleanup;
+    /* The backend the last request said the history is in. */
+    GPasteStorage current;
+};
+
+static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (TestMigrationPrompt, test_migration_prompt, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (G_PASTE_TYPE_PROMPT, test_migration_prompt_iface_init))
+
+static void
+test_migration_prompt_migration (GPastePrompt        *prompt,
+                                 GPastePromptRequest *request)
+{
+    TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
+
+    self->current = g_paste_prompt_request_get_current (request);
+    g_paste_prompt_request_reply_migration (request, self->chosen, self->import, self->cleanup);
+}
+
+static void
+test_migration_prompt_iface_init (GPastePromptInterface *iface)
+{
+    iface->migration = test_migration_prompt_migration;
+}
+
+static void
+test_migration_prompt_class_init (TestMigrationPromptClass *klass G_GNUC_UNUSED)
+{
+}
+
+static void
+test_migration_prompt_init (TestMigrationPrompt *self G_GNUC_UNUSED)
+{
+}
+
+static void
+on_migration_settled (GObject      *source G_GNUC_UNUSED,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+static void
+run_migration (GPasteSettings      *settings,
+               TestMigrationPrompt *prompt)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+
+    /* Bounded, so a migration that never settles fails here rather than at
+     * meson's timeout; an import into an encrypted flavour takes seconds. */
+    gint64 deadline = g_get_monotonic_time () + 60 * G_USEC_PER_SEC;
+
+    while (!result && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+    g_assert_nonnull (result);
+
+    g_assert_true (g_paste_storage_migration_finish (result, &error));
+    g_assert_no_error (error);
+}
+
+/* A storage-backend GSettings refuses to store leaves the daemon reading the
+ * old backend, so the old data has to stay, and the revision with it -- until
+ * the reply names the backend the setting holds, which settles under the lock
+ * too. */
+static void
+test_migration_refused_backend (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        const gchar *name = g_paste_settings_get_history_name (settings);
+        guint64 revision = G_PASTE_STORAGE_BACKEND_REVISION - 1;
+
+        g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+        g_paste_settings_set_storage_backend_revision (settings, revision);
+
+        {
+            g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            g_autolist (GPasteItem) items = g_list_prepend (NULL, g_paste_text_item_new ("kept"));
+
+            g_paste_storage_backend_write_history (file, name, items);
+        }
+
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+        /* Importing where an import can go, and deleting the old data. */
+#ifdef G_PASTE_ENABLE_SQLITE
+        prompt->chosen = G_PASTE_STORAGE_SQLITE;
+#else
+        prompt->chosen = G_PASTE_STORAGE_NOOP;
+#endif
+        prompt->import = TRUE;
+        prompt->cleanup = TRUE;
+        refused_key = G_PASTE_STORAGE_BACKEND_SETTING;
+        run_migration (settings, prompt);
+
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+        g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, revision);
+
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) kept = NULL;
+        gsize size;
+
+        g_assert_true (g_paste_storage_backend_read_history (file, name, NULL, &kept, &size));
+        g_assert_cmpuint (g_list_length (kept), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (kept->data), ==, "kept");
+
+        /* "Keep as is". */
+        prompt->chosen = G_PASTE_STORAGE_FILE;
+        prompt->import = FALSE;
+        prompt->cleanup = FALSE;
+        run_migration (settings, prompt);
+        refused_key = NULL;
+
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+        g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, G_PASTE_STORAGE_BACKEND_REVISION);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not store the new storage backend*");
+}
+
+/* As test_set_active_unstored (). */
+static void
+test_migration_unstored_backend (void)
+{
+    unstored = TRUE;
+    test_migration_refused_backend ();
+    unstored = FALSE;
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+/* Under a storage-backend GSettings refuses to store, the history is in the
+ * backend the setting holds, whatever the files say: that is the one the
+ * daemon goes on running on, and what an import reads and a cleanup deletes --
+ * not the copy a refused migration left in the backend it could not switch to. */
+static void
+test_migration_locked_backend_is_current (void)
+{
+    if (g_test_subprocess ())
+    {
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        const gchar *name = "locked-backend-is-current";
+
+        g_paste_settings_set_history_name (settings, name);
+
+        {
+            g_autoptr (GPasteStorageBackend) refused = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+            g_autoptr (GPasteStorageBackend) in_use = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            g_autolist (GPasteItem) old_items = g_list_prepend (NULL, g_paste_text_item_new ("stale"));
+            g_autolist (GPasteItem) items = g_list_prepend (NULL, g_paste_text_item_new ("recent"));
+
+            g_paste_storage_backend_write_history (refused, name, old_items);
+            g_paste_storage_backend_write_history (in_use, name, items);
+        }
+
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+        /* "Keep as is". */
+        prompt->chosen = G_PASTE_STORAGE_FILE;
+        refused_key = G_PASTE_STORAGE_BACKEND_SETTING;
+        run_migration (settings, prompt);
+        refused_key = NULL;
+        g_assert_cmpint (prompt->current, ==, G_PASTE_STORAGE_FILE);
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+}
+
+/* As test_set_active_unstored (). */
+static void
+test_migration_unstored_backend_is_current (void)
+{
+    unstored = TRUE;
+    test_migration_locked_backend_is_current ();
+    unstored = FALSE;
+}
+#endif
 
 /* Read a history back through @backend, handing back an owned list: the size
  * out-parameter no test asserts on, the by-hand free and the empty-list reset
@@ -3804,6 +4024,12 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/add_password_name_conflict", test_add_password_name_conflict);
     g_test_add_func ("/history/set_active_refused", test_set_active_refused);
     g_test_add_func ("/history/set_active_unstored", test_set_active_unstored);
+    g_test_add_func ("/history/migration_refused_backend", test_migration_refused_backend);
+    g_test_add_func ("/history/migration_unstored_backend", test_migration_unstored_backend);
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_func ("/history/migration_locked_backend_is_current", test_migration_locked_backend_is_current);
+    g_test_add_func ("/history/migration_unstored_backend_is_current", test_migration_unstored_backend_is_current);
+#endif
     g_test_add_func ("/history/make_password_updates_in_place", test_make_password_updates_in_place);
     g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
     g_test_add_func ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);

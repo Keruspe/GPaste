@@ -83,8 +83,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * later, from the main loop. So a caller that has to know whether a write took
  * reads the setting back after g_paste_settings_sync_key (), which waits for
  * the backend and re-reads the key ahead of that announcement
- * (g_paste_daemon_methods_set_active ()). GSettings hands out a fresh string,
- * which the cache takes. */
+ * (g_paste_daemon_methods_set_active (), the storage migration). GSettings
+ * hands out a fresh string, which the cache takes. */
 #define ASSIGN(dest, src)      (dest) = (src)
 #define ASSIGN_TAKE(dest, src) g_set_str_take (&(dest), (src))
 

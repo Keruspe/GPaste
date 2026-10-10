@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-error.h>
+#include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
@@ -475,13 +476,32 @@ apply_migration_settle (MigrationData *self,
     const gchar *chosen_passphrase = g_paste_storage_backend_get_passphrase ();
 #endif
 
-    if (import && !imported)
-    {
-        /* The import genuinely failed: keep the current backend, data and revision
-         * untouched so nothing is lost or hidden and the migration is offered
-         * again next time rather than silently leaving an empty new backend. */
-        g_warning ("History import failed; keeping the current storage backend and old data");
+    /* Whether the history moved to @chosen. Not when the import genuinely
+     * failed, nor when GSettings refused to store the new backend (a locked
+     * key): the daemon then reads the backend the setting still names, and the
+     * old data is all it has. Either way keep the current backend, data and
+     * revision untouched, so nothing is lost or hidden and the migration is
+     * offered again next time rather than silently leaving an empty or unread
+     * backend; what an import already wrote to @chosen stays where it is. A
+     * reply naming the backend the setting already holds reads back equal
+     * under a lock too, so it still settles -- "Keep as is", normally: the way
+     * out of a dialog that would otherwise come back at every start. */
+    gboolean moved = FALSE;
 
+    if (import && !imported)
+        g_warning ("History import failed; keeping the current storage backend and old data");
+    else
+    {
+        g_paste_settings_set_storage_backend (self->settings, chosen);
+        g_paste_settings_sync_key (self->settings, G_PASTE_STORAGE_BACKEND_SETTING);
+        moved = (g_paste_settings_get_storage_backend (self->settings) == chosen);
+
+        if (!moved)
+            g_warning ("Could not store the new storage backend; keeping the current one and old data");
+    }
+
+    if (!moved)
+    {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
         /* We are staying on the source backend, so the process has to go back to
          * the passphrase that opens it — which is the one we unlocked it with, or
@@ -494,8 +514,6 @@ apply_migration_settle (MigrationData *self,
     }
     else
     {
-        g_paste_settings_set_storage_backend (self->settings, chosen);
-
         /* Whether the old data is actually gone, which is not the same as having
          * been told to delete it: the keyring decision below turns on the former. */
         gboolean cleaned = FALSE;
@@ -903,8 +921,15 @@ g_paste_storage_migration_async (GPastePrompt       *prompt,
      * import. */
     GPasteStorage current = g_paste_settings_get_storage_backend (settings);
 
+    /* Read back, rather than taken as detected: a storage-backend GSettings
+     * refuses to store -- a locked key -- leaves the daemon on the backend it
+     * holds, and that one is what an import reads and a cleanup deletes. */
     if (detect_current_backend (settings, &current))
+    {
         g_paste_settings_set_storage_backend (settings, current);
+        g_paste_settings_sync_key (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+        current = g_paste_settings_get_storage_backend (settings);
+    }
 
     MigrationData *self = g_new0 (MigrationData, 1);
 

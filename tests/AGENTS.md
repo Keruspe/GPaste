@@ -60,7 +60,12 @@ was asked for the state it already has. `/history/set_active_unstored` takes
 the write instead and gives it back once `g_settings_sync()` waits for it, from
 another thread while the main context is held, as dconf does with a database it
 cannot write: the read-back has to see the setting given back before the main
-loop announces it.
+loop announces it. `/history/migration_refused_backend`
+refuses `storage-backend` the same way, through `g_settings_set_enum()`: a
+migration whose new backend cannot be stored keeps the old history and the
+revision, while a "Keep as is" reply still settles under the lock;
+`/history/migration_unstored_backend` and
+`/history/migration_unstored_backend_is_current` have dconf give it back.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers a
