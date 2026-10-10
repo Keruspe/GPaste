@@ -821,48 +821,35 @@ g_paste_prompt_passphrase_strength (const gchar *passphrase,
     return g_paste_util_password_strength (passphrase, hint);
 }
 
-G_PASTE_VISIBLE GType
-g_paste_prompt_text_get_type (void)
-{
-    static GType etype = 0;
-    if (!etype)
-    {
-        static const GEnumValue values[] = {
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE,                  "G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE",                  "passphrase-title" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION,            "G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION",            "passphrase-description" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION,    "G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION",    "passphrase-confirm-description" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT,                 "G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT",                 "passphrase-accept" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT,         "G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT",         "passphrase-confirm-accept" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE,                        "G_PASTE_PROMPT_TEXT_PASSPHRASE",                        "passphrase" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM,                "G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM",                "passphrase-confirm" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH,               "G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH",               "passphrase-strength" },
-            { G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE,   "G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE",   "passphrase-strength-unavailable" },
-            { G_PASTE_PROMPT_TEXT_REMEMBER,                          "G_PASTE_PROMPT_TEXT_REMEMBER",                          "remember" },
-            { G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE,                 "G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE",                 "remember-subtitle" },
-            { G_PASTE_PROMPT_TEXT_MIGRATION_TITLE,                   "G_PASTE_PROMPT_TEXT_MIGRATION_TITLE",                   "migration-title" },
-            { G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION,             "G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION",             "migration-description" },
-            { G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT,                  "G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT",                  "migration-accept" },
-            { G_PASTE_PROMPT_TEXT_MIGRATION_KEEP,                    "G_PASTE_PROMPT_TEXT_MIGRATION_KEEP",                    "migration-keep" },
-            { G_PASTE_PROMPT_TEXT_STORAGE_BACKEND,                   "G_PASTE_PROMPT_TEXT_STORAGE_BACKEND",                   "storage-backend" },
-            { G_PASTE_PROMPT_TEXT_IMPORT,                            "G_PASTE_PROMPT_TEXT_IMPORT",                            "import" },
-            { G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE,                   "G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE",                   "import-subtitle" },
-            { G_PASTE_PROMPT_TEXT_CLEANUP,                           "G_PASTE_PROMPT_TEXT_CLEANUP",                           "cleanup" },
-            { G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,                  "G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE",                  "cleanup-subtitle" },
-            { G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,                   "G_PASTE_PROMPT_TEXT_CLEANUP_WARNING",                   "cleanup-warning" },
-            { G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE,                "G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE",                "rekey-failed-title" },
-            { G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION,          "G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION",          "rekey-failed-description" },
-            { G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION,           "G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION",           "rekey-split-description" },
-            { G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE,              "G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE",              "cleanup-failed-title" },
-            { G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION,        "G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION",        "cleanup-failed-description" },
-            { G_PASTE_PROMPT_TEXT_CLOSE,                             "G_PASTE_PROMPT_TEXT_CLOSE",                             "close" },
-            { G_PASTE_PROMPT_TEXT_CANCEL,                            "G_PASTE_PROMPT_TEXT_CANCEL",                            "cancel" },
-            { 0, NULL, NULL }
-        };
-        etype = g_enum_register_static (g_intern_static_string ("GPastePromptText"), values);
-        g_type_class_ref (etype);
-    }
-    return etype;
-}
+G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE,                "passphrase-title"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION,          "passphrase-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION,  "passphrase-confirm-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT,               "passphrase-accept"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT,       "passphrase-confirm-accept"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE,                      "passphrase"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM,              "passphrase-confirm"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH,             "passphrase-strength"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_PASSPHRASE_STRENGTH_UNAVAILABLE, "passphrase-strength-unavailable"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REMEMBER,                        "remember"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE,               "remember-subtitle"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_TITLE,                 "migration-title"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION,           "migration-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT,                "migration-accept"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP,                  "migration-keep"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND,                 "storage-backend"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT,                          "import"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE,                 "import-subtitle"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP,                         "cleanup"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,                "cleanup-subtitle"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,                 "cleanup-warning"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE,              "rekey-failed-title"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION,        "rekey-failed-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION,         "rekey-split-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE,            "cleanup-failed-title"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION,      "cleanup-failed-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLOSE,                           "close"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"))
 
 /**
  * g_paste_prompt_text:

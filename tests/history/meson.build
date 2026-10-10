@@ -9,3 +9,10 @@ test_history = executable(
 # meson's 30s default on a slow or loaded machine. Give it real room rather than
 # letting the suite fail intermittently for a reason that is not a bug.
 test('history', test_history, depends: [gpaste_schemas, test_bus_supervisor], timeout: 180)
+
+test_enums = executable(
+  'test-enums',
+  sources: [ 'test-enums.c' ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
+)
+test('enums', test_enums, depends: [gpaste_schemas, test_bus_supervisor])

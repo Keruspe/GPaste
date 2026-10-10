@@ -11,27 +11,12 @@ static const gchar *special_mimes[G_PASTE_SPECIAL_MIME_LAST] = {
     [G_PASTE_SPECIAL_MIME_TEXT_XML_UTF8]      = "text/xml;charset=utf-8",
 };
 
-G_PASTE_VISIBLE GType
-g_paste_special_mime_get_type (void)
-{
-    static GType etype = 0;
-
-    if (!etype)
-    {
-        static const GEnumValue values[] = {
-            { G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES, "G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES", "gnome-copied-files" },
-            { G_PASTE_SPECIAL_MIME_TEXT_HTML,          "G_PASTE_SPECIAL_MIME_TEXT_HTML",          "text-html"          },
-            { G_PASTE_SPECIAL_MIME_TEXT_HTML_UTF8,     "G_PASTE_SPECIAL_MIME_TEXT_HTML_UTF8",     "text-html-utf8"     },
-            { G_PASTE_SPECIAL_MIME_TEXT_XML,           "G_PASTE_SPECIAL_MIME_TEXT_XML",           "text-xml"           },
-            { G_PASTE_SPECIAL_MIME_TEXT_XML_UTF8,      "G_PASTE_SPECIAL_MIME_TEXT_XML_UTF8",      "text-xml-utf8"      },
-            { G_PASTE_SPECIAL_MIME_INVALID,            NULL,                                      NULL                 },
-        };
-        etype = g_enum_register_static (g_intern_static_string ("GPasteSpecialMime"), values);
-        g_type_class_ref (etype);
-    }
-
-    return etype;
-}
+G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPasteSpecialMime, g_paste_special_mime,
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_SPECIAL_MIME_GNOME_COPIED_FILES, "gnome-copied-files"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_SPECIAL_MIME_TEXT_HTML,          "text-html"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_SPECIAL_MIME_TEXT_HTML_UTF8,     "text-html-utf8"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_SPECIAL_MIME_TEXT_XML,           "text-xml"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_SPECIAL_MIME_TEXT_XML_UTF8,      "text-xml-utf8"))
 
 /**
  * g_paste_special_mime_get:

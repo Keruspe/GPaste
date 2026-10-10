@@ -1737,23 +1737,10 @@ g_paste_client_get_version (GPasteClient *self)
     return (version) ? g_variant_dup_string (version, NULL) : NULL;
 }
 
-G_PASTE_VISIBLE GType
-g_paste_daemon_presence_get_type (void)
-{
-    static GType etype = 0;
-    if (!etype)
-    {
-        static const GEnumValue values[] = {
-            { G_PASTE_DAEMON_PRESENCE_ABSENT,   "G_PASTE_DAEMON_PRESENCE_ABSENT",   "absent"   },
-            { G_PASTE_DAEMON_PRESENCE_STARTING, "G_PASTE_DAEMON_PRESENCE_STARTING", "starting" },
-            { G_PASTE_DAEMON_PRESENCE_READY,    "G_PASTE_DAEMON_PRESENCE_READY",    "ready"    },
-            { 0,                                NULL,                               NULL       }
-        };
-        etype = g_enum_register_static (g_intern_static_string ("GPasteDaemonPresence"), values);
-        g_type_class_ref (etype);
-    }
-    return etype;
-}
+G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPasteDaemonPresence, g_paste_daemon_presence,
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_DAEMON_PRESENCE_ABSENT,   "absent"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_DAEMON_PRESENCE_STARTING, "starting"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_DAEMON_PRESENCE_READY,    "ready"))
 
 /* Whether the bus has handed the name straight to another owner that the
  * proxy does not address yet (on_name_owner_changed ()). */
@@ -2174,8 +2161,8 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
          * with this very signal arriving in a gnome-shell that still runs the old
          * library. Skip such an update rather than hand a handler a value its
          * switch has no case for. */
-        if (!g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action) ||
-            !g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), target))
+        if (!g_enum_get_value (g_type_class_get (G_PASTE_TYPE_UPDATE_ACTION), action) ||
+            !g_enum_get_value (g_type_class_get (G_PASTE_TYPE_UPDATE_TARGET), target))
         {
             g_warning ("Ignoring an update from a daemon speaking of an unknown action or target");
             return;

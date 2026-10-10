@@ -312,3 +312,8 @@ promotes the plain successor in the history as well as replacing both
 selections.
 A mocked read must deliver each counted reply even after a publication supersedes
 it; the superseded conclusion releases content, while those replies free the update.
+
+`test-enums` has 32 threads ask for each enum type GPaste registers at once, in
+a fresh subprocess per type so that theirs is the first use, with
+`g_enum_register_static()` interposed to widen the window a racing registration
+needs: every caller must get the same type back.

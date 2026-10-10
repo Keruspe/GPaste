@@ -300,7 +300,7 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
     for (const GSList *val = special_values; val; val = val->next)
     {
         GPasteBinaryData *value = val->data;
-        GEnumValue *gev = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_MIME), g_paste_binary_data_get_mime (value));
+        GEnumValue *gev = g_enum_get_value (g_type_class_get (G_PASTE_TYPE_SPECIAL_MIME), g_paste_binary_data_get_mime (value));
 
         /* Skip a value carrying an unknown mime rather than dereferencing NULL,
          * as the sqlite backend does — writing the item is worth more than the
@@ -767,7 +767,7 @@ start_tag (GMarkupParseContext *context,
         {
             if (g_paste_str_equal (*a, "mime"))
             {
-                GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_SPECIAL_MIME), *v);
+                GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_get (G_PASTE_TYPE_SPECIAL_MIME), *v);
                 if (gev)
                     data->mime = gev->value;
                 else
