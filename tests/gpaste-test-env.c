@@ -122,9 +122,10 @@ remove_tree (GFile *file)
  * @flags: what the binary needs besides private settings and runtime directory
  *
  * Detach the process from the user's session before anything reads it: memory
- * GSettings on the build tree's schemas, a private bus, no display but a private
- * Xvfb. Call it first in main(), before gtk_init_check() and g_test_init(), so
- * that a binary run by hand is as harmless as one run by meson.
+ * GSettings on the build tree's schemas, private runtime, data, configuration
+ * and cache directories, a private bus, no display but a private Xvfb. Call it
+ * first in main(), before gtk_init_check() and g_test_init(), so that a binary
+ * run by hand is as harmless as one run by meson.
  */
 void
 g_paste_test_env_setup (GPasteTestEnvFlags flags)
@@ -146,6 +147,28 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
     if (!runtime_dir)
         g_error ("Could not create a runtime directory: %s", error->message);
     g_setenv ("XDG_RUNTIME_DIR", runtime_dir, TRUE);
+
+    /* Data, configuration and cache go beneath it too, before GLib caches where
+     * they are; a daemon the test spawns inherits them, unless g_test_init () is
+     * given G_TEST_OPTION_ISOLATE_DIRS, which points them at /dev/null. */
+    static const struct
+    {
+        const gchar *variable;
+        const gchar *directory;
+    } xdg[] = {
+        { "XDG_DATA_HOME",   "data"   },
+        { "XDG_CONFIG_HOME", "config" },
+        { "XDG_CACHE_HOME",  "cache"  },
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (xdg); ++i)
+    {
+        g_autofree gchar *path = g_build_filename (runtime_dir, xdg[i].directory, NULL);
+
+        if (g_mkdir_with_parents (path, 0700) < 0)
+            g_error ("Could not create a private test directory: %s", path);
+        g_setenv (xdg[i].variable, path, TRUE);
+    }
 
     g_setenv ("GTK_A11Y", "none", TRUE);
     g_setenv ("GIO_USE_VFS", "local", TRUE);

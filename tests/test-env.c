@@ -7,6 +7,24 @@
 #include <sys/resource.h>
 
 static void
+private_data_directories (void)
+{
+    const gchar *runtime = g_getenv ("XDG_RUNTIME_DIR");
+    const gchar *variables[] = { "XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (variables); ++i)
+    {
+        const gchar *path = g_getenv (variables[i]);
+
+        g_assert_nonnull (path);
+        g_assert_true (g_str_has_prefix (path, runtime));
+        g_assert_cmpint (path[strlen (runtime)], ==, G_DIR_SEPARATOR);
+        g_assert_true (g_file_test (path, G_FILE_TEST_IS_DIR));
+    }
+    g_assert_cmpstr (g_get_user_data_dir (), ==, g_getenv ("XDG_DATA_HOME"));
+}
+
+static void
 held_connection (gconstpointer user_data)
 {
     GDBusConnection *connection = (GDBusConnection *) user_data;
@@ -52,5 +70,6 @@ main (int argc, char **argv)
     g_assert_nonnull (connection);
     g_test_add_data_func ("/environment/held-session-connection", connection, held_connection);
     g_test_add_func ("/environment/crashed-test-reaps-bus", crashed_test_reaps_bus);
+    g_test_add_func ("/environment/private-data-directories", private_data_directories);
     return g_paste_test_env_run ();
 }
