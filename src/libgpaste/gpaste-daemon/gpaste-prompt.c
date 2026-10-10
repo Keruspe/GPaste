@@ -848,6 +848,8 @@ G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION,         "rekey-split-description"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE,            "cleanup-failed-title"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION,      "cleanup-failed-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_TITLE,             "import-failed-title"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION,       "import-failed-description"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLOSE,                           "close"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"))
 
@@ -921,6 +923,10 @@ g_paste_prompt_text (GPastePromptText text)
         return _("The old data was not deleted");
     case G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION:
         return _("The clipboard history GPaste was told to delete after the migration is still on disk.");
+    case G_PASTE_PROMPT_TEXT_IMPORT_FAILED_TITLE:
+        return _("The history was not migrated");
+    case G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION:
+        return _("GPaste could not copy your clipboard history into the new storage backend, so it keeps the one it had and will ask again next time.");
     case G_PASTE_PROMPT_TEXT_CLOSE:
         return _("Close");
     case G_PASTE_PROMPT_TEXT_CANCEL:

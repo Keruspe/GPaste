@@ -23,7 +23,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix a failed image preview in the graphical tool repeating a toast as you scroll
 - Fix the history rarely losing items at startup
 - Fix changes to a locked or unsaveable setting looking applied when they were not
-- Fix storage migrations losing the history under a locked setting
+- Fix storage migrations silently losing the history
 - Fix gpaste-client misreading --use-index, starting the daemon needlessly, and replacing non-UTF-8 input with a placeholder
 - Fix the memory limit removing items it should keep, or ignoring edited ones
 - Fix histories and backups missing recent copies, and deleted or emptied histories coming back

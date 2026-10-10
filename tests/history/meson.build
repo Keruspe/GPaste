@@ -30,3 +30,12 @@ test_saver = executable(
   dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
 )
 test('saver', test_saver, depends: [gpaste_schemas, test_bus_supervisor])
+
+# The cases go through the migration's own code, which the binary includes, and
+# inject the failures each of them is about.
+test_storage_failures = executable(
+  'test-storage-failures',
+  sources: [ 'test-storage-failures.c' ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
+)
+test('storage-failures', test_storage_failures, depends: [gpaste_schemas, test_bus_supervisor])

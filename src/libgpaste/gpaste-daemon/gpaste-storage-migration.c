@@ -286,21 +286,29 @@ imported_item_matches (GPasteItem *source,
  * flavors, which never persist passwords — an encrypted destination does, so a
  * password missing there *is* a failure), and in-memory sizes differing across
  * backends (an image read back from a database blob carries its PNG bytes
- * while a path-based one does not). */
+ * while a path-based one does not).
+ *
+ * A failure takes back what it already wrote to @chosen, with @error saying
+ * which history stopped it: the next start detects the current backend from
+ * the files on disk, the active history's first and the flavours in a fixed
+ * order (see detect_current_backend()). A copy left behind under a flavour
+ * that comes first would be taken for the history in use, every entry copied
+ * since the failure lost behind it. */
 static gboolean
 import_histories (GPasteSettings *settings,
                   GPasteStorage   current,
                   const gchar    *current_passphrase,
                   GPasteStorage   chosen,
-                  const gchar    *chosen_passphrase)
+                  const gchar    *chosen_passphrase,
+                  GError        **error)
 {
     /* Both keys are passed explicitly: source and destination may both be
      * encrypted under two different passphrases, which the single process-wide
      * one cannot express. */
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new_with_passphrase (current, settings, current_passphrase);
     g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new_with_passphrase (chosen, settings, chosen_passphrase);
-    g_autoptr (GError) error = NULL;
-    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &error);
+    g_autoptr (GError) list_error = NULL;
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &list_error);
     /* Only the plain flavors drop password items; an encrypted destination stores
      * them, so a password missing from the read-back is a genuine write failure
      * there and must not be waved through (the caller may then delete the source). */
@@ -311,9 +319,13 @@ import_histories (GPasteSettings *settings,
      * reporting success would let the caller delete histories still on disk. */
     if (!names)
     {
-        g_warning ("Could not list the histories to migrate: %s", error->message);
+        g_propagate_prefixed_error (error, g_steal_pointer (&list_error),
+                                    "Could not list the histories to migrate: ");
         return FALSE;
     }
+
+    /* Past the last history written to @chosen. */
+    GStrv written_end = names;
 
     for (GStrv name = names; ok && *name; ++name)
     {
@@ -327,11 +339,34 @@ import_histories (GPasteSettings *settings,
          * for a retry with the data untouched. */
         if (!g_paste_storage_backend_read_history (previous, *name, NULL /* cancellable */, &history, &size))
         {
+            g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         "Could not read the history “%s”", *name);
             ok = FALSE;
             break;
         }
 
+        /* A destination already holding this history and unable to read it --
+         * written by a newer GPaste, under another passphrase -- is one a write
+         * refuses to touch, and the rollback below would then delete it all the
+         * same: the import stops before it, leaving it exactly as it is. */
+        g_autofree gchar *destination = g_paste_storage_backend_get_history_file_path (next, *name);
+
+        if (g_file_test (destination, G_FILE_TEST_EXISTS))
+        {
+            g_autolist (GPasteItem) existing = NULL;
+            gsize existing_size = 0;
+
+            if (!g_paste_storage_backend_read_history (next, *name, NULL /* cancellable */, &existing, &existing_size))
+            {
+                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                             "The new storage backend already holds a history “%s” it cannot read", *name);
+                ok = FALSE;
+                break;
+            }
+        }
+
         g_paste_storage_backend_write_history (next, *name, history);
+        written_end = name + 1;
 
         g_autolist (GPasteItem) written = NULL;
         gsize written_size = 0;
@@ -354,9 +389,29 @@ import_histories (GPasteSettings *settings,
         /* Nothing may read back that was not written. */
         if (w)
             ok = FALSE;
+
+        if (!ok)
+            g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         "The history “%s” did not read back as it was written", *name);
     }
 
-    return ok;
+    if (ok)
+        return TRUE;
+
+    /* The destination's image directory goes only once no flavour stores the
+     * name, which the source still does: that is the base delete_history()'s
+     * rule, and it keeps the source's own images. */
+    for (GStrv name = names; name != written_end; ++name)
+    {
+        g_autoptr (GError) delete_error = NULL;
+
+        g_paste_storage_backend_delete_history (next, *name, &delete_error);
+
+        if (delete_error)
+            g_warning ("Could not remove the incomplete copy of the history “%s”: %s", *name, delete_error->message);
+    }
+
+    return FALSE;
 }
 
 /* Delete what the import copied out of. %FALSE, with @error saying what first
@@ -444,19 +499,25 @@ import_work_run (GTask        *task,
                  GCancellable *cancellable G_GNUC_UNUSED)
 {
     ImportWork *work = task_data;
+    g_autoptr (GError) error = NULL;
 
-    g_task_return_boolean (task, import_histories (work->settings,
-                                                   work->current,
-                                                   g_paste_passphrase_peek (work->current_passphrase),
-                                                   work->chosen,
-                                                   g_paste_passphrase_peek (work->chosen_passphrase)));
+    if (import_histories (work->settings,
+                          work->current,
+                          g_paste_passphrase_peek (work->current_passphrase),
+                          work->chosen,
+                          g_paste_passphrase_peek (work->chosen_passphrase),
+                          &error))
+        g_task_return_boolean (task, TRUE);
+    else
+        g_task_return_error (task, g_steal_pointer (&error));
 }
 
 /* Everything after the import: settings, cleanup and keyring, all back on the
  * main thread where their ordering against the rest of the daemon holds. */
 static void
 apply_migration_settle (MigrationData *self,
-                        gboolean       imported)
+                        gboolean       imported,
+                        const GError  *import_error)
 {
     GPasteStorage chosen = self->chosen;
     gboolean import = self->import;
@@ -482,14 +543,26 @@ apply_migration_settle (MigrationData *self,
      * old data is all it has. Either way keep the current backend, data and
      * revision untouched, so nothing is lost or hidden and the migration is
      * offered again next time rather than silently leaving an empty or unread
-     * backend; what an import already wrote to @chosen stays where it is. A
-     * reply naming the backend the setting already holds reads back equal
-     * under a lock too, so it still settles -- "Keep as is", normally: the way
-     * out of a dialog that would otherwise come back at every start. */
+     * backend. A failed import has already taken back what it wrote to
+     * @chosen; a complete one refused by the lock stays where it is, the
+     * same lock refusing the detection that could prefer it. A reply naming
+     * the backend the setting already holds reads back equal under a lock
+     * too, so it still settles -- "Keep as is", normally: the way out of a
+     * dialog that would otherwise come back at every start. */
     gboolean moved = FALSE;
 
     if (import && !imported)
-        g_warning ("History import failed; keeping the current storage backend and old data");
+    {
+        g_autofree gchar *message = g_strconcat (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION),
+                                                 "\n\n", import_error->message, NULL);
+
+        g_warning ("History import failed; keeping the current storage backend and old data: %s", import_error->message);
+        /* As with a failed cleanup below: the dialog has closed, and the user
+         * would otherwise find it back at the next start with no idea why. */
+        g_paste_prompt_report (self->prompt,
+                               g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_TITLE),
+                               message);
+    }
     else
     {
         g_paste_settings_set_storage_backend (self->settings, chosen);
@@ -576,9 +649,10 @@ on_import_done (GObject      *source G_GNUC_UNUSED,
                 GAsyncResult *result,
                 gpointer      user_data)
 {
-    /* The worker only ever returns a boolean (see import_work_run), never an
-     * error, so there is none to propagate. */
-    apply_migration_settle (user_data, g_task_propagate_boolean (G_TASK (result), NULL));
+    g_autoptr (GError) error = NULL;
+    gboolean imported = g_task_propagate_boolean (G_TASK (result), &error);
+
+    apply_migration_settle (user_data, imported, error);
 }
 
 static void
@@ -590,7 +664,7 @@ apply_migration (MigrationData *self)
      * files and derives no key — so this is the only step that goes to a thread. */
     if (!self->import)
     {
-        apply_migration_settle (self, TRUE);
+        apply_migration_settle (self, TRUE, NULL);
         return;
     }
 

@@ -189,8 +189,8 @@ typedef enum
     G_PASTE_PROMPT_TEXT_CLEANUP,
     G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE,
     G_PASTE_PROMPT_TEXT_CLEANUP_WARNING,
-    /* What g_paste_prompt_report() is called with: the two things that can go
-     * wrong after the user has answered and stopped watching. */
+    /* What g_paste_prompt_report() is called with: what can go wrong after the
+     * user has answered and stopped watching. */
     G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE,
     G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION,
     /* The re-key failed *and* could not put back what it had already moved, so
@@ -199,6 +199,8 @@ typedef enum
     G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION,
     G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE,
     G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_IMPORT_FAILED_TITLE,
+    G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION,
     G_PASTE_PROMPT_TEXT_CLOSE,
     G_PASTE_PROMPT_TEXT_CANCEL,
 } GPastePromptText;
