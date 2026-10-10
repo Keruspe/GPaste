@@ -1385,6 +1385,30 @@ test_all_favourites_grow_past_cap (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 8);
 }
 
+/* Removing the head puts the item below it in its place, and the active item
+ * is not the memory cap's to evict, even when it is the biggest one there is
+ * -- which, idle a moment before, it was elected as. */
+static void
+test_memory_cap_after_head_removal (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *large = g_strnfill (6 * 1024 * 1024, 'X');
+
+    g_paste_history_add (history, g_paste_text_item_new ("tail"));
+    g_paste_history_add (history, g_paste_text_item_new (large));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_paste_history_remove (history, 0);
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_cmpuint (g_paste_settings_get_max_memory_usage (settings), ==, 5);
+
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuid));
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+}
+
 /* The memory cap evicts the biggest item it *may* evict, and a favourite is
  * never one -- so the election has to skip it and take the runner-up. */
 static void
@@ -4203,6 +4227,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
     g_test_add_func ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     g_test_add_func ("/history/select_counts_image_once", test_select_counts_image_once);
+    g_test_add_func ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
     g_test_add_func ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
     g_test_add_func ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
     g_test_add_func ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);

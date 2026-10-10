@@ -67,7 +67,14 @@ struct _GPasteHistory
      * load clears it, and that load's own result sets it again. */
     gboolean              unreadable;
 
-    /* Note: we never track the first (active) item here */
+    /* What the memory cap evicts next: the biggest item it may evict at all,
+     * which is never the first (active) one nor a favourite, and %NULL when
+     * there is none. Kept up to date as the history changes, which spares the
+     * cap a scan for its first eviction; the price is that every path moving an
+     * item to or from the head, resizing, pinning or replacing one has to keep
+     * it right, or re-elect. A stale one has the cap evict an item it must not,
+     * or compare against an item already freed, @biggest_uuid borrowing its
+     * string from the item it names. */
     const gchar          *biggest_uuid;
     guint64               biggest_size;
 
@@ -776,7 +783,12 @@ g_paste_history_remove_common (GPasteHistory *self,
             g_paste_history_selected (self, NULL);
     }
 
-    if (was_biggest)
+    /* The head going puts the next item in its place, and the item that was
+     * elected may well be that one: active now, it is not the cap's to evict.
+     * Only then: one elected deeper is still the one to elect, the election
+     * walking the whole history. */
+    if (was_biggest || (!index && self->history->len &&
+                        g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (g_ptr_array_index (self->history, 0)))))
         g_paste_history_private_elect_new_biggest (self);
 
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, index, G_PASTE_HISTORY_SAVE_REMOVE, NULL, uuid, FALSE);
