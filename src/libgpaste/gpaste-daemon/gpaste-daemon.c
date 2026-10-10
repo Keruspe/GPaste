@@ -1152,7 +1152,8 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
 
 /* Drop the export (and the signal wiring that goes with it), so the object path
  * is free again for a successor daemon built on the same, still-alive
- * connection — which is exactly what the gnome-shell host does on re-enable. */
+ * connection — which is exactly what the gnome-shell host does on re-enable.
+ * dispose () runs it too; @registered makes it a no-op once it has run. */
 static void
 g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
 {
@@ -1249,8 +1250,7 @@ g_paste_daemon_dispose (GObject *object)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (object);
 
-    if (self->registered)
-        g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (self->skeleton));
+    g_paste_daemon_unregister_on_connection (G_PASTE_BUS_OBJECT (self));
 
     g_clear_object (&self->skeleton);
     g_clear_object (&self->history_signals);
@@ -1303,8 +1303,8 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
      * the PropertiesChanged a set announces -- which the skeleton sends only
      * for one made while exported. Set in init () instead, the window would
      * never know which version a daemon it watched start is
-     * (g_paste_ui_window_update_version_toast ()). No test builds a whole
-     * daemon; the UI suite's stand-in sets it here too. */
+     * (g_paste_ui_window_update_version_toast ()). No test checks it on a
+     * whole daemon; the UI suite's stand-in sets it here too. */
     g_paste_daemon3_set_version (daemon->skeleton, VERSION);
 
     daemon->registered = TRUE;

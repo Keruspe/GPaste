@@ -5,7 +5,9 @@
  * and a slot to stand in. Shared by the suites that drive updates without a
  * backend -- the update API the X11 hints workaround reads through
  * (test-clipboard-hints.c), and the workaround itself against a real server
- * (test-clipboard-x11-hints.c). */
+ * (test-clipboard-x11-hints.c) -- and by the daemon teardown suite
+ * (tests/daemon/test-daemon-teardown.c), whose daemon publishes nothing: a
+ * select that reaches one fails the case. */
 
 #pragma once
 

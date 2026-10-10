@@ -17,8 +17,8 @@ clipboard_gdk_test = executable(
 test('clipboard-gdk', clipboard_gdk_test, depends: [gpaste_schemas, test_bus_supervisor])
 
 # The least an update needs of a provider, for the two suites that drive updates
-# with no backend under them.
-test_clipboard_provider_sources = [ 'gpaste-test-clipboard-provider.c' ]
+# with no backend under them, and for tests/daemon, whose daemon selects nothing.
+test_clipboard_provider_sources = files('gpaste-test-clipboard-provider.c')
 
 # The update API the X11 hints workaround reads through; goes with
 # src/daemon/gpaste-clipboard-x11-hints.c.
