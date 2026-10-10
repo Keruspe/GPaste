@@ -285,11 +285,11 @@ g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
  *          history)
  */
 G_PASTE_VISIBLE gboolean
-g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
-                                      const gchar           *name,
-                                      GCancellable          *cancellable,
-                                      GList                **history,
-                                      gsize                 *size)
+g_paste_storage_backend_read_history (GPasteStorageBackend *self,
+                                      const gchar          *name,
+                                      GCancellable         *cancellable,
+                                      GList               **history,
+                                      gsize                *size)
 {
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);

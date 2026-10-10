@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-daemon/gpaste-history.h>
@@ -13,7 +14,10 @@
  * writing it waits at the backend boundary until the case releases it, so the
  * case can act while that write is still out. The model and the saver stay the
  * shipped ones, their threads and completion callbacks included. A static
- * GMutex and GCond need no initialisation. */
+ * GMutex and GCond need no initialisation.
+ *
+ * With @require_written, a worker reading that history asserts the held write
+ * has landed first. */
 typedef struct
 {
     GMutex       mutex;
@@ -23,22 +27,28 @@ typedef struct
     gboolean     hold_write;
     gboolean     started;
     gboolean     released;
+    gboolean     require_written;
+    gboolean     written;
 } Barrier;
 
 static Barrier barrier;
 static void (*real_write) (GPasteStorageBackend *, const gchar *, const GList *);
+static gboolean (*real_read) (GPasteStorageBackend *, const gchar *, GCancellable *, GList **, gsize *);
 
 void
 g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
                                        const gchar          *name,
                                        const GList          *items)
 {
+    gboolean held = FALSE;
+
     /* The main thread is never held: a drain applying writes there is what the
      * held worker is being raced against. */
     if (g_thread_self () != barrier.main_thread)
     {
         g_mutex_lock (&barrier.mutex);
-        if (barrier.hold_write && g_paste_str_equal (name, barrier.name))
+        held = barrier.hold_write && g_paste_str_equal (name, barrier.name);
+        if (held)
         {
             barrier.started = TRUE;
             g_cond_broadcast (&barrier.cond);
@@ -49,6 +59,31 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
     }
 
     real_write (backend, name, items);
+
+    if (held)
+    {
+        g_mutex_lock (&barrier.mutex);
+        barrier.written = TRUE;
+        g_mutex_unlock (&barrier.mutex);
+    }
+}
+
+gboolean
+g_paste_storage_backend_read_history (GPasteStorageBackend *backend,
+                                      const gchar          *name,
+                                      GCancellable         *cancellable,
+                                      GList               **items,
+                                      gsize                *size)
+{
+    if (g_thread_self () != barrier.main_thread)
+    {
+        g_mutex_lock (&barrier.mutex);
+        if (barrier.require_written && g_paste_str_equal (name, barrier.name))
+            g_assert_true (barrier.written);
+        g_mutex_unlock (&barrier.mutex);
+    }
+
+    return real_read (backend, name, cancellable, items, size);
 }
 
 static void
@@ -95,6 +130,20 @@ release_eventually (gpointer data G_GNUC_UNUSED)
     g_mutex_unlock (&barrier.mutex);
     release_worker ();
     return NULL;
+}
+
+static gboolean
+history_loaded (gconstpointer data,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return !g_paste_history_is_loading ((GPasteHistory *) data);
+}
+
+static void
+wait_load (GPasteHistory *history)
+{
+    g_paste_test_bus_wait_until (history_loaded, history, NULL);
+    g_assert_false (g_paste_history_is_loading (history));
 }
 
 static gboolean
@@ -152,6 +201,8 @@ fixture (GPasteSettings       **settings,
     barrier.hold_write = FALSE;
     barrier.started = FALSE;
     barrier.released = FALSE;
+    barrier.require_written = FALSE;
+    barrier.written = FALSE;
     g_mutex_unlock (&barrier.mutex);
 }
 
@@ -233,6 +284,75 @@ test_delete_other (void)
     g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "pending");
 }
 
+/* A history switched away from and straight back to while its writes are out
+ * is read once they have landed: read earlier, it would be installed without
+ * them and saved over them by the switch's own full write. */
+static void
+test_switch_pending (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "switch-source");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("first pending"));
+    wait_worker ();
+    g_paste_history_add (history, g_paste_text_item_new ("second pending"));
+    g_mutex_lock (&barrier.mutex);
+    barrier.require_written = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+
+    g_paste_history_switch (history, "other-switch");
+    g_paste_history_switch (history, "switch-source");
+
+    g_autoptr (GThread) release = g_thread_new ("release-switch-write", release_later, NULL);
+
+    wait_load (history);
+    g_thread_join (g_steal_pointer (&release));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "second pending");
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "switch-source");
+
+    g_assert_cmpuint (g_list_length (items), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "second pending");
+}
+
+/* Another history is read whatever the one left still has out: with the file
+ * backend each is a store of its own. And the writes it has out still land,
+ * the one queued included, although the history switched to saves itself as
+ * soon as it is loaded. */
+static void
+test_switch_other (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "switch-left");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("first pending"));
+    wait_worker ();
+    g_paste_history_add (history, g_paste_text_item_new ("second pending"));
+
+    g_autoptr (GThread) release = g_thread_new ("release-left-write", release_eventually, NULL);
+
+    g_paste_history_switch (history, "switch-reached");
+    wait_load (history);
+    g_assert_false (is_released ());
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, "switch-reached");
+    release_worker ();
+    g_thread_join (g_steal_pointer (&release));
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "switch-left");
+
+    g_assert_cmpuint (g_list_length (items), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "second pending");
+}
+
 int
 main (int    argc,
       char **argv)
@@ -242,10 +362,14 @@ main (int    argc,
 
     barrier.main_thread = g_thread_self ();
     real_write = dlsym (RTLD_NEXT, "g_paste_storage_backend_write_history");
+    real_read = dlsym (RTLD_NEXT, "g_paste_storage_backend_read_history");
     g_assert_nonnull (real_write);
+    g_assert_nonnull (real_read);
 
     g_test_add_func ("/history-ordering/delete-pending", test_delete_pending);
     g_test_add_func ("/history-ordering/delete-other", test_delete_other);
+    g_test_add_func ("/history-ordering/switch-pending", test_switch_pending);
+    g_test_add_func ("/history-ordering/switch-other", test_switch_other);
 
     return g_paste_test_env_run ();
 }

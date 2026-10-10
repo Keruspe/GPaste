@@ -5,7 +5,10 @@
 
 #include <gio/gio.h>
 
-typedef struct _GPasteHistorySaverWrite GPasteHistorySaverWrite;
+typedef struct _GPasteHistorySaverWrite    GPasteHistorySaverWrite;
+typedef struct _GPasteHistorySaverLoadData GPasteHistorySaverLoadData;
+
+static void g_paste_history_saver_load_data_free (gpointer data);
 
 /* Owns the asynchronous persistence of a history: it writes snapshots handed to
  * it (coalescing concurrent requests) and loads histories in the background,
@@ -14,7 +17,12 @@ typedef struct _GPasteHistorySaverWrite GPasteHistorySaverWrite;
  *
  * All of its state is only ever touched on the main thread: g_paste_history_saver_record
  * / _load run there, and the GTask completion callbacks fire on the thread-default
- * context they were created on. The @owner GObject is used as the GTask source so
+ * context they were created on. A load that has to wait for writes to land (see
+ * g_paste_history_saver_start_load ()) is started by the completion of one, so
+ * it completes on the context that write was recorded from rather than on the
+ * one its caller had: a caller pushing a context of its own around a load while
+ * writes are out would iterate that context in vain. Every caller runs on the
+ * default one. The @owner GObject is used as the GTask source so
  * it stays alive for the whole duration of every in-flight operation. Each task also
  * holds its own ref on the saver (released in its done callback), so an owner that
  * swaps its saver out mid-flight (g_paste_history_reload_backend) cannot free one
@@ -32,7 +40,7 @@ struct _GPasteHistorySaver
     GPasteHistorySaverWrite     *writing;
     /* Pending writes (GPasteHistorySaverWrite*), applied in order. With a
      * non-incremental backend each entry is a full rewrite, so the queue is
-     * coalesced down to the latest snapshot and never holds more than one. */
+     * coalesced down to the latest snapshot of each history. */
     GQueue                       pending;
 
     /* Handshake for g_paste_history_saver_drain(): the worker thread clears
@@ -45,6 +53,8 @@ struct _GPasteHistorySaver
 
     gboolean                     load_in_progress;
     guint64                      load_generation;
+    /* A load waiting for writes to land before it reads, or %NULL. */
+    GPasteHistorySaverLoadData  *pending_load;
     /* The read the load in flight is doing. The generation says whether anyone
      * still wants that read's result; this is what stops the read itself, which
      * is the lock wait and then a whole history off disk. */
@@ -131,6 +141,7 @@ g_paste_history_saver_write_task (GTask        *task,
 }
 
 static void g_paste_history_saver_write_done (GObject *source_object, GAsyncResult *result, gpointer user_data);
+static void g_paste_history_saver_start_load (GPasteHistorySaver *self);
 
 static void
 g_paste_history_saver_start_write (GPasteHistorySaver *self)
@@ -169,6 +180,7 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
 
     /* More changes may have queued up while we were writing: drain the next. */
     g_paste_history_saver_start_write (self);
+    g_paste_history_saver_start_load (self);
 }
 
 /**
@@ -184,8 +196,8 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
  *
  * Persist a change to @name in the background. An incremental backend applies
  * the queued changes in order; for a non-incremental one (which rewrites the
- * whole snapshot anyway) successive records coalesce into the latest snapshot,
- * so only the most recent state ever reaches the disk.
+ * whole snapshot anyway) successive records for the same history coalesce into
+ * its latest snapshot, so only the most recent state ever reaches its store.
  */
 G_PASTE_VISIBLE void
 g_paste_history_saver_record (GPasteHistorySaver *self,
@@ -198,10 +210,27 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     /* A non-incremental backend ignores the granular hint and rewrites the whole
-     * snapshot, so collapse any pending writes into a single full one. */
+     * snapshot, so collapse this history's pending writes into a single full
+     * one. Only this history's: one just switched away from may still have its
+     * last snapshot waiting for its turn, and
+     * nothing else would ever write it. */
     if (!g_paste_storage_backend_is_incremental (self->backend))
     {
-        g_queue_clear_full (&self->pending, g_paste_history_saver_write_free);
+        for (GList *link = self->pending.head; link;)
+        {
+            GList *next = link->next;
+            GPasteHistorySaverWrite *pending = link->data;
+
+            if (g_paste_str_equal (pending->name, name))
+            {
+                g_autoptr (GPasteHistorySaverWrite) dropped = pending;
+
+                g_queue_delete_link (&self->pending, link);
+            }
+
+            link = next;
+        }
+
         op = G_PASTE_HISTORY_SAVE_FULL;
         item = NULL;
         uuid = NULL;
@@ -276,6 +305,16 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
  * outside the saver. The writes of every other history carry on in the
  * background: they reach other stores, so making the caller wait for them
  * would only hold the main thread, and records made afterwards queue as ever.
+ *
+ * On the SQLite flavours, applying @name's operations here takes the one
+ * cached connection, which the history in use's next operation opens back --
+ * an Argon2id derivation each way on an encrypted store. They are seldom
+ * still queued by then: a load waits for the whole queue on such a backend
+ * (g_paste_history_saver_holds_writes_for ()) and nothing is recorded while it
+ * runs, so the history left has landed before the one switched to is read or
+ * written. Only one emptied while it loads, its load given up, and left at
+ * once leaves operations of its own behind a write of the next; paying the
+ * derivations then is kept over moving the drain to the worker.
  */
 G_PASTE_VISIBLE void
 g_paste_history_saver_drain_history (GPasteHistorySaver *self,
@@ -318,6 +357,7 @@ g_paste_history_saver_detach (GPasteHistorySaver *self)
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
     self->detached = TRUE;
+    g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
 
     /* The result was going to be dropped either way; this is the read producing
      * it, which the new saver is not waiting for and the old owner cannot use. */
@@ -328,13 +368,13 @@ g_paste_history_saver_detach (GPasteHistorySaver *self)
 /* Load path    */
 /****************/
 
-typedef struct
+struct _GPasteHistorySaverLoadData
 {
     GPasteStorageBackend *backend;
     gchar                *name;
     guint64               generation;
     gboolean              save_after;
-} GPasteHistorySaverLoadData;
+};
 
 static void
 g_paste_history_saver_load_data_free (gpointer data)
@@ -343,6 +383,8 @@ g_paste_history_saver_load_data_free (gpointer data)
     g_clear_object (&d->backend);
     g_clear_pointer (&d->name, g_free);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteHistorySaverLoadData, g_paste_history_saver_load_data_free)
 
 typedef struct
 {
@@ -435,6 +477,60 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
                   data->save_after, load_result->readable);
 }
 
+/* Whether writes still out have to land before @name is read. */
+static gboolean
+g_paste_history_saver_holds_writes_for (GPasteHistorySaver *self,
+                                        const gchar        *name)
+{
+    /* An incremental backend applies each operation to the store it has open,
+     * which on the SQLite flavours is a single cached connection: a read of
+     * another history in between takes it from under the queued operations,
+     * and on an encrypted store every reopening derives its key again, an
+     * Argon2id pass each. Its reads wait for the whole queue. A store
+     * rewritten whole is a file per history, so those wait only for the writes
+     * of the history they read. */
+    if (g_paste_storage_backend_is_incremental (self->backend))
+        return self->writing || !g_queue_is_empty (&self->pending);
+
+    if (self->writing && g_paste_str_equal (self->writing->name, name))
+        return TRUE;
+
+    for (const GList *link = self->pending.head; link; link = link->next)
+    {
+        const GPasteHistorySaverWrite *pending = link->data;
+
+        if (g_paste_str_equal (pending->name, name))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* A history is read only once the writes recorded for it have landed: one
+ * switched away from and straight back to would otherwise be read without its
+ * last changes, installed without them and saved over them by the switch's own
+ * full write. The load waits on the main thread, where nothing blocks on it, and
+ * write_done () tries it again. */
+static void
+g_paste_history_saver_start_load (GPasteHistorySaver *self)
+{
+    if (!self->pending_load || g_paste_history_saver_holds_writes_for (self, self->pending_load->name))
+        return;
+
+    g_autoptr (GPasteHistorySaverLoadData) data = g_steal_pointer (&self->pending_load);
+
+    /* Hold our own ref for the task (see start_write): reload_backend may drop
+     * the owner's ref to us while this load is still in flight. */
+    g_autoptr (GTask) task = g_task_new (self->owner, self->load_cancellable, g_paste_history_saver_load_done, g_object_ref (self));
+    /* The result is what says whether the read completed (@readable), and the
+     * generation and @detached are what say whether anyone still wants it, so
+     * GTask must not turn a cancelled load into an error of its own on top. */
+    g_task_set_check_cancellable (task, FALSE);
+    g_task_set_static_name (task, "gpaste-history-load");
+    g_task_set_task_data (task, g_steal_pointer (&data), g_paste_history_saver_load_data_free);
+    g_task_run_in_thread (task, g_paste_history_saver_load_task);
+}
+
 /**
  * g_paste_history_saver_load:
  * @self: a #GPasteHistorySaver
@@ -454,7 +550,7 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
     self->load_in_progress = TRUE;
     self->load_generation++;
 
-    GPasteHistorySaverLoadData *data = g_new (GPasteHistorySaverLoadData, 1);
+    g_autoptr (GPasteHistorySaverLoadData) data = g_new (GPasteHistorySaverLoadData, 1);
     data->backend = g_object_ref (self->backend);
     data->name = g_strdup (name);
     data->generation = self->load_generation;
@@ -470,16 +566,9 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
     g_paste_clear_cancellable (&self->load_cancellable);
     self->load_cancellable = g_cancellable_new ();
 
-    /* Hold our own ref for the task (see start_write): reload_backend may drop
-     * the owner's ref to us while this load is still in flight. */
-    g_autoptr (GTask) task = g_task_new (self->owner, self->load_cancellable, g_paste_history_saver_load_done, g_object_ref (self));
-    /* The result is what says whether the read completed (@readable), and the
-     * generation and @detached are what say whether anyone still wants it, so
-     * GTask must not turn a cancelled load into an error of its own on top. */
-    g_task_set_check_cancellable (task, FALSE);
-    g_task_set_static_name (task, "gpaste-history-load");
-    g_task_set_task_data (task, data, g_paste_history_saver_load_data_free);
-    g_task_run_in_thread (task, g_paste_history_saver_load_task);
+    g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
+    self->pending_load = g_steal_pointer (&data);
+    g_paste_history_saver_start_load (self);
 }
 
 /**
@@ -503,6 +592,7 @@ g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
      * clear @load_in_progress, so clear it here. */
     self->load_generation++;
     self->load_in_progress = FALSE;
+    g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
     g_cancellable_cancel (self->load_cancellable);
 }
 
@@ -530,6 +620,7 @@ g_paste_history_saver_dispose (GObject *object)
     GPasteHistorySaver *self = G_PASTE_HISTORY_SAVER (object);
 
     g_queue_clear_full (&self->pending, g_paste_history_saver_write_free);
+    g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
     g_clear_object (&self->backend);
 
     /* A load in flight holds a ref on us through its task, so dispose () runs

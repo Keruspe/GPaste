@@ -20,6 +20,13 @@ test('enums', test_enums, depends: [gpaste_schemas, test_bus_supervisor])
 test_ordering = executable(
   'test-ordering',
   sources: [ 'test-ordering.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
 )
 test('history-ordering', test_ordering, depends: [gpaste_schemas, test_bus_supervisor])
+
+test_saver = executable(
+  'test-saver',
+  sources: [ 'test-saver.c' ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+)
+test('saver', test_saver, depends: [gpaste_schemas, test_bus_supervisor])

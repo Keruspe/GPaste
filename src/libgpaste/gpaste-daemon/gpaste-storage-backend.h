@@ -119,11 +119,11 @@ gboolean       g_paste_storage_backend_is_encrypted  (GPasteStorageBackend *self
 gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
                                                       const gchar          *name);
 
-gboolean g_paste_storage_backend_read_history (GPasteStorageBackend  *self,
-                                               const gchar           *name,
-                                               GCancellable          *cancellable,
-                                               GList                **history,
-                                               gsize                 *size);
+gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
+                                               const gchar          *name,
+                                               GCancellable         *cancellable,
+                                               GList               **history,
+                                               gsize                *size);
 void g_paste_storage_backend_write_history    (GPasteStorageBackend *self,
                                                const gchar          *name,
                                                const GList          *history);

@@ -341,8 +341,10 @@ g_paste_history_update (GPasteHistory      *self,
 {
     /* Don't persist intermediate states while an async load is replacing the
      * history (the load result triggers its own save when appropriate), nor once
-     * we have been flushed for handover (a successor daemon owns the file now). */
-    if (!self->stopped && !self->unreadable && !g_paste_history_saver_is_loading (self->saver))
+     * we have been flushed for handover (a successor daemon owns the file now).
+     * Nor a history nobody has named, which has no store to persist into: the
+     * saver files every write under the history's name. */
+    if (self->name && !self->stopped && !self->unreadable && !g_paste_history_saver_is_loading (self->saver))
     {
         /* A non-incremental backend rewrites everything and always needs the
          * snapshot. An incremental one only reconciles what rode along with an

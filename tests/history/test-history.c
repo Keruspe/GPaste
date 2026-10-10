@@ -2090,6 +2090,73 @@ test_save_load_roundtrip (void)
     }
 }
 
+static gint
+compare_entries (gconstpointer a,
+                 gconstpointer b,
+                 gpointer      user_data G_GNUC_UNUSED)
+{
+    return g_strcmp0 (*(const gchar * const *) a, *(const gchar * const *) b);
+}
+
+/* Every entry of the history directory with its size and modification time,
+ * the directory's own included, so that two listings differ once anything in
+ * it was written, created or removed. */
+static GStrv
+history_dir_listing (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autoptr (GDir) listing = g_dir_open (dir, 0, NULL);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    GStatBuf st;
+
+    if (g_stat (dir, &st) == 0)
+        g_strv_builder_take (builder, g_strdup_printf (". %" G_GINT64_FORMAT ".%09ld", (gint64) st.st_mtim.tv_sec, st.st_mtim.tv_nsec));
+
+    for (const gchar *entry; listing && (entry = g_dir_read_name (listing));)
+    {
+        g_autofree gchar *path = g_build_filename (dir, entry, NULL);
+
+        if (g_stat (path, &st) == 0)
+        {
+            g_strv_builder_take (builder, g_strdup_printf ("%s %" G_GINT64_FORMAT " %" G_GINT64_FORMAT ".%09ld", entry,
+                                                           (gint64) st.st_size, (gint64) st.st_mtim.tv_sec, st.st_mtim.tv_nsec));
+        }
+    }
+
+    GStrv entries = g_strv_builder_end (builder);
+
+    g_sort_array (entries, g_strv_length (entries), sizeof (gchar *), compare_entries, NULL);
+
+    return entries;
+}
+
+/* A history nobody has named has no store, so its changes are kept in memory
+ * and persisted nowhere: the saver files every write under a history's name.
+ * Several of them in a row, and a flush applying what is queued on the spot,
+ * write nothing at all. */
+static void
+test_unnamed_history_persists_nothing (void)
+{
+    g_autoptr (GPasteHistory) history = make_plain_history ();
+    g_auto (GStrv) before = history_dir_listing ();
+
+    for (guint i = 0; i < 3; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("unnamed %u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+    }
+
+    g_paste_history_flush (history);
+    pump_for_ms (10);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+
+    g_auto (GStrv) after = history_dir_listing ();
+
+    g_assert_cmpstrv (after, before);
+}
+
 /* g_paste_history_flush() must get every pending change to disk synchronously,
  * without the caller having to pump the main loop: an exit/handover path relies
  * on the on-disk history being complete the moment flush() returns. */
@@ -4116,6 +4183,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
     g_test_add_func ("/history/empty", test_empty);
     g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);
+    g_test_add_func ("/history/unnamed_history_persists_nothing", test_unnamed_history_persists_nothing);
     g_test_add_func ("/history/flush_persists_synchronously", test_flush_persists_synchronously);
     g_test_add_func ("/history/flush_stops_recording", test_flush_stops_recording);
     g_test_add_func ("/history/delete_refused_after_flush", test_delete_refused_after_flush);

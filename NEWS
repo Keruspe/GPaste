@@ -26,7 +26,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix storage migrations losing the history under a locked setting
 - Fix gpaste-client misreading --use-index, starting the daemon needlessly, and replacing non-UTF-8 input with a placeholder
 - Fix selecting an image making the memory limit remove other items
-- Fix deleted histories coming back
+- Fix histories missing recent copies, and deleted histories coming back
 - Build: require libXfixes and Meson 1.9
 
 NEW in 51.0 (15/09/2026)
