@@ -530,7 +530,9 @@ static const struct
 /* Prepare the encrypted flavor on an open database: derive the key from the
  * per-database salt and verify it against the stored key check. A fresh
  * database (or one that is still empty — nothing to lose) gets a new salt and
- * check for this passphrase instead. @wrong_passphrase is set when the
+ * check for this passphrase instead, and only such a one: parameters missing
+ * from a database holding data are refused, since its ciphertext still needs
+ * the salt and limits it was written with. @wrong_passphrase is set when the
  * passphrase does not unlock existing data, the one failure the caller must
  * report differently. */
 static gboolean
@@ -550,7 +552,9 @@ g_paste_sqlite_backend_setup_crypto (sqlite3     *db,
     g_autofree guchar *check = NULL;
     gsize check_length = 0;
 
-    if (g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length))
+    gboolean loaded = g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length);
+
+    if (loaded)
     {
         /* derive_key() has already said why. */
         if (!g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key))
@@ -558,16 +562,23 @@ g_paste_sqlite_backend_setup_crypto (sqlite3     *db,
 
         if (g_paste_sqlite_backend_key_checks_out (key, check, check_length))
             return TRUE;
+    }
 
-        /* The wrong passphrase for a history that still holds data must be
-         * refused: accepting it would load empty and the next save would
-         * destroy the real content. An empty history has nothing to lose, so
-         * re-key it for the new passphrase instead of locking the user out. */
-        if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0)
-        {
+    /* The wrong passphrase for a history that still holds data must be
+     * refused: accepting it would load empty and the next save would destroy
+     * the real content. So must incomplete parameters, which are no new store,
+     * replacing them being what would make the content unreadable for good.
+     * An empty history has nothing to lose, so it is (re-)keyed for this
+     * passphrase instead of locking the user out -- and a count that cannot be
+     * read is no proof of empty. */
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    {
+        if (loaded)
             *wrong_passphrase = TRUE;
-            return FALSE;
-        }
+        else
+            g_warning ("sqlite: incomplete encryption parameters in a history holding data; not touching it");
+
+        return FALSE;
     }
 
     randombytes_buf (salt, sizeof (salt));

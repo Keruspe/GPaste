@@ -11,6 +11,15 @@
 #include <dlfcn.h>
 #include <string.h>
 
+#ifdef G_PASTE_ENABLE_SQLITE
+#include <gpaste-daemon/gpaste-sqlite-backend.h>
+
+#include <sqlite3.h>
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3, sqlite3_close)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3_stmt, sqlite3_finalize)
+#endif
+
 /* Writes through a backend of the first kind leave the history's first item
  * out, as a destination that took a write and does not give it back would;
  * file writes through one of the second kind lose the document's footer, as an
@@ -434,6 +443,75 @@ test_import_needs_readable_copy (void)
 }
 #endif
 
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
+static gchar *
+read_meta (sqlite3     *db,
+           const gchar *key)
+{
+    g_autoptr (sqlite3_stmt) statement = NULL;
+
+    g_assert_cmpint (sqlite3_prepare_v2 (db, "SELECT hex (value) FROM meta WHERE key = ?;", -1, &statement, NULL), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_bind_text (statement, 1, key, -1, SQLITE_TRANSIENT), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_step (statement), ==, SQLITE_ROW);
+
+    return g_strdup ((const gchar *) sqlite3_column_text (statement, 0));
+}
+
+/* Encryption parameters with one missing are no new store when the history
+ * holds data: its salt and key check have to survive the open that refuses
+ * it, or nothing would ever decrypt that data again. */
+static void
+test_incomplete_crypto (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*incomplete encryption parameters*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "incomplete-crypto";
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
+    g_autoptr (sqlite3) db = NULL;
+
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+
+    g_autofree gchar *salt = read_meta (db, "salt");
+    g_autofree gchar *check = read_meta (db, "check");
+
+    g_assert_cmpint (sqlite3_exec (db, "DELETE FROM meta WHERE key = 'memlimit';", NULL, NULL, NULL), ==, SQLITE_OK);
+    g_clear_pointer (&db, sqlite3_close);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) items = NULL;
+        gsize size;
+
+        g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    }
+
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+
+    g_autofree gchar *kept_salt = read_meta (db, "salt");
+    g_autofree gchar *kept_check = read_meta (db, "check");
+
+    g_assert_cmpstr (kept_salt, ==, salt);
+    g_assert_cmpstr (kept_check, ==, check);
+}
+#endif
+
 int
 main (int    argc,
       char **argv)
@@ -446,6 +524,9 @@ main (int    argc,
     g_test_add_data_func ("/storage/migration/encrypted-sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_SQLITE), test_migration_keeps_unopenable_identity);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/unlock/unopenable-flavour", test_unlock_skips_unopenable_flavour);
+#endif
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
+    g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
