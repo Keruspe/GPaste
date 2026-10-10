@@ -1234,6 +1234,73 @@ dup_uuid_at (GPasteHistory *history,
     return g_strdup (g_paste_item_get_uuid (item));
 }
 
+/* An image of a single colour, @side pixels square: what it weighs once decoded
+ * is its pixels, while the PNG it keeps when idle is next to nothing. */
+static GPasteItem *
+uniform_image (guint side)
+{
+    gsize length = (gsize) side * side * 4;
+    g_autofree guchar *pixels = g_malloc (length);
+
+    memset (pixels, 0x80, length);
+
+    g_autoptr (GBytes) bytes = g_bytes_new_take (g_steal_pointer (&pixels), length);
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (side, side, GDK_MEMORY_R8G8B8A8, bytes, side * 4);
+
+    return g_paste_image_item_new (texture);
+}
+
+/* Selecting an idle image decodes it again, and the history's total has to
+ * count that texture once: counted twice, the memory cap evicts entries to pay
+ * for memory nothing uses -- here every one but the head, the image weighing
+ * just over half the cap. */
+static void
+test_select_counts_image_once (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_history_size (settings, 100);
+    /* The schema's floor. */
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_cmpuint (g_paste_settings_get_max_memory_usage (settings), ==, 5);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "select-counts-image-once");
+
+    /* 2.6 MB decoded against 5 MiB. */
+    GPasteItem *image = uniform_image (820);
+    g_autofree gchar *image_uuid = g_strdup (g_paste_item_get_uuid (image));
+
+    g_paste_history_add (history, image);
+
+    for (guint i = 0; i < 5; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("text %u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+    }
+
+    g_autofree gchar *text_uuid = dup_uuid_at (history, 0);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 6);
+
+    /* There and back again, twice: the texture is decoded and dropped each
+     * time, which has to net out. */
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_assert_true (g_paste_history_select (history, image_uuid));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 6);
+        g_assert_true (g_paste_history_select (history, text_uuid));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 6);
+    }
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
+}
+
 /* The size cap still fires at max, but it takes the last *non-favourite*: a
  * pinned item sitting at the very bottom outlives everything added over it,
  * while the ordinary items around it keep rotating out. */
@@ -4015,6 +4082,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/get_by_uuid", test_get_by_uuid);
     g_test_add_func ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
     g_test_add_func ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
+    g_test_add_func ("/history/select_counts_image_once", test_select_counts_image_once);
     g_test_add_func ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
     g_test_add_func ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
     g_test_add_func ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);

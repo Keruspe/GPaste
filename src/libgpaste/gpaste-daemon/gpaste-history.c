@@ -696,8 +696,11 @@ _g_paste_history_add (GPasteHistory *self,
     g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);
     g_steal_pointer (&owned); /* ownership transferred to the history */
 
-    g_paste_history_activate_first (self, FALSE);
+    /* Counted in at what it weighs now, and only then made active: activating
+     * takes the head out at that weight and puts it back at its active one, so
+     * an idle image being selected adds its texture once. */
     self->size += g_paste_item_get_size (item);
+    g_paste_history_activate_first (self, FALSE);
 
     /* Before the caps, not after: whatever was displaced above has already been
      * freed, and biggest_uuid borrows its string from the item it names, so an
