@@ -263,6 +263,12 @@ other extensions' changes do not notify `extension-enabled`, and that a row
 bound to it comes back after a refused flip. This settings-only suite uses
 `G_PASTE_TEST_ENV_OWN_BUS` to leave both bus addresses unreachable.
 
+`test-util` compiles `gpaste-util.c` with the session bus proxy's constructors
+and calls faked, and checks how both `g_paste_util_activate_ui()` flavours take
+their argument, whether the proxy comes up or is refused: a floating one is
+consumed, a caller's own reference left to the caller -- who may drop it before
+the asynchronous flavour's proxy is up, the call still made with it.
+
 `test-portal-provider` runs the GlobalShortcuts client against a fake portal on
 private buses, without GTK initialization or a desktop session. It controls
 method replies and `Response` signals independently, including both reply

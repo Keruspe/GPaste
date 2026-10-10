@@ -14,3 +14,10 @@ shell_settings_test_exe = executable(
   dependencies: [ libgpaste_lib_deps, gpaste_test_bus_dep, gpaste_test_env_dep, libgpaste_internal_dep ],
 )
 test('test-shell-settings', shell_settings_test_exe, depends: [gpaste_schemas, shell_test_schemas, test_bus_supervisor])
+
+util_test_exe = executable(
+  'gpaste-util-test',
+  sources: 'test-util.c',
+  dependencies: [ libgpaste_lib_deps, gpaste_test_env_dep, libgpaste_internal_dep ],
+)
+test('test-util', util_test_exe, depends: [gpaste_schemas, test_bus_supervisor])

@@ -145,8 +145,8 @@ g_paste_util_spawn_sync (const gchar *app,
 }
 
 /* The ActivateAction payload, which is the whole of what the two flavours below
- * have in common: same interface, same action, same floating @arg wrapped in the
- * "av" the method takes, same platform data. */
+ * have in common: same interface, same action, same @arg wrapped in the "av" the
+ * method takes, same platform data. */
 static GVariant *
 activate_ui_params (const gchar *action,
                     GVariant    *arg)
@@ -161,15 +161,6 @@ activate_ui_params (const gchar *action,
     return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ());
 }
 
-/* @arg is floating, and the payload is what would have consumed it: a proxy that
- * never came up is the one path that has to do it by hand. */
-static void
-activate_ui_drop_arg (GVariant *arg)
-{
-    if (arg)
-        g_variant_unref (g_variant_ref_sink (arg));
-}
-
 static void
 g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
                                          GAsyncResult *res,
@@ -177,14 +168,13 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
 {
     g_autofree gpointer *data = (gpointer *) user_data;
     g_autofree gchar *action = data[0];
-    GVariant *arg = data[1];
+    g_autoptr (GVariant) arg = data[1];
     g_autoptr (GError) error = NULL;
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
 
     if (!proxy)
     {
         g_warning ("Failed to get D-Bus proxy: %s", error->message);
-        activate_ui_drop_arg (arg);
         return;
     }
 
@@ -203,7 +193,10 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
  * @action: the action to activate
  * @arg: (nullable): the action argument
  *
- * Activate an action on a GPaste app
+ * Activate an action on a GPaste app.
+ *
+ * A floating @arg is consumed. A caller owning @arg keeps its reference, and
+ * may drop it as soon as this returns: @arg is held until the call is made.
  */
 G_PASTE_VISIBLE void
 g_paste_util_activate_ui (const gchar *action,
@@ -213,7 +206,7 @@ g_paste_util_activate_ui (const gchar *action,
 
     gpointer *data = g_new (gpointer, 2);
     data[0] = g_strdup (action);
-    data[1] = arg;
+    data[1] = (arg) ? g_variant_ref_sink (arg) : NULL;
 
     g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
                               G_DBUS_PROXY_FLAGS_NONE,
@@ -239,6 +232,8 @@ g_paste_util_activate_ui (const gchar *action,
  * line client -- would return before anything reached the bus, and exit
  * reporting the success of having asked. This is that caller's version.
  *
+ * @arg is taken as g_paste_util_activate_ui() takes it.
+ *
  * Returns: %FALSE, with @error set, when the app could not be reached
  */
 G_PASTE_VISIBLE gboolean
@@ -248,6 +243,7 @@ g_paste_util_activate_ui_sync (const gchar *action,
 {
     g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
 
+    g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                   G_DBUS_PROXY_FLAGS_NONE,
                                                                   NULL,
@@ -258,15 +254,11 @@ g_paste_util_activate_ui_sync (const gchar *action,
                                                                   error);
 
     if (!proxy)
-    {
-        activate_ui_drop_arg (arg);
-
         return FALSE;
-    }
 
     g_autoptr (GVariant) ret = g_dbus_proxy_call_sync (proxy,
                                                        "ActivateAction",
-                                                       activate_ui_params (action, arg),
+                                                       activate_ui_params (action, owned),
                                                        G_DBUS_CALL_FLAGS_NONE,
                                                        -1,
                                                        NULL, /* cancellable */
