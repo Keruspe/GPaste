@@ -1781,11 +1781,6 @@ g_paste_history_delete (GPasteHistory *self,
         g_paste_history_saver_abandon_load (self->saver);
 
         g_paste_history_empty (self);
-        /* Emptying records a write for this very history, which the saver would
-         * otherwise apply *after* the file is gone — re-creating it (both
-         * backends create the store on open/write), so the deleted history would
-         * come back, empty, in the next listing. Land it first. */
-        g_paste_history_saver_drain (self->saver);
 
         /* Whatever we could not read back is about to be unlinked, so there is
          * nothing left to protect: recording must resume, or the gate would stay
@@ -1793,6 +1788,13 @@ g_paste_history_delete (GPasteHistory *self,
          * again. */
         self->unreadable = FALSE;
     }
+
+    /* The saver may still hold writes for this history: the emptying above, or
+     * those recorded before a switch away from it, one possibly still in
+     * flight. Applied *after* the file is gone, any of them would re-create it
+     * (both backends create the store on open/write), so the deleted history
+     * would come back in the next listing. Land them first. */
+    g_paste_history_saver_drain_history (self->saver, history_name);
 
     g_autoptr (GError) local_error = NULL;
 

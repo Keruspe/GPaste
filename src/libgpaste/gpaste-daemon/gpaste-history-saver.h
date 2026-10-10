@@ -46,19 +46,21 @@ typedef enum
 /* Async operations */
 /********************/
 
-void     g_paste_history_saver_record       (GPasteHistorySaver  *self,
-                                             GPasteHistorySaveOp  op,
-                                             const gchar         *name,
-                                             GPasteItem          *item,
-                                             const gchar         *uuid,
-                                             GList               *history);
-void     g_paste_history_saver_load         (GPasteHistorySaver *self,
-                                             const gchar        *name,
-                                             gboolean            save_after);
-void     g_paste_history_saver_drain        (GPasteHistorySaver *self);
-void     g_paste_history_saver_detach       (GPasteHistorySaver *self);
-void     g_paste_history_saver_abandon_load (GPasteHistorySaver *self);
-gboolean g_paste_history_saver_is_loading   (GPasteHistorySaver *self);
+void     g_paste_history_saver_record        (GPasteHistorySaver  *self,
+                                              GPasteHistorySaveOp  op,
+                                              const gchar         *name,
+                                              GPasteItem          *item,
+                                              const gchar         *uuid,
+                                              GList               *history);
+void     g_paste_history_saver_load          (GPasteHistorySaver *self,
+                                              const gchar        *name,
+                                              gboolean            save_after);
+void     g_paste_history_saver_drain         (GPasteHistorySaver *self);
+void     g_paste_history_saver_drain_history (GPasteHistorySaver *self,
+                                              const gchar        *name);
+void     g_paste_history_saver_detach        (GPasteHistorySaver *self);
+void     g_paste_history_saver_abandon_load  (GPasteHistorySaver *self);
+gboolean g_paste_history_saver_is_loading    (GPasteHistorySaver *self);
 
 /****************/
 /* Constructor  */

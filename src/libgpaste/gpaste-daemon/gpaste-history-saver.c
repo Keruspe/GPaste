@@ -5,6 +5,8 @@
 
 #include <gio/gio.h>
 
+typedef struct _GPasteHistorySaverWrite GPasteHistorySaverWrite;
+
 /* Owns the asynchronous persistence of a history: it writes snapshots handed to
  * it (coalescing concurrent requests) and loads histories in the background,
  * handing the result back through a callback. It never touches the live history
@@ -25,7 +27,9 @@ struct _GPasteHistorySaver
     gpointer                     owner; /* not ref'd: owns us, outlives us */
     GPasteHistorySaverLoadedFunc loaded;
 
-    gboolean                     write_in_progress;
+    /* The write a worker has out, borrowed from its task (which frees it only
+     * once write_done () has run), or %NULL. */
+    GPasteHistorySaverWrite     *writing;
     /* Pending writes (GPasteHistorySaverWrite*), applied in order. With a
      * non-incremental backend each entry is a full rewrite, so the queue is
      * coalesced down to the latest snapshot and never holds more than one. */
@@ -58,7 +62,7 @@ G_PASTE_DEFINE_TYPE (HistorySaver, history_saver, G_TYPE_OBJECT)
 /* Write path   */
 /****************/
 
-typedef struct
+struct _GPasteHistorySaverWrite
 {
     GPasteHistorySaver   *saver; /* not ref'd: the task's own ref keeps it alive */
     GPasteStorageBackend *backend;
@@ -67,7 +71,7 @@ typedef struct
     GPasteItem           *item; /* ref'd, or NULL */
     gchar                *uuid; /* or NULL */
     GList                *history;
-} GPasteHistorySaverWrite;
+};
 
 static void
 g_paste_history_saver_write_free (gpointer data)
@@ -79,6 +83,8 @@ g_paste_history_saver_write_free (gpointer data)
     g_clear_pointer (&d->uuid, g_free);
     g_clear_list (&d->history, g_object_unref);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteHistorySaverWrite, g_paste_history_saver_write_free)
 
 static void
 g_paste_history_saver_do_write (const GPasteHistorySaverWrite *data)
@@ -129,10 +135,8 @@ static void g_paste_history_saver_write_done (GObject *source_object, GAsyncResu
 static void
 g_paste_history_saver_start_write (GPasteHistorySaver *self)
 {
-    if (self->write_in_progress || g_queue_is_empty (&self->pending))
+    if (self->writing || g_queue_is_empty (&self->pending))
         return;
-
-    self->write_in_progress = TRUE;
 
     /* Set before launching so a drain that runs before the worker starts still
      * sees the write as in flight and waits for it. */
@@ -140,7 +144,9 @@ g_paste_history_saver_start_write (GPasteHistorySaver *self)
     self->worker_running = TRUE;
     g_mutex_unlock (&self->drain_mutex);
 
-    GPasteHistorySaverWrite *data = g_queue_pop_head (&self->pending);
+    g_autoptr (GPasteHistorySaverWrite) data = g_queue_pop_head (&self->pending);
+
+    self->writing = data;
 
     /* Hold our own ref for the duration of the task: the owner keeps us alive
      * only as long as it still owns us, but g_paste_history_reload_backend()
@@ -148,7 +154,7 @@ g_paste_history_saver_start_write (GPasteHistorySaver *self)
      * write_done) rather than the owner to survive until the callback fires. */
     g_autoptr (GTask) task = g_task_new (self->owner, NULL, g_paste_history_saver_write_done, g_object_ref (self));
     g_task_set_static_name (task, "gpaste-history-write");
-    g_task_set_task_data (task, data, g_paste_history_saver_write_free);
+    g_task_set_task_data (task, g_steal_pointer (&data), g_paste_history_saver_write_free);
     g_task_run_in_thread (task, g_paste_history_saver_write_task);
 }
 
@@ -159,7 +165,7 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
 {
     g_autoptr (GPasteHistorySaver) self = user_data; /* the ref taken in start_write */
 
-    self->write_in_progress = FALSE;
+    self->writing = NULL;
 
     /* More changes may have queued up while we were writing: drain the next. */
     g_paste_history_saver_start_write (self);
@@ -201,7 +207,7 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
         uuid = NULL;
     }
 
-    GPasteHistorySaverWrite *data = g_new0 (GPasteHistorySaverWrite, 1);
+    g_autoptr (GPasteHistorySaverWrite) data = g_new0 (GPasteHistorySaverWrite, 1);
     data->saver = self;
     data->backend = g_object_ref (self->backend);
     data->op = op;
@@ -210,9 +216,27 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
     data->uuid = g_strdup (uuid);
     data->history = history;
 
-    g_queue_push_tail (&self->pending, data);
+    g_queue_push_tail (&self->pending, g_steal_pointer (&data));
 
     g_paste_history_saver_start_write (self);
+}
+
+/* Wait for the in-flight worker write (if any) to finish. We cannot spin the
+ * main loop here (that is where the write-done callback would run), so the
+ * worker signals us directly when its write completes.
+ *
+ * Deliberately *not* clearing @writing: the drained task's completion callback
+ * is still queued on the main context and will clear it (and pick up anything
+ * recorded meanwhile). Clearing it here would let a record() made after a
+ * resumed handover start a second worker while that callback then starts a
+ * third — two threads rewriting the same history at once. */
+static void
+g_paste_history_saver_wait_worker (GPasteHistorySaver *self)
+{
+    g_mutex_lock (&self->drain_mutex);
+    while (self->worker_running)
+        g_cond_wait (&self->drain_cond, &self->drain_mutex);
+    g_mutex_unlock (&self->drain_mutex);
 }
 
 /**
@@ -230,28 +254,53 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
-    /* Wait for the in-flight worker write (if any) to finish. We cannot spin the
-     * main loop here (that is where the write-done callback would run), so the
-     * worker signals us directly when its write completes. */
-    g_mutex_lock (&self->drain_mutex);
-    while (self->worker_running)
-        g_cond_wait (&self->drain_cond, &self->drain_mutex);
-    g_mutex_unlock (&self->drain_mutex);
+    g_paste_history_saver_wait_worker (self);
 
     /* Apply whatever is still queued synchronously, in order. */
     while (!g_queue_is_empty (&self->pending))
     {
-        GPasteHistorySaverWrite *data = g_queue_pop_head (&self->pending);
+        g_autoptr (GPasteHistorySaverWrite) data = g_queue_pop_head (&self->pending);
 
         g_paste_history_saver_do_write (data);
-        g_paste_history_saver_write_free (data);
     }
+}
 
-    /* Deliberately *not* clearing write_in_progress: the drained task's completion
-     * callback is still queued on the main context and will clear it (and pick up
-     * anything recorded meanwhile). Clearing it here would let a record() made
-     * after a resumed handover start a second worker while that callback then
-     * starts a third — two threads rewriting the same history at once. */
+/**
+ * g_paste_history_saver_drain_history:
+ * @self: a #GPasteHistorySaver
+ * @name: the history whose writes have to land
+ *
+ * Synchronously finish the writes recorded for @name: wait for the one in
+ * flight if it is @name's, and apply @name's queued ones, in order. Meant for
+ * the main thread, before something reads, rewrites or unlinks @name's store
+ * outside the saver. The writes of every other history carry on in the
+ * background: they reach other stores, so making the caller wait for them
+ * would only hold the main thread, and records made afterwards queue as ever.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_drain_history (GPasteHistorySaver *self,
+                                     const gchar        *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+
+    if (self->writing && g_paste_str_equal (self->writing->name, name))
+        g_paste_history_saver_wait_worker (self);
+
+    for (GList *link = self->pending.head; link;)
+    {
+        GList *next = link->next;
+        GPasteHistorySaverWrite *pending = link->data;
+
+        if (g_paste_str_equal (pending->name, name))
+        {
+            g_autoptr (GPasteHistorySaverWrite) data = pending;
+
+            g_queue_delete_link (&self->pending, link);
+            g_paste_history_saver_do_write (data);
+        }
+
+        link = next;
+    }
 }
 
 /**
