@@ -422,7 +422,7 @@ g_paste_clipboard_gdk_sync_ready (GObject      *source_object,
                                   GAsyncResult *res,
                                   gpointer      user_data)
 {
-    GPasteClipboardSyncData *data = user_data; /* built in sync_text */
+    g_autoptr (GPasteClipboardSyncData) data = user_data; /* built in sync_text */
     g_autoptr (GError) error = NULL;
     g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
@@ -430,8 +430,6 @@ g_paste_clipboard_gdk_sync_ready (GObject      *source_object,
         g_debug ("Failed to sync clipboard text: %s", error->message);
     else
         g_paste_clipboard_sync_data_deliver (data, text);
-
-    g_paste_clipboard_sync_data_free (data);
 }
 
 static void

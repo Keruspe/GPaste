@@ -132,16 +132,13 @@ sync_text (GPasteClipboardProvider    *provider,
            GDestroyNotify              destroy)
 {
     TestClipboard *self = TEST_CLIPBOARD (provider);
-    GPasteClipboardSyncData *data = g_paste_clipboard_sync_data_new (other, callback, user_data, destroy);
+    g_autoptr (GPasteClipboardSyncData) data = g_paste_clipboard_sync_data_new (other, callback, user_data, destroy);
 
     ++self->sync_reads;
     if (self->defer_sync)
-        self->sync = data;
+        self->sync = g_steal_pointer (&data);
     else
-    {
         g_paste_clipboard_sync_data_deliver (data, self->content.str);
-        g_paste_clipboard_sync_data_free (data);
-    }
 }
 
 static void
@@ -2380,10 +2377,9 @@ test_stale_sync_reply (gconstpointer user_data)
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (changed));
 
     /* Taken off the mock first: a retried sync stores its own data there. */
-    GPasteClipboardSyncData *late = g_steal_pointer (&clipboard->sync);
+    g_autoptr (GPasteClipboardSyncData) late = g_steal_pointer (&clipboard->sync);
 
     g_paste_clipboard_sync_data_deliver (late, "late source text");
-    g_paste_clipboard_sync_data_free (late);
     g_assert_cmpuint (primary->publications, ==, 0);
     g_assert_cmpstr (primary->content.str, ==, (source_changed) ? "destination" : "new copy");
 

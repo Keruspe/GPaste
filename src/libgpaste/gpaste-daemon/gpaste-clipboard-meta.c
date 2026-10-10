@@ -522,7 +522,7 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                    GBytes              *bytes,
                                    gpointer             user_data)
 {
-    GPasteClipboardSyncData *data = user_data; /* built in sync_text */
+    g_autoptr (GPasteClipboardSyncData) data = user_data; /* built in sync_text */
 
     /* Asked before the copy below and not only by deliver (): the bytes this read
      * landed with are the selection's whole text, and duplicating them for a sync
@@ -546,8 +546,6 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
             g_paste_clipboard_sync_data_deliver (data, dup);
         }
     }
-
-    g_paste_clipboard_sync_data_free (data);
 }
 
 static void

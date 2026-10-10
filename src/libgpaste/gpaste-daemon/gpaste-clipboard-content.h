@@ -179,6 +179,8 @@ void                     g_paste_clipboard_sync_data_deliver    (GPasteClipboard
                                                                  const gchar             *text);
 void                     g_paste_clipboard_sync_data_free       (GPasteClipboardSyncData *data);
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardSyncData, g_paste_clipboard_sync_data_free)
+
 /* Where the mime reads an update fires put their answers. Both lists are read
  * the same way and differ only in what their bytes then mean -- a representation
  * of the content to keep, or a fact about it -- so what tells them apart is a
