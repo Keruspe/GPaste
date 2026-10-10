@@ -24,6 +24,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix the history rarely losing items at startup
 - Fix changes to a locked or unsaveable setting looking applied when they were not
 - Fix storage migrations losing the history under a locked setting
+- Fix gpaste-client misreading --use-index
 - Build: require libXfixes and Meson 1.9
 
 NEW in 51.0 (15/09/2026)

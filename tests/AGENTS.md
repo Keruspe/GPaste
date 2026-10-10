@@ -91,7 +91,15 @@ than sent. It covers the re-exec fallback, the migration gate across it,
 `UploadAndCopy` and not `Upload`, and which command lines
 `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
 verb and so have the verb-less add's shape, and the listing's own flags
-included.
+included. The client's constructor and the daemon's lookups are `#define`d too,
+the lookups answering from a history the case sets, for what `--use-index`
+resolves: a single index on its own, every argument of a merge off one listing
+even when a copy lands after the first answer, a merge index past the end
+refused with the error the daemon gives a single one, and text and patterns
+left alone on an empty history. A case that succeeds runs its command line
+through `gpaste_client_main ()`, `optind` rewound; a refusal goes through
+`g_paste_dispatch ()`, where its error comes back to the case rather than out
+of `main ()` as a critical, which `g_test` makes fatal.
 
 `test-client-presence` follows `GPasteClient:daemon-presence` on the private
 bus, which has nothing to activate, with the generated skeleton standing in for

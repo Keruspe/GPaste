@@ -88,7 +88,7 @@ _gpaste_client_options()
             printf '%s' "${common} --timeout -t"
             ;;
         merge|m)
-            printf '%s' "${common} --decoration -d --separator -s"
+            printf '%s' "${common} --use-index -i --decoration -d --separator -s"
             ;;
         *)
             printf '%s' "${common}"

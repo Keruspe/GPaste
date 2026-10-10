@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-settings.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
@@ -69,6 +70,124 @@ fake_upload_and_copy_sync (GPasteClient *client G_GNUC_UNUSED,
     return g_strdup ("https://paste.rs/x");
 }
 
+/* The uuid of the faked daemon's item @n, a hex digit. */
+#define FAKE_UUID(n) "00000000-0000-4000-8000-00000000000" #n
+
+/* The history the faked daemon answers --use-index lookups from, newest
+ * first, and the item a copy puts at its head right after each answer, when
+ * @copied_after_answer names one -- the interleaving one command line's
+ * lookups have to be safe from. */
+static GPtrArray *fake_history;
+static const gchar *copied_after_answer;
+static guint index_lookups;
+static guint history_reads;
+static gchar *deleted_uuid;
+static GStrv merged_uuids;
+static gchar *added_text;
+static gchar *search_pattern;
+
+static void
+set_fake_history (const gchar * const *uuids)
+{
+    g_clear_pointer (&fake_history, g_ptr_array_unref);
+    fake_history = g_ptr_array_new_with_free_func (g_free);
+    for (const gchar * const *uuid = uuids; *uuid; ++uuid)
+        g_ptr_array_add (fake_history, g_strdup (*uuid));
+
+    copied_after_answer = NULL;
+    index_lookups = 0;
+    history_reads = 0;
+}
+
+static void
+fake_history_answered (void)
+{
+    if (copied_after_answer)
+        g_ptr_array_insert (fake_history, 0, g_strdup (copied_after_answer));
+}
+
+static GPasteClientItem *
+fake_item (guint index)
+{
+    return g_paste_client_item_new (g_ptr_array_index (fake_history, index), "value", G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
+}
+
+static GPasteClient *
+fake_client_new_sync (GError **error G_GNUC_UNUSED)
+{
+    return g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+}
+
+static GPasteClientItem *
+fake_get_item_at_index_sync (GPasteClient *client G_GNUC_UNUSED,
+                             guint64       index,
+                             GError      **error)
+{
+    ++index_lookups;
+
+    if (index >= fake_history->len)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX, "invalid index received");
+        return NULL;
+    }
+
+    GPasteClientItem *item = fake_item (index);
+
+    fake_history_answered ();
+    return item;
+}
+
+static GList *
+fake_get_history_sync (GPasteClient *client G_GNUC_UNUSED,
+                       GError      **error G_GNUC_UNUSED)
+{
+    GList *history = NULL;
+
+    ++history_reads;
+    for (guint i = fake_history->len; i > 0; --i)
+        history = g_list_prepend (history, fake_item (i - 1));
+
+    fake_history_answered ();
+    return history;
+}
+
+static void
+fake_delete_item_sync (GPasteClient *client G_GNUC_UNUSED,
+                       const gchar  *uuid,
+                       GError      **error G_GNUC_UNUSED)
+{
+    g_set_str (&deleted_uuid, uuid);
+}
+
+static gchar *
+fake_merge_sync (GPasteClient        *client G_GNUC_UNUSED,
+                 const gchar         *decoration G_GNUC_UNUSED,
+                 const gchar         *separator G_GNUC_UNUSED,
+                 const gchar * const *uuids,
+                 GError             **error G_GNUC_UNUSED)
+{
+    g_set_strv (&merged_uuids, uuids);
+    return g_strdup (FAKE_UUID (f));
+}
+
+static gchar *
+fake_add_text_sync (GPasteClient *client G_GNUC_UNUSED,
+                    const gchar  *text,
+                    GError      **error G_GNUC_UNUSED)
+{
+    g_set_str (&added_text, text);
+    return g_strdup (FAKE_UUID (f));
+}
+
+static GList *
+fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
+                  const gchar  *pattern,
+                  GError      **error G_GNUC_UNUSED)
+{
+    g_set_str (&search_pattern, pattern);
+    return NULL;
+}
+
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
 #define kill fake_kill
@@ -76,7 +195,21 @@ fake_upload_and_copy_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_util_reexecute_daemon fake_reexecute_daemon
 #define g_paste_client_get_version fake_get_version
 #define g_paste_client_upload_and_copy_sync fake_upload_and_copy_sync
+#define g_paste_client_new_sync fake_client_new_sync
+#define g_paste_client_get_item_at_index_sync fake_get_item_at_index_sync
+#define g_paste_client_get_history_sync fake_get_history_sync
+#define g_paste_client_delete_item_sync fake_delete_item_sync
+#define g_paste_client_merge_sync fake_merge_sync
+#define g_paste_client_add_text_sync fake_add_text_sync
+#define g_paste_client_search_sync fake_search_sync
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_client_search_sync
+#undef g_paste_client_add_text_sync
+#undef g_paste_client_merge_sync
+#undef g_paste_client_delete_item_sync
+#undef g_paste_client_get_history_sync
+#undef g_paste_client_get_item_at_index_sync
+#undef g_paste_client_new_sync
 #undef g_paste_client_upload_and_copy_sync
 #undef g_paste_client_get_version
 #undef g_paste_util_reexecute_daemon
@@ -84,10 +217,94 @@ fake_upload_and_copy_sync (GPasteClient *client G_GNUC_UNUSED,
 #undef kill
 #undef main
 
+/* `gpaste-client` @args as a shell would run it, getopt () rewound first: it
+ * keeps its place across calls, and every case parses a command line anew. */
+static gint
+run_client (const gchar * const *args)
+{
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    g_strv_builder_add (builder, "gpaste-client");
+    g_strv_builder_addv (builder, (const gchar **) args);
+
+    g_auto (GStrv) argv = g_strv_builder_end (builder);
+
+    optind = 0;
+    return gpaste_client_main ((gint) g_strv_length (argv), argv);
+}
+
+/* An index names a place in the history, and a single one is looked up there
+ * on its own. */
+static void
+test_item_index (void)
+{
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), FAKE_UUID (b), FAKE_UUID (c), NULL });
+
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "delete", "1", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpstr (deleted_uuid, ==, FAKE_UUID (b));
+    g_assert_cmpuint (index_lookups, ==, 1);
+    g_assert_cmpuint (history_reads, ==, 0);
+    g_clear_pointer (&deleted_uuid, g_free);
+}
+
+/* Every argument of merge names an item, and all of them are read off the same
+ * listing: the copy landing after the first answer would otherwise have the
+ * second index name the first item again. */
+static void
+test_merge_indexes (void)
+{
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), FAKE_UUID (b), FAKE_UUID (c), NULL });
+    copied_after_answer = FAKE_UUID (d);
+
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "merge", "0", "1", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpstrv (merged_uuids, ((const gchar *[]) { FAKE_UUID (a), FAKE_UUID (b), NULL }));
+    g_assert_cmpuint (history_reads, ==, 1);
+    g_assert_cmpuint (index_lookups, ==, 0);
+    g_clear_pointer (&merged_uuids, g_strfreev);
+}
+
+/* Past the end of the history, several indexes are refused the way a single
+ * one is: nothing is merged. */
+static void
+test_merge_past_end (void)
+{
+    g_autoptr (GPasteClient) client = fake_client_new_sync (NULL);
+    Context ctx = {
+        .client = client,
+        .argc = 2,
+        .args = (const gchar *[]) { "0", "3", NULL },
+        .use_index = TRUE,
+    };
+    g_autoptr (GError) error = NULL;
+
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), FAKE_UUID (b), FAKE_UUID (c), NULL });
+
+    g_assert_cmpint (g_paste_dispatch (3, "merge", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX);
+    g_assert_null (merged_uuids);
+}
+
+/* Text, a pattern, a name or a path is no index, and an empty history has no
+ * item to look any of them up as. */
+static void
+test_nonitem_arguments (void)
+{
+    set_fake_history ((const gchar *[]) { NULL });
+
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "add", "hello", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "search", "hello", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpstr (added_text, ==, "hello");
+    g_assert_cmpstr (search_pattern, ==, "hello");
+    g_assert_cmpuint (index_lookups, ==, 0);
+    g_assert_cmpuint (history_reads, ==, 0);
+    g_clear_pointer (&added_text, g_free);
+    g_clear_pointer (&search_pattern, g_free);
+}
+
 static void
 test_upload_and_copy (void)
 {
-    Context ctx = { .uuid = "item" };
+    Context ctx = { .argc = 1, .args = (const gchar *[]) { "item", NULL } };
     g_autoptr (GError) error = NULL;
 
     g_assert_cmpint (g_paste_upload_and_copy (&ctx, &error), ==, EXIT_SUCCESS);
@@ -239,6 +456,10 @@ main (int argc, char **argv)
     g_test_add_func ("/client/reexec/refusal", test_refusal);
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
+    g_test_add_func ("/client/index/item", test_item_index);
+    g_test_add_func ("/client/index/merge", test_merge_indexes);
+    g_test_add_func ("/client/index/merge-past-end", test_merge_past_end);
+    g_test_add_func ("/client/index/nonitem-arguments", test_nonitem_arguments);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
     g_test_add_data_func ("/client/daemon_version/answered", "51.1", test_daemon_version);
     g_test_add_data_func ("/client/daemon_version/unanswered", NULL, test_daemon_version);

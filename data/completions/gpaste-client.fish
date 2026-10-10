@@ -127,5 +127,10 @@ complete -c gpaste-client -n '__fish_seen_subcommand_from empty e delete-history
 
 complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
 
+# Every argument of these verbs is offered items, where merge alone takes one
+# in each: the contents of replace and the name of make-password are offered
+# them too, unlike in bash and zsh. Telling the first argument from the next
+# would mean counting the words before the cursor, less the options and the
+# values -d, -s and -t take, for a completion the user only has to type past.
 complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u upload-and-copy uc replace strip-rich-text srt make-password mp merge m favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'

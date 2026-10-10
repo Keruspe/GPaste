@@ -212,7 +212,11 @@ Only display the pinned items, when listing the history or a search
 .br
 .TP
 .B --use-index
-Use the item index instead of its uuid
+Address items by their index rather than their uuid: their position in the history, starting at zero, as
+.B gpaste-client history \%--use-index
+displays it. Every argument naming an item is read as an index then, each of
+.BR merge 's
+included, while text, names, search patterns, paths and history names keep their usual meaning
 .br
 .TP
 .B --timeout <seconds>

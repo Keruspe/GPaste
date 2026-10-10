@@ -15,7 +15,6 @@ typedef struct
     gint          argc;
     const gchar **args;
     gchar        *pipe_data;
-    const gchar  *uuid;
     gboolean      help;
     gboolean      version;
     gboolean      favourites;
@@ -579,7 +578,7 @@ static gint
 g_paste_delete (Context *ctx,
                 GError **error)
 {
-    g_paste_client_delete_item_sync (ctx->client, ctx->uuid, error);
+    g_paste_client_delete_item_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -588,7 +587,7 @@ static gint
 g_paste_favourite (Context *ctx,
                    GError **error)
 {
-    g_paste_client_set_favourite_sync (ctx->client, ctx->uuid, TRUE, error);
+    g_paste_client_set_favourite_sync (ctx->client, ctx->args[0], TRUE, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -597,7 +596,7 @@ static gint
 g_paste_unfavourite (Context *ctx,
                      GError **error)
 {
-    g_paste_client_set_favourite_sync (ctx->client, ctx->uuid, FALSE, error);
+    g_paste_client_set_favourite_sync (ctx->client, ctx->args[0], FALSE, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -624,7 +623,7 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_sync (ctx->client, ctx->uuid, error);
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -643,7 +642,7 @@ g_paste_replace (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_autofree gchar *uuid = g_paste_client_replace_sync (ctx->client, ctx->uuid, data, error);
+    g_autofree gchar *uuid = g_paste_client_replace_sync (ctx->client, ctx->args[0], data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -652,7 +651,7 @@ static gint
 g_paste_strip_rich_text (Context *ctx,
                          GError **error)
 {
-    g_paste_client_strip_rich_text_sync (ctx->client, ctx->uuid, error);
+    g_paste_client_strip_rich_text_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -691,7 +690,7 @@ static gint
 g_paste_select (Context *ctx,
                 GError **error)
 {
-    g_paste_client_select_sync (ctx->client, ctx->uuid, error);
+    g_paste_client_select_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -709,7 +708,7 @@ static gint
 g_paste_upload (Context *ctx,
                 GError **error)
 {
-    g_autofree gchar *url = g_paste_client_upload_sync (ctx->client, ctx->uuid, error);
+    g_autofree gchar *url = g_paste_client_upload_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -725,7 +724,7 @@ static gint
 g_paste_upload_and_copy (Context *ctx,
                          GError **error)
 {
-    g_autofree gchar *url = g_paste_client_upload_and_copy_sync (ctx->client, ctx->uuid, error);
+    g_autofree gchar *url = g_paste_client_upload_and_copy_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -744,7 +743,7 @@ g_paste_make_password (Context *ctx,
      * cancel a running one -- and a text item becoming one takes that default
      * anyway, which is what the sentinel asks the daemon for. */
     guint timeout = (ctx->timeout_given) ? ctx->timeout : G_PASTE_PASSWORD_TIMEOUT_UNCHANGED;
-    g_autofree gchar *uuid = g_paste_client_make_password_sync (ctx->client, ctx->uuid, ctx->args[1], timeout, error);
+    g_autofree gchar *uuid = g_paste_client_make_password_sync (ctx->client, ctx->args[0], ctx->args[1], timeout, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -774,6 +773,7 @@ typedef struct
     gint         extra_args;
     gboolean     needs_client;
     gboolean     reads_pipe;   /* takes its last argument from stdin when it is absent */
+    gint         item_args;    /* leading item arguments, G_MAXINT for all */
     const gchar *args;         /* what --help shows after the verb */
     const gchar *doc;          /* untranslated */
     gint       (*handler) (Context *ctx,
@@ -783,46 +783,46 @@ typedef struct
 static const Command commands[] = {
         /* The verb-less forms, first: a flag with no verb at all, then a piped-in
          * item or, with nothing at all, the history. */
-        { 0, NULL, NULL, G_MAXINT, FALSE, FALSE, NULL, NULL, g_paste_flag_action },
-        { 0, NULL, NULL, 0,        TRUE,  TRUE,  NULL, NULL, g_paste_add         },
-        { 0, NULL, NULL, 0,        TRUE,  FALSE, NULL, NULL, g_paste_history     },
+        { 0, NULL, NULL, G_MAXINT, FALSE, FALSE, 0,        NULL, NULL, g_paste_flag_action },
+        { 0, NULL, NULL, 0,        TRUE,  TRUE,  0,        NULL, NULL, g_paste_add         },
+        { 0, NULL, NULL, 0,        TRUE,  FALSE, 0,        NULL, NULL, g_paste_history     },
 
-        { 1, "history",           "h",               0,        TRUE,  FALSE, NULL,                    N_ ("print the history with UUIDs"),                                                            g_paste_history },
-        { 1, "history-size",      "hs",              0,        TRUE,  FALSE, NULL,                    N_ ("print the size of the current history"),                                                   g_paste_history_size },
-        { 2, "search",            NULL,              0,        TRUE,  FALSE, "<pattern>",             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
-        { 1, "get-history",       "gh",              0,        TRUE,  FALSE, NULL,                    N_ ("get the name of the current history"),                                                     g_paste_get_history },
-        { 2, "backup-history",    "bh",              1,        TRUE,  FALSE, "<name>",                N_ ("back up the current history"),                                                             g_paste_backup_history },
-        { 2, "switch-history",    "sh",              0,        TRUE,  FALSE, "<name>",                N_ ("switch to another history"),                                                               g_paste_switch_history },
-        { 1, "delete-history",    "dh",              1,        TRUE,  FALSE, "<name>",                N_ ("delete a history"),                                                                        g_paste_delete_history },
-        { 1, "list-histories",    "lh",              0,        TRUE,  FALSE, NULL,                    N_ ("list available histories"),                                                                g_paste_list_histories },
-        { 1, "add",               "a",               1,        TRUE,  TRUE,  "<text>",                N_ ("set text to clipboard"),                                                                   g_paste_add },
-        { 2, "add-password",      "ap",              1,        TRUE,  TRUE,  "<name> <password>",     N_ ("add the <name> / <password> pair to the clipboard"),                                       g_paste_add_password },
-        { 2, "get",               "g",               0,        TRUE,  FALSE, "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
-        { 2, "select",            "s set",           0,        TRUE,  FALSE, "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
-        { 2, "replace",           NULL,              1,        TRUE,  TRUE,  "<uuid> <contents>",     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },
-        { 2, "strip-rich-text",   "srt",             0,        TRUE,  FALSE, "<uuid>",                N_ ("drop the rich text flavours of the item <uuid>, keeping the plain text it shows"),          g_paste_strip_rich_text },
-        { 4, "merge",             "m",               G_MAXINT, TRUE,  FALSE, "<uuid> … <uuid>",       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
-        { 3, "make-password",     "mp",              0,        TRUE,  FALSE, "<uuid> <name>",         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
-        { 2, "delete",            "d del rm remove", 0,        TRUE,  FALSE, "<uuid>",                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
-        { 2, "favourite",         "fav",             0,        TRUE,  FALSE, "<uuid>",                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
-        { 2, "unfavourite",       "unfav",           0,        TRUE,  FALSE, "<uuid>",                N_ ("unpin item <uuid>, letting the history drop it again"),                                    g_paste_unfavourite },
-        { 2, "delete-password",   "dp",              0,        TRUE,  FALSE, "<name>",                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
-        { 2, "file",              "f",               0,        TRUE,  FALSE, "<path>",                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
-        { 1, "empty",             "e",               1,        TRUE,  FALSE, NULL,                    N_ ("empty the history"),                                                                       g_paste_empty },
-        { 1, "start",             "d daemon",        0,        TRUE,  FALSE, NULL,                    N_ ("start tracking clipboard changes"),                                                        g_paste_start },
-        { 1, "stop",              "q quit",          0,        TRUE,  FALSE, NULL,                    N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
-        { 1, "daemon-reexec",     "dr",              0,        TRUE,  FALSE, NULL,                    N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
-        { 1, "migrate",           NULL,              0,        TRUE,  FALSE, NULL,                    N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
-        { 1, "change-passphrase", NULL,              0,        TRUE,  FALSE, NULL,                    N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
-        { 1, "preferences",       "p settings",      0,        FALSE, FALSE, NULL,                    N_ ("launch the configuration tool"),                                                           g_paste_preferences },
-        { 1, "ui",                NULL,              0,        FALSE, FALSE, NULL,                    N_ ("launch the graphical tool"),                                                               g_paste_ui },
-        { 1, "show-history",      NULL,              0,        TRUE,  FALSE, NULL,                    N_ ("make the GNOME Shell extension display the history"),                                      g_paste_show_history },
-        { 2, "upload",            "u",               0,        TRUE,  FALSE, "<uuid>",                N_ ("upload the item <uuid> to a pastebin service"),                                            g_paste_upload },
-        { 2, "upload-and-copy",   "uc",              0,        TRUE,  FALSE, "<uuid>",                N_ ("upload the item <uuid> to a pastebin service, and copy its address"),                      g_paste_upload_and_copy },
-        { 1, "version",           "v",               0,        FALSE, FALSE, NULL,                    N_ ("display the version"),                                                                     g_paste_version },
-        { 1, "daemon-version",    "dv",              0,        TRUE,  FALSE, NULL,                    N_ ("display the daemon version"),                                                              g_paste_daemon_version },
-        { 1, "help",              NULL,              0,        FALSE, FALSE, NULL,                    N_ ("display this help"),                                                                       g_paste_help },
-        { 1, "about",             NULL,              0,        FALSE, FALSE, NULL,                    N_ ("display the about dialog"),                                                                g_paste_about },
+        { 1, "history",           "h",               0,        TRUE,  FALSE, 0,        NULL,                    N_ ("print the history with UUIDs"),                                                            g_paste_history },
+        { 1, "history-size",      "hs",              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("print the size of the current history"),                                                   g_paste_history_size },
+        { 2, "search",            NULL,              0,        TRUE,  FALSE, 0,        "<pattern>",             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
+        { 1, "get-history",       "gh",              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("get the name of the current history"),                                                     g_paste_get_history },
+        { 2, "backup-history",    "bh",              1,        TRUE,  FALSE, 0,        "<name>",                N_ ("back up the current history"),                                                             g_paste_backup_history },
+        { 2, "switch-history",    "sh",              0,        TRUE,  FALSE, 0,        "<name>",                N_ ("switch to another history"),                                                               g_paste_switch_history },
+        { 1, "delete-history",    "dh",              1,        TRUE,  FALSE, 0,        "<name>",                N_ ("delete a history"),                                                                        g_paste_delete_history },
+        { 1, "list-histories",    "lh",              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("list available histories"),                                                                g_paste_list_histories },
+        { 1, "add",               "a",               1,        TRUE,  TRUE,  0,        "<text>",                N_ ("set text to clipboard"),                                                                   g_paste_add },
+        { 2, "add-password",      "ap",              1,        TRUE,  TRUE,  0,        "<name> <password>",     N_ ("add the <name> / <password> pair to the clipboard"),                                       g_paste_add_password },
+        { 2, "get",               "g",               0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
+        { 2, "select",            "s set",           0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
+        { 2, "replace",           NULL,              1,        TRUE,  TRUE,  1,        "<uuid> <contents>",     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },
+        { 2, "strip-rich-text",   "srt",             0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("drop the rich text flavours of the item <uuid>, keeping the plain text it shows"),          g_paste_strip_rich_text },
+        { 4, "merge",             "m",               G_MAXINT, TRUE,  FALSE, G_MAXINT, "<uuid> … <uuid>",       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
+        { 3, "make-password",     "mp",              0,        TRUE,  FALSE, 1,        "<uuid> <name>",         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
+        { 2, "delete",            "d del rm remove", 0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
+        { 2, "favourite",         "fav",             0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
+        { 2, "unfavourite",       "unfav",           0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("unpin item <uuid>, letting the history drop it again"),                                    g_paste_unfavourite },
+        { 2, "delete-password",   "dp",              0,        TRUE,  FALSE, 0,        "<name>",                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
+        { 2, "file",              "f",               0,        TRUE,  FALSE, 0,        "<path>",                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
+        { 1, "empty",             "e",               1,        TRUE,  FALSE, 0,        NULL,                    N_ ("empty the history"),                                                                       g_paste_empty },
+        { 1, "start",             "d daemon",        0,        TRUE,  FALSE, 0,        NULL,                    N_ ("start tracking clipboard changes"),                                                        g_paste_start },
+        { 1, "stop",              "q quit",          0,        TRUE,  FALSE, 0,        NULL,                    N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
+        { 1, "daemon-reexec",     "dr",              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
+        { 1, "migrate",           NULL,              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
+        { 1, "change-passphrase", NULL,              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
+        { 1, "preferences",       "p settings",      0,        FALSE, FALSE, 0,        NULL,                    N_ ("launch the configuration tool"),                                                           g_paste_preferences },
+        { 1, "ui",                NULL,              0,        FALSE, FALSE, 0,        NULL,                    N_ ("launch the graphical tool"),                                                               g_paste_ui },
+        { 1, "show-history",      NULL,              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("make the GNOME Shell extension display the history"),                                      g_paste_show_history },
+        { 2, "upload",            "u",               0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("upload the item <uuid> to a pastebin service"),                                            g_paste_upload },
+        { 2, "upload-and-copy",   "uc",              0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("upload the item <uuid> to a pastebin service, and copy its address"),                      g_paste_upload_and_copy },
+        { 1, "version",           "v",               0,        FALSE, FALSE, 0,        NULL,                    N_ ("display the version"),                                                                     g_paste_version },
+        { 1, "daemon-version",    "dv",              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("display the daemon version"),                                                              g_paste_daemon_version },
+        { 1, "help",              NULL,              0,        FALSE, FALSE, 0,        NULL,                    N_ ("display this help"),                                                                       g_paste_help },
+        { 1, "about",             NULL,              0,        FALSE, FALSE, 0,        NULL,                    N_ ("display the about dialog"),                                                                g_paste_about },
 };
 
 /* Whether a command line takes its content from a pipe. Three verbs fall back
@@ -991,6 +991,64 @@ dispatch_reads_stdin (gint           argc,
     return FALSE;
 }
 
+/* The arguments @command runs with under --use-index: its leading @item_args
+ * ones are positions in the history, each swapped for the uuid of the item
+ * there, and the others -- text, a pattern, a name, a path -- go through as
+ * they are.
+ *
+ * Several indexes are all read off one listing of the history: looked up one
+ * call at a time, a copy landing between two calls would shift every later
+ * index by one, and a merge would take an item twice and skip another. A
+ * single index cannot be caught that way, and its own lookup spares reading
+ * the listing, which carries the text of every item. */
+static GStrv
+resolve_item_args (const Command *command,
+                   const Context *ctx,
+                   GError       **error)
+{
+    gint count = MIN (ctx->argc, command->item_args);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    if (count == 1)
+    {
+        g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_sync (ctx->client, g_ascii_strtoull (ctx->args[0], NULL, 10), error);
+
+        if (!item)
+            return NULL;
+
+        g_strv_builder_add (builder, g_paste_client_item_get_uuid (item));
+    }
+    else
+    {
+        g_autolist (GPasteClientItem) history = g_paste_client_get_history_sync (ctx->client, error);
+
+        if (*error)
+            return NULL;
+
+        guint length = g_list_length (history);
+
+        for (gint i = 0; i < count; ++i)
+        {
+            guint64 index = g_ascii_strtoull (ctx->args[i], NULL, 10);
+
+            /* The error GetItemAtIndex answers past the end, so that one index
+             * or several report it alike. */
+            if (index >= length)
+            {
+                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX, "No item at index %" G_GUINT64_FORMAT, index);
+                return NULL;
+            }
+
+            g_strv_builder_add (builder, g_paste_client_item_get_uuid (g_list_nth_data (history, index)));
+        }
+    }
+
+    for (gint i = count; i < ctx->argc; ++i)
+        g_strv_builder_add (builder, ctx->args[i]);
+
+    return g_strv_builder_end (builder);
+}
+
 static gint
 g_paste_dispatch (gint         argc,
                   const gchar *verb,
@@ -1006,7 +1064,19 @@ g_paste_dispatch (gint         argc,
             if (c->needs_client && !ctx->client)
                 return EXIT_FAILURE;
 
-            gint ret = c->handler (ctx, error);
+            Context command_ctx = *ctx;
+            g_auto (GStrv) resolved = NULL;
+
+            if (ctx->use_index && c->item_args && ctx->argc)
+            {
+                resolved = resolve_item_args (c, ctx, error);
+                if (!resolved)
+                    return EXIT_FAILURE;
+
+                command_ctx.args = (const gchar **) resolved;
+            }
+
+            gint ret = c->handler (&command_ctx, error);
             if (ret >= 0)
                 return ret;
         }
@@ -1014,6 +1084,7 @@ g_paste_dispatch (gint         argc,
 
     return -1;
 }
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -1032,7 +1103,6 @@ main (gint argc, gchar *argv[])
     {
         g_autoptr (GPasteClient) client = ctx.client = g_paste_client_new_sync (&error);
         g_autofree gchar *pipe_data = NULL;
-        g_autofree gchar *uuid = NULL;
 
         /* Only where a pipe is what the command line is for: extract_pipe_data ()
          * reads stdin to its end, and an end is not something every caller is
@@ -1047,24 +1117,7 @@ main (gint argc, gchar *argv[])
          * live one would trip the assert of whatever runs next. */
         g_autoptr (GError) connect_error = (ctx.client) ? NULL : g_steal_pointer (&error);
 
-        /* Only worth resolving the index while there is a daemon to resolve it
-         * in: without one this would hand a %NULL client to a call that refuses
-         * it, and every verb that could use the uuid needs a client anyway. */
-        if (ctx.client && ctx.use_index && ctx.argc > 0)
-        {
-            g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
-
-            if (!error)
-                ctx.uuid = uuid = g_strdup (g_paste_client_item_get_uuid (item));
-        }
-        else
-            ctx.uuid = ctx.args[0];
-
-        /* Only a failure of our own lookup above (which did need a client) skips
-         * the dispatch; a missing daemon does not, since the client-less verbs
-         * still have work to do. */
-        if (!error)
-            status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
+        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
 
         /* Nothing matched the command line at all: a verb we do not know, or one
          * we do with the wrong number of arguments after it. Say so the way a

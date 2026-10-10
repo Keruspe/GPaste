@@ -214,7 +214,9 @@ gpaste-client change-passphrase     # re-key an encrypted history
 `gpaste-client help` lists every subcommand; see also `man gpaste-client`.
 
 Items are addressed by UUID by default. Pass `--use-index` to use their
-position in the history instead.
+position in the history instead, starting at zero: `--use-index merge 0 1 2`
+merges the first three items. Text, search patterns, paths and history names
+keep their usual meaning.
 
 ### After upgrading
 
