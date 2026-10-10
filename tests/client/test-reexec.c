@@ -247,6 +247,48 @@ test_item_index (void)
     g_clear_pointer (&deleted_uuid, g_free);
 }
 
+/* Anything but a complete unsigned decimal number names no item, and is
+ * refused before anything is looked up -- a vertical tab in front included,
+ * which g_ascii_string_to_unsigned () alone lets through. */
+static void
+test_malformed_index (void)
+{
+    const gchar *malformed[] = { "abc", "1x", "", "-1", "+1", " 1", "1 ", "0x1", "\v1", "\v-1", "18446744073709551616" };
+    g_autoptr (GPasteClient) client = fake_client_new_sync (NULL);
+
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), FAKE_UUID (b), FAKE_UUID (c), NULL });
+
+    for (guint i = 0; i < G_N_ELEMENTS (malformed); ++i)
+    {
+        Context ctx = {
+            .client = client,
+            .argc = 1,
+            .args = (const gchar *[]) { malformed[i], NULL },
+            .use_index = TRUE,
+        };
+        g_autoptr (GError) error = NULL;
+
+        g_assert_cmpint (g_paste_dispatch (2, "delete", &ctx, &error), ==, EXIT_FAILURE);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        g_assert_null (deleted_uuid);
+    }
+
+    /* A merge's indexes are all checked before its one listing is read. */
+    Context ctx = {
+        .client = client,
+        .argc = 2,
+        .args = (const gchar *[]) { "0", "abc", NULL },
+        .use_index = TRUE,
+    };
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpint (g_paste_dispatch (3, "merge", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_null (merged_uuids);
+    g_assert_cmpuint (index_lookups, ==, 0);
+    g_assert_cmpuint (history_reads, ==, 0);
+}
+
 /* Every argument of merge names an item, and all of them are read off the same
  * listing: the copy landing after the first answer would otherwise have the
  * second index name the first item again. */
@@ -457,6 +499,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/index/item", test_item_index);
+    g_test_add_func ("/client/index/malformed", test_malformed_index);
     g_test_add_func ("/client/index/merge", test_merge_indexes);
     g_test_add_func ("/client/index/merge-past-end", test_merge_past_end);
     g_test_add_func ("/client/index/nonitem-arguments", test_nonitem_arguments);

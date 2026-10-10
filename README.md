@@ -215,8 +215,8 @@ gpaste-client change-passphrase     # re-key an encrypted history
 
 Items are addressed by UUID by default. Pass `--use-index` to use their
 position in the history instead, starting at zero: `--use-index merge 0 1 2`
-merges the first three items. Text, search patterns, paths and history names
-keep their usual meaning.
+merges the first three items. Indexes must be unsigned decimal numbers. Text,
+search patterns, paths and history names keep their usual meaning.
 
 ### After upgrading
 

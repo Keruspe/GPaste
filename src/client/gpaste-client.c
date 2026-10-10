@@ -991,10 +991,44 @@ dispatch_reads_stdin (gint           argc,
     return FALSE;
 }
 
-/* The arguments @command runs with under --use-index: its leading @item_args
- * ones are positions in the history, each swapped for the uuid of the item
- * there, and the others -- text, a pattern, a name, a path -- go through as
- * they are.
+/* The positions @command's leading item arguments name under --use-index,
+ * every one of them checked before any is looked up.
+ *
+ * An index is a complete unsigned decimal number: g_ascii_strtoull () alone
+ * would read "abc" as 0 and "1x" as 1, and act on items nobody named.
+ * g_ascii_string_to_unsigned () refuses a sign or a space in front, but tells
+ * a space by g_ascii_isspace (), which a vertical tab is not, while the
+ * strtoull () beneath it skips one: the digit asked of the first character is
+ * what keeps "\v-1" from reading as G_MAXUINT64. */
+static GArray *
+item_indexes (const Command *command,
+              const Context *ctx,
+              GError       **error)
+{
+    gint count = MIN (ctx->argc, command->item_args);
+    g_autoptr (GArray) indexes = g_array_sized_new (FALSE, FALSE, sizeof (guint64), (guint) count);
+
+    for (gint i = 0; i < count; ++i)
+    {
+        const gchar *arg = ctx->args[i];
+        guint64 index = 0;
+
+        if (!g_ascii_isdigit (*arg) || !g_ascii_string_to_unsigned (arg, 10, 0, G_MAXUINT64, &index, NULL))
+        {
+            g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "Invalid item index: %s", arg);
+            return NULL;
+        }
+
+        g_array_append_val (indexes, index);
+    }
+
+    return g_steal_pointer (&indexes);
+}
+
+/* The arguments a command runs with under --use-index: the leading ones
+ * @indexes came from swapped for the uuids of the items at those positions,
+ * and the others -- text, a pattern, a name, a path -- going through as they
+ * are.
  *
  * Several indexes are all read off one listing of the history: looked up one
  * call at a time, a copy landing between two calls would shift every later
@@ -1002,16 +1036,15 @@ dispatch_reads_stdin (gint           argc,
  * single index cannot be caught that way, and its own lookup spares reading
  * the listing, which carries the text of every item. */
 static GStrv
-resolve_item_args (const Command *command,
-                   const Context *ctx,
+resolve_item_args (const Context *ctx,
+                   GArray        *indexes,
                    GError       **error)
 {
-    gint count = MIN (ctx->argc, command->item_args);
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
-    if (count == 1)
+    if (indexes->len == 1)
     {
-        g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_sync (ctx->client, g_ascii_strtoull (ctx->args[0], NULL, 10), error);
+        g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_sync (ctx->client, g_array_index (indexes, guint64, 0), error);
 
         if (!item)
             return NULL;
@@ -1027,9 +1060,9 @@ resolve_item_args (const Command *command,
 
         guint length = g_list_length (history);
 
-        for (gint i = 0; i < count; ++i)
+        for (guint i = 0; i < indexes->len; ++i)
         {
-            guint64 index = g_ascii_strtoull (ctx->args[i], NULL, 10);
+            guint64 index = g_array_index (indexes, guint64, i);
 
             /* The error GetItemAtIndex answers past the end, so that one index
              * or several report it alike. */
@@ -1043,7 +1076,7 @@ resolve_item_args (const Command *command,
         }
     }
 
-    for (gint i = count; i < ctx->argc; ++i)
+    for (gint i = (gint) indexes->len; i < ctx->argc; ++i)
         g_strv_builder_add (builder, ctx->args[i]);
 
     return g_strv_builder_end (builder);
@@ -1065,11 +1098,16 @@ g_paste_dispatch (gint         argc,
                 return EXIT_FAILURE;
 
             Context command_ctx = *ctx;
+            g_autoptr (GArray) indexes = NULL;
             g_auto (GStrv) resolved = NULL;
 
             if (ctx->use_index && c->item_args && ctx->argc)
             {
-                resolved = resolve_item_args (c, ctx, error);
+                indexes = item_indexes (c, ctx, error);
+                if (!indexes)
+                    return EXIT_FAILURE;
+
+                resolved = resolve_item_args (ctx, indexes, error);
                 if (!resolved)
                     return EXIT_FAILURE;
 
