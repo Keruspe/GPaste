@@ -70,12 +70,15 @@ struct _GPasteStorageBackendClass
 
     /*< protected, optional: re-encrypt an existing history under a new key >*/
     /* @self holds the passphrase the history is currently encrypted with; only
-     * the encrypted flavors implement this. Returns %FALSE when @name was left
-     * as it was, so a caller re-keying several histories can stop instead of
-     * ending up with a set split across two passphrases. */
+     * the encrypted flavors implement this. Returns %FALSE when @name could not
+     * be re-keyed, having put back what it had already changed, so a caller
+     * re-keying several histories can stop instead of ending up with a set
+     * split across two passphrases -- unless what changed could not all be put
+     * back either, which sets @split (never %NULL, and %FALSE on entry). */
     gboolean (*rekey)                (GPasteStorageBackend *self,
                                       const gchar          *name,
-                                      const gchar          *new_passphrase);
+                                      const gchar          *new_passphrase,
+                                      gboolean             *split);
 
     /*< protected, optional: data materialized outside the store >*/
     /* Drop whatever this backend wrote for @item beyond the history itself --
@@ -138,7 +141,8 @@ gboolean g_paste_storage_backend_delete_history_images (const gchar *name,
                                                         GError     **error);
 gboolean g_paste_storage_backend_rekey        (GPasteStorageBackend *self,
                                                const gchar          *name,
-                                               const gchar          *new_passphrase);
+                                               const gchar          *new_passphrase,
+                                               gboolean             *split);
 
 void     g_paste_storage_backend_add_item             (GPasteStorageBackend *self,
                                                        const gchar          *name,

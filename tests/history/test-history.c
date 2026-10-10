@@ -2894,8 +2894,8 @@ test_encrypted_rekey (void)
             g_paste_storage_backend_write_history (backend, other_name, other_items);
             g_list_free_full (other_items, g_object_unref);
 
-            g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase));
-            g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase));
+            g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
+            g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase, NULL));
         }
 
         /* Both histories moved, not just the first. */
@@ -2954,7 +2954,7 @@ test_encrypted_rekey (void)
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
 
-            g_assert_false (g_paste_storage_backend_rekey (backend, name, new_passphrase));
+            g_assert_false (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
         }
 
         /* A key change must change nothing but the key: a history holding more
@@ -2990,7 +2990,7 @@ test_encrypted_rekey (void)
             {
                 g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
 
-                g_assert_true (g_paste_storage_backend_rekey (backend, big_name, new_passphrase));
+                g_assert_true (g_paste_storage_backend_rekey (backend, big_name, new_passphrase, NULL));
             }
 
             g_paste_settings_set_max_history_size (settings, 10);
@@ -3007,7 +3007,7 @@ test_encrypted_rekey (void)
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_NOOP, settings);
 
-            g_assert_false (g_paste_storage_backend_rekey (backend, name, new_passphrase));
+            g_assert_false (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
         }
 
         return;
@@ -4157,8 +4157,8 @@ test_encrypted_sqlite_rekey (void)
             g_paste_storage_backend_write_history (backend, other_name, other_items);
             g_list_free_full (other_items, g_object_unref);
 
-            g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase));
-            g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase));
+            g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
+            g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase, NULL));
         }
 
         /* Both histories moved, not just the first. */

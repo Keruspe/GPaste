@@ -4,12 +4,94 @@
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
+#include <gpaste-daemon/gpaste-file-backend.h>
+#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
 #include <dlfcn.h>
 #include <string.h>
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <sodium.h>
+
+/* Every key this binary derives costs libsodium's minimum: the cases are about
+ * files and transactions, not key strength, and the MODERATE parameters every
+ * store is written with cost a third of a second and 256 MiB a derivation. The
+ * parameters stored are still those, and every derivation here goes through
+ * this one, a read's as much as a write's, so the two still agree. */
+int
+crypto_pwhash (unsigned char * const       out,
+               unsigned long long          outlen,
+               const char * const          passwd,
+               unsigned long long          passwdlen,
+               const unsigned char * const salt,
+               unsigned long long          opslimit G_GNUC_UNUSED,
+               size_t                      memlimit G_GNUC_UNUSED,
+               int                         alg)
+{
+    typedef int (*Derive) (unsigned char *, unsigned long long, const char *, unsigned long long,
+                           const unsigned char *, unsigned long long, size_t, int);
+    Derive original = (Derive) dlsym (RTLD_NEXT, "crypto_pwhash");
+
+    g_assert_nonnull (original);
+
+    return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
+}
+
+/* Moves whose source ends with one of these fail, as a filesystem giving out
+ * would fail them: NULL for none. */
+static const gchar * const *failed_moves;
+
+/* Whether link () fails as a filesystem without hard links has it fail. */
+static gboolean refused_links;
+
+int
+link (const char *from,
+      const char *to)
+{
+    typedef int (*Link) (const char *, const char *);
+    Link original = (Link) dlsym (RTLD_NEXT, "link");
+
+    g_assert_nonnull (original);
+    if (refused_links)
+    {
+        errno = EPERM;
+
+        return -1;
+    }
+
+    return original (from, to);
+}
+
+gboolean
+g_file_move (GFile                *source,
+             GFile                *destination,
+             GFileCopyFlags        flags,
+             GCancellable         *cancellable,
+             GFileProgressCallback progress,
+             gpointer              data,
+             GError              **error)
+{
+    typedef gboolean (*Move) (GFile *, GFile *, GFileCopyFlags, GCancellable *, GFileProgressCallback, gpointer, GError **);
+    Move original = (Move) dlsym (RTLD_NEXT, "g_file_move");
+    g_autofree gchar *path = g_file_get_path (source);
+
+    g_assert_nonnull (original);
+    for (const gchar * const *suffix = failed_moves; suffix && *suffix; ++suffix)
+    {
+        if (g_str_has_suffix (path, *suffix))
+        {
+            g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED, "injected failure moving %s", path);
+
+            return FALSE;
+        }
+    }
+
+    return original (source, destination, flags, cancellable, progress, data, error);
+}
+#endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
@@ -188,7 +270,10 @@ struct _TestMigrationPrompt
     GPasteStorage chosen;
     gboolean      import;
     gboolean      cleanup;
+    const gchar  *passphrase;
     guint         reports;
+    gchar        *title;
+    gchar        *message;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -209,23 +294,60 @@ test_migration_prompt_migration (GPastePrompt        *prompt,
 }
 
 static void
-test_migration_prompt_report (GPastePrompt *prompt,
-                              const gchar  *title   G_GNUC_UNUSED,
-                              const gchar  *message G_GNUC_UNUSED)
+test_migration_prompt_passphrase (GPastePrompt        *prompt,
+                                  GPastePromptRequest *request)
 {
-    ++TEST_MIGRATION_PROMPT (prompt)->reports;
+    g_paste_prompt_request_reply_passphrase (request, TEST_MIGRATION_PROMPT (prompt)->passphrase, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 }
+
+static void
+test_migration_prompt_report (GPastePrompt *prompt,
+                              const gchar  *title,
+                              const gchar  *message)
+{
+    TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
+
+    ++self->reports;
+    g_set_str (&self->title, title);
+    g_set_str (&self->message, message);
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+/* The one report a failed import makes: its own title, and the reason after
+ * the standing description. */
+static void
+assert_import_failure_reported (TestMigrationPrompt *prompt)
+{
+    g_autofree gchar *standing = g_strconcat (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION), "\n\n", NULL);
+
+    g_assert_cmpuint (prompt->reports, ==, 1);
+    g_assert_cmpstr (prompt->title, ==, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_TITLE));
+    g_assert_true (g_str_has_prefix (prompt->message, standing));
+    g_assert_cmpuint (strlen (prompt->message), >, strlen (standing));
+}
+#endif
 
 static void
 test_migration_prompt_iface_init (GPastePromptInterface *iface)
 {
+    iface->passphrase = test_migration_prompt_passphrase;
     iface->migration = test_migration_prompt_migration;
     iface->report = test_migration_prompt_report;
 }
 
 static void
-test_migration_prompt_class_init (TestMigrationPromptClass *klass G_GNUC_UNUSED)
+test_migration_prompt_finalize (GObject *object)
 {
+    g_free (TEST_MIGRATION_PROMPT (object)->title);
+    g_free (TEST_MIGRATION_PROMPT (object)->message);
+
+    G_OBJECT_CLASS (test_migration_prompt_parent_class)->finalize (object);
+}
+
+static void
+test_migration_prompt_class_init (TestMigrationPromptClass *klass)
+{
+    G_OBJECT_CLASS (klass)->finalize = test_migration_prompt_finalize;
 }
 
 static void
@@ -455,7 +577,7 @@ test_import_failure_leaves_no_copy (void)
     g_assert_no_error (error);
     shortened_kind = -1;
 
-    g_assert_cmpuint (prompt->reports, ==, 1);
+    assert_import_failure_reported (prompt);
     g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
     g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, revision);
 
@@ -511,7 +633,7 @@ test_import_needs_readable_copy (void)
     g_assert_no_error (error);
     truncated_kind = -1;
 
-    g_assert_cmpuint (prompt->reports, ==, 1);
+    assert_import_failure_reported (prompt);
     g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_SQLITE);
 
     g_autolist (GPasteItem) kept = NULL;
@@ -892,6 +1014,243 @@ test_verification_waits_for_busy_database (void)
 }
 #endif
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An encrypted file history called @name holding an image, whose history file
+ * and image side file are handed back through @history and @image. */
+static void
+write_encrypted_history (GPasteSettings *settings,
+                         const gchar    *name,
+                         const gchar    *passphrase,
+                         gchar         **history,
+                         gchar         **image)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
+    const guchar pixel[] = { 100, 200, 50, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = NULL;
+
+    items = g_list_append (items, g_paste_text_item_new ("text"));
+    items = g_list_append (items, g_paste_image_item_new (texture));
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_storage_backend_write_history (backend, name, items);
+
+    g_autofree gchar *plain = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (items->next->data)));
+
+    *history = g_paste_storage_backend_get_history_file_path (backend, name);
+    *image = g_paste_file_backend_encrypted_path (plain);
+    g_assert_true (g_file_test (*image, G_FILE_TEST_EXISTS));
+}
+
+static GBytes *
+read_bytes (const gchar *path)
+{
+    gchar *contents = NULL;
+    gsize length;
+
+    g_assert_true (g_file_get_contents (path, &contents, &length, NULL));
+
+    return g_bytes_new_take (contents, length);
+}
+
+/* Whether anything a re-key puts beside the files of @name is still there. */
+static gboolean
+has_rekey_leftovers (const gchar *name)
+{
+    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
+    g_autofree gchar *images_path = g_paste_file_backend_images_dir (name);
+    g_autoptr (GFile) images_dir = g_file_new_for_path (images_path);
+    GFile *dirs[] = { history_dir, images_dir };
+
+    for (guint i = 0; i < G_N_ELEMENTS (dirs); ++i)
+    {
+        g_autoptr (GError) error = NULL;
+        g_auto (GStrv) files = g_paste_util_list_directory (dirs[i], G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+        g_assert_no_error (error);
+        for (GStrv file = files; *file; ++file)
+        {
+            if (strstr (*file, ".rekey"))
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+/* A re-key the filesystem stops part way puts back what it had changed, and
+ * leaves nothing beside the files. */
+static void
+test_rekey_rollback (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected failure moving*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-rollback";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    g_autoptr (GBytes) original_history = read_bytes (history);
+    g_autoptr (GBytes) original_image = read_bytes (image);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+    /* The image goes in before the history: failing the history's install is
+     * failing the re-key once the image has already moved. */
+    const gchar * const history_install[] = { ".xmls.rekey", NULL };
+    gboolean split = TRUE;
+
+    failed_moves = history_install;
+    g_assert_false (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+    failed_moves = NULL;
+    g_assert_false (split);
+
+    g_autoptr (GBytes) kept_history = read_bytes (history);
+    g_autoptr (GBytes) kept_image = read_bytes (image);
+
+    g_assert_true (g_bytes_equal (kept_history, original_history));
+    g_assert_true (g_bytes_equal (kept_image, original_image));
+    g_assert_false (has_rekey_leftovers (name));
+}
+
+/* When putting an image back fails too, the failure says the history is split,
+ * and the original the image could not get back stays beside it. The history
+ * never left its path, so nothing has to move it back: refusing every move
+ * back still finds it there. */
+static void
+test_rekey_split (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not put back*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-split";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    g_autoptr (GBytes) original_history = read_bytes (history);
+    g_autoptr (GBytes) original_image = read_bytes (image);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+    const gchar * const no_way_back[] = { ".xmls.rekey", ".xmls.rekey-old", ".pngs.rekey-old", NULL };
+    gboolean split = FALSE;
+
+    failed_moves = no_way_back;
+    g_assert_false (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+    failed_moves = NULL;
+    g_assert_true (split);
+
+    g_autoptr (GBytes) kept_history = read_bytes (history);
+    g_autoptr (GBytes) moved_image = read_bytes (image);
+    g_autofree gchar *aside = g_strconcat (image, ".rekey-old", NULL);
+    g_autoptr (GBytes) kept_image = read_bytes (aside);
+
+    g_assert_true (g_bytes_equal (kept_history, original_history));
+    g_assert_false (g_bytes_equal (moved_image, original_image));
+    g_assert_true (g_bytes_equal (kept_image, original_image));
+}
+
+/* A re-key that goes through leaves nothing beside the files, and every one
+ * of them opens with the new passphrase -- on a filesystem without hard links
+ * too, the originals then copied aside. */
+static void
+test_rekey_success (gconstpointer data)
+{
+    gboolean without_links = GPOINTER_TO_INT (data);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = (without_links) ? "rekey-without-links" : "rekey-success";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+        gboolean split = TRUE;
+
+        refused_links = without_links;
+        g_assert_true (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+        refused_links = FALSE;
+        g_assert_false (split);
+    }
+
+    g_assert_false (has_rekey_leftovers (name));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "new passphrase");
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data)));
+}
+
+static void
+on_rekey_settled (GObject      *source G_GNUC_UNUSED,
+                  GAsyncResult *result,
+                  gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* What the user is told about a re-key that left the history split is that it
+ * did, not that the history still takes the passphrase it had. */
+static void
+test_rekey_split_reported (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*left partly on the new passphrase*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("old passphrase");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+    const gchar * const no_way_back[] = { ".xmls.rekey", ".pngs.rekey-old", NULL };
+
+    prompt->passphrase = "new passphrase";
+    failed_moves = no_way_back;
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    failed_moves = NULL;
+
+    g_assert_false (g_paste_storage_rekey_finish (result, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_cmpuint (prompt->reports, ==, 1);
+    g_assert_true (g_str_has_prefix (prompt->message, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION)));
+}
+#endif
+
 int
 main (int    argc,
       char **argv)
@@ -904,6 +1263,11 @@ main (int    argc,
     g_test_add_data_func ("/storage/migration/encrypted-sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_SQLITE), test_migration_keeps_unopenable_identity);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/unlock/unopenable-flavour", test_unlock_skips_unopenable_flavour);
+    g_test_add_func ("/storage/rekey/rollback", test_rekey_rollback);
+    g_test_add_func ("/storage/rekey/split", test_rekey_split);
+    g_test_add_data_func ("/storage/rekey/success", GINT_TO_POINTER (FALSE), test_rekey_success);
+    g_test_add_data_func ("/storage/rekey/without-hard-links", GINT_TO_POINTER (TRUE), test_rekey_success);
+    g_test_add_func ("/storage/rekey/split-reported", test_rekey_split_reported);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);

@@ -568,6 +568,8 @@ g_paste_storage_backend_count_history (GPasteStorageBackend *self,
  *        currently encrypted with
  * @name: the name of the history to re-encrypt
  * @new_passphrase: the passphrase to encrypt @name with from now on
+ * @split: (out) (optional): set to whether a failure left part of @name under
+ *         @new_passphrase
  *
  * Re-encrypt an existing history under @new_passphrase, in place: the data stays
  * where it is, only the key changes. Meant for a passphrase change, which —
@@ -579,15 +581,25 @@ g_paste_storage_backend_count_history (GPasteStorageBackend *self,
  * trying to be generic. A backend that cannot re-key says so instead of
  * reporting a success that never happened.
  *
- * Returns: %FALSE when @name was left exactly as it was, so a caller re-keying
- *          several histories can stop rather than split them across two
- *          passphrases
+ * A failure puts back what the re-key had already changed, so @name is left as
+ * it was: a caller re-keying several histories can stop rather than split them
+ * across two passphrases -- unless the filesystem refuses that too, in which
+ * case @split is set and the originals that could not be put back are left
+ * beside their files, the journal naming them.
+ *
+ * Returns: whether @name is now encrypted under @new_passphrase
  */
 G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_rekey (GPasteStorageBackend *self,
                                const gchar          *name,
-                               const gchar          *new_passphrase)
+                               const gchar          *new_passphrase,
+                               gboolean             *split)
 {
+    gboolean left_split = FALSE;
+
+    if (split)
+        *split = FALSE;
+
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
     g_return_val_if_fail (new_passphrase && *new_passphrase, FALSE);
@@ -598,7 +610,12 @@ g_paste_storage_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
-    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey (self, name, new_passphrase);
+    gboolean rekeyed = G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->rekey (self, name, new_passphrase, &left_split);
+
+    if (split)
+        *split = left_split;
+
+    return rekeyed;
 }
 
 /**

@@ -1821,11 +1821,12 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
 /* Re-encrypt @name under @new_passphrase. Everything — every content column and
  * the meta parameters the key is checked against — moves in a single
  * transaction, so the database is only ever readable with the old passphrase or
- * with the new one, never stuck between them. */
+ * with the new one, never stuck between them: nothing here ever sets @split. */
 static gboolean
 g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
                               const gchar          *name,
-                              const gchar          *new_passphrase)
+                              const gchar          *new_passphrase,
+                              gboolean             *split G_GNUC_UNUSED)
 {
     if (!g_paste_sqlite_backend_get_passphrase (self))
     {

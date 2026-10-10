@@ -16,6 +16,7 @@
 #include <glib/gstdio.h>
 
 #include <errno.h>
+#include <unistd.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 #include <gpaste-daemon/gpaste-secret-stream-converter.h>
@@ -1245,16 +1246,41 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* What a re-key puts beside each file it changes: the file's replacement under
+ * the new key, and the original under a second name while the replacements go
+ * in. Both are named from the file alone. */
+#define G_PASTE_FILE_BACKEND_REKEY_NEW ".rekey"
+#define G_PASTE_FILE_BACKEND_REKEY_OLD ".rekey-old"
+
+static gchar *
+_g_paste_file_backend_rekey_sibling (const gchar *path,
+                                     const gchar *suffix)
+{
+    return g_strconcat (path, suffix, NULL);
+}
+
+/* Remove the @suffix sibling of @path, saying so when it is there and will not
+ * go: an original kept aside is the history under the passphrase being
+ * replaced, which may be why it is being replaced. */
+static void
+_g_paste_file_backend_remove_rekey_sibling (const gchar *path,
+                                            const gchar *suffix)
+{
+    g_autofree gchar *sibling = _g_paste_file_backend_rekey_sibling (path, suffix);
+
+    if (g_unlink (sibling) && errno != ENOENT)
+        g_warning ("Could not remove %s: %s", sibling, g_strerror (errno));
+}
+
 /* Re-encrypt one file's bytes from the key @self holds to the one @rekeyed does,
- * into a sibling temporary file whose path is returned through @tmp_path. The
- * bytes are copied verbatim — this is a key change, not a rewrite — and read
- * back through the new key before the caller is told it worked, so a bad write
- * is caught while the original is still the only thing in place. */
+ * into its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling. The bytes are copied
+ * verbatim — this is a key change, not a rewrite — and read back through the
+ * new key before the caller is told it worked, so a bad write is caught while
+ * the original is still the only thing in place. */
 static gboolean
 _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                       GPasteStorageBackend *rekeyed,
-                                      const gchar          *path,
-                                      gchar               **tmp_path)
+                                      const gchar          *path)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
     /* The file's plaintext -- an image's pixels as readily as a history's
@@ -1270,7 +1296,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
         return FALSE;
     }
 
-    g_autofree gchar *tmp = g_strconcat (path, ".rekey", NULL);
+    g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
     g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (rekeyed)->get_output_stream (G_PASTE_FILE_BACKEND ((gpointer) rekeyed),
                                                                                                      tmp_file);
@@ -1308,13 +1334,12 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
         return FALSE;
     }
 
-    *tmp_path = g_steal_pointer (&tmp);
-
     return TRUE;
 }
 
-/* Every file of @name that is encrypted: the history itself and the image side
- * files it references, which live in the history's own images directory.
+/* Every file of @name that is encrypted: the history itself, first, and the
+ * image side files it references, which live in the history's own images
+ * directory.
  *
  * %NULL (never an incomplete list) if the directory is there but cannot be
  * listed: the caller re-keys exactly what this returns, so a short list would
@@ -1325,10 +1350,8 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
                                        const gchar          *name)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-    g_autofree gchar *history_path = g_paste_storage_backend_get_history_file_path (self, name);
 
-    if (g_file_test (history_path, G_FILE_TEST_EXISTS))
-        g_strv_builder_take (builder, g_steal_pointer (&history_path));
+    g_strv_builder_take (builder, g_paste_storage_backend_get_history_file_path (self, name));
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
@@ -1354,9 +1377,23 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
     return g_strv_builder_end (builder);
 }
 
+/* Where the @k-th file a re-key installs sits in the list of the history's
+ * encrypted files: the images go in first and the history, at 0, last. */
+static guint
+_g_paste_file_backend_install_index (guint k,
+                                     guint n_paths)
+{
+    return (k + 1) % n_paths;
+}
+
 /* Re-encrypt @name under @new_passphrase. Everything encrypted under the old key
- * — the history and its images — is rewritten beside itself and only then moved
- * into place, so a failure anywhere leaves the whole history exactly as it was.
+ * — the history and its images — is rewritten beside itself, then each original
+ * is given a second name, and only then is each replacement renamed over its
+ * file: no byte is copied, and no file of the history is ever absent. The
+ * images go in first and the history last, its rename being the one that makes
+ * the re-key happen, so a failure on the way is undone by renaming the
+ * originals back -- and one that cannot be is what @split reports, those
+ * originals left under their second name.
  *
  * Deliberately byte-for-byte: reading the history into items and writing them
  * back would put it through the history-size limit and the images-support
@@ -1365,7 +1402,8 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
 static gboolean
 g_paste_file_backend_rekey (GPasteStorageBackend *self,
                             const gchar          *name,
-                            const gchar          *new_passphrase)
+                            const gchar          *new_passphrase,
+                            gboolean             *split)
 {
     if (!g_paste_file_backend_get_passphrase (self))
     {
@@ -1373,50 +1411,78 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
+    /* Re-keying none of a history is no success either: one we could not find
+     * must not come back as one that now speaks the new passphrase. */
+    g_autofree gchar *history = g_paste_storage_backend_get_history_file_path (self, name);
+
+    if (!g_file_test (history, G_FILE_TEST_EXISTS))
+        return FALSE;
+
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
                                                                                   new_passphrase);
     g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (self, name);
 
-    /* Re-keying part of a history is worse than not re-keying it at all — and
-     * re-keying none of it is the same thing said of the whole: a history whose
-     * files we could not list, or could not find, must not come back as one that
-     * now speaks the new passphrase. */
-    if (!paths || !*paths)
+    /* Re-keying part of a history is worse than not re-keying it at all. */
+    if (!paths)
         return FALSE;
 
-    g_autoptr (GStrvBuilder) written = g_strv_builder_new ();
-    gboolean ok = TRUE;
+    guint n_paths = g_strv_length (paths);
 
-    for (GStrv path = paths; ok && *path; ++path)
+    for (guint i = 0; i < n_paths; ++i)
     {
-        gchar *tmp = NULL;
+        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, paths[i]))
+            continue;
 
-        if ((ok = _g_paste_file_backend_reencrypt_file (self, rekeyed, *path, &tmp)))
-            g_strv_builder_take (written, tmp);
+        /* Nothing has moved yet, so dropping the copies puts us back exactly
+         * where we started. */
+        for (guint j = 0; j < i; ++j)
+            _g_paste_file_backend_remove_rekey_sibling (paths[j], G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+        return FALSE;
     }
 
-    g_auto (GStrv) tmps = g_strv_builder_end (written);
-
-    if (!ok)
+    /* A hard link, which is what keeps every original at its path while the
+     * renames below happen, and copies nothing. A filesystem without them --
+     * vfat, exFAT, most network and FUSE mounts -- has the original copied
+     * aside instead: the same bytes under the second name, which is all a
+     * settle puts back, the inode only telling it whether the original is
+     * still at its path. */
+    for (guint i = 0; i < n_paths; ++i)
     {
-        /* Nothing has moved yet, so dropping the copies puts us back exactly
-         * where we started. Best effort: a temporary we fail to remove is
-         * clutter, and the originals are intact either way. */
-        for (GStrv tmp = tmps; *tmp; ++tmp)
-        {
-            g_autoptr (GFile) file = g_file_new_for_path (*tmp);
+        g_autofree gchar *aside = _g_paste_file_backend_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
 
-            g_file_delete (file, NULL, NULL);
+        if (!link (paths[i], aside))
+            continue;
+
+        gint link_errno = errno;
+        g_autoptr (GFile) original = g_file_new_for_path (paths[i]);
+        g_autoptr (GFile) copy = g_file_new_for_path (aside);
+        g_autoptr (GError) error = NULL;
+
+        if (g_file_copy (original, copy, G_FILE_COPY_NONE, NULL, NULL, NULL, &error))
+            continue;
+
+        g_warning ("Could not keep the original of %s aside, by a hard link (%s) nor a copy (%s)", paths[i], g_strerror (link_errno), error->message);
+
+        for (guint j = 0; j < n_paths; ++j)
+        {
+            if (j < i)
+                _g_paste_file_backend_remove_rekey_sibling (paths[j], G_PASTE_FILE_BACKEND_REKEY_OLD);
+            _g_paste_file_backend_remove_rekey_sibling (paths[j], G_PASTE_FILE_BACKEND_REKEY_NEW);
         }
 
         return FALSE;
     }
 
-    for (guint i = 0; tmps[i]; ++i)
+    guint installed = 0;
+
+    for (; installed < n_paths; ++installed)
     {
-        g_autoptr (GFile) tmp_file = g_file_new_for_path (tmps[i]);
-        g_autoptr (GFile) file = g_file_new_for_path (paths[i]);
+        const gchar *path = paths[_g_paste_file_backend_install_index (installed, n_paths)];
+        g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+        g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+        g_autoptr (GFile) file = g_file_new_for_path (path);
         g_autoptr (GError) error = NULL;
 
         /* Each of these is a rename over a file whose replacement is already
@@ -1424,12 +1490,47 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
          * itself giving out. */
         if (!g_file_move (tmp_file, file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
         {
-            g_warning ("Failed to install the re-encrypted %s: %s", paths[i], error->message);
-            ok = FALSE;
+            g_warning ("Failed to install the re-encrypted %s: %s", path, error->message);
+            break;
         }
     }
 
-    return ok;
+    if (installed == n_paths)
+    {
+        for (guint i = 0; i < n_paths; ++i)
+            _g_paste_file_backend_remove_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
+
+        return TRUE;
+    }
+
+    /* Put back what moved, the original under its second name being the only
+     * copy of it left. Those that never moved keep theirs at their path, and
+     * lose only the second name. */
+    for (guint k = 0; k < n_paths; ++k)
+    {
+        const gchar *path = paths[_g_paste_file_backend_install_index (k, n_paths)];
+
+        _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+        if (k >= installed)
+        {
+            _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+            continue;
+        }
+
+        g_autofree gchar *aside_path = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+        g_autoptr (GFile) aside = g_file_new_for_path (aside_path);
+        g_autoptr (GFile) file = g_file_new_for_path (path);
+        g_autoptr (GError) error = NULL;
+
+        if (!g_file_move (aside, file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+        {
+            g_warning ("Could not put back %s, whose original is left at %s: %s", path, aside_path, error->message);
+            *split = TRUE;
+        }
+    }
+
+    return FALSE;
 }
 #endif
 

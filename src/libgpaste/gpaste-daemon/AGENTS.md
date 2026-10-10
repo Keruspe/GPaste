@@ -116,6 +116,8 @@ The libadwaita backend is `GPastePromptAdw` (`src/daemon/gpaste-prompt-adw.{c,h}
 
 `GPasteFileBackend` wraps its streams with it for `ENCRYPTED_FILE` (".xmls"), and, unlike the plain flavour, persists passwords: their real value (`g_paste_item_get_real_value`) and `name`.
 
+**Re-keying a file history** (`g_paste_file_backend_rekey`) writes each encrypted file's replacement beside it (`<file>.rekey`) and gives the original a second name (`<file>.rekey-old`, a hard link: nothing is copied, and no file of the history is ever absent), then renames the replacements over the files, images first and the history last, the history's rename being what makes the re-key happen. A failure renames the originals back; one that cannot be put back is what `g_paste_storage_backend_rekey()`'s `split` reports, `rekey_histories()` turning it into the split message the user is shown, and its original stays under its second name.
+
 ## The GlobalShortcuts portal client
 
 **`GPasteGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`) as a `GDBusProxy` subclass and is the daemon's only keybinding mechanism: `g_paste_global_shortcut_client_grab_all (accels[])`/`_ungrab_all()`, and a `keybinding-activated (const gchar *id)` signal. `gpaste-global-shortcut-client.c` is commented throughout; what a change to it has to keep:

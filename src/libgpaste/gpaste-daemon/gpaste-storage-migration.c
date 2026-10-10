@@ -1205,11 +1205,6 @@ rekey_finish (RekeyData *self,
     storage_concern_return (task, error);
 }
 
-/* Re-encrypt every history of the current flavor with @passphrase. Each one is
- * re-keyed atomically, but they go one at a time: stop at the first failure
- * rather than carrying on, so what is left is "these are on the new passphrase,
- * those are still on the old" — recoverable by running again — instead of a set
- * silently split further apart. */
 /* Re-key @name on its own backend: a backend caches whatever it last opened, so
  * giving each history a fresh one keeps a re-keyed database from being reopened
  * through an instance that still holds the old key. */
@@ -1217,15 +1212,22 @@ static gboolean
 rekey_history (RekeyData   *self,
                const gchar *name,
                const gchar *from,
-               const gchar *to)
+               const gchar *to,
+               gboolean    *split)
 {
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
                                                                                             self->settings,
                                                                                             from);
 
-    return g_paste_storage_backend_rekey (backend, name, to);
+    return g_paste_storage_backend_rekey (backend, name, to, split);
 }
 
+/* Re-encrypt every history of the current flavor with @passphrase. Each one is
+ * re-keyed whole or put back as it was, short of the filesystem refusing even
+ * that, but they go one at a time: stop at the first failure rather than
+ * carrying on, so what is left is "these are on the new passphrase, those are
+ * still on the old" — recoverable by running again — instead of a set silently
+ * split further apart. */
 static gboolean
 rekey_histories (RekeyData   *self,
                  const gchar *passphrase,
@@ -1250,17 +1252,27 @@ rekey_histories (RekeyData   *self,
 
     for (GStrv name = names; *name; ++name)
     {
-        if (rekey_history (self, *name, current, passphrase))
+        gboolean split = FALSE;
+
+        if (rekey_history (self, *name, current, passphrase, &split))
             continue;
+
+        /* The failing one has put back what it had changed, unless it says it
+         * could not: then it is on both passphrases whatever happens to the
+         * others, which is the failure the user has to hear about. */
+        if (split)
+        {
+            g_warning ("The history \"%s\" is left partly on the new passphrase", *name);
+            self->split = TRUE;
+        }
 
         /* Put the ones that did move back on the passphrase they all still
          * shared a moment ago, rather than leave the set split between two — a
          * split one cannot be repaired by running this again, since it starts
-         * from a single passphrase. Each history's re-key either happened whole
-         * or not at all, so the failing one needs nothing undone. */
+         * from a single passphrase. */
         for (GStrv done = names; done != name; ++done)
         {
-            if (rekey_history (self, *done, passphrase, current))
+            if (rekey_history (self, *done, passphrase, current, NULL))
                 continue;
 
             g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", *done);
