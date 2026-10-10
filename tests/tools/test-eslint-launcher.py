@@ -23,7 +23,7 @@ def check(condition, message=''):
 
 FAKE_NPM = '''#!/bin/sh
 printf '%s\\n' "$PWD" >> "$G_PASTE_LINT_TEST_LOG"
-if [ "$1" = clean-install ]; then mkdir node_modules; fi
+if [ "$1" = clean-install ]; then mkdir -p node_modules; touch node_modules/.package-lock.json; fi
 '''
 
 
@@ -92,5 +92,17 @@ with tempfile.TemporaryDirectory(prefix='gpaste-lint-paths-') as temporary:
         (project / 'node_modules').symlink_to(target)
         check(run(scratch, project, str(tools / 'run-eslint.sh'), project) == [str(tools)])
         assert_linked(project)
+
+    # A lock newer than the install made from it is installed again; one no
+    # newer is not.
+    for name, stale in [('stale install', True), ('current install', False)]:
+        project = checkout(scratch, name)
+        tools = project / 'tools'
+        (tools / 'node_modules').mkdir()
+        (tools / 'node_modules/.package-lock.json').touch()
+        (tools / 'package-lock.json').touch()
+        installed = (tools / 'node_modules/.package-lock.json').stat().st_mtime
+        os.utime(tools / 'package-lock.json', (installed, installed + (10 if stale else -10)))
+        check(run(scratch, project, str(tools / 'run-eslint.sh'), project) == [str(tools)] * (2 if stale else 1))
 
     check(not any((scratch / 'decoy/tools').iterdir()))
