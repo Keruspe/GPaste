@@ -1016,6 +1016,12 @@ g_paste_storage_migration_async (GPastePrompt       *prompt,
      * import. */
     GPasteStorage current = g_paste_settings_get_storage_backend (settings);
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* Ahead of the import that may read one, as in
+     * g_paste_storage_decryption_needed(). */
+    g_paste_file_backend_settle_rekeys ();
+#endif
+
     /* Read back, rather than taken as detected: a storage-backend GSettings
      * refuses to store -- a locked key -- leaves the daemon on the backend it
      * holds, and that one is what an import reads and a cleanup deletes. */
@@ -1069,6 +1075,12 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
+
+    /* Every start asks this before loading anything or verifying a passphrase,
+     * which is when a passphrase change the last process did not finish has
+     * to be put back or done with: a history it left half re-keyed refuses
+     * every read until then. */
+    g_paste_file_backend_settle_rekeys ();
 
     /* Only an encrypted history that is not already unlocked needs decrypting,
      * and only in a build that can open it: one that cannot keeps nothing at

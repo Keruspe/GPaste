@@ -10,6 +10,8 @@
 #include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
+#include <glib/gstdio.h>
+
 #include <dlfcn.h>
 #include <string.h>
 
@@ -1164,6 +1166,15 @@ test_rekey_split (void)
     g_assert_true (g_bytes_equal (kept_history, original_history));
     g_assert_false (g_bytes_equal (moved_image, original_image));
     g_assert_true (g_bytes_equal (kept_image, original_image));
+
+    /* Which is what the next start puts back, the history's replacement left
+     * beside it saying there is something to. */
+    g_paste_file_backend_settle_rekeys ();
+
+    g_autoptr (GBytes) put_back = read_bytes (image);
+
+    g_assert_true (g_bytes_equal (put_back, original_image));
+    g_assert_false (has_rekey_leftovers (name));
 }
 
 /* A re-key that goes through leaves nothing beside the files, and every one
@@ -1199,6 +1210,336 @@ test_rekey_success (gconstpointer data)
     g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
     g_assert_cmpuint (g_list_length (items), ==, 2);
     g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data)));
+}
+
+static void
+write_file (const gchar *path,
+            const gchar *contents)
+{
+    g_autofree gchar *dir = g_path_get_dirname (path);
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (path, contents, -1, NULL));
+}
+
+static void
+assert_contents (const gchar *path,
+                 const gchar *expected)
+{
+    g_autofree gchar *contents = NULL;
+
+    g_assert_true (g_file_get_contents (path, &contents, NULL, NULL));
+    g_assert_cmpstr (contents, ==, expected);
+}
+
+/* What a process dying while a re-key installs its files leaves: the image
+ * renamed over, its original under its second name, the history still in
+ * place with a second name of its own and its replacement beside it. */
+static void
+write_interrupted_rekey (const gchar *name,
+                         gchar      **history,
+                         gchar      **image)
+{
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+
+    *history = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
+    *image = g_build_filename (images, "0123.pngs", NULL);
+
+    g_autofree gchar *history_aside = g_strconcat (*history, ".rekey-old", NULL);
+    g_autofree gchar *history_replacement = g_strconcat (*history, ".rekey", NULL);
+    g_autofree gchar *image_aside = g_strconcat (*image, ".rekey-old", NULL);
+
+    write_file (*history, "old history");
+    g_assert_cmpint (link (*history, history_aside), ==, 0);
+    write_file (history_replacement, "new history");
+    write_file (*image, "new image");
+    write_file (image_aside, "old image");
+}
+
+/* A re-key that never reached its last rename is put back at the next start,
+ * before anything reads the history or verifies a passphrase against it. */
+static void
+test_rekey_settled_back (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-settled-back";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    /* A passphrase this process holds already, so that the answer comes before
+     * any keyring is asked. */
+    g_paste_storage_backend_set_passphrase ("passphrase");
+    g_assert_false (g_paste_storage_decryption_needed (settings));
+    g_paste_storage_backend_set_passphrase (NULL);
+
+    assert_contents (history, "old history");
+    assert_contents (image, "old image");
+    g_assert_false (has_rekey_leftovers (name));
+}
+
+/* A re-key that made its last rename and died before dropping the originals
+ * has them dropped at the next start, the migration's included. */
+static void
+test_rekey_settled_forward (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+
+    g_autofree gchar *history_replacement = g_strconcat (history, ".rekey", NULL);
+
+    /* The history's replacement renamed over it, its original keeping its
+     * second name. */
+    g_assert_cmpint (g_rename (history_replacement, history), ==, 0);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->dismiss = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+
+    assert_contents (history, "new history");
+    assert_contents (image, "new image");
+    g_assert_false (has_rekey_leftovers (name));
+}
+
+/* Until it is settled, a history a re-key left half done is refused rather
+ * than read without the images it can no longer decrypt. */
+static void
+test_rekey_unsettled_refused (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*did not finish*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-unsettled";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "passphrase", &history, &image);
+
+    g_autofree gchar *history_replacement = g_strconcat (history, ".rekey", NULL);
+
+    write_file (history_replacement, "new history");
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+}
+
+/* Deleting a history takes what a re-key left beside it along. */
+static void
+test_rekey_leftovers_deleted (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-deleted";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+    g_paste_storage_backend_delete_history (backend, name, NULL);
+    g_assert_false (g_file_test (history, G_FILE_TEST_EXISTS));
+    g_assert_false (has_rekey_leftovers (name));
+}
+
+/* A history whose delete fails keeps what says its re-key did not finish:
+ * without it, the next read would no longer refuse a history split between
+ * two passphrases, and the next settle would drop its originals. */
+static void
+test_rekey_marker_kept_by_failed_delete (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-undeletable";
+    g_autofree gchar *history = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
+    g_autofree gchar *marker = g_strconcat (history, ".rekey", NULL);
+    g_autofree gchar *inside = g_build_filename (history, "not empty", NULL);
+    g_autoptr (GError) error = NULL;
+
+    /* Something no unlink takes: a directory holding a file. */
+    write_file (inside, "content");
+    write_file (marker, "new history");
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+    g_paste_storage_backend_delete_history (backend, name, &error);
+    g_assert_nonnull (error);
+    g_assert_true (g_file_test (marker, G_FILE_TEST_EXISTS));
+
+    g_assert_cmpint (g_unlink (inside), ==, 0);
+    g_assert_cmpint (g_rmdir (history), ==, 0);
+    g_assert_cmpint (g_unlink (marker), ==, 0);
+}
+
+/* A history a re-key left unsettled is not written over either: the settle
+ * would put its original back over the write, which would then have been
+ * answered as held -- an emptying undone at the next start. */
+static void
+test_rekey_unsettled_unwritten (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*did not finish; not writing over it*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-unwritten";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "passphrase", &history, &image);
+
+    g_autofree gchar *history_replacement = g_strconcat (history, ".rekey", NULL);
+    g_autoptr (GBytes) before = read_bytes (history);
+
+    write_file (history_replacement, "new history");
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autoptr (GBytes) after = NULL;
+
+    g_paste_storage_backend_write_history (backend, name, NULL);
+    after = read_bytes (history);
+    g_assert_true (g_bytes_equal (before, after));
+}
+
+/* What a re-key left beside a history that is gone -- a delete cut short after
+ * the history went, or a split history removed by hand -- is a history deleted:
+ * the next start drops it rather than put its original back, and the name reads
+ * as a new history from then on. */
+static void
+test_rekey_settled_without_history (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-without-history";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+    g_assert_cmpint (g_unlink (history), ==, 0);
+
+    g_paste_file_backend_settle_rekeys ();
+    g_assert_false (g_file_test (history, G_FILE_TEST_EXISTS));
+    g_assert_false (has_rekey_leftovers (name));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+}
+
+/* A file that names no valid history is no history's to settle. */
+static void
+test_rekey_settles_valid_names (void)
+{
+    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
+    g_autofree gchar *dir = g_file_get_path (history_dir);
+    const gchar * const strays[] = { ".xmls", "..xmls", "...xmls.rekey" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (strays); ++i)
+    {
+        g_autofree gchar *path = g_build_filename (dir, strays[i], NULL);
+
+        write_file (path, "stray");
+    }
+
+    g_paste_file_backend_settle_rekeys ();
+
+    for (guint i = 0; i < G_N_ELEMENTS (strays); ++i)
+    {
+        g_autofree gchar *path = g_build_filename (dir, strays[i], NULL);
+
+        g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    }
+}
+
+/* A re-key settles what an earlier one left behind before starting, rather
+ * than fail on the second name it would give the history. */
+static void
+test_rekey_after_leftovers (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-after-leftovers";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    g_autofree gchar *history_aside = g_strconcat (history, ".rekey-old", NULL);
+
+    write_file (history_aside, "an older history");
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+    gboolean split = TRUE;
+
+    g_assert_true (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+    g_assert_false (split);
+    g_assert_false (has_rekey_leftovers (name));
+}
+
+/* A history whose images cannot be listed is not re-keyed, but that is no
+ * split: nothing of it moved. */
+static void
+test_rekey_unlistable_images (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!geteuid ())
+        {
+            g_test_skip ("root lists a directory of mode 0");
+            return;
+        }
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not list the images*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-unlistable";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+    gboolean split = TRUE;
+
+    g_assert_cmpint (g_chmod (images, 0), ==, 0);
+
+    /* Given back its mode before anything is asserted, so that a failure does
+     * not leave the test's directories to a cleanup that cannot enter them. */
+    gboolean rekeyed = g_paste_storage_backend_rekey (backend, name, "new passphrase", &split);
+
+    g_assert_cmpint (g_chmod (images, 0700), ==, 0);
+    g_assert_false (rekeyed);
+    g_assert_false (split);
 }
 
 static void
@@ -1268,6 +1609,16 @@ main (int    argc,
     g_test_add_data_func ("/storage/rekey/success", GINT_TO_POINTER (FALSE), test_rekey_success);
     g_test_add_data_func ("/storage/rekey/without-hard-links", GINT_TO_POINTER (TRUE), test_rekey_success);
     g_test_add_func ("/storage/rekey/split-reported", test_rekey_split_reported);
+    g_test_add_func ("/storage/rekey/settled-back", test_rekey_settled_back);
+    g_test_add_func ("/storage/rekey/settled-forward", test_rekey_settled_forward);
+    g_test_add_func ("/storage/rekey/unsettled-refused", test_rekey_unsettled_refused);
+    g_test_add_func ("/storage/rekey/leftovers-deleted", test_rekey_leftovers_deleted);
+    g_test_add_func ("/storage/rekey/marker-kept-by-failed-delete", test_rekey_marker_kept_by_failed_delete);
+    g_test_add_func ("/storage/rekey/unsettled-unwritten", test_rekey_unsettled_unwritten);
+    g_test_add_func ("/storage/rekey/settled-without-history", test_rekey_settled_without_history);
+    g_test_add_func ("/storage/rekey/settles-valid-names", test_rekey_settles_valid_names);
+    g_test_add_func ("/storage/rekey/after-leftovers", test_rekey_after_leftovers);
+    g_test_add_func ("/storage/rekey/unlistable-images", test_rekey_unlistable_images);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);

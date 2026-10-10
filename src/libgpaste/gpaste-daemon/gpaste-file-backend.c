@@ -341,6 +341,22 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
      * written, which may not be the one the items belong to (a backup). */
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, history_name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* Nor written over while a change of passphrase waits to be settled, as
+     * the read refuses it: the settle would put the original back over this
+     * write, the history emptied coming back at the next start and whatever
+     * was written since lost, with this write answered as held. */
+    if (g_paste_file_backend_get_passphrase (self))
+    {
+        g_autofree gchar *marker = g_strconcat (history_file_path, ".rekey", NULL);
+
+        if (g_file_test (marker, G_FILE_TEST_EXISTS))
+        {
+            g_warning ("The change of passphrase of %s did not finish; not writing over it until it is put back", history_file_path);
+            return;
+        }
+    }
+#endif
 
     GPasteFileBackend *real_self = G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
@@ -1061,6 +1077,34 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
     return g_file_get_contents (history_file_path, text, text_length, error);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* What a re-key puts beside each file it changes: the file's replacement under
+ * the new key, and the original under a second name while the replacements go
+ * in. Both are named from the file alone. */
+#define G_PASTE_FILE_BACKEND_REKEY_NEW ".rekey"
+#define G_PASTE_FILE_BACKEND_REKEY_OLD ".rekey-old"
+
+static gchar *
+_g_paste_file_backend_rekey_sibling (const gchar *path,
+                                     const gchar *suffix)
+{
+    return g_strconcat (path, suffix, NULL);
+}
+
+/* Remove the @suffix sibling of @path, saying so when it is there and will not
+ * go: an original kept aside is the history under the passphrase being
+ * replaced, which may be why it is being replaced. */
+static void
+_g_paste_file_backend_remove_rekey_sibling (const gchar *path,
+                                            const gchar *suffix)
+{
+    g_autofree gchar *sibling = _g_paste_file_backend_rekey_sibling (path, suffix);
+
+    if (g_unlink (sibling) && errno != ENOENT)
+        g_warning ("Could not remove %s: %s", sibling, g_strerror (errno));
+}
+#endif
+
 /* One walk of the document, for both of the questions asked of it: @history and
  * @size for a read, @count for a listing that only wants how many items there
  * are. Counting skips the item building and the images entirely (see add_item),
@@ -1084,6 +1128,27 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
     /* The decrypted document, password values and all, for the encrypted
      * flavour: wiped rather than merely freed once it has been parsed. */
     g_autoptr (GPasteCleartext) text = NULL;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* A re-key that never reached its last rename can have left images under
+     * the new passphrase beside a history under the old one, which a read
+     * would drop for not decrypting, and the next save lose for good: such a
+     * history waits for g_paste_file_backend_settle_rekeys(). The history's
+     * replacement is what says so, and a re-key under way has one too, so a
+     * count only answers nothing rather than warn. */
+    if (g_paste_file_backend_get_passphrase (self))
+    {
+        g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (history_file_path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+        if (g_file_test (marker, G_FILE_TEST_EXISTS))
+        {
+            if (!count_only)
+                g_warning ("The change of passphrase of %s did not finish; not reading it until it is put back", history_file_path);
+
+            return FALSE;
+        }
+    }
+#endif
 
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
@@ -1242,36 +1307,31 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
 {
     g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, g_paste_storage_backend_get_extension (self));
 
-    g_file_delete (history_file, NULL, error);
+    g_autoptr (GError) delete_error = NULL;
+
+    if (!g_file_delete (history_file, NULL, &delete_error) &&
+        !g_error_matches (delete_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+    {
+        g_propagate_error (error, g_steal_pointer (&delete_error));
+        return;
+    }
+
+    if (delete_error)
+        g_propagate_error (error, g_steal_pointer (&delete_error));
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* Once the history is gone, and only then, what a re-key left beside it
+     * goes: its original under the passphrase being changed most of all. The
+     * replacement says a re-key did not finish, which a history still there
+     * needs said. Its images' go with their directory. */
+    g_autofree gchar *path = g_file_get_path (history_file);
+
+    _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+    _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+#endif
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-/* What a re-key puts beside each file it changes: the file's replacement under
- * the new key, and the original under a second name while the replacements go
- * in. Both are named from the file alone. */
-#define G_PASTE_FILE_BACKEND_REKEY_NEW ".rekey"
-#define G_PASTE_FILE_BACKEND_REKEY_OLD ".rekey-old"
-
-static gchar *
-_g_paste_file_backend_rekey_sibling (const gchar *path,
-                                     const gchar *suffix)
-{
-    return g_strconcat (path, suffix, NULL);
-}
-
-/* Remove the @suffix sibling of @path, saying so when it is there and will not
- * go: an original kept aside is the history under the passphrase being
- * replaced, which may be why it is being replaced. */
-static void
-_g_paste_file_backend_remove_rekey_sibling (const gchar *path,
-                                            const gchar *suffix)
-{
-    g_autofree gchar *sibling = _g_paste_file_backend_rekey_sibling (path, suffix);
-
-    if (g_unlink (sibling) && errno != ENOENT)
-        g_warning ("Could not remove %s: %s", sibling, g_strerror (errno));
-}
-
 /* Re-encrypt one file's bytes from the key @self holds to the one @rekeyed does,
  * into its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling. The bytes are copied
  * verbatim — this is a key change, not a rewrite — and read back through the
@@ -1346,12 +1406,11 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
  * leave the images it missed encrypted under the old passphrase, unreadable for
  * good once the new one is in force. */
 static GStrv
-_g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
-                                       const gchar          *name)
+_g_paste_file_backend_encrypted_files (const gchar *name)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
-    g_strv_builder_take (builder, g_paste_storage_backend_get_history_file_path (self, name));
+    g_strv_builder_take (builder, g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE)));
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
@@ -1375,6 +1434,131 @@ _g_paste_file_backend_encrypted_files (GPasteStorageBackend *self,
     }
 
     return g_strv_builder_end (builder);
+}
+
+/* Whether @a and @b are two names of one file. */
+static gboolean
+_g_paste_file_backend_same_file (const gchar *a,
+                                 const gchar *b)
+{
+    GStatBuf a_stat;
+    GStatBuf b_stat;
+
+    return !g_stat (a, &a_stat) && !g_stat (b, &b_stat) &&
+           a_stat.st_dev == b_stat.st_dev && a_stat.st_ino == b_stat.st_ino;
+}
+
+/* Settle what a re-key of @name left behind when it did not finish: the
+ * process died on the way, or the filesystem refused to put the originals back.
+ * The history's replacement still beside it means the re-key never reached its
+ * last rename, so every original under its second name goes back over its
+ * file. Without it, the re-key went through or never started, and what is left
+ * beside the files is dropped. That replacement goes last, once nothing is
+ * left to put back, so a settle cut short is taken up by the next one.
+ *
+ * Without the history itself, what is left is a history deleted -- a delete cut
+ * short, which takes the history before what is beside it, or a split one
+ * removed by hand -- and is dropped as well: putting its original back would
+ * bring back a history the user deleted.
+ *
+ * Returns: whether nothing is left to put back */
+static gboolean
+_g_paste_file_backend_settle_rekey (const gchar *name)
+{
+    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
+
+    if (!paths)
+        return FALSE;
+
+    g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (paths[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
+    gboolean pending = g_file_test (marker, G_FILE_TEST_EXISTS) && g_file_test (paths[0], G_FILE_TEST_EXISTS);
+    gboolean settled = TRUE;
+
+    for (GStrv path = paths; *path; ++path)
+    {
+        g_autofree gchar *aside_path = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+
+        if (path != paths)
+            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+        if (!g_file_test (aside_path, G_FILE_TEST_EXISTS))
+            continue;
+
+        /* An original that never moved is still at its path. */
+        if (!pending || _g_paste_file_backend_same_file (*path, aside_path))
+        {
+            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+            continue;
+        }
+
+        g_autoptr (GFile) aside = g_file_new_for_path (aside_path);
+        g_autoptr (GFile) file = g_file_new_for_path (*path);
+        g_autoptr (GError) error = NULL;
+
+        if (g_file_move (aside, file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+            continue;
+
+        g_warning ("Could not put back %s after an unfinished change of passphrase, whose original is left at %s: %s",
+                   *path, aside_path, error->message);
+        settled = FALSE;
+    }
+
+    if (settled)
+        _g_paste_file_backend_remove_rekey_sibling (paths[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+    return settled;
+}
+
+/**
+ * g_paste_file_backend_settle_rekeys:
+ *
+ * Settle every encrypted file history whose change of passphrase did not
+ * finish, putting back the originals of one that had not reached its last
+ * rename and dropping what is left beside one that had. Run before anything
+ * reads such a history or verifies a passphrase against it: until then, a read
+ * refuses it.
+ */
+G_PASTE_VISIBLE void
+g_paste_file_backend_settle_rekeys (void)
+{
+    g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE), NULL);
+
+    if (!files)
+    {
+        g_warning ("Could not list the histories to settle their passphrase changes: %s", error->message);
+        return;
+    }
+
+    g_autofree gchar *marker_suffix = g_strconcat (suffix, G_PASTE_FILE_BACKEND_REKEY_NEW, NULL);
+    g_autoptr (GHashTable) names = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+    /* By the history and by the replacement that says a re-key did not finish:
+     * one left without its history, which a delete cut short or a split
+     * history removed by hand leaves, has a read of that name refuse it for as
+     * long as it is there. And by valid names alone, which every other file of
+     * a history is named from. */
+    for (GStrv file = files; *file; ++file)
+    {
+        const gchar *found = (g_str_has_suffix (*file, suffix)) ? suffix : (g_str_has_suffix (*file, marker_suffix)) ? marker_suffix : NULL;
+
+        if (!found)
+            continue;
+
+        g_autofree gchar *name = g_strndup (*file, strlen (*file) - strlen (found));
+
+        if (g_paste_util_history_name_is_valid (name))
+            g_hash_table_add (names, g_steal_pointer (&name));
+    }
+
+    GHashTableIter iter;
+    const gchar *name;
+
+    g_hash_table_iter_init (&iter, names);
+    while (g_hash_table_iter_next (&iter, (gpointer *) &name, NULL))
+        _g_paste_file_backend_settle_rekey (name);
 }
 
 /* Where the @k-th file a re-key installs sits in the list of the history's
@@ -1418,10 +1602,23 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     if (!g_file_test (history, G_FILE_TEST_EXISTS))
         return FALSE;
 
+    /* What an earlier re-key left behind goes first: it would be taken for this
+     * one's, and its originals' second names would stop this one's. Failing to
+     * leaves @name split only while the history's replacement is still there
+     * to say so: without it, nothing was left to put back, and it was the
+     * history's images that could not be listed. */
+    if (!_g_paste_file_backend_settle_rekey (name))
+    {
+        g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (history, G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+        *split = g_file_test (marker, G_FILE_TEST_EXISTS);
+        return FALSE;
+    }
+
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
                                                                                   new_passphrase);
-    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (self, name);
+    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
 
     /* Re-keying part of a history is worse than not re-keying it at all. */
     if (!paths)
@@ -1505,12 +1702,16 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
 
     /* Put back what moved, the original under its second name being the only
      * copy of it left. Those that never moved keep theirs at their path, and
-     * lose only the second name. */
+     * lose only the second name. The history never moved, its rename being the
+     * last; its replacement stays until everything else is back, which is what
+     * tells _g_paste_file_backend_settle_rekey() there is something to put back
+     * when the filesystem refuses here. */
     for (guint k = 0; k < n_paths; ++k)
     {
         const gchar *path = paths[_g_paste_file_backend_install_index (k, n_paths)];
 
-        _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+        if (path != paths[0])
+            _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
 
         if (k >= installed)
         {
@@ -1529,6 +1730,9 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
             *split = TRUE;
         }
     }
+
+    if (!*split)
+        _g_paste_file_backend_remove_rekey_sibling (paths[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
 
     return FALSE;
 }

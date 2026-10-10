@@ -36,6 +36,7 @@ void   g_paste_file_backend_delete_image   (const gchar *path);
 GPasteStorageBackend *g_paste_file_backend_new_encrypted (GPasteSettings *settings,
                                                           const gchar    *passphrase);
 
+void g_paste_file_backend_settle_rekeys (void);
 #endif
 
 G_END_DECLS
