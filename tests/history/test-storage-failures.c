@@ -42,6 +42,8 @@ crypto_pwhash (unsigned char * const       out,
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
 }
 
+#endif
+
 /* Moves whose source ends with one of these fail, as a filesystem giving out
  * would fail them: NULL for none. */
 static const gchar * const *failed_moves;
@@ -93,7 +95,6 @@ g_file_move (GFile                *source,
 
     return original (source, destination, flags, cancellable, progress, data, error);
 }
-#endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
@@ -314,7 +315,7 @@ test_migration_prompt_report (GPastePrompt *prompt,
     g_set_str (&self->message, message);
 }
 
-#ifdef G_PASTE_ENABLE_SQLITE
+#if defined(G_PASTE_ENABLE_ENCRYPTION) || defined(G_PASTE_ENABLE_SQLITE)
 /* The one report a failed import makes: its own title, and the reason after
  * the standing description. */
 static void
@@ -438,6 +439,63 @@ test_unlock_skips_unopenable_flavour (void)
 
     hidden_kind = -1;
     g_assert_cmpint (g_paste_storage_backend_get_kind (backend), ==, G_PASTE_STORAGE_NOOP);
+}
+
+/* A failed import out of the encrypted file flavour into the plain one takes its
+ * copy back with the screenshots it decrypted on the way: they are the very
+ * pixels the source keeps encrypted. */
+static void
+test_import_failure_leaves_no_cleartext (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*did not read back as it was written*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    const guchar pixel[] = { 53, 63, 73, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    GPasteItem *image = g_paste_image_item_new (texture);
+    g_autofree gchar *png = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image)));
+    g_autofree gchar *pngs = g_paste_file_backend_encrypted_path (png);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    {
+        g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        /* The text first, which the injected failure leaves out, so that the
+         * image is written before the read-back finds the copy short. */
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("text"));
+
+        items = g_list_append (items, image);
+        g_paste_storage_backend_write_history (encrypted, name, items);
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_FILE;
+    prompt->import = TRUE;
+    prompt->cleanup = TRUE;
+    g_paste_storage_backend_set_passphrase ("passphrase");
+    shortened_kind = G_PASTE_STORAGE_FILE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+    shortened_kind = -1;
+    g_paste_storage_backend_set_passphrase (NULL);
+
+    assert_import_failure_reported (prompt);
+    g_assert_false (g_file_test (png, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (pngs, G_FILE_TEST_EXISTS));
 }
 #endif
 
@@ -1016,6 +1074,47 @@ test_verification_waits_for_busy_database (void)
 }
 #endif
 
+/* A full write that does not land sweeps nothing: what is on disk is still the
+ * snapshot before it, which references the image the failed one dropped. */
+static void
+test_failed_write_keeps_images (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to install history file*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "failed-write-images";
+    const guchar pixel[] = { 50, 60, 70, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *image = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (items->data)));
+    const gchar * const history_install[] = { ".xml.tmp", NULL };
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+
+    failed_moves = history_install;
+    g_paste_storage_backend_write_history (backend, name, NULL);
+    failed_moves = NULL;
+
+    g_autolist (GPasteItem) kept = NULL;
+    gsize size;
+
+    g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &kept, &size));
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
+}
+
 /* An alternative representation that decodes to nothing -- base64 a corrupt
  * file cut to nothing, an empty blob in a database -- is no representation:
  * the item is read without it, from its plain value, and written back so. */
@@ -1288,7 +1387,7 @@ write_interrupted_rekey (const gchar *name,
     g_autofree gchar *images = g_paste_file_backend_images_dir (name);
 
     *history = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
-    *image = g_build_filename (images, "0123.pngs", NULL);
+    *image = g_build_filename (images, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.pngs", NULL);
 
     g_autofree gchar *history_aside = g_strconcat (*history, ".rekey-old", NULL);
     g_autofree gchar *history_replacement = g_strconcat (*history, ".rekey", NULL);
@@ -1587,6 +1686,29 @@ test_rekey_unlistable_images (void)
     g_assert_false (split);
 }
 
+/* A ".pngs" under a name this backend never writes is no entry's side file: a
+ * re-key leaves it as it is rather than failing to decrypt it. */
+static void
+test_rekey_foreign_side_file (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-foreign";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+    g_autofree gchar *foreign = g_build_filename (images, "Screenshot.pngs", NULL);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+    gboolean split = TRUE;
+
+    write_file (foreign, "not ours");
+    g_assert_true (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+    g_assert_false (split);
+    assert_contents (foreign, "not ours");
+}
+
 static void
 on_rekey_settled (GObject      *source G_GNUC_UNUSED,
                   GAsyncResult *result,
@@ -1644,6 +1766,7 @@ main (int    argc,
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
 
+    g_test_add_func ("/storage/failed-write-images", test_failed_write_keeps_images);
     g_test_add_data_func ("/storage/empty-alternative/file", GUINT_TO_POINTER (G_PASTE_STORAGE_FILE), test_empty_alternative);
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/empty-alternative/sqlite", GUINT_TO_POINTER (G_PASTE_STORAGE_SQLITE), test_empty_alternative);
@@ -1668,6 +1791,8 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/settles-valid-names", test_rekey_settles_valid_names);
     g_test_add_func ("/storage/rekey/after-leftovers", test_rekey_after_leftovers);
     g_test_add_func ("/storage/rekey/unlistable-images", test_rekey_unlistable_images);
+    g_test_add_func ("/storage/rekey/foreign-side-file", test_rekey_foreign_side_file);
+    g_test_add_func ("/storage/migration/import-failure-cleartext", test_import_failure_leaves_no_cleartext);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);

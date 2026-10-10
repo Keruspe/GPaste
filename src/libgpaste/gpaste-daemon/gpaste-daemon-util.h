@@ -4,6 +4,7 @@
 #pragma once
 
 #include <gpaste-3/gpaste-macros.h>
+#include <gpaste-3/gpaste-storage.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gio/gio.h>
@@ -34,6 +35,11 @@ gchar *g_paste_util_get_history_file_path (const gchar *name,
                                            const gchar *extension);
 GFile *g_paste_util_get_history_file      (const gchar *name,
                                            const gchar *extension);
+
+/* Whether the @storage flavour stores a history of @name: what is on disk under
+ * that flavour's extension, whether or not this build can open it. */
+gboolean g_paste_util_history_is_stored (const gchar  *name,
+                                         GPasteStorage storage);
 
 gboolean g_paste_util_ensure_history_dir_exists (void);
 

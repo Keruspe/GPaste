@@ -325,24 +325,20 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *self,
     G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, name, history);
 }
 
-/* Whether any storage flavor still keeps a history under @name on disk. The
- * images/<name>/ directory belongs to the *name*, not to one backend: after a
- * migration the source's delete_history runs while the destination still
- * references (or just materialized) images in that very directory, so it must
- * only go away once no flavor stores the name anymore. */
+/* Whether a file flavour still keeps a history under @name. The images/<name>/
+ * directory belongs to the *name*, not to one backend: after a migration the
+ * source's delete_history runs while the destination still references (or just
+ * materialized) images in that very directory, so it must only go away once no
+ * flavour reading it stores the name anymore. The database flavours keep their
+ * images in the store and read no file there, so they do not count. */
 static gboolean
 _g_paste_storage_backend_history_still_stored (const gchar *name)
 {
-    /* Check every storage flavor's on-disk file. Each kind's extension comes
-     * from the shared g_paste_storage_get_extension(), so a new flavor is
-     * covered here automatically (the non-storing NOOP's extension simply never
-     * matches a real file). */
-    for (GPasteStorage kind = 0; kind < G_PASTE_N_STORAGE; ++kind)
-    {
-        g_autoptr (GFile) file = g_paste_util_get_history_file (name, g_paste_storage_get_extension (kind));
+    static const GPasteStorage file_flavours[] = { G_PASTE_STORAGE_FILE, G_PASTE_STORAGE_ENCRYPTED_FILE };
 
-        if (g_file_query_exists (file,
-                                 NULL)) /* cancellable */
+    for (gsize i = 0; i < G_N_ELEMENTS (file_flavours); ++i)
+    {
+        if (g_paste_util_history_is_stored (name, file_flavours[i]))
             return TRUE;
     }
 
@@ -439,8 +435,8 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
     if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
         G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
 
-    /* Only sweep the images once the name is gone from every flavor: another
-     * backend may still reference them (a migration's destination, whose
+    /* Only sweep the images once the name is gone from both file flavours:
+     * the other may still reference them (a migration's destination, whose
      * cleanup deletes the source history under the same name). */
     if (_g_paste_storage_backend_history_still_stored (name))
         return;
@@ -701,31 +697,6 @@ g_paste_storage_backend_clear_history (GPasteStorageBackend *self,
     g_return_if_fail (name);
 
     G_PASTE_STORAGE_BACKEND_UPDATE (clear_history);
-}
-
-/**
- * g_paste_storage_backend_drop_item_data:
- * @self: a #GPasteStorageBackend instance
- * @name: the name of the history the item was dropped from
- * @item: (transfer none): the #GPasteItem being dropped for good
- *
- * Drop the data this backend materialized for @item outside its own store --
- * an image's cache file today, nothing else. A backend that keeps an item's
- * data inside its store has none of this to do, and does nothing.
- */
-G_PASTE_VISIBLE void
-g_paste_storage_backend_drop_item_data (GPasteStorageBackend *self,
-                                        const gchar          *name,
-                                        GPasteItem           *item)
-{
-    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
-    g_return_if_fail (name);
-    g_return_if_fail (G_PASTE_IS_ITEM (item));
-
-    GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
-
-    if (klass->drop_item_data)
-        klass->drop_item_data (self, name, item);
 }
 
 /**

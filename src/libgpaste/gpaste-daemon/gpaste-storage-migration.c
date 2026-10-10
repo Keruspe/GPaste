@@ -88,9 +88,7 @@ detect_current_backend (GPasteSettings *settings,
      * existing encrypted setup is never demoted. */
     for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
     {
-        g_autoptr (GFile) file = g_paste_util_get_history_file (name, g_paste_storage_get_extension (flavours[i]));
-
-        if (g_file_query_exists (file, NULL)) /* cancellable */
+        if (g_paste_util_history_is_stored (name, flavours[i]))
         {
             *current = flavours[i];
 
@@ -1068,10 +1066,40 @@ g_paste_storage_migration_finish (GAsyncResult *result,
     return storage_concern_finish (result, g_paste_storage_migration_async, error);
 }
 
+/**
+ * g_paste_storage_decryption_needed:
+ * @settings: a #GPasteSettings instance
+ *
+ * Whether an encrypted history still needs decrypting before it can be loaded:
+ * the backend is encrypted and no passphrase is set yet. When libsecret is
+ * built, a keyring passphrase that unlocks the history is applied as a side
+ * effect (answering %FALSE then), so %TRUE means a prompt is genuinely
+ * required.
+ *
+ * Every start asks this before loading anything, so it is also where the store
+ * is made fit to be read, whatever its flavour: a change of passphrase the last
+ * process left unfinished is settled, and, once per process, the images GPaste
+ * 50 kept in the history directory's shared images/ that no history names any
+ * more are deleted.
+ *
+ * Returns: whether the passphrase has to be asked for
+ */
 G_PASTE_VISIBLE gboolean
 g_paste_storage_decryption_needed (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
+
+    /* Every start asks this before loading anything, which is what the sweep
+     * needs: see g_paste_file_backend_sweep_legacy_images (). Once per process,
+     * gnome-shell asking again before an in-place migration, with a history
+     * loaded. */
+    static gsize legacy_images_swept = 0;
+
+    if (g_once_init_enter (&legacy_images_swept))
+    {
+        g_paste_file_backend_sweep_legacy_images ();
+        g_once_init_leave (&legacy_images_swept, 1);
+    }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);

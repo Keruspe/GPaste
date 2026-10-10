@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
 
 #include <glib/gstdio.h>
 
@@ -164,6 +165,15 @@ g_paste_util_get_history_file (const gchar *name,
     g_autofree gchar *history_file_path = g_paste_util_get_history_file_path (name, extension);
 
     return g_file_new_for_path (history_file_path);
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_util_history_is_stored (const gchar  *name,
+                                GPasteStorage storage)
+{
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (storage));
+
+    return g_file_test (path, G_FILE_TEST_EXISTS);
 }
 
 /**

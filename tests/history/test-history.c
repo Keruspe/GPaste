@@ -551,9 +551,7 @@ read_history (GPasteStorageBackend *backend,
     return read_history_full (backend, name, NULL);
 }
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-/* Same, for the tests that care that the read itself worked. Only the encrypted
- * tests do: everywhere else a failed read is the thing under test. */
+/* Same, for the tests that need the read itself to have worked. */
 static GList *
 read_history_ok (GPasteStorageBackend *backend,
                  const gchar          *name)
@@ -565,7 +563,6 @@ read_history_ok (GPasteStorageBackend *backend,
 
     return loaded;
 }
-#endif
 
 /* The history is on disk but must not be read back: a newer schema, a wrong
  * passphrase, a file we cannot decrypt. Refused means both -- the backend says
@@ -829,8 +826,9 @@ test_file_backup_owns_images (void)
 }
 
 /* Dropping an image from a history takes the file the backend materialized for
- * it: whoever wrote it is the one that deletes it, which for the file flavours
- * is the cache file under the history's own images directory. */
+ * it under the history's own images directory, once the write the removal
+ * records has landed: that snapshot no longer references it, and the file
+ * flavours sweep what theirs do not. */
 static void
 test_file_eviction_deletes_image (void)
 {
@@ -865,10 +863,464 @@ test_file_eviction_deletes_image (void)
 
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
 
+    /* Nothing is checked between the removal and the flush: the saver may land
+     * the write, and sweep, before the next line runs. That the file outlives
+     * a write still in flight is /history-ordering/remove-image-during-write's
+     * business, which holds the write to look. */
     g_paste_history_remove (history, 0);
+    g_paste_history_flush (history);
 
     g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
 }
+
+/* Write @n_texts text items followed by an image to @name through the file
+ * backend, and hand back the path of the image's file. */
+static gchar *
+write_texts_and_image (GPasteSettings *settings,
+                       const gchar    *name,
+                       guint           n_texts,
+                       guchar          shade)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autoptr (GBytes) png = test_png_bytes_colored (shade, shade, shade);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = NULL;
+
+    for (guint i = 0; i < n_texts; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("text %u", i);
+
+        items = g_list_append (items, g_paste_text_item_new (value));
+    }
+
+    GPasteItem *image = g_paste_image_item_new_from_bytes (png, date, NULL);
+
+    g_assert_nonnull (image);
+    items = g_list_append (items, image);
+    g_paste_storage_backend_write_history (backend, name, items);
+
+    gchar *path = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image)));
+
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+
+    return path;
+}
+
+/* An image evicted while the history is flushed keeps its file: the store,
+ * which a flushed history does not write, still references it. Once recording
+ * resumes, the next save sweeps it. */
+static void
+test_file_flushed_eviction_keeps_image (void)
+{
+    const gchar *name = "flushed-evict-image";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+
+    g_autofree gchar *image_path = write_texts_and_image (settings, name, 4, 31);
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, name);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 5);
+
+    g_paste_history_flush (history);
+    g_paste_history_add (history, g_paste_text_item_new ("evicts the image"));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 5);
+    /* Again, for any write the add recorded to have landed, sweep and all. */
+    g_paste_history_flush (history);
+    g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    g_paste_history_resume (history);
+    g_paste_history_add (history, g_paste_text_item_new ("saved"));
+    g_paste_history_flush (history);
+    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+}
+
+/* An unreadable history is never written, so nothing sweeps the files its store
+ * still references: the same image copied into it in the meantime, then
+ * deleted, leaves the file it names alone. */
+static void
+test_file_unreadable_keeps_image (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "unreadable-image";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autofree gchar *image_path = write_texts_and_image (settings, name, 0, 32);
+        g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
+        g_autofree gchar *contents = NULL;
+
+        /* A version this GPaste does not read: the history is unreadable. */
+        g_assert_true (g_file_get_contents (history_path, &contents, NULL, NULL));
+
+        gchar *version = strstr (contents, "version=\"2.0\"");
+
+        g_assert_nonnull (version);
+        version[9] = '9';
+        g_assert_true (g_file_set_contents (history_path, contents, -1, NULL));
+
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+        g_autoptr (GBytes) png = test_png_bytes_colored (32, 32, 32);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+
+        g_paste_history_load (history, name);
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+        g_paste_history_add (history, g_paste_image_item_new_from_bytes (png, date, NULL));
+        g_paste_history_remove (history, 0);
+        g_paste_history_flush (history);
+
+        g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*version*");
+}
+
+/* A read that skips a stored image -- images turned off, or an image stored
+ * without a date -- or that stops short leaves its file alone: a read is no
+ * write, and the history it read still references the file. Turned back on,
+ * the image is read again. */
+static void
+test_file_skipped_image_kept_by_reads (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autofree gchar *filtered = write_texts_and_image (settings, "filtered-image", 1, 33);
+        g_autofree gchar *truncated = write_texts_and_image (settings, "truncated-image", 1, 34);
+        g_autofree gchar *undated = write_texts_and_image (settings, "undated-image", 1, 35);
+
+        {
+            g_autofree gchar *path = g_paste_util_get_history_file_path ("truncated-image", "xml");
+            g_autofree gchar *contents = NULL;
+
+            g_assert_true (g_file_get_contents (path, &contents, NULL, NULL));
+
+            gchar *footer = strstr (contents, "</history>");
+
+            g_assert_nonnull (footer);
+            g_assert_true (g_file_set_contents (path, contents, footer - contents, NULL));
+        }
+
+        {
+            g_autofree gchar *path = g_paste_util_get_history_file_path ("undated-image", "xml");
+            g_autofree gchar *contents = NULL;
+
+            g_assert_true (g_file_get_contents (path, &contents, NULL, NULL));
+
+            gchar *date = strstr (contents, " date=\"");
+
+            g_assert_nonnull (date);
+            /* An attribute this version ignores, in place of the date. */
+            memcpy (date + 1, "data", 4);
+            g_assert_true (g_file_set_contents (path, contents, -1, NULL));
+        }
+
+        g_paste_settings_set_images_support (settings, FALSE);
+        {
+            g_autolist (GPasteItem) filtered_items = read_history_ok (backend, "filtered-image");
+
+            g_assert_cmpuint (g_list_length (filtered_items), ==, 1);
+        }
+
+        {
+            g_autolist (GPasteItem) partial = NULL;
+            gsize size;
+
+            g_assert_false (g_paste_storage_backend_read_history (backend, "truncated-image", NULL, &partial, &size));
+        }
+
+        g_paste_settings_set_images_support (settings, TRUE);
+        /* Read with images on, so that its missing date is all that skips it. */
+        {
+            g_autolist (GPasteItem) undated_items = read_history_ok (backend, "undated-image");
+
+            g_assert_cmpuint (g_list_length (undated_items), ==, 1);
+        }
+
+        g_assert_true (g_file_test (filtered, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (truncated, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (undated, G_FILE_TEST_EXISTS));
+
+        g_autolist (GPasteItem) loaded = read_history_ok (backend, "filtered-image");
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 2);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Document ended unexpectedly*");
+}
+
+/* With images turned off, a load skips the stored image, and the next save of
+ * the history, which no longer references it, takes its file. */
+static void
+test_file_skipped_image_swept_by_save (void)
+{
+    const gchar *name = "skipped-image-swept";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+
+    g_autofree gchar *image_path = write_texts_and_image (settings, name, 1, 36);
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_settings_set_images_support (settings, FALSE);
+    g_paste_history_load (history, name);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_true (g_file_test (image_path, G_FILE_TEST_EXISTS));
+
+    g_paste_history_add (history, g_paste_text_item_new ("saved"));
+    g_paste_history_flush (history);
+    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+}
+
+/* What a full write sweeps is its own: under its history's images directory,
+ * the files of its own flavour named after a checksum, which the snapshot does
+ * not reference. Another history's directory, the other file flavour's images
+ * of the same history, and any file named otherwise stay, as does everything a
+ * database write leaves. */
+static void
+test_file_sweep_bounds (void)
+{
+    if (g_test_subprocess ())
+    {
+        const gchar *name = "sweep-bounds";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autofree gchar *kept = write_texts_and_image (settings, name, 0, 37);
+        g_autofree gchar *other = write_texts_and_image (settings, "sweep-bounds-other", 0, 38);
+        g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+        g_autofree gchar *foreign = g_build_filename (images, "Screenshot.png", NULL);
+        g_autofree gchar *encrypted_orphan = g_build_filename (images, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.pngs", NULL);
+        g_autofree gchar *orphan = g_build_filename (images, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.png", NULL);
+        g_autofree gchar *other_orphan = g_strconcat (other, ".bak", NULL);
+
+        g_assert_true (g_file_set_contents (foreign, "not ours", -1, NULL));
+        g_assert_true (g_file_set_contents (encrypted_orphan, "the other flavour's", -1, NULL));
+        g_assert_true (g_file_set_contents (orphan, "nobody's", -1, NULL));
+        g_assert_true (g_file_set_contents (other_orphan, "another history's", -1, NULL));
+
+#ifdef G_PASTE_ENABLE_SQLITE
+        {
+            g_autoptr (GPasteStorageBackend) database = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+            g_paste_storage_backend_write_history (database, name, NULL);
+            g_assert_true (g_file_test (orphan, G_FILE_TEST_EXISTS));
+        }
+#endif
+
+        {
+            g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            g_autolist (GPasteItem) items = read_history_ok (file, name);
+
+            g_paste_storage_backend_write_history (file, name, items);
+        }
+
+        g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
+        g_assert_false (g_file_test (orphan, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (encrypted_orphan, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (foreign, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (other_orphan, G_FILE_TEST_EXISTS));
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        {
+            g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+            g_paste_storage_backend_write_history (encrypted, name, NULL);
+        }
+
+        g_assert_false (g_file_test (encrypted_orphan, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (foreign, G_FILE_TEST_EXISTS));
+#endif
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+}
+
+/* The images GPaste 50 kept in one directory shared by every history go at
+ * startup once no history references them, whichever spelling of the data
+ * directory the reference has. A history it wrote keeps its own until it is
+ * written again, which references a copy in its own directory. */
+static void
+test_file_legacy_images_sweep (void)
+{
+    const gchar *name = "legacy-images";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (42, 43, 44);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autoptr (GPasteItem) image = g_paste_image_item_new_from_bytes (png, date, NULL);
+    const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image));
+    g_autoptr (GBytes) aliased_png = test_png_bytes_colored (45, 46, 47);
+    g_autoptr (GPasteItem) aliased_image = g_paste_image_item_new_from_bytes (aliased_png, date, NULL);
+    const gchar *aliased_checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (aliased_image));
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *shared = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *file_name = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *legacy = g_build_filename (shared, file_name, NULL);
+    g_autofree gchar *aliased_file_name = g_strconcat (aliased_checksum, ".png", NULL);
+    g_autofree gchar *aliased_legacy = g_build_filename (shared, aliased_file_name, NULL);
+    /* The data directory as a symlinked home reaches it. */
+    g_autofree gchar *alias = g_build_filename (g_get_user_data_dir (), "gpaste-alias", NULL);
+    g_autofree gchar *aliased_reference = g_build_filename (alias, "images", aliased_file_name, NULL);
+    g_autofree gchar *orphan = g_build_filename (shared, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.png", NULL);
+    g_autofree gchar *foreign = g_build_filename (shared, "Screenshot.png", NULL);
+    g_autofree gchar *history = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                                                 "<history version=\"2.0\">\n"
+                                                 "  <item kind=\"Image\" uuid=\"5c7a3c3e-legacy\" date=\"1234567890\" checksum=\"%s\">\n"
+                                                 "    <value><![CDATA[%s]]></value>\n"
+                                                 "  </item>\n"
+                                                 "  <item kind=\"Image\" uuid=\"5c7a3c3e-aliased\" date=\"1234567890\" checksum=\"%s\">\n"
+                                                 "    <value><![CDATA[%s]]></value>\n"
+                                                 "  </item>\n"
+                                                 "</history>\n",
+                                                 checksum, legacy, aliased_checksum, aliased_reference);
+    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
+
+    g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+    g_assert_true (g_file_set_contents (aliased_legacy, g_bytes_get_data (aliased_png, NULL), (gssize) g_bytes_get_size (aliased_png), NULL));
+    g_assert_cmpint (symlink (history_dir, alias), ==, 0);
+    g_assert_true (g_file_set_contents (orphan, "nobody's", -1, NULL));
+    g_assert_true (g_file_set_contents (foreign, "not ours", -1, NULL));
+    g_assert_true (g_file_set_contents (history_path, history, -1, NULL));
+
+    g_paste_file_backend_sweep_legacy_images ();
+    g_assert_true (g_file_test (legacy, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (aliased_legacy, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (orphan, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (foreign, G_FILE_TEST_EXISTS));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (items), ==, 2);
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    g_paste_file_backend_sweep_legacy_images ();
+    g_assert_false (g_file_test (legacy, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (aliased_legacy, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (g_unlink (alias), ==, 0);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (items->data), ==, checksum);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, aliased_checksum);
+}
+
+/* An image is found under its history's images directory, by the name its
+ * checksum gives it, whatever path the document stored: one spelling the data
+ * directory as it was reached before a home moved is no reason to drop it --
+ * and its file survives the next write's sweep. */
+static void
+test_file_image_moved_home (void)
+{
+    const gchar *name = "image-moved-home";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autoptr (GBytes) png = test_png_bytes_colored (61, 62, 63);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autofree gchar *checksum = g_strdup (g_paste_image_item_get_checksum (items->data));
+    g_autofree gchar *image = g_paste_file_backend_image_path (name, checksum);
+    g_autofree gchar *document = g_paste_util_get_history_file_path (name, "xml");
+    g_autofree gchar *contents = NULL;
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *data_dir = g_path_get_dirname (history_dir);
+
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (g_file_get_contents (document, &contents, NULL, NULL));
+
+    g_auto (GStrv) parts = g_strsplit (contents, data_dir, -1);
+    g_autofree gchar *moved = g_strjoinv ("/nonexistent/old-home", parts);
+
+    g_assert_cmpuint (g_strv_length (parts), ==, 2);
+    g_assert_true (g_file_set_contents (document, moved, -1, NULL));
+
+    g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+    g_paste_storage_backend_write_history (backend, name, loaded);
+    g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A plain history moved to the encrypted flavour the way a migration does it:
+ * imported, then deleted. Its screenshots go in clear with it, their encrypted
+ * side files staying -- unless a side file is missing, the plaintext then being
+ * what the encrypted entry falls back on, until the next encrypted write puts
+ * the side file there and sweeps it. */
+static void
+check_encrypting_migration_images (gboolean side_file_lost)
+{
+    const gchar *name = (side_file_lost) ? "encrypting-migration-lost" : "encrypting-migration";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autofree gchar *png = write_texts_and_image (settings, name, 0, (side_file_lost) ? 40 : 39);
+    g_autofree gchar *pngs = g_paste_file_backend_encrypted_path (png);
+    g_autoptr (GPasteStorageBackend) plain = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = read_history_ok (plain, name);
+
+    g_paste_storage_backend_write_history (encrypted, name, items);
+    g_assert_true (g_file_test (pngs, G_FILE_TEST_EXISTS));
+    if (side_file_lost)
+        g_assert_cmpint (g_unlink (pngs), ==, 0);
+
+    g_paste_storage_backend_delete_history (plain, name, NULL);
+    g_assert_cmpint (g_file_test (png, G_FILE_TEST_EXISTS), ==, side_file_lost);
+
+    g_autolist (GPasteItem) imported = read_history_ok (encrypted, name);
+
+    g_assert_cmpuint (g_list_length (imported), ==, 1);
+    g_paste_storage_backend_write_history (encrypted, name, imported);
+    g_assert_true (g_file_test (pngs, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (png, G_FILE_TEST_EXISTS));
+}
+
+static void
+test_file_encrypting_migration_images (void)
+{
+    check_encrypting_migration_images (FALSE);
+}
+
+static void
+test_file_encrypting_migration_lost_side_file (void)
+{
+    check_encrypting_migration_images (TRUE);
+}
+#endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
 /* The same eviction against a database: the image was never a file, so nothing
@@ -3487,6 +3939,35 @@ test_sqlite_cascade (void)
     g_list_free_full (items, g_object_unref);
 }
 
+/* A database keeps its images in the store, so deleting the last file flavour
+ * of a name takes the images directory with it, a database of the same name
+ * notwithstanding: a migration from the plain flavour leaves no screenshot in
+ * clear. */
+static void
+test_sqlite_migration_takes_source_images (void)
+{
+    const gchar *name = "sqlite-migrate-source-images";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autofree gchar *png = write_texts_and_image (settings, name, 0, 41);
+    g_autoptr (GPasteStorageBackend) source = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autoptr (GPasteStorageBackend) destination = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = read_history_ok (source, name);
+
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+
+    g_paste_storage_backend_write_history (destination, name, items);
+    g_paste_storage_backend_delete_history (source, name, NULL);
+    g_assert_false (g_file_test (png, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (images, G_FILE_TEST_EXISTS));
+
+    g_autolist (GPasteItem) imported = read_history_ok (destination, name);
+
+    g_assert_cmpuint (g_list_length (imported), ==, 1);
+}
+
 /* The images/<name>/ directory belongs to the history *name*, shared across
  * backend flavors: a migration imports into the destination and then deletes
  * the source under the same name, which must not sweep the images the
@@ -4378,6 +4859,17 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/file_image_per_history", test_file_image_per_history);
     g_test_add_func ("/history/file_backup_owns_images", test_file_backup_owns_images);
     g_test_add_func ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
+    g_test_add_func ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);
+    g_test_add_func ("/history/file_image_moved_home", test_file_image_moved_home);
+    g_test_add_func ("/history/file_unreadable_keeps_image", test_file_unreadable_keeps_image);
+    g_test_add_func ("/history/file_skipped_image_kept_by_reads", test_file_skipped_image_kept_by_reads);
+    g_test_add_func ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
+    g_test_add_func ("/history/file_sweep_bounds", test_file_sweep_bounds);
+    g_test_add_func ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);
+    g_test_add_func ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
+#endif
     g_test_add_func ("/history/content_kind_transitions", test_content_kind_transitions);
     g_test_add_func ("/history/same_display_string_keeps_size", test_same_display_string_keeps_size);
     g_test_add_func ("/history/add_get_length", test_add_get_length);
@@ -4453,6 +4945,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_strip_rich_text", test_sqlite_strip_rich_text);
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
     g_test_add_func ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
+    g_test_add_func ("/history/sqlite_migration_takes_source_images", test_sqlite_migration_takes_source_images);
     g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
     g_test_add_func ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);

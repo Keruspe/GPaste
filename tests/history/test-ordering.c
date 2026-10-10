@@ -5,6 +5,7 @@
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
+#include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -694,6 +695,40 @@ test_rename_during_write (void)
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (kept)), ==, 7);
 }
 
+/* An image deleted while a write still holding it is out leaves no file once
+ * the write its deletion records has landed. Deleted when the item left the
+ * model, the file would come back with the write that was out, and the next
+ * one, no longer referencing it, would never take it again. */
+static void
+test_remove_image_during_write (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "image-removed-during-write");
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    const guchar pixel[] = { 40, 41, 42, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    GPasteItem *image = g_paste_image_item_new (texture);
+    g_autofree gchar *path = g_paste_file_backend_image_path ("image-removed-during-write",
+                                                              g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image)));
+
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, image);
+    wait_worker ();
+    g_paste_history_remove (history, 0);
+    release_worker ();
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "image-removed-during-write");
+
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+}
+
 int
 main (int    argc,
       char **argv)
@@ -722,6 +757,7 @@ main (int    argc,
     g_test_add_data_func ("/history-ordering/count-pending-images-off", GINT_TO_POINTER (TRUE), test_count_pending_settings);
     g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (FALSE), test_count_pending_settings);
     g_test_add_func ("/history-ordering/rename-during-write", test_rename_during_write);
+    g_test_add_func ("/history-ordering/remove-image-during-write", test_remove_image_during_write);
 
     return g_paste_test_env_run ();
 }

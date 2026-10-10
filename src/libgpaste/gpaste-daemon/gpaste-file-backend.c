@@ -141,33 +141,6 @@ g_paste_file_backend_encrypted_path (const gchar *path)
     return g_strconcat (path, "s", NULL);
 }
 
-/**
- * g_paste_file_backend_delete_image:
- * @path: the canonical (plain) cache path of an image
- *
- * Delete an image's materialized data: the cache file at @path and its
- * encrypted side file. Only one of the two was ever written -- which one is the
- * flavour's business -- so the absent one is fine.
- */
-G_PASTE_VISIBLE void
-g_paste_file_backend_delete_image (const gchar *path)
-{
-    g_return_if_fail (path);
-
-    g_autofree gchar *encrypted_path = g_paste_file_backend_encrypted_path (path);
-    const gchar *paths[] = { path, encrypted_path };
-
-    for (guint64 i = 0; i < G_N_ELEMENTS (paths); ++i)
-    {
-        g_autoptr (GFile) image = g_file_new_for_path (paths[i]);
-        g_autoptr (GError) error = NULL;
-
-        if (!g_file_delete (image, NULL, &error) &&
-            !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            g_warning ("Failed to delete image file: %s", (error) ? error->message : "unknown error");
-    }
-}
-
 /* The XML history references images by their canonical <checksum>.png path
  * (@reference, derived from the item's checksum under the history being
  * written, which is the backup's own when writing under another name); writing
@@ -329,6 +302,192 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
     return TRUE;
 }
 
+/* The name of the file this backend materializes an image in, under its
+ * history's images directory: its checksum, a SHA-256 in hex, and the flavour's
+ * suffix. %NULL for an item without a checksum, which no file names. */
+static gchar *
+_g_paste_file_backend_image_file_name (GPasteImageItem *image,
+                                       gboolean         encrypted)
+{
+    const gchar *checksum = g_paste_image_item_get_checksum (image);
+
+    if (!checksum)
+        return NULL;
+
+    return g_strconcat (checksum, (encrypted) ? ".pngs" : ".png", NULL);
+}
+
+/* Whether @file_name is one _g_paste_file_backend_image_file_name() could have
+ * produced for this flavour. */
+static gboolean
+_g_paste_file_backend_is_image_file_name (const gchar *file_name,
+                                          gboolean     encrypted)
+{
+    const gsize checksum_length = 2 * 32; /* SHA-256, in hex */
+
+    return strspn (file_name, "0123456789abcdef") == checksum_length &&
+           g_str_equal (file_name + checksum_length, (encrypted) ? ".pngs" : ".png");
+}
+
+/* Delete the image files under images/@history_name/ that no history of that
+ * name can read any more, once the store of this flavour has been written in
+ * full (@referenced, the file names its snapshot references) or deleted
+ * (@referenced %NULL): what an item leaving the history left, whichever way it
+ * left. Here rather than when the item leaves the model, for two reasons. A
+ * write still out with an earlier snapshot, in which the item was, would bring
+ * a file deleted then back, and nothing would delete it again: the written
+ * snapshot is the one point in the saver's order where what the store needs
+ * is known. And the store may still need the file when the model no longer has
+ * the item: a history that cannot be read, or one handed over to another
+ * daemon, is never written, so it is never swept.
+ *
+ * The two file flavours share the directory. Each sweeps its own files, and a
+ * plaintext ".png" is both the plain flavour's image and the encrypted one's
+ * fallback for an entry whose ".pngs" is missing (add_item ()), so it stays
+ * while either may read it: while a plain history of that name is stored and
+ * references it -- or may, for an encrypted sweep, which cannot see that
+ * history's references -- or while an encrypted one is stored and the ".pngs"
+ * beside it is not. Past that it is the secret the encrypted flavour exists to
+ * keep off the disk: a screenshot a migration to it left in clear.
+ *
+ * What is never touched: anything outside images/<history_name>/, and in it
+ * anything but files named after a checksum the way this backend names its
+ * own. */
+static void
+_g_paste_file_backend_sweep_images (const gchar *history_name,
+                                    gboolean     encrypted,
+                                    GHashTable  *referenced)
+{
+    g_autofree gchar *images_dir = g_paste_file_backend_images_dir (history_name);
+    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!files)
+    {
+        g_warning ("Could not list the images of \"%s\" to remove the ones it no longer holds: %s", history_name, error->message);
+        return;
+    }
+
+    gboolean plain_stored = encrypted && g_paste_util_history_is_stored (history_name, G_PASTE_STORAGE_FILE);
+    gboolean encrypted_stored = !encrypted && g_paste_util_history_is_stored (history_name, G_PASTE_STORAGE_ENCRYPTED_FILE);
+
+    for (GStrv file = files; *file; ++file)
+    {
+        g_autofree gchar *path = g_build_filename (images_dir, *file, NULL);
+
+        if (_g_paste_file_backend_is_image_file_name (*file, encrypted))
+        {
+            if (referenced && g_hash_table_contains (referenced, *file))
+                continue;
+        }
+        else if (!encrypted || plain_stored || !_g_paste_file_backend_is_image_file_name (*file, FALSE))
+            continue;
+
+        /* A ".png", in either flavour's sweep: kept while an encrypted entry
+         * may fall back on it. */
+        if (!_g_paste_file_backend_is_image_file_name (*file, TRUE))
+        {
+            g_autofree gchar *side_file = g_paste_file_backend_encrypted_path (path);
+            g_autofree gchar *side_name = g_path_get_basename (side_file);
+            gboolean may_fall_back = (encrypted) ? referenced && g_hash_table_contains (referenced, side_name) : encrypted_stored;
+
+            if (may_fall_back && !g_file_test (side_file, G_FILE_TEST_EXISTS))
+                continue;
+        }
+
+        if (g_unlink (path) && errno != ENOENT)
+            g_warning ("Could not remove the image %s, which its history no longer holds: %s", path, g_strerror (errno));
+    }
+}
+
+/**
+ * g_paste_file_backend_sweep_legacy_images:
+ *
+ * Delete the images GPaste 50 kept in the one directory every history shared
+ * (images/<checksum>.png) that no history still references.
+ *
+ * GPaste 50 referenced them by absolute path, from plain histories alone, and
+ * a history read from that layout copies each into its own images directory on
+ * its next write, referencing the copy from then on: a shared file stays for
+ * as long as a history GPaste 50 wrote has yet to be written again. To be run
+ * before any history is read, since an image read from a shared file reloads
+ * its pixels from it for as long as it is in memory.
+ *
+ * Nothing goes when a history file cannot be read: what it references is then
+ * unknown.
+ */
+G_PASTE_VISIBLE void
+g_paste_file_backend_sweep_legacy_images (void)
+{
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *images_dir = g_build_filename (history_dir, "images", NULL);
+    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) images = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!images)
+    {
+        g_warning ("Could not list the images GPaste 50 left: %s", error->message);
+        return;
+    }
+
+    g_auto (GStrv) histories = NULL;
+    g_autoptr (GPtrArray) contents = g_ptr_array_new_with_free_func (g_free);
+    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (G_PASTE_STORAGE_FILE), NULL);
+
+    for (GStrv image = images; *image; ++image)
+    {
+        if (!_g_paste_file_backend_is_image_file_name (*image, FALSE))
+            continue;
+
+        /* Read the first time there is an image to look for, and only then:
+         * once nothing is left in the shared
+         * directory, a start costs a listing. */
+        if (!histories)
+        {
+            g_autoptr (GFile) history_dir_file = g_file_new_for_path (history_dir);
+
+            if (!(histories = g_paste_util_list_directory (history_dir_file, G_FILE_ATTRIBUTE_STANDARD_NAME, &error)))
+            {
+                g_warning ("Could not list the histories to know which images GPaste 50 left they reference: %s", error->message);
+                return;
+            }
+
+            for (GStrv history = histories; *history; ++history)
+            {
+                if (!g_str_has_suffix (*history, suffix))
+                    continue;
+
+                g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
+                gchar *text = NULL;
+
+                if (!g_file_get_contents (path, &text, NULL, &error))
+                {
+                    g_warning ("Could not read %s to know which images GPaste 50 left it references: %s", path, error->message);
+                    return;
+                }
+                g_ptr_array_add (contents, text);
+            }
+        }
+
+        g_autofree gchar *path = g_build_filename (images_dir, *image, NULL);
+        /* The path's tail alone: GPaste 50 spelt the data directory as it was
+         * reached then, which a symlinked home or another XDG_DATA_HOME may no
+         * longer match. A checksum name needs no encoding, and a match a
+         * per-history path or a text item happens
+         * to contain only keeps a file. */
+        g_autofree gchar *reference = g_strconcat (G_DIR_SEPARATOR_S "images" G_DIR_SEPARATOR_S, *image, NULL);
+        gboolean referenced = FALSE;
+
+        for (guint i = 0; !referenced && i < contents->len; ++i)
+            referenced = strstr (g_ptr_array_index (contents, i), reference) != NULL;
+
+        if (!referenced && g_unlink (path) && errno != ENOENT)
+            g_warning ("Could not remove the image %s, which no history references any more: %s", path, g_strerror (errno));
+    }
+}
+
 static void
 g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
                                          const gchar          *history_name,
@@ -372,6 +531,8 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
 
     gboolean success = TRUE;
     g_autoptr (GError) error = NULL;
+    /* The image files this snapshot references, for the sweep once it is in. */
+    g_autoptr (GHashTable) referenced = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
     if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, &error) ||
         !g_output_stream_write_all (stream, "<history version=\"2.0\">\n", 24, NULL, NULL /* cancellable */, &error))
@@ -406,6 +567,11 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
              * image item has -- building one is what computes it. */
             image_reference = g_paste_file_backend_image_path (history_name, g_paste_image_item_get_checksum (image));
             _g_paste_file_backend_ensure_image_file (real_self, image, image_reference);
+
+            gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
+
+            if (file_name)
+                g_hash_table_add (referenced, file_name);
         }
 
         const GSList *special_values = g_paste_item_get_special_values (item);
@@ -460,14 +626,11 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         success = FALSE;
     }
 
-    if (!success)
-    {
-        if (!g_file_delete (tmp_file, NULL, &error) &&
-            !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        {
-            g_warning ("Failed to delete history temp file: %s", error->message);
-        }
-    }
+    if (success)
+        _g_paste_file_backend_sweep_images (history_name, encrypted, referenced);
+    else if (!g_file_delete (tmp_file, NULL, &error) &&
+             !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Failed to delete history temp file: %s", error->message);
 }
 
 /********************/
@@ -504,6 +667,8 @@ typedef enum
 typedef struct
 {
     GPasteStorageBackend *backend;
+    /* The history being read, whose images directory an image is looked up in. */
+    const gchar          *history_name;
     const gchar          *history_file_path;
     GList                *history;
     gsize                 mem_size;
@@ -796,6 +961,34 @@ start_tag (GMarkupParseContext *context,
         WARN_AT ("Unknown element: %s", element_name);
 }
 
+/* Where an image of the history read is: in its images directory, under the
+ * name its checksum gives it, whatever path the document stored -- one spelling
+ * the data directory as it was reached then, which a moved or renamed home, or
+ * another XDG_DATA_HOME, no longer matches. The stored path is read only when
+ * nothing is there: an image of GPaste 50's shared directory, which the next
+ * save moves into the history's own. */
+static gchar *
+_g_paste_file_backend_image_location (const Data *data)
+{
+    if (!data->checksum)
+        return g_strdup (data->text);
+
+    g_autofree gchar *derived = g_paste_file_backend_image_path (data->history_name, data->checksum);
+
+    if (g_file_test (derived, G_FILE_TEST_EXISTS))
+        return g_steal_pointer (&derived);
+
+    if (g_paste_storage_backend_is_encrypted (data->backend))
+    {
+        g_autofree gchar *side_file = g_paste_file_backend_encrypted_path (derived);
+
+        if (g_file_test (side_file, G_FILE_TEST_EXISTS))
+            return g_steal_pointer (&derived);
+    }
+
+    return g_strdup (data->text);
+}
+
 static void
 add_item (Data *data)
 {
@@ -855,15 +1048,19 @@ add_item (Data *data)
                                                                                                 0)); /* base */
             /* The encrypted flavor stores the image in an encrypted side file
              * rather than at the referenced (plaintext) path. Either way the
-             * item keeps the path it was stored with: that is where its
+             * item keeps the path it was read at: that is where its
              * materialized data actually lives. */
-            g_autoptr (GBytes) png = _g_paste_file_backend_load_image_bytes (data->backend, data->text);
+            g_autofree gchar *path = _g_paste_file_backend_image_location (data);
+            g_autoptr (GBytes) png = _g_paste_file_backend_load_image_bytes (data->backend, path);
 
-            item = (png) ? g_paste_image_item_new_from_bytes_at_path (data->text, png, date_time, data->checksum)
-                         : g_paste_image_item_new_from_file (data->text, date_time, data->checksum);
+            item = (png) ? g_paste_image_item_new_from_bytes_at_path (path, png, date_time, data->checksum)
+                         : g_paste_image_item_new_from_file (path, date_time, data->checksum);
         }
-        else
-            g_paste_file_backend_delete_image (data->text);
+        /* An image read with images turned off, or without the date to restore
+         * it with, is skipped and its file left where it is: this may be no read
+         * the history is saved from (another history sized up, an import, a
+         * document cut short), and the next full write of it sweeps what it no
+         * longer references. */
         break;
     case G_PASTE_ITEM_KIND_INVALID:
         break;
@@ -1170,6 +1367,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
         };
         Data data = {
             self,
+            name,
             history_file_path,
             NULL,
             0,
@@ -1314,15 +1512,20 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
                                      GError              **error)
 {
     g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, g_paste_storage_backend_get_extension (self));
-
     g_autoptr (GError) delete_error = NULL;
 
+    /* The images go once the history is gone, and the ones this flavour may
+     * share with the other go only once neither can read them: see
+     * _g_paste_file_backend_sweep_images (). The base class takes the whole
+     * directory once no file flavour stores the name. */
     if (!g_file_delete (history_file, NULL, &delete_error) &&
         !g_error_matches (delete_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
     {
         g_propagate_error (error, g_steal_pointer (&delete_error));
         return;
     }
+
+    _g_paste_file_backend_sweep_images (name, g_paste_storage_backend_is_encrypted (self), NULL);
 
     if (delete_error)
         g_propagate_error (error, g_steal_pointer (&delete_error));
@@ -1435,9 +1638,10 @@ _g_paste_file_backend_encrypted_files (const gchar *name)
 
     for (GStrv image = images; *image; ++image)
     {
-        /* The encrypted side files only; a leftover plain ".png" holds
-         * nothing secret and has no key to change. */
-        if (g_str_has_suffix (*image, ".pngs"))
+        /* The encrypted side files only, named as this backend names them: a
+         * leftover plain ".png" holds nothing secret, and a ".pngs" under any
+         * other name is no entry's, the sweep leaving it alone too. */
+        if (_g_paste_file_backend_is_image_file_name (*image, TRUE))
             g_strv_builder_take (builder, g_build_filename (images_dir, *image, NULL));
     }
 
@@ -1821,32 +2025,6 @@ g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
 }
 #endif
 
-/* What this backend wrote for @item beside its history file: an image's cache
- * file, and nothing else. Named from the checksum under the history the item is
- * being dropped from, plus wherever the item was read from when that is
- * somewhere else -- a legacy shared-directory entry is still this item's file.
- * A history whose images were never materialized (another flavour wrote it)
- * simply has nothing to delete. */
-static void
-g_paste_file_backend_drop_item_data (GPasteStorageBackend *self G_GNUC_UNUSED,
-                                     const gchar          *name,
-                                     GPasteItem           *item)
-{
-    if (!G_PASTE_IS_IMAGE_ITEM (item))
-        return;
-
-    GPasteImageItem *image = G_PASTE_IMAGE_ITEM (item);
-    const gchar *checksum = g_paste_image_item_get_checksum (image);
-    const gchar *cache_path = g_paste_image_item_get_cache_path (image);
-    g_autofree gchar *path = (checksum) ? g_paste_file_backend_image_path (name, checksum) : NULL;
-
-    if (path)
-        g_paste_file_backend_delete_image (path);
-
-    if (cache_path && !g_paste_str_equal (cache_path, path))
-        g_paste_file_backend_delete_image (cache_path);
-}
-
 static void
 g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 {
@@ -1857,7 +2035,6 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     storage_class->get_kind = g_paste_file_backend_get_kind;
     storage_class->delete_history = g_paste_file_backend_delete_history;
     storage_class->count_history = g_paste_file_backend_count_history;
-    storage_class->drop_item_data = g_paste_file_backend_drop_item_data;
 
     klass->get_output_stream = g_paste_file_backend_get_output_stream;
 

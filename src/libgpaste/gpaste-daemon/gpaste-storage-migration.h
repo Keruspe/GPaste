@@ -18,11 +18,6 @@ G_BEGIN_DECLS
  * differs from G_PASTE_STORAGE_BACKEND_REVISION. */
 gboolean g_paste_storage_migration_needed (GPasteSettings *settings);
 
-/* Whether an encrypted history still needs decrypting before it can be loaded:
- * the backend is encrypted and no passphrase is set yet. When libsecret is built
- * this also applies a usable keyring passphrase as a side effect (returning
- * %FALSE then), so a %TRUE result means a prompt is genuinely required. It
- * first settles a change of passphrase the last process left unfinished. */
 gboolean g_paste_storage_decryption_needed (GPasteSettings *settings);
 
 /* The three storage concerns are ordinary GAsyncResult operations: each _async

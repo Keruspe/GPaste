@@ -191,31 +191,19 @@ g_paste_history_private_elect_new_biggest (GPasteHistory *self)
     g_paste_history_private_elect_new_biggest_sparing (self, NULL);
 }
 
-/* The item goes, and with it whatever the storage backend materialized outside
- * its own store for it -- an image's cache file, for the flavours that keep
- * one. Which of them did is the backend's own business: a database blob has
- * nothing here to clean up. */
-static void
-g_paste_history_item_free (GPasteHistory *self,
-                           gpointer       data)
-{
-    g_autoptr (GPasteItem) item = data;
-
-    /* A history that has not been named yet was never persisted, so no backend
-     * has written anything for this item to begin with. */
-    if (self->name)
-        g_paste_storage_backend_drop_item_data (self->backend, self->name, item);
-}
-
 /* Drop the item at @index from the model. The array's ref is *stolen* rather
- * than released, so this never frees on its own: with @remove_leftovers the
- * item (and any backing file it owns) is disposed of here, without it the
- * caller has taken the ref over — either to free it itself or because the item
- * is only being moved to the front. */
+ * than released, so this never frees on its own: with @departs the item leaves
+ * the history for good and is disposed of here, without it the caller has
+ * taken the ref over — either to free it itself or because the item is only
+ * being moved to the front.
+ *
+ * Nothing the storage backend wrote for the item goes with it: an image's file
+ * goes with the next full write that no longer references it, the file
+ * flavours' sweep (gpaste-file-backend.c says why there). */
 static void
 g_paste_history_private_remove (GPasteHistory *self,
                                 guint          index,
-                                gboolean       remove_leftovers)
+                                gboolean       departs)
 {
     g_return_if_fail (index < self->history->len);
 
@@ -227,7 +215,7 @@ g_paste_history_private_remove (GPasteHistory *self,
     g_hash_table_remove (self->by_uuid, g_paste_item_get_uuid (item));
     g_ptr_array_steal_index (self->history, index);
 
-    if (remove_leftovers)
+    if (departs)
     {
         /* A password leaving the model for good may still be sitting on a
          * selection, and the entry that recorded it is about to be gone: nothing
@@ -239,13 +227,13 @@ g_paste_history_private_remove (GPasteHistory *self,
          * tests). Which selections that is, if any, is the clipboards manager's
          * to answer.
          *
-         * A @remove_leftovers of %FALSE is an item being moved to the front or a
+         * A @departs of %FALSE is an item being moved to the front or a
          * duplicate the caller frees, which is no departure: the value stays in
          * the history. */
         if (G_PASTE_IS_PASSWORD_ITEM (item))
             self->pending_dropped = g_slist_prepend (self->pending_dropped, g_object_ref (item));
 
-        g_paste_history_item_free (self, item);
+        g_object_unref (item);
     }
 }
 
@@ -296,7 +284,7 @@ g_paste_history_snapshot (GPasteHistory *self)
 
 /* Drop every item, keeping the containers. Releases the array's refs through
  * its free func (a plain unref: unlike g_paste_history_empty this is a history
- * being swapped out, not thrown away, so backing files are left alone). */
+ * being swapped out, not thrown away, so no password leaves it). */
 static void
 g_paste_history_private_clear (GPasteHistory *self)
 {
@@ -478,7 +466,7 @@ g_paste_history_private_check_size (GPasteHistory *self)
     guint64 max_history_size = g_paste_settings_get_max_history_size (self->settings);
 
     /* Truncate from the tail: private_remove already does the size bookkeeping,
-     * the uuid index and the leftover backing files.
+     * the uuid index and the passwords that leave.
      *
      * Favourites are skipped rather than dropped, so this walks the tail once
      * instead of always taking the last item. A history holding nothing else
@@ -521,13 +509,13 @@ g_paste_history_private_check_size (GPasteHistory *self)
 
 /* Both caps, applied when a cap itself moves rather than the history under it.
  * The same trim g_paste_history_on_loaded () performs, saved for the same
- * reason: an eviction frees the backing files of what it drops, so a store left
- * pointing at them is a history that cannot be read back -- and every client
+ * reason: the store has to drop what the model dropped, the file flavours
+ * sweeping the images of what it evicted with that write -- and every client
  * would go on showing rows the daemon no longer has until the next clipboard
  * change came to redraw them. Which is also why a flushed or unreadable history
  * is left alone: neither can be saved (the first belongs to a successor daemon
- * now, the second must never be written over), so a trim there would delete the
- * images a store still points at. */
+ * now, the second must never be written over), so a trim there would only have
+ * the model answer for less than the store holds. */
 static void
 g_paste_history_private_trim (GPasteHistory *self)
 {
@@ -663,8 +651,7 @@ _g_paste_history_add (GPasteHistory *self,
              * user asked to keep evictable again, one keystroke at a time. */
             if (g_paste_item_is_favourite (old_first))
                 g_paste_item_set_favourite (item, TRUE);
-            /* old_first is a distinct object replaced by the grown item; free it
-             * (its shared backing file, if any, is kept). */
+            /* No departure: the grown item carries the same line on. */
             g_autoptr (GPasteItem) dropped = old_first;
             g_paste_history_private_remove (self, 0, FALSE);
         }
@@ -709,9 +696,9 @@ _g_paste_history_add (GPasteHistory *self,
                      * one object and this says nothing new. */
                     if (g_paste_item_is_favourite (entry))
                         g_paste_item_set_favourite (item, TRUE);
-                    /* On add, @entry is a distinct duplicate to free (its shared
-                     * backing file is kept). On select, @entry IS @item being moved
-                     * to the front, so its ref must be left alone. */
+                    /* On add, @entry is a distinct duplicate to free. On select,
+                     * @entry IS @item being moved to the front, so its ref must
+                     * be left alone. */
                     g_autoptr (GPasteItem) dropped = new_selection ? entry : NULL;
                     g_paste_history_private_remove (self, i, FALSE);
                     break;
@@ -992,9 +979,7 @@ _g_paste_history_replace (GPasteHistory *self,
     self->size += g_paste_item_get_size (new);
 
     /* Swap in place: the steal hands back the array's ref (its free func does
-     * not run) so we drop it ourselves, and @new takes the same slot. Unlike a
-     * removal this keeps any backing file, since only the item wrapping it is
-     * being replaced. */
+     * not run) so we drop it ourselves, and @new takes the same slot. */
     g_hash_table_remove (self->by_uuid, old_uuid);
     g_ptr_array_steal_index (self->history, index);
     g_object_unref (old);
@@ -1425,8 +1410,8 @@ g_paste_history_empty (GPasteHistory *self)
     G_PASTE_LOCK_HISTORY;
 
     /* Through private_remove rather than the array's own free func: emptying
-     * also drops each item's backing file, keeps the uuid index in step, and
-     * announces every password it takes with it -- their cleartext would
+     * keeps the uuid index in step, and announces every password it takes with
+     * it -- their cleartext would
      * otherwise outlive the entries that recorded them, with no countdown to take
      * it off under a password-timeout of 0. Nothing is published over the
      * selections here beyond that: there is no head left to publish, and the
@@ -1601,9 +1586,8 @@ g_paste_history_sync (GPasteHistory *self,
  *
  * No cap is applied to what comes back, unlike the load g_paste_history_on_loaded ()
  * installs: this one reads a history the daemon is not keeping -- another one, to
- * size it or to copy it -- and nothing saves what it read, so a trim would free
- * the backing files of the items it dropped and leave a store still pointing at
- * them. What is on disk is what is answered. */
+ * size it or to copy it -- and nothing saves what it read, so a trim would only
+ * answer for less than the store holds. What is on disk is what is answered. */
 static void
 g_paste_history_load_locked (GPasteHistory *self,
                              const gchar   *name)
@@ -1694,13 +1678,14 @@ g_paste_history_on_loaded (gpointer user_data,
      * the rows over the cap would sit there until it came and then vanish all at
      * once.
      *
-     * An eviction frees the backing files of what it drops, so the store must
-     * not be left referencing them: whatever the load asked for, a trim is
-     * saved. Which is also why a history that is unreadable or flushed is left
-     * alone: neither can be saved (the first must never be written over, the
-     * second belongs to a successor daemon now), so a trim there would delete
-     * the images a store still points at. A switch can land right inside that
-     * flushed window -- see g_paste_history_history_name_changed (). */
+     * The store has to drop what the model dropped, the file flavours sweeping
+     * the images of what it evicted with that write: whatever the load asked
+     * for, a trim is saved. Which is also why a history that is unreadable or
+     * flushed is left alone: neither can be saved (the first must never be
+     * written over, the second belongs to a successor daemon now), so a trim
+     * there would only have the model answer for less than the store holds. A
+     * switch can land right inside that flushed window -- see
+     * g_paste_history_history_name_changed (). */
     else if (!self->stopped)
     {
         guint length_before = self->history->len;
