@@ -18,6 +18,49 @@
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3, sqlite3_close)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3_stmt, sqlite3_finalize)
+
+/* The statement whose execution fails as a full disk would fail it, matched
+ * as a substring: NULL for none. */
+static const gchar *failed_sql;
+
+int
+sqlite3_exec (sqlite3    *db,
+              const char *sql,
+              int       (*callback) (void *, int, char **, char **),
+              void       *data,
+              char      **error)
+{
+    typedef int (*Exec) (sqlite3 *, const char *, int (*) (void *, int, char **, char **), void *, char **);
+    Exec original = (Exec) dlsym (RTLD_NEXT, "sqlite3_exec");
+
+    g_assert_nonnull (original);
+    if (failed_sql && strstr (sql, failed_sql))
+    {
+        if (error)
+            *error = sqlite3_mprintf ("injected disk-full failure");
+
+        return SQLITE_FULL;
+    }
+
+    return original (db, sql, callback, data, error);
+}
+
+/* One integer out of @path, through a connection of its own: test-history.c's
+ * sqlite_raw_count() is the same, in a binary that shares no fixture with
+ * this one. */
+static gint64
+sqlite_query_int (const gchar *path,
+                  const gchar *sql)
+{
+    g_autoptr (sqlite3) db = NULL;
+    g_autoptr (sqlite3_stmt) statement = NULL;
+
+    g_assert_cmpint (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_prepare_v2 (db, sql, -1, &statement, NULL), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_step (statement), ==, SQLITE_ROW);
+
+    return sqlite3_column_int64 (statement, 0);
+}
 #endif
 
 /* Writes through a backend of the first kind leave the history's first item
@@ -443,6 +486,66 @@ test_import_needs_readable_copy (void)
 }
 #endif
 
+#ifdef G_PASTE_ENABLE_SQLITE
+/* A version 1 database, as an older GPaste left it, whose upgrade fails at
+ * the statement @data names: the database has to come out of it exactly as it
+ * went in, so that the next open upgrades it whole. */
+static void
+test_schema_failure (gconstpointer data)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "schema-failure";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    g_autoptr (sqlite3) db = NULL;
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (db,
+                                   "CREATE TABLE items (id INTEGER PRIMARY KEY, uuid TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,"
+                                   "                    value TEXT NOT NULL, rank INTEGER NOT NULL, date INTEGER, checksum TEXT,"
+                                   "                    name TEXT, image BLOB);"
+                                   "CREATE UNIQUE INDEX items_rank ON items (rank DESC);"
+                                   "CREATE TABLE special_values (item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,"
+                                   "                             position INTEGER NOT NULL, mime TEXT NOT NULL, data BLOB NOT NULL,"
+                                   "                             PRIMARY KEY (item_id, position));"
+                                   "INSERT INTO items (uuid, kind, value, rank) VALUES ('952f0c74-bf9e-4d4f-b493-dd7d30998150', 'Text', 'precious', 1);"
+                                   "PRAGMA user_version = 1;",
+                                   NULL, NULL, NULL), ==, SQLITE_OK);
+    g_clear_pointer (&db, sqlite3_close);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) items = NULL;
+        gsize size;
+
+        failed_sql = data;
+        g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+        failed_sql = NULL;
+    }
+
+    g_assert_cmpint (sqlite_query_int (path, "PRAGMA user_version;"), ==, 1);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name IN ('favourite', 'timeout');"), ==, 0);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "precious");
+}
+#endif
+
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
 static gchar *
 read_meta (sqlite3     *db,
@@ -636,6 +739,11 @@ main (int    argc,
     g_test_add_data_func ("/storage/migration/encrypted-sqlite-identity", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_SQLITE), test_migration_keeps_unopenable_identity);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/unlock/unopenable-flavour", test_unlock_skips_unopenable_flavour);
+#endif
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);
+    g_test_add_data_func ("/storage/sqlite/schema/version", "PRAGMA user_version = 3", test_schema_failure);
+    g_test_add_data_func ("/storage/sqlite/schema/commit", "COMMIT;", test_schema_failure);
 #endif
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
     g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);

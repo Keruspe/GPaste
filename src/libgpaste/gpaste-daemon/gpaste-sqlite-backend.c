@@ -93,6 +93,8 @@ g_paste_sqlite_backend_close (sqlite3 *db)
     sqlite3_close (db);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3, g_paste_sqlite_backend_close)
+
 static gboolean
 g_paste_sqlite_backend_exec (sqlite3     *db,
                              const gchar *sql)
@@ -685,12 +687,11 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
     if (!g_paste_util_ensure_history_dir_exists ())
         return NULL;
 
-    sqlite3 *db = NULL;
+    g_autoptr (sqlite3) db = NULL;
 
     if (sqlite3_open_v2 (db_path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to open “%s”: %s", db_path, db ? sqlite3_errmsg (db) : "out of memory");
-        sqlite3_close (db);
         return NULL;
     }
 
@@ -700,34 +701,35 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                                       "PRAGMA journal_mode = WAL;"
                                       "PRAGMA synchronous = NORMAL;"
                                       "PRAGMA foreign_keys = ON;"))
-    {
-        sqlite3_close (db);
         return NULL;
-    }
 
     gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
-    gboolean ok;
 
     if (version > G_PASTE_SQLITE_SCHEMA_VERSION)
     {
         g_warning ("sqlite: “%s” uses schema version %" G_GINT64_FORMAT " from a newer GPaste (this one supports %d); not touching it",
                    db_path, version, G_PASTE_SQLITE_SCHEMA_VERSION);
-        sqlite3_close (db);
         return NULL;
     }
 
-    if (version == 0)
-        ok = g_paste_sqlite_backend_create_schema (db);
-    else
-        ok = g_paste_sqlite_backend_migrate_schema (db, version);
-
-    if (ok && version != G_PASTE_SQLITE_SCHEMA_VERSION)
-        ok = g_paste_sqlite_backend_exec (db, "PRAGMA user_version = " G_STRINGIFY (G_PASTE_SQLITE_SCHEMA_VERSION) ";");
-
-    if (!ok)
+    /* The schema and the version saying which it is go in one transaction: a
+     * step committed on its own, with the version write still to fail, would
+     * have the next open run that step again and fail on what it already did
+     * ("duplicate column"), every time. Rolled back whole, the upgrade is
+     * simply tried again. */
+    if (version != G_PASTE_SQLITE_SCHEMA_VERSION)
     {
-        sqlite3_close (db);
-        return NULL;
+        if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
+            return NULL;
+
+        gboolean ok = (version == 0) ? g_paste_sqlite_backend_create_schema (db)
+                                     : g_paste_sqlite_backend_migrate_schema (db, version);
+
+        if (ok)
+            ok = g_paste_sqlite_backend_exec (db, "PRAGMA user_version = " G_STRINGIFY (G_PASTE_SQLITE_SCHEMA_VERSION) ";");
+
+        if (!g_paste_sqlite_backend_finish_transaction (db, ok))
+            return NULL;
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -741,7 +743,6 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
             if (wrong_passphrase)
                 g_warning ("sqlite: the passphrase does not unlock “%s”; not touching it", db_path);
             gcr_secure_memory_free (key);
-            sqlite3_close (db);
             return NULL;
         }
 
@@ -757,10 +758,10 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                                      "WHERE items.id = ranked.id;");
     }
 
-    backend->db = db;
+    backend->db = g_steal_pointer (&db);
     backend->db_path = g_strdup (db_path);
 
-    return db;
+    return backend->db;
 }
 
 /*****************/
@@ -1353,14 +1354,10 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
-    sqlite3 *db = NULL;
+    g_autoptr (sqlite3) db = NULL;
 
     if (sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
-    {
-        sqlite3_close (db);
-
         return 0;
-    }
 
     sqlite3_busy_timeout (db, 5000);
 
@@ -1369,11 +1366,7 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
     /* 0 is a database with no schema yet, which a read creates and finds empty;
      * anything past ours is one this GPaste will not touch. */
     if (!version || version > G_PASTE_SQLITE_SCHEMA_VERSION)
-    {
-        sqlite3_close (db);
-
         return 0;
-    }
 
     gboolean images_support = g_paste_settings_get_images_support (settings);
     const gchar *query;
@@ -1408,7 +1401,6 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
     if (sqlite3_prepare_v2 (db, query, -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare history count query: %s", sqlite3_errmsg (db));
-        sqlite3_close (db);
 
         return 0;
     }
@@ -1424,7 +1416,6 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
         count = sqlite3_column_int64 (stmt, 0);
 
     sqlite3_finalize (stmt);
-    sqlite3_close (db);
 
     return count;
 }
@@ -1954,14 +1945,11 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
                                                    const gchar          *name)
 {
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
-    sqlite3 *db = NULL;
+    g_autoptr (sqlite3) db = NULL;
 
     /* Read-only: verification must never create or touch anything. */
     if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
-    {
-        sqlite3_close (db);
         return FALSE;
-    }
 
     /* As on every other connection: another one busy with the database is
      * waited out. Without it the reads below fail at once, the meta read
@@ -1976,10 +1964,7 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
     gsize check_length = 0;
 
     if (!g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length))
-    {
-        sqlite3_close (db);
         return FALSE;
-    }
 
     const gchar *passphrase = g_paste_sqlite_backend_get_passphrase (self);
     /* Where every other derived key lives: the stack is pageable, so a key on it
@@ -1995,7 +1980,6 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
     gboolean has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
 
     gcr_secure_memory_free (key);
-    sqlite3_close (db);
 
     return derived && !checks_out && has_data;
 }
