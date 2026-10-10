@@ -20,8 +20,10 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3, sqlite3_close)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3_stmt, sqlite3_finalize)
 
 /* The statement whose execution fails as a full disk would fail it, matched
- * as a substring: NULL for none. */
+ * as a substring, and the database another GPaste upgrades the moment a
+ * transaction is about to begin: NULL for none. */
 static const gchar *failed_sql;
+static const gchar *upgraded_meanwhile;
 
 int
 sqlite3_exec (sqlite3    *db,
@@ -42,7 +44,47 @@ sqlite3_exec (sqlite3    *db,
         return SQLITE_FULL;
     }
 
+    if (upgraded_meanwhile && strstr (sql, "BEGIN IMMEDIATE"))
+    {
+        g_autoptr (sqlite3) other = NULL;
+
+        g_assert_cmpint (sqlite3_open (upgraded_meanwhile, &other), ==, SQLITE_OK);
+        g_assert_cmpint (original (other,
+                                   "ALTER TABLE items ADD COLUMN favourite INTEGER NOT NULL DEFAULT 0;"
+                                   "ALTER TABLE items ADD COLUMN timeout INTEGER NOT NULL DEFAULT 0;"
+                                   "PRAGMA user_version = 3;",
+                                   NULL, NULL, NULL), ==, SQLITE_OK);
+        upgraded_meanwhile = NULL;
+    }
+
     return original (db, sql, callback, data, error);
+}
+
+/* The statement whose next step fails as a busy database would fail it, once
+ * @busy_step_skip of its steps have gone through: NULL for none. */
+static const gchar *busy_step_sql;
+static guint busy_step_skip;
+
+int
+sqlite3_step (sqlite3_stmt *statement)
+{
+    typedef int (*Step) (sqlite3_stmt *);
+    Step original = (Step) dlsym (RTLD_NEXT, "sqlite3_step");
+
+    g_assert_nonnull (original);
+    if (busy_step_sql && !g_strcmp0 (sqlite3_sql (statement), busy_step_sql))
+    {
+        if (busy_step_skip)
+            --busy_step_skip;
+        else
+        {
+            busy_step_sql = NULL;
+
+            return SQLITE_BUSY;
+        }
+    }
+
+    return original (statement);
 }
 
 /* One integer out of @path, through a connection of its own: test-history.c's
@@ -487,9 +529,50 @@ test_import_needs_readable_copy (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
-/* A version 1 database, as an older GPaste left it, whose upgrade fails at
- * the statement @data names: the database has to come out of it exactly as it
- * went in, so that the next open upgrades it whole. */
+/* A version 1 database as an older GPaste left it, at @path, holding one item
+ * whose value is "precious". */
+static void
+write_version_1 (const gchar *path)
+{
+    g_autoptr (sqlite3) db = NULL;
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (db,
+                                   "CREATE TABLE items (id INTEGER PRIMARY KEY, uuid TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,"
+                                   "                    value TEXT NOT NULL, rank INTEGER NOT NULL, date INTEGER, checksum TEXT,"
+                                   "                    name TEXT, image BLOB);"
+                                   "CREATE UNIQUE INDEX items_rank ON items (rank DESC);"
+                                   "CREATE TABLE special_values (item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,"
+                                   "                             position INTEGER NOT NULL, mime TEXT NOT NULL, data BLOB NOT NULL,"
+                                   "                             PRIMARY KEY (item_id, position));"
+                                   "INSERT INTO items (uuid, kind, value, rank) VALUES ('952f0c74-bf9e-4d4f-b493-dd7d30998150', 'Text', 'precious', 1);"
+                                   "PRAGMA user_version = 1;",
+                                   NULL, NULL, NULL), ==, SQLITE_OK);
+}
+
+/* Read @name through a fresh SQLite backend: whether it read, and its one item
+ * being the one write_version_1() stored when it did. */
+static gboolean
+read_version_1 (GPasteSettings *settings,
+                const gchar    *name)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    if (!g_paste_storage_backend_read_history (backend, name, NULL, &items, &size))
+        return FALSE;
+
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "precious");
+
+    return TRUE;
+}
+
+/* A version 1 database whose upgrade fails at the statement @data names has
+ * to come out of it exactly as it went in, so that the next open upgrades it
+ * whole. */
 static void
 test_schema_failure (gconstpointer data)
 {
@@ -506,43 +589,73 @@ test_schema_failure (gconstpointer data)
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "schema-failure";
     g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
-    g_autoptr (sqlite3) db = NULL;
 
-    g_assert_true (g_paste_util_ensure_history_dir_exists ());
-    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
-    g_assert_cmpint (sqlite3_exec (db,
-                                   "CREATE TABLE items (id INTEGER PRIMARY KEY, uuid TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,"
-                                   "                    value TEXT NOT NULL, rank INTEGER NOT NULL, date INTEGER, checksum TEXT,"
-                                   "                    name TEXT, image BLOB);"
-                                   "CREATE UNIQUE INDEX items_rank ON items (rank DESC);"
-                                   "CREATE TABLE special_values (item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,"
-                                   "                             position INTEGER NOT NULL, mime TEXT NOT NULL, data BLOB NOT NULL,"
-                                   "                             PRIMARY KEY (item_id, position));"
-                                   "INSERT INTO items (uuid, kind, value, rank) VALUES ('952f0c74-bf9e-4d4f-b493-dd7d30998150', 'Text', 'precious', 1);"
-                                   "PRAGMA user_version = 1;",
-                                   NULL, NULL, NULL), ==, SQLITE_OK);
-    g_clear_pointer (&db, sqlite3_close);
-
-    {
-        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-        g_autolist (GPasteItem) items = NULL;
-        gsize size;
-
-        failed_sql = data;
-        g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
-        failed_sql = NULL;
-    }
+    write_version_1 (path);
+    failed_sql = data;
+    g_assert_false (read_version_1 (settings, name));
+    failed_sql = NULL;
 
     g_assert_cmpint (sqlite_query_int (path, "PRAGMA user_version;"), ==, 1);
     g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM pragma_table_info ('items') WHERE name IN ('favourite', 'timeout');"), ==, 0);
+    g_assert_true (read_version_1 (settings, name));
+}
 
-    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-    g_autolist (GPasteItem) items = NULL;
-    gsize size;
+/* A version that cannot be read is no version 0: the open is refused rather
+ * than a schema created over the old tables and stamped current, which no
+ * later open would have upgraded. */
+static void
+test_schema_version_unreadable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*could not read the schema version*");
+        return;
+    }
 
-    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
-    g_assert_cmpuint (g_list_length (items), ==, 1);
-    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "precious");
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "schema-version-unreadable";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    write_version_1 (path);
+    busy_step_sql = "PRAGMA user_version;";
+    g_assert_false (read_version_1 (settings, name));
+    busy_step_sql = NULL;
+
+    g_assert_cmpint (sqlite_query_int (path, "PRAGMA user_version;"), ==, 1);
+    g_assert_true (read_version_1 (settings, name));
+
+    /* The same of the read the upgrade makes again under the write lock. */
+    const gchar *locked_name = "schema-version-unreadable-locked";
+    g_autofree gchar *locked_path = g_paste_util_get_history_file_path (locked_name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    write_version_1 (locked_path);
+    busy_step_sql = "PRAGMA user_version;";
+    busy_step_skip = 1;
+    g_assert_false (read_version_1 (settings, locked_name));
+    g_assert_null (busy_step_sql);
+
+    g_assert_cmpint (sqlite_query_int (locked_path, "PRAGMA user_version;"), ==, 1);
+    g_assert_true (read_version_1 (settings, locked_name));
+}
+
+/* Another GPaste upgrading the database between the version read and the
+ * transaction leaves this one nothing to do, not the same steps to fail on. */
+static void
+test_schema_upgraded_meanwhile (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "schema-upgraded-meanwhile";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    write_version_1 (path);
+    upgraded_meanwhile = path;
+    g_assert_true (read_version_1 (settings, name));
+    g_assert_null (upgraded_meanwhile);
+    g_assert_cmpint (sqlite_query_int (path, "PRAGMA user_version;"), ==, 3);
 }
 #endif
 
@@ -558,6 +671,58 @@ read_meta (sqlite3     *db,
     g_assert_cmpint (sqlite3_step (statement), ==, SQLITE_ROW);
 
     return g_strdup ((const gchar *) sqlite3_column_text (statement, 0));
+}
+
+/* An encrypted SQLite history holding data, whose count cannot be read when a
+ * passphrase it refuses comes: refused, as one known to hold data is, rather
+ * than taken for empty and keyed afresh over what its rows were encrypted
+ * with. */
+static void
+test_uncounted_crypto (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*does not unlock*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "uncounted-crypto";
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
+    g_autoptr (sqlite3) db = NULL;
+
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+
+    g_autofree gchar *salt = read_meta (db, "salt");
+    g_autofree gchar *check = read_meta (db, "check");
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "wrong");
+        g_autolist (GPasteItem) items = NULL;
+        gsize size;
+
+        busy_step_sql = "SELECT COUNT (*) FROM items;";
+        g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+        g_assert_null (busy_step_sql);
+    }
+
+    g_autofree gchar *kept_salt = read_meta (db, "salt");
+    g_autofree gchar *kept_check = read_meta (db, "check");
+
+    g_assert_cmpstr (kept_salt, ==, salt);
+    g_assert_cmpstr (kept_check, ==, check);
 }
 
 /* Encryption parameters with one missing are no new store when the history
@@ -744,9 +909,12 @@ main (int    argc,
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);
     g_test_add_data_func ("/storage/sqlite/schema/version", "PRAGMA user_version = 3", test_schema_failure);
     g_test_add_data_func ("/storage/sqlite/schema/commit", "COMMIT;", test_schema_failure);
+    g_test_add_func ("/storage/sqlite/schema/unreadable-version", test_schema_version_unreadable);
+    g_test_add_func ("/storage/sqlite/schema/upgraded-meanwhile", test_schema_upgraded_meanwhile);
 #endif
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
     g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);
+    g_test_add_func ("/storage/sqlite/uncounted-crypto", test_uncounted_crypto);
     g_test_add_func ("/storage/sqlite/busy-verification", test_verification_waits_for_busy_database);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE

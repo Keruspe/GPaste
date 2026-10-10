@@ -664,6 +664,22 @@ g_paste_sqlite_backend_migrate_schema (sqlite3 *db,
     }
 }
 
+/* The schema version @db is at, or -1 (with a warning) when it cannot be read:
+ * a database that answers nothing is not one without a schema, which is what
+ * 0 says, and creating the schema over its tables would leave them as they
+ * are while recording them as current. */
+static gint64
+g_paste_sqlite_backend_schema_version (sqlite3     *db,
+                                       const gchar *db_path)
+{
+    gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", -1);
+
+    if (version < 0)
+        g_warning ("sqlite: could not read the schema version of “%s”: %s; not touching it", db_path, sqlite3_errmsg (db));
+
+    return version;
+}
+
 /* Get the (cached) connection for @db_path, opening and preparing the database
  * as needed. Returns NULL (and warns) when the database cannot be used, e.g.
  * when it was created by a newer GPaste: every operation then no-ops instead
@@ -703,7 +719,10 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                                       "PRAGMA foreign_keys = ON;"))
         return NULL;
 
-    gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
+    gint64 version = g_paste_sqlite_backend_schema_version (db, db_path);
+
+    if (version < 0)
+        return NULL;
 
     if (version > G_PASTE_SQLITE_SCHEMA_VERSION)
     {
@@ -722,10 +741,21 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
         if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
             return NULL;
 
-        gboolean ok = (version == 0) ? g_paste_sqlite_backend_create_schema (db)
-                                     : g_paste_sqlite_backend_migrate_schema (db, version);
+        /* Again, under the write lock: another connection may have upgraded
+         * the database between the read above and taking it, and running the
+         * steps a second time would fail on the columns they added. A newer
+         * version found here is left alone like the one above, the next open
+         * saying why. */
+        version = g_paste_sqlite_backend_schema_version (db, db_path);
 
-        if (ok)
+        gboolean ok = (version >= 0 && version <= G_PASTE_SQLITE_SCHEMA_VERSION);
+
+        if (ok && version == 0)
+            ok = g_paste_sqlite_backend_create_schema (db);
+        else if (ok && version != G_PASTE_SQLITE_SCHEMA_VERSION)
+            ok = g_paste_sqlite_backend_migrate_schema (db, version);
+
+        if (ok && version != G_PASTE_SQLITE_SCHEMA_VERSION)
             ok = g_paste_sqlite_backend_exec (db, "PRAGMA user_version = " G_STRINGIFY (G_PASTE_SQLITE_SCHEMA_VERSION) ";");
 
         if (!g_paste_sqlite_backend_finish_transaction (db, ok))
