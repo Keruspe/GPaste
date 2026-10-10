@@ -1963,6 +1963,12 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
         return FALSE;
     }
 
+    /* As on every other connection: another one busy with the database is
+     * waited out. Without it the reads below fail at once, the meta read
+     * leaving nothing to refute with and the count reading as an empty
+     * history, either way accepting a passphrase the key check refuses. */
+    sqlite3_busy_timeout (db, 5000);
+
     guchar salt[crypto_pwhash_SALTBYTES];
     guint64 opslimit = 0;
     guint64 memlimit = 0;
@@ -1981,6 +1987,11 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
     guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
     gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
     gboolean checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
+    /* A count that still cannot be read is inconclusive, which the vfunc asks
+     * to answer as no refutation rather than condemn a passphrase over an I/O
+     * error. Accepting a wrong one here costs no data: the open that follows
+     * refuses it on the same count (setup_crypto()), and the history stays
+     * unreadable rather than written over. */
     gboolean has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
 
     gcr_secure_memory_free (key);

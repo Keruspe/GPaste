@@ -512,6 +512,118 @@ test_incomplete_crypto (void)
 }
 #endif
 
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
+#include <time.h>
+#include <unistd.h>
+
+/* The thread whose sleeps are a wait on a busy database, and whether it has
+ * slept: SQLite's busy timeout waits between its attempts with nanosleep (), or
+ * with usleep () in a build without it. */
+static GThread *busy_sleeper;
+static GMutex busy_mutex;
+static GCond busy_cond;
+static gboolean busy_slept;
+
+static void
+note_busy_sleep (void)
+{
+    if (!busy_sleeper || g_thread_self () != busy_sleeper)
+        return;
+
+    g_mutex_lock (&busy_mutex);
+    busy_slept = TRUE;
+    g_cond_broadcast (&busy_cond);
+    g_mutex_unlock (&busy_mutex);
+}
+
+int
+nanosleep (const struct timespec *duration,
+           struct timespec       *remaining)
+{
+    typedef int (*Sleep) (const struct timespec *, struct timespec *);
+    Sleep original = (Sleep) dlsym (RTLD_NEXT, "nanosleep");
+
+    note_busy_sleep ();
+    return original (duration, remaining);
+}
+
+int
+usleep (useconds_t microseconds)
+{
+    typedef int (*Sleep) (useconds_t);
+    Sleep original = (Sleep) dlsym (RTLD_NEXT, "usleep");
+
+    note_busy_sleep ();
+    return original (microseconds);
+}
+
+/* Lets the database go once its holder has been waited for -- or never was,
+ * a few seconds on: by then a verification that did not wait has answered. */
+static gpointer
+close_once_waited_for (gpointer data)
+{
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    g_mutex_lock (&busy_mutex);
+    while (!busy_slept && g_cond_wait_until (&busy_cond, &busy_mutex, deadline))
+        ;
+    g_mutex_unlock (&busy_mutex);
+    sqlite3_close (data);
+
+    return NULL;
+}
+
+/* Hold the database at @path busy from another connection, until the calling
+ * thread has waited on it: the thread returned lets it go. */
+static GThread *
+hold_busy (const gchar *path)
+{
+    sqlite3 *holder = NULL;
+
+    /* Exclusive locking mode keeps the lock past the transaction, shutting
+     * every other connection out until this one closes. */
+    g_assert_cmpint (sqlite3_open (path, &holder), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (holder, "PRAGMA locking_mode = EXCLUSIVE; BEGIN EXCLUSIVE; COMMIT;", NULL, NULL, NULL), ==, SQLITE_OK);
+
+    busy_slept = FALSE;
+    busy_sleeper = g_thread_self ();
+
+    return g_thread_new ("close-once-waited-for", close_once_waited_for, holder);
+}
+
+/* What hold_busy () held let go, the database having been waited for. */
+static void
+release_busy (GThread *closer)
+{
+    g_thread_join (closer);
+    busy_sleeper = NULL;
+    g_assert_true (busy_slept);
+}
+
+/* A database another connection is busy with is waited for, not read as one
+ * holding nothing: a passphrase its key check refuses would otherwise pass
+ * verification, as if the history were empty and up for keying afresh. */
+static void
+test_verification_waits_for_busy_database (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "busy-verification";
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
+    GThread *closer = hold_busy (path);
+
+    g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "wrong passphrase"));
+    release_busy (closer);
+}
+#endif
+
 int
 main (int    argc,
       char **argv)
@@ -527,6 +639,7 @@ main (int    argc,
 #endif
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
     g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);
+    g_test_add_func ("/storage/sqlite/busy-verification", test_verification_waits_for_busy_database);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
