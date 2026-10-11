@@ -151,7 +151,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /**
  * g_paste_settings_set_close_on_select:
  * @self: a #GPasteSettings instance
- * @value: the new history name
+ * @value: whether to close the history once an item is selected
  *
  * Change the "close-on-select" setting
  */
@@ -272,7 +272,7 @@ STRING_SETTING (history_name, HISTORY_NAME)
 /**
  * g_paste_settings_set_images_support:
  * @self: a #GPasteSettings instance
- * @value: the new history name
+ * @value: whether to keep the images copied in the history
  *
  * Change the "images-support" setting
  */
@@ -494,7 +494,7 @@ BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
 /**
  * g_paste_settings_set_rich_text_support:
  * @self: a #GPasteSettings instance
- * @value: the new history name
+ * @value: whether to keep the rich text copied with a text
  *
  * Change the "rich-text-support" setting
  */

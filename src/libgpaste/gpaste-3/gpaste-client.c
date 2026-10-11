@@ -58,23 +58,39 @@ struct _GPasteClient
  * A proxy for the GPaste daemon's D-Bus interface.
  *
  * Every method comes in a synchronous flavor and an async pair, and both report
- * failures the same way, in one of two kinds of domain:
+ * failures the same way:
  *
  * - %G_PASTE_ERROR for a request the daemon understood and refused, e.g.
  *   %G_PASTE_ERROR_NOT_FOUND for an unknown uuid. The daemon registers the
  *   domain with g_dbus_error_register_error_domain(), so the code survives the
  *   round-trip and callers can switch on it instead of matching on the message.
  * - %G_DBUS_ERROR or %G_IO_ERROR for a failure of the transport itself: no
- *   daemon on the bus, it went away mid-call, the call was cancelled. These say
- *   nothing about the request.
+ *   daemon on the bus, it went away mid-call
+ *   (g_paste_client_is_daemon_gone_error ()), the call was cancelled. These say
+ *   nothing about the request, bar the %G_IO_ERROR cases below.
+ * - %G_IO_ERROR_BUSY, one of the two %G_IO_ERROR codes that are no transport
+ *   failure, for a request the daemon refuses for now and will take later: one
+ *   changing the items, or BackupHistory, EmptyHistory and DeleteHistory,
+ *   while the daemon hands its storage over, and a backup of the current
+ *   history while it loads -- see the D-Bus interface's own documentation.
+ *   Worth asking again, not dropping.
+ * - %G_IO_ERROR_INVALID_DATA, the other, for a string D-Bus cannot carry or
+ *   a reply GPaste's own daemon never sends. A call carrying a string that is
+ *   not UTF-8 -- a file name in another encoding, a relative one joined to a
+ *   working directory named in one -- fails with it before anything is sent;
+ *   an item with no valid uuid is one g_paste_client_get_item () and
+ *   g_paste_client_get_item_at_index () fail on and a listing leaves out.
+ *
+ * A call reading a file fails as the read does, which is about the request
+ * too: g_paste_client_add_file_sync ()'s in %G_IO_ERROR for a file the daemon
+ * cannot look up (%G_IO_ERROR_NOT_FOUND, %G_IO_ERROR_PERMISSION_DENIED, ...)
+ * and in %G_FILE_ERROR for one its open or a read fails on, as
+ * g_paste_client_get_image_sync () does for an image whose cache file cannot be
+ * read.
  *
  * A caller that wants to tell "the daemon said no" from "the daemon is not
  * there" should therefore check the domain with g_error_matches(), not the bare
  * code: the numbering of the two overlaps.
- *
- * A call carrying a string that is not UTF-8, which is all D-Bus carries -- a
- * file name in another encoding, a relative one joined to a working directory
- * named in one -- fails with %G_IO_ERROR_INVALID_DATA without being sent.
  */
 static void g_paste_client_daemon3_iface_init        (GPasteDaemon3Iface  *iface);
 static void g_paste_client_initable_iface_init       (GInitableIface      *iface);
@@ -2579,9 +2595,7 @@ g_paste_client_g_properties_changed (GDBusProxy          *proxy,
                                      const gchar * const *invalidated_properties)
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
-    GVariantDict dict;
-
-    g_variant_dict_init (&dict, changed_properties);
+    g_auto (GVariantDict) dict = G_VARIANT_DICT_INIT (changed_properties);
 
     if (g_paste_client_property_moved (&dict, invalidated_properties, G_PASTE_DAEMON_PROP_ACTIVE))
     {
@@ -2594,8 +2608,6 @@ g_paste_client_g_properties_changed (GDBusProxy          *proxy,
 
     if (g_paste_client_property_moved (&dict, invalidated_properties, G_PASTE_DAEMON_PROP_VERSION))
         g_object_notify (G_OBJECT (self), "version");
-
-    g_variant_dict_clear (&dict);
 }
 
 /* The other half of a daemon restart. The proxy empties its property cache when
@@ -2696,7 +2708,7 @@ on_name_owner_changed (GDBusConnection *connection     G_GNUC_UNUSED,
 
 /**
  * g_paste_client_is_daemon_gone_error:
- * @error: an error a call on a #GPasteClient failed with
+ * @error: (nullable): an error a call on a #GPasteClient failed with, or %NULL
  *
  * Whether @error says the daemon the call went to left the bus rather than
  * refused it: it disconnected without answering, or the name had no owner by
@@ -2849,13 +2861,15 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * GPasteClient::show-history:
      * @client: the object on which the signal was emitted
      *
-     * The "show-history" signal is emitted when we switch
-     * from a history to another.
+     * The "show-history" signal is emitted when the daemon asks for the
+     * history to be shown -- the ShowHistory method, its keyboard shortcut or
+     * `gpaste-client show-history` -- for a client with a window of its own to
+     * show it in. A switch from one history to another is notify::history.
      */
     signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history");
 
     /**
-     * GPasteClient::track:
+     * GPasteClient::tracking:
      * @client: the object on which the signal was emitted
      * @tracking_state: whether we're now tracking or not
      *

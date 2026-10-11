@@ -244,6 +244,9 @@ g_paste_util_activate_ui (const gchar *action,
  *
  * @arg is taken as g_paste_util_activate_ui() takes it.
  *
+ * Errors are those of the session bus: %G_DBUS_ERROR, or %G_IO_ERROR for a
+ * transport that failed.
+ *
  * Returns: %FALSE, with @error set, when the app could not be reached
  */
 G_PASTE_VISIBLE gboolean
@@ -816,6 +819,9 @@ g_paste_util_read_pid_file (const gchar *component)
  * ninety seconds overall. The client allows two minutes. An in-process host
  * replies after accepting its restart; a standalone exec closes the connection.
  * A caller that must not block uses g_paste_client_reexecute().
+ *
+ * Errors are those of #GPasteClient's calls: %G_PASTE_ERROR for a daemon
+ * refusing the re-exec, %G_DBUS_ERROR or %G_IO_ERROR for the transport.
  *
  * Returns: %TRUE if the daemon honoured the re-exec
  */
