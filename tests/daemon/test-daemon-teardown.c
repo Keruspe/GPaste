@@ -365,6 +365,25 @@ test_startup_update (Fixture      *fixture,
     g_dbus_connection_signal_unsubscribe (listener, subscription);
 }
 
+/* A reload of the storage tells whoever lists the histories that their set
+ * has changed: onto another flavour, it is another set, with other counts. */
+static void
+test_reload_announces_histories (Fixture      *fixture,
+                                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) listener = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    guint changes = 0;
+    guint subscription = g_dbus_connection_signal_subscribe (listener, NULL, G_PASTE_DAEMON_INTERFACE_NAME, "HistoriesChanged",
+                                                             G_PASTE_DAEMON_OBJECT_PATH, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
+                                                             on_update, &changes, NULL);
+
+    g_paste_test_bus_round_trip (listener, fixture->connection);
+    g_paste_daemon_flush (fixture->daemon);
+    g_paste_daemon_reload_storage (fixture->daemon);
+    g_paste_test_bus_wait_for_count (&changes, 1);
+    g_dbus_connection_signal_unsubscribe (listener, subscription);
+}
+
 static gboolean
 on_reexecute_self (GPasteDaemon *daemon G_GNUC_UNUSED,
                    gpointer      user_data)
@@ -935,6 +954,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
+    g_test_add ("/daemon/teardown/reload-announces-histories", Fixture, NULL, fixture_set_up, test_reload_announces_histories, fixture_tear_down);
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);

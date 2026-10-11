@@ -4,6 +4,7 @@
 #include <glib/gstdio.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
+#include <gpaste-3/gpaste-update-enums.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-clipboard-content.h>
@@ -4405,6 +4406,40 @@ test_load_keeps_add_uuid (void)
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 
+static void
+count_replace_all (GPasteHistory     *history  G_GNUC_UNUSED,
+                   GPasteUpdateAction action,
+                   GPasteUpdateTarget target,
+                   const gchar       *uuid     G_GNUC_UNUSED,
+                   guint64            position G_GNUC_UNUSED,
+                   gpointer           user_data)
+{
+    if (action == G_PASTE_UPDATE_ACTION_REPLACE && target == G_PASTE_UPDATE_TARGET_ALL)
+        ++*(guint *) user_data;
+}
+
+/* A reload empties the history until its load fills it again, and says so then
+ * and there, as a switch does: its name staying the same, nothing else would
+ * tell a view still showing what it put away. */
+static void
+test_reload_backend_announced (void)
+{
+    guint updates = 0;
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+    g_paste_history_add (history, g_paste_text_item_new ("reloaded"));
+    pump_for_ms (50);
+    g_paste_history_flush (history);
+    g_signal_connect (history, "update", G_CALLBACK (count_replace_all), &updates);
+    g_paste_history_reload_backend (history);
+
+    g_assert_cmpuint (updates, ==, 1);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_true (pump_until_length (history, 1, 5000));
+    g_assert_cmpuint (updates, ==, 2);
+}
+
 /* What is copied while the store is handed over -- a passphrase change's
  * prompts up -- is in the model alone: the reload ending the handover keeps
  * it, recorded on top of what it reads back. A password among it has not
@@ -6737,6 +6772,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
+    add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
     g_test_add_data_func ("/history/reload_then_delete_drops_password", GINT_TO_POINTER (FALSE), test_reload_then_delete_drops_password);
     g_test_add_data_func ("/history/reload_twice_drops_password", GINT_TO_POINTER (TRUE), test_reload_then_delete_drops_password);

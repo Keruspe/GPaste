@@ -1928,9 +1928,9 @@ g_paste_history_on_loaded (gpointer user_data,
  *
  * Rebuild the storage backend from the (possibly changed) "storage-backend"
  * setting and re-read the history from it, then resume recording. Meant to be
- * called after a storage migration has rewritten the store on disk: it assumes
- * g_paste_history_flush() already stopped recording and drained the saver, so
- * the backend swap does not race any pending write.
+ * called once a storage migration or a passphrase change has rewritten the
+ * store on disk: it assumes g_paste_history_flush() already stopped recording
+ * and drained the saver, so the backend swap does not race any pending write.
  */
 G_PASTE_VISIBLE void
 g_paste_history_reload_backend (GPasteHistory *self)
@@ -2001,14 +2001,17 @@ g_paste_history_reload_backend (GPasteHistory *self)
     self->stopped = FALSE;
     self->unreadable = FALSE;
 
-    /* Tell every UI to reload the whole history from the new backend. */
-    g_paste_history_emit_switch (self, self->name);
-
-    /* Asynchronously, like every other load: the only caller is the gnome-shell
-     * host, where reading (and, for an encrypted flavour, deriving the key with
-     * Argon2id) inline would freeze the whole compositor. The store was just
-     * written by the migration, so there is nothing to normalize back. */
+    /* Asynchronously, like every other load: reading (and, for an encrypted
+     * flavour, deriving the key with Argon2id) inline would freeze the whole
+     * compositor in the gnome-shell host, and stop the standalone daemon, which
+     * reloads after a passphrase change, from answering the bus meanwhile. The
+     * store was just rewritten, so there is nothing to normalize back. */
     g_paste_history_saver_load (self->saver, self->name, FALSE);
+
+    /* Every view is told the history it shows is gone, as a switch tells it,
+     * and redraws again once the load has filled it. A switch is announced by
+     * the name it changes, which a reload leaves as it was. */
+    g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, NULL, 0);
 }
 
 /**

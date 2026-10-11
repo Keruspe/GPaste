@@ -567,7 +567,9 @@
       Distinct from switching: a backup creates a history without making it the
       current one, which no change of the History property can express. Raised
       by every membership change: a backup, a deletion, and an empty or a
-      switch that named a history there was none of.
+      switch that named a history there was none of. A reload of the storage
+      (a migration or a change of passphrase the daemon took on in place)
+      raises it too, the set listed then perhaps another, with other counts.
     -->
     <signal name="HistoriesChanged">
       <annotation name="org.gtk.GDBus.C.Name" value="RawHistoriesChanged"/>

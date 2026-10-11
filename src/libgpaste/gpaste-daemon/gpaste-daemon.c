@@ -182,11 +182,12 @@ g_paste_daemon_expire_password (GPasteDaemon *self)
  * @self: (transfer none): the #GPasteDaemon
  *
  * Reload the history from its storage backend, rebuilding that backend from the
- * (possibly changed) "storage-backend" setting. Meant to be called after an
- * on-demand storage migration has rewritten the store on disk, so the live
- * daemon picks up the new backend without a full re-exec. Assumes the caller
- * flushed first (see g_paste_daemon_flush()); used by the gnome-shell host,
- * where the daemon cannot re-exec itself.
+ * (possibly changed) "storage-backend" setting. Meant to be called once an
+ * on-demand storage migration or a passphrase change has rewritten the store on
+ * disk, so the live daemon picks up the new backend without a full re-exec.
+ * Assumes the caller flushed first (see g_paste_daemon_flush()); used by the
+ * gnome-shell host, where the daemon cannot re-exec itself, and by the
+ * standalone daemon after a passphrase change.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_reload_storage (GPasteDaemon *self)
@@ -194,6 +195,11 @@ g_paste_daemon_reload_storage (GPasteDaemon *self)
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     g_paste_history_reload_backend (self->history);
+
+    /* The reload tells every view the item list is gone; onto another flavour,
+     * the set of histories and their counts have changed too, which whatever
+     * lists them -- the graphical tool's sidebar -- hears of only here. */
+    g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
 }
 
 /**
