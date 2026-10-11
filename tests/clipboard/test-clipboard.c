@@ -141,6 +141,12 @@ sync_text (GPasteClipboardProvider    *provider,
         g_paste_clipboard_sync_data_deliver (data, self->content.str);
 }
 
+/* Every vfunc is required, so the store a re-exec asks for answers too. */
+static void
+store (GPasteClipboardProvider *provider G_GNUC_UNUSED)
+{
+}
+
 static void
 test_clipboard_iface_init (GPasteClipboardProviderInterface *iface)
 {
@@ -153,6 +159,7 @@ test_clipboard_iface_init (GPasteClipboardProviderInterface *iface)
     iface->select_item = select_item;
     iface->select_text = select_text;
     iface->sync_text = sync_text;
+    iface->store = store;
 }
 
 static void

@@ -28,6 +28,8 @@ typedef struct
     TestClipboard   *primary;
     GPasteDaemon    *daemon;
     GDBusConnection *connection;
+    guint            reexecutions;
+    guint            stored_at_reexecution;
 } Fixture;
 
 static gboolean
@@ -163,6 +165,30 @@ test_startup_update (Fixture      *fixture,
     g_dbus_connection_signal_unsubscribe (listener, subscription);
 }
 
+static gboolean
+on_reexecute_self (GPasteDaemon *daemon G_GNUC_UNUSED,
+                   gpointer      user_data)
+{
+    Fixture *fixture = user_data;
+
+    fixture->stored_at_reexecution = fixture->clipboard->stores + fixture->primary->stores;
+    ++fixture->reexecutions;
+    return TRUE;
+}
+
+/* A re-exec has both selections stored before the host is told to go. */
+static void
+test_reexecute_stores_first (Fixture      *fixture,
+                             gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
+    g_paste_daemon_reexecute (fixture->daemon);
+    g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+    g_assert_cmpuint (fixture->clipboard->stores, ==, 1);
+    g_assert_cmpuint (fixture->primary->stores, ==, 1);
+    g_assert_cmpuint (fixture->stored_at_reexecution, ==, 2);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -173,6 +199,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
+    g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
 
     return g_paste_test_env_run ();
 }

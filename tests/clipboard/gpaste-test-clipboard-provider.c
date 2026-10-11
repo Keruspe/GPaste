@@ -72,6 +72,12 @@ sync_text (GPasteClipboardProvider    *provider G_GNUC_UNUSED,
 }
 
 static void
+store (GPasteClipboardProvider *provider)
+{
+    ++TEST_CLIPBOARD (provider)->stores;
+}
+
+static void
 test_clipboard_iface_init (GPasteClipboardProviderInterface *iface)
 {
     iface->is_clipboard = is_clipboard;
@@ -83,6 +89,7 @@ test_clipboard_iface_init (GPasteClipboardProviderInterface *iface)
     iface->select_item = select_item;
     iface->select_text = select_text;
     iface->sync_text = sync_text;
+    iface->store = store;
 }
 
 /* The cached value is a plain allocation, and a disposed provider still answers
