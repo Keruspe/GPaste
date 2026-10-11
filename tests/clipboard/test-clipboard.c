@@ -73,6 +73,7 @@ is_empty (GPasteClipboardProvider *provider)
 
 static void
 update (GPasteClipboardProvider              *provider,
+        gboolean                              record,
         GPasteClipboardProviderUpdateCallback callback,
         gpointer                              user_data)
 {
@@ -83,6 +84,7 @@ update (GPasteClipboardProvider              *provider,
         GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, self->settings, CLIPBOARD_CONTENT_TEXT,
                                                                        &self->pending, &self->content, callback, user_data);
 
+        pending->record = record;
         /* The text and HTML replies are released independently by the test. */
         g_paste_clipboard_update_add_read (pending);
     }
@@ -1673,6 +1675,58 @@ capture_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
     g_assert_false (superseded);
     result->item = item;
     result->secret = secret;
+}
+
+/* Trimming re-owns the clipboard with the trimmed text -- while tracking only:
+ * a paused GPaste rewrites nothing it is not recording. */
+static void
+test_trim_reselect_tracking (gconstpointer user_data)
+{
+    gboolean track = GPOINTER_TO_INT (user_data);
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    ReadResult result = { 0 };
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_trim_items (settings, TRUE);
+    g_paste_settings_set_track_changes (settings, track);
+
+    GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (clipboard), settings,
+                                                                   CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
+                                                                   &clipboard->content, capture_read, &result);
+    g_paste_clipboard_update_add_read (pending);
+    text_ready (clipboard, settings, pending, "  padded text  ");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_autoptr (GPasteItem) item = result.item;
+
+    g_assert_cmpstr (g_paste_item_get_value (item), ==, "padded text");
+    g_assert_cmpuint (clipboard->publications, ==, track ? 1 : 0);
+}
+
+/* Nor does a read asked only to identify the selection, which records
+ * nothing: the bootstrap read of a copy made before the daemon started. */
+static void
+test_trim_identify_keeps_owner (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_reads = TRUE;
+    g_paste_settings_set_trim_items (settings, TRUE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_assert_nonnull (pending);
+    text_ready (clipboard, settings, pending, "  copied before the daemon started  ");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 }
 
 /* A hint read that fails says nothing, but one served empty is the owner
@@ -4144,6 +4198,9 @@ main (int argc, char *argv[])
 
         g_test_add_data_func (path, test, test_timeout_edit_during_read);
     }
+    g_test_add_data_func ("/clipboard/trim_reselect/tracking", GINT_TO_POINTER (TRUE), test_trim_reselect_tracking);
+    g_test_add_data_func ("/clipboard/trim_reselect/paused", GINT_TO_POINTER (FALSE), test_trim_reselect_tracking);
+    g_test_add_func ("/clipboard/trim_reselect/identify", test_trim_identify_keeps_owner);
     g_test_add_data_func ("/clipboard/reselect_overdue/one", GINT_TO_POINTER (FALSE), test_reselect_overdue_password);
     g_test_add_data_func ("/clipboard/reselect_overdue/two", GINT_TO_POINTER (TRUE), test_reselect_overdue_password);
     for (guint i = 0; i < 5; ++i)

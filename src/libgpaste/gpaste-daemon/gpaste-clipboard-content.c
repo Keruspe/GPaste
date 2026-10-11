@@ -217,12 +217,13 @@ g_paste_clipboard_content_get_file_list (const GPasteClipboardContent *content)
  * @content: the currently held content (for dedup against the new text)
  * @settings: a #GPasteSettings instance (trim and min/max size policy)
  * @may_reselect: whether re-owning the selection with the trimmed text is
- *                allowed -- the clipboard selection, and only when this read
- *                knows what it carries. The primary is never re-owned (a
- *                selection made with the mouse is not GPaste's to rewrite), and
- *                neither is a text whose sensitive hint never answered, which
- *                would put hint-less text over what may be a secret. A caller
- *                passing a plain is_clipboard () here would undo that
+ *                allowed -- the clipboard selection, while tracking, and only
+ *                when this read knows what it carries. The primary is never
+ *                re-owned (a selection made with the mouse is not GPaste's to
+ *                rewrite), and neither is a text whose sensitive hint never
+ *                answered, which would put hint-less text over what may be a
+ *                secret. A caller passing a plain is_clipboard () here would
+ *                undo that
  * @text: the candidate text just read from the selection
  * @sensitive: whether the completed hint reads identify a password
  * @out_value: (out) (transfer full) (nullable): the trimmed text to act on, or
@@ -942,7 +943,12 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     if (update->produced && update->content_kind == CLIPBOARD_CONTENT_TEXT)
     {
         g_autofree gchar *value = NULL;
-        gboolean may_reselect = g_paste_clipboard_provider_is_clipboard (update->provider) && !update->mimes.sensitive_unknown;
+        /* GPaste rewrites nothing it is not recording: not while paused, nor
+         * for a read only identifying the selection. */
+        gboolean may_reselect = (g_paste_clipboard_provider_is_clipboard (update->provider) &&
+                                 !update->mimes.sensitive_unknown &&
+                                 update->record &&
+                                 g_paste_settings_get_track_changes (update->settings));
         GPasteClipboardTextAction action = g_paste_clipboard_content_classify_text (update->cache, update->settings,
                                                                                     may_reselect, update->text,
                                                                                     update->mimes.sensitive, &value);
@@ -1079,10 +1085,9 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     GPasteClipboardProviderUpdateCallback callback = update->callback;
     gpointer user_data = update->user_data;
 
-    /* Re-own trimmed text or a GDK image only after its reads are complete, so
-     * replacing the owner cannot abort the remaining MIME transfers. Publishing
-     * the item also preserves a password's sensitive hint and an image's
-     * texture. */
+    /* Re-own trimmed text only after its reads are complete, so replacing the
+     * owner cannot abort the remaining MIME transfers. Publishing the item also
+     * preserves a password's sensitive hint. */
     if (reselect && item)
         g_paste_clipboard_provider_select_item_full (provider, item, FALSE);
 
@@ -1208,6 +1213,7 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
     update->callback = callback;
     update->user_data = user_data;
     update->pending = 1;
+    update->record = TRUE;
     update->content_kind = content_kind;
     update->slot = slot;
     update->cache = cache;

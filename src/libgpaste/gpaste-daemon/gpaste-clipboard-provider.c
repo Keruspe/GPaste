@@ -166,9 +166,18 @@ g_paste_clipboard_provider_update (GPasteClipboardProvider              *self,
                                    GPasteClipboardProviderUpdateCallback callback,
                                    gpointer                              user_data)
 {
+    g_paste_clipboard_provider_update_full (self, TRUE, callback, user_data);
+}
+
+void
+g_paste_clipboard_provider_update_full (GPasteClipboardProvider              *self,
+                                        gboolean                              record,
+                                        GPasteClipboardProviderUpdateCallback callback,
+                                        gpointer                              user_data)
+{
     g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
 
-    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->update (self, callback, user_data);
+    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->update (self, record, callback, user_data);
 }
 
 /**

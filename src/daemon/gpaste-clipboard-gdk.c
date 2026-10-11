@@ -147,6 +147,9 @@ typedef void (*GPasteClipboardGdkTextureCallback) (GPasteClipboardGdk *self,
 struct _GPasteClipboardGdkFormatsWait
 {
     GWeakRef                              self;
+    /* Whether the update this wait answers for records its copy: see @record
+     * on #GPasteClipboardUpdate. */
+    gboolean                              record;
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;
     guint                                 source_id;
@@ -290,6 +293,7 @@ g_paste_clipboard_gdk_supersede_formats_wait (GPasteClipboardGdk *self)
 static void
 g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *self,
                                         gboolean                              released,
+                                        gboolean                              record,
                                         GPasteClipboardProviderUpdateCallback callback,
                                         gpointer                              user_data)
 {
@@ -297,6 +301,7 @@ g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *se
     guint timeout = (released) ? G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE : G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT;
 
     g_weak_ref_init (&wait->self, self);
+    wait->record = record;
     wait->callback = callback;
     wait->user_data = user_data;
     wait->after_change = self->emitting_change;
@@ -562,13 +567,12 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     g_autofree gchar *checksum = g_paste_image_item_compute_checksum (texture);
     GdkTexture *result = NULL;
 
+    /* Not re-owned: the selection stays its owner's, with every format it
+     * offers, and the history's head goes back on it if the owner releases it. */
     if (self->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, self->content.str))
         data->update->unchanged = TRUE;
     else
-    {
-        data->update->reselect = TRUE;
         result = texture;  /* borrowed from the g_autoptr above */
-    }
 
     if (data->callback)
         data->callback (self, result, data->update);
@@ -951,20 +955,24 @@ g_paste_clipboard_gdk_read_mime (gpointer                backend,
  * keeps our requestor window on the server. */
 static void
 g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
+                              gboolean                              record,
                               GPasteClipboardProviderUpdateCallback callback,
                               gpointer                              user_data)
 {
     GdkContentFormats *formats = gdk_clipboard_get_formats (self->real);
     GPasteClipboardContentKind content_kind = CLIPBOARD_CONTENT_NONE;
+    /* Text before an image: a copy offering both -- spreadsheet cells, which come
+     * with a picture of themselves -- is the text, and an image is only what is
+     * copied when it is all there is. */
     if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
         content_kind = CLIPBOARD_CONTENT_FILE_LIST;
     else if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA))
         content_kind = CLIPBOARD_CONTENT_COLOR;
+    else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
+        content_kind = CLIPBOARD_CONTENT_TEXT;
     else if (g_paste_settings_get_images_support (self->settings) &&
              gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE))
         content_kind = CLIPBOARD_CONTENT_IMAGE;
-    else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
-        content_kind = CLIPBOARD_CONTENT_TEXT;
     else if (gdk_content_formats_is_empty (formats))
     {
         g_paste_clipboard_gdk_supersede (self);
@@ -984,7 +992,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         gboolean released = (g_paste_clipboard_x11_hints_get_owner (self->hints) ==
                              G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE);
 
-        g_paste_clipboard_gdk_wait_for_formats (self, released, callback, user_data);
+        g_paste_clipboard_gdk_wait_for_formats (self, released, record, callback, user_data);
         return;
     }
     else
@@ -1012,13 +1020,15 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
 
     /* Nothing here can have failed its preconditions, but the caller's own
      * bookkeeping is released by the callback and by nothing else, so the one
-     * path that fires no read still answers. */
+     * path that fires no read still answers (/gdk/update/unmade). */
     if (!update)
     {
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_UNKNOWN, user_data);
         return;
     }
+
+    update->record = record;
 
     /* Counted in beside the read it counts, never before the switch: an arm that
      * fires nothing would leave the update pending on a read that does not
@@ -1260,6 +1270,7 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
 
     if (wait && !wait->after_change && !self->copy_owed && !gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
     {
+        gboolean record = wait->record;
         GPasteClipboardProviderUpdateCallback callback = wait->callback;
         gpointer user_data = wait->user_data;
 
@@ -1268,7 +1279,7 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
         self->formats_wait = NULL;
         g_source_remove (wait->source_id);
         g_paste_clipboard_gdk_formats_wait_free (wait);
-        g_paste_clipboard_gdk_update (self, callback, user_data);
+        g_paste_clipboard_gdk_update (self, record, callback, user_data);
         return;
     }
 

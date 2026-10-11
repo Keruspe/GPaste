@@ -956,6 +956,7 @@ g_paste_clipboard_meta_pick_mime (GList       *mimetypes,
 
 static void
 g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
+                               gboolean                              record,
                                GPasteClipboardProviderUpdateCallback callback,
                                gpointer                              user_data)
 {
@@ -971,16 +972,17 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         content_kind = CLIPBOARD_CONTENT_COLOR;
     }
-    else if (g_paste_settings_get_images_support (self->settings) &&
-             (content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_TEXTURE, META_MIME_IMAGE)))
-    {
-        content_kind = CLIPBOARD_CONTENT_IMAGE;
-    }
+    /* Text before an image, as in the GDK backend's update (). */
     else if (mimetypes_contain (mimetypes, META_MIME_TEXT) ||
              mimetypes_contain (mimetypes, META_MIME_TEXT_PLAIN))
     {
         content_kind = CLIPBOARD_CONTENT_TEXT;
         content_mime = mimetypes_contain (mimetypes, META_MIME_TEXT) ? META_MIME_TEXT : META_MIME_TEXT_PLAIN;
+    }
+    else if (g_paste_settings_get_images_support (self->settings) &&
+             (content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_TEXTURE, META_MIME_IMAGE)))
+    {
+        content_kind = CLIPBOARD_CONTENT_IMAGE;
     }
     else if (!mimetypes)
     {
@@ -1015,9 +1017,10 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
                                                                   callback,
                                                                   user_data);
 
-    /* Nothing here can have failed its preconditions, but the caller's own
-     * bookkeeping is released by the callback and by nothing else, so the one
-     * path that fires no read still answers. */
+    /* As in the GDK backend's update (): the one path that fires no read still
+     * answers. Those preconditions are the provider's own state, out of a
+     * library test's reach; the GDK backend's twin is pinned
+     * (/gdk/update/unmade). */
     if (!update)
     {
         g_list_free_full (mimetypes, g_free);
@@ -1025,6 +1028,8 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_UNKNOWN, user_data);
         return;
     }
+
+    update->record = record;
 
     /* What the content read is fired with, whatever its kind, and never
      * content_mime itself: that one aliases the mimetypes list freed below,

@@ -40,6 +40,7 @@ is_empty (GPasteClipboardProvider *provider)
 
 static void
 update (GPasteClipboardProvider              *provider,
+        gboolean                              record G_GNUC_UNUSED,
         GPasteClipboardProviderUpdateCallback callback,
         gpointer                              user_data)
 {

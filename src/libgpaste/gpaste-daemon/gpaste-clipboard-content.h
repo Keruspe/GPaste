@@ -300,7 +300,7 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * @unchanged confirms an exact match with the cache. A read producing no item
  * without this confirmation leaves the selection unidentified, not empty.
  * @reselect asks for the selection to be re-owned after all reads complete:
- * trimmed text needs its normalized value published, and GDK retains images. */
+ * trimmed text needs its normalized value published. */
 typedef struct _GPasteClipboardUpdate GPasteClipboardUpdate;
 
 struct _GPasteClipboardUpdate
@@ -329,6 +329,10 @@ struct _GPasteClipboardUpdate
         GdkRGBA      rgba;
     };
     gboolean                              reselect;
+    /* Whether the caller records the copy read: one that does not -- a read
+     * asked only to identify the selection -- re-owns nothing. %TRUE unless
+     * the backend says otherwise. */
+    gboolean                              record;
     GPasteClipboardMimeResults            mimes;
 };
 

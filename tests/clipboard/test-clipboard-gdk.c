@@ -14,6 +14,7 @@
  * a live clipboard. GTK transport is the only part replaced by this fixture. */
 static GdkContentFormats *formats;
 static GTask *pending_text;
+static GTask *pending_texture;
 static guint publications;
 /* What the hints workaround answers here: whether it can convert this display at
  * all, and what X says about the selection's owner. The two are independent --
@@ -58,6 +59,30 @@ static gchar *
 mock_read_text_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
                        GAsyncResult *result,
                        GError      **error)
+{
+    return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+static void
+mock_set_value (GdkClipboard *clipboard G_GNUC_UNUSED)
+{
+    ++publications;
+}
+
+static void
+mock_read_texture (GdkClipboard        *clipboard G_GNUC_UNUSED,
+                   GCancellable        *cancellable,
+                   GAsyncReadyCallback  callback,
+                   gpointer             user_data)
+{
+    g_assert_null (pending_texture);
+    pending_texture = g_task_new (NULL, cancellable, callback, user_data);
+}
+
+static GdkTexture *
+mock_read_texture_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
+                          GAsyncResult *result,
+                          GError      **error)
 {
     return g_task_propagate_pointer (G_TASK (result), error);
 }
@@ -126,6 +151,9 @@ mock_hints_get_owner (GPasteClipboardX11Hints *self G_GNUC_UNUSED)
 #define gdk_clipboard_set_content mock_set_content
 #define gdk_clipboard_read_text_async mock_read_text
 #define gdk_clipboard_read_text_finish mock_read_text_finish
+#define gdk_clipboard_read_texture_async mock_read_texture
+#define gdk_clipboard_read_texture_finish mock_read_texture_finish
+#define gdk_clipboard_set(clipboard, type, ...) mock_set_value (clipboard)
 #define gdk_clipboard_read_async mock_read_mime
 #define gdk_clipboard_read_finish mock_read_mime_finish
 #define g_paste_clipboard_x11_hints_new mock_hints_new
@@ -218,6 +246,11 @@ fixture_teardown (Fixture      *f,
         g_task_return_pointer (pending_text, NULL, NULL);
         g_clear_object (&pending_text);
     }
+    if (pending_texture)
+    {
+        g_task_return_pointer (pending_texture, NULL, NULL);
+        g_clear_object (&pending_texture);
+    }
     pump (10);
     g_clear_object (&f->manager);
     f->clipboard->settings = NULL;
@@ -303,6 +336,94 @@ formats_bootstrap (Fixture      *f,
     g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "already there");
     g_assert_cmpuint (g_paste_history_get_length (f->history), ==, (copy) ? 2 : 1);
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, (copy) ? "already there" : "replacement");
+}
+
+/* A copy offering a picture of itself beside its text -- spreadsheet cells -- is
+ * read as the text. */
+static void
+text_before_image (Fixture      *f,
+                   gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_paste_settings_set_images_support (f->settings, TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    set_formats (TRUE);
+    formats = gdk_content_formats_union (g_steal_pointer (&formats), gdk_content_formats_new_for_gtype (GDK_TYPE_TEXTURE));
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+
+    g_assert_null (pending_texture);
+    g_assert_nonnull (pending_text);
+    g_task_return_pointer (pending_text, g_strdup ("cells"), g_free);
+    g_clear_object (&pending_text);
+    pump (10);
+
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "cells");
+}
+
+static void
+on_update_answered (GPasteClipboardProvider *provider G_GNUC_UNUSED,
+                    GPasteItem              *item,
+                    gboolean                 superseded G_GNUC_UNUSED,
+                    GPasteClipboardSecret    secret,
+                    gpointer                 user_data)
+{
+    g_assert_null (item);
+    *(GPasteClipboardSecret *) user_data = secret;
+}
+
+/* An update its provider can no longer make -- the settings its dispose ()
+ * clears gone -- still answers its caller, which releases its bookkeeping
+ * there alone, rather than dereference the update it never got. In a
+ * subprocess, the precondition's critical let through for that one call, and
+ * no other critical anywhere. */
+static void
+update_unmade (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 5 * G_USEC_PER_SEC, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*CRITICAL*g_paste_clipboard_update_new*G_PASTE_IS_SETTINGS*");
+        g_test_trap_assert_stderr_unmatched ("*CRITICAL*CRITICAL*");
+        return;
+    }
+
+    GPasteClipboardSecret secret = CLIPBOARD_SECRET_NO;
+
+    set_formats (TRUE);
+    f->clipboard->settings = NULL;
+
+    GLogLevelFlags fatal = g_log_set_always_fatal (G_LOG_FATAL_MASK);
+
+    g_paste_clipboard_gdk_update (f->clipboard, TRUE, on_update_answered, &secret);
+    g_log_set_always_fatal (fatal);
+    f->clipboard->settings = f->settings;
+    g_assert_cmpint (secret, ==, CLIPBOARD_SECRET_UNKNOWN);
+}
+
+/* An image read leaves the selection to its owner, with every format it offers:
+ * the history records it, and nothing is published over it. */
+static void
+image_not_reowned (Fixture      *f,
+                   gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_paste_settings_set_images_support (f->settings, TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_clear_pointer (&formats, gdk_content_formats_unref);
+    formats = gdk_content_formats_new_for_gtype (GDK_TYPE_TEXTURE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+
+    guint before = publications;
+    guchar pixel[4] = { 1, 2, 3, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+
+    g_assert_nonnull (pending_texture);
+    g_task_return_pointer (pending_texture, gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4), g_object_unref);
+    g_clear_object (&pending_texture);
+    pump (10);
+
+    g_assert_cmpint (g_paste_item_get_kind (g_paste_history_get (f->history, 0)), ==, G_PASTE_ITEM_KIND_IMAGE);
+    g_assert_cmpuint (publications, ==, before);
 }
 
 static void
@@ -610,7 +731,7 @@ formats_wait_dispose (void)
     set_formats (FALSE);
     clipboard->settings = settings;
     g_weak_ref_init (&weak, clipboard);
-    g_paste_clipboard_gdk_update (clipboard, on_disposed_wait, &answered);
+    g_paste_clipboard_gdk_update (clipboard, TRUE, on_disposed_wait, &answered);
     g_assert_nonnull (clipboard->formats_wait);
 
     /* No real GdkClipboard to disconnect from: dispose () the way it runs, minus
@@ -665,5 +786,8 @@ main (int argc, char **argv)
     g_test_add ("/gdk/formats/bootstrap", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, formats_bootstrap, fixture_teardown);
     g_test_add ("/gdk/formats/bootstrap-then-copy", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, formats_bootstrap, fixture_teardown);
     g_test_add_func ("/gdk/formats/dispose", formats_wait_dispose);
+    g_test_add ("/gdk/update/text-before-image", Fixture, NULL, fixture_setup, text_before_image, fixture_teardown);
+    g_test_add ("/gdk/update/unmade", Fixture, NULL, fixture_setup, update_unmade, fixture_teardown);
+    g_test_add ("/gdk/update/image-not-reowned", Fixture, NULL, fixture_setup, image_not_reowned, fixture_teardown);
     return g_paste_test_env_run ();
 }

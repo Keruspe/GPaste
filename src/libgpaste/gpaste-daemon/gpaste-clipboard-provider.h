@@ -114,6 +114,7 @@ struct _GPasteClipboardProviderInterface
     gboolean     (*is_reading)         (GPasteClipboardProvider *self);
     gboolean     (*is_empty)           (GPasteClipboardProvider *self);
     void         (*update)             (GPasteClipboardProvider              *self,
+                                        gboolean                              record,
                                         GPasteClipboardProviderUpdateCallback callback,
                                         gpointer                              user_data);
     void         (*select_text)        (GPasteClipboardProvider *self,
@@ -163,10 +164,12 @@ struct _GPasteClipboardProviderInterface
     }                                                                                                      \
     static void                                                                                            \
     provider_update (GPasteClipboardProvider              *self,                                           \
+                     gboolean                              record,                                         \
                      GPasteClipboardProviderUpdateCallback callback,                                       \
                      gpointer                              user_data)                                      \
     {                                                                                                      \
-        g_paste_clipboard_##lc##_update (G_PASTE_CLIPBOARD_##UC ((gpointer) self), callback, user_data);   \
+        g_paste_clipboard_##lc##_update (G_PASTE_CLIPBOARD_##UC ((gpointer) self), record, callback,       \
+                                        user_data);                                                        \
     }                                                                                                      \
     static void                                                                                            \
     provider_select_text (GPasteClipboardProvider *self,                                                   \

@@ -812,8 +812,8 @@ g_paste_clipboards_manager_identify (_Clipboard *clip)
     if (g_paste_clipboard_provider_is_reading (clip->clipboard))
         return;
 
-    g_paste_clipboard_provider_update (clip->clipboard, g_paste_clipboards_manager_identify_ready,
-                                       g_paste_clipboards_manager_update_data_new (clip, FALSE));
+    g_paste_clipboard_provider_update_full (clip->clipboard, FALSE, g_paste_clipboards_manager_identify_ready,
+                                            g_paste_clipboards_manager_update_data_new (clip, FALSE));
 }
 
 /* Every write to this selection is announced here, the manager's own and the one
@@ -1449,9 +1449,10 @@ g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
                            g_paste_settings_get_primary_to_history (settings) ||     // Or we asked that primary affects clipboard
                            g_paste_settings_get_synchronize_clipboards (settings))); // Or primary and clipboards are synchronized hence primary will affect history through clipboard
 
-    g_paste_clipboard_provider_update (clipboard,
-                                       g_paste_clipboards_manager_update_ready,
-                                       g_paste_clipboards_manager_update_data_new (clip, track));
+    g_paste_clipboard_provider_update_full (clipboard,
+                                            track,
+                                            g_paste_clipboards_manager_update_ready,
+                                            g_paste_clipboards_manager_update_data_new (clip, track));
 }
 
 /**
