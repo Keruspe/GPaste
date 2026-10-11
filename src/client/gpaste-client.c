@@ -1192,7 +1192,7 @@ show_help (FILE *out)
     /* Translators: help for --oneline */
     fprintf (out, "  -o, --oneline: %s\n", _("display each item on only one line"));
     /* Translators: help for --raw */
-    fprintf (out, "  -r, --raw: %s\n", _("display each item raw (without line numbers)"));
+    fprintf (out, "  -r, --raw: %s\n", _("display each item alone, without its uuid or index"));
     /* Translators: help for --reverse */
     fprintf (out, "  -e, --reverse: %s\n", _("display the items in reverse order"));
     /* Translators: help for --zero */

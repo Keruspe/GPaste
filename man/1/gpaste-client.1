@@ -12,7 +12,8 @@ GPaste \- A lightweight clipboard manager for the Gnome desktop
 
 .SH "DESCRIPTION"
 GPaste is a modular clipboard management system with a fully
-DBus-based daemon, a \s-1CLI\s0 client and a gtk+ tray icon.
+DBus-based daemon, a \s-1CLI\s0 client, a graphical tool and a GNOME Shell
+extension.
 
 With no command,
 .B gpaste-client
@@ -54,7 +55,8 @@ and tabs stay. Written to a file or a pipe, items are as they are.
 
 .TP
 .B gpaste-client [history]
-Display the history with indexes
+Display the history, each item after its uuid, or its index under
+.B \%--use-index
 .br
 .TP
 .B gpaste-client history-size
@@ -265,7 +267,7 @@ Display each item on one line, without new lines
 .br
 .TP
 .B -r, --raw
-Display the item raw (without index)
+Display the items alone, without their uuids or indexes
 .br
 .TP
 .B -e, --reverse
