@@ -721,14 +721,17 @@ g_paste_clipboards_manager_resume_sync (_Clipboard *clip)
  * record and its countdown, and with no record nothing asks for the re-read
  * that would find the password still sitting there
  * (/clipboard/unconfirmed_password/secret_without_text/expiry). Only a no says
- * the selection holds no password at all. */
+ * the selection holds no password at all. A read that identified the selection
+ * settles it whatever the hint said -- any text, the empty one included, an
+ * image, files, a colour, a secret that is not a text -- what it holds being
+ * what the record is then held against
+ * (g_paste_clipboard_provider_is_identified ()). */
 static void
 g_paste_clipboards_manager_confirm_password (_Clipboard           *clip,
                                              GPasteClipboardSecret secret)
 {
     clip->password_unconfirmed = (clip->password || clip->pending_passwords) && secret != CLIPBOARD_SECRET_NO &&
-                                 !g_paste_clipboard_provider_get_text (clip->clipboard) &&
-                                 !g_paste_clipboard_provider_get_image_checksum (clip->clipboard);
+                                 !g_paste_clipboard_provider_is_identified (clip->clipboard);
 }
 
 /* Whether @clip's selection may be carrying a secret, which is what every route

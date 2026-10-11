@@ -33,6 +33,7 @@ g_paste_clipboard_content_clear (GPasteClipboardContent *content)
         break;
     case CLIPBOARD_CONTENT_COLOR:
     case CLIPBOARD_CONTENT_IGNORED:
+    case CLIPBOARD_CONTENT_WITHHELD:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }
@@ -63,6 +64,35 @@ g_paste_clipboard_content_set_ignored (GPasteClipboardContent *content)
 {
     g_paste_clipboard_content_clear (content);
     content->kind = CLIPBOARD_CONTENT_IGNORED;
+}
+
+/**
+ * g_paste_clipboard_content_set_withheld:
+ * @content: a #GPasteClipboardContent
+ *
+ * Say the selection holds a secret that is not a text, kept as nothing
+ *
+ * Every getter answers %NULL, as for g_paste_clipboard_content_set_ignored (),
+ * but the selection is identified: what it holds is no password.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_content_set_withheld (GPasteClipboardContent *content)
+{
+    g_paste_clipboard_content_clear (content);
+    content->kind = CLIPBOARD_CONTENT_WITHHELD;
+}
+
+/**
+ * g_paste_clipboard_content_is_identified:
+ * @content: a #GPasteClipboardContent
+ *
+ * Returns: whether @content says what the selection holds, nothing included:
+ *          %FALSE only for g_paste_clipboard_content_set_ignored ()
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_content_is_identified (const GPasteClipboardContent *content)
+{
+    return content->kind != CLIPBOARD_CONTENT_IGNORED;
 }
 
 /**
@@ -883,7 +913,7 @@ g_paste_clipboard_mime_results_clear (GPasteClipboardMimeResults *results)
  * @texture: (nullable): the image, for %CLIPBOARD_CONTENT_IMAGE
  * @file_list: (nullable): the files, for %CLIPBOARD_CONTENT_FILE_LIST
  * @rgba: (nullable): the colour, for %CLIPBOARD_CONTENT_COLOR
- * @sensitive: whether the owner marked its text a secret
+ * @sensitive: whether the owner marked its content a secret
  * @special_mimes: (array fixed-size=5): the alternative representations, one
  *                 slot per #GPasteSpecialMime (%G_PASTE_SPECIAL_MIME_LAST of
  *                 them)
@@ -905,6 +935,12 @@ g_paste_clipboard_content_to_item (GPasteSettings            *settings,
                                    GPasteBinaryData         **special_mimes)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+    /* A secret is kept only as a password, which only a text can be: an image,
+     * a file list or a colour its owner marked one is not kept at all, which is
+     * what the hint asks of a clipboard manager. */
+    if (sensitive && kind != CLIPBOARD_CONTENT_TEXT)
+        return NULL;
 
     GPasteItem *item = NULL;
 
@@ -932,6 +968,7 @@ g_paste_clipboard_content_to_item (GPasteSettings            *settings,
             item = G_PASTE_ITEM (g_paste_image_item_new (texture));
         break;
     case CLIPBOARD_CONTENT_IGNORED:
+    case CLIPBOARD_CONTENT_WITHHELD:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }
@@ -992,6 +1029,7 @@ g_paste_clipboard_update_release_content (GPasteClipboardUpdate *update)
         break;
     case CLIPBOARD_CONTENT_COLOR:
     case CLIPBOARD_CONTENT_IGNORED:
+    case CLIPBOARD_CONTENT_WITHHELD:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }
@@ -1172,11 +1210,17 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
             break;
         case CLIPBOARD_CONTENT_NONE:
         case CLIPBOARD_CONTENT_IGNORED:
+        case CLIPBOARD_CONTENT_WITHHELD:
             g_assert_not_reached ();
         }
     }
     else if (empty_text)
         g_paste_clipboard_content_set_text (update->cache, "");
+    /* A secret that is not a text is read for what it is, and kept as nothing:
+     * the selection is identified all the same, and no password is on it
+     * (g_paste_clipboards_manager_confirm_password ()). */
+    else if (kind != CLIPBOARD_CONTENT_NONE && kind != CLIPBOARD_CONTENT_TEXT && update->mimes.sensitive)
+        g_paste_clipboard_content_set_withheld (update->cache);
     /* Rejection and read failure establish no match with the previous owner.
      * Keep an unidentified selection non-empty so it cannot be restored over. */
     else if (!update->unchanged)
@@ -1322,6 +1366,11 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (slot, NULL);
     g_return_val_if_fail (cache, NULL);
+    /* An update reads some content, and with it the hints saying it is a
+     * secret: a kind carrying none -- nothing there, ignored, withheld -- is
+     * no update to make. */
+    g_return_val_if_fail (content_kind == CLIPBOARD_CONTENT_TEXT || content_kind == CLIPBOARD_CONTENT_IMAGE ||
+                          content_kind == CLIPBOARD_CONTENT_FILE_LIST || content_kind == CLIPBOARD_CONTENT_COLOR, NULL);
 
     g_paste_clipboard_update_supersede (slot);
 
@@ -1459,8 +1508,7 @@ g_paste_clipboard_update_add_sensitive_mime_read (GPasteClipboardUpdate *update,
  *
  * For a backend that has to make a round trip of its own to learn that before
  * it can hand g_paste_clipboard_update_read_sensitive_mimes () an answer; one
- * whose formats already say has no use for this. Only worth making when
- * g_paste_clipboard_update_wants_sensitive_mimes () says so.
+ * whose formats already say has no use for this.
  *
  * Counted among the hint reads and not merely among the reads, because it is out
  * after the same thing they are: a deadline this one outlasts leaves every hint
@@ -1544,27 +1592,6 @@ g_paste_clipboard_update_read_special_mimes (GPasteClipboardUpdate         *upda
 }
 
 /**
- * g_paste_clipboard_update_wants_sensitive_mimes:
- * @update: a #GPasteClipboardUpdate
- *
- * Whether @update reads the hints saying its content is a secret
- *
- * A text update does, whatever rich-text support says, a hint that a text is a
- * password being no more rich text than the text is: see #GPasteSensitiveMime.
- * Asked by g_paste_clipboard_update_read_sensitive_mimes (), and by a backend
- * deciding whether to ask the selection which hints it offers at all.
- *
- * Returns: whether the sensitive mimes are read for @update
- */
-G_PASTE_VISIBLE gboolean
-g_paste_clipboard_update_wants_sensitive_mimes (const GPasteClipboardUpdate *update)
-{
-    g_return_val_if_fail (update, FALSE);
-
-    return update->content_kind == CLIPBOARD_CONTENT_TEXT;
-}
-
-/**
  * g_paste_clipboard_update_read_sensitive_mimes:
  * @update: the #GPasteClipboardUpdate the reads count into
  * @offer: what @offered consults to answer, opaque here
@@ -1588,9 +1615,6 @@ g_paste_clipboard_update_read_sensitive_mimes (GPasteClipboardUpdate         *up
     g_return_if_fail (update);
     g_return_if_fail (offered);
     g_return_if_fail (read);
-
-    if (!g_paste_clipboard_update_wants_sensitive_mimes (update))
-        return;
 
     for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
     {

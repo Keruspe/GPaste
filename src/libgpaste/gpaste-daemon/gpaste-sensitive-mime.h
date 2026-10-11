@@ -9,13 +9,14 @@ G_BEGIN_DECLS
 
 /* The mime types a clipboard owner offers to say that what it is offering is a
  * secret. Each is a key with the values it may be said under; the payload stays
- * the ordinary text alongside, which is why these are a list of their own rather
- * than more #GPasteSpecialMime: nothing is kept under them and nothing is drawn
- * from them. They are published for a password item and read back to recognise
- * one, and that is all.
+ * the ordinary content alongside, which is why these are a list of their own
+ * rather than more #GPasteSpecialMime: nothing is kept under them and nothing is
+ * drawn from them. They are published for a password item and read back to
+ * recognise one -- or to keep no item at all of a secret that is not a text --
+ * and that is all.
  *
- * A backend therefore reads them on any text update, whatever rich-text support
- * says about the special values beside them: what they carry is not a richer
+ * A backend therefore reads them on any update, whatever rich-text support says
+ * about the special values beside them: what they carry is not a richer
  * representation of the content but a fact about it, and one that decides what
  * the item is rather than what else it holds.
  *

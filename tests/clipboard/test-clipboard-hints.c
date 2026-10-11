@@ -74,7 +74,6 @@ test_sensitive_offer_read (gconstpointer user_data)
                                                                      CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
                                                                      &clipboard->content, capture_read, &result);
 
-    g_assert_true (g_paste_clipboard_update_wants_sensitive_mimes (pending));
     g_paste_clipboard_update_add_read (pending);
     g_paste_clipboard_update_add_sensitive_offer_read (pending);
     test_clipboard_text_ready (pending, "offered text");
@@ -146,7 +145,7 @@ drop_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
 }
 
 /* The two halves of the MIME-reading policy, apart and together: special values
- * with a file list or a rich text, hints with every text. */
+ * with a file list or a rich text, hints with every content. */
 static void
 test_mime_read_policy (gconstpointer user_data)
 {
@@ -164,7 +163,6 @@ test_mime_read_policy (gconstpointer user_data)
                                                                      (text) ? CLIPBOARD_CONTENT_TEXT : CLIPBOARD_CONTENT_FILE_LIST,
                                                                      &clipboard->pending, &clipboard->content, drop_read, NULL);
 
-    g_assert_cmpint (g_paste_clipboard_update_wants_sensitive_mimes (pending), ==, text);
 
     if (split)
     {
@@ -178,7 +176,7 @@ test_mime_read_policy (gconstpointer user_data)
     g_paste_clipboard_update_maybe_done (pending);
 
     g_assert_cmpuint (reads.special, ==, (!text || rich) ? G_PASTE_SPECIAL_MIME_LAST - G_PASTE_SPECIAL_MIME_FIRST : 0);
-    g_assert_cmpuint (reads.sensitive, ==, (text) ? G_PASTE_SENSITIVE_MIME_LAST - G_PASTE_SENSITIVE_MIME_FIRST : 0);
+    g_assert_cmpuint (reads.sensitive, ==, G_PASTE_SENSITIVE_MIME_LAST - G_PASTE_SENSITIVE_MIME_FIRST);
 }
 
 int

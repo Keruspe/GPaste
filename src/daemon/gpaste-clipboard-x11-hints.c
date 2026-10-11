@@ -645,7 +645,7 @@ g_paste_clipboard_x11_hints_get_owner (GPasteClipboardX11Hints *self)
  * @update: the #GPasteClipboardUpdate the reads count into
  *
  * Ask the selection which hints it offers, and read those, all counted into
- * @update. Does nothing for an update that reads no hints.
+ * @update.
  */
 void
 g_paste_clipboard_x11_hints_read (GPasteClipboardX11Hints *self,
@@ -653,9 +653,6 @@ g_paste_clipboard_x11_hints_read (GPasteClipboardX11Hints *self,
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD_X11_HINTS (self));
     g_return_if_fail (update);
-
-    if (!g_paste_clipboard_update_wants_sensitive_mimes (update))
-        return;
 
     g_paste_clipboard_update_add_sensitive_offer_read (update);
     g_paste_clipboard_x11_hints_convert (self, self->targets_atom, self->selection_timestamp, update->guard.cancellable,

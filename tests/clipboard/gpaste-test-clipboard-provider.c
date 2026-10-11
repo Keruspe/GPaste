@@ -38,6 +38,12 @@ is_empty (GPasteClipboardProvider *provider)
     return g_paste_clipboard_content_is_empty (&TEST_CLIPBOARD (provider)->content);
 }
 
+static gboolean
+is_identified (GPasteClipboardProvider *provider)
+{
+    return g_paste_clipboard_content_is_identified (&TEST_CLIPBOARD (provider)->content);
+}
+
 static void
 update (GPasteClipboardProvider              *provider,
         gboolean                              record G_GNUC_UNUSED,
@@ -85,6 +91,7 @@ test_clipboard_iface_init (GPasteClipboardProviderInterface *iface)
     iface->get_text = get_text;
     iface->get_image_checksum = get_image_checksum;
     iface->is_empty = is_empty;
+    iface->is_identified = is_identified;
     iface->is_reading = is_reading;
     iface->update = update;
     iface->select_item = select_item;

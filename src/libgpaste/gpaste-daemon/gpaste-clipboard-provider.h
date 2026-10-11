@@ -129,6 +129,7 @@ struct _GPasteClipboardProviderInterface
     const gchar               *(*get_image_checksum) (GPasteClipboardProvider *self);
     gboolean                   (*is_reading)         (GPasteClipboardProvider *self);
     gboolean                   (*is_empty)           (GPasteClipboardProvider *self);
+    gboolean                   (*is_identified)      (GPasteClipboardProvider *self);
     void                       (*update)             (GPasteClipboardProvider              *self,
                                                       gboolean                              record,
                                                       GPasteClipboardProviderUpdateCallback callback,
@@ -178,6 +179,11 @@ struct _GPasteClipboardProviderInterface
     {                                                                                                      \
         return g_paste_clipboard_##lc##_is_empty (G_PASTE_CLIPBOARD_##UC ((gpointer) self));               \
     }                                                                                                      \
+    static gboolean                                                                                        \
+    provider_is_identified (GPasteClipboardProvider *self)                                                 \
+    {                                                                                                      \
+        return g_paste_clipboard_##lc##_is_identified (G_PASTE_CLIPBOARD_##UC ((gpointer) self));          \
+    }                                                                                                      \
     static void                                                                                            \
     provider_update (GPasteClipboardProvider              *self,                                           \
                      gboolean                              record,                                         \
@@ -223,6 +229,7 @@ struct _GPasteClipboardProviderInterface
         iface->get_image_checksum = provider_get_image_checksum;                                           \
         iface->is_reading = provider_is_reading;                                                           \
         iface->is_empty = provider_is_empty;                                                               \
+        iface->is_identified = provider_is_identified;                                                     \
         iface->update = provider_update;                                                                   \
         iface->select_text = provider_select_text;                                                         \
         iface->sync_text = provider_sync_text;                                                             \
@@ -235,6 +242,7 @@ const gchar  *g_paste_clipboard_provider_get_text           (GPasteClipboardProv
 const gchar  *g_paste_clipboard_provider_get_image_checksum (GPasteClipboardProvider *self);
 gboolean      g_paste_clipboard_provider_is_reading         (GPasteClipboardProvider *self);
 gboolean      g_paste_clipboard_provider_is_empty           (GPasteClipboardProvider *self);
+gboolean      g_paste_clipboard_provider_is_identified      (GPasteClipboardProvider *self);
 void          g_paste_clipboard_provider_update             (GPasteClipboardProvider              *self,
                                                              GPasteClipboardProviderUpdateCallback callback,
                                                              gpointer                              user_data);

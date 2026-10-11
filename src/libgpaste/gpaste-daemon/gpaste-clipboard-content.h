@@ -31,6 +31,10 @@ typedef enum
      * (e.g. an image while images-support is disabled): not tracked, but
      * must not be overridden by ensure_not_empty either. */
     CLIPBOARD_CONTENT_IGNORED,
+    /* Read, and kept as nothing: a secret that is not a text, which no item is
+     * made of (g_paste_clipboard_content_to_item ()). Not empty either, and
+     * unlike IGNORED the selection is identified: no password is on it. */
+    CLIPBOARD_CONTENT_WITHHELD,
 } GPasteClipboardContentKind;
 
 typedef struct
@@ -45,7 +49,9 @@ typedef struct
 
 void         g_paste_clipboard_content_clear              (GPasteClipboardContent       *content);
 void         g_paste_clipboard_content_set_ignored        (GPasteClipboardContent       *content);
+void         g_paste_clipboard_content_set_withheld       (GPasteClipboardContent       *content);
 gboolean     g_paste_clipboard_content_is_empty           (const GPasteClipboardContent *content);
+gboolean     g_paste_clipboard_content_is_identified      (const GPasteClipboardContent *content);
 const gchar *g_paste_clipboard_content_get_text           (const GPasteClipboardContent *content);
 const gchar *g_paste_clipboard_content_get_image_checksum (const GPasteClipboardContent *content);
 GdkFileList *g_paste_clipboard_content_get_file_list      (const GPasteClipboardContent *content);
@@ -387,7 +393,6 @@ void                    g_paste_clipboard_update_read_special_mimes       (GPast
                                                                            GPasteClipboardMimeOfferedFunc        offered,
                                                                            gpointer                              backend,
                                                                            GPasteClipboardMimeReadFunc           read);
-gboolean                g_paste_clipboard_update_wants_sensitive_mimes    (const GPasteClipboardUpdate          *update);
 void                    g_paste_clipboard_update_read_sensitive_mimes     (GPasteClipboardUpdate                *update,
                                                                            gconstpointer                         offer,
                                                                            GPasteClipboardMimeOfferedFunc        offered,

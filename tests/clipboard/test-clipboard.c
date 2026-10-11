@@ -14,24 +14,26 @@ struct _TestClipboard
 {
     GObject parent_instance;
 
-    GPasteClipboardContent   content;
+    GPasteClipboardContent     content;
     /* Borrowed: what the test configures is what a read must be classified
      * against, so the mock hands this very object to every update it builds. */
-    GPasteSettings          *settings;
-    gboolean                 is_clipboard;
-    GPasteItem              *published;
-    const gchar             *refuse_value;
-    guint                    publications;
-    GPasteClipboardUpdate   *pending;
-    gboolean                 defer_reads;
-    gboolean                 reject_next;
+    GPasteSettings            *settings;
+    gboolean                   is_clipboard;
+    GPasteItem                *published;
+    const gchar               *refuse_value;
+    guint                      publications;
+    GPasteClipboardUpdate     *pending;
+    gboolean                   defer_reads;
+    /* What a deferred read reads, a text when left unset. */
+    GPasteClipboardContentKind defer_kind;
+    gboolean                   reject_next;
     /* Another client takes the selection before every claim. */
-    gboolean                 refuse_claims;
+    gboolean                   refuse_claims;
     /* Every claim made, refused ones included. */
-    guint                    claims;
-    gboolean                 defer_sync;
-    guint                    sync_reads;
-    GPasteClipboardSyncData *sync;
+    guint                      claims;
+    gboolean                   defer_sync;
+    guint                      sync_reads;
+    GPasteClipboardSyncData   *sync;
 };
 
 static void test_clipboard_iface_init (GPasteClipboardProviderInterface *iface);
@@ -75,6 +77,14 @@ is_empty (GPasteClipboardProvider *provider)
     return g_paste_clipboard_content_is_empty (&self->content);
 }
 
+static gboolean
+is_identified (GPasteClipboardProvider *provider)
+{
+    TestClipboard *self = TEST_CLIPBOARD (provider);
+
+    return g_paste_clipboard_content_is_identified (&self->content);
+}
+
 static void
 update (GPasteClipboardProvider              *provider,
         gboolean                              record,
@@ -85,7 +95,8 @@ update (GPasteClipboardProvider              *provider,
 
     if (self->defer_reads)
     {
-        GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, self->settings, CLIPBOARD_CONTENT_TEXT,
+        GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, self->settings,
+                                                                       (self->defer_kind) ? self->defer_kind : CLIPBOARD_CONTENT_TEXT,
                                                                        &self->pending, &self->content, callback, user_data);
 
         pending->record = record;
@@ -175,6 +186,7 @@ test_clipboard_iface_init (GPasteClipboardProviderInterface *iface)
     iface->get_text = get_text;
     iface->get_image_checksum = get_image_checksum;
     iface->is_empty = is_empty;
+    iface->is_identified = is_identified;
     iface->is_reading = is_reading;
     iface->update = update;
     iface->select_item = select_item;
@@ -1902,6 +1914,93 @@ test_hint_reply_without_value (gconstpointer user_data)
 
     g_assert_null (result.item);
     g_assert_cmpint (result.secret, ==, (served) ? CLIPBOARD_SECRET_NO : CLIPBOARD_SECRET_UNKNOWN);
+}
+
+/* A secret is kept as a password when it is a text, and not at all otherwise. */
+static void
+test_secret_not_text (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    const GdkRGBA rgba = { 0.25, 0.5, 0.75, 1 };
+    g_autoptr (GPasteItem) colour = g_paste_clipboard_content_to_item (settings, CLIPBOARD_CONTENT_COLOR, NULL, NULL, NULL, &rgba, FALSE, NULL);
+    g_autoptr (GPasteItem) secret_colour = g_paste_clipboard_content_to_item (settings, CLIPBOARD_CONTENT_COLOR, NULL, NULL, NULL, &rgba, TRUE, NULL);
+    g_autoptr (GPasteItem) secret_text = g_paste_clipboard_content_to_item (settings, CLIPBOARD_CONTENT_TEXT, "s3cret", NULL, NULL, NULL, TRUE, NULL);
+
+    g_assert_nonnull (colour);
+    g_assert_null (secret_colour);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (secret_text));
+}
+
+/* Answer @clipboard's deferred read of a 1x1 image or a colour, its hint
+ * saying it is a secret or going unanswered. */
+static void
+answer_content (TestClipboard *clipboard,
+                gboolean       secret)
+{
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_assert_nonnull (pending);
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           (secret) ? g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT) : NULL);
+    if (pending->content_kind == CLIPBOARD_CONTENT_IMAGE)
+    {
+        static const guchar pixel[4] = { 1, 2, 3, 255 };
+        g_autoptr (GBytes) bytes = g_bytes_new_static (pixel, sizeof (pixel));
+
+        pending->texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, sizeof (pixel));
+    }
+    else
+        pending->rgba = (GdkRGBA) { 1, 0, 0, 1 };
+    pending->produced = TRUE;
+    g_paste_clipboard_update_maybe_done (pending);
+    g_paste_clipboard_update_maybe_done (pending);
+}
+
+/* A read of what is not a text identifies the selection whatever the hint says
+ * -- an image or a colour its owner marks a secret, kept as nothing, a colour
+ * whose hint went unanswered: the password recorded before is not on it, and a
+ * wait for that password's expiry ends rather than fail. */
+static void
+test_not_text_retires_record (gconstpointer user_data)
+{
+    guint variant = GPOINTER_TO_UINT (user_data);
+    gboolean secret = variant & 1;
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 30);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+    clipboard->defer_kind = (variant & 2) ? CLIPBOARD_CONTENT_IMAGE : CLIPBOARD_CONTENT_COLOR;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    answer_content (clipboard, secret);
+
+    g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &result);
+    pump_for (20);
+    if (clipboard->pending)
+        answer_content (clipboard, secret);
+    for (guint i = 0; i < 3000 && !result; ++i)
+        pump_for (1);
+    g_assert_nonnull (result);
+    g_assert_true (g_paste_clipboards_manager_expire_password_finish (manager, result, &error));
+    g_assert_no_error (error);
+
+    for (guint64 i = 0; secret && i < g_paste_history_get_length (history); ++i)
+    {
+        g_autoptr (GPasteItem) item = g_paste_history_dup (history, i);
+
+        g_assert_cmpint (g_paste_item_get_kind (item), !=, (variant & 2) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_COLOR);
+    }
 }
 
 static void
@@ -5008,6 +5107,10 @@ main (int argc, char *argv[])
 
         g_test_add_data_func (path, GUINT_TO_POINTER (variant), test_secret_text_policy);
     }
+    g_test_add_func ("/clipboard/secret_not_text", test_secret_not_text);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/secret_image", GUINT_TO_POINTER (3), test_not_text_retires_record);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/secret_colour", GUINT_TO_POINTER (1), test_not_text_retires_record);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/colour_unanswered", GUINT_TO_POINTER (0), test_not_text_retires_record);
     g_test_add_data_func ("/clipboard/hint_reply/served_empty", GINT_TO_POINTER (TRUE), test_hint_reply_without_value);
     g_test_add_data_func ("/clipboard/hint_reply/refused", GINT_TO_POINTER (FALSE), test_hint_reply_without_value);
     g_test_add_func ("/clipboard/emptied_under_password", test_emptied_under_password);

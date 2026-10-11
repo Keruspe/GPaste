@@ -151,6 +151,24 @@ g_paste_clipboard_provider_is_empty (GPasteClipboardProvider *self)
 }
 
 /**
+ * g_paste_clipboard_provider_is_identified:
+ * @self: a #GPasteClipboardProvider instance
+ *
+ * Get whether the last read says what the selection holds, nothing included,
+ * rather than leaving it unknown: a read that failed, a text the size policy
+ * turned down, types nothing here handles
+ *
+ * Returns: %TRUE if the selection is identified
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_provider_is_identified (GPasteClipboardProvider *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
+
+    return !g_paste_clipboard_provider_is_reading (self) && G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->is_identified (self);
+}
+
+/**
  * g_paste_clipboard_provider_update:
  * @self: a #GPasteClipboardProvider instance
  * @callback: (scope async): the callback to be called when the content is ready

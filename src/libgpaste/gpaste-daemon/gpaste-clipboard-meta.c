@@ -93,6 +93,12 @@ g_paste_clipboard_meta_get_image_checksum (GPasteClipboardMeta *self)
     return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
+static gboolean
+g_paste_clipboard_meta_is_identified (GPasteClipboardMeta *self)
+{
+    return g_paste_clipboard_content_is_identified (&self->content);
+}
+
 /* --- mimetype helpers --- */
 
 static gboolean
@@ -1315,6 +1321,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_paste_clipboard_meta_read_mime (self, update->mime, update->guard.cancellable, g_paste_clipboard_meta_update_on_text, update);
         break;
     case CLIPBOARD_CONTENT_IGNORED:
+    case CLIPBOARD_CONTENT_WITHHELD:
     case CLIPBOARD_CONTENT_NONE:
         g_assert_not_reached ();
     }

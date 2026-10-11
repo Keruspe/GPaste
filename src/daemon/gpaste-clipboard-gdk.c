@@ -526,6 +526,12 @@ g_paste_clipboard_gdk_get_image_checksum (GPasteClipboardGdk *self)
     return g_paste_clipboard_content_get_image_checksum (&self->content);
 }
 
+static gboolean
+g_paste_clipboard_gdk_is_identified (GPasteClipboardGdk *self)
+{
+    return g_paste_clipboard_content_is_identified (&self->content);
+}
+
 static void
 g_paste_clipboard_gdk_private_set_image_checksum (GPasteClipboardGdk *self,
                                                   const gchar        *image_checksum)
@@ -1174,6 +1180,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_paste_clipboard_gdk_set_texture (self, update, g_paste_clipboard_gdk_update_on_texture_ready);
         break;
     case CLIPBOARD_CONTENT_IGNORED:
+    case CLIPBOARD_CONTENT_WITHHELD:
     case CLIPBOARD_CONTENT_NONE:
         g_assert_not_reached ();
     }
