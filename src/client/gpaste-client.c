@@ -239,7 +239,8 @@ spawn (const gchar *app)
     if (!g_paste_util_spawn_sync (app, &error))
     {
         /* Translators: %s is the program GPaste tried to start, then the reason it could not. */
-        g_critical (_("Couldn’t spawn %s: %s"), app, error->message);
+        g_printerr (_("Couldn’t spawn %s: %s"), app, error->message);
+        g_printerr ("\n");
         return EXIT_FAILURE;
     }
 
@@ -1278,9 +1279,12 @@ main (gint argc, gchar *argv[])
             status = EXIT_FAILURE;
         }
 
+        /* A refusal, a missing item, a bad argument: what the user is told
+         * about, with the status saying it failed. Not a critical, which is
+         * for a bug, and which G_DEBUG=fatal-criticals turns into a crash. */
         if (error)
         {
-            g_critical ("%s\n", error->message);
+            g_printerr ("%s\n", error->message);
             status = EXIT_FAILURE;
         }
     }

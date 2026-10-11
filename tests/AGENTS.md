@@ -169,10 +169,10 @@ anything after the digits, past `guint64` -- refused before any lookup or
 client, a single index on its own, every argument of a merge off one listing
 even when a copy lands after the first answer, a merge index past the end
 refused with the error the daemon gives a single one, and text and patterns
-left alone on an empty history. A case that succeeds runs its command line
-through `gpaste_client_main ()`, `optind` rewound; a refusal goes through
-`g_paste_dispatch ()`, where its error comes back to the case rather than out
-of `main ()` as a critical, which `g_test` makes fatal. Every argument of
+left alone on an empty history. A case runs its command line through
+`gpaste_client_main ()`, `optind` rewound, a refusal printed and exiting with a
+failure there as it is for the user (`failure-reported`), or through
+`g_paste_dispatch ()` where the case reads the error itself. Every argument of
 every verb that talks to the daemon, walked off `commands[]`, the text piped in
 for one and merge's decoration and separator are refused when not UTF-8, before
 any client is built, while UTF-8 beyond ASCII goes through.

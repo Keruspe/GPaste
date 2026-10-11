@@ -9,6 +9,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix gpaste-client cutting piped input at a NUL byte, or taking a failed read for its end
 - Document piping a password to gpaste-client add-password, and drop the newline ending it
 - Fix gpaste-client add-password and replace failing silently, or starting the daemon, with nothing piped
+- Report gpaste-client failures as plain messages rather than critical warnings
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 
 NEW in 51.1 (20/10/2026)

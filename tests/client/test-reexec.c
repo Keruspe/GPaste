@@ -734,6 +734,23 @@ test_pipe_refusals (void)
     g_assert_cmpstr (data, ==, "piped");
 }
 
+/* A command that fails tells the user why on stderr and exits 1 -- with no
+ * critical, which is for a bug, and which G_DEBUG=fatal-criticals turns into
+ * a crash. */
+static void
+test_failure_reported (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("Invalid item index: abc\n");
+        return;
+    }
+
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "delete", "abc", NULL }), ==, EXIT_FAILURE);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -922,6 +939,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/pipe/password", test_piped_password);
     g_test_add_func ("/client/password-timeout", test_password_timeout);
     g_test_add_func ("/client/pipe/nothing-piped", test_nothing_piped);
+    g_test_add_func ("/client/failure-reported", test_failure_reported);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
