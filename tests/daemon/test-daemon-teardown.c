@@ -9,9 +9,28 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <glib/gstdio.h>
 #include <sys/file.h>
+
+/* Every write of extension-paused: GSettings raises no change for a value it
+ * already holds, so this is the one place a write of the same value shows. */
+static guint extension_paused_writes;
+
+gboolean
+g_settings_set_boolean (GSettings   *settings,
+                        const gchar *key,
+                        gboolean     value)
+{
+    typedef gboolean (*SetBoolean) (GSettings *, const gchar *, gboolean);
+    SetBoolean original = (SetBoolean) dlsym (RTLD_NEXT, "g_settings_set_boolean");
+
+    g_assert_nonnull (original);
+    if (g_str_equal (key, G_PASTE_EXTENSION_PAUSED_SETTING))
+        ++extension_paused_writes;
+    return original (settings, key, value);
+}
 
 /* The private bus has no GlobalShortcuts portal, and a daemon that cannot reach
  * it warns, which g_test makes fatal. Its constructor is never answered here,
@@ -652,6 +671,147 @@ test_reexecute_store_busy (Fixture      *fixture,
     g_assert_nonnull (uploaded);
 }
 
+/* Under track-extension-state, the extension going pauses the tracking and its
+ * coming back resumes what that paused -- and nothing else: it says it is there
+ * to every daemon it finds, after a restart, a handoff or an unlock, and a
+ * pause of the user's own outlives all of it, as does one made while it was
+ * away, however the tracking was turned on and off again meanwhile. */
+static void
+test_extension_state (Fixture      *fixture,
+                      gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteSettings *settings = fixture->settings;
+    GPasteDaemon *daemon = fixture->daemon;
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (daemon);
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_track_extension_state (settings, TRUE);
+    g_paste_settings_set_track_changes (settings, TRUE);
+
+    /* Away, and back. */
+    g_paste_daemon_extension_state_changed (daemon, FALSE);
+    g_assert_false (g_paste_settings_get_track_changes (settings));
+    g_paste_daemon_extension_state_changed (daemon, TRUE);
+    g_assert_true (g_paste_settings_get_track_changes (settings));
+
+    /* The user pausing, then the extension saying it is there to a daemon
+     * restarted under it, and going and coming as the shell rebases it. */
+    g_paste_daemon_methods_set_active (&methods, FALSE, &error);
+    g_assert_no_error (error);
+    g_paste_daemon_extension_state_changed (daemon, TRUE);
+    g_assert_false (g_paste_settings_get_track_changes (settings));
+    g_paste_daemon_extension_state_changed (daemon, FALSE);
+    g_paste_daemon_extension_state_changed (daemon, TRUE);
+    g_assert_false (g_paste_settings_get_track_changes (settings));
+
+    /* Away, the tracking turned on and off again from the preferences: the
+     * pause is the user's by then. */
+    g_paste_settings_set_track_changes (settings, TRUE);
+    g_paste_daemon_extension_state_changed (daemon, FALSE);
+    g_paste_settings_set_track_changes (settings, TRUE);
+    g_paste_settings_set_track_changes (settings, FALSE);
+    g_paste_daemon_extension_state_changed (daemon, TRUE);
+    g_assert_false (g_paste_settings_get_track_changes (settings));
+
+    /* Away, and the user asking for no tracking all the same. */
+    g_paste_settings_set_track_changes (settings, TRUE);
+    g_paste_daemon_extension_state_changed (daemon, FALSE);
+    g_paste_daemon_methods_set_active (&methods, FALSE, &error);
+    g_assert_no_error (error);
+    g_paste_daemon_extension_state_changed (daemon, TRUE);
+    g_assert_false (g_paste_settings_get_track_changes (settings));
+
+    g_paste_settings_reset (settings, G_PASTE_TRACK_EXTENSION_STATE_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_TRACK_CHANGES_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
+}
+
+/* A pause a GPaste with no "extension-paused" left -- the tracking off under
+ * track-extension-state, which it resumed on every return of the extension --
+ * is carried over as the extension's, once: its return resumes the tracking.
+ * Once, the key written either way: a pause of the user's own made since is
+ * never taken for one. */
+static void
+test_extension_pause_carried_over (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
+    g_autoptr (TestClipboard) primary = test_clipboard_new ();
+
+    g_paste_settings_set_history_name (settings, "daemon-teardown");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+    g_paste_settings_set_track_extension_state (settings, TRUE);
+
+    /* Left off by that GPaste: resumed. Left on: the user pausing it under
+     * the first daemon, the second keeps it paused. */
+    for (guint left_on = 0; left_on < 2; ++left_on)
+    {
+        g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
+        g_paste_settings_set_track_changes (settings, left_on);
+
+        g_autoptr (GPasteDaemon) first = g_paste_daemon_new (settings, G_PASTE_CLIPBOARD_PROVIDER (clipboard), G_PASTE_CLIPBOARD_PROVIDER (primary));
+        const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (first);
+        g_autoptr (GError) error = NULL;
+
+        /* Its screensaver client built before it goes, as fixture_set_up ()
+         * has its own. */
+        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &first->screensaver, NULL);
+
+        if (left_on)
+        {
+            g_paste_daemon_methods_set_active (&methods, FALSE, &error);
+            g_assert_no_error (error);
+            g_object_run_dispose (G_OBJECT (first));
+
+            g_autoptr (GPasteDaemon) second = g_paste_daemon_new (settings, G_PASTE_CLIPBOARD_PROVIDER (clipboard), G_PASTE_CLIPBOARD_PROVIDER (primary));
+
+            g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &second->screensaver, NULL);
+            g_paste_daemon_extension_state_changed (second, TRUE);
+            g_assert_false (g_paste_settings_get_track_changes (settings));
+            g_object_run_dispose (G_OBJECT (second));
+        }
+        else
+        {
+            g_paste_daemon_extension_state_changed (first, TRUE);
+            g_assert_true (g_paste_settings_get_track_changes (settings));
+            g_object_run_dispose (G_OBJECT (first));
+        }
+    }
+
+    g_paste_settings_reset (settings, G_PASTE_TRACK_EXTENSION_STATE_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_TRACK_CHANGES_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
+}
+
+/* What the extension's pause is cleared on -- tracking turned on, an export, a
+ * SetActive -- writes nothing when there is no pause: each write is a dconf
+ * round trip and a change every process watching the schema hears. */
+static void
+test_extension_paused_written_when_set (Fixture      *fixture,
+                                        gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteSettings *settings = fixture->settings;
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (fixture->daemon);
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_track_changes (settings, FALSE);
+    extension_paused_writes = 0;
+    g_paste_settings_set_track_changes (settings, TRUE);
+    g_paste_daemon_methods_set_active (&methods, TRUE, &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (extension_paused_writes, ==, 0);
+
+    /* A pause there is cleared, once. */
+    g_paste_settings_set_extension_paused (settings, TRUE);
+    g_paste_daemon_methods_set_active (&methods, TRUE, &error);
+    g_assert_no_error (error);
+    g_assert_false (g_paste_settings_get_extension_paused (settings));
+    g_assert_cmpuint (extension_paused_writes, ==, 2);
+
+    g_paste_settings_reset (settings, G_PASTE_TRACK_CHANGES_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -660,12 +820,15 @@ main (int argc, char *argv[])
 
     g_test_add ("/daemon/teardown/dispose-twice", Fixture, NULL, fixture_set_up, test_dispose_twice, fixture_tear_down);
     g_test_add ("/daemon/shortcuts/handed-over", Fixture, NULL, fixture_set_up, test_shortcuts_handed_over, fixture_tear_down);
+    g_test_add_func ("/daemon/methods/extension-pause-carried-over", test_extension_pause_carried_over);
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
+    g_test_add ("/daemon/methods/extension-state", Fixture, NULL, fixture_set_up, test_extension_state, fixture_tear_down);
+    g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
     g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);

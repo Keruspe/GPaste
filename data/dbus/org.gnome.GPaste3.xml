@@ -394,6 +394,10 @@
 
       A report, not an order: what to do about it is the daemon's
       "track-extension-state" policy, and a client does not second-guess it.
+      The policy pauses the tracking when the extension goes, and resumes only
+      what that paused when it comes back ("extension-paused"), so a client may
+      say the extension is there as often as it finds a daemon: a pause of the
+      user's own outlives every such report.
     -->
     <method name="ReportExtensionState">
       <arg type="b" direction="in" name="active"/>

@@ -220,13 +220,21 @@ g_paste_daemon_extension_state_changed (GPasteDaemon *self,
 }
 
 /* Connected swapped to notify::track-changes, so @settings is the emitter: the
- * new state is read back from it rather than carried by the signal. */
+ * new state is read back from it rather than carried by the signal. Tracking on
+ * again, however it came about -- the preferences write the key themselves --
+ * leaves no pause of the extension's for its return to undo. Cleared only when
+ * set: this runs at every export too, and a write is a dconf round trip and a
+ * change every process watching the schema hears, the same value or not. */
 static void
 g_paste_daemon_tracking (GPasteDaemon   *self,
                          GParamSpec     *pspec G_GNUC_UNUSED,
                          GPasteSettings *settings)
 {
-    g_paste_daemon3_set_active (self->skeleton, g_paste_settings_get_track_changes (settings));
+    gboolean tracking = g_paste_settings_get_track_changes (settings);
+
+    g_paste_daemon3_set_active (self->skeleton, tracking);
+    if (tracking && g_paste_settings_get_extension_paused (settings))
+        g_paste_settings_set_extension_paused (settings, FALSE);
 }
 
 /********************/
@@ -1720,6 +1728,15 @@ g_paste_daemon_new (GPasteSettings          *settings,
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (primary), NULL);
 
     GPasteDaemon *self = G_PASTE_DAEMON (g_object_new (G_PASTE_TYPE_DAEMON, NULL));
+
+    /* "extension-paused" never written is a GPaste that had no such key having
+     * run the tracking last -- one that resumed it on every return of the
+     * extension. The tracking it left off under track-extension-state is
+     * carried over as the extension's pause, once: the key is written either
+     * way, so that a pause of the user's own made from here on is never taken
+     * for one (g_paste_daemon_methods_extension_state_changed ()). */
+    if (g_paste_settings_is_default (settings, G_PASTE_EXTENSION_PAUSED_SETTING))
+        g_paste_settings_set_extension_paused (settings, g_paste_settings_get_track_extension_state (settings) && !g_paste_settings_get_track_changes (settings));
 
     self->settings = g_object_ref (settings);
     GPasteHistory *history = self->history = g_paste_history_new (settings);

@@ -20,6 +20,7 @@ struct _GPasteSettings
     guint64       element_size;
     gboolean      empty_history_confirmation;
     gboolean      experimental_meta_daemon;
+    gboolean      extension_paused;
     gboolean      growing_lines;
     gchar        *history_name;
     gboolean      images_support;
@@ -203,6 +204,25 @@ BOOLEAN_SETTING (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)
  * Change the "experimental-meta-daemon" setting
  */
 BOOLEAN_SETTING (experimental_meta_daemon, EXPERIMENTAL_META_DAEMON)
+
+/**
+ * g_paste_settings_get_extension_paused:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "extension-paused" setting: whether the GNOME Shell extension going
+ * away paused the tracking, which the daemon keeps under
+ * "track-extension-state"
+ *
+ * Returns: the value of the "extension-paused" setting
+ */
+/**
+ * g_paste_settings_set_extension_paused:
+ * @self: a #GPasteSettings instance
+ * @value: whether the extension going away paused the tracking
+ *
+ * Change the "extension-paused" setting
+ */
+BOOLEAN_SETTING (extension_paused, EXTENSION_PAUSED)
 
 /**
  * g_paste_settings_get_growing_lines:
@@ -775,6 +795,7 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (ELEMENT_SIZE, element_size),
     SETTING_ENTRY (EMPTY_HISTORY_CONFIRMATION, empty_history_confirmation),
     SETTING_ENTRY (EXPERIMENTAL_META_DAEMON, experimental_meta_daemon),
+    SETTING_ENTRY (EXTENSION_PAUSED, extension_paused),
     SETTING_ENTRY (GROWING_LINES, growing_lines),
     SETTING_ENTRY (HISTORY_NAME, history_name),
     SETTING_ENTRY (IMAGES_SUPPORT, images_support),
@@ -844,6 +865,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     UINT (element_size,               ELEMENT_SIZE)                                       \
     BOOL (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)                         \
     BOOL (experimental_meta_daemon,   EXPERIMENTAL_META_DAEMON)                           \
+    BOOL (extension_paused,           EXTENSION_PAUSED)                                   \
     BOOL (growing_lines,              GROWING_LINES)                                      \
     STR  (history_name,               HISTORY_NAME)                                       \
     BOOL (images_support,             IMAGES_SUPPORT)                                     \

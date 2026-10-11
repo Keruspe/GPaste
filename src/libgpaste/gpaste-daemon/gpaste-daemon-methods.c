@@ -771,6 +771,11 @@ g_paste_daemon_methods_set_active (const GPasteDaemonMethods *self,
     g_paste_settings_sync_key (self->settings, G_PASTE_TRACK_CHANGES_SETTING);
 
     G_PASTE_DBUS_ASSERT (!g_paste_settings_get_track_changes (self->settings) == !active, G_PASTE_ERROR_FAILED, "the track-changes setting cannot be changed");
+
+    /* The user's own say, over what the extension going away did. Cleared
+     * only when set, as in g_paste_daemon_tracking (). */
+    if (g_paste_settings_get_extension_paused (self->settings))
+        g_paste_settings_set_extension_paused (self->settings, FALSE);
 }
 
 /* The policy itself, in one place: whether the extension coming or going should
@@ -778,13 +783,33 @@ g_paste_daemon_methods_set_active (const GPasteDaemonMethods *self,
  * from the D-Bus method and, without a bus round trip, from a host running the
  * daemon in its own process (see g_paste_daemon_extension_state_changed()).
  * A write GSettings refuses is reported to nobody: the extension states a fact
- * and has nothing that shows the tracking to put right. */
+ * and has nothing that shows the tracking to put right.
+ *
+ * The extension going pauses the tracking, and its coming back resumes only
+ * what that pause stopped, which "extension-paused" remembers across restarts:
+ * the extension says it is there to every daemon it finds, after a restart or a
+ * handoff and each time the screen unlocks, and none of that is it coming back
+ * -- a pause of the user's own has to outlive all of it
+ * (/daemon/methods/extension-state). */
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
                                                 gboolean                   state)
 {
-    if (g_paste_settings_get_track_extension_state (self->settings))
-        g_paste_settings_set_track_changes (self->settings, state);
+    GPasteSettings *settings = self->settings;
+
+    if (!g_paste_settings_get_track_extension_state (settings))
+        return;
+
+    if (!state && g_paste_settings_get_track_changes (settings))
+    {
+        g_paste_settings_set_extension_paused (settings, TRUE);
+        g_paste_settings_set_track_changes (settings, FALSE);
+    }
+    else if (state && g_paste_settings_get_extension_paused (settings))
+    {
+        g_paste_settings_set_extension_paused (settings, FALSE);
+        g_paste_settings_set_track_changes (settings, TRUE);
+    }
 }
 
 /* The matches themselves, not their uuids: a caller wanting to show them would

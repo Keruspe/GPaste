@@ -20,6 +20,7 @@ gboolean     g_paste_settings_get_close_on_select            (GPasteSettings *se
 guint64      g_paste_settings_get_element_size               (GPasteSettings *self);
 gboolean     g_paste_settings_get_empty_history_confirmation (GPasteSettings *self);
 gboolean     g_paste_settings_get_experimental_meta_daemon   (GPasteSettings *self);
+gboolean     g_paste_settings_get_extension_paused           (GPasteSettings *self);
 gboolean     g_paste_settings_get_growing_lines              (GPasteSettings *self);
 const gchar *g_paste_settings_get_history_name               (GPasteSettings *self);
 gboolean     g_paste_settings_get_images_preview             (GPasteSettings *self);
@@ -55,6 +56,8 @@ void g_paste_settings_set_element_size               (GPasteSettings *self,
 void g_paste_settings_set_empty_history_confirmation (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_experimental_meta_daemon   (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_extension_paused           (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_growing_lines              (GPasteSettings *self,
                                                       gboolean        value);

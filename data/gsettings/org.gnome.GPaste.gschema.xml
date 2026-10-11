@@ -235,6 +235,14 @@
       </description>
     </key>
 
+    <key name="extension-paused" type="b">
+      <default>false</default>
+      <summary>Tracking paused while the GNOME Shell extension is away</summary>
+      <description>
+        Kept by the daemon under track-extension-state: set when the extension going away paused the tracking, so that its coming back resumes it, and only then.
+      </description>
+    </key>
+
     <key name="trim-items" type="b">
       <default>false</default>
       <summary>Trim text items before adding them to the history</summary>
