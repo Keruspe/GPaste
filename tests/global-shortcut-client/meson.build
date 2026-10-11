@@ -21,8 +21,12 @@ configure_file(
   configuration: { 'PORTAL_TEST': portal_provider_test_exe.full_path() },
 )
 
-test('test-portal-provider', portal_provider_test_exe,
-  timeout: 120,
-  depends: [gpaste_schemas, test_bus_supervisor],
-  env: { 'G_TEST_BUILDDIR': meson.current_build_dir() },
-)
+# The executable's copy of the client stands in for the library's, whose own
+# calls must reach it: a second copy registers the type twice.
+if library_interposable
+  test('test-portal-provider', portal_provider_test_exe,
+    timeout: 120,
+    depends: [gpaste_schemas, test_bus_supervisor],
+    env: { 'G_TEST_BUILDDIR': meson.current_build_dir() },
+  )
+endif

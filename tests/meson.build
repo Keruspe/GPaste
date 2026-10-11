@@ -37,6 +37,25 @@ gpaste_test_bus_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
+# A few suites replace a libgpaste-daemon function from the executable, which
+# reaches the library's own calls only while those go through the PLT:
+# -Bsymbolic-functions, in Ubuntu's default LDFLAGS for one, binds them inside
+# the library, and those suites cannot run. A static library has no PLT at all,
+# and its objects define what those executables define again, so they are not
+# even built then.
+library_static = get_option('default_library') == 'static' or (get_option('default_library') == 'both' and get_option('default_both_libraries') == 'static')
+library_interposable = not library_static
+foreach arg : get_option('c_link_args')
+  if arg.contains('Bsymbolic')
+    library_interposable = false
+  endif
+endforeach
+if library_static
+  message('Static libraries: skipping the test suites that interpose libgpaste-daemon')
+elif not library_interposable
+  message('Linking with -Bsymbolic: skipping the test suites that interpose libgpaste-daemon')
+endif
+
 subdir('client')
 subdir('clipboard')
 subdir('completions')

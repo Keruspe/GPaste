@@ -229,6 +229,7 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
  * feature it needs: -1 for none. The library asks through its own exported
  * symbol, which this one takes the place of. */
 static gint hidden_kind = -1;
+static guint listed;
 
 const GPasteStorage *
 g_paste_prompt_list_storage_backends (guint *n_offered)
@@ -238,6 +239,7 @@ g_paste_prompt_list_storage_backends (guint *n_offered)
     static GPasteStorage kept[G_PASTE_N_STORAGE];
 
     g_assert_nonnull (original);
+    ++listed;
 
     const GPasteStorage *offered = original (n_offered);
     guint n_kept = 0;
@@ -255,6 +257,29 @@ g_paste_prompt_list_storage_backends (guint *n_offered)
 
     return kept;
 }
+
+#if defined(G_PASTE_ENABLE_ENCRYPTION) || defined(G_PASTE_ENABLE_SQLITE)
+/* Whether hiding a kind reaches the library's own calls, which go through the
+ * interposer above only while they go through the PLT: -Bsymbolic binds them
+ * inside the library, and a case hiding a kind skips itself then. Every other
+ * case interposes calls the library makes into another one, or that the
+ * migration makes from its copy built into this binary, which -Bsymbolic
+ * leaves alone. The cases hiding one are those of a flavour that can be
+ * missing. */
+static gboolean
+kind_hidable (void)
+{
+    guint before = listed;
+
+    g_paste_prompt_storage_is_offered (G_PASTE_STORAGE_FILE);
+    if (listed != before)
+        return TRUE;
+
+    g_test_skip ("libgpaste-daemon binds its own calls (-Bsymbolic)");
+
+    return FALSE;
+}
+#endif
 
 /* The migration's own static helpers, detect_current_backend() and
  * import_histories() among them, are what these cases drive. */
@@ -421,6 +446,9 @@ test_unlock_skips_unopenable_flavour (void)
 {
     if (!g_test_subprocess ())
     {
+        if (!kind_hidable ())
+            return;
+
         g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
         g_test_trap_assert_passed ();
         g_test_trap_assert_stderr ("*This build cannot open the encrypted storage backend*");
@@ -507,6 +535,9 @@ test_import_failure_leaves_no_cleartext (void)
 static void
 test_migration_refuses_unoffered_choice (void)
 {
+    if (!kind_hidable ())
+        return;
+
     if (!g_test_subprocess ())
     {
         g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
@@ -558,6 +589,9 @@ test_migration_refuses_unoffered_choice (void)
 static void
 test_migration_clamps_unopenable_source (void)
 {
+    if (!kind_hidable ())
+        return;
+
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
 
