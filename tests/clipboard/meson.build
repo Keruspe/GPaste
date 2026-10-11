@@ -36,7 +36,7 @@ test('clipboard-hints', test_clipboard_hints, depends: [gpaste_schemas, test_bus
 test_clipboard_x11_hints = executable(
   'test-clipboard-x11-hints',
   sources: [ 'test-clipboard-x11-hints.c', '../../src/daemon/gpaste-clipboard-x11-hints.c' ] + test_clipboard_provider_sources,
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gtk4x11_dep, xfixes_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gtk4x11_dep, xfixes_dep, cc.find_library('dl') ],
 )
 
 test('clipboard-x11-hints', test_clipboard_x11_hints, depends: [gpaste_schemas, test_bus_supervisor])

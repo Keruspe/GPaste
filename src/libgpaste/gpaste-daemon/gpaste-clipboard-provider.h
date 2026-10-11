@@ -87,6 +87,22 @@ typedef void (*GPasteClipboardSyncCallback) (GPasteClipboardProvider *other,
                                              gpointer                 user_data);
 
 /**
+ * GPasteClipboardPublication:
+ * @G_PASTE_CLIPBOARD_PUBLICATION_INVALID: no selection can carry the item
+ * @G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED: the selection carries it now
+ * @G_PASTE_CLIPBOARD_PUBLICATION_REFUSED: another client took the selection
+ *   first, and it carries that client's copy
+ *
+ * What putting an item or a text on a selection came to.
+ */
+typedef enum
+{
+    G_PASTE_CLIPBOARD_PUBLICATION_INVALID,
+    G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED,
+    G_PASTE_CLIPBOARD_PUBLICATION_REFUSED,
+} GPasteClipboardPublication;
+
+/**
  * GPasteClipboardProviderInterface:
  * @parent_iface: the parent interface
  *
@@ -108,25 +124,25 @@ struct _GPasteClipboardProviderInterface
 {
     GTypeInterface parent_iface;
 
-    gboolean     (*is_clipboard)       (GPasteClipboardProvider *self);
-    const gchar *(*get_text)           (GPasteClipboardProvider *self);
-    const gchar *(*get_image_checksum) (GPasteClipboardProvider *self);
-    gboolean     (*is_reading)         (GPasteClipboardProvider *self);
-    gboolean     (*is_empty)           (GPasteClipboardProvider *self);
-    void         (*update)             (GPasteClipboardProvider              *self,
-                                        gboolean                              record,
-                                        GPasteClipboardProviderUpdateCallback callback,
-                                        gpointer                              user_data);
-    void         (*select_text)        (GPasteClipboardProvider *self,
-                                        const gchar             *text);
-    void         (*sync_text)          (GPasteClipboardProvider    *self,
-                                        GPasteClipboardProvider    *other,
-                                        GPasteClipboardSyncCallback callback,
-                                        gpointer                    user_data,
-                                        GDestroyNotify              destroy);
-    gboolean     (*select_item)        (GPasteClipboardProvider *self,
-                                        GPasteItem              *item);
-    void         (*store)              (GPasteClipboardProvider *self);
+    gboolean                   (*is_clipboard)       (GPasteClipboardProvider *self);
+    const gchar               *(*get_text)           (GPasteClipboardProvider *self);
+    const gchar               *(*get_image_checksum) (GPasteClipboardProvider *self);
+    gboolean                   (*is_reading)         (GPasteClipboardProvider *self);
+    gboolean                   (*is_empty)           (GPasteClipboardProvider *self);
+    void                       (*update)             (GPasteClipboardProvider              *self,
+                                                      gboolean                              record,
+                                                      GPasteClipboardProviderUpdateCallback callback,
+                                                      gpointer                              user_data);
+    GPasteClipboardPublication (*select_text)        (GPasteClipboardProvider *self,
+                                                      const gchar             *text);
+    void                       (*sync_text)          (GPasteClipboardProvider    *self,
+                                                      GPasteClipboardProvider    *other,
+                                                      GPasteClipboardSyncCallback callback,
+                                                      gpointer                    user_data,
+                                                      GDestroyNotify              destroy);
+    GPasteClipboardPublication (*select_item)        (GPasteClipboardProvider *self,
+                                                      GPasteItem              *item);
+    void                       (*store)              (GPasteClipboardProvider *self);
 };
 
 /*
@@ -171,11 +187,11 @@ struct _GPasteClipboardProviderInterface
         g_paste_clipboard_##lc##_update (G_PASTE_CLIPBOARD_##UC ((gpointer) self), record, callback,       \
                                         user_data);                                                        \
     }                                                                                                      \
-    static void                                                                                            \
+    static GPasteClipboardPublication                                                                      \
     provider_select_text (GPasteClipboardProvider *self,                                                   \
                           const gchar             *text)                                                   \
     {                                                                                                      \
-        g_paste_clipboard_##lc##_select_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self), text);             \
+        return g_paste_clipboard_##lc##_select_text (G_PASTE_CLIPBOARD_##UC ((gpointer) self), text);      \
     }                                                                                                      \
     static void                                                                                            \
     provider_sync_text (GPasteClipboardProvider    *self,                                                  \
@@ -188,7 +204,7 @@ struct _GPasteClipboardProviderInterface
                                             G_PASTE_CLIPBOARD_##UC ((gpointer) other),                     \
                                             callback, user_data, destroy);                                 \
     }                                                                                                      \
-    static gboolean                                                                                        \
+    static GPasteClipboardPublication                                                                      \
     provider_select_item (GPasteClipboardProvider *self,                                                   \
                           GPasteItem              *item)                                                   \
     {                                                                                                      \

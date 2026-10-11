@@ -194,17 +194,21 @@ g_paste_clipboard_provider_select_text (GPasteClipboardProvider *self,
     g_paste_clipboard_provider_select_text_full (self, text, TRUE);
 }
 
-void
+GPasteClipboardPublication
 g_paste_clipboard_provider_select_text_full (GPasteClipboardProvider *self,
                                              const gchar             *text,
                                              gboolean                 independent)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
-    g_return_if_fail (text);
-    g_return_if_fail (g_utf8_validate (text, -1, NULL));
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
+    g_return_val_if_fail (text, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
+    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
 
-    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_text (self, text);
-    g_signal_emit (self, signals[PUBLISHED], 0, independent);
+    GPasteClipboardPublication publication = G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_text (self, text);
+
+    if (publication == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+        g_signal_emit (self, signals[PUBLISHED], 0, independent);
+
+    return publication;
 }
 
 /**
@@ -255,28 +259,30 @@ g_paste_clipboard_provider_sync_text (GPasteClipboardProvider    *self,
  *
  * Put the value of the item into the provider and the underlying selection
  *
- * Returns: %FALSE if the item was invalid, %TRUE otherwise
+ * Returns: %FALSE if the item was invalid, %TRUE otherwise -- whether or not
+ *          another client had taken the selection first
  */
 G_PASTE_VISIBLE gboolean
 g_paste_clipboard_provider_select_item (GPasteClipboardProvider *self,
                                         GPasteItem              *item)
 {
-    return g_paste_clipboard_provider_select_item_full (self, item, TRUE);
+    return g_paste_clipboard_provider_select_item_full (self, item, TRUE) != G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 }
 
-gboolean
+GPasteClipboardPublication
 g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
                                              GPasteItem              *item,
                                              gboolean                 independent)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (item), G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
 
-    if (!G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_item (self, item))
-        return FALSE;
+    GPasteClipboardPublication publication = G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->select_item (self, item);
 
-    g_signal_emit (self, signals[PUBLISHED], 0, independent);
-    return TRUE;
+    if (publication == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+        g_signal_emit (self, signals[PUBLISHED], 0, independent);
+
+    return publication;
 }
 
 /**
@@ -335,12 +341,18 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
     if (G_PASTE_IS_PASSWORD_ITEM (item))
         return NULL;
 
-    if (g_paste_clipboard_provider_select_item_full (self, item, FALSE))
+    switch (g_paste_clipboard_provider_select_item_full (self, item, FALSE))
+    {
+    case G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED:
         return item;
-
-    g_paste_history_remove (history, 0);
-
-    return NULL;
+    case G_PASTE_CLIPBOARD_PUBLICATION_INVALID:
+        g_paste_history_remove (history, 0);
+        return NULL;
+    case G_PASTE_CLIPBOARD_PUBLICATION_REFUSED:
+    default:
+        /* Another client's copy is there now, which is no emptiness to fill. */
+        return NULL;
+    }
 }
 
 /**

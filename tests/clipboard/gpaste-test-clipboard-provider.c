@@ -48,14 +48,14 @@ update (GPasteClipboardProvider              *provider,
         callback (provider, NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
 }
 
-static gboolean
+static GPasteClipboardPublication
 select_item (GPasteClipboardProvider *provider G_GNUC_UNUSED,
              GPasteItem              *item G_GNUC_UNUSED)
 {
     g_assert_not_reached ();
 }
 
-static void
+static GPasteClipboardPublication
 select_text (GPasteClipboardProvider *provider G_GNUC_UNUSED,
              const gchar             *text G_GNUC_UNUSED)
 {

@@ -13,6 +13,7 @@
  * backend can go back to g_paste_clipboard_update_read_mimes () against its
  * formats, and this file, its tests and the xfixes dependency can go. */
 
+#include <errno.h>
 #include "gpaste-clipboard-x11-hints.h"
 
 #include <gdk/x11/gdkx.h>
@@ -776,7 +777,11 @@ g_paste_clipboard_x11_hints_server_time (GPasteClipboardX11Hints *self,
         {
             gint64 remaining = deadline - g_get_monotonic_time ();
 
-            if (remaining <= 0 || g_poll (&fd, 1, (gint) (remaining / G_TIME_SPAN_MILLISECOND) + 1) < 0)
+            /* A signal landing during the wait -- the daemon has its handlers
+             * installed by then -- interrupts the poll, which says nothing about
+             * the server: only another error ends the wait early. */
+            if (remaining <= 0 ||
+                (g_poll (&fd, 1, (gint) (remaining / G_TIME_SPAN_MILLISECOND) + 1) < 0 && errno != EINTR))
                 break;
         }
 

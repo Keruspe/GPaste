@@ -27,6 +27,8 @@
 #include <gdk/x11/gdkx.h>
 #include <X11/Xatom.h>
 
+#include <dlfcn.h>
+#include <errno.h>
 #include <string.h>
 
 #define HINT_VALUE "secret"
@@ -581,6 +583,86 @@ late_reply (void)
     pump (owner, 100);
 }
 
+/* How many of the polls the workaround makes are interrupted, as a signal
+ * landing during them would interrupt them, and whether the first look for the
+ * server's answer finds nothing yet, as it does on a server slower than this
+ * one: the workaround is compiled into this binary, so its calls reach these
+ * definitions rather than GLib's and Xlib's. */
+static guint poll_interruptions;
+static gboolean hide_answer;
+static GThread *poll_thread;
+
+Bool
+XCheckIfEvent (Display *display,
+               XEvent  *event,
+               Bool   (*predicate) (Display *, XEvent *, XPointer),
+               XPointer arg)
+{
+    typedef Bool (*Check) (Display *, XEvent *, Bool (*) (Display *, XEvent *, XPointer), XPointer);
+    static Check real_check;
+
+    if (hide_answer && g_thread_self () == poll_thread)
+    {
+        hide_answer = FALSE;
+        return False;
+    }
+    if (!real_check)
+        real_check = (Check) dlsym (RTLD_NEXT, "XCheckIfEvent");
+    return real_check (display, event, predicate, arg);
+}
+
+gint
+g_poll (GPollFD *fds,
+        guint    nfds,
+        gint     timeout)
+{
+    typedef gint (*Poll) (GPollFD *, guint, gint);
+    static Poll real_poll;
+
+    /* The main thread's alone: GDBus's worker polls too. */
+    if (poll_interruptions && g_thread_self () == poll_thread)
+    {
+        --poll_interruptions;
+        errno = EINTR;
+        return -1;
+    }
+    if (!real_poll)
+        real_poll = (Poll) dlsym (RTLD_NEXT, "g_poll");
+    return real_poll (fds, nfds, timeout);
+}
+
+/* A signal landing while the server's clock is asked -- the daemon has its
+ * handlers installed by then -- interrupts the wait, which is no answer from the
+ * server: the clock is kept asking until it answers. */
+static void
+server_time_interrupted (void)
+{
+    if (skipped_without_display ())
+        return;
+
+    /* A connection of its own, the clock being asked once per display. */
+    GdkDisplay *display = gdk_display_open (g_getenv ("DISPLAY"));
+
+    g_assert_true (GDK_IS_X11_DISPLAY (display));
+    poll_thread = g_thread_self ();
+    hide_answer = TRUE;
+    poll_interruptions = 1;
+
+    GPasteClipboardX11Hints *hints = g_paste_clipboard_x11_hints_new (gdk_display_get_clipboard (display), TRUE);
+    gboolean interrupted = !hide_answer && !poll_interruptions;
+    const Time *timestamp = g_object_get_qdata (G_OBJECT (display), g_quark_from_static_string ("gpaste-clipboard-x11-hints-server-time"));
+
+    hide_answer = FALSE;
+    poll_interruptions = 0;
+    poll_thread = NULL;
+    g_assert_nonnull (timestamp);
+    g_assert_cmpuint (*timestamp, !=, CurrentTime);
+    g_assert_true (interrupted);
+
+    g_clear_object (&hints);
+    gdk_display_close (display);
+}
+
 static gboolean
 window_exists (Display *dpy,
                Window   window)
@@ -673,6 +755,7 @@ main (int   argc,
     g_test_add_data_func ("/x11-hints/hint/incr", GINT_TO_POINTER (OWNER_HINT_AS_INCR), hint_read);
     g_test_add_data_func ("/x11-hints/timestamp/bootstrap", GINT_TO_POINTER (TRUE), timestamped_conversion);
     g_test_add_data_func ("/x11-hints/timestamp/notified", GINT_TO_POINTER (FALSE), timestamped_conversion);
+    g_test_add_func ("/x11-hints/timestamp/interrupted", server_time_interrupted);
     g_test_add_func ("/x11-hints/late-reply", late_reply);
     g_test_add_func ("/x11-hints/dispose-retired", dispose_retired);
 

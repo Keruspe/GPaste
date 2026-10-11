@@ -198,7 +198,7 @@ static void g_paste_clipboards_manager_ensure_not_empty (_Clipboard *clip);
 static void g_paste_clipboards_manager_arm_password (_Clipboard *clip, GPasteItem *item, gboolean renew_expired);
 static gboolean g_paste_clipboards_manager_selection_holds (GPasteClipboardProvider *clipboard, GPasteItem *item);
 static void g_paste_clipboards_manager_forget_stale_password (_Clipboard *clip);
-static gboolean g_paste_clipboards_manager_publish_item (_Clipboard *clip, GPasteItem *item, gboolean independent);
+static GPasteClipboardPublication g_paste_clipboards_manager_publish_item (_Clipboard *clip, GPasteItem *item, gboolean independent);
 static void g_paste_clipboards_manager_arm_password_at (_Clipboard *clip, GPasteItem *item, guint timeout, gint64 deadline, gboolean changed);
 
 static gboolean
@@ -410,9 +410,11 @@ g_paste_clipboards_manager_note_published (_Clipboard *clip)
 /* Put @item on @clip's selection, answering whether it got there.
  *
  * Every write the manager makes to a selection goes through this or through
- * publish_text (). A refusal put nothing there, so every record it holds still
- * stands -- the password it names, the secret it is carrying, and the strips it
- * is owed alike (note_published ()).
+ * publish_text (). A refusal put nothing there, whether the item is one no
+ * selection can carry or another client took the selection first, so every
+ * record it holds still stands: the password it names, the secret it is
+ * carrying, and the strips it is owed alike (note_published ()). Only an
+ * invalid item is the history's to drop.
  *
  * @independent says whether this write is the user choosing what the selection
  * carries -- select () and clear (), which end the copy that was on it -- or
@@ -421,28 +423,29 @@ g_paste_clipboards_manager_note_published (_Clipboard *clip)
  * the copy serial the synchronization in notify_finish () orders itself by;
  * maintenance preserves it, so a write made on behalf of an older copy cannot
  * overwrite a newer one. */
-static gboolean
+static GPasteClipboardPublication
 g_paste_clipboards_manager_publish_item (_Clipboard *clip,
                                          GPasteItem *item,
                                          gboolean    independent)
 {
-    if (!g_paste_clipboard_provider_select_item_full (clip->clipboard, item, independent))
-        return FALSE;
+    GPasteClipboardPublication publication = g_paste_clipboard_provider_select_item_full (clip->clipboard, item, independent);
 
-    g_paste_clipboards_manager_note_published (clip);
+    if (publication == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+        g_paste_clipboards_manager_note_published (clip);
 
-    return TRUE;
+    return publication;
 }
 
 /* Put @text on @clip's selection. As in publish_item (): what it carries
- * afterwards is ours, and @independent says the same thing. */
+ * afterwards is ours, unless another client took it first, and @independent
+ * says the same thing. */
 static void
 g_paste_clipboards_manager_publish_text (_Clipboard  *clip,
                                          const gchar *text,
                                          gboolean     independent)
 {
-    g_paste_clipboard_provider_select_text_full (clip->clipboard, text, independent);
-    g_paste_clipboards_manager_note_published (clip);
+    if (g_paste_clipboard_provider_select_text_full (clip->clipboard, text, independent) == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+        g_paste_clipboards_manager_note_published (clip);
 }
 
 /* Requests borrow their snapshots: only items still in the history can be
@@ -553,7 +556,7 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard           *clip,
 
         if (g_paste_clipboards_manager_selection_holds (clip->clipboard, plain))
         {
-            if (secret != CLIPBOARD_SECRET_NO || !g_paste_clipboards_manager_publish_item (clip, plain, FALSE))
+            if (secret != CLIPBOARD_SECRET_NO || g_paste_clipboards_manager_publish_item (clip, plain, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
                 g_paste_clipboards_manager_refuse_refresh (clip, plain);
 
             if (*item)
@@ -1004,7 +1007,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
         /* And never as bare text, as in notify_finish (): a refusal leaves the
          * destination selection alone rather than falling back to the very
          * exposure this is here to close. */
-        if (g_paste_clipboards_manager_publish_item (_to, _from->password, FALSE))
+        if (g_paste_clipboards_manager_publish_item (_to, _from->password, FALSE) == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
         {
             /* Named for the copy it now carries, as notify_finish () names it for
              * the same write: this one is not independent either, so nothing else
@@ -1277,7 +1280,7 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
              * did reach it. */
             if (password)
             {
-                if (g_paste_clipboards_manager_publish_item (other, password, FALSE))
+                if (g_paste_clipboards_manager_publish_item (other, password, FALSE) == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
                 {
                     /* Named for this copy exactly as the text branch below does
                      * it: the write is not independent, so nothing else moves
@@ -1806,7 +1809,7 @@ g_paste_clipboards_manager_publish_over_password (_Clipboard *clip)
      * something and ensure_not_empty () leaves it alone, where a genuinely empty
      * selection would have it re-select the history's head -- the very password
      * just taken off. */
-    if (!replacement || !g_paste_clipboards_manager_publish_item (clip, replacement, FALSE))
+    if (!replacement || g_paste_clipboards_manager_publish_item (clip, replacement, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
         g_paste_clipboards_manager_publish_text (clip, "", FALSE);
 }
 
@@ -2110,7 +2113,7 @@ g_paste_clipboards_manager_refresh_text (GPasteClipboardsManager *self,
         else if (!g_paste_clipboards_manager_may_carry_secret (clip) &&
                  g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
         {
-            if (!g_paste_clipboards_manager_publish_item (clip, item, FALSE))
+            if (g_paste_clipboards_manager_publish_item (clip, item, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
                 g_paste_clipboards_manager_refuse_refresh (clip, item);
         }
     }
@@ -2140,7 +2143,9 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = clipboard->data;
 
-        if (!g_paste_clipboards_manager_publish_item (clip, item, TRUE))
+        GPasteClipboardPublication publication = g_paste_clipboards_manager_publish_item (clip, item, TRUE);
+
+        if (publication == G_PASTE_CLIPBOARD_PUBLICATION_INVALID)
         {
             g_debug ("clipboards-manager: item was invalid, deleting it");
             selected = FALSE;
@@ -2152,7 +2157,8 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
          * did are watched whatever a later one concludes -- or a secret sits on
          * their selections with nothing to take it off, under a uuid the caller
          * is about to drop from the history. */
-        g_paste_clipboards_manager_arm_password (clip, item, TRUE);
+        if (publication == G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+            g_paste_clipboards_manager_arm_password (clip, item, TRUE);
     }
 
     /* Resolve forced expiry after every selection has been written, so a

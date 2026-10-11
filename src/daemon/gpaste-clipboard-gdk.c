@@ -392,10 +392,13 @@ g_paste_clipboard_gdk_set_text (GPasteClipboardGdk            *self,
 {
     GPasteClipboardGdkTextCallbackData *data = g_new (GPasteClipboardGdkTextCallbackData, 1);
 
-    /* Hold a ref for the whole read, as the meta backend does: nothing else
-     * keeps us alive between the request and its callback. @update needs none:
-     * this read is counted into it and an update is freed by the last read to
-     * report, so it outlives every one of them by construction. */
+    /* Hold a ref for the whole read, as the meta backend does. The update holds
+     * the provider too, but only until it concludes, and a read can outlive
+     * that: an owner that never answers keeps it pending in GDK, holding this
+     * ref -- and the provider, which the daemon keeps for its whole life anyway
+     * -- for as long. @update needs none: this read is counted into it and an
+     * update is freed by the last read to report, so it outlives every one of
+     * them by construction. */
     data->self = g_object_ref (self);
     data->update = update;
     data->callback = callback;
@@ -406,20 +409,37 @@ g_paste_clipboard_gdk_set_text (GPasteClipboardGdk            *self,
                                    data);
 }
 
-static void
+/* Publish @provider, the cache already saying what it carries. GDK refuses a
+ * claim another client won meanwhile -- it asks the server who owns the
+ * selection right after taking it -- and the selection then carries that
+ * client's copy, not ours: neither the cache nor the answer may say otherwise.
+ * That owner's change notification follows, and reading it is what fills the
+ * cache again. */
+static GPasteClipboardPublication
+g_paste_clipboard_gdk_claim (GPasteClipboardGdk *self,
+                             GdkContentProvider *provider)
+{
+    if (gdk_clipboard_set_content (self->real, provider))
+        return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
+
+    g_debug ("%s: another client owns the selection", g_paste_clipboard_provider_target_name (self->is_clipboard));
+    g_paste_clipboard_content_set_ignored (&self->content);
+
+    return G_PASTE_CLIPBOARD_PUBLICATION_REFUSED;
+}
+
+static GPasteClipboardPublication
 g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
                                    const gchar        *text)
 {
     g_debug ("%s: select text", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     g_paste_clipboard_gdk_supersede (self);
-
-    /* Avoid cycling twice as setting the content will make the clipboards manager react */
     g_paste_clipboard_gdk_private_set_text (self, text);
 
     g_autoptr (GdkContentProvider) provider = g_paste_text_content_provider_new (text);
 
-    gdk_clipboard_set_content (self->real, provider);
+    return g_paste_clipboard_gdk_claim (self, provider);
 }
 
 static void
@@ -531,19 +551,22 @@ g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdk *self,
     g_paste_clipboard_content_set_file_list (&self->content, file_list);
 }
 
-static void
+static GPasteClipboardPublication
 g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdk *self,
                                               GdkTexture         *texture,
                                               const gchar        *checksum)
 {
-    g_return_if_fail (GDK_IS_TEXTURE (texture));
+    g_return_val_if_fail (GDK_IS_TEXTURE (texture), G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
 
     g_paste_clipboard_gdk_supersede (self);
 
     g_debug ("%s: select image", g_paste_clipboard_provider_target_name (self->is_clipboard));
 
     g_paste_clipboard_gdk_private_set_image_checksum (self, checksum);
-    gdk_clipboard_set (self->real, GDK_TYPE_TEXTURE, texture);
+
+    g_autoptr (GdkContentProvider) provider = gdk_content_provider_new_typed (GDK_TYPE_TEXTURE, texture);
+
+    return g_paste_clipboard_gdk_claim (self, provider);
 }
 
 typedef struct
@@ -1202,7 +1225,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     g_paste_clipboard_update_maybe_done (update);
 }
 
-static gboolean
+static GPasteClipboardPublication
 g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
                                    GPasteItem         *item)
 {
@@ -1214,10 +1237,9 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
         const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item));
 
         if (!texture)
-            return FALSE;
+            return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 
-        g_paste_clipboard_gdk_private_select_texture (self, texture, checksum);
-        return TRUE;
+        return g_paste_clipboard_gdk_private_select_texture (self, texture, checksum);
     }
 
     g_paste_clipboard_gdk_supersede (self);
@@ -1236,8 +1258,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
         };
         g_autoptr (GdkContentProvider) provider = gdk_content_provider_new_union (providers, G_N_ELEMENTS (providers));
 
-        gdk_clipboard_set_content (self->real, provider);
-        return TRUE;
+        return g_paste_clipboard_gdk_claim (self, provider);
     }
 
     g_autoptr (GPtrArray) providers = g_ptr_array_new ();
@@ -1294,9 +1315,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     else
         provider = gdk_content_provider_new_union ((GdkContentProvider **) providers->pdata, providers->len);
 
-    gdk_clipboard_set_content (self->real, provider);
-
-    return TRUE;
+    return g_paste_clipboard_gdk_claim (self, provider);
 }
 
 static gboolean
@@ -1418,10 +1437,10 @@ g_paste_clipboard_gdk_dispose (GObject *object)
 
     if (self->settings)
     {
-        /* The read in flight goes too, not just the wait: its conclusion re-owns
-         * the selection for a trimmed text, which would reach a cleared
-         * @real -- and it is what ends the conversions the hints workaround has
-         * out, each of which holds the object being cleared below. */
+        /* The read in flight goes too, not just the wait. Only an explicit
+         * g_object_run_dispose () can find one -- an update holds the provider
+         * until it concludes -- and its conclusion would then re-own the
+         * selection for a trimmed text through a cleared @real. */
         g_paste_clipboard_gdk_supersede (self);
         g_signal_handler_disconnect (self->real, self->c_signals[C_CHANGED]);
         g_clear_object (&self->hints);

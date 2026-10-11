@@ -16,6 +16,8 @@ static GdkContentFormats *formats;
 static GTask *pending_text;
 static GTask *pending_texture;
 static guint publications;
+/* Whether GDK refuses a claim, as it does one another client won meanwhile. */
+static gboolean refuse_claims;
 /* What the hints workaround answers here: whether it can convert this display at
  * all, and what X says about the selection's owner. The two are independent --
  * the atoms the ownership query needs are interned ahead of the XFixes check
@@ -45,7 +47,7 @@ mock_set_content (GdkClipboard       *clipboard G_GNUC_UNUSED,
                   GdkContentProvider *content G_GNUC_UNUSED)
 {
     ++publications;
-    return TRUE;
+    return !refuse_claims;
 }
 
 static void
@@ -64,12 +66,6 @@ mock_read_text_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
                        GError      **error)
 {
     return g_task_propagate_pointer (G_TASK (result), error);
-}
-
-static void
-mock_set_value (GdkClipboard *clipboard G_GNUC_UNUSED)
-{
-    ++publications;
 }
 
 static void
@@ -158,7 +154,6 @@ mock_hints_get_owner (GPasteClipboardX11Hints *self G_GNUC_UNUSED)
 #define gdk_clipboard_read_text_finish mock_read_text_finish
 #define gdk_clipboard_read_texture_async mock_read_texture
 #define gdk_clipboard_read_texture_finish mock_read_texture_finish
-#define gdk_clipboard_set(clipboard, type, ...) mock_set_value (clipboard)
 #define gdk_clipboard_read_async mock_read_mime
 #define gdk_clipboard_read_finish mock_read_mime_finish
 #define g_paste_clipboard_x11_hints_new mock_hints_new
@@ -231,6 +226,7 @@ fixture_setup (Fixture      *f,
     f->clipboard->is_clipboard = TRUE;
     set_formats (FALSE);
     publications = 0;
+    refuse_claims = FALSE;
     hints_available = TRUE;
     /* A copy someone has just made: the selection has an owner, which is what
      * makes a set of empty formats the ambiguity the long deadline is for. */
@@ -538,6 +534,38 @@ bare_text_plain_sync (Fixture      *f,
 
     g_assert_null (pending_text);
     g_assert_cmpstr (synced, ==, "caf\xc3\xa9 \xe2\x82\xac");
+}
+
+static void
+on_published (GPasteClipboardProvider *provider G_GNUC_UNUSED,
+              gboolean                 independent G_GNUC_UNUSED,
+              gpointer                 user_data)
+{
+    ++*(guint *) user_data;
+}
+
+/* A claim another client won meanwhile leaves the selection carrying that
+ * client's copy: the cache says it does not know what is there, rather than
+ * that GPaste's item is, and nothing is announced as published -- the item is
+ * no less valid for it. */
+static void
+refused_claim (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteItem) item = g_paste_text_item_new ("lost the race");
+    guint published = 0;
+    gulong handler = g_signal_connect (f->clipboard, "published", G_CALLBACK (on_published), &published);
+
+    refuse_claims = TRUE;
+    g_assert_true (g_paste_clipboard_provider_select_item (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), item));
+    g_assert_null (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
+    g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
+
+    g_paste_clipboard_provider_select_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), "lost again");
+    g_assert_null (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
+    refuse_claims = FALSE;
+    g_assert_cmpuint (published, ==, 0);
+    g_signal_handler_disconnect (f->clipboard, handler);
 }
 
 static void
@@ -903,6 +931,7 @@ main (int argc, char **argv)
     g_test_add ("/gdk/update/text-before-image", Fixture, NULL, fixture_setup, text_before_image, fixture_teardown);
     g_test_add ("/gdk/update/unmade", Fixture, NULL, fixture_setup, update_unmade, fixture_teardown);
     g_test_add ("/gdk/update/image-not-reowned", Fixture, NULL, fixture_setup, image_not_reowned, fixture_teardown);
+    g_test_add ("/gdk/claim/refused", Fixture, NULL, fixture_setup, refused_claim, fixture_teardown);
     g_test_add ("/gdk/update/bare-text-plain", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, bare_text_plain, fixture_teardown);
     g_test_add ("/gdk/update/bare-text-plain-not-utf8", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, bare_text_plain, fixture_teardown);
     g_test_add ("/gdk/update/bare-text-plain-empty", Fixture, NULL, fixture_setup, bare_text_plain_empty, fixture_teardown);

@@ -500,7 +500,8 @@ g_paste_clipboard_meta_private_set_text (GPasteClipboardMeta *self,
     g_paste_clipboard_content_set_text (&self->content, text);
 }
 
-static void
+/* mutter refuses no owner, so a publication here is always one. */
+static GPasteClipboardPublication
 g_paste_clipboard_meta_select_text (GPasteClipboardMeta *self,
                                     const gchar         *text)
 {
@@ -513,6 +514,8 @@ g_paste_clipboard_meta_select_text (GPasteClipboardMeta *self,
 
     g_paste_clipboard_meta_source_add_text (source, bytes);
     g_paste_clipboard_meta_publish_source (self, source);
+
+    return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
 }
 
 /* --- sync_text --- */
@@ -595,7 +598,7 @@ g_paste_clipboard_meta_store (GPasteClipboardMeta *self G_GNUC_UNUSED)
 
 /* --- select_item --- */
 
-static gboolean
+static GPasteClipboardPublication
 g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
                                     GPasteItem          *item)
 {
@@ -607,7 +610,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item));
 
         if (!texture)
-            return FALSE;
+            return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 
         g_paste_clipboard_content_set_image_checksum (&self->content, checksum);
 
@@ -618,7 +621,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_value_set_object (&value, texture);
         g_paste_clipboard_meta_source_add_value (source, &value);
         g_paste_clipboard_meta_publish_source (self, source);
-        return TRUE;
+        return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
     }
 
     if (G_PASTE_IS_COLOR_ITEM (item))
@@ -641,7 +644,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 
         g_paste_clipboard_meta_source_add_text (source, text_bytes);
         g_paste_clipboard_meta_publish_source (self, source);
-        return TRUE;
+        return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
     }
 
     if (G_PASTE_IS_URIS_ITEM (item))
@@ -660,7 +663,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_paste_clipboard_meta_source_add_value (source, &value);
         g_paste_clipboard_meta_source_add_special_values (source, item);
         g_paste_clipboard_meta_publish_source (self, source);
-        return TRUE;
+        return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
     }
 
     /* Plain text, with any rich-text/HTML/XML special values offered alongside. */
@@ -675,7 +678,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     g_paste_clipboard_meta_source_add_sensitive_mimes (source, item);
     g_paste_clipboard_meta_publish_source (self, source);
 
-    return TRUE;
+    return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
 }
 
 static gboolean

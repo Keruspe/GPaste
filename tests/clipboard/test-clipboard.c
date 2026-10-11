@@ -25,6 +25,8 @@ struct _TestClipboard
     GPasteClipboardUpdate   *pending;
     gboolean                 defer_reads;
     gboolean                 reject_next;
+    /* Another client takes the selection before every claim. */
+    gboolean                 refuse_claims;
     gboolean                 defer_sync;
     guint                    sync_reads;
     GPasteClipboardSyncData *sync;
@@ -92,7 +94,7 @@ update (GPasteClipboardProvider              *provider,
         callback (provider, NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
 }
 
-static gboolean
+static GPasteClipboardPublication
 select_item (GPasteClipboardProvider *provider,
              GPasteItem              *item)
 {
@@ -101,29 +103,42 @@ select_item (GPasteClipboardProvider *provider,
     if (self->reject_next)
     {
         self->reject_next = FALSE;
-        return FALSE;
+        return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
     }
 
     if (self->refuse_value && g_str_equal (self->refuse_value, g_paste_item_get_real_value (item)))
-        return FALSE;
+        return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 
     g_paste_clipboard_update_supersede (&self->pending);
+    if (self->refuse_claims)
+    {
+        g_paste_clipboard_content_set_ignored (&self->content);
+        return G_PASTE_CLIPBOARD_PUBLICATION_REFUSED;
+    }
+
     g_paste_clipboard_content_set_text (&self->content, g_paste_item_get_real_value (item));
     g_set_object (&self->published, item);
     ++self->publications;
-    return TRUE;
+    return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
 }
 
-static void
+static GPasteClipboardPublication
 select_text (GPasteClipboardProvider *provider,
              const gchar             *text)
 {
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
     g_paste_clipboard_update_supersede (&self->pending);
+    if (self->refuse_claims)
+    {
+        g_paste_clipboard_content_set_ignored (&self->content);
+        return G_PASTE_CLIPBOARD_PUBLICATION_REFUSED;
+    }
+
     g_paste_clipboard_content_set_text (&self->content, text);
     g_clear_object (&self->published);
     ++self->publications;
+    return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
 }
 
 static void
@@ -704,6 +719,65 @@ test_typed_cache_commit (gconstpointer user_data)
     default:
         g_assert_not_reached ();
     }
+}
+
+/* An emptied selection refusing the history's head as it is put back --
+ * another client claimed it in the gap -- leaves that head in the history: it
+ * is the user's last copy, and only an item no selection can carry goes. */
+static void
+test_ensure_not_empty_refused (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    g_paste_history_add (history, g_paste_text_item_new ("last copy"));
+    g_assert_true (is_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard)));
+
+    clipboard->refuse_claims = TRUE;
+    g_assert_null (g_paste_clipboard_provider_ensure_not_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard), history));
+    clipboard->refuse_claims = FALSE;
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "last copy");
+}
+
+/* A selection another client took first carries that client's copy: the item
+ * selected stays in the history, and no countdown is armed for a password the
+ * selection never carried -- which would otherwise take that client's copy off,
+ * were it the same text. */
+static void
+test_select_refused_claim (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "lost the race", 37);
+
+    g_paste_history_add (history, g_paste_text_item_new ("replacement"));
+    g_paste_history_add (history, g_object_ref (password));
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_track_changes (settings, FALSE);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+
+    clipboard->refuse_claims = TRUE;
+    g_assert_true (g_paste_clipboards_manager_select (manager, password));
+    clipboard->refuse_claims = FALSE;
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    text_ready (clipboard, settings, pending, "lost the race");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    guint publications = clipboard->publications;
+
+    g_paste_clipboards_manager_expire_password (manager);
+    g_assert_cmpuint (clipboard->publications, ==, publications);
 }
 
 static void
@@ -4108,6 +4182,8 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/dropped_password/bootstrap_twin", GUINT_TO_POINTER (2), test_dropped_password_merge_twin);
     g_test_add_data_func ("/clipboard/merged_password/expiry", GINT_TO_POINTER (FALSE), test_merged_password_expiry);
     g_test_add_data_func ("/clipboard/merged_password/bootstrap_expiry", GINT_TO_POINTER (TRUE), test_merged_password_expiry);
+    g_test_add_func ("/clipboard/select/refused_claim", test_select_refused_claim);
+    g_test_add_func ("/clipboard/ensure_not_empty/refused", test_ensure_not_empty_refused);
     g_test_add_data_func ("/clipboard/sensitive_followup/strip", GINT_TO_POINTER (FALSE), test_sensitive_followup);
     g_test_add_data_func ("/clipboard/sensitive_followup/sync", GINT_TO_POINTER (TRUE), test_sensitive_followup);
     g_test_add_data_func ("/clipboard/queued_strip/lifetime", GINT_TO_POINTER (TRUE), test_queued_strip);

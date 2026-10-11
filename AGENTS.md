@@ -171,9 +171,9 @@ An enumeration that has to back a `GValue` needs a GType: `GPasteItemKind`,
 which is what lets a setting like `storage-backend` be a `g_param_spec_enum`
 rather than a widened integer and `GPasteClient:daemon-presence` a property. Not
 every exposed enum does: `GPasteError` is an error domain, and
-`GPasteStorageRemember`, `GPasteItemState` and `GPasteClipboardSecret` are in
-`GPasteDaemon-1.gir` without one -- `prompt.js` reading the first as plain
-values, no binding reading the other two. Those that do register it with
+`GPasteStorageRemember`, `GPasteItemState`, `GPasteClipboardSecret` and
+`GPasteClipboardPublication` are in `GPasteDaemon-1.gir` without one --
+`prompt.js` reading the first as plain values, no binding reading the others. Those that do register it with
 `G_DEFINE_ENUM_TYPE`, whose one-time initialisation keeps two threads using one
 for the first time -- a storage worker reading an item's kind among them -- from
 registering it twice, and read their class with `g_type_class_get()`, since
