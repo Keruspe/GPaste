@@ -601,7 +601,10 @@ g_paste_ui_panel_do_switch (GPasteUiPanel *self)
                                    on_switched,
                                    data);
 
-    gtk_widget_grab_focus (self->search_entry);
+    /* On to the search, but only when it is open: GTK hands the focus to a
+     * widget its closed bar hides all the same, where no key reaches anything. */
+    if (gtk_widget_get_mapped (self->search_entry))
+        gtk_widget_grab_focus (self->search_entry);
 }
 
 static void

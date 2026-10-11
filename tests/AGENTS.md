@@ -256,7 +256,8 @@ clicking it does, that a row handed to another item blanks its text and
 offers no action until that item is read, and that a row lays out a bounded part
 of a long item's text. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
-that Switch or Create keeps its text until the switch is answered, that Back Up
+that Switch or Create keeps its text until the switch is answered and moves
+the focus on to the search only while it is open, that Back Up
 waits for a name neither refused nor listed and backs up on Enter, that its
 dialog goes with its window, and that a Back Up or a deletion confirmed once the
 daemon left sends nothing, the daemon's presence faked as the switch is. It is built without `G_LOG_USE_STRUCTURED`, so

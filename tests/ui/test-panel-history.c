@@ -446,6 +446,22 @@ test_panel_switch_name (void)
     g_paste_ui_panel_do_switch (self);
     g_assert_cmpstr (sent_name, ==, G_PASTE_DEFAULT_HISTORY);
     answer (client);
+
+    /* The focus goes on to the search only while it is open, and stays put
+     * otherwise rather than going to a widget nothing shows. */
+    gtk_widget_grab_focus (GTK_WIDGET (entry));
+    gtk_widget_set_visible (self->search_entry, FALSE);
+    g_paste_ui_panel_do_switch (self);
+    answer (client);
+    /* The search entry hands its focus to the text inside it. */
+    g_assert_nonnull (gtk_root_get_focus (GTK_ROOT (window)));
+    g_assert_false (gtk_widget_is_ancestor (gtk_root_get_focus (GTK_ROOT (window)), self->search_entry));
+    g_assert_true (gtk_widget_is_ancestor (gtk_root_get_focus (GTK_ROOT (window)), GTK_WIDGET (entry)));
+
+    gtk_widget_set_visible (self->search_entry, TRUE);
+    g_paste_ui_panel_do_switch (self);
+    answer (client);
+    g_assert_true (gtk_widget_is_ancestor (gtk_root_get_focus (GTK_ROOT (window)), self->search_entry));
     gtk_window_destroy (window);
 }
 
