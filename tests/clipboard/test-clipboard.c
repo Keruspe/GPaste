@@ -27,6 +27,8 @@ struct _TestClipboard
     gboolean                 reject_next;
     /* Another client takes the selection before every claim. */
     gboolean                 refuse_claims;
+    /* Every claim made, refused ones included. */
+    guint                    claims;
     gboolean                 defer_sync;
     guint                    sync_reads;
     GPasteClipboardSyncData *sync;
@@ -110,6 +112,7 @@ select_item (GPasteClipboardProvider *provider,
         return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 
     g_paste_clipboard_update_supersede (&self->pending);
+    ++self->claims;
     if (self->refuse_claims)
     {
         g_paste_clipboard_content_set_ignored (&self->content);
@@ -129,6 +132,7 @@ select_text (GPasteClipboardProvider *provider,
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
     g_paste_clipboard_update_supersede (&self->pending);
+    ++self->claims;
     if (self->refuse_claims)
     {
         g_paste_clipboard_content_set_ignored (&self->content);
@@ -739,6 +743,36 @@ test_ensure_not_empty_refused (void)
     clipboard->refuse_claims = FALSE;
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "last copy");
+}
+
+/* A password taken off a selection another client takes just then is off it
+ * already: that client's copy is claimed over neither with the next item nor
+ * with the empty string. */
+static void
+test_expiry_refused_claim (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "taken off", 37);
+
+    g_paste_history_add (history, g_paste_text_item_new ("older"));
+    g_paste_history_add (history, g_paste_text_item_new ("replacement"));
+    g_paste_history_add (history, g_object_ref (password));
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_track_changes (settings, FALSE);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_assert_true (g_paste_clipboards_manager_select (manager, password));
+
+    guint claims = clipboard->claims;
+
+    clipboard->refuse_claims = TRUE;
+    g_paste_clipboards_manager_expire_password (manager);
+    clipboard->refuse_claims = FALSE;
+    g_assert_cmpuint (clipboard->claims, ==, claims + 1);
 }
 
 /* A selection another client took first carries that client's copy: the item
@@ -2122,6 +2156,53 @@ test_expiry_retires_head_with_other_reading (void)
     g_paste_clipboard_content_clear (&primary->content);
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (primary));
     g_assert_cmpstr (primary->content.str, ==, "replacement");
+}
+
+/* The secret once copied without the hint is in the history as plain text:
+ * taking the password off puts an older item there instead, on the selection
+ * and at the head ensure_not_empty () republishes, never the secret in clear. */
+static void
+test_expiry_skips_cleartext_twin (void)
+{
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    password_read_ready (fixture, "same secret");
+    g_paste_history_add (fixture->history, g_paste_text_item_new ("same secret"));
+    g_paste_history_add (fixture->history, g_object_ref (fixture->password));
+    pump_for (1100);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (fixture->history, 0)), ==, "replacement");
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
+}
+
+/* The same twin with whitespace around it -- the newline a terminal copy kept,
+ * trim-items being off -- is the secret in clear all the same. */
+static void
+test_expiry_skips_padded_twin (void)
+{
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    password_read_ready (fixture, "same secret");
+    g_paste_history_add (fixture->history, g_paste_text_item_new ("same secret\n"));
+    g_paste_history_add (fixture->history, g_object_ref (fixture->password));
+    pump_for (1100);
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
+}
+
+/* Another password heads the history, so nothing is moved up and activated
+ * first: what goes on the selection is the first item fit to, skipping the
+ * cleartext twin and a replacement the provider refuses -- an image below the
+ * head, its texture dropped -- rather than settling for the empty string. */
+static void
+test_expiry_below_another_password (void)
+{
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    password_read_ready (fixture, "same secret");
+    g_paste_history_add (fixture->history, g_paste_text_item_new ("same secret"));
+    g_paste_history_add (fixture->history, g_paste_text_item_new ("idle image"));
+    g_paste_history_add (fixture->history, g_object_ref (fixture->password));
+    g_paste_history_add (fixture->history, g_paste_password_item_new ("other", "other secret", 0));
+    g_paste_clipboard_content_set_text (&fixture->clipboard->content, "same secret");
+    fixture->clipboard->refuse_value = "idle image";
+    pump_for (1100);
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
 static void
@@ -3697,6 +3778,68 @@ test_dropped_password (gconstpointer user_data)
     g_assert_cmpuint (primary->publications, ==, publications);
 }
 
+/* A password deleted at the head makes the next entry the head, which goes on
+ * the selections -- unless it is that password's own text, copied once without
+ * the hint: the secret would be back in clear with nothing to take it off. The
+ * newest entry fit to replace it goes there instead. */
+static void
+test_dropped_password_head_twin (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    GPasteItem *password = g_paste_password_item_new (NULL, "the secret", 0);
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (password));
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_paste_text_item_new ("an older copy"));
+    g_paste_history_add (history, g_paste_text_item_new ("the secret"));
+    g_paste_history_add (history, password);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_assert_true (g_paste_history_select (history, uuid));
+    g_assert_cmpstr (clipboard->content.str, ==, "the secret");
+
+    g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
+    g_assert_cmpstr (clipboard->content.str, ==, "an older copy");
+}
+
+/* A selection whose recorded password its owner releases is not given back the
+ * history's head when that head is the very secret as plain text, copied once
+ * without the hint: the record said what the selection carried. It stays empty,
+ * as one whose head is the password itself does. */
+static void
+test_release_keeps_twin_off (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    GBytes *hint = g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_track_changes (settings, FALSE);
+    g_paste_history_add (history, g_paste_text_item_new ("copied secret"));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), hint);
+    text_ready (clipboard, settings, pending, "copied secret");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    clipboard->defer_reads = FALSE;
+    g_paste_clipboard_content_clear (&clipboard->content);
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_assert_true (is_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard)));
+}
+
 static void
 on_disposed_expiry (GObject      *source G_GNUC_UNUSED,
                     GAsyncResult *result,
@@ -3777,7 +3920,11 @@ test_timeout_edit_plain_selection (void)
 
 /* A failed read leaves the exposure recorded but its cache unknown. The next
  * ordinary-text read of the same value must create an item, which can evict the
- * password and synchronously replace the source cache during history_add (). */
+ * password and synchronously replace the source cache during history_add ().
+ *
+ * That read keeps the record (see notify_finish ()), so the eviction takes the
+ * password off both selections, and what goes there is not the item the read
+ * just made: that is the secret in clear. */
 static void
 test_sync_password_eviction (void)
 {
@@ -3817,8 +3964,8 @@ test_sync_password_eviction (void)
     g_paste_clipboard_update_maybe_done (pending);
 
     g_assert_null (g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (password)));
-    g_assert_cmpstr (clipboard->content.str, ==, "secret value");
-    g_assert_cmpstr (primary->content.str, ==, "secret value");
+    g_assert_cmpstr (clipboard->content.str, ==, "filler 3");
+    g_assert_cmpstr (primary->content.str, ==, "filler 3");
     g_assert_true (G_PASTE_IS_TEXT_ITEM (clipboard->published));
     g_assert_true (G_PASTE_IS_TEXT_ITEM (primary->published));
 }
@@ -4665,6 +4812,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/merged_password/bootstrap_expiry", GINT_TO_POINTER (TRUE), test_merged_password_expiry);
     g_test_add_func ("/clipboard/select/refused_claim", test_select_refused_claim);
     g_test_add_func ("/clipboard/ensure_not_empty/refused", test_ensure_not_empty_refused);
+    g_test_add_func ("/clipboard/password/expiry_refused_claim", test_expiry_refused_claim);
     g_test_add_data_func ("/clipboard/sensitive_followup/strip", GINT_TO_POINTER (FALSE), test_sensitive_followup);
     g_test_add_data_func ("/clipboard/sensitive_followup/sync", GINT_TO_POINTER (TRUE), test_sensitive_followup);
     g_test_add_data_func ("/clipboard/queued_strip/lifetime", GINT_TO_POINTER (TRUE), test_queued_strip);
@@ -4673,6 +4821,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/sync/password_eviction", test_sync_password_eviction);
     g_test_add_func ("/clipboard/empty_sensitive_selection", test_empty_sensitive_selection);
     g_test_add_func ("/clipboard/dropped_password/distinct_entry", test_dropped_password_distinct_entry);
+    g_test_add_func ("/clipboard/dropped_password/head_twin", test_dropped_password_head_twin);
+    g_test_add_func ("/clipboard/follow_release/twin_kept_off", test_release_keeps_twin_off);
     g_test_add_func ("/clipboard/strip_after_unconfirmed_read", test_strip_after_unconfirmed_read);
     g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
     g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);
@@ -4689,6 +4839,9 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/sync/independent_item", GINT_TO_POINTER (TRUE), test_independent_publication_copy_order);
     g_test_add_data_func ("/clipboard/sync/independent_text", GINT_TO_POINTER (FALSE), test_independent_publication_copy_order);
     g_test_add_func ("/clipboard/sync/after_expiry_publication", test_sync_after_expiry_publication);
+    g_test_add_func ("/clipboard/expiry/skips_cleartext_twin", test_expiry_skips_cleartext_twin);
+    g_test_add_func ("/clipboard/expiry/skips_padded_twin", test_expiry_skips_padded_twin);
+    g_test_add_func ("/clipboard/expiry/below_another_password", test_expiry_below_another_password);
     g_test_add_func ("/clipboard/reassert_timeout", test_reassert_preserves_timeout);
     g_test_add_data_func ("/clipboard/edit_after_failure/shorten", GINT_TO_POINTER (FALSE), test_edit_after_failed_read);
     g_test_add_data_func ("/clipboard/edit_after_failure/cancel", GINT_TO_POINTER (TRUE), test_edit_after_failed_read);
