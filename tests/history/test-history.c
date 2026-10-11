@@ -2432,6 +2432,64 @@ test_memory_cap_after_replacement_spares_once (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
 }
 
+/* A favourite weighing more than max-memory-usage stays, the cap leaving it
+ * alone, and selecting it makes it the head like any other: the selection it is
+ * announced for is that item's. */
+static void
+test_select_favourite_over_cap (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *large = g_strnfill (6 * 1024 * 1024, 'L');
+
+    g_paste_history_add (history, g_paste_text_item_new (large));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_cmpuint (g_paste_settings_get_max_memory_usage (settings), ==, 5);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_true (g_paste_history_select (history, uuid));
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+}
+
+/* An image selected after the cap was lowered under its decoded size weighs
+ * more than the cap once active: no eviction could bring the history under it,
+ * so none is made -- rather than every other entry lost for nothing. */
+static void
+test_select_image_over_cap (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 20);
+    /* 6.4 MB decoded, a few hundred bytes of PNG. */
+    const guint width = 1600, height = 1000;
+    g_autofree guchar *pixels = g_malloc0 (width * height * 4);
+    g_autoptr (GBytes) data = g_bytes_new_take (g_steal_pointer (&pixels), width * height * 4);
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (width, height, GDK_MEMORY_R8G8B8A8, data, width * 4);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_history_add (history, g_paste_image_item_new (texture));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    for (guint i = 0; i < 10; ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("text %u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (text));
+    }
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_cmpuint (g_paste_settings_get_max_memory_usage (settings), ==, 5);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 11);
+
+    g_assert_true (g_paste_history_select (history, uuid));
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 11);
+}
+
 /* The memory cap evicts the biggest item it *may* evict, and a favourite is
  * never one -- so the election has to skip it and take the runner-up. */
 static void
@@ -6138,6 +6196,8 @@ main (int argc, char *argv[])
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
     add_test ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
+    add_test ("/history/select_favourite_over_cap", test_select_favourite_over_cap);
+    add_test ("/history/select_image_over_cap", test_select_image_over_cap);
     add_test ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
     add_test ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
     add_test ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);

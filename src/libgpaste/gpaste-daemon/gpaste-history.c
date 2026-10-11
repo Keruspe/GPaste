@@ -482,6 +482,14 @@ g_paste_history_private_check_memory_usage_sparing (GPasteHistory *self,
 {
     guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
 
+    /* A head that alone weighs more than the cap -- an image selected after the
+     * cap was lowered under its decoded size -- no eviction brings under it:
+     * emptying the history around it would lose every other entry and still not
+     * fit, which _g_paste_history_replace () refuses an edit over. Once the head
+     * goes idle, the history is weighed again. */
+    if (self->history->len && g_paste_item_get_size (g_ptr_array_index (self->history, 0)) > max_memory)
+        return;
+
     while (self->size > max_memory && self->biggest_uuid)
     {
         guint index;
@@ -656,7 +664,10 @@ _g_paste_history_add (GPasteHistory *self,
         return;
     }
 
-    if (g_paste_item_get_size (item) > max_memory)
+    /* Only an add is refused. What a select moves is already in the history,
+     * where the cap lets it stay as the head or a favourite, and a select left
+     * where it is would announce an item the head does not hold. */
+    if (new_selection && g_paste_item_get_size (item) > max_memory)
         return;
 
     guint length_before = self->history->len;
