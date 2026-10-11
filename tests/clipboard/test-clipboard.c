@@ -313,6 +313,32 @@ test_strip_refreshes_matching_selections (gconstpointer user_data)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, at_head ? 1 : 2);
 }
 
+/* AddPassword takes its timeout as MakePassword does: 0xffffffff writes none,
+ * which for a password being made is the "password-timeout" default. */
+static void
+test_add_password_default_timeout (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_settings_set_password_timeout (settings, 42);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *uuid = g_paste_daemon_methods_add_password (&methods, "Work", "secret", G_PASTE_PASSWORD_TIMEOUT_UNCHANGED, &error);
+
+    g_assert_no_error (error);
+
+    GPasteItem *password = g_paste_history_get_by_uuid (history, uuid);
+
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (password));
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (password)), ==, 42);
+}
+
 static void
 text_ready (TestClipboard         *self G_GNUC_UNUSED,
             GPasteSettings        *settings G_GNUC_UNUSED,
@@ -5041,6 +5067,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/select_text", test_select_text_bypasses_history);
     g_test_add_data_func ("/clipboard/copy_uploaded/kept", GINT_TO_POINTER (FALSE), test_copy_uploaded);
     g_test_add_data_func ("/clipboard/copy_uploaded/refused", GINT_TO_POINTER (TRUE), test_copy_uploaded);
+    g_test_add_func ("/clipboard/methods/add_password_default_timeout", test_add_password_default_timeout);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_password", GINT_TO_POINTER (TRUE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_text", GINT_TO_POINTER (FALSE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/emptied_password", GINT_TO_POINTER (TRUE), test_emptied_history_clears_password);

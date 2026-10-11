@@ -121,7 +121,8 @@
       until then, a name other than the placeholder is refused with the same
       G_IO_ERROR_BUSY as a storage handover (see above).
 
-      @timeout is as in MakePassword: seconds, 0 for none.
+      @timeout is as in MakePassword: seconds, 0 for none, 0xffffffff for the
+      "password-timeout" default.
     -->
     <method name="AddPassword">
       <arg type="s" direction="in"  name="name"/>

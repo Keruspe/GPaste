@@ -344,6 +344,11 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
                               "another password with that name already exists",
                               NULL);
 
+    /* As in g_paste_history_make_password (): nothing to write is the default
+     * a password being made takes. */
+    if (timeout == G_PASTE_PASSWORD_TIMEOUT_UNCHANGED)
+        timeout = (guint) g_paste_settings_get_password_timeout (self->settings);
+
     return g_paste_daemon_methods_do_add_item (self, g_paste_password_item_new (name, password, timeout), error);
 }
 

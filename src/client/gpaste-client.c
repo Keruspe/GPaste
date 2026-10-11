@@ -568,7 +568,10 @@ g_paste_add (Context *ctx,
 }
 
 /* 0 is a timeout of its own -- a password that is never taken back off -- so
- * without --timeout, AddPassword is sent the one the settings carry. */
+ * without --timeout, AddPassword is sent the one the settings carry. Not asked
+ * for the default (G_PASTE_PASSWORD_TIMEOUT_UNCHANGED): a GPaste 51.0 daemon,
+ * still running after the update that brought this client, takes that for a
+ * duration, eighteen hours of it. */
 static guint
 password_timeout (Context *ctx)
 {
