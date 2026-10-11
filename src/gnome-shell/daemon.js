@@ -27,6 +27,42 @@ function callStorageConcern(concernAsync, concernFinish, prompt, settings) {
     });
 }
 
+// The storage lock is the process's, and a daemon let go of while an import or
+// a change of passphrase is still rewriting the store on a thread of its own
+// keeps it until that write is done (GPasteDaemon.storage_is_busy()):
+// released under it, the daemon taking over would settle and read a store still
+// being written. A runner acquiring the name meanwhile takes the lock over as it
+// stands, so the pending release is dropped. 0 when none is pending.
+let pendingStorageRelease = 0;
+
+function releaseStorageWhenIdle() {
+    if (pendingStorageRelease)
+        return;
+
+    if (!GPasteDaemon.storage_is_busy()) {
+        GPasteDaemon.StorageBackend.unlock();
+        return;
+    }
+
+    pendingStorageRelease = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+        if (GPasteDaemon.storage_is_busy())
+            return GLib.SOURCE_CONTINUE;
+
+        pendingStorageRelease = 0;
+        GPasteDaemon.StorageBackend.unlock();
+        return GLib.SOURCE_REMOVE;
+    });
+    GLib.Source.set_name_by_id(pendingStorageRelease, '[GPaste] release the storage once idle');
+}
+
+function keepStorage() {
+    if (!pendingStorageRelease)
+        return;
+
+    GLib.source_remove(pendingStorageRelease);
+    pendingStorageRelease = 0;
+}
+
 // Runs the GPaste daemon inside gnome-shell, mirroring src/daemon/gpaste-daemon.c
 // but driving the mutter (MetaSelection) clipboard backend so the clipboard can
 // be watched from within the compositor itself. Compared to the standalone
@@ -160,6 +196,8 @@ export class GPasteDaemonRunner {
     async _onNameAcquired() {
         if (this._daemon || this._stopped)
             return;
+
+        keepStorage();
 
         // Settling the storage below can block on a dialog for minutes, during
         // which the bus may be torn down and rebuilt (_reconnect) and this
@@ -423,7 +461,7 @@ export class GPasteDaemonRunner {
         // session-bus connection, making the next enable() fail to register.
         this._bus?.unown_name();
 
-        GPasteDaemon.StorageBackend.unlock();
+        releaseStorageWhenIdle();
 
         this._daemon = null;
         this._searchProvider = null;

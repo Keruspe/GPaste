@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-item.h>
 #include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -2306,6 +2307,18 @@ _g_paste_file_backend_settle_rekey (const gchar *name)
 G_PASTE_VISIBLE void
 g_paste_file_backend_settle_rekeys (void)
 {
+    /* What is left beside a history is a dead process's only while nothing
+     * else can be writing: a daemon handing over -- another process, or this
+     * one's previous daemon in gnome-shell -- may still be re-keying on a
+     * thread of its own, and settling under it would put back, or drop, what it
+     * is in the middle of renaming. Left for the next start then, a read
+     * refusing such a history until it is settled. */
+    if (g_paste_storage_is_busy () || !g_paste_storage_backend_try_lock ())
+    {
+        g_message ("Another GPaste is still writing the histories; what a change of passphrase left is settled at the next start");
+        return;
+    }
+
     g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);

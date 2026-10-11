@@ -157,8 +157,9 @@ void     g_paste_storage_backend_clear_history        (GPasteStorageBackend *sel
 
 gboolean g_paste_storage_backend_is_incremental       (GPasteStorageBackend *self);
 
-void g_paste_storage_backend_lock   (GCancellable *cancellable);
-void g_paste_storage_backend_unlock (void);
+void     g_paste_storage_backend_lock     (GCancellable *cancellable);
+gboolean g_paste_storage_backend_try_lock (void);
+void     g_paste_storage_backend_unlock   (void);
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);

@@ -15,6 +15,11 @@
 #include <gpaste-daemon/gpaste-storage-keyring.h>
 #endif
 
+/* The import and re-key workers running: see g_paste_storage_is_busy (). Each
+ * starts and reports on the main thread, which is the one place this is
+ * counted. */
+static guint g_paste_storage_workers;
+
 typedef struct
 {
     GPasteSettings                *settings;
@@ -701,6 +706,7 @@ on_import_done (GObject      *source G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     gboolean imported = g_task_propagate_boolean (G_TASK (result), &error);
 
+    --g_paste_storage_workers;
     apply_migration_settle (user_data, imported, error);
 }
 
@@ -731,6 +737,7 @@ apply_migration (MigrationData *self)
 
     g_task_set_source_tag (task, apply_migration);
     g_task_set_task_data (task, work, import_work_free);
+    ++g_paste_storage_workers;
     g_task_run_in_thread (task, import_work_run);
 }
 
@@ -1115,6 +1122,23 @@ g_paste_storage_migration_finish (GAsyncResult *result,
 }
 
 /**
+ * g_paste_storage_is_busy:
+ *
+ * Whether a migration's import or a change of passphrase is rewriting the
+ * store, on a thread of its own. The process ending, exec'ing or letting go of
+ * the storage lock meanwhile cuts that write short, leaving a copy the next
+ * start may take for the history or a history half re-keyed: a host waits for
+ * this to answer %FALSE first.
+ *
+ * Returns: whether a storage worker is running
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_is_busy (void)
+{
+    return g_paste_storage_workers > 0;
+}
+
+/**
  * g_paste_storage_decryption_needed:
  * @settings: a #GPasteSettings instance
  *
@@ -1446,6 +1470,8 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
     RekeyData *self = user_data;
     g_autoptr (GError) error = NULL;
 
+    --g_paste_storage_workers;
+
     if (g_task_propagate_boolean (G_TASK (result), &error))
     {
         const gchar *cleartext = g_paste_passphrase_peek (self->new_passphrase);
@@ -1518,6 +1544,7 @@ on_rekey_passphrase_set (GObject      *source,
     g_task_set_source_tag (task, on_rekey_passphrase_set);
     /* Borrowed: rekey_finish() owns it, and it outlives the task either way. */
     g_task_set_task_data (task, self, NULL);
+    ++g_paste_storage_workers;
     g_task_run_in_thread (task, rekey_work_run);
 }
 

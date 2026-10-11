@@ -321,7 +321,13 @@
       <arg type="s"  direction="out" name="uuid"/>
     </method>
 
-    <!-- Have the daemon exec a fresh copy of itself -->
+    <!--
+      Have the daemon exec a fresh copy of itself.
+
+      Refused with the same G_IO_ERROR_BUSY as a storage handover (see above)
+      while a change of passphrase or a migration's import is rewriting the
+      store, which the exec would have to wait for: try again once it is done.
+    -->
     <method name="Reexecute"/>
 
     <!--

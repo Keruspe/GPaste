@@ -8,6 +8,8 @@
 #include <gpaste-daemon/gpaste-keybinder.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-screensaver-client.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
+#include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 
@@ -262,10 +264,31 @@ reexecute_stood_down (GDBusMethodInvocation *invocation)
                                            "The daemon stood down before it could re-execute.");
 }
 
+/* An exec waits for a storage worker rewriting the store to be done
+ * (g_paste_storage_is_busy ()), which can take minutes: a request over the bus
+ * is refused meanwhile, rather than answered for an exec that has not happened
+ * and may never -- its later failures having no one left to tell. One without
+ * an invocation (SIGUSR1) is the host's to carry out once the worker is done,
+ * through g_paste_daemon_reexecute () again. Nothing execs in gnome-shell. */
+static gboolean
+g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
+                                  GDBusMethodInvocation *invocation)
+{
+    if (self->in_process || !invocation || !g_paste_storage_is_busy ())
+        return FALSE;
+
+    g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_BUSY,
+                                                   "The history storage is being rewritten; re-execute once that is done");
+    return TRUE;
+}
+
 static void
 g_paste_daemon_reexecute_now (GPasteDaemon          *self,
                               GDBusMethodInvocation *invocation)
 {
+    if (g_paste_daemon_reexecute_refused (self, invocation))
+        return;
+
     g_paste_clipboards_manager_store (self->clipboards_manager);
 
     gboolean accepted = FALSE;
@@ -352,6 +375,10 @@ g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
         g_paste_daemon_reexecute_now (self, invocation);
         return;
     }
+
+    /* Before any countdown is brought forward for it. */
+    if (g_paste_daemon_reexecute_refused (self, invocation))
+        return;
 
     /* Storing preserves the selection across exec. Await classification and
      * expiry first, so the successor inherits no unmonitored password. */

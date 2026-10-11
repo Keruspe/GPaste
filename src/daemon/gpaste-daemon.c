@@ -57,6 +57,10 @@ typedef struct
      * the first is rewriting, then build a second daemon over the first. The
      * gnome-shell host gates the same window with _settleStorage(). */
     gboolean         settling;
+    /* A stop signal or a takeover is waiting for the store to be idle
+     * (stop_when_storage_idle ()): the settle it interrupts goes no further,
+     * and another one changes nothing. */
+    gboolean         stopping;
 } DaemonContext;
 
 /* Persist the history synchronously and release the storage lock so a successor
@@ -70,11 +74,73 @@ flush_and_unlock (DaemonContext *ctx)
     g_paste_storage_backend_unlock ();
 }
 
+typedef void (*StorageIdleFunc) (DaemonContext *ctx);
+
+typedef struct
+{
+    DaemonContext  *ctx;
+    StorageIdleFunc then;
+} IdleStorageWait;
+
+static gboolean
+on_storage_idle_poll (gpointer user_data)
+{
+    IdleStorageWait *wait = user_data;
+
+    if (g_paste_storage_is_busy ())
+        return G_SOURCE_CONTINUE;
+
+    wait->then (wait->ctx);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Run @then once no storage worker is rewriting the store
+ * (g_paste_storage_is_busy ()): ending, exec'ing or releasing the lock under
+ * one cuts its write short. Polled, the worker reporting to the library rather
+ * than to us. No test shows it, the daemon's own main () being what it guards. */
+static void
+when_storage_idle (DaemonContext  *ctx,
+                   StorageIdleFunc then)
+{
+    if (!g_paste_storage_is_busy ())
+    {
+        then (ctx);
+        return;
+    }
+
+    IdleStorageWait *wait = g_new0 (IdleStorageWait, 1);
+
+    wait->ctx = ctx;
+    wait->then = then;
+    g_source_set_name_by_id (g_timeout_add_full (G_PRIORITY_DEFAULT, 100, on_storage_idle_poll, wait, g_free),
+                             "[GPaste] wait for the storage to be idle");
+}
+
+static void reexec_once_idle (DaemonContext *ctx);
+
 static gboolean
 reexec (GPasteDaemon *g_paste_daemon,
         gpointer      user_data)
 {
     DaemonContext *ctx = user_data;
+
+    /* A stop or a takeover waiting on the store (stop_when_storage_idle ()) is
+     * this process ending, which an exec let through by the same wait would
+     * outlive: the successor, or no daemon at all, is what was asked for. No
+     * test shows it, for the reason when_storage_idle () gives. */
+    if (ctx->stopping)
+        return FALSE;
+
+    /* As for a stop signal (when_storage_idle ()). Accepted all the same: the
+     * exec follows once the write it would cut short is done -- a request over
+     * the bus being refused before it gets here (g_paste_daemon_reexecute ()). */
+    if (g_paste_storage_is_busy ())
+    {
+        when_storage_idle (ctx, reexec_once_idle);
+        return TRUE;
+    }
+
     GDBusConnection *connection = g_application_get_dbus_connection (ctx->gapp);
     g_autoptr (GError) error = NULL;
 
@@ -116,6 +182,41 @@ reexec (GPasteDaemon *g_paste_daemon,
     return FALSE;
 }
 
+/* Whatever the wait let through -- a password copied, an upload started -- is
+ * what a re-exec waits on and cancels too, so it goes through the daemon again
+ * rather than straight to the exec (g_paste_daemon_reexecute ()). */
+static void
+reexec_once_idle (DaemonContext *ctx)
+{
+    /* As in reexec (), before any countdown is brought forward for it. */
+    if (ctx->stopping)
+        return;
+
+    if (ctx->daemon)
+        g_paste_daemon_reexecute (ctx->daemon);
+    else
+        reexec (NULL, ctx);
+}
+
+static void
+quit (DaemonContext *ctx)
+{
+    flush_and_unlock (ctx);
+    g_application_quit (ctx->gapp);
+}
+
+/* Quit once the store is idle, and once: when_storage_idle () says why, and
+ * why no test shows it. */
+static void
+stop_when_storage_idle (DaemonContext *ctx)
+{
+    if (ctx->stopping)
+        return;
+
+    ctx->stopping = TRUE;
+    when_storage_idle (ctx, quit);
+}
+
 #ifdef G_OS_UNIX
 static gboolean
 signal_handler (gpointer user_data)
@@ -123,11 +224,12 @@ signal_handler (gpointer user_data)
     DaemonContext *ctx = user_data;
 
     g_print ("%s\n", _("Stop signal received, exiting"));
+    stop_when_storage_idle (ctx);
 
-    flush_and_unlock (ctx);
-    g_application_quit (ctx->gapp);
-
-    return G_SOURCE_REMOVE;
+    /* Kept: once its last source goes, GLib gives a signal its default action
+     * back, and a second Ctrl+C while the store is being rewritten would kill
+     * the rewrite the stop is waiting for. */
+    return G_SOURCE_CONTINUE;
 }
 
 static gboolean
@@ -143,11 +245,11 @@ usr1_handler (gpointer user_data)
     if (ctx->daemon)
         g_paste_daemon_reexecute (ctx->daemon);
     else
-        reexec (NULL, ctx);
+        when_storage_idle (ctx, reexec_once_idle);
 
-    /* With a live daemon, expiry and exec run asynchronously after this handler
-     * returns. Keep listening if that request is refused or exec fails. Before
-     * construction, reexec above is synchronous and returns only on failure. */
+    /* Either way the exec comes after this handler returns: the expiry runs
+     * asynchronously, and the store may have a worker to wait for. Keep
+     * listening if that request is refused or the exec fails. */
     return G_SOURCE_CONTINUE;
 }
 #endif
@@ -169,6 +271,7 @@ on_passphrase_changed (GObject      *source G_GNUC_UNUSED,
 
     ctx->changing_passphrase = FALSE;
 
+    /* A daemon stood down meanwhile (on_name_lost ()) has nothing to reload. */
     if (ctx->daemon)
         g_paste_daemon_reload_storage (ctx->daemon);
 }
@@ -249,7 +352,8 @@ on_decryption_done (GObject      *source G_GNUC_UNUSED,
     if (!g_paste_storage_decryption_finish (result, &error))
         g_warning ("Could not unlock the encrypted history: %s", error->message);
 
-    on_storage_ready (ctx);
+    if (!ctx->stopping)
+        on_storage_ready (ctx);
 }
 
 static void
@@ -273,7 +377,10 @@ on_migration_done (GObject      *source G_GNUC_UNUSED,
     if (!g_paste_storage_migration_finish (result, &error))
         g_warning ("The storage migration prompt failed: %s", error->message);
 
-    start_decryption (ctx);
+    /* A daemon stopping, or replaced, while the import ran asks nothing more
+     * and builds nothing: it is about to go. */
+    if (!ctx->stopping)
+        start_decryption (ctx);
 }
 
 /* The name is ours: only now do we run any migration / encrypted-history unlock
@@ -334,8 +441,25 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
          * loads our final state, then exit successfully so the systemd unit
          * does not land in the failed state. */
         g_print ("%s\n", _("Replaced by another GPaste daemon, exiting"));
-        flush_and_unlock (ctx);
-        g_application_quit (ctx->gapp);
+
+        /* Off the bus, its history flushed, now rather than once the store is
+         * idle: a daemon a storage worker keeps around meanwhile, still reading
+         * the selections and answering the shortcuts through its portal
+         * session, would do both beside the one that took over -- putting its
+         * own history back on a selection that one emptied. Disposed as the
+         * in-shell host disposes the daemon it lets go of; only the lock, which
+         * the worker still needs, waits for the store. No test shows it, for
+         * the reason when_storage_idle () gives. */
+        if (ctx->daemon)
+        {
+            g_paste_daemon_flush (ctx->daemon);
+            g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_REEXECUTE_SELF]);
+            g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_CHANGE_PASSPHRASE]);
+            g_object_run_dispose (G_OBJECT (ctx->daemon));
+            g_clear_object (&ctx->daemon);
+        }
+
+        stop_when_storage_idle (ctx);
         return;
     }
 

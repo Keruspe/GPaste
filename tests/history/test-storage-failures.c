@@ -13,6 +13,8 @@
 #include <glib/gstdio.h>
 
 #include <dlfcn.h>
+#include <sys/file.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 
@@ -98,6 +100,28 @@ fsync (int fd)
     }
 
     return original (fd);
+}
+
+/* What flock () fails with, as a home on NFS without lockd has it fail: 0 for
+ * nothing. */
+static gint refused_flock;
+
+int
+flock (int fd,
+       int operation)
+{
+    typedef int (*Flock) (int, int);
+    Flock original = (Flock) dlsym (RTLD_NEXT, "flock");
+
+    g_assert_nonnull (original);
+    if (refused_flock)
+    {
+        errno = refused_flock;
+
+        return -1;
+    }
+
+    return original (fd, operation);
 }
 
 /* Whether link () fails as a filesystem without hard links has it fail. */
@@ -479,6 +503,53 @@ run_migration (GPasteSettings      *settings,
 
     return g_paste_storage_migration_finish (result, error);
 }
+
+#if defined(G_PASTE_ENABLE_SQLITE) || defined(G_PASTE_ENABLE_ENCRYPTION)
+/* A storage worker running, or the concern answering without one: either ends
+ * the wait for a worker to be seen, rather than meson's timeout. */
+static gboolean
+busy_or_answered (gconstpointer result,
+                  gconstpointer arg G_GNUC_UNUSED)
+{
+    return g_paste_storage_is_busy () || *(gpointer const *) result;
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_SQLITE
+/* A migration's import rewrites the store on a thread of its own, which a host
+ * waits out before it ends or lets go of the storage lock. */
+static void
+test_import_busy (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("imported"));
+
+        g_paste_storage_backend_write_history (file, name, items);
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_SQLITE;
+    prompt->import = TRUE;
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    /* As in /storage/rekey/busy. */
+    g_paste_test_bus_wait_until (busy_or_answered, &result, NULL);
+    g_assert_true (g_paste_storage_is_busy ());
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_false (g_paste_storage_is_busy ());
+    g_assert_true (g_paste_storage_migration_finish (result, &error));
+    g_assert_no_error (error);
+}
+#endif
 
 /* A history in a format this build cannot open is still recognised as that
  * format: a dismissed migration leaves storage-backend naming it and the file
@@ -1333,6 +1404,72 @@ test_verification_empty_active_database (void)
     g_assert_cmpmem (before, before_length, after, after_length);
 }
 #endif
+
+/* A lock file that cannot be opened -- a directory at its name here, a file
+ * another user owns or a read-only data directory elsewhere -- tells no daemon
+ * apart, nor does one flock () refuses: the store may be touched all the
+ * same, rather than every load reading nothing and every Backup, Empty or
+ * Delete blaming another daemon. */
+static void
+test_lock_file_unusable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to open the history lock file: *");
+        g_test_trap_assert_stderr ("*Failed to lock the history: *");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_cmpint (g_mkdir (lock, 0700), ==, 0);
+    g_assert_true (g_paste_storage_backend_try_lock ());
+
+    /* The same of one flock () refuses. */
+    g_assert_cmpint (g_rmdir (lock), ==, 0);
+    refused_flock = ENOLCK;
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    refused_flock = 0;
+}
+
+/* Nor does a history directory that cannot be made, which says so itself: the
+ * lock file was never tried, and errno, once that is logged, says nothing of
+ * it. */
+static void
+test_lock_dir_unmade (void)
+{
+    if (geteuid () == 0)
+    {
+        g_test_skip ("A directory's mode stops no write of root's");
+        return;
+    }
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not create history dir*");
+        g_test_trap_assert_stderr_unmatched ("*history lock file*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *parent = g_path_get_dirname (dir);
+
+    g_assert_false (g_file_test (dir, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (g_mkdir_with_parents (parent, 0500), ==, 0);
+    g_assert_cmpint (g_chmod (parent, 0500), ==, 0);
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_cmpint (g_chmod (parent, 0700), ==, 0);
+}
 
 /* A full write that does not land sweeps nothing: what is on disk is still the
  * snapshot before it, which references the image the failed one dropped. */
@@ -2268,6 +2405,99 @@ test_rekey_cost (void)
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
+/* Nor while a storage worker of this process runs -- the previous daemon's
+ * re-key in gnome-shell, which holds the lock in this very process: what is
+ * left beside a history may be what it is in the middle of renaming. */
+static void
+test_rekey_settled_while_busy (void)
+{
+    const gchar *name = "rekey-settled-while-busy";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+    g_assert_true (g_paste_storage_backend_try_lock ());
+
+    ++g_paste_storage_workers;
+    g_paste_file_backend_settle_rekeys ();
+    --g_paste_storage_workers;
+    g_assert_true (has_rekey_leftovers (name));
+
+    g_paste_file_backend_settle_rekeys ();
+    g_assert_false (has_rekey_leftovers (name));
+}
+
+/* What a change of passphrase left is settled only while nothing else can be
+ * writing: with another process holding the storage lock -- a daemon handing
+ * over, perhaps still re-keying -- it is left for a start that can take it. */
+static void
+test_rekey_settled_under_lock (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    const gchar *name = "rekey-settled-under-lock";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
+    /* Another open file description, which flock () tells apart from the one
+     * the storage lock would open even in this process. */
+    gint fd = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (fd, >=, 0);
+    g_assert_cmpint (flock (fd, LOCK_EX | LOCK_NB), ==, 0);
+
+    g_paste_file_backend_settle_rekeys ();
+    g_assert_true (has_rekey_leftovers (name));
+
+    g_close (fd, NULL);
+    g_paste_file_backend_settle_rekeys ();
+    g_assert_false (has_rekey_leftovers (name));
+    assert_contents (history, "old history");
+}
+
+/* A change of passphrase rewrites the store on a thread of its own, which a
+ * host waits out before it ends or lets go of the storage lock. */
+static void
+test_rekey_busy (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("old passphrase");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    prompt->passphrase = "new passphrase";
+    g_assert_false (g_paste_storage_is_busy ());
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    /* The worker starts and reports in two turns of the main loop, so it is
+     * seen running between them. */
+    g_paste_test_bus_wait_until (busy_or_answered, &result, NULL);
+    g_assert_true (g_paste_storage_is_busy ());
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_false (g_paste_storage_is_busy ());
+    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_no_error (error);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
 /* Histories split across two passphrases -- what a change whose rollback failed
  * leaves -- are opened by the one the active history takes, the others staying
  * closed on theirs, and a change of passphrase re-keys the ones it opens rather
@@ -2378,6 +2608,8 @@ main (int    argc,
 
     g_test_add_func ("/storage/failed-write-images", test_failed_write_keeps_images);
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
+    g_test_add_func ("/storage/lock/file-unusable", test_lock_file_unusable);
+    g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
     g_test_add_func ("/storage/image-name-not-utf8", test_image_name_not_utf8);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-synced-before-install", test_encrypted_synced_before_install);
@@ -2411,6 +2643,9 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/settled-without-history", test_rekey_settled_without_history);
     g_test_add_func ("/storage/rekey/split-passphrases", test_rekey_split_passphrases);
     g_test_add_func ("/storage/rekey/cost", test_rekey_cost);
+    g_test_add_func ("/storage/rekey/settled-under-lock", test_rekey_settled_under_lock);
+    g_test_add_func ("/storage/rekey/settled-while-busy", test_rekey_settled_while_busy);
+    g_test_add_func ("/storage/rekey/busy", test_rekey_busy);
     g_test_add_func ("/storage/rekey/settles-valid-names", test_rekey_settles_valid_names);
     g_test_add_func ("/storage/rekey/after-leftovers", test_rekey_after_leftovers);
     g_test_add_func ("/storage/rekey/unlistable-images", test_rekey_unlistable_images);
@@ -2437,6 +2672,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
+    g_test_add_func ("/storage/migration/import-busy", test_import_busy);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
 #endif
 

@@ -74,6 +74,33 @@ static gint     g_paste_storage_lock_fd = -1;
  * read atomically from the waiting thread. */
 static gint     g_paste_storage_lock_released;
 
+#ifdef G_OS_UNIX
+/* The one file both lock () and try_lock () take, made where need be: -1 when
+ * it cannot be opened, with a warning saying why. A history directory that
+ * cannot be made is the helper's own to report: once it has logged, errno
+ * says nothing of it.
+ *
+ * A lock file that cannot be opened or locked tells no daemon apart, so both
+ * answer that the store may be touched: refused instead, every load would read
+ * nothing, the history it was for staying unwritten, and every Backup, Empty or
+ * Delete would blame another daemon, for as long as the file stays as it is. */
+static gint
+g_paste_storage_backend_open_lock_file (void)
+{
+    if (!g_paste_util_ensure_history_dir_exists ())
+        return -1;
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *path = g_build_filename (dir, "lock", NULL);
+    gint fd = open (path, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    if (fd < 0)
+        g_warning ("Failed to open the history lock file: %s", g_strerror (errno));
+
+    return fd;
+}
+#endif
+
 /**
  * g_paste_storage_backend_lock:
  * @cancellable: (nullable): the load this wait belongs to, to give it up with
@@ -102,18 +129,11 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
         g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
     }
 
-    if (!g_paste_util_ensure_history_dir_exists ())
-        return;
+    gint fd = g_paste_storage_backend_open_lock_file ();
 
-    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
-    g_autofree gchar *path = g_build_filename (dir, "lock", NULL);
-    gint fd = open (path, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
-
+    /* open_lock_file () says why it failed, and why that refuses nothing. */
     if (fd < 0)
-    {
-        g_warning ("Failed to open the history lock file: %s", g_strerror (errno));
         return;
-    }
 
     gint64 start = g_get_monotonic_time ();
     gboolean logged = FALSE;
@@ -121,12 +141,43 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
     /* The wait deliberately happens *outside* the mutex: it can last as long as
      * the previous daemon takes to finish writing, and _unlock() runs on the main
      * thread of every exit path — holding the mutex here would block it (and, in
-     * the gnome-shell host, freeze the compositor) for that whole time. */
-    while (flock (fd, LOCK_EX | LOCK_NB) < 0)
+     * the gnome-shell host, freeze the compositor) for that whole time.
+     *
+     * Each attempt is made under it, though, and the lock installed the moment
+     * it is taken: try_lock () holds the mutex too, and finding this file
+     * holding the lock not yet installed, its own flock () would be refused as
+     * if another daemon held it. */
+    for (;;)
     {
-        if (errno != EWOULDBLOCK && errno != EINTR)
+        gint refused;
+
         {
-            g_warning ("Failed to lock the history: %s", g_strerror (errno));
+            g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
+
+            /* Another wait of this process's got it, and a lock of this
+             * process's is one flock () refuses this wait's own file. */
+            if (g_paste_storage_lock_fd >= 0)
+            {
+                close (fd);
+                return;
+            }
+
+            if (flock (fd, LOCK_EX | LOCK_NB) == 0)
+            {
+                /* A process that has let go of the lock wants none. */
+                if (g_atomic_int_get (&g_paste_storage_lock_released))
+                    close (fd);
+                else
+                    g_paste_storage_lock_fd = fd;
+                return;
+            }
+
+            refused = errno;
+        }
+
+        if (refused != EWOULDBLOCK && refused != EINTR)
+        {
+            g_warning ("Failed to lock the history: %s", g_strerror (refused));
             close (fd);
             return;
         }
@@ -148,15 +199,50 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
 
         g_usleep (100 * 1000); /* 100ms */
     }
+#endif
+}
 
+/**
+ * g_paste_storage_backend_try_lock:
+ *
+ * Acquire the process-wide history lock if nobody else holds it, without
+ * waiting: for what may only touch the store while no other daemon can be
+ * writing it, and has a later chance if one is (see
+ * g_paste_file_backend_settle_rekeys()). Like g_paste_storage_backend_lock(),
+ * once held it stays held.
+ *
+ * Returns: whether this process may touch the store: it holds the lock, or the
+ *     lock file cannot be opened or locked, which no daemon can then hold either
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_try_lock (void)
+{
+#ifdef G_OS_UNIX
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
-    /* Someone unlocked (or won the race) while we were waiting: drop ours. */
-    if (g_paste_storage_lock_fd >= 0 || g_atomic_int_get (&g_paste_storage_lock_released))
+    if (g_paste_storage_lock_fd >= 0)
+        return TRUE;
+
+    gint fd = g_paste_storage_backend_open_lock_file ();
+
+    if (fd < 0)
+        return TRUE;
+
+    if (flock (fd, LOCK_EX | LOCK_NB) < 0)
+    {
+        gboolean held_elsewhere = (errno == EWOULDBLOCK || errno == EINTR);
+
+        if (!held_elsewhere)
+            g_warning ("Failed to lock the history: %s", g_strerror (errno));
         close (fd);
-    else
-        g_paste_storage_lock_fd = fd;
+        return !held_elsewhere;
+    }
+
+    g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
+    g_paste_storage_lock_fd = fd;
 #endif
+
+    return TRUE;
 }
 
 /**
