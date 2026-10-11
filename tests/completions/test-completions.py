@@ -115,6 +115,35 @@ def fish_descriptions(scratch):
                           env=env, capture_output=True, check=True).stdout
 
 
+def history_dirs(data):
+    """A "GPaste" history directory beside a "gpaste" one under @data: the
+    daemon stores in the first when there is one, so the completions list it
+    alone."""
+    for directory, name in (('GPaste', 'legacy.xml'), ('gpaste', 'current.xml')):
+        (Path(data) / directory).mkdir()
+        (Path(data) / directory / name).touch()
+    return dict(os.environ, XDG_DATA_HOME=str(data))
+
+
+def zsh_histories(scratch):
+    """The history names the zsh completion offers, for history_dirs()."""
+    env = history_dirs(scratch)
+    body = (ROOT / 'data/completions/_gpaste-client').read_text()
+    body = body[:body.rindex('_gpaste-client "${@}"')]
+    script = scratch / 'histories.zsh'
+    script.write_text('_describe () { print -r -l -- "${(@P)4}" }\n' + body + '_gpaste-client_histories\n')
+    return subprocess.run(['zsh', '-f', str(script)], env=env, capture_output=True, text=True, check=True).stdout.split()
+
+
+def fish_histories(scratch):
+    """The history names the fish completion offers, for history_dirs()."""
+    env = history_dirs(scratch)
+    script = scratch / 'histories.fish'
+    script.write_text('source $argv[1]\n__gpaste_histories\n')
+    return subprocess.run(['fish', '--no-config', str(script), str(ROOT / 'data/completions/gpaste-client.fish')],
+                          env=env, capture_output=True, text=True, check=True).stdout.split()
+
+
 def bash_verbs():
     """What the bash completion offers in place of a verb, by running it."""
     script = ('source "$1"; COMP_WORDS=(gpaste-client ""); COMP_CWORD=1; COMP_LINE="gpaste-client "; '
@@ -122,6 +151,81 @@ def bash_verbs():
     out = subprocess.run(['bash', '-c', script, 'bash', str(ROOT / 'data/completions/gpaste-client')],
                          capture_output=True, text=True, check=True).stdout
     return set(out.split())
+
+
+def bash_complete(words, env=None, cwd=None, stubs=':'):
+    """COMPREPLY for a command line whose last word is the one completed, the
+    completion's functions overridden by @stubs."""
+    script = ('source "$1"; shift; ' + stubs + '; COMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); '
+              'COMP_LINE="$*"; COMP_POINT=${#COMP_LINE}; _gpaste-client; printf \'%s\\n\' "${COMPREPLY[@]}"')
+    out = subprocess.run(['bash', '-c', script, 'bash', str(ROOT / 'data/completions/gpaste-client'), *words],
+                         capture_output=True, text=True, check=True, env=env, cwd=cwd).stdout
+    return [line for line in out.splitlines() if line]
+
+
+def bash_behaviour():
+    """What the bash completion has to get right beyond the verbs it offers."""
+    failures = []
+
+    # History names straight off disk, any of which may hold what the shell
+    # would expand: offered quoted, each once, none of them run -- under the
+    # bash before 5.2 too, which expands an array subscript once more.
+    for compat in (None, '51'):
+        with tempfile.TemporaryDirectory() as data, tempfile.TemporaryDirectory() as cwd:
+            histories = Path(data) / 'gpaste'
+            histories.mkdir()
+            for name in ('$(touch ran).xml', 'my work.xml', 'plain.xml', 'plain.db'):
+                (histories / name).touch()
+            env = dict(os.environ, XDG_DATA_HOME=data)
+            if compat:
+                env['BASH_COMPAT'] = compat
+            offered = bash_complete(['gpaste-client', 'switch-history', ''], env=env, cwd=cwd)
+            if (Path(cwd) / 'ran').exists():
+                failures.append(f'a history name was run as a command (BASH_COMPAT={compat})')
+            if sorted(offered) != sorted(['\\$\\(touch\\ ran\\)', 'my\\ work', 'plain']):
+                failures.append(f'history names offered as {offered} (BASH_COMPAT={compat})')
+
+    # A word typed of a name matches it however the shell has to quote the rest:
+    # a control character makes all of it $'...', which no letter of the name
+    # starts. The word typed quoted matches the name quoted.
+    with tempfile.TemporaryDirectory() as data:
+        histories = Path(data) / 'gpaste'
+        histories.mkdir()
+        for name in ('tab\there.xml', 'my work.xml', 'plain.xml'):
+            (histories / name).touch()
+        env = dict(os.environ, XDG_DATA_HOME=data)
+        for cur, expected in (('tab', ["$'tab\\there'"]),
+                              ("$'tab", ["$'tab\\there'"]),
+                              ('my', ['my\\ work']),
+                              ('my\\ w', ['my\\ work']),
+                              ('p', ['plain'])):
+            offered = bash_complete(['gpaste-client', 'switch-history', cur], env=env)
+            if offered != expected:
+                failures.append(f'{cur!r} offered the histories {offered}, not {expected}')
+
+    with tempfile.TemporaryDirectory() as data:
+        offered = bash_complete(['gpaste-client', 'switch-history', ''], env=history_dirs(data))
+        if offered != ['legacy']:
+            failures.append(f'histories offered from {offered} beside a GPaste directory')
+
+    # The verb and --use-index, wherever the options are and however spelled.
+    stubs = '_gpaste_client_uuids () { echo uuid; }; _gpaste_client_indexes () { echo index; }'
+    for words, expected in ((['-oi', 'delete', ''], 'index'),
+                            (['--separator', '=', ',', 'merge', ''], 'uuid'),
+                            (['-s', ',', 'merge', ''], 'uuid'),
+                            (['-ot', '5', 'delete', ''], 'uuid'),
+                            (['-ot5', '-i', 'delete', ''], 'index')):
+        offered = bash_complete(['gpaste-client', *words], stubs=stubs)
+        if offered != [expected]:
+            failures.append(f'{" ".join(words)} offered {offered}, not {expected}')
+
+    if '--favourites' not in bash_options(['']).get('', set()):
+        failures.append('no --favourites for a line with no verb')
+    for verb, options in bash_options(['list-histories', 'lh']).items():
+        if '--zero' not in options:
+            failures.append(f'no --zero after {verb}, which it reads')
+
+    return failures
 
 
 def zsh_verbs():
@@ -187,6 +291,7 @@ def main():
             failures.append(f'{completion} does not offer: {", ".join(missing)}')
 
     if shutil.which('bash'):
+        failures += [f'data/completions/gpaste-client: {f}' for f in bash_behaviour()]
         missing = sorted(verb for verb, options in bash_options(sorted(items)).items()
                          if not {'--use-index', '-i'} <= options)
         if missing:
@@ -197,12 +302,20 @@ def main():
             listed = zsh_descriptions(Path(scratch))
         if listed.count(b'1: a') != 2 or controls(listed, b'\n'):
             failures.append(f'data/completions/_gpaste-client lists an item as {listed!r}')
+        with tempfile.TemporaryDirectory() as scratch:
+            listed = zsh_histories(Path(scratch))
+        if listed != ['legacy']:
+            failures.append(f'data/completions/_gpaste-client offers histories from {listed} beside a GPaste directory')
 
     if shutil.which('fish'):
         with tempfile.TemporaryDirectory() as scratch:
             listed = fish_descriptions(Path(scratch))
         if listed.count(b'1\ta') != 2 or controls(listed, b'\t\n'):
             failures.append(f'data/completions/gpaste-client.fish lists an item as {listed!r}')
+        with tempfile.TemporaryDirectory() as scratch:
+            listed = fish_histories(Path(scratch))
+        if listed != ['legacy']:
+            failures.append(f'data/completions/gpaste-client.fish offers histories from {listed} beside a GPaste directory')
 
     man = man_verbs()
     missing = sorted(v for v in canonical if v not in man)

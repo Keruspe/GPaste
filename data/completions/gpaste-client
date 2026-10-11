@@ -25,7 +25,8 @@ _gpaste_client_daemon_running()
 }
 
 # One file per history, named <history>.<extension>. Listing them off disk keeps
-# history completion working (and instant) with no daemon running at all.
+# history completion working (and instant) with no daemon running at all. Each
+# name is ended with a NUL: a history's name may hold a line break.
 _gpaste_client_histories()
 {
     local dir=${XDG_DATA_HOME:-${HOME}/.local/share}
@@ -48,10 +49,37 @@ _gpaste_client_histories()
         [[ -f ${f} ]] || continue
         name=${f##*/}
         name=${name%.*}
-        [[ -v seen[${name}] ]] && continue
+        # Through a parameter expansion: bash before 5.2 expands the subscript
+        # of [[ -v ]] a second time, running a $(...) a history's name holds.
+        [[ -n ${seen[${name}]+set} ]] && continue
         seen[${name}]=1
-        printf '%s\n' "${name}"
+        printf '%s\0' "${name}"
     done
+}
+
+# The history names matching the word being completed, into COMPREPLY quoted
+# for the shell. Not through compgen -W, which expands every word it is given
+# once more: a $(...) or a backquote in a name would run, a $VAR or a ~ expand,
+# and a space split it in two -- and a history's name may hold any of them.
+#
+# A word quoting nothing is the start of a name as it is, matched against the
+# name itself: %q writes a name holding a control character (or, outside a
+# UTF-8 locale, any non-ASCII byte) as $'...', which no letter of it starts. A
+# word quoting something is matched against the names as %q quotes them.
+_gpaste_client_complete_histories()
+{
+    local name quoted literal=0
+
+    [[ ${cur} != *[\\\'\"\$\`]* ]] && literal=1
+
+    while IFS= read -r -d '' name; do
+        printf -v quoted '%q' "${name}"
+        if ((literal)); then
+            [[ ${name} == "${cur}"* ]] && COMPREPLY+=("${quoted}")
+        else
+            [[ ${quoted} == "${cur}"* ]] && COMPREPLY+=("${quoted}")
+        fi
+    done < <(_gpaste_client_histories)
 }
 
 # Both of these ask the daemon for the history and keep only its first column.
@@ -80,15 +108,12 @@ _gpaste_client_options()
     case ${1} in
         # No verb at all: the history is printed, and --version is still to come.
         '')
-            printf '%s' "${common} --version -v --oneline -o --raw -r --reverse -e --zero -z --use-index -i"
+            printf '%s' "${common} --version -v --oneline -o --raw -r --reverse -e --zero -z --use-index -i --favourites -f"
             ;;
         history|h|search)
             printf '%s' "${common} --oneline -o --raw -r --reverse -e --zero -z --use-index -i --favourites -f"
             ;;
-        get|g)
-            printf '%s' "${common} --use-index -i"
-            ;;
-        select|set|s|delete|del|d|remove|rm|replace|strip-rich-text|srt|upload|u|upload-and-copy|uc|favourite|fav|unfavourite|unfav)
+        get|g|select|set|s|delete|del|d|remove|rm|replace|strip-rich-text|srt|upload|u|upload-and-copy|uc|favourite|fav|unfavourite|unfav)
             printf '%s' "${common} --use-index -i"
             ;;
         make-password|mp)
@@ -118,7 +143,9 @@ _gpaste-client()
     prev=${COMP_WORDS[COMP_CWORD-1]}
     COMPREPLY=()
 
-    # Both take a free-form value we have no way to guess.
+    # Both take a free-form value we have no way to guess -- typed after the
+    # option, or after its "=", which bash makes a word of its own.
+    [[ ${prev} == = ]] && prev=${COMP_WORDS[COMP_CWORD-2]}
     case ${prev} in
         -d|--decoration|-s|--separator|-t|--timeout)
             return
@@ -130,13 +157,33 @@ _gpaste-client()
     # @argpos ends up being the index of the argument now being completed.
     for ((i = 1; i < COMP_CWORD; ++i)); do
         case ${COMP_WORDS[i]} in
-            -d|--decoration|-s|--separator|-t|--timeout)
+            --decoration|--separator|--timeout)
+                # Its value: the next word, or the one after an "=".
                 ((++i))
+                [[ ${COMP_WORDS[i]} == = ]] && ((++i))
                 ;;
-            -i|--use-index)
+            --use-index)
                 use_index=1
                 ;;
-            -*)
+            --*)
+                ;;
+            -?*)
+                # Short options, bundled or not: -i among them, and one taking a
+                # value ending the bundle -- with the rest of it, or the next word
+                # when it is last.
+                local flags=${COMP_WORDS[i]#-} j
+
+                for ((j = 0; j < ${#flags}; ++j)); do
+                    case ${flags:j:1} in
+                        i)
+                            use_index=1
+                            ;;
+                        d|s|t)
+                            ((j == ${#flags} - 1)) && ((++i))
+                            break
+                            ;;
+                    esac
+                done
                 ;;
             *)
                 if [[ -z ${verb} ]]; then
@@ -181,7 +228,7 @@ _gpaste-client()
         empty|e|delete-history|dh|switch-history|sh|backup-history|bh)
             # backup-history takes <history> <backup name>, the history being
             # optional; either way only its first argument names a history.
-            ((argpos == 0)) && COMPREPLY=($(compgen -W "$(_gpaste_client_histories)" -- "${cur}"))
+            ((argpos == 0)) && _gpaste_client_complete_histories
             ;;
         file|f)
             COMPREPLY=($(compgen -f -- "${cur}"))
