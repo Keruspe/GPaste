@@ -1202,6 +1202,47 @@ test_reenable_pending_timeout_through_history (void)
 /* The record converges on the same-value twin a later publication carries, so a
  * rename of the original during a read changes no duration and keeps the
  * countdown running rather than restarting it. */
+/* A switch's load landing, as the daemon's main loop sees it. */
+static gboolean
+history_loaded (GPasteHistory *history)
+{
+    /* Bounded by the clock, not by turns of the loop: a busy machine slows
+     * those down as much as the load. */
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
+        pump_for (1);
+    return !g_paste_history_is_loading (history);
+}
+
+/* A record outliving a switch is the first history's entry: an edit of a
+ * distinct entry of the second sharing its value leaves its countdown alone. */
+static void
+test_timeout_edit_other_history_twin (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
+    GPasteItem *work = g_paste_password_item_new ("work", "s3cret", 0);
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (work));
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    g_paste_history_switch (history, "another-history");
+    g_assert_true (history_loaded (history));
+    g_paste_history_add (history, g_paste_text_item_new ("replacement"));
+    g_paste_history_add (history, work);
+    g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "replacement");
+}
+
 static void
 test_rename_twin_during_read (void)
 {
@@ -3810,6 +3851,73 @@ test_dropped_password_distinct_entry (void)
     g_assert_cmpuint (clipboard->publications, ==, publications + 1);
 }
 
+/* Editing a distinct entry that shares the selected one's value is no edit of the
+ * selection's record: the countdown the selected entry runs stays its own, and
+ * deleting that entry still takes it off. */
+static void
+test_distinct_entry_edited (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) first = g_paste_password_item_new ("first", "same value", 0);
+    g_autoptr (GPasteItem) second = g_paste_password_item_new ("second", "same value", 30);
+
+    g_paste_history_add (history, g_object_ref (first));
+    g_paste_history_add (history, g_object_ref (second));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_select (manager, second);
+    g_paste_history_add (history, g_paste_text_item_new ("unrelated"));
+
+    /* A rename, its timeout unchanged at 0: re-armed with it, the selected
+     * entry's 30 s countdown would become none at all. */
+    g_autofree gchar *uuid = g_paste_history_make_password (history, g_paste_item_get_uuid (first), "first, renamed", G_PASTE_PASSWORD_TIMEOUT_UNCHANGED);
+
+    g_assert_nonnull (uuid);
+    g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
+
+    guint publications = clipboard->publications;
+
+    g_assert_true (g_paste_history_remove_by_uuid (history, g_paste_item_get_uuid (second)));
+    g_assert_cmpstr (clipboard->content.str, ==, "unrelated");
+    g_assert_cmpuint (clipboard->publications, ==, publications + 1);
+}
+
+/* A timeout edit waiting on a read is the edited entry's alone: publishing a
+ * distinct named entry sharing its value runs that entry's own countdown. */
+static void
+test_timeout_edit_other_named_entry (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) first = g_paste_password_item_new ("first", "s3cret", 0);
+    g_autoptr (GPasteItem) second = g_paste_password_item_new ("second", "s3cret", 1);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_paste_text_item_new ("unrelated"));
+    g_paste_history_add (history, g_object_ref (first));
+    g_paste_history_add (history, g_object_ref (second));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (first), 30);
+    g_paste_clipboards_manager_rearm_password (manager, first);
+    g_paste_clipboards_manager_select (manager, second);
+    g_assert_cmpstr (clipboard->content.str, ==, "s3cret");
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+
+    text_ready (clipboard, settings, pending, "unrelated");
+    g_paste_clipboard_update_maybe_done (pending);
+}
+
 static void
 test_strip_after_unconfirmed_read (void)
 {
@@ -4316,6 +4424,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/empty_sensitive_selection", test_empty_sensitive_selection);
     g_test_add_func ("/clipboard/dropped_password/distinct_entry", test_dropped_password_distinct_entry);
     g_test_add_func ("/clipboard/strip_after_unconfirmed_read", test_strip_after_unconfirmed_read);
+    g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
+    g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);
     g_test_add_func ("/clipboard/expiry/history_before_restart", test_restart_waits_for_history);
     g_test_add_func ("/clipboard/expiry/independent_deadlines", test_expiry_independent_deadlines);
     g_test_add_func ("/clipboard/expiry/pending_preserves_waiter", test_expiry_pending_preserves_other_waiter);
@@ -4419,6 +4529,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/reenable_pending_timeout", test_reenable_pending_timeout);
     g_test_add_func ("/clipboard/timeout_edit/reenable_through_history", test_reenable_pending_timeout_through_history);
     g_test_add_func ("/clipboard/timeout_edit/rename_twin", test_rename_twin_during_read);
+    g_test_add_func ("/clipboard/timeout_edit/other_history_twin", test_timeout_edit_other_history_twin);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/select", GINT_TO_POINTER (FALSE), test_forced_expiry_without_countdown);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/edit", GINT_TO_POINTER (TRUE), test_forced_expiry_without_countdown);
     g_test_add_func ("/clipboard/trimmed_duplicate", test_trimmed_duplicate);

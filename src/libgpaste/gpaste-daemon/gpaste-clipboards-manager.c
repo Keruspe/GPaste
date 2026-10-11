@@ -1681,13 +1681,17 @@ g_paste_clipboards_manager_arm_password (_Clipboard *clip,
     g_autoslist (PendingPassword) pending = g_steal_pointer (&clip->pending_passwords);
 
     /* Publishing identifies the selection as surely as a read does. Keep the
-     * edit's deadline when this publication resolves its pending read. */
+     * edit's deadline when this publication resolves its pending read -- the
+     * edit of the entry published: by uuid as rearm_password () keys it, or the
+     * one nameless password of that value, which equal ones are. A distinct
+     * named entry sharing the value is not the one the edit was made on. */
     for (GSList *l = pending; l; l = l->next)
     {
         PendingPassword *change = l->data;
 
         if (G_PASTE_IS_PASSWORD_ITEM (item) &&
-            g_paste_str_equal (g_paste_item_get_real_value (change->item), g_paste_item_get_real_value (item)))
+            (g_paste_str_equal (g_paste_item_get_uuid (change->item), g_paste_item_get_uuid (item)) ||
+             g_paste_item_equals (change->item, item)))
         {
             gint64 deadline = change->deadline;
 
@@ -1994,6 +1998,26 @@ g_paste_clipboards_manager_expire_password_finish (GPasteClipboardsManager *self
     return TRUE;
 }
 
+/* Whether an edit of @item is about the record @clip keeps: the same entry, or
+ * the one a nameless record no entry names any more has converged on by value
+ * -- a capture merged into the head it matched; an object MakePassword replaced
+ * keeps the uuid. A distinct entry merely sharing the value is not: renaming or
+ * re-timing it is no business of the countdown the selected entry runs, nor of
+ * the record a later deletion of that entry looks for. Nor is a named record no
+ * entry names another history's entry to converge on: it is the one selected
+ * there, the record outliving a switch. */
+static gboolean
+g_paste_clipboards_manager_edit_concerns (_Clipboard *clip,
+                                          GPasteItem *item)
+{
+    GPasteHistory *history = clip->manager->history;
+
+    return !clip->password ||
+           g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
+           ((!history || !g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (clip->password))) &&
+            g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (clip->password)), G_PASTE_PASSWORD_ITEM_NO_NAME));
+}
+
 /**
  * g_paste_clipboards_manager_rearm_password:
  * @self: a #GPasteClipboardsManager instance
@@ -2020,6 +2044,9 @@ g_paste_clipboards_manager_rearm_password (GPasteClipboardsManager *self,
     for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *clip = clipboard->data;
+
+        if (!g_paste_clipboards_manager_edit_concerns (clip, item))
+            continue;
 
         /* An unanswered read leaves the same identity question outstanding
          * after I/O ends. Keep edits until a read or publication resolves it. */
