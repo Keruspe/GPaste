@@ -34,6 +34,10 @@ struct _GPasteDaemon
     GSignalGroup            *history_signals;
     GSignalGroup            *settings_signals;
     GSignalGroup            *screensaver_signals;
+
+    /* Built by g_paste_daemon_new_meta (), for gnome-shell: see
+     * g_paste_daemon_reexecute_after_expiry (). */
+    gboolean                 in_process;
 };
 
 G_PASTE_DEFINE_TYPE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
@@ -259,6 +263,33 @@ reexecute_stood_down (GDBusMethodInvocation *invocation)
 }
 
 static void
+g_paste_daemon_reexecute_now (GPasteDaemon          *self,
+                              GDBusMethodInvocation *invocation)
+{
+    g_paste_clipboards_manager_store (self->clipboards_manager);
+
+    gboolean accepted = FALSE;
+
+    g_signal_emit (self,
+                   signals[REEXECUTE_SELF],
+                   0, /* detail */
+                   &accepted);
+
+    /* A standalone exec never returns on success. The in-process Shell host
+     * accepts deferred migration explicitly; FALSE reports a host failure. */
+    if (invocation)
+    {
+        if (accepted)
+            g_paste_daemon3_complete_reexecute (self->skeleton, invocation);
+        else
+        {
+            g_dbus_method_invocation_return_error (invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                                   "The daemon host could not re-execute.");
+        }
+    }
+}
+
+static void
 on_reexecute_passwords_expired (GObject      *source_object G_GNUC_UNUSED,
                                 GAsyncResult *result,
                                 gpointer      user_data)
@@ -298,27 +329,8 @@ on_reexecute_passwords_expired (GObject      *source_object G_GNUC_UNUSED,
             g_warning ("Could not expire passwords before restarting: %s", error->message);
         return;
     }
-    g_paste_clipboards_manager_store (self->clipboards_manager);
 
-    gboolean accepted = FALSE;
-
-    g_signal_emit (self,
-                   signals[REEXECUTE_SELF],
-                   0, /* detail */
-                   &accepted);
-
-    /* A standalone exec never returns on success. The in-process Shell host
-     * accepts deferred migration explicitly; FALSE reports a host failure. */
-    if (data->invocation)
-    {
-        if (accepted)
-            g_paste_daemon3_complete_reexecute (self->skeleton, data->invocation);
-        else
-        {
-            g_dbus_method_invocation_return_error (data->invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                                                   "The daemon host could not re-execute.");
-        }
-    }
+    g_paste_daemon_reexecute_now (self, data->invocation);
 }
 
 static void
@@ -328,6 +340,16 @@ g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
     if (!self->clipboards_manager)
     {
         reexecute_stood_down (invocation);
+        return;
+    }
+
+    /* Nothing execs in gnome-shell: reexecute-self is an in-place storage
+     * migration there, or nothing at all, and this very daemon goes on taking
+     * passwords off. A countdown brought forward would take one off early for
+     * no restart. */
+    if (self->in_process)
+    {
+        g_paste_daemon_reexecute_now (self, invocation);
         return;
     }
 
@@ -1517,6 +1539,10 @@ g_paste_daemon_new_meta (GPasteSettings *settings,
     g_autoptr (GPasteClipboardProvider) clipboard = g_paste_clipboard_meta_new_clipboard (meta_selection, settings);
     g_autoptr (GPasteClipboardProvider) primary = g_paste_clipboard_meta_new_primary (meta_selection, settings);
 
-    return g_paste_daemon_new (settings, clipboard, primary);
+    GPasteDaemon *self = g_paste_daemon_new (settings, clipboard, primary);
+
+    self->in_process = TRUE;
+
+    return self;
 }
 #endif

@@ -5,6 +5,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-test-bus.h>
+#include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 
 /* The private bus has no GlobalShortcuts portal, and a daemon that cannot reach
@@ -17,8 +18,44 @@ no_portal (GAsyncReadyCallback callback G_GNUC_UNUSED,
     g_object_unref (user_data);
 }
 
+/* The expiries a re-exec asked for, and those that have answered. */
+static guint expiries;
+static guint expired;
+
+typedef struct
+{
+    GAsyncReadyCallback callback;
+    gpointer            user_data;
+} Expiry;
+
+static void
+on_counted_expiry (GObject      *source_object,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+    g_autofree Expiry *expiry = user_data;
+
+    ++expired;
+    expiry->callback (source_object, result, expiry->user_data);
+}
+
+/* Every expiry a re-exec asks for, before handing it on. */
+static void
+counting_expiry (GPasteClipboardsManager *self,
+                 GAsyncReadyCallback      callback,
+                 gpointer                 user_data)
+{
+    Expiry *expiry = g_new (Expiry, 1);
+
+    *expiry = (Expiry) { callback, user_data };
+    ++expiries;
+    g_paste_clipboards_manager_expire_password_async (self, on_counted_expiry, expiry);
+}
+
 #define g_paste_global_shortcut_client_new no_portal
+#define g_paste_clipboards_manager_expire_password_async counting_expiry
 #include <gpaste-daemon/gpaste-daemon.c>
+#undef g_paste_clipboards_manager_expire_password_async
 #undef g_paste_global_shortcut_client_new
 
 typedef struct
@@ -30,6 +67,7 @@ typedef struct
     GDBusConnection *connection;
     guint            reexecutions;
     guint            stored_at_reexecution;
+    guint            expired_at_reexecution;
 } Fixture;
 
 static gboolean
@@ -172,21 +210,42 @@ on_reexecute_self (GPasteDaemon *daemon G_GNUC_UNUSED,
     Fixture *fixture = user_data;
 
     fixture->stored_at_reexecution = fixture->clipboard->stores + fixture->primary->stores;
+    fixture->expired_at_reexecution = expired;
     ++fixture->reexecutions;
     return TRUE;
 }
 
-/* A re-exec has both selections stored before the host is told to go. */
+/* A re-exec has the passwords taken off and both selections stored before the
+ * host is told to go: the expiry has answered by then, not merely been asked
+ * for. */
 static void
 test_reexecute_stores_first (Fixture      *fixture,
                              gconstpointer user_data G_GNUC_UNUSED)
 {
+    expiries = 0;
+    expired = 0;
     g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+    g_assert_cmpuint (expiries, ==, 1);
     g_assert_cmpuint (fixture->clipboard->stores, ==, 1);
     g_assert_cmpuint (fixture->primary->stores, ==, 1);
     g_assert_cmpuint (fixture->stored_at_reexecution, ==, 2);
+    g_assert_cmpuint (fixture->expired_at_reexecution, ==, 1);
+}
+
+/* The daemon g_paste_daemon_new_meta () builds stays up through a re-exec, so
+ * no password's countdown is brought forward for one. */
+static void
+test_reexecute_in_process (Fixture      *fixture,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    expiries = 0;
+    fixture->daemon->in_process = TRUE;
+    g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
+    g_paste_daemon_reexecute (fixture->daemon);
+    g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+    g_assert_cmpuint (expiries, ==, 0);
 }
 
 int
@@ -200,6 +259,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
+    g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
 
     return g_paste_test_env_run ();
 }

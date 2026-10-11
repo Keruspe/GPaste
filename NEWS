@@ -14,6 +14,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix the graphical tool's header not fitting in its narrowest window, and a narrow window opening on the histories
 - Fix a password staying on the clipboard when its history entry is deleted, or the history emptied or decrypted
 - Fix a password taken off the clipboard coming back as plain text, or leaving it needlessly blank
+- Fix GNOME Shell taking a password off the clipboard early when asked to restart GPaste
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard
