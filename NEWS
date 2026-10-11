@@ -10,6 +10,7 @@ NEW in 51.2 (UNRELEASED)
 - Document piping a password to gpaste-client add-password, and drop the newline ending it
 - Fix gpaste-client add-password and replace failing silently, or starting the daemon, with nothing piped
 - Report gpaste-client failures as plain messages rather than critical warnings
+- Fix gpaste-client --timeout taking -0 or a padded number, and say which value was wrong
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 
 NEW in 51.1 (20/10/2026)

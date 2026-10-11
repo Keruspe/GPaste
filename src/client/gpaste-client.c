@@ -36,10 +36,25 @@ typedef struct
  * Utility functions
  */
 
+/* Whether @arg is a whole unsigned decimal number no greater than @max, in
+ * @value: digits alone, as an index or a timeout is written.
+ * g_ascii_string_to_unsigned () refuses a sign or a space in front, but tells
+ * a space by g_ascii_isspace (), which a vertical tab is not, while the
+ * strtoull () beneath it skips one: the digit asked of the first character is
+ * what keeps "\v-1" from reading as G_MAXUINT64. */
+static gboolean
+parse_unsigned (const gchar *arg,
+                guint64      max,
+                guint64     *value)
+{
+    return g_ascii_isdigit (*arg) && g_ascii_string_to_unsigned (arg, 10, 0, max, value, NULL);
+}
+
 static gboolean
 parse_cmdline (int     *argc,
                char   **argv[],
-               Context *ctx)
+               Context *ctx,
+               GError **error)
 {
     struct option long_options[] = {
         { "decoration", required_argument, NULL,  'd'  },
@@ -84,17 +99,17 @@ parse_cmdline (int     *argc,
             break;
         case 't':
         {
-            gchar *end = NULL;
-            guint64 timeout = g_ascii_strtoull (optarg, &end, 10);
+            guint64 timeout = 0;
 
             /* 0 is a timeout of its own -- a password that is never taken off
              * the clipboard -- so a malformed value has to be refused rather
-             * than fall to it. Past the range is refused for the same reason:
-             * the item caps what it is given, and a number silently becoming a
-             * smaller one is a password expiring at a time nobody asked for. */
-            if (!*optarg || (end && *end) || timeout > G_PASTE_PASSWORD_TIMEOUT_MAX)
+             * than fall to it: "-0" or " 0" included. Past the range is refused
+             * for the same reason: the item caps what it is given, and a number
+             * silently becoming a smaller one is a password expiring at a time
+             * nobody asked for. */
+            if (!parse_unsigned (optarg, G_PASTE_PASSWORD_TIMEOUT_MAX, &timeout))
             {
-                ctx->help = TRUE;
+                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, _("Invalid timeout: %s"), optarg);
                 return FALSE;
             }
 
@@ -1081,12 +1096,9 @@ check_utf8 (const Context *ctx,
 /* The positions @command's leading item arguments name under --use-index,
  * every one of them checked before any is looked up.
  *
- * An index is a complete unsigned decimal number: g_ascii_strtoull () alone
- * would read "abc" as 0 and "1x" as 1, and act on items nobody named.
- * g_ascii_string_to_unsigned () refuses a sign or a space in front, but tells
- * a space by g_ascii_isspace (), which a vertical tab is not, while the
- * strtoull () beneath it skips one: the digit asked of the first character is
- * what keeps "\v-1" from reading as G_MAXUINT64. */
+ * An index is a complete unsigned decimal number (parse_unsigned ()):
+ * g_ascii_strtoull () alone would read "abc" as 0 and "1x" as 1, and act on
+ * items nobody named. */
 static GArray *
 item_indexes (const Command *command,
               const Context *ctx,
@@ -1100,7 +1112,7 @@ item_indexes (const Command *command,
         const gchar *arg = ctx->args[i];
         guint64 index = 0;
 
-        if (!g_ascii_isdigit (*arg) || !g_ascii_string_to_unsigned (arg, 10, 0, G_MAXUINT64, &index, NULL))
+        if (!parse_unsigned (arg, G_MAXUINT64, &index))
         {
             g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "Invalid item index: %s", arg);
             return NULL;
@@ -1251,7 +1263,7 @@ main (gint argc, gchar *argv[])
     Context ctx = { 0 };
     gint status = EXIT_SUCCESS;
 
-    if (parse_cmdline (&argc, &argv, &ctx))
+    if (parse_cmdline (&argc, &argv, &ctx, &error))
     {
         g_autofree gchar *pipe_data = NULL;
 
@@ -1287,6 +1299,13 @@ main (gint argc, gchar *argv[])
             g_printerr ("%s\n", error->message);
             status = EXIT_FAILURE;
         }
+    }
+    /* An option getopt () does not know it has named already, and the help
+     * says which there are; one whose value is wrong is named here. */
+    else if (error)
+    {
+        g_printerr ("%s\n", error->message);
+        status = EXIT_FAILURE;
     }
     else
     {

@@ -751,6 +751,45 @@ test_failure_reported (void)
     g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "delete", "abc", NULL }), ==, EXIT_FAILURE);
 }
 
+/* A timeout is a whole decimal number of seconds within the range: anything
+ * else is refused and named -- "-0" above all, which a sign-skipping parse
+ * reads as 0, a password never taken off the clipboard. */
+static void
+test_timeout_parsing (void)
+{
+    const gchar *malformed[] = { "-0", "+5", " 30", "\v1", "", "1x", "0x10", "65536", "-18446744073709486081" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (malformed); ++i)
+    {
+        g_autofree gchar *option = g_strdup_printf ("--timeout=%s", malformed[i]);
+        g_autofree gchar *program = g_strdup ("gpaste-client");
+        gchar *argv[] = { program, option, NULL };
+        gchar **args = argv;
+        gint argc = 2;
+        Context ctx = { 0 };
+        g_autoptr (GError) error = NULL;
+
+        optind = 0;
+        g_assert_false (parse_cmdline (&argc, &args, &ctx, &error));
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        g_assert_false (ctx.timeout_given);
+    }
+
+    g_autofree gchar *program = g_strdup ("gpaste-client");
+    g_autofree gchar *option = g_strdup ("--timeout=30");
+    gchar *argv[] = { program, option, NULL };
+    gchar **args = argv;
+    gint argc = 2;
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    optind = 0;
+    g_assert_true (parse_cmdline (&argc, &args, &ctx, &error));
+    g_assert_no_error (error);
+    g_assert_true (ctx.timeout_given);
+    g_assert_cmpuint (ctx.timeout, ==, 30);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -940,6 +979,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/password-timeout", test_password_timeout);
     g_test_add_func ("/client/pipe/nothing-piped", test_nothing_piped);
     g_test_add_func ("/client/failure-reported", test_failure_reported);
+    g_test_add_func ("/client/options/timeout", test_timeout_parsing);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
