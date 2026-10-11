@@ -65,6 +65,12 @@ struct _GPasteHistorySaver
      * in-flight load (which keeps us alive through the task's own reference) must
      * not hand its now-stale result back to it. */
     gboolean                       detached;
+    /* Set while the owner has handed the store over (g_paste_history_flush ()):
+     * the load it left pending behind a write stays pending, rather than take
+     * the storage lock its host has just released -- or read a store a
+     * migration is rewriting. A load asked for afterwards is one somebody
+     * wants, and lifts it. */
+    gboolean                       loads_held;
 };
 
 G_PASTE_DEFINE_TYPE (HistorySaver, history_saver, G_TYPE_OBJECT)
@@ -545,7 +551,7 @@ g_paste_history_saver_load_task (GTask        *task,
      * finished flushing and released the lock, so we never load a stale history.
      * The wait is the longest thing a load does and the cancellable is what ends
      * it, an owner that has moved on having nothing to wait for. */
-    g_paste_storage_backend_lock (cancellable);
+    gboolean locked = g_paste_storage_backend_lock (cancellable);
 
     /* Nobody is waiting for what a read would produce: the owner that asked has
      * moved on, and the generation check drops the result. @readable stays
@@ -556,7 +562,7 @@ g_paste_history_saver_load_task (GTask        *task,
      * migrate -- a store the previous daemon may still be flushing, which is the
      * whole of what the lock is for. A load that found the lock already taken is
      * past that, it being installed process-wide. */
-    if (g_cancellable_is_cancelled (cancellable))
+    if (!locked || g_cancellable_is_cancelled (cancellable))
     {
         g_task_return_pointer (task, result, (GDestroyNotify) g_paste_history_saver_load_result_free);
 
@@ -641,7 +647,7 @@ g_paste_history_saver_holds_writes_for (GPasteHistorySaver *self,
 static void
 g_paste_history_saver_start_load (GPasteHistorySaver *self)
 {
-    if (!self->pending_load || g_paste_history_saver_holds_writes_for (self, self->pending_load->name))
+    if (!self->pending_load || self->loads_held || g_paste_history_saver_holds_writes_for (self, self->pending_load->name))
         return;
 
     g_autoptr (GPasteHistorySaverLoadData) data = g_steal_pointer (&self->pending_load);
@@ -667,13 +673,13 @@ g_paste_history_saver_start_load (GPasteHistorySaver *self)
  * Read @name in the background. When it completes (and has not been superseded
  * by a later load) the result is handed to the #GPasteHistorySaverLoadedFunc.
  */
-G_PASTE_VISIBLE void
-g_paste_history_saver_load (GPasteHistorySaver *self,
-                            const gchar        *name,
-                            gboolean            save_after)
+/* Make @name's read the load wanted, superseding the one out: see
+ * g_paste_history_saver_load (). */
+static void
+g_paste_history_saver_set_load (GPasteHistorySaver *self,
+                                const gchar        *name,
+                                gboolean            save_after)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
-
     self->load_in_progress = TRUE;
     self->load_generation++;
 
@@ -695,6 +701,38 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
 
     g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
     self->pending_load = g_steal_pointer (&data);
+}
+
+G_PASTE_VISIBLE void
+g_paste_history_saver_load (GPasteHistorySaver *self,
+                            const gchar        *name,
+                            gboolean            save_after)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+
+    g_paste_history_saver_set_load (self, name, save_after);
+    self->loads_held = FALSE;
+    g_paste_history_saver_start_load (self);
+}
+
+/**
+ * g_paste_history_saver_load_when_released:
+ * @self: a #GPasteHistorySaver
+ * @name: the history name to read
+ * @save_after: whether the loaded history should be persisted back once installed
+ *
+ * As g_paste_history_saver_load (), superseding the load out, but leaving loads
+ * held as they are: while they are (g_paste_history_saver_hold_loads ()), the
+ * read waits for the hold to be lifted.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_load_when_released (GPasteHistorySaver *self,
+                                          const gchar        *name,
+                                          gboolean            save_after)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+
+    g_paste_history_saver_set_load (self, name, save_after);
     g_paste_history_saver_start_load (self);
 }
 
@@ -721,6 +759,24 @@ g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
     self->load_in_progress = FALSE;
     g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
     g_cancellable_cancel (self->load_cancellable);
+}
+
+/**
+ * g_paste_history_saver_hold_loads:
+ * @self: a #GPasteHistorySaver
+ * @held: whether to hold the loads
+ *
+ * Keep the load left pending while @held, and start it once it no longer
+ * is: see @loads_held.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_hold_loads (GPasteHistorySaver *self,
+                                  gboolean            held)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+
+    self->loads_held = held;
+    g_paste_history_saver_start_load (self);
 }
 
 /**

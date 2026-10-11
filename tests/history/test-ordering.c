@@ -5,6 +5,7 @@
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
@@ -13,6 +14,9 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 
 #include <dlfcn.h>
+#include <glib/gstdio.h>
+#include <sys/file.h>
+#include <fcntl.h>
 
 /* Where the storage writes of the history named @name are held: a worker
  * writing it waits at the backend boundary until the case releases it, so the
@@ -731,6 +735,45 @@ test_remove_image_during_write (void)
     g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
 }
 
+/* A load left pending behind a write when the history is handed over waits for
+ * the handover to end: started as that write lands, it would take back the
+ * storage lock the host has just let go of. */
+static void
+test_flush_holds_pending_load (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "flush-pending");
+    leave_with_write_out (history, "flush-pending-elsewhere");
+    g_paste_history_switch (history, "flush-pending");
+    g_assert_true (g_paste_history_is_loading (history));
+
+    g_autoptr (GThread) release = g_thread_new ("release-flush-write", release_later, NULL);
+
+    g_paste_history_flush (history);
+    g_thread_join (g_steal_pointer (&release));
+    g_paste_storage_backend_unlock ();
+    g_paste_test_bus_pump (500);
+
+    /* Another open file, which flock () tells apart even in this process. */
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
+    gint fd = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (fd, >=, 0);
+    g_assert_cmpint (flock (fd, LOCK_EX | LOCK_NB), ==, 0);
+    g_close (fd, NULL);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -760,6 +803,7 @@ main (int    argc,
     g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (FALSE), test_count_pending_settings);
     g_test_add_func ("/history-ordering/rename-during-write", test_rename_during_write);
     g_test_add_func ("/history-ordering/remove-image-during-write", test_remove_image_during_write);
+    g_test_add_func ("/history-ordering/flush-holds-pending-load", test_flush_holds_pending_load);
 
     return g_paste_test_env_run ();
 }

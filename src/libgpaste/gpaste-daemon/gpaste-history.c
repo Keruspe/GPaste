@@ -1549,6 +1549,7 @@ g_paste_history_flush (GPasteHistory *self)
     G_PASTE_LOCK_HISTORY;
 
     self->stopped = TRUE;
+    g_paste_history_saver_hold_loads (self->saver, TRUE);
     g_paste_history_saver_drain (self->saver);
 
     /* A store a failed write left behind the history is brought level before
@@ -1580,6 +1581,8 @@ g_paste_history_resume (GPasteHistory *self)
     G_PASTE_LOCK_HISTORY;
 
     self->stopped = FALSE;
+    /* A switch made meanwhile left its load held: this starts it. */
+    g_paste_history_saver_hold_loads (self->saver, FALSE);
 }
 
 /* The store has been handed over: either to a successor daemon, or -- for the
@@ -1984,11 +1987,21 @@ g_paste_history_history_name_changed (GPasteHistory *self)
      * stands on its own (see g_paste_history_load_async). A flushed history
      * stays flushed, though — the in-shell daemon keeps answering the bus right
      * through its migration, so a switch can land inside that window and must
-     * not put the pre-migration backend back to work. */
+     * not put the pre-migration backend back to work: its load waits for the
+     * handover to end, held where the saver holds loads, and supersedes the
+     * load still out for the history left right away -- installed, that one
+     * would stand as the history switched to.
+     *
+     * Nothing is written back: a trim the load makes saves itself
+     * (g_paste_history_on_loaded ()), and what a read otherwise normalizes --
+     * a format upgraded, a duplicate uuid -- is written with the next change,
+     * as for the load g_paste_history_load_async () makes. A write here would
+     * be the whole history rewritten for every switch, re-encrypted and
+     * synced. */
     self->unreadable = FALSE;
 
     g_paste_history_emit_switch (self, self->name);
-    g_paste_history_saver_load (self->saver, self->name, TRUE);
+    g_paste_history_saver_load_when_released (self->saver, self->name, FALSE);
 }
 
 /* One detailed "notify::<key>" handler per setting the history reacts to, rather

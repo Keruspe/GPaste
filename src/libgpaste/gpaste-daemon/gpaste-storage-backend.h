@@ -168,7 +168,7 @@ gboolean g_paste_storage_backend_is_incremental       (GPasteStorageBackend *sel
 gboolean g_paste_storage_backend_has_diverged         (GPasteStorageBackend *self,
                                                        const gchar          *name);
 
-void     g_paste_storage_backend_lock     (GCancellable *cancellable);
+gboolean g_paste_storage_backend_lock     (GCancellable *cancellable);
 gboolean g_paste_storage_backend_try_lock (void);
 void     g_paste_storage_backend_unlock   (void);
 

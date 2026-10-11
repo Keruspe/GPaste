@@ -116,9 +116,13 @@ g_paste_storage_backend_open_lock_file (void)
  * questions: @cancellable says the load this is waiting for has been given up on
  * (superseded, or abandoned by the owner), where the released flag says this
  * process has let go of the lock and wants none. Either way no lock is
- * installed.
+ * installed, and what was waiting must not touch the store: it is what the
+ * answer says.
+ *
+ * Returns: whether this process may touch the store: it holds the lock, or the
+ *     lock file cannot be opened or locked, which no daemon can then hold either
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_lock (GCancellable *cancellable)
 {
 #ifdef G_OS_UNIX
@@ -126,7 +130,7 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
         g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
         if (g_paste_storage_lock_fd >= 0)
-            return;
+            return TRUE;
 
         g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
     }
@@ -135,7 +139,7 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
 
     /* open_lock_file () says why it failed, and why that refuses nothing. */
     if (fd < 0)
-        return;
+        return TRUE;
 
     gint64 start = g_get_monotonic_time ();
     gboolean logged = FALSE;
@@ -161,17 +165,23 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
             if (g_paste_storage_lock_fd >= 0)
             {
                 close (fd);
-                return;
+                return TRUE;
             }
 
             if (flock (fd, LOCK_EX | LOCK_NB) == 0)
             {
-                /* A process that has let go of the lock wants none. */
-                if (g_atomic_int_get (&g_paste_storage_lock_released))
+                /* A wait given up on drops it, rather than hold the lock for a
+                 * load nobody wants -- another wait of this process's then
+                 * takes it. */
+                if (g_atomic_int_get (&g_paste_storage_lock_released) ||
+                    g_cancellable_is_cancelled (cancellable))
+                {
                     close (fd);
-                else
-                    g_paste_storage_lock_fd = fd;
-                return;
+                    return FALSE;
+                }
+
+                g_paste_storage_lock_fd = fd;
+                return TRUE;
             }
 
             refused = errno;
@@ -181,7 +191,7 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
         {
             g_warning ("Failed to lock the history: %s", g_strerror (refused));
             close (fd);
-            return;
+            return TRUE;
         }
 
         /* A brief handover is normal; only warn if the previous daemon really is
@@ -196,11 +206,13 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
             g_cancellable_is_cancelled (cancellable))
         {
             close (fd);
-            return;
+            return FALSE;
         }
 
         g_usleep (100 * 1000); /* 100ms */
     }
+#else
+    return TRUE;
 #endif
 }
 
@@ -213,8 +225,8 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
  * g_paste_file_backend_settle_rekeys()). Like g_paste_storage_backend_lock(),
  * once held it stays held.
  *
- * Returns: whether this process may touch the store: it holds the lock, or the
- *     lock file cannot be opened or locked, which no daemon can then hold either
+ * Returns: whether this process may touch the store, as
+ *     g_paste_storage_backend_lock() answers it
  */
 G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_try_lock (void)

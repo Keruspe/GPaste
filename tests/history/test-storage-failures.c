@@ -132,6 +132,23 @@ g_markup_parse_context_unref (GMarkupParseContext *context)
 }
 #endif
 
+/* The history loads handed to a thread, counted as they go: a load that has to
+ * wait is told apart from one that has not run yet, however slow the worker. */
+static guint loads_started;
+
+void
+g_task_run_in_thread (GTask          *task,
+                      GTaskThreadFunc task_func)
+{
+    typedef void (*Run) (GTask *, GTaskThreadFunc);
+    Run original = (Run) dlsym (RTLD_NEXT, "g_task_run_in_thread");
+
+    g_assert_nonnull (original);
+    if (g_paste_str_equal (g_task_get_name (task), "gpaste-history-load"))
+        g_atomic_int_inc (&loads_started);
+    original (task, task_func);
+}
+
 /* Moves whose source ends with one of these fail, as a filesystem giving out
  * would fail them: NULL for none. */
 static const gchar * const *failed_moves;
@@ -184,8 +201,17 @@ fsync (int fd)
 }
 
 /* What flock () fails with, as a home on NFS without lockd has it fail: 0 for
- * nothing. */
+ * nothing. And, while @pause_taken_lock is set, the next flock () taking a
+ * lock says so through @lock_taken and then holds on to the thread for a
+ * moment, as one preempted between taking the lock and recording it would.
+ * @busy_flocks counts the exclusive locks refused for being held, a wait for
+ * the lock having started once there is one. */
 static gint refused_flock;
+static guint busy_flocks;
+static gint pause_taken_lock;
+static GMutex lock_taken_mutex;
+static GCond lock_taken_cond;
+static gboolean lock_taken;
 
 int
 flock (int fd,
@@ -202,7 +228,26 @@ flock (int fd,
         return -1;
     }
 
-    return original (fd, operation);
+    gint taken = original (fd, operation);
+
+    if (taken < 0 && errno == EWOULDBLOCK && (operation & LOCK_EX))
+    {
+        gint busy = errno;
+
+        g_atomic_int_inc (&busy_flocks);
+        errno = busy;
+    }
+
+    if (!taken && (operation & LOCK_EX) && g_atomic_int_compare_and_exchange (&pause_taken_lock, TRUE, FALSE))
+    {
+        g_mutex_lock (&lock_taken_mutex);
+        lock_taken = TRUE;
+        g_cond_broadcast (&lock_taken_cond);
+        g_mutex_unlock (&lock_taken_mutex);
+        g_usleep (300 * 1000);
+    }
+
+    return taken;
 }
 
 /* Whether link () fails as a filesystem without hard links has it fail. */
@@ -2116,11 +2161,13 @@ test_lock_file_unusable (void)
     g_assert_true (g_paste_util_ensure_history_dir_exists ());
     g_assert_cmpint (g_mkdir (lock, 0700), ==, 0);
     g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_true (g_paste_storage_backend_lock (NULL));
 
     /* The same of one flock () refuses. */
     g_assert_cmpint (g_rmdir (lock), ==, 0);
     refused_flock = ENOLCK;
     g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_true (g_paste_storage_backend_lock (NULL));
     refused_flock = 0;
 }
 
@@ -2154,6 +2201,7 @@ test_lock_dir_unmade (void)
     g_assert_cmpint (g_mkdir_with_parents (parent, 0500), ==, 0);
     g_assert_cmpint (g_chmod (parent, 0500), ==, 0);
     g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_true (g_paste_storage_backend_lock (NULL));
     g_assert_cmpint (g_chmod (parent, 0700), ==, 0);
 }
 
@@ -2462,6 +2510,278 @@ test_encrypted_stream_bounds (void)
     }
 }
 #endif
+
+/* The storage lock held by another process, as a daemon still writing holds it:
+ * an open file of our own, which flock () tells apart from the one the lock
+ * would open even in this process. */
+static gint
+hold_storage_lock (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    gint fd = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (fd, >=, 0);
+    g_assert_cmpint (flock (fd, LOCK_EX | LOCK_NB), ==, 0);
+
+    return fd;
+}
+
+typedef struct
+{
+    GCancellable *cancellable;
+    gint          done;
+    gboolean      locked;
+} LockWait;
+
+static gpointer
+wait_for_lock (gpointer data)
+{
+    LockWait *wait = data;
+
+    wait->locked = g_paste_storage_backend_lock (wait->cancellable);
+    g_atomic_int_set (&wait->done, TRUE);
+
+    return NULL;
+}
+
+/* Two waits of one process -- a load and the one superseding it -- both get the
+ * lock once its holder lets go: the second finds the first holds it, rather
+ * than have its own flock () refused for good by its own process. */
+static void
+test_storage_lock_two_waits (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    gint held = hold_storage_lock ();
+    LockWait waits[2] = { { g_cancellable_new (), FALSE, FALSE }, { g_cancellable_new (), FALSE, FALSE } };
+    GThread *threads[2];
+
+    for (guint i = 0; i < 2; ++i)
+        threads[i] = g_thread_new ("lock-wait", wait_for_lock, &waits[i]);
+
+    g_usleep (G_USEC_PER_SEC / 4);
+    g_close (held, NULL);
+
+    gint64 deadline = g_get_monotonic_time () + 3 * G_USEC_PER_SEC;
+
+    while ((!g_atomic_int_get (&waits[0].done) || !g_atomic_int_get (&waits[1].done)) && g_get_monotonic_time () < deadline)
+        g_usleep (G_USEC_PER_SEC / 20);
+
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_cancellable_cancel (waits[i].cancellable);
+        g_thread_join (threads[i]);
+        g_object_unref (waits[i].cancellable);
+        g_assert_true (waits[i].locked);
+    }
+}
+
+static gboolean
+history_loaded (gconstpointer data,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return !g_paste_history_is_loading ((GPasteHistory *) data);
+}
+
+static void
+wait_load (GPasteHistory *history)
+{
+    g_paste_test_bus_wait_until (history_loaded, history, NULL);
+    g_assert_false (g_paste_history_is_loading (history));
+}
+
+/* The lock a wait of this process has just taken is the process's: asked
+ * then -- a Backup, an Empty or a Delete -- try_lock () is not refused by the
+ * process's own lock, as if another daemon held it. */
+static void
+test_taken_lock_is_ours (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    gint held = hold_storage_lock ();
+
+    g_paste_history_load_async (history, "taken");
+    g_atomic_int_set (&pause_taken_lock, TRUE);
+    g_close (held, NULL);
+
+    g_mutex_lock (&lock_taken_mutex);
+    while (!lock_taken)
+        g_cond_wait (&lock_taken_cond, &lock_taken_mutex);
+    g_mutex_unlock (&lock_taken_mutex);
+
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    wait_load (history);
+}
+
+/* A load still waiting for the lock when its own process lets go of it --
+ * standing down for a takeover -- reads nothing: the store is still the other
+ * daemon's, which may be writing it. */
+static void
+test_load_after_release_reads_nothing (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not read the history back*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "released-wait";
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("written elsewhere"));
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    gint held = hold_storage_lock ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    busy_flocks = 0;
+    g_paste_history_load_async (history, name);
+    /* Its wait under way before the release, however late its worker started. */
+    g_paste_test_bus_wait_for_count (&busy_flocks, 1);
+    g_paste_storage_backend_unlock ();
+    wait_load (history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_close (held, NULL);
+}
+
+/* A history handed over -- flushed, its process's lock released -- starts no
+ * load when its name changes, which would take the lock back from the daemon it
+ * was handed to; resuming starts it, so that the history recorded into from
+ * then on is the one switched to and not the model the handover left. */
+static void
+test_flushed_history_loads_nothing (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("switched to"));
+
+        g_paste_storage_backend_write_history (backend, "switched-meanwhile", items);
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "handed-over");
+    g_paste_history_flush (history);
+    g_paste_storage_backend_unlock ();
+    loads_started = 0;
+    g_paste_settings_set_history_name (settings, "switched-meanwhile");
+    g_assert_cmpuint (loads_started, ==, 0);
+    g_close (hold_storage_lock (), NULL);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    g_paste_history_resume (history);
+    g_assert_cmpuint (loads_started, ==, 1);
+    wait_load (history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    /* The write the load asks for lands before the test's directories go. */
+    g_paste_history_flush (history);
+}
+
+/* A load out when the store is handed over is superseded by a switch made then,
+ * though the switch's own load waits for the handover to end: the history left
+ * is not installed as the one switched to. */
+static void
+test_flushed_switch_supersedes_load (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("item of the history left"));
+
+        g_paste_storage_backend_write_history (backend, "load-left", items);
+    }
+
+    gint held = hold_storage_lock ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load_async (history, "load-left");
+    g_assert_true (g_paste_history_is_loading (history));
+    g_paste_history_flush (history);
+    g_paste_settings_set_history_name (settings, "switched-while-loading");
+    g_close (held, NULL);
+    g_paste_test_bus_pump (500);
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, "switched-while-loading");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    g_paste_history_resume (history);
+    wait_load (history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    g_paste_history_flush (history);
+}
+
+/* A switch reads the history switched to and writes nothing back: a write would
+ * be the whole history rewritten, re-encrypted and synced, for every switch. */
+static void
+test_switch_writes_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("read"));
+
+        g_paste_storage_backend_write_history (backend, "switched-unwritten", items);
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "switched-from");
+    g_clear_pointer (&synced, g_hash_table_unref);
+    g_paste_history_switch (history, "switched-unwritten");
+    wait_load (history);
+    g_paste_test_bus_pump (200);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    g_autoptr (GList) synced_paths = (synced) ? g_hash_table_get_keys (synced) : NULL;
+
+    for (const GList *l = synced_paths; l; l = l->next)
+        g_assert_false (g_str_has_suffix (l->data, "switched-unwritten.xml.tmp"));
+
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    g_paste_history_flush (history);
+}
 
 /* What a write renames into place, a history or an image, is on the disk by
  * then; and an image whose write fails leaves nothing at its name, so the next
@@ -3465,14 +3785,7 @@ test_rekey_settled_under_lock (void)
 
     write_interrupted_rekey (name, &history, &image);
 
-    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
-    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
-    /* Another open file description, which flock () tells apart from the one
-     * the storage lock would open even in this process. */
-    gint fd = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
-
-    g_assert_cmpint (fd, >=, 0);
-    g_assert_cmpint (flock (fd, LOCK_EX | LOCK_NB), ==, 0);
+    gint fd = hold_storage_lock ();
 
     g_paste_file_backend_settle_rekeys ();
     g_assert_true (has_rekey_leftovers (name));
@@ -3627,6 +3940,12 @@ main (int    argc,
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
     g_test_add_func ("/storage/lock/file-unusable", test_lock_file_unusable);
     g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
+    g_test_add_func ("/storage/lock/two-waits", test_storage_lock_two_waits);
+    g_test_add_func ("/storage/lock/taken-is-ours", test_taken_lock_is_ours);
+    g_test_add_func ("/storage/lock/load-after-release", test_load_after_release_reads_nothing);
+    g_test_add_func ("/storage/lock/flushed-history", test_flushed_history_loads_nothing);
+    g_test_add_func ("/storage/lock/flushed-switch-supersedes-load", test_flushed_switch_supersedes_load);
+    g_test_add_func ("/storage/switch-writes-nothing", test_switch_writes_nothing);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-stream-bounds", test_encrypted_stream_bounds);
 #endif
