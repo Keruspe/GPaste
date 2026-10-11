@@ -6,6 +6,8 @@ import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js'
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
+import {logFailure} from './dependencies.js';
+
 // The star says what the item is, not what the button does: its icon is the
 // state, and clicking asks the daemon for the other one. Nothing is set here —
 // the daemon answers with an update, which refills the row and repaints the
@@ -45,6 +47,6 @@ class GPasteFavouriteButton extends St.Button {
         // starts with no uuid; ignore a click landing in that window rather than
         // letting GJS throw on the null argument.
         if (this._uuid)
-            this._client.set_favourite(this._uuid, !this._favourite, null, null);
+            this._client.set_favourite(this._uuid, !this._favourite, null, logFailure('set_favourite_finish'));
     }
 });

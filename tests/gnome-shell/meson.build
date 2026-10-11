@@ -15,7 +15,13 @@ if node.found()
   test('prompt', node,
     args: [files('test-prompt.cjs'), meson.project_source_root() / 'src/gnome-shell/prompt.js'],
   )
+  test('item', node,
+    args: [files('test-item.cjs'), meson.project_source_root() / 'src/gnome-shell/item.js'],
+  )
   test('state-switch', node,
     args: [files('test-state-switch.cjs'), meson.project_source_root() / 'src/gnome-shell/stateSwitch.js'],
+  )
+  test('dependencies', node,
+    args: [files('test-dependencies.cjs'), meson.project_source_root() / 'src/gnome-shell/dependencies.js'],
   )
 endif

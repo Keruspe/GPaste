@@ -85,7 +85,8 @@ const context = vm.createContext({
     },
     global: {stage: {get_key_focus: () => focus}},
     ensureActorVisibleInScrollView() {},
-    logFailure: () => () => {},
+    logFailure: finish => Object.assign(() => {}, {finish}),
+    debugFailure() {},
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }, is_cancelled() { return !!this.cancelled; }};
@@ -208,11 +209,14 @@ function withActions(uuids) {
     // A daemon appearing reloads; one going away forgets the rows.
     let reloads = 0;
     placeholder._reloadCurrent = () => ++reloads;
-    placeholder._client.report_extension_state = () => {};
+    const reports = [];
+    placeholder._client.report_extension_state = (state, cancellable, callback) => reports.push([state, callback.finish]);
     placeholder._client.daemon_presence = DaemonPresence.READY;
     placeholder._onDaemonPresenceChanged();
     assert.equal(placeholder._connected, true);
     assert.equal(reloads, 1);
+    // Reported there, a refusal logged rather than dropped.
+    assert.deepEqual(reports, [[true, 'report_extension_state_finish']]);
     const kept = row('kept');
     placeholder._history = [kept];
     placeholder._client.daemon_presence = DaemonPresence.ABSENT;

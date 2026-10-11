@@ -88,6 +88,13 @@ still having an owner. A revocable weak-reference double
 models collection during an upload, so its reply is finished without a
 notification from an indicator that is gone.
 
+`item` runs the shipped history row over St, Clutter and client doubles: text
+past `element-size` is cut with an ellipsis, by characters, and a larger size
+shows more of it again; a row rebound to another uuid selects and deletes
+nothing until that item is what it shows, then acts on it with a callback that
+logs a refusal, as the star does; the menu key on the star or the bin opens the
+row's actions; and a failed read is said at debug level only.
+
 `daemon` runs the shipped in-shell daemon runner over bus, daemon, storage and
 main loop doubles: a takeover, a failed export and a dropped connection all
 flush and dispose the daemon, and a takeover, a failed export and a failed

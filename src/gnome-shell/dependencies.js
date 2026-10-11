@@ -44,6 +44,17 @@ export function logFailure(finish) {
 }
 
 /**
+ * What a row's own read failing is said with: at debug level, the menu
+ * rebinding every row on each copy and each opening, so one message per binding
+ * would fill the journal -- as the graphical tool's rows avoid too.
+ *
+ * @param {Error} error - what the read failed with
+ */
+export function debugFailure(error) {
+    console.debug(`GPaste: ${error.message ?? error}`);
+}
+
+/**
  * Cancel the request still in flight and hand back the cancellable its successor
  * goes out on, so a caller keeps one field for "the request that is current".
  *

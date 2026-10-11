@@ -17,7 +17,7 @@ import St from 'gi://St';
 import GPaste from 'gi://GPaste?version=3';
 
 import {addGPasteFooter} from './actions.js';
-import {awaitReply, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, debugFailure, logFailure, replaceCancellable} from './dependencies.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
 import {GPasteHistorySwitcher} from './historySwitcher.js';
 import {GPasteItem} from './item.js';
@@ -876,9 +876,9 @@ class GPasteIndicator extends Button {
 
             for (let i = 0; i < this._history.length; ++i) {
                 if (filtered)
-                    this._history[i].setUuid(this._filteredUuids[i]).catch(console.error);
+                    this._history[i].setUuid(this._filteredUuids[i]).catch(debugFailure);
                 else
-                    this._history[i].setIndex(i).catch(console.error);
+                    this._history[i].setIndex(i).catch(debugFailure);
             }
 
             for (let i = this._history.length; i < target; ++i)
@@ -935,7 +935,7 @@ class GPasteIndicator extends Button {
             this._history.pop().destroy();
 
         for (let i = from; i < this._history.length; ++i)
-            this._history[i].setIndex(i).catch(console.error);
+            this._history[i].setIndex(i).catch(debugFailure);
 
         this._updateVisibility(available === 0);
         this._restoreRowFocus(focusIndex);
@@ -1055,7 +1055,7 @@ class GPasteIndicator extends Button {
     // extension off.
     _onStateChanged(state) {
         if (this._client && this._connected)
-            this._client.report_extension_state(state, null, null);
+            this._client.report_extension_state(state, null, logFailure('report_extension_state_finish'));
     }
 
     _onOpenStateChanged(menu, state) {

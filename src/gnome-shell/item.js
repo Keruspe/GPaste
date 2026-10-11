@@ -10,7 +10,7 @@ import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {awaitReply, replaceCancellable} from './dependencies.js';
+import {awaitReply, debugFailure, logFailure, replaceCancellable} from './dependencies.js';
 import {GPasteDeleteButton} from './deleteButton.js';
 import {GPasteFavouriteButton} from './favouriteButton.js';
 
@@ -22,6 +22,31 @@ import {GPasteFavouriteButton} from './favouriteButton.js';
 // theme's foreground because it has to hold up against both, and a swatch is
 // drawn before the actor has a theme node to ask.
 const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
+
+/**
+ * The first @size characters of @text and an ellipsis when there are more, as
+ * element-size promises -- or the whole of it for a @size of 0, its "no limit".
+ * Characters rather than UTF-16 units, so nothing is cut through a surrogate
+ * pair, and counted only as far as @size, an item running to a megabyte.
+ *
+ * @param {string} text - the one-lined text of an item
+ * @param {number} size - the most characters to show
+ * @returns {string} what the row shows
+ */
+function shownText(text, size) {
+    if (size <= 0)
+        return text;
+
+    let count = 0;
+
+    for (let i = 0; i < text.length; ++count) {
+        if (count === size)
+            return `${text.slice(0, i)}…`;
+        i += text.codePointAt(i) > 0xffff ? 2 : 1;
+    }
+
+    return text;
+}
 
 // One stage listener for every row, and not one per row. Where the keyboard is
 // has to be asked of the stage (see the constructor), but a focus move anywhere
@@ -124,11 +149,10 @@ export class GPasteItem extends PopupMenuItem {
         // for a new one without the row being refilled, so the row's would not
         // move and both reads would think themselves current.
         this._preview = null;
-        // The full (untruncated) text currently set on the label. Compared
-        // against in _setValue to skip redundant set_text() calls; we can't use
-        // label.get_text() for that because max_length truncates what the label
-        // stores, so a long value would never compare equal.
+        // The text the label shows, compared against to skip redundant
+        // set_text () calls, and the element-size it was cut to.
         this._displayedText = null;
+        this._size = size;
 
         if (slotIndex <= 9) {
             this._indexLabel = new St.Label({
@@ -168,6 +192,12 @@ export class GPasteItem extends PopupMenuItem {
 
         this._favouriteItem = new GPasteFavouriteButton(client, this._uuid);
         this.add_child(this._favouriteItem);
+
+        // The buttons count as the row (see below), and St emits popup-menu on
+        // the actor with the key focus, stopping the key there: each asks for
+        // the row's actions itself.
+        this._deleteItem.connect('popup-menu', () => this._askActions(true));
+        this._favouriteItem.connect('popup-menu', () => this._askActions(true));
 
         // Both actions wait to be asked for: they show on the row the pointer is
         // on, and on the row the keyboard is on — `active` being what the shell
@@ -217,14 +247,13 @@ export class GPasteItem extends PopupMenuItem {
         this.connect('popup-menu', () => this._askActions(true));
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        this.setTextSize(size);
 
         // Search rows are addressed by uuid (the search returns uuids); history
         // rows by their index.
         if (uuid !== null)
-            this.setUuid(uuid).catch(console.error);
+            this.setUuid(uuid).catch(debugFailure);
         else
-            this.setIndex(index).catch(console.error);
+            this.setIndex(index).catch(debugFailure);
     }
 
     destroy() {
@@ -263,9 +292,9 @@ export class GPasteItem extends PopupMenuItem {
         // A row is addressed the way it was filled: -2 marks one that came from
         // a uuid (a search, the favourites), where its index means nothing.
         if (this._index === -2)
-            this.setUuid(this._uuid).catch(console.error);
+            this.setUuid(this._uuid).catch(debugFailure);
         else
-            this.setIndex(this._index).catch(console.error);
+            this.setIndex(this._index).catch(debugFailure);
     }
 
     async setIndex(index) {
@@ -330,35 +359,21 @@ export class GPasteItem extends PopupMenuItem {
     _setValue(value, favourite = false, kind = null) {
         this.label.set_style(this._index === 0 ? 'font-weight: bold;' : null);
 
+        // The undecorated value: what the swatch needs, and what the label is
+        // drawn *from* rather than what it shows.
+        this._value = value;
+        this._kind = kind;
+
         if (this._index === -1) {
             this._uuid = null;
             this._displayedText = value || '';
             this.label.clutter_text.set_text(this._displayedText);
             this.hide();
         } else {
-            // The decoration a kind calls for, composed by libgpaste rather
-            // than spelled a second time here: it translates the bare words
-            // through the GPaste domain -- the very domain this extension
-            // declares -- and it runs in this process, so they come out in the
-            // shell's own locale rather than the daemon's. A row still waiting
-            // for its item has neither a value nor a kind to hand it, and
-            // ItemKind has no introspected member for "none" to pass in place
-            // of the one it lacks.
-            const text = value == null
-                ? ''
-                : GPaste.util_one_line(GPaste.util_display_string(value, kind));
-            if (text !== this._displayedText) {
-                this._displayedText = text;
-                this.label.clutter_text.set_text(text);
-            }
-
+            this._renderText();
             this.show();
         }
 
-        // The undecorated value: what the swatch needs, and what the label above
-        // is drawn *from* rather than what it shows.
-        this._value = value;
-        this._kind = kind;
         this._updatePreview();
 
         this._favouriteItem.setUuid(this._uuid);
@@ -369,6 +384,24 @@ export class GPasteItem extends PopupMenuItem {
         this._updateActionsVisibility();
     }
 
+    // The decoration a kind calls for, composed by libgpaste rather than spelled
+    // a second time here: it translates the bare words through the GPaste
+    // domain -- the very domain this extension declares -- and it runs in this
+    // process, so they come out in the shell's own locale rather than the
+    // daemon's. A row still waiting for its item has neither a value nor a kind
+    // to hand it, and ItemKind has no introspected member for "none" to pass in
+    // place of the one it lacks.
+    _renderText() {
+        const text = this._value == null
+            ? ''
+            : shownText(GPaste.util_one_line(GPaste.util_display_string(this._value, this._kind)), this._size);
+
+        if (text !== this._displayedText) {
+            this._displayedText = text;
+            this.label.clutter_text.set_text(text);
+        }
+    }
+
     _updateActionsVisibility() {
         const focus = global.stage.get_key_focus();
         const revealed = this.hover || this.active || (focus !== null && this.contains(focus));
@@ -377,8 +410,17 @@ export class GPasteItem extends PopupMenuItem {
         this._favouriteItem.visible = revealed || this._favourited;
     }
 
+    // Not ClutterText's max_length, which drops what is past it from the
+    // label's buffer: a larger size would find nothing left to show, and it
+    // cuts with no ellipsis to say so. The row cuts the text it is handed
+    // instead, from what it was handed.
     setTextSize(size) {
-        this.label.clutter_text.max_length = size;
+        if (size === this._size)
+            return;
+
+        this._size = size;
+        if (this._index !== -1)
+            this._renderText();
     }
 
     // The two image-preview settings, pushed by the indicator rather than
@@ -415,7 +457,7 @@ export class GPasteItem extends PopupMenuItem {
             return;
 
         if (this._kind === GPaste.ItemKind.IMAGE && this._imagesPreview)
-            this._showImage(cancellable).catch(console.error);
+            this._showImage(cancellable).catch(debugFailure);
         else if (this._kind === GPaste.ItemKind.COLOR)
             this._showColor();
     }
@@ -483,18 +525,20 @@ export class GPasteItem extends PopupMenuItem {
     // rebound to (see _shownUuid).
     _delete() {
         if (this._shownUuid)
-            this._client.delete_item(this._shownUuid, null, null);
+            this._client.delete_item(this._shownUuid, null, logFailure('delete_item_finish'));
     }
 
     activate(event) {
-        // A row is materialised before its content is fetched, so until that
-        // async round-trip lands it has no uuid to select — and GJS would throw
-        // on the null rather than let the call through. Stay a no-op (leaving
-        // the menu open to try again) instead of closing it over nothing.
-        if (!this._uuid)
+        // What the row shows, as for the bin: a row rebound by a keystroke is
+        // handed its next uuid before that item arrives, and until it has, it
+        // has nothing to select -- nor does one just materialised, GJS throwing
+        // on the null rather than letting the call through. Stay a no-op
+        // (leaving the menu open to try again) instead of closing it over
+        // nothing.
+        if (!this._shownUuid)
             return;
 
-        this._client.select(this._uuid, null, null);
+        this._client.select(this._shownUuid, null, logFailure('select_finish'));
         super.activate(event);
     }
 }
