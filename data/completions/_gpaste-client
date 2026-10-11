@@ -42,13 +42,18 @@ _gpaste-client_histories() {
 # wants, so the item's text shows up next to its uuid. Fed /dev/null for an
 # older gpaste-client first on PATH: see the bash completion's
 # _gpaste_client_uuids.
+#
+# zsh lists a description as it is, and gpaste-client writes an item as it is
+# to a pipe: a control character is shown as U+FFFD, as gpaste-client itself
+# shows one on a terminal, rather than sent there -- an escape sequence a page
+# put on the clipboard would otherwise retitle or recolour the terminal.
 (( $+functions[_gpaste-client_uuids] )) ||
 _gpaste-client_uuids() {
     local -a items
 
     _gpaste-client_daemon_running || return 1
 
-    items=(${(f)"$(gpaste-client history --oneline </dev/null 2>/dev/null)"})
+    items=(${${(f)"$(gpaste-client history --oneline </dev/null 2>/dev/null)"}//[[:cntrl:]]/�})
 
     _describe -t items 'item' items
 }
@@ -60,7 +65,7 @@ _gpaste-client_indexes() {
 
     _gpaste-client_daemon_running || return 1
 
-    items=(${(f)"$(gpaste-client history --oneline --use-index </dev/null 2>/dev/null)"})
+    items=(${${(f)"$(gpaste-client history --oneline --use-index </dev/null 2>/dev/null)"}//[[:cntrl:]]/�})
 
     _describe -t indexes 'index' items
 }

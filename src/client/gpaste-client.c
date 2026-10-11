@@ -143,6 +143,47 @@ extract_pipe_data (void)
     return (*data->str) ? g_strdup (data->str) : NULL;
 }
 
+/* @text as it goes out: on a terminal, a control character an application put
+ * on the clipboard -- an escape sequence retitling the window, clearing it or
+ * writing the terminal's own clipboard -- is shown as U+FFFD rather than acted
+ * on, line breaks and tabs aside: a line feed, a tab, and the carriage return
+ * of a CRLF line ending, which takes the cursor nowhere the line feed after it
+ * does not -- a lone one, writing over its line, is shown. Anywhere else it is
+ * written as it is, a script reading the bytes the item holds.
+ *
+ * Whether stdout is a terminal is asked once, a listing printing many items,
+ * and what lies between two such characters is written in one go. */
+static void
+print_text (const gchar *text)
+{
+    static gint terminal = -1;
+
+    if (terminal < 0)
+        terminal = isatty (STDOUT_FILENO);
+
+    if (!terminal)
+    {
+        fputs (text, stdout);
+        return;
+    }
+
+    const gchar *run = text;
+
+    for (const gchar *c = text; *c; c = g_utf8_next_char (c))
+    {
+        gunichar u = g_utf8_get_char (c);
+
+        if (u == '\n' || u == '\t' || (u == '\r' && c[1] == '\n') || !g_unichar_iscntrl (u))
+            continue;
+
+        fwrite (run, 1, (gsize) (c - run), stdout);
+        fputs ("\xef\xbf\xbd", stdout);
+        run = g_utf8_next_char (c);
+    }
+
+    fputs (run, stdout);
+}
+
 static void
 print_history_line (gchar       *line,
                     guint        index,
@@ -158,7 +199,8 @@ print_history_line (gchar       *line,
     }
     g_autofree gchar *oneline = (ctx->oneline) ? g_paste_util_one_line (line) : NULL;
 
-    printf ("%s%c", (oneline) ?: line, (ctx->zero) ? '\0' : '\n');
+    print_text ((oneline) ?: line);
+    putchar ((ctx->zero) ? '\0' : '\n');
 }
 
 static gint
@@ -622,7 +664,7 @@ g_paste_get (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s", g_paste_client_item_get_value (item));
+    print_text (g_paste_client_item_get_value (item));
 
     return EXIT_SUCCESS;
 }

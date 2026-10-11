@@ -12,13 +12,18 @@ a table could carry -- so this checks instead that none of them has fallen
 behind: every verb and alias has to be offered by all three shells, and every
 canonical verb documented in the man page. Bash is also the one completion
 offering options verb by verb, so every verb whose arguments name items has to
-be offered --use-index there; zsh and fish offer every option anywhere.
+be offered --use-index there; zsh and fish offer every option anywhere. And
+zsh and fish list an item's text as it is, so what their completions hand over
+has to hold no control character: the escape sequences a page can put on the
+clipboard would reach the terminal on TAB.
 """
 
+import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -69,6 +74,46 @@ def bash_options(names):
     return {verb: set(options.split()) for verb, options in (line.split('\t', 1) for line in out.splitlines())}
 
 
+def fake_client(scratch):
+    """A gpaste-client whose history holds one item, with an escape sequence and
+    a bell in it, and the environment that puts it first on PATH."""
+    fake = scratch / 'gpaste-client'
+    fake.write_text("#!/bin/sh\nprintf '1: a\\033]0;title\\007b\\n'\n")
+    fake.chmod(0o755)
+    return dict(os.environ, PATH=f'{scratch}{os.pathsep}{os.environ.get("PATH", "")}')
+
+
+def controls(listed, separators):
+    """Whether @listed holds a control character other than @separators."""
+    return any(byte < 0x20 and byte not in separators or byte == 0x7f for byte in listed)
+
+
+def zsh_descriptions(scratch):
+    """What the zsh completion hands _describe, for fake_client()'s history."""
+    env = fake_client(scratch)
+    body = (ROOT / 'data/completions/_gpaste-client').read_text()
+    # The file ends calling _gpaste-client, which needs the completion system:
+    # only the functions it defines are wanted.
+    body = body[:body.rindex('_gpaste-client "${@}"')]
+    script = scratch / 'items.zsh'
+    script.write_text('_gpaste-client_daemon_running () { return 0 }\n'
+                      '_describe () { print -r -l -- "${(@P)4}" }\n' + body +
+                      '_gpaste-client_uuids\n_gpaste-client_indexes\n')
+    return subprocess.run(['zsh', '-f', str(script)], env=env, capture_output=True, check=True).stdout
+
+
+def fish_descriptions(scratch):
+    """What the fish completion offers as items, uuids and indexes alike, for
+    fake_client()'s history."""
+    env = fake_client(scratch)
+    script = scratch / 'items.fish'
+    script.write_text('source $argv[1]\n'
+                      'function __gpaste_daemon_running; return 0; end\n'
+                      '__gpaste_items\n__gpaste_items --use-index\n')
+    return subprocess.run(['fish', '--no-config', str(script), str(ROOT / 'data/completions/gpaste-client.fish')],
+                          env=env, capture_output=True, check=True).stdout
+
+
 def words(path):
     """Every bare word in a file, so a verb is found however it is quoted."""
     return set(re.findall(r'[\w-]+', (ROOT / path).read_text()))
@@ -90,6 +135,18 @@ def main():
                          if not {'--use-index', '-i'} <= options)
         if missing:
             failures.append(f'data/completions/gpaste-client does not offer --use-index after: {", ".join(missing)}')
+
+    if shutil.which('zsh'):
+        with tempfile.TemporaryDirectory() as scratch:
+            listed = zsh_descriptions(Path(scratch))
+        if listed.count(b'1: a') != 2 or controls(listed, b'\n'):
+            failures.append(f'data/completions/_gpaste-client lists an item as {listed!r}')
+
+    if shutil.which('fish'):
+        with tempfile.TemporaryDirectory() as scratch:
+            listed = fish_descriptions(Path(scratch))
+        if listed.count(b'1\ta') != 2 or controls(listed, b'\t\n'):
+            failures.append(f'data/completions/gpaste-client.fish lists an item as {listed!r}')
 
     man = words('man/1/gpaste-client.1')
     missing = sorted(v for v in canonical if v not in man)

@@ -46,7 +46,9 @@ end
 function __gpaste_items
     __gpaste_daemon_running; or return
 
+    # A control character as U+FFFD, as the zsh completion shows one.
     gpaste-client history --oneline $argv </dev/null 2>/dev/null \
+        | string replace -ra '\p{Cc}' '�' \
         | string replace -r '^([^:]+): ' '$1\t'
 end
 

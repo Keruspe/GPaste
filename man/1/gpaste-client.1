@@ -39,6 +39,10 @@ or
 A command that talks to the daemon refuses any argument, option value or piped
 text that is not valid UTF-8, file paths included.
 
+Printed on a terminal, an item's control characters show as U+FFFD rather than
+reach the terminal, which an escape sequence would have act on it; line breaks
+and tabs stay. Written to a file or a pipe, items are as they are.
+
 .SH "COMMANDS"
 
 .TP

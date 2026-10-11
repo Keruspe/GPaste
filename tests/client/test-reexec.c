@@ -1,15 +1,57 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+/* posix_openpt () and its two companions, for the terminal a case writes to. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-settings.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 #include <gpaste-test-env.h>
+#include <glib/gstdio.h>
+#include <fcntl.h>
+#include <dlfcn.h>
 #include <signal.h>
+#include <termios.h>
+#include <unistd.h>
 
 static guint signals_sent;
 static GError *reexec_error;
+
+/* How often isatty () was asked, and fwrite () called while @writes_counted is
+ * set: what printing to a terminal costs. */
+static guint terminal_asks;
+static gboolean writes_counted;
+static guint writes;
+
+int
+isatty (int fd)
+{
+    typedef int (*IsATty) (int);
+    IsATty original = (IsATty) dlsym (RTLD_NEXT, "isatty");
+
+    ++terminal_asks;
+
+    return original (fd);
+}
+
+size_t
+fwrite (const void *data,
+        size_t      size,
+        size_t      count,
+        FILE       *stream)
+{
+    typedef size_t (*Write) (const void *, size_t, size_t, FILE *);
+    Write original = (Write) dlsym (RTLD_NEXT, "fwrite");
+
+    if (writes_counted)
+        ++writes;
+
+    return original (data, size, count, stream);
+}
 
 /* The re-exec the CLI asks for, refused with whatever @reexec_error says: the
  * method is what the migration gate has to outlive, and reaching a daemon to
@@ -107,10 +149,13 @@ fake_history_answered (void)
         g_ptr_array_insert (fake_history, 0, g_strdup (copied_after_answer));
 }
 
+/* What every item of the fake history holds. */
+static const gchar *fake_value = "value";
+
 static GPasteClientItem *
 fake_item (guint index)
 {
-    return g_paste_client_item_new (g_ptr_array_index (fake_history, index), "value", G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
+    return g_paste_client_item_new (g_ptr_array_index (fake_history, index), fake_value, G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
 }
 
 static GPasteClient *
@@ -151,6 +196,14 @@ fake_get_history_sync (GPasteClient *client G_GNUC_UNUSED,
 
     fake_history_answered ();
     return history;
+}
+
+static GPasteClientItem *
+fake_get_item_sync (GPasteClient *client G_GNUC_UNUSED,
+                    const gchar  *uuid,
+                    GError      **error G_GNUC_UNUSED)
+{
+    return g_paste_client_item_new (uuid, fake_value, G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
 }
 
 static void
@@ -200,6 +253,7 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_client_new_sync fake_client_new_sync
 #define g_paste_client_get_item_at_index_sync fake_get_item_at_index_sync
 #define g_paste_client_get_history_sync fake_get_history_sync
+#define g_paste_client_get_item_sync fake_get_item_sync
 #define g_paste_client_delete_item_sync fake_delete_item_sync
 #define g_paste_client_merge_sync fake_merge_sync
 #define g_paste_client_add_text_sync fake_add_text_sync
@@ -209,6 +263,7 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
 #undef g_paste_client_add_text_sync
 #undef g_paste_client_merge_sync
 #undef g_paste_client_delete_item_sync
+#undef g_paste_client_get_item_sync
 #undef g_paste_client_get_history_sync
 #undef g_paste_client_get_item_at_index_sync
 #undef g_paste_client_new_sync
@@ -591,6 +646,86 @@ test_reads_stdin (void)
     g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
 }
 
+/* On a terminal, an item's control characters are shown rather than acted on:
+ * an escape sequence copied off a web page neither retitles the window nor
+ * writes the terminal's own clipboard -- line feeds, tabs and the carriage
+ * return of a CRLF line ending aside, a lone one being shown. Asked once
+ * whether it is one, and each run between two such characters written whole. */
+static void
+test_terminal_controls (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    gint terminal = posix_openpt (O_RDWR | O_NOCTTY);
+
+    g_assert_cmpint (terminal, >=, 0);
+    g_assert_cmpint (grantpt (terminal), ==, 0);
+    g_assert_cmpint (unlockpt (terminal), ==, 0);
+
+    gint client_side = g_open (ptsname (terminal), O_RDWR | O_NOCTTY | O_CLOEXEC, 0);
+    struct termios raw;
+
+    g_assert_cmpint (client_side, >=, 0);
+    /* What is written reaches the other side as it is, no line feed made a
+     * CRLF on the way. */
+    g_assert_cmpint (tcgetattr (client_side, &raw), ==, 0);
+    cfmakeraw (&raw);
+    g_assert_cmpint (tcsetattr (client_side, TCSANOW, &raw), ==, 0);
+    fflush (stdout);
+    g_assert_cmpint (dup2 (client_side, STDOUT_FILENO), ==, STDOUT_FILENO);
+    print_text ("a\x1b]52;c;eA==\x07" "b\x7f");
+    print_text ("x\r\ny\rz\n");
+    fflush (stdout);
+
+    gchar buffer[64] = { 0 };
+    gssize length = read (terminal, buffer, sizeof (buffer) - 1);
+
+    g_assert_cmpint (length, >, 0);
+    g_assert_cmpstr (buffer, ==, "a\xef\xbf\xbd]52;c;eA==\xef\xbf\xbd" "b\xef\xbf\xbd" "x\r\ny\xef\xbf\xbdz\n");
+
+    g_autofree gchar *clean = g_strnfill (1024, 'c');
+    g_autofree gchar *echoed = g_malloc (2048);
+    guint asked = terminal_asks;
+
+    writes_counted = TRUE;
+    print_text (clean);
+    print_text (clean);
+    writes_counted = FALSE;
+    fflush (stdout);
+    g_assert_cmpuint (terminal_asks, ==, asked);
+    g_assert_cmpuint (writes, ==, 0);
+    for (gssize got = 0; got < 2048;)
+    {
+        gssize read_now = read (terminal, echoed, 2048);
+
+        g_assert_cmpint (read_now, >, 0);
+        got += read_now;
+    }
+
+    /* And what the verbs printing an item write there, which is where the
+     * escape sequences would be sent. */
+    fake_value = "c\x1b]0;title\x07" "d";
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), NULL });
+    g_assert_cmpint (run_client ((const gchar *[]) { "history", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "get", FAKE_UUID (a), NULL }), ==, EXIT_SUCCESS);
+    fflush (stdout);
+
+    gchar listed[256] = { 0 };
+
+    length = read (terminal, listed, sizeof (listed) - 1);
+    g_assert_cmpint (length, >, 0);
+    g_assert_nonnull (strstr (listed, "c\xef\xbf\xbd]0;title\xef\xbf\xbd" "d"));
+    g_assert_null (strchr (listed, '\x1b'));
+    g_assert_null (strchr (listed, '\x07'));
+    g_assert_true (g_close (client_side, NULL));
+    g_assert_true (g_close (terminal, NULL));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -599,6 +734,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/reexec/refusal", test_refusal);
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
+    g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
     g_test_add_func ("/client/utf8/accepted", test_utf8_accepted);
