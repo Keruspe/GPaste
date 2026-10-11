@@ -244,6 +244,27 @@ runSuite('Daemon runner', async () => {
     assert.equal(storage.unlocks, 1);
     assert.deepEqual(storage.passphrases, ['settled', null]);
 
+    // A runner owning the name with no daemon built yet, the store still busy,
+    // answers for the extension's report itself -- nobody else would answer
+    // the call but this process, which exports nothing yet -- and one that
+    // lost the name leaves it to the bus.
+    {
+        storage.busy = true;
+        const settling = new context.Runner(settings);
+        const settlingBus = buses.at(-1);
+
+        assert.equal(settling.reportExtensionGone(), false);
+        settlingBus.emit('name-acquired');
+        await settle();
+        assert.equal(settling._daemon ?? null, null);
+        assert.equal(settling.reportExtensionGone(), true);
+        settlingBus.emit('name-lost', false);
+        assert.equal(settling.reportExtensionGone(), false);
+        settling.shutdown();
+        storage.busy = false;
+        runSources('timeout');
+    }
+
     // A runner acquiring the name meanwhile takes the lock and the passphrase
     // over, and settles only once the store is idle.
     storage.passphrases.length = 0;

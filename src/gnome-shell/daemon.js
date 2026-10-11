@@ -113,6 +113,10 @@ export class GPasteDaemonRunner {
         // The wait _storageIdle () has out, if any: its source, and what ends it.
         this._storageWait = null;
 
+        // Whether the bus name is ours, which it is before any daemon is built
+        // behind it: see reportExtensionGone ().
+        this._ownsName = false;
+
         // Resolves once the daemon has been built and registered on the bus, or
         // the runner has given up; the indicator awaits it before connecting so
         // the common path never activates the standalone daemon by accident.
@@ -138,6 +142,7 @@ export class GPasteDaemonRunner {
             // Holding the name with nothing, or only part of it, exported is
             // what _onExportFailed() stands down to avoid, whatever threw.
             'name-acquired', () => {
+                this._ownsName = true;
                 this._onNameAcquired().catch(e => {
                     console.error(e);
                     this._standDownForGood();
@@ -159,6 +164,8 @@ export class GPasteDaemonRunner {
     }
 
     _onNameLost(wasOwned) {
+        this._ownsName = false;
+
         if (wasOwned && this._bus?.is_connected()) {
             // Another GPaste daemon (typically a manually started
             // `gpaste-daemon --replace`) took the name over while the bus is
@@ -211,6 +218,7 @@ export class GPasteDaemonRunner {
     // before it fires leaves no bus behind).
     _teardownBus() {
         this._bus?.disconnectObject(this);
+        this._ownsName = false;
 
         this._releaseDaemon();
         this._bus = null;
@@ -556,10 +564,13 @@ export class GPasteDaemonRunner {
     // after — so the "track-extension-state" policy would silently never be
     // applied on the one setup where we are the daemon.
     //
-    // Returns whether there was a daemon of ours to tell.
+    // Returns whether the report was ours to make: a daemon of ours told, or the
+    // name ours with none built behind it yet -- still settling the storage --
+    // where nothing tracks the clipboard to report to, and the call would only
+    // come back to this process, which exports nothing to answer it.
     reportExtensionGone() {
         if (!this._daemon)
-            return false;
+            return this._ownsName;
 
         this._daemon.extension_state_changed(false);
         return true;

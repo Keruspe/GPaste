@@ -119,22 +119,27 @@ nothing until that item is what it shows, then acts on it with a callback that
 logs a refusal, as the star does; the menu key on the star or the bin opens the
 row's actions; and a failed read is said at debug level only.
 
+`extension` runs the shipped `enable ()` and `disable ()` over shell, bus and
+libgpaste doubles: with the in-shell daemon told in process the indicator
+reports nothing more, the extension's own report calls the names libgpaste
+introspects, a daemon not there -- whichever way the bus says so -- being no
+error while any other refusal is logged, and the indicator it builds reads the
+extension's `GPaste.Settings` through its `settings` getter, which answers it
+until the extension is disabled.
+
 `daemon` runs the shipped in-shell daemon runner over bus, daemon, storage and
 main loop doubles: a takeover, a failed export and a dropped connection all
 flush and dispose the daemon, and a takeover, a failed export and a failed
 build all shut the prompt down and wipe the passphrase with the lock, which a
 shutdown during a storage rewrite defers until the store is idle; a runner acquiring the name meanwhile
-keeps both and settles only then, or stops waiting when it is shut down; an
-export failing stands it down from inside the first `add_object ()`, nothing
+keeps both and settles only then, or stops waiting when it is shut down; one
+owning the name with no daemon built yet answers for the extension's report
+itself; an export failing stands it down from inside the first `add_object ()`, nothing
 exported after it; a concern queued behind another flushes no daemon a
 reconnect has let go of; a re-exec the daemon asks for runs once, from an
 idle; and a check of the store runs once, from an idle, between a flush and a
 reload, what it found -- or the prompt's failure in its place -- going back to
 the daemon.
-
-`extension` runs the shipped extension over panel and session-mode doubles:
-the indicator it builds reads the extension's `GPaste.Settings` through its
-`settings` getter, which answers it until the extension is disabled.
 
 `prompt` runs the shipped GNOME Shell prompt over St, dialog and session-mode
 doubles: the strength meter and its hint wear classes the shell's theme styles;
