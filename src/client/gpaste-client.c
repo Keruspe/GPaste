@@ -619,7 +619,14 @@ g_paste_add_password (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_autofree gchar *uuid = g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, password_timeout (ctx), error);
+    /* A piped password stands in for the argument, which has no newline at its
+     * end: the one ending the line the command printing it wrote is not part of
+     * it, as `pass -c` leaves it off the first line it copies. One alone, and
+     * nothing else cut: the password itself could end in a line break, which
+     * nobody types as an argument either, and what else a store prints is the
+     * caller's to leave out (the man page). */
+    g_autofree gchar *line = (data == ctx->pipe_data && g_str_has_suffix (data, "\n")) ? g_strndup (data, strlen (data) - 1) : NULL;
+    g_autofree gchar *uuid = g_paste_client_add_password_sync (ctx->client, ctx->args[0], (line) ? line : data, password_timeout (ctx), error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -861,7 +868,7 @@ static const Command commands[] = {
         { 1, "delete-history",    "dh",              1,        TRUE,  FALSE, 0,        "<name>",                N_ ("delete a history"),                                                                        g_paste_delete_history },
         { 1, "list-histories",    "lh",              0,        TRUE,  FALSE, 0,        NULL,                    N_ ("list available histories"),                                                                g_paste_list_histories },
         { 1, "add",               "a",               1,        TRUE,  TRUE,  0,        "<text>",                N_ ("set text to clipboard"),                                                                   g_paste_add },
-        { 2, "add-password",      "ap",              1,        TRUE,  TRUE,  0,        "<name> <password>",     N_ ("add the <name> / <password> pair to the clipboard"),                                       g_paste_add_password },
+        { 2, "add-password",      "ap",              1,        TRUE,  TRUE,  0,        "<name> [<password>]",   N_ ("add the <name> / <password> pair to the clipboard, <password> read from stdin if absent"),   g_paste_add_password },
         { 2, "get",               "g",               0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
         { 2, "select",            "s set",           0,        TRUE,  FALSE, 1,        "<uuid>",                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
         { 2, "replace",           NULL,              1,        TRUE,  TRUE,  1,        "<uuid> <contents>",     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },

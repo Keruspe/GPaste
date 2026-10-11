@@ -82,8 +82,8 @@ List available histories
 Add the text into the history
 .br
 .TP
-.B gpaste-client add-password <name> <password>
-Add the name / password pair to the history
+.B gpaste-client add-password <name> [<password>]
+Add the name / password pair to the history. Without <password>, the password is everything read from stdin bar the one newline ending its line: given as an argument, it would be kept in the shell's history file and shown to every user of the system while the command runs. A store printing more than the password, as \fBpass show\fR does with an entry's other lines, is cut to its first line first: \fBpass show bank | head -n 1 | gpaste-client add-password bank\fR
 .br
 .TP
 .B gpaste-client delete-password <name>

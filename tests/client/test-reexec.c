@@ -236,6 +236,21 @@ fake_add_text_sync (GPasteClient *client G_GNUC_UNUSED,
     return g_strdup (FAKE_UUID (f));
 }
 
+static gchar *added_password;
+static guint  added_timeout;
+
+static gchar *
+fake_add_password_sync (GPasteClient *client G_GNUC_UNUSED,
+                        const gchar  *name   G_GNUC_UNUSED,
+                        const gchar  *password,
+                        guint         timeout,
+                        GError      **error  G_GNUC_UNUSED)
+{
+    g_set_str (&added_password, password);
+    added_timeout = timeout;
+    return g_strdup (FAKE_UUID (f));
+}
+
 static GList *
 fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
                   const gchar  *pattern,
@@ -259,7 +274,9 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_client_merge_sync fake_merge_sync
 #define g_paste_client_add_text_sync fake_add_text_sync
 #define g_paste_client_search_sync fake_search_sync
+#define g_paste_client_add_password_sync fake_add_password_sync
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_client_add_password_sync
 #undef g_paste_client_search_sync
 #undef g_paste_client_add_text_sync
 #undef g_paste_client_merge_sync
@@ -717,6 +734,65 @@ test_pipe_refusals (void)
     g_assert_cmpstr (data, ==, "piped");
 }
 
+/* A piped password loses the newline ending the line that printed it, and that
+ * one alone; one given as an argument is taken as it is. */
+static void
+test_piped_password (void)
+{
+    const struct
+    {
+        const gchar *piped;
+        const gchar *argument;
+        const gchar *added;
+    } cases[] = {
+        { "secret\n",   NULL,       "secret"   },
+        { "secret\n\n", NULL,       "secret\n" },
+        { "secret",     NULL,       "secret"   },
+        { NULL,         "secret\n", "secret\n" },
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        Context ctx = {
+            .argc = (cases[i].argument) ? 2 : 1,
+            .args = (const gchar *[]) { "bank", cases[i].argument, NULL },
+            .pipe_data = (gchar *) cases[i].piped,
+        };
+        g_autoptr (GError) error = NULL;
+
+        g_assert_cmpint (g_paste_dispatch (ctx.argc + 1, "add-password", &ctx, &error), ==, EXIT_SUCCESS);
+        g_assert_no_error (error);
+        g_assert_cmpstr (added_password, ==, cases[i].added);
+        g_clear_pointer (&added_password, g_free);
+        g_clear_object (&ctx.client);
+    }
+}
+
+/* Without --timeout, AddPassword is sent the timeout the settings carry, which
+ * a daemon of every version reads right, rather than asked for the default. */
+static void
+test_password_timeout (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    Context ctx = { .argc = 2, .args = (const gchar *[]) { "bank", "secret", NULL } };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_password_timeout (settings, 30);
+    g_assert_cmpint (g_paste_dispatch (3, "add-password", &ctx, &error), ==, EXIT_SUCCESS);
+    g_assert_no_error (error);
+    g_assert_cmpuint (added_timeout, ==, 30);
+    g_clear_object (&ctx.client);
+
+    ctx.timeout_given = TRUE;
+    ctx.timeout = 5;
+    g_assert_cmpint (g_paste_dispatch (3, "add-password", &ctx, &error), ==, EXIT_SUCCESS);
+    g_assert_no_error (error);
+    g_assert_cmpuint (added_timeout, ==, 5);
+    g_clear_object (&ctx.client);
+    g_clear_pointer (&added_password, g_free);
+    g_paste_settings_reset (settings, G_PASTE_PASSWORD_TIMEOUT_SETTING);
+}
+
 /* On a terminal, an item's control characters are shown rather than acted on:
  * an escape sequence copied off a web page neither retitles the window nor
  * writes the terminal's own clipboard -- line feeds, tabs and the carriage
@@ -806,6 +882,8 @@ main (int argc, char **argv)
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/pipe/refusals", test_pipe_refusals);
+    g_test_add_func ("/client/pipe/password", test_piped_password);
+    g_test_add_func ("/client/password-timeout", test_password_timeout);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
