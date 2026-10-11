@@ -136,6 +136,9 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
     const gchar *session[] = {
         "DISPLAY", "WAYLAND_DISPLAY", "WAYLAND_SOCKET", "XAUTHORITY", "AT_SPI_BUS_ADDRESS",
         "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "DBUS_STARTER_ADDRESS", "DBUS_STARTER_BUS_TYPE",
+        /* What a launcher hands the program it starts, which a test reading
+         * an activation's platform data would otherwise find there. */
+        "XDG_ACTIVATION_TOKEN", "DESKTOP_STARTUP_ID",
     };
     for (guint i = 0; i < G_N_ELEMENTS (session); ++i)
         g_unsetenv (session[i]);

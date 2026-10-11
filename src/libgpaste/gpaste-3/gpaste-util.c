@@ -28,15 +28,20 @@
 #define G_PASTE_UI_BUS_NAME       "org.gnome.GPaste.Ui"
 #define G_PASTE_UI_OBJECT_PATH    "/org/gnome/GPaste/Ui"
 
-/* Copied from glib's gio/gapplication-tool.c */
+/* Copied from glib's gio/gapplication-tool.c: X11's startup id, and Wayland's
+ * activation token, without which the window opened has the shell's
+ * focus-stealing prevention say it is ready rather than come up. */
 static GVariant *
 app_get_platform_data (void)
 {
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     const gchar *startup_id;
+    const gchar *activation_token;
 
     if ((startup_id = g_getenv ("DESKTOP_STARTUP_ID")))
         g_variant_builder_add (&builder, "{sv}", "desktop-startup-id", g_variant_new_string (startup_id));
+    if ((activation_token = g_getenv ("XDG_ACTIVATION_TOKEN")))
+        g_variant_builder_add (&builder, "{sv}", "activation-token", g_variant_new_string (activation_token));
 
     return g_variant_builder_end (&builder);
 }

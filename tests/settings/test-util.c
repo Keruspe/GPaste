@@ -11,6 +11,8 @@ static gpointer proxy_data;
 static gboolean refuse_proxy;
 static gboolean argument_destroyed;
 static guint calls;
+/* The activation token the platform data has to carry, or NULL for none. */
+static const gchar *expected_token;
 
 static void
 fake_proxy_new (GBusType            bus_type G_GNUC_UNUSED,
@@ -65,6 +67,13 @@ check_parameters (const gchar *method,
 
     g_assert_cmpstr (method, ==, "ActivateAction");
     g_assert_cmpstr (g_variant_get_string (arg, NULL), ==, "payload");
+
+    g_autoptr (GVariant) platform_data = g_variant_get_child_value (params, 2);
+    g_autoptr (GVariantDict) dict = g_variant_dict_new (platform_data);
+    const gchar *token = NULL;
+
+    g_variant_dict_lookup (dict, "activation-token", "&s", &token);
+    g_assert_cmpstr (token, ==, expected_token);
     ++calls;
 }
 
@@ -342,6 +351,24 @@ test_migration_gate_refused (void)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
 }
 
+/* A launcher's Wayland activation token reaches the graphical tool, as GLib's
+ * own gapplication tool hands it on. */
+static void
+test_activation_token (void)
+{
+    g_autoptr (GError) error = NULL;
+
+    g_setenv ("XDG_ACTIVATION_TOKEN", "token", TRUE);
+    expected_token = "token";
+    calls = 0;
+    refuse_proxy = FALSE;
+    g_assert_true (g_paste_util_activate_ui_sync ("action", argument_new (), &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (calls, ==, 1);
+    expected_token = NULL;
+    g_unsetenv ("XDG_ACTIVATION_TOKEN");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -349,6 +376,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/util/pid-file", test_pid_file);
     g_test_add_func ("/util/one-line", test_one_line);
+    g_test_add_func ("/util/activation-token", test_activation_token);
     g_test_add_func ("/util/migration-gate/refused", test_migration_gate_refused);
     g_test_add_func ("/util/display-string/files", test_files_shown);
     g_test_add_func ("/util/display-string/kinds", test_display_string);

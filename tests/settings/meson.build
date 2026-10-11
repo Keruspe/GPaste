@@ -21,3 +21,8 @@ util_test_exe = executable(
   dependencies: [ libgpaste_lib_deps, gpaste_test_env_dep, libgpaste_internal_dep ],
 )
 test('test-util', util_test_exe, depends: [gpaste_schemas, test_bus_supervisor])
+# An activation case alone, run as from a launcher that left its token behind,
+# which the test environment clears before the case reads what it is handed: in
+# a full run, /util/activation-token clears it first.
+test('test-util-launched', util_test_exe, args: ['-p', '/util/activate-ui/owned/accepted'],
+     depends: [gpaste_schemas, test_bus_supervisor], env: {'XDG_ACTIVATION_TOKEN': 'stale'})
