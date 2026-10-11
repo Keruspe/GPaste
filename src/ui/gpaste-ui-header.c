@@ -4,6 +4,7 @@
 #include <gpaste-3/gpaste-macros.h>
 
 #include <gpaste-ui-header.h>
+#include <gpaste-ui-window.h>
 
 typedef struct
 {
@@ -33,18 +34,6 @@ header_data (AdwHeaderBar *self)
     return data;
 }
 
-/* An icon-only button names itself with its tooltip and nothing else, which
- * leaves it nameless to a screen reader: GTK feeds a tooltip in as the
- * accessible *description*, and the label it would take a name from is the
- * icon. So say it twice, once for each. */
-static void
-set_icon_button_label (GtkWidget   *button,
-                       const gchar *label)
-{
-    gtk_widget_set_tooltip_text (button, label);
-    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
-}
-
 /* A plain header button: shared icon/label/valign setup, so the toolbar's
  * simple actions don't each need spelling out. */
 static GtkWidget *
@@ -54,7 +43,7 @@ header_button_new (const gchar *icon_name,
 {
     GtkWidget *button = gtk_button_new_from_icon_name (icon_name);
 
-    set_icon_button_label (button, label);
+    g_paste_ui_set_icon_button_label (button, label);
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
     gtk_actionable_set_action_name (GTK_ACTIONABLE (button), action_name);
 
@@ -67,7 +56,7 @@ header_toggle_new (const gchar *icon_name,
 {
     GtkWidget *button = gtk_toggle_button_new ();
 
-    set_icon_button_label (button, label);
+    g_paste_ui_set_icon_button_label (button, label);
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
     gtk_button_set_child (GTK_BUTTON (button), gtk_image_new_from_icon_name (icon_name));
 
@@ -94,11 +83,13 @@ header_new_item_new (void)
     adw_split_button_set_menu_model (ADW_SPLIT_BUTTON (button), G_MENU_MODEL (menu));
     adw_split_button_set_dropdown_tooltip (ADW_SPLIT_BUTTON (button), _("New Item Kind"));
     gtk_actionable_set_action_name (GTK_ACTIONABLE (button), "win.new-item");
-    /* On the button inside, not on the split button: AdwSplitButton has the
-     * `group` accessible role, and its first child is the button that carries
-     * the icon and takes the focus -- naming the group leaves that one nameless
-     * to a screen reader, which is the very thing the helper is for. */
-    set_icon_button_label (gtk_widget_get_first_child (button), _("New Item"));
+    /* The name on the split button, the tooltip on the button inside it: the
+     * libadwaita labels that button by the split button, and GTK takes a name
+     * from that relation before the button's own label, which would never be
+     * read. Unnamed, the split button would take one from its content -- the
+     * dropdown's tooltip -- for both. */
+    gtk_widget_set_tooltip_text (gtk_widget_get_first_child (button), _("New Item"));
+    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, _("New Item"), -1);
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
 
     return button;
@@ -129,7 +120,7 @@ header_menu_new (void)
 
     gtk_menu_button_set_icon_name (GTK_MENU_BUTTON (button), "open-menu-symbolic");
     gtk_menu_button_set_menu_model (GTK_MENU_BUTTON (button), G_MENU_MODEL (menu));
-    set_icon_button_label (button, _("Main Menu"));
+    g_paste_ui_set_icon_button_label (button, _("Main Menu"));
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
 
     return button;

@@ -55,7 +55,7 @@ test('test-ui-text-dialog', ui_text_dialog_test, depends: [gpaste_schemas, test_
 
 ui_panel_history_test_sources = ['test-panel-history.c']
 foreach source : gpaste_ui_sources
-  if source != 'gpaste-ui.c' and source != 'gpaste-ui-panel-history.c'
+  if source != 'gpaste-ui.c' and source != 'gpaste-ui-panel-history.c' and source != 'gpaste-ui-item.c'
     ui_panel_history_test_sources += '../../src/ui' / source
   endif
 endforeach

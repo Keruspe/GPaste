@@ -193,7 +193,9 @@ g_paste_ui_item_set_favourited (GPasteUiItem *self,
 
     gtk_button_set_icon_name (GTK_BUTTON (self->favourite),
                               (favourited) ? "starred-symbolic" : "non-starred-symbolic");
-    gtk_widget_set_tooltip_text (self->favourite, (favourited) ? _("Unpin") : _("Pin"));
+    /* The name as well as the tooltip: the name set when the button was built
+     * would go on saying "Pin". */
+    g_paste_ui_set_icon_button_label (self->favourite, (favourited) ? _("Unpin") : _("Pin"));
     g_simple_action_set_state (item_action (self, "pin"), g_variant_new_boolean (favourited));
     g_paste_ui_item_update_actions_visibility (self);
 }
@@ -921,8 +923,7 @@ row_button_new (const gchar *icon_name,
 {
     GtkWidget *button = gtk_button_new_from_icon_name (icon_name);
 
-    gtk_widget_set_tooltip_text (button, label);
-    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+    g_paste_ui_set_icon_button_label (button, label);
     gtk_widget_add_css_class (button, "flat");
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
     gtk_actionable_set_action_name (GTK_ACTIONABLE (button), action_name);

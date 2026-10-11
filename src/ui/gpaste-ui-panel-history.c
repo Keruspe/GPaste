@@ -213,9 +213,7 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
 {
     GtkWidget *button = gtk_button_new_from_icon_name ("edit-delete-symbolic");
 
-    gtk_widget_set_tooltip_text (button, _("Delete"));
-    /* An icon gives no accessible name, and a tooltip becomes a description. */
-    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, _("Delete"), -1);
+    g_paste_ui_set_icon_button_label (button, _("Delete"));
     gtk_widget_add_css_class (button, "flat");
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
     gtk_widget_set_can_focus (button, FALSE);

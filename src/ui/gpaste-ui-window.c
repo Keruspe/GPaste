@@ -246,6 +246,14 @@ g_paste_ui_report_string (GtkWidget           *origin,
     return report;
 }
 
+void
+g_paste_ui_set_icon_button_label (GtkWidget   *button,
+                                  const gchar *label)
+{
+    gtk_widget_set_tooltip_text (button, label);
+    gtk_accessible_update_property (GTK_ACCESSIBLE (button), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+}
+
 /**
  * g_paste_ui_report_void_cb:
  * @source_object: the #GPasteClient the call was made on
@@ -673,7 +681,7 @@ add_daemonless_window_actions (GPasteUiWindow *self)
 
     gtk_application_set_accels_for_action (gtk_window_get_application (GTK_WINDOW (self)),
                                            "win.preferences",
-                                           (const char *[]) { "<primary>comma", NULL });
+                                           (const char *[]) { G_PASTE_UI_PREFERENCES_ACCELERATOR, NULL });
 }
 
 /* Every control in the header drives one of these, so the window owns the state
@@ -703,11 +711,11 @@ add_window_actions (GPasteUiWindow *self)
     GtkApplication *app = gtk_window_get_application (GTK_WINDOW (self));
 
     struct { const gchar *action; const gchar *accel; } accels[] = {
-        { "win.show-help-overlay", "<primary>question" },
-        { "win.toggle-search",     "<primary>f" },
-        { "win.new-item",          "<primary>n" },
-        { "win.new-password",      "<primary><shift>n" },
-        { "window.close",          "<primary>w" },
+        { "win.show-help-overlay", G_PASTE_UI_SHORTCUTS_ACCELERATOR },
+        { "win.toggle-search",     G_PASTE_UI_SEARCH_ACCELERATOR },
+        { "win.new-item",          G_PASTE_UI_NEW_ITEM_ACCELERATOR },
+        { "win.new-password",      G_PASTE_UI_NEW_PASSWORD_ACCELERATOR },
+        { "window.close",          G_PASTE_UI_CLOSE_ACCELERATOR },
     };
 
     for (guint i = 0; i < G_N_ELEMENTS (accels); ++i)
@@ -1447,7 +1455,7 @@ build_merge_bar (GPasteUiWindow *self)
     g_signal_connect (entry, "activate", G_CALLBACK (on_custom_separator), self);
 
     GtkWidget *custom_merge = gtk_button_new_from_icon_name ("object-select-symbolic");
-    gtk_widget_set_tooltip_text (custom_merge, _("Merge with this separator"));
+    g_paste_ui_set_icon_button_label (custom_merge, _("Merge With This Separator"));
     g_signal_connect (custom_merge, "clicked", G_CALLBACK (on_custom_separator), self);
 
     gtk_box_append (GTK_BOX (custom), entry);

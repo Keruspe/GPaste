@@ -6,7 +6,8 @@
 
 /* Reach the row the sidebar draws the history on, and the revealer on it. */
 #include <gpaste-ui-panel-history.c>
-#include <gpaste-ui-item.h>
+/* And the row an item is drawn on, for its star. */
+#include <gpaste-ui-item.c>
 #include <gpaste-3/gpaste-settings.h>
 
 static gboolean have_display;
@@ -171,6 +172,36 @@ test_item_selection_mode_notify (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+/* The star names what pressing it does, the accessible name and the tooltip
+ * alike: the name set when the button was built says "Pin". */
+static void
+test_item_star_named (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWidget *window = gtk_window_new ();
+    GtkWidget *item = g_paste_ui_item_new (client, settings, GTK_WINDOW (window), 0);
+    GPasteUiItem *row = G_PASTE_UI_ITEM (item);
+
+    g_assert_no_error (error);
+    /* In the window: a widget has an accessible context once it is rooted. */
+    gtk_window_set_child (GTK_WINDOW (window), item);
+    gtk_window_present (GTK_WINDOW (window));
+    g_paste_ui_item_set_favourited (row, TRUE);
+    gtk_test_accessible_assert_property (GTK_ACCESSIBLE (row->favourite), GTK_ACCESSIBLE_PROPERTY_LABEL, "Unpin");
+    g_paste_ui_item_set_favourited (row, FALSE);
+    gtk_test_accessible_assert_property (GTK_ACCESSIBLE (row->favourite), GTK_ACCESSIBLE_PROPERTY_LABEL, "Pin");
+
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -182,5 +213,6 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/panel-history/revealed", test_revealed);
     g_test_add_func ("/ui/panel-history/delete-key", test_delete_key);
     g_test_add_func ("/ui/item/selection-mode-notify", test_item_selection_mode_notify);
+    g_test_add_func ("/ui/item/star-named", test_item_star_named);
     return g_paste_test_env_run ();
 }

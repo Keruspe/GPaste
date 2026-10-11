@@ -856,27 +856,23 @@ on_context_menu (GtkWidget *widget,
     return TRUE;
 }
 
-/* The two keys a list is expected to answer a context menu to. */
-static const struct
-{
-    guint           keyval;
-    GdkModifierType modifiers;
-} context_menu_keys[] = {
-    { GDK_KEY_Menu, 0             },
-    { GDK_KEY_F10,  GDK_SHIFT_MASK },
-};
-
 static void
 add_context_menu_shortcuts (GtkWidget *list_view)
 {
     GtkEventController *shortcuts = gtk_shortcut_controller_new ();
+    g_auto (GStrv) accelerators = g_strsplit (G_PASTE_UI_HISTORY_CONTEXT_MENU_ACCELERATORS, " ", -1);
 
     gtk_shortcut_controller_set_scope (GTK_SHORTCUT_CONTROLLER (shortcuts), GTK_SHORTCUT_SCOPE_LOCAL);
 
-    for (gsize i = 0; i < G_N_ELEMENTS (context_menu_keys); ++i)
+    for (GStrv accelerator = accelerators; *accelerator; ++accelerator)
     {
-        GtkShortcutTrigger *trigger = gtk_keyval_trigger_new (context_menu_keys[i].keyval,
-                                                              context_menu_keys[i].modifiers);
+        guint keyval;
+        GdkModifierType modifiers;
+
+        if (!gtk_accelerator_parse (*accelerator, &keyval, &modifiers))
+            g_return_if_reached ();
+
+        GtkShortcutTrigger *trigger = gtk_keyval_trigger_new (keyval, modifiers);
 
         gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (shortcuts),
                                               gtk_shortcut_new (trigger,

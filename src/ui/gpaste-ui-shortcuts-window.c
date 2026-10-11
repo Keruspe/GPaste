@@ -3,6 +3,7 @@
 
 #include <gpaste-3/gpaste-keybindings.h>
 
+#include <gpaste-ui-history.h>
 #include <gpaste-ui-shortcuts-window.h>
 
 /* The window's own shortcuts, which are not the daemon's.
@@ -22,14 +23,18 @@ static const struct
     const gchar *accelerator;
     const gchar *subtitle;
 } window_shortcuts[] = {
-    { N_ ("Search the history"),          "<primary>f",        NULL },
-    { N_ ("Add a new item"),              "<primary>n",        NULL },
-    { N_ ("Add a new password"),          "<primary><shift>n", NULL },
-    { N_ ("Paste the item at an index"),  "<primary>0",        N_ ("Ctrl+0 through Ctrl+9, for the first ten items") },
-    { N_ ("Delete a history"),            "Delete",            N_ ("When a history is focused in the sidebar") },
-    { N_ ("Show the preferences"),        "<primary>comma",    NULL },
-    { N_ ("Show the keyboard shortcuts"), "<primary>question", NULL },
-    { N_ ("Close the window"),            "<primary>w Escape", NULL },
+    { N_ ("Search the history"),          G_PASTE_UI_SEARCH_ACCELERATOR,                NULL },
+    { N_ ("Add a new item"),              G_PASTE_UI_NEW_ITEM_ACCELERATOR,              NULL },
+    { N_ ("Add a new password"),          G_PASTE_UI_NEW_PASSWORD_ACCELERATOR,          NULL },
+    /* Ctrl+0-9, Delete and the Escape beside Close are keys a controller
+     * answers rather than accelerators registered (add_shortcuts () in
+     * gpaste-ui-window.c, gpaste-ui-panel-history.c): spelled here again. */
+    { N_ ("Paste the item at an index"),  "<primary>0",                                 N_ ("Ctrl+0 through Ctrl+9, for the first ten items") },
+    { N_ ("Delete a history"),            "Delete",                                     N_ ("When a history is focused in the sidebar") },
+    { N_ ("Open an item’s menu"),         G_PASTE_UI_HISTORY_CONTEXT_MENU_ACCELERATORS, N_ ("When an item is focused") },
+    { N_ ("Show the preferences"),        G_PASTE_UI_PREFERENCES_ACCELERATOR,           NULL },
+    { N_ ("Show the keyboard shortcuts"), G_PASTE_UI_SHORTCUTS_ACCELERATOR,             NULL },
+    { N_ ("Close the window"),            G_PASTE_UI_CLOSE_ACCELERATOR " Escape",       NULL },
 };
 
 static void

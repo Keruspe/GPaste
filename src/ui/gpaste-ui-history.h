@@ -9,6 +9,11 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_HISTORY (g_paste_ui_history_get_type ())
 
+/* The keys a list is expected to answer a context menu to, as the shortcuts
+ * dialog lists them: one string for both, so that neither answers or lists a
+ * key the other does not. */
+#define G_PASTE_UI_HISTORY_CONTEXT_MENU_ACCELERATORS "Menu <shift>F10"
+
 G_PASTE_FINAL_TYPE (UiHistory, ui_history, UI_HISTORY, GtkBox)
 
 void g_paste_ui_history_search (GPasteUiHistory *self,

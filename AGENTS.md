@@ -142,7 +142,7 @@ now written down once; add to the list, not to its consumers.
 | The prompts' wording | `GPastePromptText` in `gpaste-daemon/gpaste-prompt.h` | both passphrase/migration dialogs -- the Adwaita one out of process and the St one in the shell |
 | The D-Bus methods | `data/dbus/org.gnome.GPaste3.xml` | both halves of the wire, via gdbus-codegen |
 
-**The window's own shortcuts are not in that table.** `G_PASTE_FOR_EACH_KEYBINDING` is the single source for the *global* keybindings because three consumers have to agree on them. The graphical tool's own — search, new item, paste-by-index, preferences, close — are configurable by nobody, work only while the window has the focus, and have no business in the desktop portal's list, so they live in a small table in `src/ui/gpaste-ui-shortcuts-window.c`, beside the window that answers them. Do not merge the two.
+**The window's own shortcuts are not in that table.** `G_PASTE_FOR_EACH_KEYBINDING` is the single source for the *global* keybindings because three consumers have to agree on them. The graphical tool's own — search, new item, paste-by-index, preferences, close — are configurable by nobody, work only while the window has the focus, and have no business in the desktop portal's list, so they live in a small table in `src/ui/gpaste-ui-shortcuts-window.c`, beside the window that answers them, each accelerator the window registers spelled once in `gpaste-ui-shortcuts-window.h` for both (`G_PASTE_UI_*_ACCELERATOR`). Do not merge the two.
 
 **The prompts are built twice, but say one thing.** St and Adwaita share no
 widget vocabulary, so `src/gnome-shell/prompt.js` and `src/daemon/gpaste-prompt-adw.c`

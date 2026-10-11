@@ -185,7 +185,10 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
         g_setenv (xdg[i].variable, path, TRUE);
     }
 
-    g_setenv ("GTK_A11Y", "none", TRUE);
+    /* GTK's own in-process backend: no accessibility bus to reach, and what
+     * a widget tells assistive technology is there for a test to read
+     * (gtk_test_accessible_assert_property ()). */
+    g_setenv ("GTK_A11Y", "test", TRUE);
     g_setenv ("GIO_USE_VFS", "local", TRUE);
     g_setenv ("ADW_DISABLE_PORTAL", "1", TRUE);
 

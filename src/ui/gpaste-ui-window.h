@@ -47,6 +47,13 @@ void g_paste_ui_report_string_cb (GObject      *source_object,
                                   GAsyncResult *result,
                                   gpointer      user_data);
 
+/* An icon-only button names itself with its tooltip and nothing else, which
+ * leaves it nameless to a screen reader: GTK feeds a tooltip in as the
+ * accessible *description*, and the label it would take a name from is the
+ * icon. So this says it twice, once for each. */
+void g_paste_ui_set_icon_button_label (GtkWidget   *button,
+                                       const gchar *label);
+
 void g_paste_ui_window_search     (GPasteUiWindow *self,
                                    const gchar    *search);
 void g_paste_ui_window_show_prefs (GPasteUiWindow *self);

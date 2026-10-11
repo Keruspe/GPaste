@@ -729,8 +729,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
     self->jump_button = GTK_BUTTON (jump_button);
     gtk_widget_set_valign (jump_button, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class (jump_button, "flat");
-    gtk_widget_set_tooltip_text (jump_button, _("Switch or Create"));
-    gtk_accessible_update_property (GTK_ACCESSIBLE (jump_button), GTK_ACCESSIBLE_PROPERTY_LABEL, _("Switch or Create"), -1);
+    g_paste_ui_set_icon_button_label (jump_button, _("Switch or Create"));
     adw_entry_row_add_suffix (ADW_ENTRY_ROW (switch_entry), jump_button);
 
     self->c_signals[C_SWITCH_ACTIVATED] = g_signal_connect (G_OBJECT (switch_entry),
