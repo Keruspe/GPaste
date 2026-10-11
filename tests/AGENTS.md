@@ -37,6 +37,11 @@ anything else -- beside the catalogs and the metainfo, or a line of the two
 msgattrib fails on each stop it before it commits, and nothing stray in `po/`
 is committed.
 
+`tests/build/` covers the installed headers: `c-headers` includes the three
+umbrella headers as a C consumer does, without `G_PASTE_COMPILATION`, and
+calls the inline helpers they carry; where a C++ compiler is found,
+`cxx-headers` does the same as a C++ consumer.
+
 `tests/tools/test-gen-keybindings.py` runs the control center's keybindings
 generator on headers of its own, under a locale with no UTF-8 in it: a
 description holding a typographic apostrophe comes out as UTF-8, and an entry

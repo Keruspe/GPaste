@@ -68,6 +68,7 @@ elif not library_interposable
   message('Linking with -Bsymbolic, or optimising across files with no semantic interposition: skipping the test suites that interpose a library\'s own calls')
 endif
 
+subdir('build')
 subdir('client')
 subdir('clipboard')
 subdir('completions')
