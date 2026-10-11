@@ -340,7 +340,11 @@ g_paste_daemon_reexecute_now (GPasteDaemon          *self,
     if (g_paste_daemon_reexecute_refused (self, invocation))
         return;
 
-    g_paste_clipboards_manager_store (self->clipboards_manager);
+    /* Nothing is handed to a clipboard manager first: one taking a selection
+     * over converts it from this process, which the exec replaces before it
+     * could answer, and it would be handed a password with no countdown along
+     * with the rest. The new daemon publishes the history's head; whatever else
+     * the selections carried goes with this process. */
 
     /* An exec replaces this process with one that has no idea of the commands
      * it left running, so their uploads end here -- for good, should the exec
@@ -438,8 +442,9 @@ g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
     if (g_paste_daemon_reexecute_refused (self, invocation))
         return;
 
-    /* Storing preserves the selection across exec. Await classification and
-     * expiry first, so the successor inherits no unmonitored password. */
+    /* Await classification and expiry first, so the successor inherits no
+     * unmonitored password: see g_paste_daemon_reexecute_now () for what is
+     * left behind. */
     ReexecuteData *data = g_new0 (ReexecuteData, 1);
 
     g_weak_ref_init (&data->daemon, self);

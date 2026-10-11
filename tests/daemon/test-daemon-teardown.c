@@ -150,7 +150,6 @@ typedef struct
     GPasteDaemon    *daemon;
     GDBusConnection *connection;
     guint            reexecutions;
-    guint            stored_at_reexecution;
     guint            expired_at_reexecution;
 } Fixture;
 
@@ -419,18 +418,17 @@ on_reexecute_self (GPasteDaemon *daemon G_GNUC_UNUSED,
 {
     Fixture *fixture = user_data;
 
-    fixture->stored_at_reexecution = fixture->clipboard->stores + fixture->primary->stores;
     fixture->expired_at_reexecution = expired;
     ++fixture->reexecutions;
     return TRUE;
 }
 
-/* A re-exec has the passwords taken off and both selections stored before the
- * host is told to go: the expiry has answered by then, not merely been asked
- * for. */
+/* A re-exec has the passwords taken off before the host is told to go -- the
+ * expiry has answered by then, not merely been asked for -- and hands neither
+ * selection to a clipboard manager (see g_paste_daemon_reexecute_now ()). */
 static void
-test_reexecute_stores_first (Fixture      *fixture,
-                             gconstpointer user_data G_GNUC_UNUSED)
+test_reexecute_expires_first (Fixture      *fixture,
+                              gconstpointer user_data G_GNUC_UNUSED)
 {
     expiries = 0;
     expired = 0;
@@ -438,9 +436,8 @@ test_reexecute_stores_first (Fixture      *fixture,
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
     g_assert_cmpuint (expiries, ==, 1);
-    g_assert_cmpuint (fixture->clipboard->stores, ==, 1);
-    g_assert_cmpuint (fixture->primary->stores, ==, 1);
-    g_assert_cmpuint (fixture->stored_at_reexecution, ==, 2);
+    g_assert_cmpuint (fixture->clipboard->stores, ==, 0);
+    g_assert_cmpuint (fixture->primary->stores, ==, 0);
     g_assert_cmpuint (fixture->expired_at_reexecution, ==, 1);
 }
 
@@ -1325,7 +1322,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/teardown/reload-announces-histories", Fixture, NULL, fixture_set_up, test_reload_announces_histories, fixture_tear_down);
     g_test_add ("/daemon/teardown/reexport-announces", Fixture, NULL, fixture_set_up, test_reexport_announces, fixture_tear_down);
-    g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
+    g_test_add ("/daemon/reexecute/expires-first", Fixture, NULL, fixture_set_up, test_reexecute_expires_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
     g_test_add_func ("/daemon/reexecute/handed-over", test_reexecute_handed_over);

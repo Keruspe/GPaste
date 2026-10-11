@@ -165,8 +165,7 @@ reexec (GPasteDaemon *g_paste_daemon,
         return TRUE;
     }
 
-    /* The clipboards manager was already stored by g_paste_daemon_reexecute();
-     * make sure the history hits the disk too before we hand over to the new
+    /* Make sure the history hits the disk before we hand over to the new
      * process, which blocks on the storage lock until we release it. The lock is
      * left held: a successful exec releases it automatically (its fd is CLOEXEC),
      * so the successor waits until we are actually gone. */

@@ -2494,7 +2494,8 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
  * g_paste_clipboards_manager_store:
  * @self: a #GPasteClipboardsManager instance
  *
- * Store clipboards contents before exiting
+ * Ask a clipboard manager to take over what every selection carries, as
+ * g_paste_clipboard_provider_store() does for one.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_store (GPasteClipboardsManager *self)

@@ -327,7 +327,9 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
  * g_paste_clipboard_provider_store:
  * @self: a #GPasteClipboardProvider instance
  *
- * Store the contents of the selection before exiting
+ * Ask a clipboard manager to take over what the selection carries. This only
+ * starts the hand-off: the manager converts the contents from this process, so
+ * it has to keep running, and answering, until that is done.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_provider_store (GPasteClipboardProvider *self)
