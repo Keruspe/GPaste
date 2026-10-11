@@ -1585,6 +1585,42 @@ test_image_preview_off (void)
     close_activation_window (window, &daemon);
 }
 
+/* A history filled one item at a time shows every item while they fit the
+ * window: the row's height is not read off a viewport the rows do not fill,
+ * which would make it the whole page and hold the list at two rows. */
+static void
+test_short_history_grows (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    GListModel *rows = G_LIST_MODEL (gtk_list_view_get_model (GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW))));
+
+    /* Copied one at a time. */
+    for (daemon.size = 2; daemon.size <= 12; ++daemon.size)
+    {
+        guint sized = daemon.sizings;
+
+        g_paste_test_bus_pump (100);
+        g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", (guint64) 0);
+        g_paste_test_bus_wait_for_count (&daemon.sizings, sized + 1);
+        g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+        g_paste_test_bus_pump (100);
+        g_assert_cmpuint (g_list_model_get_n_items (rows), ==, daemon.size);
+    }
+    close_activation_window (window, &daemon);
+}
+
 static gboolean
 on_sigusr1 (gpointer user_data)
 {
@@ -2977,6 +3013,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/merge-picks-shown", test_merge_picks_shown);
     g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
     g_test_add_func ("/ui/daemon-presence/image-preview-off", test_image_preview_off);
+    g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

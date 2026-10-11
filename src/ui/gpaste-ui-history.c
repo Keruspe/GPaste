@@ -582,8 +582,10 @@ g_paste_ui_history_on_adjustment_changed (GtkAdjustment *adjustment,
 
     /* The list view owns the rows, so ask the laid-out content how tall one is
      * rather than measuring a widget we do not hold: upper covers every row in
-     * the model, extrapolated from the ones actually realised. */
-    if (upper > 0 && self->size)
+     * the model, extrapolated from the ones actually realised -- once they
+     * overflow the viewport, upper being the page itself until then, which
+     * would make one row as tall as the window and a batch two rows. */
+    if (upper > page && self->size)
         self->item_height = MAX (1, (gint32) (upper / self->size));
 
     /* Cap eager filling assuming a sane minimum row height, so zero/near-zero
