@@ -622,7 +622,15 @@ g_paste_util_has_gnome_shell_extension_finish (GAsyncResult *result)
  * Get an item out of the %G_PASTE_ITEM_VARIANT_STRING #GVariant the daemon
  * answers every single-item method with
  *
- * Returns: (transfer full): The item
+ * A kind this library does not know -- a newer daemon's, met while an upgrade
+ * re-executes the daemon under a client still running the older library -- is
+ * read as text, its value shown as it arrived: stored as it came, it would be
+ * an enumeration value no binding can hand out, GJS throwing on
+ * g_paste_client_item_get_kind (). An item with no valid uuid, which GPaste's
+ * own daemon never sends, is no item at all.
+ *
+ * Returns: (transfer full) (nullable): The item, or %NULL for one with no
+ *          valid uuid
  */
 G_PASTE_VISIBLE GPasteClientItem *
 g_paste_util_get_dbus_item_result (GVariant *variant)
@@ -639,6 +647,12 @@ g_paste_util_get_dbus_item_result (GVariant *variant)
 
     g_variant_get (variant, G_PASTE_ITEM_VARIANT_FORMAT, &uuid, &value, &kind, &favourite, &notes);
 
+    if (!g_uuid_string_is_valid (uuid))
+        return NULL;
+
+    if (kind == G_PASTE_ITEM_KIND_INVALID || !g_enum_get_value (g_type_class_get (G_PASTE_TYPE_ITEM_KIND), (gint) kind))
+        kind = G_PASTE_ITEM_KIND_TEXT;
+
     return g_paste_client_item_new (uuid, value, kind, favourite, (const gchar * const *) notes);
 }
 
@@ -646,7 +660,8 @@ g_paste_util_get_dbus_item_result (GVariant *variant)
  * g_paste_util_get_dbus_items_result:
  * @variant: a #GVariant
  *
- * Get the %G_PASTE_ITEMS_VARIANT_STRING #GVariant as a list of items
+ * Get the %G_PASTE_ITEMS_VARIANT_STRING #GVariant as a list of items, those
+ * g_paste_util_get_dbus_item_result () reads no item out of left out
  *
  * Returns: (element-type GPasteClientItem) (transfer full): The items
  */
@@ -664,7 +679,10 @@ g_paste_util_get_dbus_items_result (GVariant *variant)
         if (!v)
             break;
 
-        items = g_list_prepend (items, g_paste_util_get_dbus_item_result (v));
+        GPasteClientItem *item = g_paste_util_get_dbus_item_result (v);
+
+        if (item)
+            items = g_list_prepend (items, item);
     }
 
     /* Prepended and reversed once: appending walks the whole list on every

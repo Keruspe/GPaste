@@ -221,6 +221,35 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
         }                                                                                                \
     } while (FALSE)
 
+
+/* A single item's reply, or an error for one GPaste's own daemon never sends:
+ * an item with no valid uuid, which the parser leaves out
+ * (g_paste_util_get_dbus_item_result ()), a call that succeeded handing back
+ * nothing otherwise. */
+static GPasteClientItem *
+g_paste_client_item_result (GVariant *variant,
+                            GError  **error)
+{
+    GPasteClientItem *item = g_paste_util_get_dbus_item_result (variant);
+
+    if (!item)
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "the daemon answered with an item that has no valid uuid");
+
+    return item;
+}
+
+/* GDBus spells a remote error "GDBus.Error:<name>: <message>", and every
+ * caller would show that as is -- a notification, the command line. Where the
+ * error maps to a domain, GPaste's own or GDBus' or one GLib encodes, the
+ * domain and code already say what the prefix does, so it goes; an unmapped
+ * one keeps it, the name being all there is to tell it by. */
+static void
+g_paste_client_strip_remote_error (GError **error)
+{
+    if (error && *error && !g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR))
+        g_dbus_error_strip_remote_error (*error);
+}
+
 #define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS, STRINGS)                                      \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
@@ -237,6 +266,7 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
                                             -1, /* timeout */                                   \
                                             NULL, /* cancellable */                             \
                                             error);                                             \
+        g_paste_client_strip_remote_error (error);                                              \
     }                                                                                           \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name (GPasteClient       *self ARGLIST PARAMS,                             \
@@ -268,6 +298,7 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
             g_task_propagate_boolean (G_TASK (result), error);                                  \
         else                                                                                    \
             g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), result, error);       \
+        g_paste_client_strip_remote_error (error);                                              \
     }
 
 /* Every method but three is answered out of what the daemon already holds, so
@@ -308,7 +339,10 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
                                                  out,                                           \
                                                  NULL, /* cancellable */                        \
                                                  error))                                        \
+        {                                                                                       \
+            g_paste_client_strip_remote_error (error);                                          \
             return fail;                                                                        \
+        }                                                                                       \
                                                                                                 \
         return ret;                                                                             \
     }                                                                                           \
@@ -347,7 +381,10 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
         decl;                                                                                   \
                                                                                                 \
         if (!g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), out, result, error)) \
+        {                                                                                       \
+            g_paste_client_strip_remote_error (error);                                          \
             return fail;                                                                        \
+        }                                                                                       \
                                                                                                 \
         return ret;                                                                             \
     }
@@ -391,6 +428,32 @@ G_PASTE_CLIENT_METHOD_RET (add_text,
                            g_autofree gchar *uuid = NULL, &uuid, g_steal_pointer (&uuid),
                            (const gchar *text), (text), (text))
 
+/* The path AddFile is sent. The daemon's working directory is not the
+ * caller's, so a relative @file is made absolute against the caller's; and a
+ * D-Bus string carries UTF-8 alone, so a path that is not -- a working
+ * directory named in another encoding -- is refused here rather than sent as
+ * "[Invalid UTF-8]", the daemon then looking for a file of that name. */
+static gchar *
+g_paste_client_file_path (const gchar *file,
+                          GError     **error)
+{
+    g_autofree gchar *path = NULL;
+
+    if (g_path_is_absolute (file))
+        path = g_strdup (file);
+    else
+    {
+        g_autofree gchar *current_dir = g_get_current_dir ();
+
+        path = g_build_filename (current_dir, file, NULL);
+    }
+
+    if (!g_paste_client_check_utf8 (error, path, NULL))
+        return NULL;
+
+    return g_steal_pointer (&path);
+}
+
 /**
  * g_paste_client_add_file_sync:
  * @self: a #GPasteClient instance
@@ -399,31 +462,31 @@ G_PASTE_CLIENT_METHOD_RET (add_text,
  *
  * Add the file contents to the #GPasteDaemon
  *
+ * A relative @file is taken from the caller's working directory. A path that
+ * is not valid UTF-8, which a D-Bus string cannot carry, fails with
+ * %G_IO_ERROR_INVALID_DATA before anything is sent.
+ *
  * Returns: (transfer full): the uuid of the item that was added
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **error)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (file, NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
-    g_autofree gchar *absolute_path = NULL;
+    g_autofree gchar *path = g_paste_client_file_path (file, error);
 
-    if (!g_path_is_absolute (file))
-    {
-        g_autofree gchar *current_dir = g_get_current_dir ();
-        absolute_path = g_build_filename (current_dir, file, NULL);
-    }
-
-    /* The path as it goes out: a relative one is joined to a working
-     * directory whose name may well be in another encoding. */
-    if (!g_paste_client_check_utf8 (error, (absolute_path) ? absolute_path : file, NULL))
+    if (!path)
         return NULL;
 
     g_autofree gchar *uuid = NULL;
 
-    if (!g_paste_daemon3_call_add_file_sync (G_PASTE_DAEMON3 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &uuid, NULL /* cancellable */, error))
+    if (!g_paste_daemon3_call_add_file_sync (G_PASTE_DAEMON3 (self), path, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &uuid, NULL /* cancellable */, error))
+    {
+        g_paste_client_strip_remote_error (error);
         return NULL;
+    }
 
     return g_steal_pointer (&uuid);
 }
@@ -438,24 +501,24 @@ g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **er
  * @user_data: (nullable): the data to pass to @callback
  *
  * Add the file contents to the #GPasteDaemon
+ *
+ * As g_paste_client_add_file_sync (): a path that is not valid UTF-8 is
+ * refused before anything is sent.
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file (GPasteClient *self, const gchar *file, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (file);
 
-    g_autofree gchar *absolute_path = NULL;
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *path = g_paste_client_file_path (file, &error);
 
-    if (!g_path_is_absolute (file))
+    if (!path)
     {
-        g_autofree gchar *current_dir = g_get_current_dir ();
-        absolute_path = g_build_filename (current_dir, file, NULL);
+        g_task_report_error (self, callback, user_data, g_paste_client_add_file, g_steal_pointer (&error));
+        return;
     }
-
-    const gchar *path = (absolute_path) ? absolute_path : file;
-
-    /* As in g_paste_client_add_file_sync (). */
-    G_PASTE_CLIENT_REPORT_INVALID (add_file, (path));
 
     g_paste_daemon3_call_add_file (G_PASTE_DAEMON3 (self), path, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, cancellable, callback, user_data);
 }
@@ -479,16 +542,17 @@ g_paste_client_add_file_finish (GPasteClient *self,
     g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
+    /* A path refused before anything was sent (g_paste_client_file_path ()). */
     if (g_async_result_is_tagged (result, g_paste_client_add_file))
-    {
-        g_task_propagate_boolean (G_TASK (result), error);
-        return NULL;
-    }
+        return g_task_propagate_pointer (G_TASK (result), error);
 
     g_autofree gchar *uuid = NULL;
 
     if (!g_paste_daemon3_call_add_file_finish (G_PASTE_DAEMON3 (self), &uuid, result, error))
+    {
+        g_paste_client_strip_remote_error (error);
         return NULL;
+    }
 
     return g_steal_pointer (&uuid);
 }
@@ -760,7 +824,7 @@ G_PASTE_CLIENT_METHOD (empty_history,
  */
 G_PASTE_CLIENT_METHOD_RET (get_item,
                            GPasteClientItem *, NULL,
-                           g_autoptr (GVariant) item = NULL, &item, g_paste_util_get_dbus_item_result (item),
+                           g_autoptr (GVariant) item = NULL, &item, g_paste_client_item_result (item, error),
                            (const gchar *uuid), (uuid), (uuid))
 
 /**
@@ -796,7 +860,7 @@ G_PASTE_CLIENT_METHOD_RET (get_item,
  */
 G_PASTE_CLIENT_METHOD_RET (get_item_at_index,
                            GPasteClientItem *, NULL,
-                           g_autoptr (GVariant) item = NULL, &item, g_paste_util_get_dbus_item_result (item),
+                           g_autoptr (GVariant) item = NULL, &item, g_paste_client_item_result (item, error),
                            (guint64 index), (index), ())
 
 /**
@@ -847,7 +911,10 @@ g_paste_client_get_items_sync (GPasteClient *self, const gchar * const *uuids, G
     g_autoptr (GVariant) items = NULL;
 
     if (!g_paste_daemon3_call_get_items_sync (G_PASTE_DAEMON3 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &items, NULL /* cancellable */, error))
+    {
+        g_paste_client_strip_remote_error (error);
         return NULL;
+    }
 
     return g_paste_util_get_dbus_items_result (items);
 }
@@ -887,7 +954,10 @@ g_paste_client_get_items_finish (GPasteClient *self,
     g_autoptr (GVariant) items = NULL;
 
     if (!g_paste_daemon3_call_get_items_finish (G_PASTE_DAEMON3 (self), &items, result, error))
+    {
+        g_paste_client_strip_remote_error (error);
         return NULL;
+    }
 
     return g_paste_util_get_dbus_items_result (items);
 }
@@ -1187,7 +1257,10 @@ g_paste_client_merge_sync (GPasteClient *self, const gchar *decoration, const gc
                                           &uuid,
                                           NULL, /* cancellable */
                                           error))
+    {
+        g_paste_client_strip_remote_error (error);
         return NULL;
+    }
 
     return g_steal_pointer (&uuid);
 }
@@ -1264,7 +1337,10 @@ g_paste_client_merge_finish (GPasteClient *self,
     g_autofree gchar *uuid = NULL;
 
     if (!g_paste_daemon3_call_merge_finish (G_PASTE_DAEMON3 (self), &uuid, result, error))
+    {
+        g_paste_client_strip_remote_error (error);
         return NULL;
+    }
 
     return g_steal_pointer (&uuid);
 }
@@ -1313,7 +1389,10 @@ g_paste_client_reexecute_propagate (GError  *err,
                                     GError **error)
 {
     if (err && !g_error_matches (err, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY))
+    {
         g_propagate_error (error, err);
+        g_paste_client_strip_remote_error (error);
+    }
     else
         g_clear_error (&err);
 }

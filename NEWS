@@ -28,6 +28,9 @@ NEW in 51.2 (UNRELEASED)
 - Fix the keyboard doing nothing in GNOME Shell's menu after GPaste restarts, and the menu running past the screen with scaling
 - Fix changing the passphrase freezing the preferences and saying nothing when refused
 - Fix changing the storage from the preferences failing while GPaste starts, or going unreverted once the window was closed
+- Fix error messages starting with "GDBus.Error:" and the error's internal name
+- Fix adding a file from a folder named in another encoding than UTF-8 asking for a file that is not there
+- Fix GNOME Shell's menu breaking on an item of a kind a newer GPaste added, after an update
 - Fix password names holding a tab or a line break changing after a restart
 - Fix items still showing, but no longer usable, while a migration or passphrase change reloads the history
 - Fix a history just switched away from being listed with the wrong number of items

@@ -813,6 +813,323 @@ test_legacy (void)
     g_dbus_connection_close_sync (server, NULL, NULL);
 }
 
+/* A call's reply, taken once it has come: the stand-in answers from this very
+ * main loop, so a synchronous call would wait on itself. */
+typedef struct
+{
+    gboolean      done;
+    GAsyncResult *result;
+} Reply;
+
+static void
+on_replied (GObject      *source_object G_GNUC_UNUSED,
+            GAsyncResult *res,
+            gpointer      user_data)
+{
+    Reply *reply = user_data;
+
+    reply->result = g_object_ref (res);
+    reply->done = TRUE;
+}
+
+/* Transfer full. */
+static GAsyncResult *
+wait_reply (Reply *reply)
+{
+    g_paste_test_bus_wait_until (is_true, &reply->done, NULL);
+    g_assert_true (reply->done);
+    reply->done = FALSE;
+
+    return g_steal_pointer (&reply->result);
+}
+
+static GPasteClient *
+ready_client (StandIn *stand_in)
+{
+    g_autoptr (GError) error = NULL;
+    GPasteClient *client = g_paste_client_new_sync (&error);
+
+    g_assert_no_error (error);
+    stand_in_serve (stand_in, REPLACEABLE);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+
+    return client;
+}
+
+static gboolean
+refuse_backup (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
+               GDBusMethodInvocation *invocation,
+               const gchar           *history G_GNUC_UNUSED,
+               const gchar           *backup G_GNUC_UNUSED,
+               gpointer               user_data G_GNUC_UNUSED)
+{
+    g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
+
+    return TRUE;
+}
+
+static gboolean
+refuse_item (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
+             GDBusMethodInvocation *invocation,
+             const gchar           *uuid G_GNUC_UNUSED,
+             gpointer               user_data G_GNUC_UNUSED)
+{
+    g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "no item goes by that uuid");
+
+    return TRUE;
+}
+
+/* A refusal comes with its domain and code and the daemon's own words, not
+ * GDBus' "GDBus.Error:<name>: " in front of them -- a method answering
+ * nothing, one answering something, and a hand-written one alike. */
+static void
+test_errors_stripped (void)
+{
+    StandIn stand_in = { 0 };
+    g_autoptr (GPasteClient) client = ready_client (&stand_in);
+    g_autoptr (GError) error = NULL;
+    Reply reply = { 0 };
+
+    g_signal_connect (stand_in.skeleton, "handle-backup-history", G_CALLBACK (refuse_backup), NULL);
+    g_signal_connect (stand_in.skeleton, "handle-get-item", G_CALLBACK (refuse_item), NULL);
+    g_signal_connect (stand_in.skeleton, "handle-get-items", G_CALLBACK (refuse_item), NULL);
+
+    g_paste_client_backup_history (client, "history", "backup", NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) backup = wait_reply (&reply);
+    g_paste_client_backup_history_finish (client, backup, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+    g_assert_cmpstr (error->message, ==, "no history goes by that name");
+    g_clear_error (&error);
+
+    g_paste_client_get_item (client, "00000000-0000-4000-8000-000000000001", NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) item = wait_reply (&reply);
+    g_assert_null (g_paste_client_get_item_finish (client, item, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+    g_assert_cmpstr (error->message, ==, "no item goes by that uuid");
+    g_clear_error (&error);
+
+    const gchar *uuids[] = { "00000000-0000-4000-8000-000000000001", NULL };
+
+    g_paste_client_get_items (client, uuids, NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) items = wait_reply (&reply);
+    g_assert_null (g_paste_client_get_items_finish (client, items, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+    g_assert_cmpstr (error->message, ==, "no item goes by that uuid");
+
+    stand_in_stop (&stand_in);
+}
+
+/* What the stand-in answers GetItem and GetHistory with. */
+static const gchar *served_uuid;
+static guint32      served_kind;
+
+static GVariant *
+served_item (const gchar *uuid)
+{
+    static const gchar *notes[] = { NULL };
+
+    return g_variant_new (G_PASTE_ITEM_VARIANT_FORMAT, uuid, "value", served_kind, FALSE, notes);
+}
+
+static gboolean
+serve_item (GPasteDaemon3         *skeleton,
+            GDBusMethodInvocation *invocation,
+            const gchar           *uuid G_GNUC_UNUSED,
+            gpointer               user_data G_GNUC_UNUSED)
+{
+    g_paste_daemon3_complete_get_item (skeleton, invocation, served_item (served_uuid));
+
+    return TRUE;
+}
+
+static gboolean
+serve_history (GPasteDaemon3         *skeleton,
+               GDBusMethodInvocation *invocation,
+               gpointer               user_data G_GNUC_UNUSED)
+{
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE (G_PASTE_ITEMS_VARIANT_STRING));
+
+    g_variant_builder_add_value (&builder, served_item ("00000000-0000-4000-8000-000000000001"));
+    g_variant_builder_add_value (&builder, served_item (served_uuid));
+    g_paste_daemon3_complete_get_history (skeleton, invocation, g_variant_builder_end (&builder));
+
+    return TRUE;
+}
+
+/* A kind this library does not know is read as text, rather than stored as an
+ * enumeration value no binding can hand out; an item with no valid uuid is no
+ * item -- an error for a single one, left out of a list. */
+static void
+test_items_read (void)
+{
+    StandIn stand_in = { 0 };
+    g_autoptr (GPasteClient) client = ready_client (&stand_in);
+    Reply reply = { 0 };
+
+    g_signal_connect (stand_in.skeleton, "handle-get-item", G_CALLBACK (serve_item), NULL);
+    g_signal_connect (stand_in.skeleton, "handle-get-history", G_CALLBACK (serve_history), NULL);
+
+    served_uuid = "00000000-0000-4000-8000-000000000002";
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_autoptr (GError) error = NULL;
+
+        served_kind = (i) ? 99 : G_PASTE_ITEM_KIND_INVALID;
+        g_paste_client_get_item (client, served_uuid, NULL, on_replied, &reply);
+
+        g_autoptr (GAsyncResult) result = wait_reply (&reply);
+        g_autoptr (GPasteClientItem) item = g_paste_client_get_item_finish (client, result, &error);
+
+        g_assert_no_error (error);
+        g_assert_cmpint (g_paste_client_item_get_kind (item), ==, G_PASTE_ITEM_KIND_TEXT);
+        g_assert_cmpstr (g_paste_client_item_get_value (item), ==, "value");
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    served_uuid = "not-a-uuid";
+    served_kind = G_PASTE_ITEM_KIND_TEXT;
+    g_paste_client_get_item (client, "00000000-0000-4000-8000-000000000002", NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) invalid = wait_reply (&reply);
+    g_assert_null (g_paste_client_get_item_finish (client, invalid, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+
+    g_paste_client_get_history (client, NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) history = wait_reply (&reply);
+    g_autolist (GPasteClientItem) items = g_paste_client_get_history_finish (client, history, NULL);
+
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+
+    stand_in_stop (&stand_in);
+}
+
+static guint files_asked;
+
+static gboolean
+count_add_file (GPasteDaemon3         *skeleton,
+                GDBusMethodInvocation *invocation,
+                const gchar           *file G_GNUC_UNUSED,
+                gpointer               user_data G_GNUC_UNUSED)
+{
+    ++files_asked;
+    g_paste_daemon3_complete_add_file (skeleton, invocation, "00000000-0000-4000-8000-000000000001");
+
+    return TRUE;
+}
+
+/* A path that is not UTF-8 -- a relative one in a working directory named in
+ * another encoding included -- is refused before anything is sent, rather
+ * than sent as "[Invalid UTF-8]". */
+static void
+test_add_file_not_utf8 (void)
+{
+    StandIn stand_in = { 0 };
+    g_autoptr (GPasteClient) client = ready_client (&stand_in);
+    g_autoptr (GError) error = NULL;
+    Reply reply = { 0 };
+
+    files_asked = 0;
+    g_signal_connect (stand_in.skeleton, "handle-add-file", G_CALLBACK (count_add_file), NULL);
+
+    g_assert_null (g_paste_client_add_file_sync (client, "/tmp/caf\xe9", &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_clear_error (&error);
+
+    g_autofree gchar *here = g_get_current_dir ();
+    g_autofree gchar *dir = g_dir_make_tmp ("gpaste-\xe9-XXXXXX", &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpint (g_chdir (dir), ==, 0);
+    g_paste_client_add_file (client, "notes.txt", NULL, on_replied, &reply);
+    g_assert_cmpint (g_chdir (here), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
+
+    g_autoptr (GAsyncResult) result = wait_reply (&reply);
+
+    g_assert_null (g_paste_client_add_file_finish (client, result, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_assert_cmpuint (files_asked, ==, 0);
+
+    g_paste_client_add_file (client, "/tmp/notes.txt", NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) sent = wait_reply (&reply);
+    g_autofree gchar *uuid = g_paste_client_add_file_finish (client, sent, NULL);
+
+    g_assert_nonnull (uuid);
+    g_assert_cmpuint (files_asked, ==, 1);
+
+    stand_in_stop (&stand_in);
+}
+
+/* A NULL @file is refused rather than sent as the working directory. Run in a
+ * subprocess, the critical being fatal under g_test. */
+static void
+test_add_file_null (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_failed ();
+        g_test_trap_assert_stderr ("*assertion 'file' failed*");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (NULL);
+
+    g_paste_client_add_file_sync (client, NULL, NULL);
+}
+
+static gboolean
+reexecute_unanswered (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
+                      GDBusMethodInvocation *invocation G_GNUC_UNUSED,
+                      gpointer               user_data)
+{
+    /* As a re-exec goes: the connection closes, the call never answered. */
+    g_dbus_connection_close_sync (user_data, NULL, NULL);
+
+    return TRUE;
+}
+
+static gboolean
+reexecute_refused (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
+                   GDBusMethodInvocation *invocation,
+                   gpointer               user_data G_GNUC_UNUSED)
+{
+    g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY, "not a directory");
+
+    return TRUE;
+}
+
+/* A Reexecute left unanswered by a daemon going away is the success it is; a
+ * refusal sharing the code of that NoReply in another domain is not. */
+static void
+test_reexecute_answers (void)
+{
+    for (guint i = 0; i < 2; ++i)
+    {
+        StandIn stand_in = { 0 };
+        g_autoptr (GPasteClient) client = ready_client (&stand_in);
+        g_autoptr (GError) error = NULL;
+        Reply reply = { 0 };
+
+        if (i)
+            g_signal_connect (stand_in.skeleton, "handle-reexecute", G_CALLBACK (reexecute_refused), NULL);
+        else
+            g_signal_connect (stand_in.skeleton, "handle-reexecute", G_CALLBACK (reexecute_unanswered), stand_in.server);
+
+        g_paste_client_reexecute (client, NULL, on_replied, &reply);
+
+        g_autoptr (GAsyncResult) result = wait_reply (&reply);
+
+        g_paste_client_reexecute_finish (client, result, &error);
+        if (i)
+            g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY);
+        else
+            g_assert_no_error (error);
+
+        stand_in_stop (&stand_in);
+    }
+}
+
 typedef struct
 {
     gboolean done;
@@ -955,5 +1272,10 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/legacy", test_legacy);
     g_test_add_func ("/client/presence/wait-for-daemon", test_wait_for_daemon);
     g_test_add_func ("/client/presence/completion-serving-daemon", test_completion_serving_daemon);
+    g_test_add_func ("/client/calls/errors-stripped", test_errors_stripped);
+    g_test_add_func ("/client/calls/items-read", test_items_read);
+    g_test_add_func ("/client/calls/add-file-not-utf8", test_add_file_not_utf8);
+    g_test_add_func ("/client/calls/add-file-null", test_add_file_null);
+    g_test_add_func ("/client/calls/reexecute-answers", test_reexecute_answers);
     return g_paste_test_env_run ();
 }

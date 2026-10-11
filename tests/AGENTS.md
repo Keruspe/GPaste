@@ -220,7 +220,16 @@ starting until it does, and one replacing that making it ready once
 (`handoff-after-init`); one built through the initables for a name of its own
 follows that name alone, GPaste's own changing hands leaving it ready
 (`handoff-other-name`). What `g_paste_client_is_daemon_gone_error()` counts as a
-daemon gone is checked error by error, an unknown method left out.
+daemon gone is checked error by error, an unknown method left out. The
+stand-in answers calls too, asynchronously since it answers from the client's
+own context: a refusal reaches the caller with its domain, its code and the
+daemon's words, no `GDBus.Error:` before them, whatever the method's shape; an
+item of a kind the library does not know reads as text, one with no valid uuid
+is an error alone and left out of a list; a file path not in UTF-8, a relative
+one's working directory included, is refused before anything is sent, and a
+NULL one at the precondition; and a Reexecute the stand-in leaves unanswered by
+closing its connection is a success where one refused with
+`G_IO_ERROR_NOT_DIRECTORY`, NoReply's code in another domain, is not.
 
 `test-ui-panel-history` puts one sidebar history row on the private Xvfb and
 drives its state flags directly: the delete button shows for the pointer and for
