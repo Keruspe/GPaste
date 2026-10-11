@@ -4065,6 +4065,45 @@ test_timeout_edit_other_named_entry (void)
     g_paste_clipboard_update_maybe_done (pending);
 }
 
+/* A timeout edit waits on a selection being read; the entry it was made to is
+ * then deleted. The read identifying the value takes the password off rather
+ * than re-arming it, and leaves the entry deleted. */
+static void
+test_dropped_password_pending_edit (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    /* Below the head, so the edit re-selects nothing. */
+    g_paste_history_add (history, g_paste_text_item_new ("unrelated"));
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_autofree gchar *uuid = g_paste_history_make_password (history, g_paste_item_get_uuid (bank), "bank", 60);
+
+    g_assert_nonnull (uuid);
+    g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
+    g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_assert_cmpstr (clipboard->content.str, ==, "unrelated");
+    g_assert_null (g_paste_history_get_by_uuid (history, uuid));
+}
+
 /* A record outlives a history switch, the selection still carrying what it
  * carried; a hinted re-copy of that secret in the other history is a capture of
  * its own there, not the first history's named entry, uuid and all -- running
@@ -4823,6 +4862,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/dropped_password/distinct_entry", test_dropped_password_distinct_entry);
     g_test_add_func ("/clipboard/dropped_password/head_twin", test_dropped_password_head_twin);
     g_test_add_func ("/clipboard/follow_release/twin_kept_off", test_release_keeps_twin_off);
+    g_test_add_func ("/clipboard/dropped_password/pending_edit", test_dropped_password_pending_edit);
     g_test_add_func ("/clipboard/strip_after_unconfirmed_read", test_strip_after_unconfirmed_read);
     g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
     g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);

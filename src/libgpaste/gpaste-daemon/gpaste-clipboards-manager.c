@@ -2575,6 +2575,25 @@ on_password_dropped (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = l->data;
 
+        /* A timeout edit waiting on this selection was made to the entry that
+         * went: resolved, it would re-arm the password it was made on -- clearing
+         * the overdue mark this departure leaves -- and hand the read that very
+         * object, putting the deleted entry back into the history. */
+        for (GSList **link = &clip->pending_passwords; *link;)
+        {
+            GSList *node = *link;
+            PendingPassword *change = node->data;
+
+            if (g_paste_str_equal (g_paste_item_get_uuid (change->item), g_paste_item_get_uuid (item)))
+            {
+                *link = node->next;
+                pending_password_free (change);
+                g_slist_free_1 (node);
+            }
+            else
+                link = &node->next;
+        }
+
         /* Named passwords can share a value while remaining distinct entries.
          * A record whose own entry survives is not the password being dropped.
          * Unlisted capture/merge twins are compared below. */
