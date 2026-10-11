@@ -10,7 +10,10 @@ struct _GPasteKeybinder
 {
     GObject parent_instance;
 
-    GHashTable                 *keybindings;  /* const gchar * (borrowed from _Keybinding) → _Keybinding * */
+    /* _Keybinding *, owned, in the order they were added: the order
+     * G_PASTE_FOR_EACH_KEYBINDING lists them in, which the portal's permission
+     * dialog shows them in. */
+    GPtrArray                  *keybindings;
 
     GPasteSettings             *settings;
     GSignalGroup               *settings_signals;
@@ -131,6 +134,27 @@ on_keybindings_enabled_changed (GPasteKeybinder *self,
     keybinder_rebind_all (self);
 }
 
+/* Where the binding for the dconf key @id sits: a handful of them, which a scan
+ * finds as fast as a table would, with nothing to keep in step with it. */
+static gboolean
+g_paste_keybinder_find (GPasteKeybinder *self,
+                        const gchar     *id,
+                        guint           *index)
+{
+    for (guint i = 0; i < self->keybindings->len; ++i)
+    {
+        _Keybinding *k = self->keybindings->pdata[i];
+
+        if (g_paste_str_equal (g_paste_keybinding_get_dconf_key (k->binding), id))
+        {
+            *index = i;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 /**
  * g_paste_keybinder_add_keybinding:
  * @self: a #GPasteKeybinder instance
@@ -145,9 +169,17 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
     g_return_if_fail (G_PASTE_IS_KEYBINDING (binding));
 
-    g_hash_table_insert (self->keybindings,
-                         (gpointer) g_paste_keybinding_get_dconf_key (binding),
-                         _keybinding_new (binding, self->settings));
+    _Keybinding *k = _keybinding_new (binding, self->settings);
+    guint index;
+
+    /* A binding for a key already bound takes its place. */
+    if (g_paste_keybinder_find (self, g_paste_keybinding_get_dconf_key (binding), &index))
+    {
+        _keybinding_free (self->keybindings->pdata[index]);
+        self->keybindings->pdata[index] = k;
+    }
+    else
+        g_ptr_array_add (self->keybindings, k);
 }
 
 /**
@@ -165,8 +197,6 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
-    g_autoptr (GList) values = g_hash_table_get_values (self->keybindings);
-
     /* The parsed accelerators go first, whatever the master switch says:
      * g_paste_keybinding_activate () caches the keycodes it parsed and
      * _keybinding_activate () skips a binding that is already active, so an
@@ -175,8 +205,8 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
      * holds until the set below reaches it, which is what lets it recognise a
      * set that has not changed. Ungrabbing first would take that away, and with
      * it the portal session whose permission the user has already given. */
-    for (GList *l = values; l; l = g_list_next (l))
-        _keybinding_deactivate (l->data);
+    for (guint i = 0; i < self->keybindings->len; ++i)
+        _keybinding_deactivate (self->keybindings->pdata[i]);
 
     /* Remember the value we are applying rather than whether the provider ended
      * up holding anything: a grab can fail on the far side, and the setting
@@ -186,12 +216,12 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
     /* Nothing to arm under a master switch that is off, and nothing to hand over
      * but the empty set: the keybindings themselves are what we hold, and they
      * have just been deactivated. */
-    const GList *armed = self->enabled ? values : NULL;
+    guint armed = self->enabled ? self->keybindings->len : 0;
 
     gsize n = 0;
-    for (const GList *l = armed; l; l = g_list_next (l))
+    for (guint j = 0; j < armed; ++j)
     {
-        _Keybinding *k = l->data;
+        _Keybinding *k = self->keybindings->pdata[j];
         _keybinding_activate (k);
         if (g_paste_keybinding_is_active (k->binding))
             n++;
@@ -199,9 +229,9 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 
     g_autofree GPasteKeybindingAccelerator *accels = g_new (GPasteKeybindingAccelerator, n + 1);
     gsize i = 0;
-    for (const GList *l = armed; l; l = g_list_next (l))
+    for (guint j = 0; j < armed; ++j)
     {
-        _Keybinding *k = l->data;
+        _Keybinding *k = self->keybindings->pdata[j];
         if (g_paste_keybinding_is_active (k->binding))
         {
             accels[i++] = G_PASTE_KEYBINDING_ACCELERATOR (
@@ -226,9 +256,14 @@ on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
                          gpointer                    user_data)
 {
     GPasteKeybinder *self = user_data;
-    _Keybinding *k = g_hash_table_lookup (self->keybindings, id);
+    guint index;
 
-    if (k && g_paste_keybinding_is_active (k->binding))
+    if (!g_paste_keybinder_find (self, id, &index))
+        return;
+
+    _Keybinding *k = self->keybindings->pdata[index];
+
+    if (g_paste_keybinding_is_active (k->binding))
         g_paste_keybinding_perform (k->binding);
 }
 
@@ -244,7 +279,7 @@ g_paste_keybinder_dispose (GObject *object)
         g_clear_object (&self->settings_signals);
         g_clear_object (&self->settings);
         g_paste_global_shortcut_client_ungrab_all (self->provider);
-        g_clear_pointer (&self->keybindings, g_hash_table_unref);
+        g_clear_pointer (&self->keybindings, g_ptr_array_unref);
         g_clear_object (&self->provider_signals);
         g_clear_object (&self->provider);
     }
@@ -261,7 +296,7 @@ g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 static void
 g_paste_keybinder_init (GPasteKeybinder *self)
 {
-    self->keybindings = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, _keybinding_free);
+    self->keybindings = g_ptr_array_new_with_free_func (_keybinding_free);
 }
 
 /**

@@ -201,6 +201,12 @@ test_shortcut_shift_alone (void)
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_v, GDK_SUPER_MASK));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_F9, 0));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_F9, GDK_SHIFT_MASK));
+
+    /* What is captured is the key pressed: a keypad key is no main-row one,
+     * Shift+Tab's ISO_Left_Tab is Tab. */
+    g_assert_cmpuint (g_paste_keyval_canonicalize (GDK_KEY_KP_1), ==, GDK_KEY_KP_1);
+    g_assert_cmpuint (g_paste_keyval_canonicalize (GDK_KEY_KP_Add), ==, GDK_KEY_KP_Add);
+    g_assert_cmpuint (g_paste_keyval_canonicalize (GDK_KEY_ISO_Left_Tab), ==, GDK_KEY_Tab);
 }
 
 /* An armed row the focus leaves is disarmed, so only the row the keyboard is on

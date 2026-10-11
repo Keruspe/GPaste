@@ -266,6 +266,8 @@ setup (Fixture *f, gconstpointer user_data)
     f->watchdog = g_timeout_add_seconds (10, test_timed_out, NULL);
     f->bus = g_test_dbus_new (G_TEST_DBUS_NONE);
     gboolean activate = GPOINTER_TO_UINT (user_data) == 100;
+    /* Nobody owns the name at first, nor can the bus start anyone for it. */
+    gboolean unowned = GPOINTER_TO_UINT (user_data) == 200;
     if (activate)
         g_test_dbus_add_service_dir (f->bus, g_test_get_dir (G_TEST_BUILT));
     g_test_dbus_up (f->bus);
@@ -275,7 +277,7 @@ setup (Fixture *f, gconstpointer user_data)
     f->binds = g_ptr_array_new_with_free_func (request_free);
     f->server = new_server (f, &f->registration);
     /* ALLOW_REPLACEMENT lets tests exercise a direct owner handoff. */
-    if (!activate)
+    if (!activate && !unowned)
     {
         g_assert_cmpuint (g_paste_test_bus_name_call (f->server, "RequestName",
                                                       g_variant_new ("(su)", PORTAL_NAME, 1u)), ==, 1);
@@ -772,13 +774,16 @@ trigger_format (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
     const GPasteKeybindingAccelerator accels[] = {
         { "super", "<Super>a", "Super" },
         { "return", "<Control>Return", "Return" },
+        /* A keypad key stays one: the compositor grabs the key a trigger
+         * names, and its main-row twin is another key. */
+        { "keypad", "<Super>KP_1", "Keypad" },
         { "mixed", "<Control><Alt><Shift><Super>F5", "Mixed" },
         /* No name for it in the trigger syntax: asking for a chord the portal
          * can spell would be asking for another shortcut altogether. */
         { "meta", "<Meta>a", "Meta" },
         { NULL, NULL, NULL }
     };
-    const gchar *expected[] = { "LOGO+a", "CTRL+Return", "CTRL+ALT+SHIFT+LOGO+F5", NULL };
+    const gchar *expected[] = { "LOGO+a", "CTRL+Return", "LOGO+KP_1", "CTRL+ALT+SHIFT+LOGO+F5", NULL };
     Request *session = grab (f, accels);
     Request *bind = bind_session (f, session, FALSE);
     g_assert_cmpuint (g_variant_n_children (bind->shortcuts), ==, G_N_ELEMENTS (expected));
@@ -854,6 +859,59 @@ retry_exhaustion (Fixture *f, gconstpointer user_data)
     /* A real edit gets a fresh budget. */
     current = grab (f, shortcuts);
     complete (f, bind_session (f, current, FALSE), FALSE, 0);
+}
+
+/* The CreateSession calls the client sends, which a name nobody owns keeps the
+ * server from counting as it counts the others. */
+static guint creates_sent;
+
+static GDBusMessage *
+count_creates_sent (GDBusConnection *connection G_GNUC_UNUSED,
+                    GDBusMessage    *message,
+                    gboolean         incoming,
+                    gpointer         user_data G_GNUC_UNUSED)
+{
+    if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+        g_paste_str_equal (g_dbus_message_get_member (message), "CreateSession"))
+        g_atomic_int_inc (&creates_sent);
+
+    return message;
+}
+
+/* Retries spent against a name nobody owned say nothing of the portal that then
+ * comes up: it gets the whole budget, a failure of its first ask retried rather
+ * than given up on. */
+static void
+retries_reset_on_appearance (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    creates_sent = 0;
+
+    guint filter = g_dbus_connection_add_filter (f->connection, count_creates_sent, NULL, NULL);
+
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "*binding the global shortcuts failed:*");
+    g_paste_global_shortcut_client_grab_all (f->client, shortcuts);
+    /* As in close_failure (): the first ask and its ten retries, counted as
+     * they go out. The bus answered the last before the round trip, which then
+     * has that answer land. */
+    g_paste_test_bus_wait_for_count (&creates_sent, 11);
+    g_dbus_connection_remove_filter (f->connection, filter);
+    g_paste_test_bus_round_trip (f->connection, f->server);
+    g_test_assert_expected_messages ();
+    g_assert_cmpuint (f->creates->len, ==, 0);
+
+    g_assert_cmpuint (g_paste_test_bus_name_call (f->server, "RequestName",
+                                                  g_variant_new ("(su)", PORTAL_NAME, 1u)), ==, 1);
+    while (f->creates->len < 1)
+        g_main_context_iteration (NULL, TRUE);
+    complete (f, g_ptr_array_index (f->creates, 0), FALSE, 2);
+    while (f->creates->len < 2)
+        g_main_context_iteration (NULL, TRUE);
+
+    Request *current = g_ptr_array_index (f->creates, 1);
+
+    complete (f, bind_session (f, current, FALSE), FALSE, 0);
+    activate (f, current);
+    g_assert_cmpuint (f->activations, ==, 1);
 }
 
 static void
@@ -1296,6 +1354,60 @@ keybinder_activated (GPasteKeybinding *binding G_GNUC_UNUSED,
     ++*(guint *) user_data;
 }
 
+/* The keybinder hands the portal its bindings in the order they were added --
+ * G_PASTE_FOR_EACH_KEYBINDING's, which the permission dialog lists them in --
+ * and a binding added again for a key already bound takes its place, there and
+ * in what an activation reaches. */
+static void
+keybinder_order (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    /* "first" being the one the fixture's own activation handler expects. */
+    static const gchar *ids[] = { "h", "g", "f", "first", "d", "c", "b", "a" };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    guint stale = 0;
+    guint fresh = 0;
+
+    g_paste_settings_set_keybindings_enabled (settings, TRUE);
+    g_paste_settings_set_launch_ui (settings, "<Control>a");
+
+    g_autoptr (GPasteKeybinder) keybinder = g_paste_keybinder_new (settings, f->client);
+
+    for (guint i = 0; i < G_N_ELEMENTS (ids); ++i)
+    {
+        g_paste_keybinder_add_keybinding (keybinder,
+                                          g_paste_keybinding_new (ids[i], "Binding", g_paste_settings_get_launch_ui,
+                                                                  keybinder_activated, &stale));
+    }
+    g_paste_keybinder_add_keybinding (keybinder,
+                                      g_paste_keybinding_new ("first", "Binding", g_paste_settings_get_launch_ui,
+                                                              keybinder_activated, &fresh));
+    g_paste_keybinder_activate_all (keybinder);
+    barrier (f);
+
+    Request *session = g_ptr_array_index (f->creates, 0);
+    Request *bind = bind_session (f, session, FALSE);
+
+    g_assert_cmpuint (g_variant_n_children (bind->shortcuts), ==, G_N_ELEMENTS (ids));
+    for (guint i = 0; i < G_N_ELEMENTS (ids); ++i)
+    {
+        g_autoptr (GVariant) shortcut = g_variant_get_child_value (bind->shortcuts, i);
+        const gchar *id;
+
+        g_variant_get_child (shortcut, 0, "&s", &id);
+        g_assert_cmpstr (id, ==, ids[i]);
+    }
+    complete (f, bind, FALSE, 0);
+
+    g_autoptr (GError) error = NULL;
+
+    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
+        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, NULL), &error);
+    g_assert_no_error (error);
+    barrier (f);
+    g_assert_cmpuint (fresh, ==, 1);
+    g_assert_cmpuint (stale, ==, 0);
+}
+
 static void
 keybinder_switch (Fixture *f, gconstpointer user_data)
 {
@@ -1358,6 +1470,7 @@ main (int argc, char **argv)
     g_paste_test_env_setup (G_PASTE_TEST_ENV_OWN_BUS);
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add ("/keybinder/switch-enabled", Fixture, GINT_TO_POINTER (TRUE), setup, keybinder_switch, teardown);
+    g_test_add ("/keybinder/order", Fixture, NULL, setup, keybinder_order, teardown);
     g_test_add ("/keybinder/switch-disabled", Fixture, GINT_TO_POINTER (FALSE), setup, keybinder_switch, teardown);
     /* Unexpected warnings are failures; exhaustion tests expect theirs
      * explicitly. */
@@ -1391,6 +1504,7 @@ main (int argc, char **argv)
     g_test_add ("/portal/trigger-format", Fixture, NULL, setup, trigger_format, teardown);
     g_test_add ("/portal/retry-exhaustion", Fixture, GUINT_TO_POINTER (0), setup, retry_exhaustion, teardown);
     g_test_add ("/portal/stale-failure-after-exhaustion", Fixture, GUINT_TO_POINTER (1), setup, retry_exhaustion, teardown);
+    g_test_add ("/portal/retries-reset-on-appearance", Fixture, GUINT_TO_POINTER (200), setup, retries_reset_on_appearance, teardown);
     g_test_add ("/portal/retry-disable", Fixture, GUINT_TO_POINTER (0), setup, retry_cancelled, teardown);
     g_test_add ("/portal/retry-dispose", Fixture, GUINT_TO_POINTER (1), setup, retry_cancelled, teardown);
     g_test_add ("/portal/retry-replaced", Fixture, GUINT_TO_POINTER (2), setup, retry_cancelled, teardown);

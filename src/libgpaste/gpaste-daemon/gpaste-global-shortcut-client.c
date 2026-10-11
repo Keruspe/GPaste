@@ -1505,6 +1505,17 @@ on_portal_name_owner_changed (GPasteGlobalShortcutClient *self,
     if (!owner || (self->portal_owner && !g_paste_str_equal (self->portal_owner, owner)))
         portal_lost (self);
 
+    /* An owner appearing where there was none gets the whole retry budget, as
+     * one replacing another does (portal_lost ()): retries spent against a name
+     * nobody owned -- a portal not running yet, nor activatable -- say nothing
+     * of this one, which may still be starting and fail the first ask the way
+     * the budget exists for. */
+    if (owner && !self->portal_owner)
+    {
+        g_clear_handle_id (&self->retry_source, g_source_remove);
+        self->retries = 0;
+    }
+
     g_set_str (&self->portal_owner, owner);
 
     if (!owner)

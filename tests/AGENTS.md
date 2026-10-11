@@ -346,8 +346,11 @@ private buses, without GTK initialization or a desktop session. It controls
 method replies and `Response` signals independently, including both reply
 orders, superseded operations, pending and repeated disposal, actual request
 paths differing from predictions, invalid session handles, untrusted senders,
-partial/empty grants, retry exhaustion and cancellation, and retired-request
-deadlines. Name handoffs leave the old server alive and assert that its known
+partial/empty grants, retry exhaustion and cancellation -- a portal appearing
+after the budget was spent against an unowned name getting it whole --, and
+retired-request deadlines. The keybinder hands the portal its bindings in the
+order they were added, a re-added key taking its place; a keypad key's
+trigger names the keypad key. Name handoffs leave the old server alive and assert that its known
 and late-created sessions are closed on its unique connection; separate tests
 actually disconnect that server. `Closed` immediately following a create
 response is queued on the I/O thread before main-context dispatch to test the

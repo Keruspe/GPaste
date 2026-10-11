@@ -28,6 +28,8 @@ NEW in 51.1 (UNRELEASED)
 - Fix translations missing from builds installing them outside share/locale
 - Fix GPaste not starting in builds without the systemd units, and GPaste's overview search missing from builds without the extension
 - Fix GPaste's own windows showing no icon in GNOME Shell
+- Fix keyboard shortcuts set on keypad keys firing on the main row only
+- Fix keyboard shortcuts never working when the portal started after GPaste, and their list shown scrambled
 - Fix a password staying on the clipboard when its history entry is deleted, or the history emptied or decrypted
 - Fix a password taken off the clipboard coming back as plain text, or leaving it needlessly blank
 - Fix GNOME Shell taking a password off the clipboard early when asked to restart GPaste
