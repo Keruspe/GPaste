@@ -522,6 +522,107 @@ test_migration_unstored_backend_is_current (void)
 }
 #endif
 
+#ifdef G_PASTE_ENABLE_SQLITE
+/* The history is in the flavour storage-backend names, once that was chosen: a
+ * copy an earlier migration left in another -- the old data is deleted only when
+ * asked -- is not it, whatever that flavour's precedence. */
+static void
+test_migration_detects_backend_in_use (void)
+{
+    if (g_test_subprocess ())
+    {
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        const gchar *name = "detects-backend-in-use";
+
+        g_paste_settings_set_history_name (settings, name);
+
+        {
+            g_autoptr (GPasteStorageBackend) stale = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+            g_autoptr (GPasteStorageBackend) in_use = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            g_autolist (GPasteItem) old_items = g_list_prepend (NULL, g_paste_text_item_new ("stale"));
+            g_autolist (GPasteItem) items = g_list_prepend (NULL, g_paste_text_item_new ("recent"));
+
+            g_paste_storage_backend_write_history (stale, name, old_items);
+            g_paste_storage_backend_write_history (in_use, name, items);
+        }
+
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+        /* "Keep as is". */
+        prompt->chosen = G_PASTE_STORAGE_FILE;
+        g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+        run_migration (settings, prompt);
+        g_assert_cmpint (prompt->current, ==, G_PASTE_STORAGE_FILE);
+
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+}
+#endif
+
+/* "None" chosen with the old data kept is still the backend in use: the history
+ * that flavour left on disk is what the user kept, not one to go back to. */
+static void
+test_migration_none_is_current (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        const gchar *name = "none-kept-old-data";
+
+        g_paste_settings_set_history_name (settings, name);
+
+        {
+            g_autoptr (GPasteStorageBackend) old = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            g_autolist (GPasteItem) items = g_list_prepend (NULL, g_paste_text_item_new ("kept on disk"));
+
+            g_paste_storage_backend_write_history (old, name, items);
+        }
+
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+        /* "Keep as is". */
+        prompt->chosen = G_PASTE_STORAGE_NOOP;
+        g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+        run_migration (settings, prompt);
+        g_assert_cmpint (prompt->current, ==, G_PASTE_STORAGE_NOOP);
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_NOOP);
+
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+        g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+    g_test_trap_assert_stderr_unmatched ("*WARNING*");
+    g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
+}
+
+/* A configured history name that names no history is the default one to the
+ * detection, as it is to the history the daemon then loads, rather than a path
+ * handed on regardless. */
+static void
+test_migration_invalid_history_name (void)
+{
+    if (g_test_subprocess ())
+    {
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+        g_paste_settings_set_history_name (settings, "../elsewhere");
+        prompt->chosen = G_PASTE_STORAGE_FILE;
+        run_migration (settings, prompt);
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+}
+
 /* Read a history back through @backend, handing back an owned list: the size
  * out-parameter no test asserts on, the by-hand free and the empty-list reset
  * the read insists on all stay here rather than in every caller.
@@ -5437,6 +5538,11 @@ main (int argc, char *argv[])
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);
     add_test ("/history/file_count_matches_read", test_file_count_matches_read);
+#ifdef G_PASTE_ENABLE_SQLITE
+    add_test ("/history/migration_detects_backend_in_use", test_migration_detects_backend_in_use);
+#endif
+    add_test ("/history/migration_none_is_current", test_migration_none_is_current);
+    add_test ("/history/migration_invalid_history_name", test_migration_invalid_history_name);
     add_test ("/history/file_value_round_trip", test_file_value_round_trip);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     add_test ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);

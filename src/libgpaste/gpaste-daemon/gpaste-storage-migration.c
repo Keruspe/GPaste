@@ -82,10 +82,38 @@ detect_current_backend (GPasteSettings *settings,
         G_PASTE_STORAGE_FILE,
     };
 
-    const gchar *name = g_paste_settings_get_history_name (settings);
+    /* As g_paste_history_resolve_name () has it: a name that is no history's
+     * is the default one, which is the history the daemon then loads. */
+    const gchar *configured = g_paste_settings_get_history_name (settings);
+    const gchar *name = (g_paste_util_history_name_is_valid (configured)) ? configured : G_PASTE_DEFAULT_HISTORY;
+    GPasteStorage set = g_paste_settings_get_storage_backend (settings);
 
-    /* The active history's own file wins, in the precedence order above, so an
-     * existing encrypted setup is never demoted. */
+    /* The flavour storage-backend was set to, when the active history is stored
+     * there: that is the one in use, and a copy left in another flavour by an
+     * earlier migration -- which deletes the old data only when asked -- is
+     * not, whatever its precedence. A setting at its default says nothing,
+     * having never been chosen. "None" stores nothing to look for: chosen, it
+     * is the one in use, and what an earlier flavour left is what the user
+     * kept rather than what they went back to. */
+    if (!g_paste_settings_is_default (settings, G_PASTE_STORAGE_BACKEND_SETTING))
+    {
+        if (set == G_PASTE_STORAGE_NOOP)
+        {
+            *current = set;
+
+            return TRUE;
+        }
+
+        if (g_paste_util_history_is_stored (name, set))
+        {
+            *current = set;
+
+            return TRUE;
+        }
+    }
+
+    /* Otherwise the active history's own file wins, in the precedence order
+     * above, so an existing encrypted setup is never demoted. */
     for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
     {
         if (g_paste_util_history_is_stored (name, flavours[i]))

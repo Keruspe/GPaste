@@ -879,6 +879,55 @@ test_sqlite_checksum_refused (void)
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
 }
 
+/* A destination already holding the history in a form this build cannot read
+ * -- a newer GPaste's database -- is one the import stops before, rather than
+ * one its rollback deletes after the write refused to touch it. */
+static void
+test_import_spares_unreadable_destination (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*already holds a history*it cannot read*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *database = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("source"));
+        g_autoptr (sqlite3) db = NULL;
+
+        g_paste_storage_backend_write_history (file, name, items);
+        write_version_1 (database);
+        g_assert_cmpint (sqlite3_open (database, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "PRAGMA user_version = 99;", NULL, NULL, NULL), ==, SQLITE_OK);
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_SQLITE;
+    prompt->import = TRUE;
+    prompt->cleanup = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+
+    assert_import_failure_reported (prompt);
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+    g_assert_true (g_file_test (database, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (sqlite_query_int (database, "PRAGMA user_version;"), ==, 99);
+}
+
 /* A version 1 database whose upgrade fails at the statement @data names has
  * to come out of it exactly as it went in, so that the next open upgrades it
  * whole. */
@@ -2167,6 +2216,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
+    g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
 #endif
 
     return g_paste_test_env_run ();
