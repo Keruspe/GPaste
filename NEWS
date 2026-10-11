@@ -21,6 +21,8 @@ NEW in 51.2 (UNRELEASED)
 - Fix GNOME Shell's menu cutting long items with no ellipsis, and not lengthening them when the item length is raised
 - Fix clicking an item in GNOME Shell's search right after typing pasting another one
 - Fix the menu key doing nothing on an item's star or delete button in GNOME Shell's menu
+- Fix searches for text with characters like ( * + . finding nothing or the wrong items
+- Fix GNOME Shell's menu not finding a password by a name with capital letters
 - Fix password names holding a tab or a line break changing after a restart
 - Fix items still showing, but no longer usable, while a migration or passphrase change reloads the history
 - Fix a history just switched away from being listed with the wrong number of items

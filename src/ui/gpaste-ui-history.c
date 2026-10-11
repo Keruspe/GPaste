@@ -703,8 +703,15 @@ g_paste_ui_history_filter (GPasteUiHistory *self)
 
     cdata->searched = (self->search != NULL);
 
+    /* What is typed is text, and Search takes a regular expression: escaped,
+     * as Search in org.gnome.GPaste3.xml asks of a front end. '(' would not
+     * compile otherwise, and '.' would match what was not typed. */
     if (cdata->searched)
-        g_paste_client_search (self->client, self->search, cdata->cancellable, on_filter_ready, cdata);
+    {
+        g_autofree gchar *pattern = g_regex_escape_string (self->search, -1);
+
+        g_paste_client_search (self->client, pattern, cdata->cancellable, on_filter_ready, cdata);
+    }
     else
         g_paste_client_get_favourites (self->client, cdata->cancellable, on_filter_ready, cdata);
 }

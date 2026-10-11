@@ -2499,6 +2499,54 @@ test_search_image_by_what_it_shows (void)
     g_assert_cmpuint (g_strv_length (by_size), ==, 1);
 }
 
+/* A password is found by its name, whatever its case: its value is not what
+ * anyone knows it by. A query that is no regular expression, or one too long, is
+ * the caller's to hear of -- refused, not journalled -- and an escaped one finds
+ * the text typed. */
+static void
+test_search_queries (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_add (history, g_paste_password_item_new ("MyBank", "secret", 0));
+    g_paste_history_add (history, g_paste_text_item_new ("c++ (gcc"));
+    g_paste_history_add (history, g_paste_text_item_new ("cxx gcc"));
+
+    g_auto (GStrv) by_name = g_paste_history_search (history, "MyBank");
+    g_auto (GStrv) by_lowercase = g_paste_history_search (history, "mybank");
+    g_autofree gchar *escaped = g_regex_escape_string ("c++ (gcc", -1);
+    g_auto (GStrv) literal = g_paste_history_search (history, escaped);
+
+    g_assert_cmpuint (g_strv_length (by_name), ==, 1);
+    g_assert_cmpuint (g_strv_length (by_lowercase), ==, 1);
+    g_assert_cmpuint (g_strv_length (literal), ==, 1);
+
+    /* Nor by the placeholder its value is: an asterisk typed, escaped, finds
+     * no password named otherwise. */
+    g_autofree gchar *asterisk = g_regex_escape_string ("*", -1);
+    g_auto (GStrv) by_placeholder = g_paste_history_search (history, asterisk);
+
+    g_assert_cmpuint (g_strv_length (by_placeholder), ==, 0);
+
+    g_assert_null (g_paste_daemon_methods_search (&methods, "c++ (gcc", &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_clear_error (&error);
+
+    g_autofree gchar *long_query = g_strnfill (G_PASTE_HISTORY_MAX_SEARCH_LENGTH + 1, 'a');
+
+    g_assert_null (g_paste_daemon_methods_search (&methods, long_query, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_clear_error (&error);
+
+    g_autoptr (GVariant) found = g_paste_daemon_methods_search (&methods, escaped, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_variant_n_children (found), ==, 1);
+}
+
 /* Merge joins text: an image's value is a checksum and a password's a
  * placeholder, so either is refused, and nothing is added. */
 static void
@@ -6798,6 +6846,7 @@ main (int argc, char *argv[])
     add_test ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     add_test ("/history/select_counts_image_once", test_select_counts_image_once);
     add_test ("/history/search_image_by_what_it_shows", test_search_image_by_what_it_shows);
+    add_test ("/history/search_queries", test_search_queries);
     add_test ("/history/merge_refuses_image_and_password", test_merge_refuses_image_and_password);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);

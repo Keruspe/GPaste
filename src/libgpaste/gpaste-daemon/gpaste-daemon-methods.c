@@ -986,12 +986,22 @@ g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
 }
 
 /* The matches themselves, not their uuids: a caller wanting to show them would
- * only have to ask for every one of them straight back. */
+ * only have to ask for every one of them straight back.
+ *
+ * A query too long, or no regular expression at all, is the caller's to hear
+ * of rather than the daemon's journal, once per keystroke: refused before the
+ * history compiles it. */
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
                                const gchar               *query,
                                GError                   **error)
 {
+    G_PASTE_DBUS_ASSERT_FULL (strlen (query) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is too long", NULL);
+
+    g_autoptr (GRegex) valid = g_regex_new (query, G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
+
+    G_PASTE_DBUS_ASSERT_FULL (valid, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression", NULL);
+
     GPasteHistory *history = self->history;
     g_auto (GStrv) results = g_paste_history_search (history, query);
 

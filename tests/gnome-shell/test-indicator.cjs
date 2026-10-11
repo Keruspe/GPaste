@@ -62,7 +62,7 @@ const context = vm.createContext({
         notifyError: (title, body) => notified.push({title, body}),
     },
     GObject: {registerClass: (...args) => args.at(-1)},
-    GLib: {Source: {remove() {}}},
+    GLib: {Source: {remove() {}}, Regex: {escape_string: text => `escaped(${text})`}},
     WeakRef: WeakRefDouble,
     Clutter: {},
     St: {
@@ -74,6 +74,7 @@ const context = vm.createContext({
     GPasteDummyHistoryItem: Actor,
     GPasteSearchItem: Actor,
     GPaste: {
+        Error: {INVALID_ARGUMENT: 9},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
@@ -86,6 +87,10 @@ const context = vm.createContext({
     global: {stage: {get_key_focus: () => focus}},
     ensureActorVisibleInScrollView() {},
     logFailure: finish => Object.assign(() => {}, {finish}),
+    awaitReply: async (cancellable, call) => {
+        const reply = await call;
+        return [!cancellable.is_cancelled(), reply];
+    },
     debugFailure() {},
     replaceCancellable: previous => {
         previous?.cancel();
@@ -432,6 +437,30 @@ function withActions(uuids) {
     uploaded._upload('a');
     assert.equal(notified.length, 0);
     assert.equal(errors.pop().message, 'no network');
+
+    // The search goes out as typed and as text: escaped, never lowercased. One
+    // the daemon refuses as too long lists nothing, and is no failure.
+    const filtered = indicator();
+    const queries = [];
+    let rebuilt = null;
+    let reconciled = 0;
+
+    filtered._client = {
+        search: query => {
+            queries.push(query);
+            return Promise.reject(Object.assign(new Error('too long'), {
+                matches: (domain, code) => domain === context.GPaste.Error && code === context.GPaste.Error.INVALID_ARGUMENT,
+            }));
+        },
+    };
+    filtered._searchItem = {text: 'MyBank (x', favourites: false};
+    filtered._hasSearch = () => true;
+    filtered._rebuild = empty => { rebuilt = empty; };
+    filtered._reconcileConnection = () => ++reconciled;
+    await filtered._runFilter();
+    assert.deepEqual(queries, ['escaped(MyBank (x)']);
+    assert.equal(rebuilt, true);
+    assert.equal(reconciled, 0);
 
     assert.deepEqual(errors, []);
     console.log('Indicator: teardown, daemon presence and item actions passed');

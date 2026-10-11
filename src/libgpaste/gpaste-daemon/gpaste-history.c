@@ -2564,7 +2564,7 @@ g_paste_history_search (GPasteHistory *self,
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
-    g_return_val_if_fail (strlen (pattern) <= 256, NULL);
+    g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
 
     g_debug ("history: search '%s'", pattern);
 
@@ -2594,10 +2594,13 @@ g_paste_history_search (GPasteHistory *self,
         const gchar *text = (g_paste_item_get_kind (item) == G_PASTE_ITEM_KIND_IMAGE) ? g_paste_item_get_display_string (item) : g_paste_item_get_value (item);
         gboolean match = FALSE;
 
+        /* A password's value is not what it is known by, its name is: matched
+         * as the value would be, whatever its case, and the placeholder its
+         * value is not at all -- an asterisk typed would list every one. */
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
-        else if (G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal (pattern, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item))))
-            match = TRUE;
+        else if (G_PASTE_IS_PASSWORD_ITEM (item))
+            match = g_regex_match (regex, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
         else if (g_regex_match (regex, text, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             match = TRUE;
 

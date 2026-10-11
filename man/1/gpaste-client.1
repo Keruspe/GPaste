@@ -62,7 +62,8 @@ Display the size of the current history
 .br
 .TP
 .B gpaste-client search <pattern>
-Display the items of the history matching <pattern>
+Display the items of the history matching <pattern>, a Perl-compatible regular expression matched whatever the case; a password is matched by its name. Quote what the shell or the expression would read otherwise, as in
+.B gpaste-client search 'c\\+\\+'
 .br
 .TP
 .B gpaste-client get-history

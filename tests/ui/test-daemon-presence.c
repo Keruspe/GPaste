@@ -96,6 +96,7 @@ typedef struct
     GStrv                  merged;
     guint                  switches;
     gboolean               listing_fails;
+    gchar                 *query;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -233,9 +234,11 @@ on_select (GPasteDaemon3         *skeleton,
 static gboolean
 on_fake_search (GPasteDaemon3         *skeleton,
                 GDBusMethodInvocation *invocation,
-                const gchar           *query G_GNUC_UNUSED,
+                const gchar           *query,
                 gpointer               user_data)
 {
+    g_set_str (&((FakeDaemon *) user_data)->query, query);
+
     return on_get_favourites (skeleton, invocation, user_data);
 }
 
@@ -387,6 +390,7 @@ fake_daemon_stop (FakeDaemon *daemon)
     g_clear_pointer (&daemon->held_items, g_ptr_array_unref);
     g_clear_pointer (&daemon->selected, g_free);
     g_clear_pointer (&daemon->merged, g_strfreev);
+    g_clear_pointer (&daemon->query, g_free);
 }
 
 /* The calls the window sends the daemon's name that are its own to make -- a
@@ -1922,6 +1926,31 @@ test_legacy_daemon (void)
     fake_daemon_stop (&daemon);
 }
 
+/* What is typed in the search is searched for as text: Search takes a regular
+ * expression, which would not compile it, or would match what was not typed. */
+static void
+test_search_escaped (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    g_paste_ui_history_search (window->history, "c++ (gcc");
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+    g_assert_cmpstr (daemon.query, ==, "c\\+\\+ \\(gcc");
+    close_activation_window (window, &daemon);
+}
+
 /* A listing asked for under one history and answered after a switch to
  * another: the sidebar keeps the row of the history current now selected. */
 static void
@@ -3237,6 +3266,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/closed-while-connecting", test_closed_while_connecting);
     g_test_add_func ("/ui/daemon-presence/listing-fails", test_listing_fails);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
+    g_test_add_func ("/ui/daemon-presence/search-escaped", test_search_escaped);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);
     g_test_add_func ("/ui/daemon-presence/listing-abandoned", test_listing_abandoned);

@@ -69,6 +69,13 @@ const GPtrArray *g_paste_history_get_history (GPasteHistory *self);
 guint64      g_paste_history_get_length  (GPasteHistory *self);
 const gchar *g_paste_history_get_current (GPasteHistory *self);
 
+/* The longest query a search takes, in bytes: room for whatever a user types,
+ * escaped by a front end (a character becoming at most two). It bounds the
+ * pattern, not what matching it costs: one no front end escaped, with nested
+ * quantifiers, can run every item into PCRE2's match limit, tens of
+ * milliseconds apiece. */
+#define G_PASTE_HISTORY_MAX_SEARCH_LENGTH 4096
+
 GStrv g_paste_history_search (GPasteHistory *self,
                               const gchar   *pattern);
 

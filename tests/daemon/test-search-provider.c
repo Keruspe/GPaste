@@ -23,6 +23,7 @@ typedef struct
     GPasteBusObject *provider;
 
     guint            searches;
+    gchar           *query;
     guint            item_calls;
     guint            history_calls;
 } Fixture;
@@ -30,12 +31,13 @@ typedef struct
 static gboolean
 on_search (GPasteDaemon3         *daemon,
            GDBusMethodInvocation *invocation,
-           const gchar           *query G_GNUC_UNUSED,
+           const gchar           *query,
            gpointer               user_data)
 {
     Fixture *f = user_data;
 
     ++f->searches;
+    g_set_str (&f->query, query);
     g_paste_daemon3_complete_search (daemon, invocation,
                                      g_variant_new_parsed ("[('" REMOVED_UUID "', 'removed text', uint32 1, false, @as []),"
                                                            " ('" SURVIVING_UUID "', 'surviving text', uint32 1, false, @as [])]"));
@@ -106,6 +108,7 @@ fixture_teardown (Fixture      *f,
     g_paste_test_bus_name_call (f->server, "ReleaseName", g_variant_new ("(s)", G_PASTE_BUS_NAME));
     g_clear_object (&f->caller);
     g_clear_object (&f->server);
+    g_clear_pointer (&f->query, g_free);
 }
 
 static void
@@ -141,9 +144,9 @@ call_provider (Fixture     *f,
 /* The provider answers every search empty, asking the daemon nothing, until
  * its client is up: search until one reaches the daemon. */
 static void
-search (Fixture *f)
+search_terms (Fixture             *f,
+              const gchar * const *terms)
 {
-    static const gchar * const terms[] = { "text", NULL };
     static const gchar * const found[] = { REMOVED_UUID, SURVIVING_UUID, NULL };
     gint64 deadline = g_get_monotonic_time () + G_PASTE_TEST_BUS_WAIT_SECONDS * G_USEC_PER_SEC;
 
@@ -162,6 +165,27 @@ search (Fixture *f)
         }
     }
     g_assert_cmpuint (f->searches, ==, 1);
+}
+
+static void
+search (Fixture *f)
+{
+    static const gchar * const terms[] = { "text", NULL };
+
+    search_terms (f, terms);
+}
+
+/* What the overview's user typed is searched for as text: Search takes a
+ * regular expression, which would not compile it, or would match what was not
+ * typed. */
+static void
+test_escaped (Fixture      *f,
+              gconstpointer user_data G_GNUC_UNUSED)
+{
+    static const gchar * const terms[] = { "c++", "(gcc", NULL };
+
+    search_terms (f, terms);
+    g_assert_cmpstr (f->query, ==, "c\\+\\+ \\(gcc");
 }
 
 /* Every signal the daemon sent is ahead of the reply to the round trip, so once
@@ -245,6 +269,7 @@ main (int argc, char **argv)
 {
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
+    g_test_add ("/search-provider/search/escaped", Fixture, NULL, fixture_setup, test_escaped, fixture_teardown);
     g_test_add ("/search-provider/metas/removed", Fixture, NULL, fixture_setup, test_removed, fixture_teardown);
     g_test_add ("/search-provider/metas/replaced", Fixture, NULL, fixture_setup, test_replaced, fixture_teardown);
     return g_paste_test_env_run ();

@@ -93,7 +93,11 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) results = g_paste_client_search_finish (self->client, res, &error);
 
-    if (error)
+    /* A phrase past what a search takes is the user's to type, not a failure
+     * to journal at every keystroke: it finds nothing. */
+    if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT))
+        g_debug ("GPaste search refused: %s", error->message);
+    else if (error)
         g_warning ("GPaste search failed: %s", error->message);
 
     /* The shell's interface takes identifiers and asks for their metas
@@ -166,7 +170,10 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
     data->invocation = invocation;
     data->complete = complete;
 
-    g_paste_client_search (self->client, search, self->search, on_search_ready, data);
+    /* As text, as in g_paste_ui_history_filter (). */
+    g_autofree gchar *pattern = g_regex_escape_string (search, -1);
+
+    g_paste_client_search (self->client, pattern, self->search, on_search_ready, data);
 
     return TRUE;
 }

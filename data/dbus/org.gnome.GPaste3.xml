@@ -430,8 +430,14 @@
     <!--
       The items matching a query.
 
-      An image is matched by what its row shows, its size and when it was
-      taken, rather than by its value, which is the checksum naming its file.
+      @query is a Perl-compatible regular expression, matched whatever the
+      case; a front end searching for what a user typed escapes it first
+      (g_regex_escape_string ()), the way the graphical tool, the GNOME Shell
+      menu and the overview do. A password is matched by its name, its value
+      being what nobody knows it by, and an image by what its row shows, its
+      size and when it was taken, rather than by its value, which is the
+      checksum naming its file. A query longer than 4096 bytes, or one that is
+      no regular expression, is .Error.InvalidArgument.
     -->
     <method name="Search">
       <arg type="s"         direction="in"  name="query"/>
