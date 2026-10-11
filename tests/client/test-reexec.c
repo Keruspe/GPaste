@@ -279,11 +279,13 @@ fake_list_histories_sync (GPasteClient *client G_GNUC_UNUSED,
 }
 
 /* The presence the faked client reports, READY unless a case says otherwise,
- * and what a follow of the daemon turns it into, once the main loop runs: a
- * daemon coming up, or none coming. */
+ * and what a wait for the daemon turns it into: a daemon coming up, or none
+ * coming -- or, with waited_on_legacy, a GPaste 45 or 50 told apart. What the
+ * wait itself does is libgpaste's (/client/presence/wait-for-daemon). */
 static GPasteDaemonPresence fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
 static GPasteDaemonPresence presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
-static guint follows;
+static gboolean             waited_on_legacy;
+static guint                follows;
 
 static GPasteDaemonPresence
 fake_get_daemon_presence (GPasteClient *client G_GNUC_UNUSED)
@@ -292,39 +294,30 @@ fake_get_daemon_presence (GPasteClient *client G_GNUC_UNUSED)
 }
 
 static void
-fake_daemon_answers (gpointer user_data G_GNUC_UNUSED)
-{
-    fake_presence = presence_after_follow;
-}
-
-static void
-fake_follow_daemon (GPasteClient *client   G_GNUC_UNUSED,
-                    gboolean      activate G_GNUC_UNUSED)
-{
-    ++follows;
-    if (fake_presence == G_PASTE_DAEMON_PRESENCE_ABSENT)
-        fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
-    g_source_set_name_by_id (g_idle_add_once (fake_daemon_answers, NULL), "[GPaste] test daemon answers");
-}
-
-/* What the faked check of whether a GPaste 45 or 50 owns the name answers a
- * wait for the daemon. */
-static gboolean waited_on_legacy;
-
-static void
-fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
-                       GCancellable       *cancellable,
-                       GAsyncReadyCallback callback,
-                       gpointer            user_data)
+fake_wait_for_daemon (GPasteClient       *client G_GNUC_UNUSED,
+                      GCancellable       *cancellable,
+                      GAsyncReadyCallback callback,
+                      gpointer            user_data)
 {
     g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
 
-    g_task_return_boolean (task, waited_on_legacy);
+    if (fake_presence != G_PASTE_DAEMON_PRESENCE_READY)
+    {
+        ++follows;
+        fake_presence = presence_after_follow;
+    }
+
+    if (waited_on_legacy)
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, "older: restart it with “gpaste-client daemon-reexec”");
+    else if (fake_presence == G_PASTE_DAEMON_PRESENCE_READY)
+        g_task_return_boolean (task, TRUE);
+    else
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, "none serving");
 }
 
 static gboolean
-fake_daemon_is_legacy_finish (GAsyncResult *result,
-                              GError      **error)
+fake_wait_for_daemon_finish (GAsyncResult *result,
+                             GError      **error)
 {
     return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -346,13 +339,11 @@ fake_daemon_is_legacy_finish (GAsyncResult *result,
 #define g_paste_client_add_password_sync fake_add_password_sync
 #define g_paste_client_list_histories_sync fake_list_histories_sync
 #define g_paste_client_get_daemon_presence fake_get_daemon_presence
-#define g_paste_client_follow_daemon fake_follow_daemon
-#define g_paste_util_daemon_is_legacy fake_daemon_is_legacy
-#define g_paste_util_daemon_is_legacy_finish fake_daemon_is_legacy_finish
+#define g_paste_util_wait_for_daemon fake_wait_for_daemon
+#define g_paste_util_wait_for_daemon_finish fake_wait_for_daemon_finish
 #include "../../src/client/gpaste-client.c"
-#undef g_paste_util_daemon_is_legacy_finish
-#undef g_paste_util_daemon_is_legacy
-#undef g_paste_client_follow_daemon
+#undef g_paste_util_wait_for_daemon_finish
+#undef g_paste_util_wait_for_daemon
 #undef g_paste_client_get_daemon_presence
 #undef g_paste_client_list_histories_sync
 #undef g_paste_client_add_password_sync

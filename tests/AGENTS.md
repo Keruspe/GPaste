@@ -156,11 +156,8 @@ DeleteHistory of the current history deletes nothing.
 to count the connections opened on a history saved under another name.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
-master switch and accelerator edits retire its snapshot. It also covers a
-refused storage migration, both with the preferences window still up (an alert
-dialog) and without one — the latter in a `g_test_trap_subprocess ()`, the
-warning it must emit being fatal under `g_test` — and that New and the merge
-bar's custom separator, icon-only, carry an accessible name, and that the
+master switch and accelerator edits retire its snapshot. It also covers that
+New and the merge bar's custom separator, icon-only, carry an accessible name, and that the
 dialog lists the keys that open an item's menu, reading its sections through an
 interposed `adw_shortcuts_dialog_add()`. It uses memory
 GSettings and isolated configuration directories, and runs on a private Xvfb,
@@ -374,7 +371,15 @@ number, keeps its setting even where the range starts at 0; a text row writes
 its setting once applied, not as typed; a row destroyed with its reset menu up
 takes the menu with it; Shift alone makes no global shortcut, bar on a
 function key; an armed shortcut row the focus leaves is disarmed; and a
-disposed one still holds its accelerator.
+disposed one still holds its accelerator. It compiles the history page in too,
+over a faked client, for its storage buttons: a refused migration closes the
+gate it opened, gives the button back and says why, with the window up (an
+alert dialog) and without one -- the latter in a `g_test_trap_subprocess ()`,
+the warning it must emit being fatal under `g_test`; nothing goes out to a
+daemon not yet serving, the request waiting for one and giving up, the gate
+never opened, when none comes; the application is held while a request is
+out; and a change of passphrase goes out asynchronously, a refusal shown as a
+migration's is.
 
 `test-ui-history-model` checks that `GPasteUiHistoryModel` ignores an
 invalidated range past its rows, however far past, a position near the top of

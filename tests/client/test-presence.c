@@ -813,6 +813,74 @@ test_legacy (void)
     g_dbus_connection_close_sync (server, NULL, NULL);
 }
 
+typedef struct
+{
+    gboolean done;
+    gboolean serving;
+    GError  *error;
+} Waited;
+
+static void
+on_waited (GObject      *source_object G_GNUC_UNUSED,
+           GAsyncResult *res,
+           gpointer      user_data)
+{
+    Waited *waited = user_data;
+
+    waited->serving = g_paste_util_wait_for_daemon_finish (res, &waited->error);
+    waited->done = TRUE;
+}
+
+/* Waiting for a daemon to serve goes on while one owns the name before it
+ * exports anything, answering once it serves; one serving only a GPaste 45 or
+ * 50's interface fails it at once, saying how to restart it. */
+static void
+test_wait_for_daemon (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    guint owner;
+
+    g_assert_no_error (error);
+
+    g_autoptr (GDBusConnection) server = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_NONE, &owner);
+    Waited waited = { 0 };
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    g_paste_util_wait_for_daemon (client, NULL, on_waited, &waited);
+    g_paste_test_bus_pump (100);
+    g_assert_false (waited.done);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+
+    g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (skeleton), server, G_PASTE_DAEMON_OBJECT_PATH, &error);
+    g_assert_no_error (error);
+    g_paste_daemon3_set_history (skeleton, "history");
+    g_paste_test_bus_wait_until (is_true, &waited.done, NULL);
+    g_assert_true (waited.serving);
+    g_assert_no_error (waited.error);
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (skeleton));
+    g_bus_unown_name (owner);
+    g_dbus_connection_close_sync (server, NULL, NULL);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    g_autoptr (GDBusConnection) legacy = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_NONE, &owner);
+    guint registration = legacy_export (legacy);
+    Waited refused = { 0 };
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    g_paste_util_wait_for_daemon (client, NULL, on_waited, &refused);
+    g_paste_test_bus_wait_until (is_true, &refused.done, NULL);
+    g_assert_false (refused.serving);
+    g_assert_error (refused.error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_nonnull (strstr (refused.error->message, "daemon-reexec"));
+    g_clear_error (&refused.error);
+
+    g_dbus_connection_unregister_object (legacy, registration);
+    g_bus_unown_name (owner);
+    g_dbus_connection_close_sync (legacy, NULL, NULL);
+}
+
 static void
 on_shell_done (GObject      *source_object,
                GAsyncResult *res,
@@ -885,6 +953,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/daemon-gone-error", test_daemon_gone_error);
     g_test_add_func ("/client/invalid-utf8-refused", test_invalid_utf8_refused);
     g_test_add_func ("/client/presence/legacy", test_legacy);
+    g_test_add_func ("/client/presence/wait-for-daemon", test_wait_for_daemon);
     g_test_add_func ("/client/presence/completion-serving-daemon", test_completion_serving_daemon);
     return g_paste_test_env_run ();
 }

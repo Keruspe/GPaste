@@ -1235,64 +1235,37 @@ resolve_item_args (const Context *ctx,
 typedef struct
 {
     gboolean done;
-    gboolean legacy;
-} LegacyCheck;
+    gboolean serving;
+    GError  *error;
+} DaemonWaited;
 
 static void
-on_legacy_checked (GObject      *source_object G_GNUC_UNUSED,
-                   GAsyncResult *res,
-                   gpointer      user_data)
+on_daemon_waited (GObject      *source_object G_GNUC_UNUSED,
+                  GAsyncResult *res,
+                  gpointer      user_data)
 {
-    LegacyCheck *check = user_data;
+    DaemonWaited *waited = user_data;
 
-    check->legacy = g_paste_util_daemon_is_legacy_finish (res, NULL);
-    check->done = TRUE;
+    waited->serving = g_paste_util_wait_for_daemon_finish (res, &waited->error);
+    waited->done = TRUE;
 }
 
-/* Whether a daemon serves @client, waited for. A daemon owns the name before it
- * serves anything, settling its storage first -- one this client's own
- * construction just started, one re-executing -- and a call made in between
- * finds no object to answer it, a property read off the client none cached.
- * Waited for as long as the client deems one on its way, which it stops doing
- * once two minutes go by without a history being served -- bar a GPaste 45 or
- * 50 an update left running, which owns the name and never serves this
- * interface: asked once whether that is who owns it, the command fails at once,
- * saying how to restart it. */
+/* Whether a daemon serves @client, waited for: see g_paste_util_wait_for_daemon
+ * (), which this runs the main context for. */
 static gboolean
 wait_for_daemon (GPasteClient *client,
                  GError      **error)
 {
-    if (g_paste_client_get_daemon_presence (client) != G_PASTE_DAEMON_PRESENCE_READY)
-        g_paste_client_follow_daemon (client, TRUE);
+    DaemonWaited waited = { 0 };
 
-    LegacyCheck check = { 0 };
-    g_autoptr (GCancellable) cancellable = g_cancellable_new ();
-
-    if (g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_STARTING)
-        g_paste_util_daemon_is_legacy (client, cancellable, on_legacy_checked, &check);
-    else
-        check.done = TRUE;
-
-    while (g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_STARTING && !check.legacy)
+    g_paste_util_wait_for_daemon (client, NULL, on_daemon_waited, &waited);
+    while (!waited.done)
         g_main_context_iteration (NULL, TRUE);
 
-    /* @check is this frame's: the answer still out has to land before it goes. */
-    g_cancellable_cancel (cancellable);
-    while (!check.done)
-        g_main_context_iteration (NULL, TRUE);
+    if (waited.error)
+        g_propagate_error (error, waited.error);
 
-    if (check.legacy)
-    {
-        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED,
-                             _("The GPaste daemon running is an older one, which serves none of this: restart it with “gpaste-client daemon-reexec”."));
-        return FALSE;
-    }
-
-    if (g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_READY)
-        return TRUE;
-
-    g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, _("No GPaste daemon is serving a history."));
-    return FALSE;
+    return waited.serving;
 }
 
 static gint

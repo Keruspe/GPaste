@@ -57,6 +57,17 @@ search_activated (GSimpleAction *action    G_GNUC_UNUSED,
         g_paste_ui_window_search (window, g_variant_get_string (parameter, NULL));
 }
 
+/* As gpaste-preferences' on_activate (): a storage request from the
+ * preferences it hosts holds the application past its window's closing, and a
+ * launch meanwhile is given a window again. */
+static void
+on_activate (GApplication *gapp,
+             gpointer      user_data G_GNUC_UNUSED)
+{
+    if (!gtk_application_get_windows (GTK_APPLICATION (gapp)))
+        g_paste_ui_window_new (GTK_APPLICATION (gapp));
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -72,6 +83,8 @@ main (gint argc, gchar *argv[])
     g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
 
     G_GNUC_UNUSED GtkWidget *window = g_paste_ui_window_new (app);
+
+    g_signal_connect (gapp, "activate", G_CALLBACK (on_activate), NULL);
 
     return g_application_run (gapp, argc, argv);
 }

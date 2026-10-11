@@ -12,6 +12,18 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
     g_application_quit (G_APPLICATION (user_data));
 }
 
+/* A request a storage button sent holds the application past its dialog's
+ * closing, until the daemon answers: a launch meanwhile reaches this process,
+ * which has no dialog left to present, and is given one again. What runs
+ * main () is tested by nothing, which is why this says so here. */
+static void
+on_activate (GApplication *gapp,
+             gpointer      user_data G_GNUC_UNUSED)
+{
+    if (!gtk_application_get_windows (GTK_APPLICATION (gapp)))
+        adw_dialog_present (g_paste_gtk_preferences_dialog_new (gapp), NULL);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -26,6 +38,7 @@ main (gint argc, gchar *argv[])
     AdwDialog *dialog = g_paste_gtk_preferences_dialog_new (gapp);
 
     adw_dialog_present (dialog, NULL);
+    g_signal_connect (gapp, "activate", G_CALLBACK (on_activate), NULL);
 
     return g_application_run (gapp, argc, argv);
 }

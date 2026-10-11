@@ -4,123 +4,218 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
 
-typedef struct
+typedef struct _DaemonRequest DaemonRequest;
+
+typedef void (*DaemonCall)   (GPasteClient       *client,
+                              GCancellable       *cancellable,
+                              GAsyncReadyCallback callback,
+                              gpointer            user_data);
+typedef void (*DaemonFinish) (GPasteClient *client,
+                              GAsyncResult *result,
+                              GError      **error);
+
+/* What one of the storage buttons asked the daemon, for as long as it is out:
+ * the button stays insensitive meanwhile, and the application is held, so that
+ * closing the preferences does not end the process before the answer -- a
+ * refused migration has its gate to close then, and either has a failure to
+ * report. */
+struct _DaemonRequest
 {
     AdwButtonRow *row;
-    guint64       revision;
-} StorageMigration;
+    GApplication *application;   /* held while out, or NULL */
+    GPasteClient *client;
+    DaemonCall    call;
+    DaemonFinish  finish;
+    const gchar  *failure_title; /* what a failure is shown under */
+    const gchar  *failure_log;   /* what it is warned as, with no window to show it on */
+    gboolean      migration;     /* whether it opens the migration gate */
+    guint64       revision;      /* what closes the gate again */
+};
 
+/* A storage row is sensitive while it has no request out, and the passphrase
+ * row -- the one carrying the settings -- only while the history is encrypted
+ * too. A reply and a change of backend both move it, so both go through this
+ * one rule, neither undoing what the other holds it to. */
 static void
-storage_migration_free (StorageMigration *migration)
+update_row_sensitivity (AdwButtonRow *row)
 {
-    g_object_unref (migration->row);
-    g_free (migration);
+    GPasteSettings *settings = g_object_get_data (G_OBJECT (row), "gpaste-encrypted-only");
+    gboolean requesting = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (row), "gpaste-requesting"));
+
+    gtk_widget_set_sensitive (GTK_WIDGET (row),
+                              !requesting && (!settings || g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (settings))));
 }
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (StorageMigration, storage_migration_free)
+static void
+set_requesting (AdwButtonRow *row,
+                gboolean      requesting)
+{
+    g_object_set_data (G_OBJECT (row), "gpaste-requesting", GINT_TO_POINTER (requesting));
+    update_row_sensitivity (row);
+}
 
 static void
-storage_migration_complete (StorageMigration *migration,
-                            GError           *error)
+daemon_request_free (DaemonRequest *self)
 {
-    gtk_widget_set_sensitive (GTK_WIDGET (migration->row), TRUE);
+    g_clear_object (&self->client);
+
+    if (self->application)
+        g_application_release (self->application);
+
+    g_object_unref (self->row);
+    g_free (self);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (DaemonRequest, daemon_request_free)
+
+static DaemonRequest *
+daemon_request_new (AdwButtonRow *row,
+                    gboolean      migration)
+{
+    DaemonRequest *self = g_new0 (DaemonRequest, 1);
+
+    self->row = g_object_ref (row);
+    self->migration = migration;
+    self->application = g_application_get_default ();
+    if (self->application)
+        g_application_hold (self->application);
+
+    if (migration)
+    {
+        self->call = g_paste_client_reexecute;
+        self->finish = g_paste_client_reexecute_finish;
+        self->failure_title = _("Could Not Change Storage Backend");
+        self->failure_log = "Could not change the storage backend";
+    }
+    else
+    {
+        self->call = g_paste_client_change_passphrase;
+        self->finish = g_paste_client_change_passphrase_finish;
+        self->failure_title = _("Could Not Change Passphrase");
+        self->failure_log = "Could not change the passphrase";
+    }
+
+    set_requesting (row, TRUE);
+
+    return self;
+}
+
+/* Consumes @self. */
+static void
+daemon_request_complete (DaemonRequest *self,
+                         const GError  *error)
+{
+    g_autoptr (DaemonRequest) request = self;
+
+    set_requesting (request->row, FALSE);
 
     if (!error)
         return;
 
-    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (migration->row));
+    GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (request->row));
 
     /* The dialog needs a window to go on, and the preferences can be closed
-     * while the daemon is still answering -- which is exactly when a migration
+     * while the daemon is still answering -- which is exactly when a request
      * that failed has nowhere to report itself. The journal is the only record
      * left then, so the failure is warned about rather than dropped
-     * (/ui/migration/refused_without_window). Where there is a window the dialog
-     * is the report, and no warning goes out for something the user was shown. */
+     * (/preferences/storage/refused-without-window). Where there is a window
+     * the dialog is the report, and no warning goes out for something the user
+     * was shown. */
     if (!root)
     {
-        g_warning ("Could not change the storage backend: %s", error->message);
+        g_warning ("%s: %s", request->failure_log, error->message);
         return;
     }
 
-    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (_("Could Not Change Storage Backend"), error->message));
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (request->failure_title, error->message));
 
     adw_alert_dialog_add_response (dialog, "close", _("Close"));
     adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (root));
 }
 
 static void
-on_storage_migration_done (GObject      *source,
-                           GAsyncResult *result,
-                           gpointer      user_data)
+on_daemon_request_answered (GObject      *source,
+                            GAsyncResult *result,
+                            gpointer      user_data)
 {
-    g_autoptr (StorageMigration) migration = user_data;
+    DaemonRequest *self = user_data;
     g_autoptr (GError) error = NULL;
 
-    g_paste_client_reexecute_finish (G_PASTE_CLIENT (source), result, &error);
-    if (error)
-        g_paste_util_cancel_storage_migration (migration->revision);
-    storage_migration_complete (migration, error);
+    self->finish (G_PASTE_CLIENT (source), result, &error);
+    if (error && self->migration)
+        g_paste_util_cancel_storage_migration (self->revision);
+    daemon_request_complete (self, error);
 }
 
 static void
-on_storage_migration_client_ready (GObject      *source G_GNUC_UNUSED,
-                                   GAsyncResult *result,
-                                   gpointer      user_data)
+daemon_request_send (DaemonRequest *self)
 {
-    g_autoptr (StorageMigration) migration = user_data;
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClient) client = g_paste_client_new_finish (result, &error);
+    if (self->migration)
+        self->revision = g_paste_util_prepare_storage_migration ();
+    self->call (self->client, NULL, on_daemon_request_answered, self);
+}
 
-    if (!client)
+/* A daemon owning the name is not one serving the history yet -- one starting
+ * behind its unlock prompt owns it before it exports anything -- and a call
+ * reaching it then fails as a method it does not know, a migration's gate
+ * closed again for nothing. So the request waits for one to serve
+ * (g_paste_util_wait_for_daemon ()). */
+static void
+on_daemon_waited (GObject      *source G_GNUC_UNUSED,
+                  GAsyncResult *result,
+                  gpointer      user_data)
+{
+    DaemonRequest *self = user_data;
+    g_autoptr (GError) error = NULL;
+
+    if (g_paste_util_wait_for_daemon_finish (result, &error))
+        daemon_request_send (self);
+    else
+        daemon_request_complete (self, error);
+}
+
+static void
+on_daemon_request_client_ready (GObject      *source G_GNUC_UNUSED,
+                                GAsyncResult *result,
+                                gpointer      user_data)
+{
+    DaemonRequest *self = user_data;
+    g_autoptr (GError) error = NULL;
+
+    self->client = g_paste_client_new_finish (result, &error);
+
+    if (!self->client)
     {
-        storage_migration_complete (migration, error);
+        daemon_request_complete (self, error);
         return;
     }
 
-    migration->revision = g_paste_util_prepare_storage_migration ();
-    g_paste_client_reexecute (client, NULL, on_storage_migration_done, g_steal_pointer (&migration));
+    g_paste_util_wait_for_daemon (self->client, NULL, on_daemon_waited, self);
 }
 
 static void
 on_storage_migration_activated (AdwButtonRow *row,
                                 gpointer      user_data G_GNUC_UNUSED)
 {
-    StorageMigration *migration = g_new0 (StorageMigration, 1);
-
-    migration->row = g_object_ref (row);
-    gtk_widget_set_sensitive (GTK_WIDGET (row), FALSE);
-    g_paste_client_new (on_storage_migration_client_ready, migration);
+    g_paste_client_new (on_daemon_request_client_ready, daemon_request_new (row, TRUE));
 }
 
+/* The daemon owns the prompts (it holds the current passphrase, and knows how
+ * to raise them in its host), so it is asked rather than doing any of it here;
+ * the passphrases never travel over the bus. */
 static void
-on_change_passphrase_activated (AdwButtonRow *row G_GNUC_UNUSED,
+on_change_passphrase_activated (AdwButtonRow *row,
                                 gpointer      user_data G_GNUC_UNUSED)
 {
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
-
-    if (!client)
-    {
-        g_warning ("Could not connect to the daemon to change the passphrase: %s", error->message);
-        return;
-    }
-
-    /* The daemon owns the prompts (it holds the current passphrase, and knows
-     * how to raise them in its host), so ask it rather than doing any of it
-     * here; the passphrases never travel over the bus. */
-    g_paste_client_change_passphrase_sync (client, &error);
-
-    if (error)
-        g_warning ("Could not change the passphrase: %s", error->message);
+    g_paste_client_new (on_daemon_request_client_ready, daemon_request_new (row, FALSE));
 }
 
 static void
-update_passphrase_sensitivity (GPasteSettings *settings,
-                               GParamSpec     *pspec G_GNUC_UNUSED,
-                               gpointer        user_data)
+on_storage_backend_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                            GParamSpec     *pspec    G_GNUC_UNUSED,
+                            gpointer        user_data)
 {
-    gtk_widget_set_sensitive (GTK_WIDGET (user_data),
-                              g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (settings)));
+    update_row_sensitivity (user_data);
 }
 
 /**
@@ -193,9 +288,10 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                                           G_CALLBACK (on_change_passphrase_activated),
                                                                           NULL);
 
-    update_passphrase_sensitivity (settings, NULL, passphrase);
+    g_object_set_data_full (G_OBJECT (passphrase), "gpaste-encrypted-only", g_object_ref (settings), g_object_unref);
+    update_row_sensitivity (passphrase);
     g_signal_connect_object (settings, "notify::" G_PASTE_STORAGE_BACKEND_SETTING,
-                             G_CALLBACK (update_passphrase_sensitivity), passphrase, 0);
+                             G_CALLBACK (on_storage_backend_changed), passphrase, 0);
 
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 

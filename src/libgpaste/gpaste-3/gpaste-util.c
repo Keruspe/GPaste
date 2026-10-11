@@ -905,6 +905,139 @@ g_paste_util_daemon_is_legacy_finish (GAsyncResult *result,
     return g_task_propagate_boolean (G_TASK (result), error);
 }
 
+typedef struct
+{
+    GPasteClient *client;
+    gulong        presence_handler;
+    gboolean      answered;
+} DaemonWait;
+
+static void
+daemon_wait_free (gpointer data)
+{
+    DaemonWait *wait = data;
+
+    g_clear_signal_handler (&wait->presence_handler, wait->client);
+    g_paste_client_unfollow_daemon (wait->client);
+    g_object_unref (wait->client);
+    g_free (wait);
+}
+
+/* Answer @task once, consuming the reference its wait holds; %NULL @error for a
+ * daemon serving. */
+static void
+daemon_wait_answer (GTask  *task,
+                    GError *error) /* (transfer full) (nullable) */
+{
+    DaemonWait *wait = g_task_get_task_data (task);
+
+    if (wait->answered)
+    {
+        g_clear_error (&error);
+        return;
+    }
+
+    wait->answered = TRUE;
+    g_clear_signal_handler (&wait->presence_handler, wait->client);
+
+    if (error)
+        g_task_return_error (task, error);
+    else
+        g_task_return_boolean (task, TRUE);
+    g_object_unref (task);
+}
+
+static void
+on_daemon_wait_presence (GPasteClient *client,
+                         GParamSpec   *pspec G_GNUC_UNUSED,
+                         gpointer      user_data)
+{
+    switch (g_paste_client_get_daemon_presence (client))
+    {
+    case G_PASTE_DAEMON_PRESENCE_READY:
+        daemon_wait_answer (user_data, NULL);
+        break;
+    case G_PASTE_DAEMON_PRESENCE_ABSENT:
+        daemon_wait_answer (user_data, g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, _("No GPaste daemon is serving a history.")));
+        break;
+    default:
+        break;
+    }
+}
+
+static void
+on_daemon_wait_legacy (GObject      *source_object G_GNUC_UNUSED,
+                       GAsyncResult *res,
+                       gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+
+    if (g_paste_util_daemon_is_legacy_finish (res, NULL))
+    {
+        daemon_wait_answer (g_object_ref (task),
+                            g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED,
+                                                 _("The GPaste daemon running is an older one, which serves none of this: restart it with “gpaste-client daemon-reexec”.")));
+    }
+}
+
+/**
+ * g_paste_util_wait_for_daemon:
+ * @client: a #GPasteClient
+ * @cancellable: (nullable): a #GCancellable
+ * @callback: (scope async): called once a daemon serves, or none will
+ * @user_data: data for @callback
+ *
+ * Wait for a daemon to serve @client before calling it, starting one if none
+ * runs (g_paste_client_follow_daemon ()). A daemon owns the name before it
+ * serves anything, settling its storage first -- one just started, one
+ * re-executing -- and a call made in between finds no object to answer it. The
+ * wait lasts for as long as the client deems one on its way, two minutes
+ * without a history served at most, bar a GPaste 45 or 50 an update left
+ * running, which owns the name and never serves this interface: asked once
+ * whether that is who owns it, the wait fails at once, saying how to restart
+ * it.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_wait_for_daemon (GPasteClient       *client,
+                              GCancellable       *cancellable,
+                              GAsyncReadyCallback callback,
+                              gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (client));
+
+    GTask *task = g_task_new (client, cancellable, callback, user_data);
+    DaemonWait *wait = g_new0 (DaemonWait, 1);
+
+    g_task_set_source_tag (task, g_paste_util_wait_for_daemon);
+    wait->client = g_object_ref (client);
+    g_task_set_task_data (task, wait, daemon_wait_free);
+    g_paste_client_follow_daemon (client, TRUE);
+    wait->presence_handler = g_signal_connect (client, "notify::daemon-presence", G_CALLBACK (on_daemon_wait_presence), task);
+
+    if (g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_STARTING)
+        g_paste_util_daemon_is_legacy (client, cancellable, on_daemon_wait_legacy, g_object_ref (task));
+    on_daemon_wait_presence (client, NULL, task);
+}
+
+/**
+ * g_paste_util_wait_for_daemon_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails with %G_IO_ERROR_NOT_CONNECTED when no daemon serves, or the one there
+ * never will.
+ *
+ * Returns: whether a daemon serves
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_wait_for_daemon_finish (GAsyncResult *result,
+                                     GError      **error)
+{
+    g_return_val_if_fail (G_IS_TASK (result) && g_task_get_source_tag (G_TASK (result)) == g_paste_util_wait_for_daemon, FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), error);
+}
+
 /**
  * g_paste_util_reexecute_legacy_daemon:
  * @client: a #GPasteClient

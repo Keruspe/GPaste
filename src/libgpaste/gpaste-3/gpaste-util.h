@@ -59,6 +59,12 @@ gboolean g_paste_util_daemon_is_legacy_finish   (GAsyncResult       *result,
                                                  GError            **error);
 gboolean g_paste_util_reexecute_legacy_daemon   (GPasteClient       *client,
                                                  GError            **error);
+void     g_paste_util_wait_for_daemon           (GPasteClient       *client,
+                                                 GCancellable       *cancellable,
+                                                 GAsyncReadyCallback callback,
+                                                 gpointer            user_data);
+gboolean g_paste_util_wait_for_daemon_finish    (GAsyncResult       *result,
+                                                 GError            **error);
 guint64  g_paste_util_prepare_storage_migration (void);
 void     g_paste_util_cancel_storage_migration  (guint64 revision);
 
