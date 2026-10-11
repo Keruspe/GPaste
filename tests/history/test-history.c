@@ -3543,6 +3543,32 @@ test_memory_cap_after_replacement_spares_once (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
 }
 
+/* Replace builds a text item out of @contents, so it has to have some. */
+static void
+test_replace_refuses_no_contents (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* The critical is the refusal under test, which
+         * G_PASTE_TEST_IN_SUBPROCESS would abort on. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+        g_paste_history_add (history, g_paste_text_item_new ("kept"));
+
+        g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+        g_assert_null (g_paste_history_replace (history, uuid, NULL));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+        g_assert_cmpstr (value_at (history, 0), ==, "kept");
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*CRITICAL*g_paste_history_replace*contents*");
+}
+
 /* A favourite weighing more than max-memory-usage stays, the cap leaving it
  * alone, and selecting it makes it the head like any other: the selection it is
  * announced for is that item's. */
@@ -7859,6 +7885,7 @@ main (int argc, char *argv[])
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
     add_test ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
+    add_test ("/history/replace_refuses_no_contents", test_replace_refuses_no_contents);
     add_test ("/history/select_favourite_over_cap", test_select_favourite_over_cap);
     add_test ("/history/select_image_over_cap", test_select_image_over_cap);
     add_test ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);

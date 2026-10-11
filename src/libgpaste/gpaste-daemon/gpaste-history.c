@@ -1158,7 +1158,7 @@ g_paste_history_replace (GPasteHistory *self,
                          const gchar   *contents)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
-    g_return_val_if_fail (!contents || g_utf8_validate (contents, -1, NULL), NULL);
+    g_return_val_if_fail (contents && g_utf8_validate (contents, -1, NULL), NULL);
 
     G_PASTE_LOCK_HISTORY;
     guint index;
