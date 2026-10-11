@@ -24,6 +24,40 @@ static void g_paste_prompt_adw_prompt_iface_init (GPastePromptInterface *iface);
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (PromptAdw, prompt_adw, G_TYPE_OBJECT,
                                     G_PASTE_TYPE_PROMPT, g_paste_prompt_adw_prompt_iface_init)
 
+/* Every text these dialogs show is plain -- the prompt's own wording in any
+ * translation, a GError's message naming histories and paths -- while
+ * libadwaita parses Pango markup in a group's title and description and in a
+ * row's title and subtitle: one "&" or "<" and the label goes blank. The rows
+ * and the banner are told their text is not markup; a group, which has no
+ * such switch, is handed its text escaped. */
+static void
+set_group_text (GtkWidget   *group,
+                const gchar *title,
+                const gchar *description)
+{
+    if (title)
+    {
+        g_autofree gchar *escaped = g_markup_escape_text (title, -1);
+
+        adw_preferences_group_set_title (ADW_PREFERENCES_GROUP (group), escaped);
+    }
+
+    if (description)
+    {
+        g_autofree gchar *escaped = g_markup_escape_text (description, -1);
+
+        adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group), escaped);
+    }
+}
+
+static void
+set_row_title (GtkWidget   *row,
+               const gchar *title)
+{
+    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (row), FALSE);
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
+}
+
 /*
  * The migration dialog
  */
@@ -34,14 +68,15 @@ typedef struct
 
     GtkWindow           *window;
     GtkWidget           *apply;
-    AdwComboRow         *backend_row;
+    /* One radio per backend offered, in display order. */
+    GtkCheckButton     **backend_checks;
     AdwSwitchRow        *import_row;
     AdwSwitchRow        *cleanup_row;
     AdwBanner           *warning;
 
     GPasteStorage        current;
 
-    /* The backends offered by the combo, in display order. */
+    /* The backends offered, in display order. */
     const GPasteStorage *backends;
     guint                n_backends;
 } MigrationDialog;
@@ -73,32 +108,30 @@ migration_dialog_free (gpointer data)
     MigrationDialog *self = data;
 
     g_clear_object (&self->request);
+    g_free (self->backend_checks);
     g_free (self);
 }
 
-/* The combo lists the backends in a built-at-runtime order; map both ways. */
-static GPasteStorage
-backend_for_index (MigrationDialog *self,
-                   guint            index)
-{
-    return (index < self->n_backends) ? self->backends[index] : G_PASTE_STORAGE_NOOP;
-}
-
-static guint
-index_for_backend (MigrationDialog *self,
-                   GPasteStorage    storage_kind)
+/* Which backend is picked, into @chosen. None is only until the user picks one,
+ * when the backend in use is not on the list: nothing is picked for them. */
+static gboolean
+chosen_backend (MigrationDialog *self,
+                GPasteStorage   *chosen)
 {
     for (guint i = 0; i < self->n_backends; ++i)
     {
-        if (self->backends[i] == storage_kind)
-            return i;
+        if (gtk_check_button_get_active (self->backend_checks[i]))
+        {
+            *chosen = self->backends[i];
+            return TRUE;
+        }
     }
 
-    return 0;
+    return FALSE;
 }
 
 /* Whether the backend in use is one this build can construct, hence one the
- * combo lists. It is not, for a history stored by a flavour built out of this
+ * dialog lists. It is not, for a history stored by a flavour built out of this
  * copy of GPaste (an .xmls or a .db opened by a build without encryption or
  * sqlite): the dialog then has nothing to preselect and nothing to keep, and
  * says so by offering neither. */
@@ -117,9 +150,8 @@ current_is_offered (MigrationDialog *self)
 static void
 update_state (MigrationDialog *self)
 {
-    guint selected = adw_combo_row_get_selected (self->backend_row);
-    gboolean chosen_anything = (selected < self->n_backends);
-    GPasteStorage chosen = backend_for_index (self, selected);
+    GPasteStorage chosen = G_PASTE_STORAGE_NOOP;
+    gboolean chosen_anything = chosen_backend (self, &chosen);
     gboolean backend_changes = chosen_anything && g_paste_prompt_backend_changes (self->current, chosen);
     gboolean import_possible = chosen_anything && g_paste_prompt_can_import (self->current, chosen);
 
@@ -149,30 +181,16 @@ on_state_changed (GObject    *object G_GNUC_UNUSED,
     update_state (user_data);
 }
 
-/* AdwComboRow ellipsizes the backend labels — both the dropdown rows and the
- * GtkInscription previewing the current selection — and offers no property to
- * stop it. Give it our own factory of plain GtkLabels instead, which it uses for
- * the dropdown rows and the selected-value preview alike, so the longer backend
- * names stay readable. */
+/* A radio of the group activated, and only that: picking another first
+ * unpicks the one before, and the moment in between, nothing picked, would
+ * turn both switches off for good. */
 static void
-backend_label_setup (GtkSignalListItemFactory *factory G_GNUC_UNUSED,
-                     GtkListItem              *item,
-                     gpointer                  user_data G_GNUC_UNUSED)
+on_backend_toggled (GObject    *object,
+                    GParamSpec *pspec,
+                    gpointer    user_data)
 {
-    GtkWidget *label = gtk_label_new (NULL);
-
-    gtk_label_set_xalign (GTK_LABEL (label), 0.0);
-    gtk_list_item_set_child (item, label);
-}
-
-static void
-backend_label_bind (GtkSignalListItemFactory *factory G_GNUC_UNUSED,
-                    GtkListItem              *item,
-                    gpointer                  user_data G_GNUC_UNUSED)
-{
-    GtkStringObject *string = gtk_list_item_get_item (item);
-
-    gtk_label_set_label (GTK_LABEL (gtk_list_item_get_child (item)), gtk_string_object_get_string (string));
+    if (gtk_check_button_get_active (GTK_CHECK_BUTTON (object)))
+        on_state_changed (object, pspec, user_data);
 }
 
 static void
@@ -180,9 +198,14 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
           gpointer   user_data)
 {
     MigrationDialog *self = user_data;
+    GPasteStorage chosen;
+
+    /* Insensitive until a backend is picked (update_state ()). */
+    if (!chosen_backend (self, &chosen))
+        return;
 
     g_paste_prompt_request_reply_migration (self->request,
-                                            backend_for_index (self, adw_combo_row_get_selected (self->backend_row)),
+                                            chosen,
                                             adw_switch_row_get_active (self->import_row),
                                             adw_switch_row_get_active (self->cleanup_row));
 
@@ -193,7 +216,7 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
  * cleanup. A reply rather than the dismissal it sits next to, which is the whole
  * point -- a dismissal leaves the revision alone and the dialog comes back on
  * the next start. Deliberately answers with the *current* backend rather than
- * whatever the combo is showing: this button undoes the fiddling too. */
+ * whichever is picked: this button undoes the fiddling too. */
 static void
 on_keep (GtkButton *button G_GNUC_UNUSED,
          gpointer   user_data)
@@ -268,54 +291,62 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     GtkWidget *warning = adw_banner_new (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_WARNING));
 
+    /* Said, though libadwaita 1.10 starts a banner with markup off, against its
+     * own property's default of on, which a later release may honour: no case
+     * here can tell the two apart. */
+    adw_banner_set_use_markup (ADW_BANNER (warning), FALSE);
     self->warning = ADW_BANNER (warning);
 
-    g_autoptr (GtkStringList) backends = gtk_string_list_new (NULL);
+    GtkWidget *backends = adw_preferences_group_new ();
+
+    set_group_text (backends,
+                    g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND),
+                    g_paste_prompt_text ((current_is_offered (self)) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
+                                                                     : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
+
+    /* Radios rather than a combo, as the shell prompt's exclusive checkboxes
+     * are: no preselection when the backend in use is not on the list, since
+     * picking one for the user would have the dialog claim a backend they never
+     * chose, and the first is as wrong a claim as any -- which an AdwComboRow,
+     * always selecting something, cannot leave alone. Nothing is picked until
+     * they say so, and Apply stays insensitive until they do. */
+    self->backend_checks = g_new0 (GtkCheckButton *, self->n_backends);
 
     for (guint i = 0; i < self->n_backends; ++i)
-        gtk_string_list_append (backends, g_paste_prompt_storage_label (self->backends[i]));
+    {
+        GtkWidget *row = adw_action_row_new ();
+        GtkWidget *check = gtk_check_button_new ();
 
-    GtkWidget *backend_row = adw_combo_row_new ();
-
-    self->backend_row = ADW_COMBO_ROW (backend_row);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (backend_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND));
-    adw_combo_row_set_model (self->backend_row, G_LIST_MODEL (backends));
-
-    /* No preselection when the backend in use is not on the list: picking one
-     * for the user would have the dialog claim a backend they never chose, and
-     * the first row is as wrong a claim as any. Nothing is selected until they
-     * say so, and Apply stays insensitive until they do. */
-    adw_combo_row_set_selected (self->backend_row,
-                                (current_is_offered (self)) ? index_for_backend (self, self->current) : GTK_INVALID_LIST_POSITION);
-
-    g_autoptr (GtkListItemFactory) factory = gtk_signal_list_item_factory_new ();
-
-    g_signal_connect (factory, "setup", G_CALLBACK (backend_label_setup), NULL);
-    g_signal_connect (factory, "bind", G_CALLBACK (backend_label_bind), NULL);
-    adw_combo_row_set_factory (self->backend_row, factory);
+        self->backend_checks[i] = GTK_CHECK_BUTTON (check);
+        set_row_title (row, g_paste_prompt_storage_label (self->backends[i]));
+        gtk_check_button_set_group (self->backend_checks[i], (i) ? self->backend_checks[0] : NULL);
+        gtk_check_button_set_active (self->backend_checks[i], self->backends[i] == self->current);
+        adw_action_row_add_prefix (ADW_ACTION_ROW (row), check);
+        adw_action_row_set_activatable_widget (ADW_ACTION_ROW (row), check);
+        g_signal_connect (check, "notify::active", G_CALLBACK (on_backend_toggled), self);
+        adw_preferences_group_add (ADW_PREFERENCES_GROUP (backends), row);
+    }
 
     GtkWidget *import_row = adw_switch_row_new ();
 
     self->import_row = ADW_SWITCH_ROW (import_row);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
+    set_row_title (import_row, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE));
 
     GtkWidget *cleanup_row = adw_switch_row_new ();
 
     self->cleanup_row = ADW_SWITCH_ROW (cleanup_row);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
+    set_row_title (cleanup_row, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE));
 
     GtkWidget *group = adw_preferences_group_new ();
 
-    adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
-                                           g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION));
-    adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), backend_row);
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), import_row);
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), cleanup_row);
 
     GtkWidget *page = adw_preferences_page_new ();
 
+    adw_preferences_page_add (ADW_PREFERENCES_PAGE (page), ADW_PREFERENCES_GROUP (backends));
     adw_preferences_page_add (ADW_PREFERENCES_PAGE (page), ADW_PREFERENCES_GROUP (group));
 
     GtkWidget *content = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
@@ -330,7 +361,6 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
 
-    g_signal_connect (backend_row, "notify::selected", G_CALLBACK (on_state_changed), self);
     g_signal_connect (import_row, "notify::active", G_CALLBACK (on_state_changed), self);
     g_signal_connect (cleanup_row, "notify::active", G_CALLBACK (on_state_changed), self);
     g_signal_connect (window, "destroy", G_CALLBACK (migration_dialog_dismiss), self);
@@ -505,7 +535,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     GtkWidget *entry = adw_password_entry_row_new ();
 
     self->entry = GTK_EDITABLE (entry);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
+    set_row_title (entry, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
     g_signal_connect (entry, "changed", G_CALLBACK (on_passphrase_changed), self);
     /* Enter submits, as it does in the shell prompt: an unlock that only takes
      * the mouse is an unlock the daemon waits on for no reason. */
@@ -526,7 +556,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         GtkWidget *confirm_entry = adw_password_entry_row_new ();
 
         self->confirm_entry = GTK_EDITABLE (confirm_entry);
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (confirm_entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
+        set_row_title (confirm_entry, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
         g_signal_connect (confirm_entry, "changed", G_CALLBACK (on_passphrase_changed), self);
         /* Enter submits from here too: this is the field the user finishes
          * typing in, and the shell prompt takes it in both of its entries. */
@@ -551,8 +581,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     g_autofree gchar *description = error_message ? g_strconcat (error_message, "\n\n", standing, NULL)
                                                   : NULL;
 
-    adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
-                                           description ? description : standing);
+    set_group_text (group, NULL, description ? description : standing);
 
     /* No keyring in this build means nothing to offer to remember it in. */
     if (g_paste_prompt_keyring_available ())
@@ -561,7 +590,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         gboolean starts_on;
 
         self->remember = remember;
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
+        set_row_title (remember, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
         adw_action_row_set_subtitle (ADW_ACTION_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE));
 
         g_paste_prompt_remember_state (g_paste_prompt_request_get_remember (request),

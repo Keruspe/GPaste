@@ -264,7 +264,10 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         const content = new Dialog.MessageDialogContent({
             title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_TITLE),
-            description: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_DESCRIPTION),
+            // Naming no "Keep as is" where none is offered (see below).
+            description: GPasteDaemon.prompt_text(this._chosen === null
+                ? GPasteDaemon.PromptText.MIGRATION_DESCRIPTION_UNKEPT
+                : GPasteDaemon.PromptText.MIGRATION_DESCRIPTION),
         });
 
         this._backendButtons = new Map();

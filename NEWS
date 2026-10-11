@@ -17,6 +17,8 @@ NEW in 51.1 (UNRELEASED)
 - Fix GPaste inside GNOME Shell keeping its passphrase, or its questions, after being replaced or turned off during a migration
 - Fix GPaste's storage questions inside GNOME Shell showing on the lock screen
 - Fix the passphrase strength meter missing from GPaste's questions inside GNOME Shell
+- Fix the storage migration window picking a storage for you when the one in use cannot be kept
+- Fix the passphrase and migration windows going blank where a message holds a & or a <
 - Fix a password staying on the clipboard when its history entry is deleted, or the history emptied or decrypted
 - Fix a password taken off the clipboard coming back as plain text, or leaving it needlessly blank
 - Fix GNOME Shell taking a password off the clipboard early when asked to restart GPaste

@@ -80,6 +80,9 @@ const context = vm.createContext({
             keyring_available: () => false,
             pwquality_available: () => true,
             passphrase_is_complete: () => false,
+            storage_label: storage => `storage ${storage}`,
+            can_import: () => false,
+            backend_changes: () => false,
         },
         PromptText: new Proxy({}, {get: (target, name) => name}),
         StorageRemember: {UNCHANGED: 0, YES: 1, NO: 2},
@@ -159,4 +162,30 @@ assert.deepEqual(errors, ['GPaste: Title: Message']);
 assert.equal(sessionMode.handler, null);
 assert.equal(dialogs.length, 3);
 
-console.log('Prompt: lock screen and strength meter passed');
+// The migration dialog names "Keep as is" only where it offers it: not for a
+// backend this build cannot open, which is on no list.
+const migrationPrompt = new context.Prompt();
+
+sessionMode.update(false);
+
+for (const [current, description] of [[0, 'MIGRATION_DESCRIPTION'], [9, 'MIGRATION_DESCRIPTION_UNKEPT']]) {
+    const migration = {
+        get_current: () => current,
+        get_offered: () => [0, 1],
+        reply_migration() {},
+        dismiss() {},
+    };
+    const shownBefore = dialogs.length;
+
+    migrationPrompt.vfunc_migration(migration);
+    assert.equal(dialogs.length, shownBefore + 1);
+
+    const [migrationContent] = dialogs.at(-1).contentLayout.children;
+
+    assert.equal(migrationContent.description, description);
+    dialogs.at(-1).close();
+}
+
+migrationPrompt.shutdown();
+
+console.log('Prompt: lock screen, strength meter and migration description passed');

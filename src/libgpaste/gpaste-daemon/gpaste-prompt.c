@@ -884,7 +884,8 @@ G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_TITLE,             "import-failed-title"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION,       "import-failed-description"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLOSE,                           "close"),
-                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"))
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,    "migration-description-unkept"))
 
 /**
  * g_paste_prompt_text:
@@ -964,6 +965,8 @@ g_paste_prompt_text (GPastePromptText text)
         return _("Close");
     case G_PASTE_PROMPT_TEXT_CANCEL:
         return _("Cancel");
+    case G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT:
+        return _("Choose where GPaste should store your clipboard history. Nothing is kept on disk unless you pick a storing backend here. Closing this window asks it again next time.");
     default:
         return "";
     }

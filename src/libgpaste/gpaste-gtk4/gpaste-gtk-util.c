@@ -751,6 +751,9 @@ g_paste_gtk_util_password_strength_row_new (const gchar *title,
 
     GtkWidget *row = adw_action_row_new ();
 
+    /* Plain text, both of it: a translation and libpwquality's advice, neither
+     * of them markup, where one "&" would blank the label. */
+    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (row), FALSE);
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
 
     if (!g_paste_util_pwquality_available ())

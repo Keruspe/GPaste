@@ -205,6 +205,10 @@ typedef enum
     G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION,
     G_PASTE_PROMPT_TEXT_CLOSE,
     G_PASTE_PROMPT_TEXT_CANCEL,
+    /* G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION for a dialog offering no "Keep
+     * as is": the backend in use is one this build cannot open. Last, so that
+     * the values before it keep their numbers. */
+    G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,
 } GPastePromptText;
 
 #define G_PASTE_TYPE_PROMPT_TEXT (g_paste_prompt_text_get_type ())
