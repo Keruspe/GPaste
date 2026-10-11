@@ -4,6 +4,18 @@ test(
   suite: 'gpaste',
 )
 
+test(
+  'release',
+  find_program('test-release.py'),
+  suite: 'gpaste',
+)
+
+test(
+  'gen-keybindings',
+  find_program('test-gen-keybindings.py'),
+  suite: 'gpaste',
+)
+
 if get_option('gnome-shell')
   test(
     'extension-locale',
