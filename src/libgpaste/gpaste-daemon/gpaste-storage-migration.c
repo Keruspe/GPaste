@@ -368,7 +368,10 @@ import_histories (GPasteSettings *settings,
         return FALSE;
     }
 
-    /* Past the last history written to @chosen. */
+    /* Past the last history written to @chosen, which a failure takes back. A
+     * copy the import replaced goes with it: what it held went with the write,
+     * and the source still holds what replaced it. One whose write failed is
+     * as it was, and stays, an older copy an earlier migration kept included. */
     GStrv written_end = names;
 
     for (GStrv name = names; ok && *name; ++name)
@@ -409,7 +412,13 @@ import_histories (GPasteSettings *settings,
             }
         }
 
-        g_paste_storage_backend_write_history (next, *name, history);
+        if (!g_paste_storage_backend_write_history (next, *name, history))
+        {
+            g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         "The history “%s” could not be written", *name);
+            ok = FALSE;
+            break;
+        }
         written_end = name + 1;
 
         g_autolist (GPasteItem) written = NULL;

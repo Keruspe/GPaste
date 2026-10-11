@@ -51,7 +51,7 @@ gboolean     g_paste_history_sync        (GPasteHistory *self,
                                           const gchar   *name,
                                           GError       **error);
 void         g_paste_history_reload_backend (GPasteHistory *self);
-void     g_paste_history_save       (GPasteHistory *self,
+gboolean g_paste_history_save       (GPasteHistory *self,
                                      const gchar   *name);
 void     g_paste_history_load       (GPasteHistory *self,
                                      const gchar   *name);

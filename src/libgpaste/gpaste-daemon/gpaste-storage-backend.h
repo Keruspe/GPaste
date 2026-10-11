@@ -26,15 +26,18 @@ struct _GPasteStorageBackendClass
      * (a failed decryption, parse or I/O error), so a caller can tell a genuine
      * empty history apart from a read that silently yielded nothing -- and
      * likewise for a read @cancellable stopped partway, a partial history being
-     * one nothing may persist over. */
+     * one nothing may persist over.
+     *
+     * A write returns whether the store of @name holds @history now: one that
+     * fails leaves it as it was, and leaves none where there was none. */
     gboolean (*read_history_file)  (GPasteStorageBackend  *self,
                                     const gchar           *name,
                                     GCancellable          *cancellable,
                                     GList                **history,
                                     gsize                 *size);
-    void (*write_history_file) (GPasteStorageBackend *self,
-                                const gchar          *name,
-                                const GList          *history);
+    gboolean (*write_history_file) (GPasteStorageBackend *self,
+                                    const gchar          *name,
+                                    const GList          *history);
 
     /*< protected >*/
     /* Which flavour this instance is. Everything else about the flavour --
@@ -105,6 +108,12 @@ struct _GPasteStorageBackendClass
                                       GPasteItem           *item);
     void     (*clear_history)        (GPasteStorageBackend *self,
                                       const gchar          *name);
+    /* Whether a write of @name failed since the last full one that landed,
+     * the store lagging the history until one does. Asked on the main thread
+     * after every write, so it must not wait on a read in flight. Unset, no
+     * store ever lags. */
+    gboolean (*has_diverged)         (GPasteStorageBackend *self,
+                                      const gchar          *name);
 };
 
 GPasteSettings *g_paste_storage_backend_get_settings (GPasteStorageBackend *self);
@@ -116,21 +125,21 @@ gboolean       g_paste_storage_backend_is_encrypted  (GPasteStorageBackend *self
 gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
                                                       const gchar          *name);
 
-gboolean g_paste_storage_backend_read_history (GPasteStorageBackend *self,
-                                               const gchar          *name,
-                                               GCancellable         *cancellable,
-                                               GList               **history,
-                                               gsize                *size);
-void g_paste_storage_backend_write_history    (GPasteStorageBackend *self,
-                                               const gchar          *name,
-                                               const GList          *history);
-void g_paste_storage_backend_delete_history   (GPasteStorageBackend *self,
-                                               const gchar          *name,
-                                               GError              **error);
-GStrv g_paste_storage_backend_list_histories  (GPasteStorageBackend *self,
-                                               GError              **error);
-gsize g_paste_storage_backend_count_history   (GPasteStorageBackend *self,
-                                               const gchar          *name);
+gboolean g_paste_storage_backend_read_history  (GPasteStorageBackend *self,
+                                                const gchar          *name,
+                                                GCancellable         *cancellable,
+                                                GList               **history,
+                                                gsize                *size);
+gboolean g_paste_storage_backend_write_history (GPasteStorageBackend *self,
+                                                const gchar          *name,
+                                                const GList          *history);
+void g_paste_storage_backend_delete_history    (GPasteStorageBackend *self,
+                                                const gchar          *name,
+                                                GError              **error);
+GStrv g_paste_storage_backend_list_histories   (GPasteStorageBackend *self,
+                                                GError              **error);
+gsize g_paste_storage_backend_count_history    (GPasteStorageBackend *self,
+                                                const gchar          *name);
 gboolean g_paste_storage_backend_delete_history_images (const gchar *name,
                                                         GError     **error);
 gboolean g_paste_storage_backend_rekey        (GPasteStorageBackend *self,
@@ -156,6 +165,8 @@ void     g_paste_storage_backend_clear_history        (GPasteStorageBackend *sel
                                                        const GList          *history);
 
 gboolean g_paste_storage_backend_is_incremental       (GPasteStorageBackend *self);
+gboolean g_paste_storage_backend_has_diverged         (GPasteStorageBackend *self,
+                                                       const gchar          *name);
 
 void     g_paste_storage_backend_lock     (GCancellable *cancellable);
 gboolean g_paste_storage_backend_try_lock (void);

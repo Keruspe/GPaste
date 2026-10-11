@@ -30,6 +30,18 @@ typedef void (*GPasteHistorySaverLoadedFunc) (gpointer  user_data,
                                               gboolean  save_after,
                                               gboolean  readable);
 
+/**
+ * GPasteHistorySaverDivergedFunc:
+ * @user_data: the @owner passed to g_paste_history_saver_new()
+ * @name: the history whose store a write left behind
+ *
+ * Called on the main thread when a write other than a full one has left the
+ * store of @name behind the history (see g_paste_storage_backend_has_diverged()),
+ * for the owner to record a full write of it.
+ */
+typedef void (*GPasteHistorySaverDivergedFunc) (gpointer     user_data,
+                                                const gchar *name);
+
 /* The kind of change being persisted. Incremental backends (e.g. SQLite) act on
  * the supplied item/uuid; the file backend ignores them and rewrites the whole
  * snapshot, so for it every kind behaves like %G_PASTE_HISTORY_SAVE_FULL. */
@@ -69,8 +81,9 @@ gboolean g_paste_history_saver_is_loading    (GPasteHistorySaver *self);
 /* Constructor  */
 /****************/
 
-GPasteHistorySaver *g_paste_history_saver_new (GPasteStorageBackend        *backend,
-                                               gpointer                     owner,
-                                               GPasteHistorySaverLoadedFunc loaded);
+GPasteHistorySaver *g_paste_history_saver_new (GPasteStorageBackend          *backend,
+                                               gpointer                       owner,
+                                               GPasteHistorySaverLoadedFunc   loaded,
+                                               GPasteHistorySaverDivergedFunc diverged);
 
 G_END_DECLS

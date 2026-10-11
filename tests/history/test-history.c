@@ -852,6 +852,59 @@ test_file_delete_takes_temporary (void)
     g_assert_false (g_file_test (temporary, G_FILE_TEST_EXISTS));
 }
 
+/* With no storage in use, a backup is no copy made: refused rather than
+ * answered for. So is the deletion of a history another flavour still stores
+ * -- an encrypted store left locked, or what a migration kept -- which the
+ * "no storage" backend cannot reach, whichever flavour that is: the store
+ * stays, and so does the session's model. */
+static void
+test_noop_refuses_unmade (void)
+{
+    static const GPasteStorage stored[] = {
+        G_PASTE_STORAGE_FILE,
+        G_PASTE_STORAGE_ENCRYPTED_FILE,
+        G_PASTE_STORAGE_SQLITE,
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+    };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+
+    g_paste_history_load (history, "noop-kept");
+    g_paste_history_add (history, g_paste_text_item_new ("this session"));
+
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_daemon_methods_backup_history (&methods, "noop-kept", "noop-copy", &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    }
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    /* Only whether it is there counts, not what it holds. */
+    for (gsize i = 0; i < G_N_ELEMENTS (stored); ++i)
+    {
+        g_autofree gchar *kept = g_paste_util_get_history_file_path ("noop-kept", g_paste_storage_get_extension (stored[i]));
+        g_autoptr (GError) error = NULL;
+
+        g_assert_true (g_file_set_contents (kept, "kept", -1, NULL));
+
+        g_paste_daemon_methods_delete_history (&methods, "noop-kept", &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+        g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+        g_assert_cmpint (g_unlink (kept), ==, 0);
+    }
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+}
+
 /* The same image copied in two histories gets one file each: evicting or
  * deleting it from one history must never break the other. */
 static void
@@ -1388,7 +1441,7 @@ test_file_image_moved_home (void)
     g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
     g_autofree gchar *data_dir = g_path_get_dirname (history_dir);
 
-    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
     g_assert_true (g_file_get_contents (document, &contents, NULL, NULL));
 
     g_auto (GStrv) parts = g_strsplit (contents, data_dir, -1);
@@ -1401,7 +1454,7 @@ test_file_image_moved_home (void)
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
-    g_paste_storage_backend_write_history (backend, name, loaded);
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, loaded));
     g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
 }
 
@@ -1536,7 +1589,7 @@ test_file_encrypted_image_round_trip (void)
     {
         g_autoptr (GPasteStorageBackend) writer = g_paste_file_backend_new_encrypted (settings, "passphrase");
 
-        g_paste_storage_backend_write_history (writer, name, items);
+        g_assert_true (g_paste_storage_backend_write_history (writer, name, items));
     }
 
     /* Read by another backend, as the next start's would be. */
@@ -5692,6 +5745,7 @@ main (int argc, char *argv[])
     add_test ("/history/history_image_names_no_file", test_history_image_names_no_file);
     add_test ("/history/file_image_per_history", test_file_image_per_history);
     add_test ("/history/file_delete_takes_temporary", test_file_delete_takes_temporary);
+    add_test ("/history/noop_refuses_unmade", test_noop_refuses_unmade);
     add_test ("/history/file_backup_owns_images", test_file_backup_owns_images);
     add_test ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
     add_test ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);

@@ -11,8 +11,9 @@ struct _GPasteNoopBackend
 G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
 /* The "no storage" backend persists nothing: the history lives only in memory
- * for the current session. Reads come back empty, writes are dropped, and no
- * history is ever listed on disk. */
+ * for the current session. Reads come back empty, writes are dropped -- each
+ * answering that nothing was kept, so a backup or an emptying asked of it is
+ * not reported as made -- and no history is ever listed on disk. */
 
 static gboolean
 g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self        G_GNUC_UNUSED,
@@ -28,11 +29,12 @@ g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self        G_GNU
     return TRUE;
 }
 
-static void
+static gboolean
 g_paste_noop_backend_write_history_file (GPasteStorageBackend *self G_GNUC_UNUSED,
                                          const gchar          *name G_GNUC_UNUSED,
                                          const GList          *history G_GNUC_UNUSED)
 {
+    return FALSE;
 }
 
 static GPasteStorage

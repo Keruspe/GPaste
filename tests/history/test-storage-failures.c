@@ -3,8 +3,10 @@
 
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
+#include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
@@ -191,10 +193,16 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3, sqlite3_close)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (sqlite3_stmt, sqlite3_finalize)
 
 /* The statement whose execution fails as a full disk would fail it, matched
- * as a substring, and the database another GPaste upgrades the moment a
- * transaction is about to begin: NULL for none. */
+ * as a substring -- the next one only, with @failed_sql_once -- and the
+ * database another GPaste upgrades the moment a transaction is about to begin:
+ * NULL for none. */
 static const gchar *failed_sql;
+static gboolean failed_sql_once;
 static const gchar *upgraded_meanwhile;
+/* How many full writes began emptying their table, and how many statements
+ * @failed_sql failed. */
+static guint full_writes;
+static guint injected_failures;
 
 int
 sqlite3_exec (sqlite3    *db,
@@ -207,8 +215,14 @@ sqlite3_exec (sqlite3    *db,
     Exec original = (Exec) dlsym (RTLD_NEXT, "sqlite3_exec");
 
     g_assert_nonnull (original);
+    if (!strcmp (sql, "DELETE FROM items;"))
+        ++full_writes;
+
     if (failed_sql && strstr (sql, failed_sql))
     {
+        if (failed_sql_once)
+            failed_sql = NULL;
+        ++injected_failures;
         if (error)
             *error = sqlite3_mprintf ("injected disk-full failure");
 
@@ -277,6 +291,32 @@ sqlite3_wal_checkpoint_v2 (sqlite3    *db,
     return original (db, database, mode, log_frames, checkpointed_frames);
 }
 
+/* The statement whose next preparation fails, as an allocation failing would
+ * fail it: NULL for none. */
+static const gchar *failed_prepare_sql;
+
+int
+sqlite3_prepare_v2 (sqlite3       *db,
+                    const char    *sql,
+                    int            length,
+                    sqlite3_stmt **statement,
+                    const char   **tail)
+{
+    typedef int (*Prepare) (sqlite3 *, const char *, int, sqlite3_stmt **, const char **);
+    Prepare original = (Prepare) dlsym (RTLD_NEXT, "sqlite3_prepare_v2");
+
+    g_assert_nonnull (original);
+    if (failed_prepare_sql && !g_strcmp0 (sql, failed_prepare_sql))
+    {
+        failed_prepare_sql = NULL;
+        *statement = NULL;
+
+        return SQLITE_NOMEM;
+    }
+
+    return original (db, sql, length, statement, tail);
+}
+
 /* One integer out of @path, through a connection of its own: test-history.c's
  * sqlite_raw_count() is the same, in a binary that shares no fixture with
  * this one. */
@@ -302,22 +342,23 @@ sqlite_query_int (const gchar *path,
 static gint shortened_kind = -1;
 static gint truncated_kind = -1;
 
-void
+gboolean
 g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
                                        const gchar          *name,
                                        const GList          *items)
 {
-    typedef void (*Write) (GPasteStorageBackend *, const gchar *, const GList *);
+    typedef gboolean (*Write) (GPasteStorageBackend *, const gchar *, const GList *);
     Write original = (Write) dlsym (RTLD_NEXT, "g_paste_storage_backend_write_history");
     gint kind = g_paste_storage_backend_get_kind (backend);
 
     g_assert_nonnull (original);
     if (items && kind == shortened_kind)
         items = items->next;
-    original (backend, name, items);
+
+    gboolean written = original (backend, name, items);
 
     if (kind != truncated_kind)
-        return;
+        return written;
 
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
     g_autofree gchar *contents = NULL;
@@ -328,6 +369,8 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
 
     g_assert_nonnull (footer);
     g_assert_true (g_file_set_contents (path, contents, footer - contents, NULL));
+
+    return written;
 }
 
 /* The offered backends less this kind, standing for a build without the
@@ -1057,6 +1100,401 @@ test_sqlite_checksum_refused (void)
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
 }
 
+/* An incremental write that fails -- a full disk -- is not lost for good:
+ * nothing retries it, and the next add's reconciliation only drops rows, so
+ * that add, which carries the whole snapshot, writes it in full instead. */
+static void
+test_sqlite_diverged_write (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "diverged-write";
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) c = g_paste_text_item_new ("c");
+    g_autoptr (GList) history = g_list_prepend (NULL, a);
+
+    g_paste_storage_backend_write_history (backend, name, history);
+
+    history = g_list_prepend (history, b);
+    failed_sql = "BEGIN IMMEDIATE";
+    g_paste_storage_backend_add_item (backend, name, b, history);
+    failed_sql = NULL;
+
+    history = g_list_prepend (history, c);
+    g_paste_storage_backend_add_item (backend, name, c, history);
+
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_value (items->next->data), ==, "b");
+}
+
+/* A full write failing on a database it created leaves none behind, as the file
+ * flavour leaves no document: a backup answered for would otherwise be listed
+ * while holding nothing -- whether the write or the open making the schema
+ * fails. One that was there before the write stays as it was, until the next
+ * add carrying the history writes it in full: the reconciliation would only
+ * drop rows, leaving out what the failed write had. */
+static void
+test_sqlite_failed_write_leaves_no_database (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "failed-backup";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    g_autolist (GPasteItem) first = g_list_append (NULL, g_paste_text_item_new ("first"));
+    g_autolist (GPasteItem) second = g_list_append (NULL, g_paste_text_item_new ("second"));
+
+    failed_sql = "DELETE FROM items;";
+    g_paste_storage_backend_write_history (backend, name, first);
+    failed_sql = NULL;
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+
+    failed_sql = "CREATE TABLE IF NOT EXISTS items";
+    g_paste_storage_backend_write_history (backend, name, first);
+    failed_sql = NULL;
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+
+    g_paste_storage_backend_write_history (backend, name, first);
+    failed_sql = "DELETE FROM items;";
+    g_paste_storage_backend_write_history (backend, name, second);
+    failed_sql = NULL;
+
+    {
+        g_autolist (GPasteItem) items = NULL;
+        gsize size;
+
+        g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+        g_assert_cmpuint (g_list_length (items), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "first");
+    }
+
+    g_autoptr (GPasteItem) third = g_paste_text_item_new ("third");
+    g_autoptr (GList) history = g_list_prepend (g_list_copy (second), third);
+
+    g_paste_storage_backend_add_item (backend, name, third, history);
+
+    {
+        g_autolist (GPasteItem) items = NULL;
+        gsize size;
+
+        g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+        g_assert_cmpuint (g_list_length (items), ==, 2);
+        g_assert_cmpstr (g_paste_item_get_value (items->next->data), ==, "second");
+    }
+
+    /* The same through a connection the failed write had to open. */
+    g_autoptr (GPasteStorageBackend) reopened = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+    g_paste_storage_backend_write_history (reopened, name, first);
+    g_clear_object (&reopened);
+    reopened = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    failed_sql = "PRAGMA journal_mode";
+    g_paste_storage_backend_write_history (reopened, name, second);
+    failed_sql = NULL;
+    /* The open failed, rather than the case going by without it. */
+    g_assert_true (g_paste_storage_backend_has_diverged (reopened, name));
+    g_paste_storage_backend_add_item (reopened, name, third, history);
+
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (reopened, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (items->next->data), ==, "second");
+}
+
+/* An add's reconciliation scans the store when its count fails: taken for a
+ * count that matched, the failure would keep the row the add displaced. */
+static void
+test_sqlite_reconcile_uncounted (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "reconcile-uncounted";
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) c = g_paste_text_item_new ("c");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, a), b);
+
+    g_paste_storage_backend_write_history (backend, name, history);
+
+    /* b displaced by c. */
+    g_autoptr (GList) displaced = g_list_prepend (g_list_prepend (NULL, a), c);
+
+    busy_step_sql = "SELECT COUNT (*) FROM items;";
+    g_paste_storage_backend_add_item (backend, name, c, displaced);
+    g_assert_null (busy_step_sql);
+
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+}
+
+/* A row the reconciliation failed to drop leaves the store behind the history
+ * as much as a write that failed. */
+static void
+test_sqlite_reconcile_failed (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*failed to reconcile an item*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "reconcile-failed";
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) c = g_paste_text_item_new ("c");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, a), b);
+
+    g_paste_storage_backend_write_history (backend, name, history);
+
+    g_autoptr (GList) displaced = g_list_prepend (g_list_prepend (NULL, a), c);
+
+    busy_step_sql = "DELETE FROM items WHERE uuid = ?;";
+    g_paste_storage_backend_add_item (backend, name, c, displaced);
+    g_assert_null (busy_step_sql);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+}
+
+/* A remove, a replace or an emptying that fails at one of its steps, given by
+ * the statement failing there. */
+typedef struct
+{
+    const gchar *operation;
+    gboolean     unopened; /* through a backend whose connection fails to open */
+    const gchar *failed_sql;
+    const gchar *failed_prepare;
+    const gchar *busy_step;
+} IncrementalFailure;
+
+#define G_PASTE_TEST_REPLACE_SQL "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ?, image = ?, favourite = ?, timeout = ? WHERE uuid = ? RETURNING id;"
+
+static const IncrementalFailure incremental_failures[] = {
+    { "remove", TRUE, "PRAGMA journal_mode", NULL, NULL },
+    { "remove", FALSE, NULL, "DELETE FROM items WHERE uuid = ?;", NULL },
+    { "remove", FALSE, NULL, NULL, "DELETE FROM items WHERE uuid = ?;" },
+    { "replace", TRUE, "PRAGMA journal_mode", NULL, NULL },
+    { "replace", FALSE, "BEGIN IMMEDIATE", NULL, NULL },
+    { "replace", FALSE, NULL, G_PASTE_TEST_REPLACE_SQL, NULL },
+    { "replace", FALSE, NULL, NULL, G_PASTE_TEST_REPLACE_SQL },
+    { "clear", FALSE, "DELETE FROM items;", NULL, NULL },
+};
+
+/* Whichever step of theirs fails, these leave the store behind the history as
+ * much as a failed add: the item removed, or the whole history emptied, would
+ * otherwise be back at the next start, nothing writing the history in full. */
+static void
+test_sqlite_incremental_failed (gconstpointer data)
+{
+    const IncrementalFailure *failure = data;
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) writer = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autoptr (GPasteStorageBackend) unopened = (failure->unopened) ? g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings) : NULL;
+    GPasteStorageBackend *backend = (unopened) ? unopened : writer;
+    const gchar *name = "incremental-failed";
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) c = g_paste_text_item_new ("c");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, a), b);
+
+    g_paste_storage_backend_write_history (writer, name, history);
+
+    failed_sql = failure->failed_sql;
+    failed_prepare_sql = failure->failed_prepare;
+    busy_step_sql = failure->busy_step;
+    if (!g_strcmp0 (failure->operation, "remove"))
+    {
+        history = g_list_remove (history, a);
+        g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (a), history);
+    }
+    else if (!g_strcmp0 (failure->operation, "replace"))
+    {
+        g_list_find (history, a)->data = c;
+        g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (a), c, history);
+    }
+    else
+        g_paste_storage_backend_clear_history (backend, name, NULL);
+    failed_sql = NULL;
+
+    g_assert_cmpuint (injected_failures, ==, (failure->failed_sql) ? 1 : 0);
+    g_assert_null (failed_prepare_sql);
+    g_assert_null (busy_step_sql);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+}
+
+static gboolean
+items_counted (gconstpointer data,
+               gconstpointer arg)
+{
+    return sqlite_query_int (data, "SELECT COUNT (*) FROM items;") == GPOINTER_TO_INT (arg);
+}
+
+/* A write the saver had out that fails leaves the store behind the history,
+ * which then writes it in full, once: the adds after it displaced nothing, so
+ * none carries the history that would bring the store level. A store refusing
+ * every write is asked for that one full write, not for another after each
+ * that fails -- and for one more when the history is flushed. */
+static void
+test_sqlite_diverged_history (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "diverged-history";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_paste_history_load (history, name);
+    g_paste_history_add (history, g_paste_text_item_new ("a"));
+    g_paste_test_bus_wait_until (items_counted, path, GINT_TO_POINTER (1));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+
+    full_writes = 0;
+    failed_sql = "BEGIN IMMEDIATE";
+    failed_sql_once = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("b"));
+    g_paste_history_add (history, g_paste_text_item_new ("c"));
+    g_paste_test_bus_wait_until (items_counted, path, GINT_TO_POINTER (3));
+    g_assert_null (failed_sql);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 3);
+    g_assert_cmpuint (full_writes, ==, 1);
+
+    injected_failures = 0;
+    failed_sql = "BEGIN IMMEDIATE";
+    failed_sql_once = FALSE;
+    g_paste_history_add (history, g_paste_text_item_new ("d"));
+    /* The add, and the full write after it: waited for, however slow the
+     * worker, and then a moment for a third that must not come. */
+    g_paste_test_bus_wait_for_count (&injected_failures, 2);
+    g_paste_test_bus_pump (100);
+    g_assert_cmpuint (injected_failures, ==, 2);
+
+    /* Room again, and nothing copied since: the flush an exit makes writes
+     * the store level, it being what the successor loads. */
+    failed_sql = NULL;
+    g_paste_history_flush (history);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 4);
+}
+
+/* A backup, or the emptying of another history, whose write fails answers
+ * that it failed: the backup is not there to be listed, and the history
+ * emptied is as it was, the images it holds included. The file flavour says
+ * the same of a document it could not install. */
+static void
+test_sqlite_failed_write_answered (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("answered", g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    g_autofree gchar *backup_path = g_paste_util_get_history_file_path ("answered-backup", g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    g_autofree gchar *images = g_paste_file_backend_images_dir ("answered");
+    g_autofree gchar *image = g_build_filename (images, "kept.png", NULL);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+        g_assert_true (g_paste_storage_backend_write_history (backend, "answered", items));
+    }
+
+    g_assert_cmpint (g_mkdir_with_parents (images, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (image, "", -1, NULL));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+
+    g_assert_true (g_paste_storage_backend_try_lock ());
+
+    failed_sql = "DELETE FROM items;";
+    g_paste_daemon_methods_backup_history (&methods, "answered", "answered-backup", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&error);
+    g_paste_daemon_methods_empty_history (&methods, "answered", &error);
+    failed_sql = NULL;
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+
+    g_assert_false (g_file_test (backup_path, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+    g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("never installed"));
+    static const gchar * const install[] = { ".xml.tmp", NULL };
+
+    failed_moves = install;
+    g_assert_false (g_paste_storage_backend_write_history (file, "answered-file", items));
+    failed_moves = NULL;
+    g_assert_true (g_paste_storage_backend_write_history (file, "answered-file", items));
+}
+
 /* Ranks past the compaction threshold are brought back down on open whatever
  * order the rows are in: one selected again holds a rank above older rows with
  * a higher id, which the compaction's unique index would otherwise trip on. */
@@ -1145,6 +1583,50 @@ test_import_spares_unreadable_destination (void)
     g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
     g_assert_true (g_file_test (database, G_FILE_TEST_EXISTS));
     g_assert_cmpint (sqlite_query_int (database, "PRAGMA user_version;"), ==, 99);
+}
+
+/* A destination history whose write failed, installing nothing, is one the
+ * rollback leaves as it was: an older copy an earlier migration kept stays. */
+static void
+test_import_spares_unwritten_destination (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected failure moving*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "unwritten";
+
+    {
+        g_autoptr (GPasteStorageBackend) sqlite = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) old = g_list_append (NULL, g_paste_text_item_new ("older copy"));
+        g_autolist (GPasteItem) source = g_list_append (NULL, g_paste_text_item_new ("source"));
+
+        g_assert_true (g_paste_storage_backend_write_history (file, name, old));
+        g_assert_true (g_paste_storage_backend_write_history (sqlite, name, source));
+    }
+
+    static const gchar * const install[] = { ".xml.tmp", NULL };
+    g_autoptr (GError) error = NULL;
+
+    failed_moves = install;
+    g_assert_false (import_histories (settings, G_PASTE_STORAGE_SQLITE, NULL, G_PASTE_STORAGE_FILE, NULL, &error));
+    failed_moves = NULL;
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (file, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "older copy");
 }
 
 /* A version 1 database whose upgrade fails at the statement @data names has
@@ -1630,7 +2112,7 @@ test_image_name_not_utf8 (void)
 
     items = g_list_append (items, g_paste_text_item_new ("saved"));
     g_paste_settings_set_images_support (settings, TRUE);
-    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
 
     g_autolist (GPasteItem) loaded = NULL;
     gsize size;
@@ -1640,6 +2122,79 @@ test_image_name_not_utf8 (void)
     g_assert_true (G_PASTE_IS_IMAGE_ITEM (loaded->data));
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
     g_assert_cmpstr (g_paste_item_get_value (loaded->next->data), ==, "saved");
+}
+
+/* A history written without one of its images does not hold what it was
+ * given: the write says so -- a backup missing its screenshots is no backup --
+ * and one that was not there before is not left behind. */
+static void
+test_image_write_failed (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to create images directory*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "image-write-failed";
+    const guchar pixel[] = { 82, 83, 84, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+    g_autofree gchar *document = g_paste_util_get_history_file_path (name, "xml");
+    g_autofree gchar *parent = g_path_get_dirname (images);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    /* What the image's directory cannot be made through. */
+    g_assert_cmpint (g_mkdir_with_parents (parent, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (images, "", 0, NULL));
+
+    g_assert_false (g_paste_storage_backend_write_history (backend, name, items));
+    g_assert_false (g_file_test (document, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (images, G_FILE_TEST_IS_REGULAR));
+}
+
+/* A write of a history that was not there failing past its images -- the
+ * document refusing to go in -- takes back the images it wrote: no listing
+ * shows a name no history has, and nothing would ever reach them again. */
+static void
+test_new_history_write_failed (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to install history file*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "new-history-write-failed";
+    const guchar pixel[] = { 85, 86, 87, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+    g_autofree gchar *document = g_paste_util_get_history_file_path (name, "xml");
+    g_autofree gchar *blocker = g_build_filename (document, "blocker", NULL);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    /* What the document cannot be moved over. */
+    g_assert_cmpint (g_mkdir_with_parents (document, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (blocker, "", 0, NULL));
+
+    g_assert_false (g_paste_storage_backend_write_history (backend, name, items));
+    g_assert_false (g_file_test (images, G_FILE_TEST_EXISTS));
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -2314,7 +2869,7 @@ test_rekey_unsettled_unwritten (void)
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
     g_autoptr (GBytes) after = NULL;
 
-    g_paste_storage_backend_write_history (backend, name, NULL);
+    g_assert_false (g_paste_storage_backend_write_history (backend, name, NULL));
     after = read_bytes (history);
     g_assert_true (g_bytes_equal (before, after));
 }
@@ -2854,6 +3409,8 @@ main (int    argc,
     g_test_add_func ("/storage/lock/file-unusable", test_lock_file_unusable);
     g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
     g_test_add_func ("/storage/image-name-not-utf8", test_image_name_not_utf8);
+    g_test_add_func ("/storage/image-write-failed", test_image_write_failed);
+    g_test_add_func ("/storage/new-history-write-failed", test_new_history_write_failed);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-synced-before-install", test_encrypted_synced_before_install);
 #endif
@@ -2922,7 +3479,20 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
     g_test_add_func ("/storage/migration/import-busy", test_import_busy);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
+    g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);
     g_test_add_func ("/storage/sqlite/rank-compaction", test_sqlite_rank_compaction);
+    g_test_add_func ("/storage/sqlite/diverged-write", test_sqlite_diverged_write);
+    g_test_add_func ("/storage/sqlite/failed-write-leaves-no-database", test_sqlite_failed_write_leaves_no_database);
+    g_test_add_func ("/storage/sqlite/reconcile-uncounted", test_sqlite_reconcile_uncounted);
+    g_test_add_func ("/storage/sqlite/reconcile-failed", test_sqlite_reconcile_failed);
+    g_test_add_func ("/storage/sqlite/diverged-history", test_sqlite_diverged_history);
+    g_test_add_func ("/storage/sqlite/failed-write-answered", test_sqlite_failed_write_answered);
+    for (gsize i = 0; i < G_N_ELEMENTS (incremental_failures); ++i)
+    {
+        g_autofree gchar *path = g_strdup_printf ("/storage/sqlite/incremental-failed/%s-%" G_GSIZE_FORMAT, incremental_failures[i].operation, i);
+
+        g_test_add_data_func (path, &incremental_failures[i], test_sqlite_incremental_failed);
+    }
 #endif
 
     return g_paste_test_env_run ();

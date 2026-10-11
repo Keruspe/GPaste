@@ -241,9 +241,10 @@ _g_paste_file_backend_sync_directory (const gchar *path)
  * capture. The plain
  * flavor writes that file as-is; the encrypted one writes a "<checksum>.pngs"
  * sibling through the same stream converter as the history, so no pixel ever
- * reaches the disk in clear. Best effort: a failure only costs this image, not
- * the write. */
-static void
+ * reaches the disk in clear.
+ *
+ * Returns: whether the file is there, written now or before */
+static gboolean
 _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
                                          GPasteImageItem   *item,
                                          const gchar       *reference)
@@ -252,7 +253,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     g_autofree gchar *target = (encrypted) ? g_paste_file_backend_encrypted_path (reference) : g_strdup (reference);
 
     if (g_file_test (target, G_FILE_TEST_EXISTS))
-        return;
+        return TRUE;
 
     GBytes *png = g_paste_image_item_get_png_bytes (item);
     g_autoptr (GBytes) read_back = NULL;
@@ -266,10 +267,8 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
         gchar *data = NULL;
         gsize length = 0;
 
-        /* Unreadable cache file: nothing to write. Best effort, as documented
-         * above -- it costs this one image, not the history write. */
         if (!cache_path || !g_file_get_contents (cache_path, &data, &length, NULL))
-            return;
+            return FALSE;
 
         png = read_back = g_bytes_new_take (data, length);
     }
@@ -282,7 +281,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     if (g_mkdir_with_parents (images_dir, 0700) < 0)
     {
         g_warning ("Failed to create images directory: %s", g_strerror (errno));
-        return;
+        return FALSE;
     }
 
     /* get_output_stream wraps the file with the encryption converter exactly
@@ -299,7 +298,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, tmp_file);
 
     if (!stream)
-        return;
+        return FALSE;
 
     gsize length;
     gconstpointer data = g_bytes_get_data (png, &length);
@@ -317,11 +316,13 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
             _g_paste_file_backend_remember_png (G_PASTE_STORAGE_BACKEND ((gpointer) self), target, png_checksum);
         }
 #endif
-        return;
+        return TRUE;
     }
 
     g_warning ("Failed to materialize image to %s: %s", target, error->message);
     g_file_delete (tmp_file, NULL, NULL);
+
+    return FALSE;
 }
 
 /* For the encrypted flavor, load and decrypt an image's "<checksum>.pngs"
@@ -680,13 +681,13 @@ g_paste_file_backend_sweep_legacy_images (void)
     }
 }
 
-static void
+static gboolean
 g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
                                          const gchar          *history_name,
                                          const GList          *history)
 {
     if (!g_paste_util_ensure_history_dir_exists ())
-        return;
+        return FALSE;
 
     /* Images are referenced (and materialized) under the history being
      * written, which may not be the one the items belong to (a backup). */
@@ -704,10 +705,14 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         if (g_file_test (marker, G_FILE_TEST_EXISTS))
         {
             g_warning ("The change of passphrase of %s did not finish; not writing over it until it is put back", history_file_path);
-            return;
+            return FALSE;
         }
     }
 #endif
+
+    /* A history this write would bring into being, which one that fails must
+     * not leave behind: neither a document nor images no listing shows. */
+    gboolean existed = g_file_test (history_file_path, G_FILE_TEST_IS_REGULAR);
 
     GPasteFileBackend *real_self = G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
@@ -719,9 +724,15 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, tmp_file);
 
     if (!stream)
-        return;
+        return FALSE;
 
     gboolean success = TRUE;
+    /* Whether every image this snapshot references is on the disk: a history
+     * written without one of them does not hold @history, whatever its document
+     * says, and the write says so -- a backup missing its screenshots would
+     * otherwise be answered as made. The saver's own writes try a missing one
+     * again at the next, from the item's bytes. */
+    gboolean images_written = TRUE;
     g_autoptr (GError) error = NULL;
     /* The image files this snapshot references, for the sweep once it is in. */
     g_autoptr (GHashTable) referenced = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -761,7 +772,8 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
              * image item has -- building one is what computes it. */
             image_reference = g_paste_file_backend_image_path (history_name, g_paste_image_item_get_checksum (image));
 
-            _g_paste_file_backend_ensure_image_file (real_self, image, image_reference);
+            if (!_g_paste_file_backend_ensure_image_file (real_self, image, image_reference))
+                images_written = FALSE;
 
             gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
 
@@ -846,6 +858,25 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     else if (!g_file_delete (tmp_file, NULL, &error) &&
              !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
         g_warning ("Failed to delete history temp file: %s", error->message);
+
+    if (success && images_written)
+        return TRUE;
+
+    /* What a failed write of a history that was not there made goes again: no
+     * listing shows images under a name no history has, and nothing would ever
+     * reach those screenshots -- left in clear by the plain flavour. */
+    if (!existed)
+    {
+        if (success && g_unlink (history_file_path) && errno != ENOENT)
+            g_warning ("Could not remove %s, which a failed write made: %s", history_file_path, g_strerror (errno));
+        _g_paste_file_backend_sweep_images (history_name, encrypted, NULL);
+
+        g_autofree gchar *images_dir = g_paste_file_backend_images_dir (history_name);
+
+        g_rmdir (images_dir);
+    }
+
+    return FALSE;
 }
 
 /********************/

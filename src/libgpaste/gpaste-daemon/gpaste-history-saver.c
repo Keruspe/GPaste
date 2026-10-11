@@ -31,39 +31,40 @@ struct _GPasteHistorySaver
 {
     GObject parent_instance;
 
-    GPasteStorageBackend        *backend;
-    gpointer                     owner; /* not ref'd: owns us, outlives us */
-    GPasteHistorySaverLoadedFunc loaded;
+    GPasteStorageBackend          *backend;
+    gpointer                       owner; /* not ref'd: owns us, outlives us */
+    GPasteHistorySaverLoadedFunc   loaded;
+    GPasteHistorySaverDivergedFunc diverged;
 
     /* The write a worker has out, borrowed from its task (which frees it only
      * once write_done () has run), or %NULL. */
-    GPasteHistorySaverWrite     *writing;
+    GPasteHistorySaverWrite       *writing;
     /* Pending writes (GPasteHistorySaverWrite*), applied in order. With a
      * non-incremental backend each entry is a full rewrite, so the queue is
      * coalesced down to the latest snapshot of each history. */
-    GQueue                       pending;
+    GQueue                         pending;
 
     /* Handshake for g_paste_history_saver_drain(): the worker thread clears
      * @worker_running and signals @drain_cond when it finishes its write, so a
      * synchronous drain on the main thread can wait for it without spinning the
      * main loop (which is what would otherwise dispatch the write-done callback). */
-    GMutex                       drain_mutex;
-    GCond                        drain_cond;
-    gboolean                     worker_running;
+    GMutex                         drain_mutex;
+    GCond                          drain_cond;
+    gboolean                       worker_running;
 
-    gboolean                     load_in_progress;
-    guint64                      load_generation;
+    gboolean                       load_in_progress;
+    guint64                        load_generation;
     /* A load waiting for writes to land before it reads, or %NULL. */
-    GPasteHistorySaverLoadData  *pending_load;
+    GPasteHistorySaverLoadData    *pending_load;
     /* The read the load in flight is doing. The generation says whether anyone
      * still wants that read's result; this is what stops the read itself, which
      * is the lock wait and then a whole history off disk. */
-    GCancellable                *load_cancellable;
+    GCancellable                  *load_cancellable;
 
     /* Set by g_paste_history_saver_detach(): the owner has replaced us, so an
      * in-flight load (which keeps us alive through the task's own reference) must
      * not hand its now-stale result back to it. */
-    gboolean                     detached;
+    gboolean                       detached;
 };
 
 G_PASTE_DEFINE_TYPE (HistorySaver, history_saver, G_TYPE_OBJECT)
@@ -169,14 +170,43 @@ g_paste_history_saver_start_write (GPasteHistorySaver *self)
     g_task_run_in_thread (task, g_paste_history_saver_write_task);
 }
 
+/* Whether a full write of @name is queued, which brings its store level with
+ * the history whatever failed before it. */
+static gboolean
+g_paste_history_saver_full_write_queued (GPasteHistorySaver *self,
+                                         const gchar        *name)
+{
+    for (const GList *link = self->pending.head; link; link = link->next)
+    {
+        const GPasteHistorySaverWrite *pending = link->data;
+
+        if (pending->op == G_PASTE_HISTORY_SAVE_FULL && g_paste_str_equal (pending->name, name))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static void
 g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
                                   GAsyncResult *result        G_GNUC_UNUSED,
                                   gpointer      user_data)
 {
     g_autoptr (GPasteHistorySaver) self = user_data; /* the ref taken in start_write */
+    /* A write that failed left the store behind, which nothing would write
+     * again before the next add carrying the history. A full one failing is
+     * asked for again by the next change, not here, where a store refusing
+     * every write would have it retried in a loop. */
+    g_autofree gchar *diverged = (self->writing->op != G_PASTE_HISTORY_SAVE_FULL && !self->detached &&
+                                  !g_paste_history_saver_full_write_queued (self, self->writing->name) &&
+                                  g_paste_storage_backend_has_diverged (self->backend, self->writing->name))
+        ? g_strdup (self->writing->name)
+        : NULL;
 
     self->writing = NULL;
+
+    if (diverged)
+        self->diverged (self->owner, diverged);
 
     /* More changes may have queued up while we were writing: drain the next. */
     g_paste_history_saver_start_write (self);
@@ -758,8 +788,9 @@ g_paste_history_saver_init (GPasteHistorySaver *self)
  * @backend: the #GPasteStorageBackend to read and write through
  * @owner: the GObject driving this saver; used as the async source so it (and
  *         therefore this saver, which it owns) stays alive during operations,
- *         and passed back to @loaded
+ *         and passed back to @loaded and @diverged
  * @loaded: (scope notified): invoked when an async load completes
+ * @diverged: (scope notified): invoked when a write left its store behind
  *
  * Create a new instance of #GPasteHistorySaver
  *
@@ -767,19 +798,22 @@ g_paste_history_saver_init (GPasteHistorySaver *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteHistorySaver *
-g_paste_history_saver_new (GPasteStorageBackend        *backend,
-                           gpointer                     owner,
-                           GPasteHistorySaverLoadedFunc loaded)
+g_paste_history_saver_new (GPasteStorageBackend          *backend,
+                           gpointer                       owner,
+                           GPasteHistorySaverLoadedFunc   loaded,
+                           GPasteHistorySaverDivergedFunc diverged)
 {
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (backend), NULL);
     g_return_val_if_fail (G_IS_OBJECT (owner), NULL);
     g_return_val_if_fail (loaded, NULL);
+    g_return_val_if_fail (diverged, NULL);
 
     GPasteHistorySaver *self = g_object_new (G_PASTE_TYPE_HISTORY_SAVER, NULL);
 
     self->backend = g_object_ref (backend);
     self->owner = owner;
     self->loaded = loaded;
+    self->diverged = diverged;
 
     return self;
 }

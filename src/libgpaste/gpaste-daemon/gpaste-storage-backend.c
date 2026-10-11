@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
@@ -401,17 +402,20 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *self,
  * @name: the name of the history to save
  * @history: (element-type GPasteItem): the history to write
  *
- * Save the history by writing it to our storage backend
+ * Save the history by writing it to our storage backend. A write that fails
+ * leaves the store of @name as it was, and leaves none where there was none.
+ *
+ * Returns: whether the store of @name holds @history now
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_write_history (GPasteStorageBackend *self,
                                        const gchar          *name,
                                        const GList          *history)
 {
-    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
-    g_return_if_fail (name);
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (name, FALSE);
 
-    G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, name, history);
+    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, name, history);
 }
 
 /* Whether a file flavour still keeps a history under @name. The images/<name>/
@@ -520,6 +524,18 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
 {
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
+
+    /* The "no storage" backend has nothing of a history to delete, unless a
+     * flavour still stores its name: an encrypted store left locked, which a
+     * dismissed unlock has the daemon run on this backend over, or what a
+     * migration to it kept. That one is not this backend's to delete, and a
+     * delete answered for with it still on disk would have it believed gone. */
+    if (g_paste_storage_backend_get_kind (self) == G_PASTE_STORAGE_NOOP && g_paste_util_history_is_stored_anywhere (name))
+    {
+        g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                     "“%s” is kept by a storage not in use, which a deletion cannot reach", name);
+        return;
+    }
 
     if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
         G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
@@ -812,6 +828,29 @@ g_paste_storage_backend_is_incremental (GPasteStorageBackend *self)
     const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
 
     return klass->add_item && klass->remove_item && klass->replace_item && klass->clear_history;
+}
+
+/**
+ * g_paste_storage_backend_has_diverged:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of a history
+ *
+ * Whether a write of @name failed since the last full write of it that landed,
+ * the store holding what the history no longer does, or missing what it does,
+ * until one lands. Never waits on a read or a write in flight.
+ *
+ * Returns: whether the next write of @name has to be a full one
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_has_diverged (GPasteStorageBackend *self,
+                                      const gchar          *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (name, FALSE);
+
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+
+    return klass->has_diverged && klass->has_diverged (self, name);
 }
 
 static void

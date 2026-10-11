@@ -329,7 +329,13 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT (!g_paste_history_is_unreadable (_history),
                          G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
 
-    g_paste_history_save (_history, backup);
+    /* A write that fails leaves no history called @backup, so nothing to
+     * announce either. */
+    if (!g_paste_history_save (_history, backup))
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the backup could not be written");
+        return;
+    }
 
     g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
 }
@@ -404,7 +410,13 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
     {
         g_autoptr (GPasteHistory) history = g_paste_history_new (self->settings);
 
-        g_paste_history_save (history, name);
+        /* A write that fails leaves the history as it was, holding the images
+         * the sweep below would take. */
+        if (!g_paste_history_save (history, name))
+        {
+            g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the history could not be emptied");
+            return;
+        }
 
         /* Emptying the current history leaves its images to the sweep of its
          * empty snapshot, which takes the files of its own flavour alone;

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
 #include <gpaste-3/gpaste-util.h>
@@ -339,14 +340,12 @@ g_paste_history_emit_update (GPasteHistory     *self,
                    NULL);
 }
 
-/* @displaced says whether anything left the history alongside the change: a
- * dedup, a grown line replacing its shorter self, or an eviction. It only means
- * anything for an add on an incremental backend -- see below. */
+/* Have the saver persist a change to the history. @displaced says whether
+ * anything left the history alongside it: a dedup, a grown line replacing its
+ * shorter self, or an eviction. It only means anything for an add on an
+ * incremental backend -- see below. */
 static void
-g_paste_history_update (GPasteHistory      *self,
-                        GPasteUpdateAction  action,
-                        GPasteUpdateTarget  target,
-                        guint64             position,
+g_paste_history_record (GPasteHistory      *self,
                         GPasteHistorySaveOp op,
                         GPasteItem         *item,
                         const gchar        *uuid,
@@ -357,21 +356,55 @@ g_paste_history_update (GPasteHistory      *self,
      * we have been flushed for handover (a successor daemon owns the file now).
      * Nor a history nobody has named, which has no store to persist into: the
      * saver files every write under the history's name. */
-    if (self->name && !self->stopped && !self->unreadable && !g_paste_history_saver_is_loading (self->saver))
-    {
-        /* A non-incremental backend rewrites everything and always needs the
-         * snapshot. An incremental one only reconciles what rode along with an
-         * add -- and reconciliation only ever deletes rows the history no longer
-         * has, so with nothing displaced there is provably nothing to delete.
-         * That is the common case, and it is what spares a per-item ref-copy of
-         * the whole history on every single clipboard change. */
-        gboolean full = !g_paste_storage_backend_is_incremental (self->backend);
-        GList *snapshot = (full || op == G_PASTE_HISTORY_SAVE_FULL || (op == G_PASTE_HISTORY_SAVE_ADD && displaced))
-            ? g_paste_history_snapshot (self)
-            : NULL;
+    if (!self->name || self->stopped || self->unreadable || g_paste_history_saver_is_loading (self->saver))
+        return;
 
-        g_paste_history_saver_record (self->saver, op, self->name, item, uuid, snapshot);
-    }
+    /* A non-incremental backend rewrites everything and always needs the
+     * snapshot. An incremental one only reconciles what rode along with an
+     * add -- and reconciliation only ever deletes rows the history no longer
+     * has, so with nothing displaced there is provably nothing to delete.
+     * That is the common case, and it is what spares a per-item ref-copy of
+     * the whole history on every single clipboard change. A store a failed
+     * write left behind is the saver's to report
+     * (g_paste_history_on_diverged ()). */
+    gboolean full = !g_paste_storage_backend_is_incremental (self->backend);
+    GList *snapshot = (full || op == G_PASTE_HISTORY_SAVE_FULL || (op == G_PASTE_HISTORY_SAVE_ADD && displaced))
+        ? g_paste_history_snapshot (self)
+        : NULL;
+
+    g_paste_history_saver_record (self->saver, op, self->name, item, uuid, snapshot);
+}
+
+/* A write the saver had out left the store of @name behind the model: see
+ * #GPasteHistorySaverDivergedFunc. A history switched away from has no model
+ * left to write, and stays behind until a write of it lands. */
+static void
+g_paste_history_on_diverged (gpointer     user_data,
+                             const gchar *name)
+{
+    GPasteHistory *self = user_data;
+
+    if (!g_paste_str_equal (name, self->name))
+        return;
+
+    G_PASTE_DO_LOCK_HISTORY;
+
+    g_paste_history_record (self, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+}
+
+/* Record the change (@displaced is g_paste_history_record ()'s), and announce
+ * it. */
+static void
+g_paste_history_update (GPasteHistory      *self,
+                        GPasteUpdateAction  action,
+                        GPasteUpdateTarget  target,
+                        guint64             position,
+                        GPasteHistorySaveOp op,
+                        GPasteItem         *item,
+                        const gchar        *uuid,
+                        gboolean            displaced)
+{
+    g_paste_history_record (self, op, item, uuid, displaced);
 
     /* The item the change is about: whichever one it left behind, or the uuid
      * alone when it left none (a removal). Neither rides along with an ALL,
@@ -1466,13 +1499,17 @@ g_paste_history_resolve_name (GPasteHistory *self,
  * @self: a #GPasteHistory instance
  * @name: (nullable): the name to save the history to (defaults to the configured one)
  *
- * Save the #GPasteHistory to the history file
+ * Save the #GPasteHistory to the history file, synchronously. A save that fails
+ * leaves the store of @name as it was (see
+ * g_paste_storage_backend_write_history()).
+ *
+ * Returns: whether the store of @name holds the history now
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_save (GPasteHistory *self,
                       const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
 
     G_PASTE_LOCK_HISTORY;
 
@@ -1493,7 +1530,7 @@ g_paste_history_save (GPasteHistory *self,
         ? NULL
         : g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
 
-    g_paste_storage_backend_write_history ((elsewhere) ? elsewhere : self->backend, target, snapshot);
+    return g_paste_storage_backend_write_history ((elsewhere) ? elsewhere : self->backend, target, snapshot);
 }
 
 /**
@@ -1513,6 +1550,18 @@ g_paste_history_flush (GPasteHistory *self)
 
     self->stopped = TRUE;
     g_paste_history_saver_drain (self->saver);
+
+    /* A store a failed write left behind the history is brought level before
+     * it is handed over, what the successor loads being that store: the catch
+     * up a write that fails asks for (g_paste_history_on_diverged ()) is
+     * recorded nowhere once stopped. One full write, which failing leaves the
+     * store where it was. */
+    if (self->name && !self->unreadable && !g_paste_history_saver_is_loading (self->saver) &&
+        g_paste_storage_backend_has_diverged (self->backend, self->name))
+    {
+        g_paste_history_saver_record (self->saver, G_PASTE_HISTORY_SAVE_FULL, self->name, NULL, NULL, g_paste_history_snapshot (self));
+        g_paste_history_saver_drain (self->saver);
+    }
 }
 
 /**
@@ -1752,7 +1801,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
     g_clear_object (&self->saver);
     g_clear_object (&self->backend);
     self->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (self->settings), self->settings);
-    self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded);
+    self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded, g_paste_history_on_diverged);
 
     /* Added to what a reload before this one set aside, its load given up
      * above before it could say which of them it found again. */
@@ -1834,6 +1883,26 @@ g_paste_history_switch (GPasteHistory *self,
     g_paste_settings_set_history_name (self->settings, name);
 }
 
+/* What deletes a store checks first that the backend in use can reach it. The
+ * "no storage" one cannot reach what another flavour keeps under @name -- an
+ * encrypted store left locked, what a migration to it kept -- and that store
+ * would bring the history back once it is used again (as in
+ * g_paste_storage_backend_delete_history ()). Refused before anything changes:
+ * the session's model, all that backend holds, can still be emptied one item
+ * at a time. */
+static gboolean
+g_paste_history_check_store_reachable (GPasteHistory *self,
+                                       const gchar   *name,
+                                       GError       **error)
+{
+    if (g_paste_storage_backend_get_kind (self->backend) != G_PASTE_STORAGE_NOOP || !g_paste_util_history_is_stored_anywhere (name))
+        return TRUE;
+
+    g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                 "“%s” is kept by a storage not in use, which this one cannot reach", name);
+    return FALSE;
+}
+
 /**
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
@@ -1858,6 +1927,9 @@ g_paste_history_delete (GPasteHistory *self,
     const gchar *history_name = (name) ? name : self->name;
 
     if (!g_paste_history_check_owned (self, history_name, error))
+        return FALSE;
+
+    if (!g_paste_history_check_store_reachable (self, history_name, error))
         return FALSE;
 
     if (g_paste_str_equal (history_name, self->name))
@@ -2253,7 +2325,7 @@ g_paste_history_new (GPasteSettings *settings)
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
 
     self->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (settings), settings);
-    self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded);
+    self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded, g_paste_history_on_diverged);
     self->settings = g_object_ref (settings);
 
     /* The text item size settings are deliberately absent: they filter what

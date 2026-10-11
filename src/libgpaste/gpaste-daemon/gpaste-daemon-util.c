@@ -226,6 +226,18 @@ g_paste_util_history_is_stored (const gchar  *name,
     return g_file_test (path, G_FILE_TEST_EXISTS);
 }
 
+G_PASTE_VISIBLE gboolean
+g_paste_util_history_is_stored_anywhere (const gchar *name)
+{
+    for (GPasteStorage storage = 0; storage < G_PASTE_N_STORAGE; ++storage)
+    {
+        if (storage != G_PASTE_STORAGE_NOOP && g_paste_util_history_is_stored (name, storage))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 /**
  * g_paste_util_ensure_history_dir_exists:
  *

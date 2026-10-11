@@ -37,9 +37,11 @@ GFile *g_paste_util_get_history_file      (const gchar *name,
                                            const gchar *extension);
 
 /* Whether the @storage flavour stores a history of @name: what is on disk under
- * that flavour's extension, whether or not this build can open it. */
-gboolean g_paste_util_history_is_stored (const gchar  *name,
-                                         GPasteStorage storage);
+ * that flavour's extension, whether or not this build can open it. The second
+ * asks it of every flavour that stores anything. */
+gboolean g_paste_util_history_is_stored          (const gchar  *name,
+                                                  GPasteStorage storage);
+gboolean g_paste_util_history_is_stored_anywhere (const gchar  *name);
 
 gboolean g_paste_util_ensure_history_dir_exists (void);
 

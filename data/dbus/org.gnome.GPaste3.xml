@@ -123,6 +123,10 @@
       still on their way to the disk included. The current history cannot be
       backed up while it is loading, which is refused with the same
       G_IO_ERROR_BUSY as a storage handover (see above).
+
+      The backup is written before the answer: a write that fails (a full
+      disk, or no storage in use, which keeps nothing) is .Error.Failed, and
+      leaves no history called @backup, never an empty one.
     -->
     <method name="BackupHistory">
       <arg type="s" direction="in" name="history"/>
@@ -137,7 +141,13 @@
     -->
     <method name="ChangePassphrase"/>
 
-    <!-- Delete a whole history -->
+    <!--
+      Delete a whole history.
+
+      With no storage in use, a history another storage still keeps (an
+      encrypted store left locked, or what a migration kept) is out of its
+      reach: .Error.Failed, the store and the history in use left as they were.
+    -->
     <method name="DeleteHistory">
       <arg type="s" direction="in" name="name"/>
     </method>
@@ -152,7 +162,13 @@
       <arg type="s" direction="in" name="name"/>
     </method>
 
-    <!-- Empty a history, keeping it around -->
+    <!--
+      Empty a history, keeping it around.
+
+      Another history than the current one is emptied on disk before the
+      answer: a write that fails (a full disk, or no storage in use) is
+      .Error.Failed, the history left as it was.
+    -->
     <method name="EmptyHistory">
       <arg type="s" direction="in" name="name"/>
     </method>

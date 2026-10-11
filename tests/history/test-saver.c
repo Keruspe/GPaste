@@ -33,7 +33,7 @@ test_backend_kind (GPasteStorageBackend *backend G_GNUC_UNUSED)
     return G_PASTE_STORAGE_FILE;
 }
 
-static void
+static gboolean
 test_backend_write (GPasteStorageBackend *backend,
                     const gchar          *name,
                     const GList          *items)
@@ -50,6 +50,8 @@ test_backend_write (GPasteStorageBackend *backend,
     if (items)
         g_hash_table_replace (self->values, g_strdup (name), g_strdup (g_paste_item_get_real_value (items->data)));
     g_mutex_unlock (&self->mutex);
+
+    return TRUE;
 }
 
 static void
@@ -140,12 +142,14 @@ test_incremental_read (GPasteStorageBackend *backend,
     return TRUE;
 }
 
-static void
+static gboolean
 test_incremental_write (GPasteStorageBackend *backend,
                         const gchar          *name    G_GNUC_UNUSED,
                         const GList          *history G_GNUC_UNUSED)
 {
     test_incremental_hold (backend);
+
+    return TRUE;
 }
 
 static void
@@ -224,6 +228,12 @@ on_loaded (gpointer owner G_GNUC_UNUSED,
 }
 
 static void
+on_diverged (gpointer     owner G_GNUC_UNUSED,
+             const gchar *name G_GNUC_UNUSED)
+{
+}
+
+static void
 wait_for_worker (TestBackend *backend)
 {
     gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
@@ -263,7 +273,7 @@ test_history_names (void)
 {
     g_autoptr (GObject) owner = g_object_new (G_TYPE_OBJECT, NULL);
     g_autoptr (TestBackend) backend = g_object_new (TEST_TYPE_BACKEND, NULL);
-    g_autoptr (GPasteHistorySaver) saver = g_paste_history_saver_new (G_PASTE_STORAGE_BACKEND (backend), owner, on_loaded);
+    g_autoptr (GPasteHistorySaver) saver = g_paste_history_saver_new (G_PASTE_STORAGE_BACKEND (backend), owner, on_loaded, on_diverged);
 
     record (saver, "A", "first");
     wait_for_worker (backend);
@@ -286,7 +296,7 @@ test_incremental_load_waits (void)
 {
     g_autoptr (GObject) owner = g_object_new (G_TYPE_OBJECT, NULL);
     g_autoptr (TestIncremental) backend = g_object_new (TEST_TYPE_INCREMENTAL, NULL);
-    g_autoptr (GPasteHistorySaver) saver = g_paste_history_saver_new (G_PASTE_STORAGE_BACKEND (backend), owner, on_loaded);
+    g_autoptr (GPasteHistorySaver) saver = g_paste_history_saver_new (G_PASTE_STORAGE_BACKEND (backend), owner, on_loaded, on_diverged);
     g_autoptr (GPasteItem) added = g_paste_text_item_new ("added");
     gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
 

@@ -71,9 +71,18 @@ struct _GPasteSqliteBackend
     /* The one open connection, lazily (re)opened for the last used database.
      * The lock serializes the vfuncs: the saver runs writes one at a time, but
      * a background load can overlap an in-flight write. */
-    sqlite3 *db;
-    gchar   *db_path;
-    GMutex   lock;
+    sqlite3    *db;
+    gchar      *db_path;
+    GMutex      lock;
+    /* The histories a write failed for since their last full one that landed:
+     * nothing retries a write, and the next add's reconciliation only drops
+     * rows, so the store would lag the model for good. The next add, which
+     * carries the whole snapshot, writes it in full instead, and the history
+     * asks for one sooner (g_paste_storage_backend_has_diverged ()). Under
+     * @diverged_lock rather than @lock, which a load may hold for as long as
+     * its read takes: the main thread asks after every write. */
+    GHashTable *diverged;
+    GMutex      diverged_lock;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* When set, the content columns are encrypted, the ".dbs" extension is used,
@@ -1077,6 +1086,42 @@ g_paste_sqlite_backend_count_stored (const guchar *key,
     return count;
 }
 
+/* Remove the database at @db_path and what SQLite keeps beside it. @backend's
+ * lock is held. */
+static void
+g_paste_sqlite_backend_unlink (GPasteSqliteBackend *backend,
+                               const gchar         *db_path,
+                               GError             **error)
+{
+    /* Close our connection first so the WAL is checkpointed and its sidecar
+     * files can go away with the database. */
+    if (backend->db && g_paste_str_equal (backend->db_path, db_path))
+    {
+        g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
+        g_clear_pointer (&backend->db_path, g_free);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        g_clear_pointer (&backend->key, gcr_secure_memory_free);
+#endif
+    }
+
+    g_autoptr (GFile) db_file = g_file_new_for_path (db_path);
+
+    g_file_delete (db_file, NULL, error);
+
+    static const gchar *sidecars[] = { "-wal", "-shm" };
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (sidecars); ++i)
+    {
+        g_autofree gchar *sidecar_path = g_strconcat (db_path, sidecars[i], NULL);
+        g_autoptr (GFile) sidecar = g_file_new_for_path (sidecar_path);
+
+        /* Only present while a connection is (or was) open, so a missing one is
+         * the normal case and not worth reporting -- the database itself is the
+         * delete that counts, and it reports through @error above. */
+        g_file_delete (sidecar, NULL, NULL);
+    }
+}
+
 /* What a delete took -- a text made a password, an item deleted or edited, a
  * history emptied -- has to be in no file afterwards, as it is in none once the
  * plain file flavour rewrites its document. secure_delete zeroes it in the
@@ -1092,18 +1137,60 @@ g_paste_sqlite_backend_forget_deleted (sqlite3 *db)
         g_debug ("sqlite: could not empty the write-ahead log: %s", sqlite3_errmsg (db));
 }
 
+/* Remember that a write of @name failed, or that a full one landed: see
+ * @diverged. */
 static void
-g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
-                                           const gchar          *name,
-                                           const GList          *history)
+g_paste_sqlite_backend_diverge (GPasteSqliteBackend *backend,
+                                const gchar         *name)
+{
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
+
+    g_hash_table_add (backend->diverged, g_strdup (name));
+}
+
+static void
+g_paste_sqlite_backend_converge (GPasteSqliteBackend *backend,
+                                 const gchar         *name)
+{
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
+
+    g_hash_table_remove (backend->diverged, name);
+}
+
+static gboolean
+g_paste_sqlite_backend_has_diverged (GPasteStorageBackend *self,
+                                     const gchar          *name)
 {
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
+
+    return g_hash_table_contains (backend->diverged, name);
+}
+
+/* Write @history over the history called @name, @backend's lock held: see
+ * write_history_file in #GPasteStorageBackendClass for what it returns. */
+static gboolean
+g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
+                                     const gchar          *name,
+                                     const GList          *history)
+{
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
+    /* A database this write creates and then fails to fill goes again, as the
+     * file flavour never installs a document it failed to write: left there,
+     * it is a history listed as if written while holding nothing -- a backup
+     * answered for, which the user may then delete the original over. */
+    gboolean created = !g_file_test (history_file_path, G_FILE_TEST_EXISTS);
     sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
+    /* An open fails past creating the database too: its schema, its key. */
     if (!db)
-        return;
+    {
+        if (created)
+            g_paste_sqlite_backend_unlink (backend, history_file_path, NULL);
+        g_paste_sqlite_backend_diverge (backend, name);
+        return FALSE;
+    }
 
     const guchar *key = g_paste_sqlite_backend_get_key (self);
 
@@ -1112,10 +1199,8 @@ g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
 
     /* One transaction, so replacing the whole content is atomic: a failure
      * (or crash) rolls back to the previous state instead of losing data. */
-    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
-        return;
-
-    gboolean success = g_paste_sqlite_backend_exec (db, "DELETE FROM items;");
+    gboolean began = g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;");
+    gboolean success = began && g_paste_sqlite_backend_exec (db, "DELETE FROM items;");
 
     for (const GList *h = history; success && h; h = g_list_next (h))
     {
@@ -1127,8 +1212,32 @@ g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
         success = g_paste_sqlite_backend_upsert_item (db, key, item, rank--);
     }
 
-    if (g_paste_sqlite_backend_finish_transaction (db, success))
+    if (began)
+        success = g_paste_sqlite_backend_finish_transaction (db, success);
+
+    if (success)
+    {
+        g_paste_sqlite_backend_converge (backend, name);
         g_paste_sqlite_backend_forget_deleted (db);
+        return TRUE;
+    }
+
+    if (created)
+        g_paste_sqlite_backend_unlink (backend, history_file_path, NULL);
+    g_paste_sqlite_backend_diverge (backend, name);
+
+    return FALSE;
+}
+
+static gboolean
+g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
+                                           const gchar          *name,
+                                           const GList          *history)
+{
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+
+    return g_paste_sqlite_backend_write_locked (self, name, history);
 }
 
 /*****************/
@@ -1632,8 +1741,8 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
  * snapshot, so the snapshot is the authoritative fallback: after applying the
  * granular hint, any stored row missing from it (items evicted by the size or
  * memory limits, or a deduplicated older copy — those never get their own
- * remove operation) is dropped. */
-static void
+ * remove operation) is dropped. Returns whether it was, every one of them. */
+static gboolean
 g_paste_sqlite_backend_reconcile (sqlite3      *db,
                                   const guchar *key,
                                   const GList  *history)
@@ -1641,9 +1750,10 @@ g_paste_sqlite_backend_reconcile (sqlite3      *db,
     gint64 expected = g_paste_sqlite_backend_count_stored (key, history);
 
     /* The common case: nothing rode along, the store already matches. Only
-     * build the uuid set (and scan the table) when it actually does not. */
-    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", expected) == expected)
-        return;
+     * build the uuid set (and scan the table) when it actually does not, or
+     * could not be counted: -1, which no count is. */
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) == expected)
+        return TRUE;
 
     g_autoptr (GHashTable) uuids = g_hash_table_new (g_str_hash, g_str_equal);
 
@@ -1660,12 +1770,13 @@ g_paste_sqlite_backend_reconcile (sqlite3      *db,
     if (sqlite3_prepare_v2 (db, "SELECT uuid FROM items;", -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare reconciliation query: %s", sqlite3_errmsg (db));
-        return;
+        return FALSE;
     }
 
     g_autoptr (GStrvBuilder) extra = g_strv_builder_new ();
+    gint ret;
 
-    while (sqlite3_step (stmt) == SQLITE_ROW)
+    while ((ret = sqlite3_step (stmt)) == SQLITE_ROW)
     {
         const gchar *uuid = (const gchar *) sqlite3_column_text (stmt, 0);
 
@@ -1673,33 +1784,44 @@ g_paste_sqlite_backend_reconcile (sqlite3      *db,
             g_strv_builder_add (extra, uuid);
     }
 
+    if (ret != SQLITE_DONE)
+        g_warning ("sqlite: failed to scan for reconciliation: %s", sqlite3_errmsg (db));
     sqlite3_finalize (stmt);
+    if (ret != SQLITE_DONE)
+        return FALSE;
 
     g_auto (GStrv) to_delete = g_strv_builder_end (extra);
 
     if (!to_delete || !*to_delete)
-        return;
+        return TRUE;
 
     sqlite3_stmt *del = NULL;
 
     if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &del, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare reconciliation cleanup: %s", sqlite3_errmsg (db));
-        return;
+        return FALSE;
     }
+
+    gboolean reconciled = TRUE;
 
     for (GStrv uuid = to_delete; *uuid; ++uuid)
     {
         sqlite3_bind_text (del, 1, *uuid, -1, SQLITE_STATIC);
 
         if (sqlite3_step (del) != SQLITE_DONE)
+        {
             g_warning ("sqlite: failed to reconcile an item: %s", sqlite3_errmsg (db));
+            reconciled = FALSE;
+        }
 
         sqlite3_reset (del);
         sqlite3_clear_bindings (del);
     }
 
     sqlite3_finalize (del);
+
+    return reconciled;
 }
 
 /* An "add" is not always a pure insert: the same operation also covers
@@ -1715,13 +1837,20 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+
+    if (history && g_paste_sqlite_backend_has_diverged (self, name))
+    {
+        g_paste_sqlite_backend_write_locked (self, name, history);
+        return;
+    }
+
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    if (!db)
+    if (!db || !g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
+    {
+        g_paste_sqlite_backend_diverge (backend, name);
         return;
-
-    if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
-        return;
+    }
 
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean success = TRUE;
@@ -1734,15 +1863,19 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     }
 
     /* A %NULL history says nothing was displaced by this add, so no row can
-     * have been orphaned and there is nothing to reconcile. */
+     * have been orphaned and there is nothing to reconcile. One that fails
+     * leaves rows the add still commits around: the store lags all the same. */
+    gboolean reconciled = TRUE;
+
     if (success && history)
-        g_paste_sqlite_backend_reconcile (db, key, history);
+        reconciled = g_paste_sqlite_backend_reconcile (db, key, history);
 
     /* No forget_deleted (): what an add displaces is the oldest item evicted,
      * on every copy once the history is full, or an older copy of what it
      * adds -- nothing the user deleted. A checkpoint with its syncs on every
      * copy is what SQLite's own, every thousand pages, spares. */
-    g_paste_sqlite_backend_finish_transaction (db, success);
+    if (!g_paste_sqlite_backend_finish_transaction (db, success) || !reconciled)
+        g_paste_sqlite_backend_diverge (backend, name);
 }
 
 static void
@@ -1756,20 +1889,27 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     if (!db)
+    {
+        g_paste_sqlite_backend_diverge (backend, name);
         return;
+    }
 
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare item removal: %s", sqlite3_errmsg (db));
+        g_paste_sqlite_backend_diverge (backend, name);
         return;
     }
 
     sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_STATIC);
 
     if (sqlite3_step (stmt) != SQLITE_DONE)
+    {
         g_warning ("sqlite: failed to remove an item: %s", sqlite3_errmsg (db));
+        g_paste_sqlite_backend_diverge (backend, name);
+    }
 
     sqlite3_finalize (stmt);
     g_paste_sqlite_backend_forget_deleted (db);
@@ -1787,7 +1927,10 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     if (!db)
+    {
+        g_paste_sqlite_backend_diverge (backend, name);
         return;
+    }
 
     const guchar *key = g_paste_sqlite_backend_get_key (self);
 
@@ -1802,7 +1945,10 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     }
 
     if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
+    {
+        g_paste_sqlite_backend_diverge (backend, name);
         return;
+    }
 
     sqlite3_stmt *stmt = NULL;
     gboolean success = (sqlite3_prepare_v2 (db,
@@ -1814,6 +1960,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     {
         g_warning ("sqlite: failed to prepare item replacement: %s", sqlite3_errmsg (db));
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        g_paste_sqlite_backend_diverge (backend, name);
         return;
     }
 
@@ -1838,7 +1985,9 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     if (success && found)
         success = g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 
-    if (g_paste_sqlite_backend_finish_transaction (db, success))
+    if (!g_paste_sqlite_backend_finish_transaction (db, success))
+        g_paste_sqlite_backend_diverge (backend, name);
+    else
         g_paste_sqlite_backend_forget_deleted (db);
 }
 
@@ -1854,6 +2003,8 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
     /* Keep the (now empty) database so the history is still listed. */
     if (db && g_paste_sqlite_backend_exec (db, "DELETE FROM items;"))
         g_paste_sqlite_backend_forget_deleted (db);
+    else
+        g_paste_sqlite_backend_diverge (backend, name);
 }
 
 /**************/
@@ -1958,33 +2109,7 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend *self,
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
 
-    /* Close our connection first so the WAL is checkpointed and its sidecar
-     * files can go away with the database. */
-    if (backend->db && g_paste_str_equal (backend->db_path, db_path))
-    {
-        g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
-        g_clear_pointer (&backend->db_path, g_free);
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-        g_clear_pointer (&backend->key, gcr_secure_memory_free);
-#endif
-    }
-
-    g_autoptr (GFile) db_file = g_file_new_for_path (db_path);
-
-    g_file_delete (db_file, NULL, error);
-
-    static const gchar *sidecars[] = { "-wal", "-shm" };
-
-    for (guint64 i = 0; i < G_N_ELEMENTS (sidecars); ++i)
-    {
-        g_autofree gchar *sidecar_path = g_strconcat (db_path, sidecars[i], NULL);
-        g_autoptr (GFile) sidecar = g_file_new_for_path (sidecar_path);
-
-        /* Only present while a connection is (or was) open, so a missing one is
-         * the normal case and not worth reporting -- the database itself is the
-         * delete that counts, and it reports through @error above. */
-        g_file_delete (sidecar, NULL, NULL);
-    }
+    g_paste_sqlite_backend_unlink (backend, db_path, error);
 }
 
 static GPasteStorage
@@ -1998,9 +2123,14 @@ g_paste_sqlite_backend_finalize (GObject *object)
 {
     GPasteSqliteBackend *self = G_PASTE_SQLITE_BACKEND (object);
 
+    /* With the connection, here rather than in dispose (): the write vfuncs
+     * read it for as long as they can run, which is until the last reference
+     * goes. */
+    g_clear_pointer (&self->diverged, g_hash_table_unref);
     g_clear_pointer (&self->db, g_paste_sqlite_backend_close);
     g_clear_pointer (&self->db_path, g_free);
     g_mutex_clear (&self->lock);
+    g_mutex_clear (&self->diverged_lock);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_clear_pointer (&self->key, gcr_secure_memory_free);
     g_paste_passphrase_free (self->passphrase);
@@ -2128,6 +2258,7 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->remove_item = g_paste_sqlite_backend_remove_item;
     storage_class->replace_item = g_paste_sqlite_backend_replace_item;
     storage_class->clear_history = g_paste_sqlite_backend_clear_history;
+    storage_class->has_diverged = g_paste_sqlite_backend_has_diverged;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     storage_class->rekey = g_paste_sqlite_backend_rekey;
@@ -2142,6 +2273,8 @@ static void
 g_paste_sqlite_backend_init (GPasteSqliteBackend *self)
 {
     g_mutex_init (&self->lock);
+    self->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    g_mutex_init (&self->diverged_lock);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

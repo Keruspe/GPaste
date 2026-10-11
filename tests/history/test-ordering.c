@@ -39,10 +39,10 @@ typedef struct
 } Barrier;
 
 static Barrier barrier;
-static void (*real_write) (GPasteStorageBackend *, const gchar *, const GList *);
+static gboolean (*real_write) (GPasteStorageBackend *, const gchar *, const GList *);
 static gboolean (*real_read) (GPasteStorageBackend *, const gchar *, GCancellable *, GList **, gsize *);
 
-void
+gboolean
 g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
                                        const gchar          *name,
                                        const GList          *items)
@@ -75,7 +75,7 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
         g_mutex_unlock (&barrier.mutex);
     }
 
-    real_write (backend, name, items);
+    gboolean written = real_write (backend, name, items);
 
     if (held)
     {
@@ -83,6 +83,8 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
         barrier.written = TRUE;
         g_mutex_unlock (&barrier.mutex);
     }
+
+    return written;
 }
 
 gboolean
