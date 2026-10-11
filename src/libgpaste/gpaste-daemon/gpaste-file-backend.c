@@ -30,6 +30,15 @@ typedef struct
      * entries are persisted (encrypted) rather than skipped. NULL means a plain
      * ".xml" history. */
     GPastePassphrase *passphrase;
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* The SHA-256 of the PNG each encrypted side file holds, by the side file's
+     * path, for the ones this backend wrote, or read and found to be the image
+     * their history names: what a document names a side file by (see
+     * _g_paste_file_backend_write_image_metadata ()). The saver's worker and the
+     * main thread both read and write histories. */
+    GMutex            png_checksums_lock;
+    GHashTable       *png_checksums;
+#endif
 } GPasteFileBackendPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
@@ -43,6 +52,31 @@ g_paste_file_backend_get_passphrase (GPasteStorageBackend *self)
 
     return g_paste_passphrase_peek (priv->passphrase);
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* That @side_file holds the PNG whose SHA-256 is @png_checksum. */
+static void
+_g_paste_file_backend_remember_png (GPasteStorageBackend *self,
+                                    const gchar          *side_file,
+                                    const gchar          *png_checksum)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->png_checksums_lock);
+
+    g_hash_table_replace (priv->png_checksums, g_strdup (side_file), g_strdup (png_checksum));
+}
+
+/* The SHA-256 of the PNG @side_file holds, when this backend knows it. */
+static gchar *
+_g_paste_file_backend_png_checksum (GPasteStorageBackend *self,
+                                    const gchar          *side_file)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->png_checksums_lock);
+
+    return g_strdup (g_hash_table_lookup (priv->png_checksums, side_file));
+}
+#endif
 
 static gboolean g_paste_file_backend_load_contents (GPasteStorageBackend *self,
                                                     const gchar          *history_file_path,
@@ -262,7 +296,17 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
         g_output_stream_close (stream, NULL /* cancellable */, &error) &&
         _g_paste_file_backend_sync (tmp_file, &error) &&
         g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+    {
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        if (encrypted)
+        {
+            g_autofree gchar *png_checksum = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, png);
+
+            _g_paste_file_backend_remember_png (G_PASTE_STORAGE_BACKEND ((gpointer) self), target, png_checksum);
+        }
+#endif
         return;
+    }
 
     g_warning ("Failed to materialize image to %s: %s", target, error->message);
     g_file_delete (tmp_file, NULL, NULL);
@@ -305,9 +349,18 @@ _g_paste_file_backend_load_image_bytes (GPasteStorageBackend *self,
 #endif
 }
 
+/* An image's date and checksum and, in an encrypted document, @png_checksum:
+ * the SHA-256 of the PNG its side file holds, which is what binds that file to
+ * the authenticated document -- anyone able to write the images directory could
+ * otherwise put another of the user's own side files in its place. Checking it
+ * costs a hash of the PNG, where the image's own checksum is one of its pixels,
+ * decoded and downloaded first, and one a round trip through PNG does not always
+ * reproduce. %NULL when this backend does not know what the side file holds,
+ * which a read checks by its pixels instead. */
 static gboolean
 _g_paste_file_backend_write_image_metadata (GOutputStream   *stream,
                                             GPasteImageItem *item,
+                                            const gchar     *png_checksum,
                                             GError         **error)
 {
     g_autofree gchar *date_str = g_date_time_format ((GDateTime *) g_paste_image_item_get_date (item), "%s");
@@ -317,10 +370,15 @@ _g_paste_file_backend_write_image_metadata (GOutputStream   *stream,
         !g_output_stream_write_all (stream, date_str, strlen (date_str), NULL, NULL /* cancellable */, error))
         return FALSE;
 
-    /* The checksum (hex SHA256) needs no XML escaping */
+    /* The checksums (hex SHA256) need no XML escaping */
     if (checksum &&
         (!g_output_stream_write_all (stream, "\" checksum=\"", 12, NULL, NULL /* cancellable */, error) ||
          !g_output_stream_write_all (stream, checksum, strlen (checksum), NULL, NULL /* cancellable */, error)))
+        return FALSE;
+
+    if (png_checksum &&
+        (!g_output_stream_write_all (stream, "\" png=\"", 7, NULL, NULL /* cancellable */, error) ||
+         !g_output_stream_write_all (stream, png_checksum, strlen (png_checksum), NULL, NULL /* cancellable */, error)))
         return FALSE;
 
     return TRUE;
@@ -676,6 +734,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         const gchar *kind_str = g_paste_item_kind_to_string (kind);
 
         g_autofree gchar *image_reference = NULL;
+        g_autofree gchar *png_checksum = NULL;
 
         if (G_PASTE_IS_IMAGE_ITEM (item))
         {
@@ -691,6 +750,15 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
             _g_paste_file_backend_ensure_image_file (real_self, image, image_reference);
 
             gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+            if (encrypted)
+            {
+                g_autofree gchar *side_file = g_paste_file_backend_encrypted_path (image_reference);
+
+                png_checksum = _g_paste_file_backend_png_checksum (self, side_file);
+            }
+#endif
 
             if (file_name)
                 g_hash_table_add (referenced, file_name);
@@ -710,7 +778,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
             !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, &error) ||
             (G_PASTE_IS_PASSWORD_ITEM (item) && !_g_paste_file_backend_write_password_name (stream, G_PASTE_PASSWORD_ITEM (item), &error)) ||
-            (G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, G_PASTE_IMAGE_ITEM (item), &error)) ||
+            (G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, G_PASTE_IMAGE_ITEM (item), png_checksum, &error)) ||
             /* Written only when set, so an ordinary history's file is unchanged
              * by the attribute's existence. */
             (g_paste_item_is_favourite (item) && !g_output_stream_write_all (stream, "\" favourite=\"true", 17, NULL, NULL /* cancellable */, &error)) ||
@@ -812,6 +880,9 @@ typedef struct
      * second time. */
     GDateTime            *date;
     gchar                *checksum;
+    /* The SHA-256 of the PNG an encrypted image's side file holds, when the
+     * document says (_g_paste_file_backend_write_image_metadata ()). */
+    gchar                *png_checksum;
     gchar                *name;
     gchar                *text;
     GSList               *special_values;
@@ -1000,6 +1071,7 @@ start_tag (GMarkupParseContext *context,
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_date_time_unref);
         g_clear_pointer (&data->checksum, g_free);
+        g_clear_pointer (&data->png_checksum, g_free);
         g_clear_pointer (&data->name, g_paste_util_free_cleartext);
         g_clear_pointer (&data->text, g_paste_util_free_cleartext);
         g_clear_slist (&data->special_values, g_object_unref);
@@ -1059,6 +1131,22 @@ start_tag (GMarkupParseContext *context,
                     continue;
                 }
                 g_set_str (&data->checksum, *v);
+            }
+            else if (g_paste_str_equal (*a, "png"))
+            {
+                if (data->type != G_PASTE_ITEM_KIND_IMAGE)
+                {
+                    WARN_AT_ATTR (a, "Expected an Image item, but the kind is %s", parse_kind_name (data->type));
+                    continue;
+                }
+                /* A malformed one names no file: the image is then checked by
+                 * its pixels, as one the document says nothing of is. */
+                if (!g_paste_image_item_is_checksum (*v))
+                {
+                    WARN_AT_ATTR (a, "Invalid image PNG checksum");
+                    continue;
+                }
+                g_set_str (&data->png_checksum, *v);
             }
             else if (g_paste_str_equal (*a, "name"))
             {
@@ -1123,6 +1211,80 @@ start_tag (GMarkupParseContext *context,
             data->malformed = TRUE;
         data->unknown_depth = 1;
     }
+}
+
+/* An encrypted history's image, read only when it is the one the history names.
+ * The history is authenticated, but nothing binds an image to it: not the
+ * plaintext file at its reference, which anyone able to write the images
+ * directory could put any pixels in for the next save to encrypt as the user's
+ * own, nor the encrypted side file, which carries nothing of its name and could
+ * be another of the user's own put in its place. The document names the PNG
+ * its side file holds, by @png_checksum, when it was written knowing it; else
+ * the image is checked by its pixels, against its @checksum.
+ *
+ * @side_file is where @png was decrypted from, which this backend then knows
+ * the PNG of, or %NULL for the plaintext fallback. */
+static GPasteItem *
+_g_paste_file_backend_named_image (GPasteStorageBackend *self,
+                                   const gchar          *path,
+                                   const gchar          *side_file,
+                                   GBytes               *png,
+                                   GDateTime            *date,
+                                   const gchar          *checksum,
+                                   const gchar          *png_checksum)
+{
+    g_autofree gchar *computed = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, png);
+    g_autoptr (GPasteItem) item = NULL;
+
+    if (png_checksum)
+    {
+        if (g_paste_str_equal (computed, png_checksum))
+            item = g_paste_image_item_new_from_bytes_at_path (path, png, date, checksum);
+    }
+    else
+    {
+        item = g_paste_image_item_new_from_bytes_at_path (path, png, date, NULL /* computed */);
+
+        if (item && !g_paste_str_equal (g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)), checksum))
+            g_clear_object (&item);
+    }
+
+    if (!item)
+    {
+        g_warning ("Ignoring the image at %s, which is not the one its encrypted history names", path);
+        return NULL;
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    if (side_file)
+        _g_paste_file_backend_remember_png (self, side_file, computed);
+#else
+    (void) self;
+    (void) side_file;
+#endif
+
+    return g_steal_pointer (&item);
+}
+
+/* The encrypted flavour's fallback for an image whose side file is missing:
+ * the plaintext file at its reference, read as
+ * _g_paste_file_backend_named_image () says, by its
+ * pixels: @png_checksum names a side file's PNG. */
+static GPasteItem *
+_g_paste_file_backend_read_fallback_image (GPasteStorageBackend *self,
+                                           const gchar          *path,
+                                           GDateTime            *date,
+                                           const gchar          *checksum)
+{
+    gchar *contents = NULL;
+    gsize length = 0;
+
+    if (!checksum || !g_file_get_contents (path, &contents, &length, NULL))
+        return NULL;
+
+    g_autoptr (GBytes) png = g_bytes_new_take (contents, length);
+
+    return _g_paste_file_backend_named_image (self, path, NULL, png, date, checksum, NULL);
 }
 
 /* Where an image of the history read is: in its images directory, under the
@@ -1215,8 +1377,18 @@ add_item (Data *data)
             g_autofree gchar *path = _g_paste_file_backend_image_location (data);
             g_autoptr (GBytes) png = _g_paste_file_backend_load_image_bytes (data->backend, path);
 
-            item = (png) ? g_paste_image_item_new_from_bytes_at_path (path, png, date_time, data->checksum)
-                         : g_paste_image_item_new_from_file (path, date_time, data->checksum);
+            if (png && data->checksum && g_paste_storage_backend_is_encrypted (data->backend))
+            {
+                g_autofree gchar *side_file = g_paste_file_backend_encrypted_path (path);
+
+                item = _g_paste_file_backend_named_image (data->backend, path, side_file, png, date_time, data->checksum, data->png_checksum);
+            }
+            else if (png)
+                item = g_paste_image_item_new_from_bytes_at_path (path, png, date_time, data->checksum);
+            else if (g_paste_storage_backend_is_encrypted (data->backend))
+                item = _g_paste_file_backend_read_fallback_image (data->backend, path, date_time, data->checksum);
+            else
+                item = g_paste_image_item_new_from_file (path, date_time, data->checksum);
         }
         /* An image read with images turned off, or without the date to restore
          * it with, is skipped and its file left where it is: this may be no read
@@ -1594,6 +1766,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
             NULL, /* uuid */
             NULL, /* date */
             NULL, /* checksum */
+            NULL, /* png_checksum */
             NULL, /* name */
             NULL, /* text */
             NULL, /* special_values */
@@ -1668,6 +1841,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
         g_clear_pointer (&data.uuid, g_free);
         g_clear_pointer (&data.date, g_date_time_unref);
         g_clear_pointer (&data.checksum, g_free);
+        g_clear_pointer (&data.png_checksum, g_free);
         g_clear_pointer (&data.name, g_paste_util_free_cleartext);
         g_clear_pointer (&data.text, g_paste_util_free_cleartext);
         /* add_item() consumes these at every </item>; a document that ends inside
@@ -2231,11 +2405,22 @@ g_paste_file_backend_get_output_stream (GPasteFileBackend *self G_GNUC_UNUSED,
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 static void
+g_paste_file_backend_dispose (GObject *object)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
+
+    g_clear_pointer (&priv->png_checksums, g_hash_table_unref);
+
+    G_OBJECT_CLASS (g_paste_file_backend_parent_class)->dispose (object);
+}
+
+static void
 g_paste_file_backend_finalize (GObject *object)
 {
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
 
     g_paste_passphrase_free (priv->passphrase);
+    g_mutex_clear (&priv->png_checksums_lock);
 
     G_OBJECT_CLASS (g_paste_file_backend_parent_class)->finalize (object);
 }
@@ -2279,6 +2464,7 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     storage_class->rekey = g_paste_file_backend_rekey;
     storage_class->history_refutes_passphrase = g_paste_file_backend_history_refutes_passphrase;
 
+    G_OBJECT_CLASS (klass)->dispose = g_paste_file_backend_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_file_backend_finalize;
 #endif
 }
@@ -2286,6 +2472,12 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 static void
 g_paste_file_backend_init (GPasteFileBackend *self G_GNUC_UNUSED)
 {
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (self);
+
+    g_mutex_init (&priv->png_checksums_lock);
+    priv->png_checksums = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+#endif
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

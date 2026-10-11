@@ -1305,6 +1305,148 @@ test_file_image_moved_home (void)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An encrypted image whose side file is missing is read from the plaintext file
+ * at its reference only when that file holds the pixels the history names:
+ * anyone able to write the images directory could otherwise have the next save
+ * encrypt pixels of their choosing as the user's own. */
+static void
+test_file_encrypted_fallback_verified (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "encrypted-fallback";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        g_autoptr (GBytes) genuine = test_png_bytes_colored (48, 49, 50);
+        g_autoptr (GBytes) forged = test_png_bytes_colored (51, 52, 53);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (genuine, date, NULL));
+        g_autofree gchar *png = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (items->data));
+        g_autofree gchar *pngs = g_paste_file_backend_encrypted_path (png);
+
+        g_paste_storage_backend_write_history (encrypted, name, items);
+        g_assert_cmpint (g_unlink (pngs), ==, 0);
+
+        g_assert_true (g_file_set_contents (png, g_bytes_get_data (forged, NULL), (gssize) g_bytes_get_size (forged), NULL));
+        {
+            g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
+
+            g_assert_null (loaded);
+        }
+
+        g_assert_true (g_file_set_contents (png, g_bytes_get_data (genuine, NULL), (gssize) g_bytes_get_size (genuine), NULL));
+        {
+            g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
+
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        }
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not the one its encrypted history names*");
+}
+
+/* Nor is an encrypted side file read under another image's name: it carries
+ * nothing of the name, and one of the user's own encrypted images put in its
+ * place would decrypt all the same. */
+static void
+test_file_encrypted_side_file_verified (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "encrypted-side-file";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        g_autoptr (GBytes) kept = test_png_bytes_colored (54, 55, 56);
+        g_autoptr (GBytes) swapped = test_png_bytes_colored (57, 58, 59);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (kept, date, NULL));
+
+        items = g_list_append (items, g_paste_image_item_new_from_bytes (swapped, date, NULL));
+
+        g_autofree gchar *kept_png = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (items->data));
+        g_autofree gchar *swapped_png = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (items->next->data));
+        g_autofree gchar *kept_pngs = g_paste_file_backend_encrypted_path (kept_png);
+        g_autofree gchar *swapped_pngs = g_paste_file_backend_encrypted_path (swapped_png);
+        g_autofree gchar *contents = NULL;
+        gsize length = 0;
+
+        g_paste_storage_backend_write_history (encrypted, name, items);
+        g_assert_true (g_file_get_contents (kept_pngs, &contents, &length, NULL));
+        g_assert_true (g_file_set_contents (swapped_pngs, contents, (gssize) length, NULL));
+
+        g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, g_paste_image_item_get_checksum (items->data));
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not the one its encrypted history names*");
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An image whose pixels a round trip through PNG does not give back exactly --
+ * floating point with alpha -- is read back from the encrypted flavour all the
+ * same: its side file is checked against the PNG the document names, not
+ * against pixels decoded and hashed anew. */
+static void
+test_file_encrypted_image_round_trip (void)
+{
+    const gchar *name = "encrypted-round-trip";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    /* As a copy offering a TIFF alone is captured: through GDK's own loader. */
+    const guint width = 97, height = 61;
+    g_autofree gfloat *pixels = g_new (gfloat, width * height * 4);
+    g_autoptr (GRand) rand = g_rand_new_with_seed (11);
+
+    for (guint i = 0; i < width * height * 4; ++i)
+        pixels[i] = (gfloat) g_rand_double (rand);
+
+    g_autoptr (GBytes) data = g_bytes_new (pixels, width * height * 4 * sizeof (gfloat));
+    g_autoptr (GdkTexture) source = gdk_memory_texture_new (width, height, GDK_MEMORY_R32G32B32A32_FLOAT, data, width * 4 * sizeof (gfloat));
+    g_autoptr (GBytes) tiff = gdk_texture_save_to_tiff_bytes (source);
+    g_autoptr (GdkTexture) texture = gdk_texture_new_from_bytes (tiff, NULL);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *checksum = g_strdup (g_paste_image_item_get_checksum (items->data));
+
+    /* What makes the case: these pixels hash otherwise once through PNG. */
+    {
+        g_autoptr (GBytes) png = gdk_texture_save_to_png_bytes (texture);
+        g_autoptr (GdkTexture) reloaded = gdk_texture_new_from_bytes (png, NULL);
+        g_autofree gchar *reloaded_checksum = g_paste_image_item_compute_checksum (reloaded);
+
+        g_assert_cmpstr (reloaded_checksum, !=, checksum);
+    }
+
+    {
+        g_autoptr (GPasteStorageBackend) writer = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+        g_paste_storage_backend_write_history (writer, name, items);
+    }
+
+    /* Read by another backend, as the next start's would be. */
+    g_autoptr (GPasteStorageBackend) reader = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) loaded = read_history_ok (reader, name);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+}
+#endif
+
 /* A plain history moved to the encrypted flavour the way a migration does it:
  * imported, then deleted. Its screenshots go in clear with it, their encrypted
  * side files staying -- unless a side file is missing, the plaintext then being
@@ -5205,6 +5347,9 @@ main (int argc, char *argv[])
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     add_test ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);
+    add_test ("/history/file_encrypted_fallback_verified", test_file_encrypted_fallback_verified);
+    add_test ("/history/file_encrypted_side_file_verified", test_file_encrypted_side_file_verified);
+    add_test ("/history/file_encrypted_image_round_trip", test_file_encrypted_image_round_trip);
     add_test ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
 #endif
     add_test ("/history/content_kind_transitions", test_content_kind_transitions);
