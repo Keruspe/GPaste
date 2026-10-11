@@ -19,7 +19,10 @@ gpaste_test_env_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
-test_env = executable('test-env', 'test-env.c', dependencies: [ gio_dep, gpaste_test_env_dep ])
+test_env = executable('test-env', 'test-env.c',
+  c_args: '-DG_PASTE_TEST_BUS_SUPERVISOR="@0@"'.format(test_bus_supervisor.full_path()),
+  dependencies: [ gio_dep, gpaste_test_env_dep ],
+)
 test('test-env', test_env, depends: [gpaste_schemas, test_bus_supervisor], timeout: 10)
 
 # A private bus and the boilerplate around it, shared by the tests that need one.

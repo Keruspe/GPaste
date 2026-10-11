@@ -3,6 +3,7 @@
 
 #include <gpaste-test-env.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <glib-unix.h>
 #include <signal.h>
@@ -11,9 +12,15 @@
 #include <sys/prctl.h>
 #endif
 
+static gchar *tmp_dir;
 static gchar *runtime_dir;
-static GSubprocess *test_bus;
+static GSubprocess *supervisor;
 static GSubprocess *xvfb;
+
+/* dbus-daemon refuses a socket path longer than 99 characters, and our bus makes
+ * its own as "/dbus-" and ten more characters in "/gpaste-test-runtime-XXXXXX"
+ * under the temporary directory. A fixture's GTestDBus always listens in /tmp. */
+#define G_PASTE_TEST_TMPDIR_MAX (99 - 16 - 27)
 
 static void
 die_with_parent (gpointer user_data G_GNUC_UNUSED)
@@ -24,37 +31,48 @@ die_with_parent (gpointer user_data G_GNUC_UNUSED)
 }
 
 /* No activation directories: a test bus must not start desktop services. A
- * subprocess also avoids GTestDBus finalization waiting for GIO's singleton. */
+ * subprocess also avoids GTestDBus finalization waiting for GIO's singleton.
+ * Without a bus, the supervisor is only there to remove the directories. */
 static GSubprocess *
-start_bus (void)
+start_supervisor (gboolean with_bus)
 {
-    g_autofree gchar *config_path = g_build_filename (runtime_dir, "bus.conf", NULL);
-    g_autofree gchar *escaped = g_markup_escape_text (runtime_dir, -1);
-    g_autofree gchar *config = g_strdup_printf ("<busconfig><type>session</type>"
-                                                "<listen>unix:tmpdir=%s</listen>"
-                                                "<policy context=\"default\"><allow send_destination=\"*\"/>"
-                                                "<allow receive_sender=\"*\"/><allow own=\"*\"/>"
-                                                "</policy></busconfig>", escaped);
     g_autoptr (GError) error = NULL;
+    g_autofree gchar *config_path = NULL;
 
-    if (!g_file_set_contents (config_path, config, -1, &error))
-        g_error ("Could not configure the test bus: %s", error->message);
+    if (with_bus)
+    {
+        config_path = g_build_filename (runtime_dir, "bus.conf", NULL);
+        g_autofree gchar *escaped = g_markup_escape_text (runtime_dir, -1);
+        g_autofree gchar *config = g_strdup_printf ("<busconfig><type>session</type>"
+                                                    "<listen>unix:tmpdir=%s</listen>"
+                                                    "<policy context=\"default\"><allow send_destination=\"*\"/>"
+                                                    "<allow receive_sender=\"*\"/><allow own=\"*\"/>"
+                                                    "</policy></busconfig>", escaped);
+
+        if (!g_file_set_contents (config_path, config, -1, &error))
+            g_error ("Could not configure the test bus: %s", error->message);
+    }
 
     g_autoptr (GSubprocessLauncher) launcher = g_subprocess_launcher_new (G_SUBPROCESS_FLAGS_STDIN_PIPE | G_SUBPROCESS_FLAGS_STDOUT_PIPE);
-    g_autoptr (GSubprocess) bus = g_subprocess_launcher_spawn (launcher, &error,
-                                                              G_PASTE_TEST_BUS_SUPERVISOR, config_path, NULL);
-    if (!bus)
-        g_error ("Could not start the test bus: %s", error->message);
+    g_autoptr (GSubprocess) process = g_subprocess_launcher_spawn (launcher, &error,
+                                                                  G_PASTE_TEST_BUS_SUPERVISOR,
+                                                                  config_path ? config_path : "",
+                                                                  tmp_dir ? tmp_dir : runtime_dir, NULL);
+    if (!process)
+        g_error ("Could not start the test bus supervisor: %s", error->message);
 
-    g_autoptr (GDataInputStream) output = g_data_input_stream_new (g_subprocess_get_stdout_pipe (bus));
-    g_autofree gchar *address = g_data_input_stream_read_line (output, NULL, NULL, &error);
+    if (with_bus)
+    {
+        g_autoptr (GDataInputStream) output = g_data_input_stream_new (g_subprocess_get_stdout_pipe (process));
+        g_autofree gchar *address = g_data_input_stream_read_line (output, NULL, NULL, &error);
 
-    if (!address || !*address)
-        g_error ("The test bus did not announce an address: %s", error ? error->message : "end of stream");
+        if (!address || !*address)
+            g_error ("The test bus did not announce an address: %s", error ? error->message : "end of stream");
 
-    g_setenv ("DBUS_SESSION_BUS_ADDRESS", address, TRUE);
-    g_setenv ("DBUS_SYSTEM_BUS_ADDRESS", address, TRUE);
-    return g_steal_pointer (&bus);
+        g_setenv ("DBUS_SESSION_BUS_ADDRESS", address, TRUE);
+        g_setenv ("DBUS_SYSTEM_BUS_ADDRESS", address, TRUE);
+    }
+    return g_steal_pointer (&process);
 }
 
 static GSubprocess *
@@ -99,24 +117,6 @@ start_xvfb (void)
     return g_steal_pointer (&server);
 }
 
-/* Nothing but the tests writes under runtime_dir, but a symlink there must still
- * not lead the removal out of it. */
-static void
-remove_tree (GFile *file)
-{
-    if (g_file_query_file_type (file, G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS, NULL) == G_FILE_TYPE_DIRECTORY)
-    {
-        g_autoptr (GFileEnumerator) children = g_file_enumerate_children (file, G_FILE_ATTRIBUTE_STANDARD_NAME,
-                                                                          G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                                                          NULL, NULL);
-        GFile *child;
-
-        while (children && g_file_enumerator_iterate (children, NULL, &child, NULL, NULL) && child)
-            remove_tree (child);
-    }
-    g_file_delete (file, NULL, NULL);
-}
-
 /**
  * g_paste_test_env_setup:
  * @flags: what the binary needs besides private settings and runtime directory
@@ -139,6 +139,21 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
     };
     for (guint i = 0; i < G_N_ELEMENTS (session); ++i)
         g_unsetenv (session[i]);
+
+    /* A long temporary directory -- a package build tree's $TMPDIR, or the
+     * $G_TEST_TMPDIR a trap child gets inside its parent's, which GLib prefers
+     * -- leaves no room for a bus socket: the tests then get a short one of
+     * their own, before GLib caches where it is. */
+    const gchar *variable = g_getenv ("G_TEST_TMPDIR") ? "G_TEST_TMPDIR" : "TMPDIR";
+    const gchar *tmp = g_getenv (variable);
+
+    if (tmp && strlen (tmp) > G_PASTE_TEST_TMPDIR_MAX)
+    {
+        tmp_dir = g_strdup ("/tmp/gpaste-test-XXXXXX");
+        if (!g_mkdtemp_full (tmp_dir, 0700))
+            g_error ("Could not create a temporary directory: %s", g_strerror (errno));
+        g_setenv (variable, tmp_dir, TRUE);
+    }
 
     /* GIO looks for a session bus at $XDG_RUNTIME_DIR/bus when no address is
      * set. */
@@ -180,14 +195,12 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
         g_setenv ("DBUS_SESSION_BUS_ADDRESS", nowhere, TRUE);
         g_setenv ("DBUS_SYSTEM_BUS_ADDRESS", nowhere, TRUE);
     }
-    else
-    {
-        /* dbus-daemon is a test dependency, even for model-only suites: library
-         * initialization may acquire GIO's shared bus. Fail closed rather than
-         * silently skipping isolation or changing behavior with installed tools.
-         * OWN_BUS reserves isolation for fixtures that manage their own bus. */
-        test_bus = start_bus ();
-    }
+
+    /* dbus-daemon is a test dependency, even for model-only suites: library
+     * initialization may acquire GIO's shared bus. Fail closed rather than
+     * silently skipping isolation or changing behavior with installed tools.
+     * OWN_BUS reserves isolation for fixtures that manage their own bus. */
+    supervisor = start_supervisor (!(flags & G_PASTE_TEST_ENV_OWN_BUS));
 
     if (flags & G_PASTE_TEST_ENV_DISPLAY)
         xvfb = start_xvfb ();
@@ -203,7 +216,7 @@ g_paste_test_env_has_display (void)
  * g_paste_test_env_run:
  *
  * Run the tests, then stop the bus g_paste_test_env_setup() started and remove
- * its runtime directory.
+ * its directories.
  *
  * Returns: the result of g_test_run()
  */
@@ -216,17 +229,18 @@ g_paste_test_env_run (void)
      * away. -terminate ends the server once the process closes that connection
      * at exit, and PR_SET_PDEATHSIG if it never opened one. */
     g_clear_object (&xvfb);
-    /* Stop and reap the server independently of any live client connections. */
-    if (test_bus)
-    {
-        g_output_stream_close (g_subprocess_get_stdin_pipe (test_bus), NULL, NULL);
-        g_subprocess_wait (test_bus, NULL, NULL);
-        g_clear_object (&test_bus);
-    }
+    /* Stop and reap the server independently of any live client connections;
+     * the supervisor removes the directories once it has. Say so rather than
+     * close the lifeline: a process forked without exec, as GTestDBus forks its
+     * watcher, holds a copy of it until we exit. */
+    GOutputStream *lifeline = g_subprocess_get_stdin_pipe (supervisor);
 
-    g_autoptr (GFile) runtime = g_file_new_for_path (runtime_dir);
-    remove_tree (runtime);
+    g_output_stream_write_all (lifeline, "\n", 1, NULL, NULL, NULL);
+    g_output_stream_close (lifeline, NULL, NULL);
+    g_subprocess_wait (supervisor, NULL, NULL);
+    g_clear_object (&supervisor);
     g_clear_pointer (&runtime_dir, g_free);
+    g_clear_pointer (&tmp_dir, g_free);
 
     return result;
 }
