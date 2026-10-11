@@ -4817,11 +4817,14 @@ test_encrypted_password_name_is_escaped (void)
 static void
 test_history_dir_is_private (void)
 {
-    g_assert_true (g_paste_util_ensure_history_dir_exists ());
-
     g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
     GStatBuf st;
 
+    /* As an installation predating the private mode left it: found, not
+     * created, it has to be restricted all the same. */
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0755), ==, 0);
+    g_assert_cmpint (g_chmod (dir, 0755), ==, 0);
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
     g_assert_cmpint (g_stat (dir, &st), ==, 0);
     g_assert_cmpuint (st.st_mode & 0777, ==, 0700);
 
@@ -4847,118 +4850,145 @@ test_history_dir_is_private (void)
     g_assert_cmpuint (st.st_mode & 0777, ==, 0700);
 }
 
+/* Every case starts from the schema's defaults: the memory backend is shared by
+ * the whole binary, so a key one case sets (the storage backend, most of all)
+ * would otherwise reach every case after it, and a case run alone with -p would
+ * see different settings. */
+static void
+run_from_defaults (gconstpointer test)
+{
+    g_autoptr (GSettings) raw = g_settings_new (G_PASTE_SETTINGS_NAME);
+    g_autoptr (GSettingsSchema) schema = NULL;
+
+    g_object_get (raw, "settings-schema", &schema, NULL);
+
+    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
+
+    for (GStrv key = keys; *key; ++key)
+        g_settings_reset (raw, *key);
+
+    ((GTestFunc) test) ();
+}
+
+static void
+add_test (const gchar *path,
+          GTestFunc    test)
+{
+    g_test_add_data_func (path, (gconstpointer) test, run_from_defaults);
+}
+
 int
 main (int argc, char *argv[])
 {
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
 
-    g_test_add_func ("/history/image_capture_does_not_write", test_image_capture_does_not_write);
-    g_test_add_func ("/history/file_image_materialization", test_file_image_materialization);
-    g_test_add_func ("/history/history_image_names_no_file", test_history_image_names_no_file);
-    g_test_add_func ("/history/file_image_per_history", test_file_image_per_history);
-    g_test_add_func ("/history/file_backup_owns_images", test_file_backup_owns_images);
-    g_test_add_func ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
-    g_test_add_func ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);
-    g_test_add_func ("/history/file_image_moved_home", test_file_image_moved_home);
-    g_test_add_func ("/history/file_unreadable_keeps_image", test_file_unreadable_keeps_image);
-    g_test_add_func ("/history/file_skipped_image_kept_by_reads", test_file_skipped_image_kept_by_reads);
-    g_test_add_func ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
-    g_test_add_func ("/history/file_sweep_bounds", test_file_sweep_bounds);
-    g_test_add_func ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
+    add_test ("/history/image_capture_does_not_write", test_image_capture_does_not_write);
+    add_test ("/history/file_image_materialization", test_file_image_materialization);
+    add_test ("/history/history_image_names_no_file", test_history_image_names_no_file);
+    add_test ("/history/file_image_per_history", test_file_image_per_history);
+    add_test ("/history/file_backup_owns_images", test_file_backup_owns_images);
+    add_test ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
+    add_test ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);
+    add_test ("/history/file_image_moved_home", test_file_image_moved_home);
+    add_test ("/history/file_unreadable_keeps_image", test_file_unreadable_keeps_image);
+    add_test ("/history/file_skipped_image_kept_by_reads", test_file_skipped_image_kept_by_reads);
+    add_test ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
+    add_test ("/history/file_sweep_bounds", test_file_sweep_bounds);
+    add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    g_test_add_func ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);
-    g_test_add_func ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
+    add_test ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);
+    add_test ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
 #endif
-    g_test_add_func ("/history/content_kind_transitions", test_content_kind_transitions);
-    g_test_add_func ("/history/same_display_string_keeps_size", test_same_display_string_keeps_size);
-    g_test_add_func ("/history/add_get_length", test_add_get_length);
-    g_test_add_func ("/history/dedup_moves_to_front", test_dedup_moves_to_front);
-    g_test_add_func ("/history/add_equal_first_is_noop", test_add_equal_first_is_noop);
-    g_test_add_func ("/history/size_enforcement", test_size_enforcement);
-    g_test_add_func ("/history/remove", test_remove);
-    g_test_add_func ("/history/remove_by_uuid", test_remove_by_uuid);
-    g_test_add_func ("/history/get_by_uuid", test_get_by_uuid);
-    g_test_add_func ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
-    g_test_add_func ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
-    g_test_add_func ("/history/select_counts_image_once", test_select_counts_image_once);
-    g_test_add_func ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
-    g_test_add_func ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
-    g_test_add_func ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
-    g_test_add_func ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
-    g_test_add_func ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
-    g_test_add_func ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
-    g_test_add_func ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);
-    g_test_add_func ("/history/favourite_survives_memory_cap", test_favourite_survives_memory_cap);
-    g_test_add_func ("/history/favourite_roundtrip", test_favourite_roundtrip);
-    g_test_add_func ("/history/favourite_survives_replace", test_favourite_survives_replace);
-    g_test_add_func ("/history/add_password_name_conflict", test_add_password_name_conflict);
-    g_test_add_func ("/history/set_active_refused", test_set_active_refused);
-    g_test_add_func ("/history/set_active_unstored", test_set_active_unstored);
-    g_test_add_func ("/history/migration_refused_backend", test_migration_refused_backend);
-    g_test_add_func ("/history/migration_unstored_backend", test_migration_unstored_backend);
+    add_test ("/history/content_kind_transitions", test_content_kind_transitions);
+    add_test ("/history/same_display_string_keeps_size", test_same_display_string_keeps_size);
+    add_test ("/history/add_get_length", test_add_get_length);
+    add_test ("/history/dedup_moves_to_front", test_dedup_moves_to_front);
+    add_test ("/history/add_equal_first_is_noop", test_add_equal_first_is_noop);
+    add_test ("/history/size_enforcement", test_size_enforcement);
+    add_test ("/history/remove", test_remove);
+    add_test ("/history/remove_by_uuid", test_remove_by_uuid);
+    add_test ("/history/get_by_uuid", test_get_by_uuid);
+    add_test ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
+    add_test ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
+    add_test ("/history/select_counts_image_once", test_select_counts_image_once);
+    add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
+    add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
+    add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
+    add_test ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
+    add_test ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
+    add_test ("/history/unfavourite_makes_evictable", test_unfavourite_makes_evictable);
+    add_test ("/history/all_favourites_grow_past_cap", test_all_favourites_grow_past_cap);
+    add_test ("/history/favourite_survives_memory_cap", test_favourite_survives_memory_cap);
+    add_test ("/history/favourite_roundtrip", test_favourite_roundtrip);
+    add_test ("/history/favourite_survives_replace", test_favourite_survives_replace);
+    add_test ("/history/add_password_name_conflict", test_add_password_name_conflict);
+    add_test ("/history/set_active_refused", test_set_active_refused);
+    add_test ("/history/set_active_unstored", test_set_active_unstored);
+    add_test ("/history/migration_refused_backend", test_migration_refused_backend);
+    add_test ("/history/migration_unstored_backend", test_migration_unstored_backend);
 #ifdef G_PASTE_ENABLE_SQLITE
-    g_test_add_func ("/history/migration_locked_backend_is_current", test_migration_locked_backend_is_current);
-    g_test_add_func ("/history/migration_unstored_backend_is_current", test_migration_unstored_backend_is_current);
+    add_test ("/history/migration_locked_backend_is_current", test_migration_locked_backend_is_current);
+    add_test ("/history/migration_unstored_backend_is_current", test_migration_unstored_backend_is_current);
 #endif
-    g_test_add_func ("/history/make_password_keeps_uuid", test_make_password_keeps_uuid);
-    g_test_add_func ("/history/make_password_heavy_name", test_make_password_heavy_name);
-    g_test_add_func ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
-    g_test_add_func ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);
-    g_test_add_func ("/history/nameless_password_dedup_past_the_head", test_nameless_password_dedup_past_the_head);
-    g_test_add_func ("/history/select_moves_a_password_the_head_matches", test_select_moves_a_password_the_head_matches);
-    g_test_add_func ("/history/named_passwords_never_match", test_named_passwords_never_match);
-    g_test_add_func ("/history/rename_keeps_history_size", test_rename_keeps_history_size);
-    g_test_add_func ("/history/strip_rich_text", test_strip_rich_text);
-    g_test_add_func ("/history/strip_rich_text_persists", test_strip_rich_text_persists);
-    g_test_add_func ("/history/edit_and_make_password_drop_rich_text", test_edit_and_make_password_drop_rich_text);
-    g_test_add_func ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
-    g_test_add_func ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
-    g_test_add_func ("/history/uris_item_answers_its_uris", test_uris_item_answers_its_uris);
-    g_test_add_func ("/history/load_applies_the_caps", test_load_applies_the_caps);
-    g_test_add_func ("/history/load_leaves_a_flushed_history_alone", test_load_leaves_a_flushed_history_alone);
-    g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
-    g_test_add_func ("/history/empty", test_empty);
-    g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);
-    g_test_add_func ("/history/unnamed_history_persists_nothing", test_unnamed_history_persists_nothing);
-    g_test_add_func ("/history/flush_persists_synchronously", test_flush_persists_synchronously);
-    g_test_add_func ("/history/flush_stops_recording", test_flush_stops_recording);
-    g_test_add_func ("/history/delete_refused_after_flush", test_delete_refused_after_flush);
-    g_test_add_func ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
-    g_test_add_func ("/history/file_version_guard", test_file_version_guard);
-    g_test_add_func ("/history/password_dropped", test_password_dropped);
-    g_test_add_func ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
-    g_test_add_func ("/history/dir_is_private", test_history_dir_is_private);
+    add_test ("/history/make_password_keeps_uuid", test_make_password_keeps_uuid);
+    add_test ("/history/make_password_heavy_name", test_make_password_heavy_name);
+    add_test ("/history/nameless_passwords_may_coexist", test_nameless_passwords_may_coexist);
+    add_test ("/history/nameless_passwords_with_same_value_dedup", test_nameless_passwords_with_same_value_dedup);
+    add_test ("/history/nameless_password_dedup_past_the_head", test_nameless_password_dedup_past_the_head);
+    add_test ("/history/select_moves_a_password_the_head_matches", test_select_moves_a_password_the_head_matches);
+    add_test ("/history/named_passwords_never_match", test_named_passwords_never_match);
+    add_test ("/history/rename_keeps_history_size", test_rename_keeps_history_size);
+    add_test ("/history/strip_rich_text", test_strip_rich_text);
+    add_test ("/history/strip_rich_text_persists", test_strip_rich_text_persists);
+    add_test ("/history/edit_and_make_password_drop_rich_text", test_edit_and_make_password_drop_rich_text);
+    add_test ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
+    add_test ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
+    add_test ("/history/uris_item_answers_its_uris", test_uris_item_answers_its_uris);
+    add_test ("/history/load_applies_the_caps", test_load_applies_the_caps);
+    add_test ("/history/load_leaves_a_flushed_history_alone", test_load_leaves_a_flushed_history_alone);
+    add_test ("/history/select_moves_to_front", test_select_moves_to_front);
+    add_test ("/history/empty", test_empty);
+    add_test ("/history/save_load_roundtrip", test_save_load_roundtrip);
+    add_test ("/history/unnamed_history_persists_nothing", test_unnamed_history_persists_nothing);
+    add_test ("/history/flush_persists_synchronously", test_flush_persists_synchronously);
+    add_test ("/history/flush_stops_recording", test_flush_stops_recording);
+    add_test ("/history/delete_refused_after_flush", test_delete_refused_after_flush);
+    add_test ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
+    add_test ("/history/file_version_guard", test_file_version_guard);
+    add_test ("/history/password_dropped", test_password_dropped);
+    add_test ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
+    add_test ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
-    g_test_add_func ("/history/encrypted_empty_placeholder", test_encrypted_empty_placeholder);
-    g_test_add_func ("/history/load_skips_password_head", test_load_skips_password_head);
-    g_test_add_func ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
-    g_test_add_func ("/history/encrypted_rekey", test_encrypted_rekey);
-    g_test_add_func ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);
-    g_test_add_func ("/history/encrypted_password_name_is_escaped", test_encrypted_password_name_is_escaped);
+    add_test ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
+    add_test ("/history/encrypted_empty_placeholder", test_encrypted_empty_placeholder);
+    add_test ("/history/load_skips_password_head", test_load_skips_password_head);
+    add_test ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
+    add_test ("/history/encrypted_rekey", test_encrypted_rekey);
+    add_test ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);
+    add_test ("/history/encrypted_password_name_is_escaped", test_encrypted_password_name_is_escaped);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
-    g_test_add_func ("/history/sqlite_roundtrip", test_sqlite_roundtrip);
-    g_test_add_func ("/history/sqlite_incremental", test_sqlite_incremental);
-    g_test_add_func ("/history/sqlite_replace", test_sqlite_replace);
-    g_test_add_func ("/history/sqlite_strip_rich_text", test_sqlite_strip_rich_text);
-    g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
-    g_test_add_func ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
-    g_test_add_func ("/history/sqlite_migration_takes_source_images", test_sqlite_migration_takes_source_images);
-    g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
-    g_test_add_func ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
-    g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
-    g_test_add_func ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
-    g_test_add_func ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);
-    g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
-    g_test_add_func ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
+    add_test ("/history/sqlite_roundtrip", test_sqlite_roundtrip);
+    add_test ("/history/sqlite_incremental", test_sqlite_incremental);
+    add_test ("/history/sqlite_replace", test_sqlite_replace);
+    add_test ("/history/sqlite_strip_rich_text", test_sqlite_strip_rich_text);
+    add_test ("/history/sqlite_cascade", test_sqlite_cascade);
+    add_test ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
+    add_test ("/history/sqlite_migration_takes_source_images", test_sqlite_migration_takes_source_images);
+    add_test ("/history/sqlite_image_blob", test_sqlite_image_blob);
+    add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
+    add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
+    add_test ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
+    add_test ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);
+    add_test ("/history/sqlite_version_guard", test_sqlite_version_guard);
+    add_test ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    g_test_add_func ("/history/encrypted_sqlite_absurd_kdf_params", test_encrypted_sqlite_absurd_kdf_params);
-    g_test_add_func ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);
-    g_test_add_func ("/history/encrypted_sqlite_wrong_passphrase", test_encrypted_sqlite_wrong_passphrase);
-    g_test_add_func ("/history/encrypted_sqlite_rekey", test_encrypted_sqlite_rekey);
-    g_test_add_func ("/history/encrypted_sqlite_incremental", test_encrypted_sqlite_incremental);
+    add_test ("/history/encrypted_sqlite_absurd_kdf_params", test_encrypted_sqlite_absurd_kdf_params);
+    add_test ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);
+    add_test ("/history/encrypted_sqlite_wrong_passphrase", test_encrypted_sqlite_wrong_passphrase);
+    add_test ("/history/encrypted_sqlite_rekey", test_encrypted_sqlite_rekey);
+    add_test ("/history/encrypted_sqlite_incremental", test_encrypted_sqlite_incremental);
 #endif
 #endif
 
