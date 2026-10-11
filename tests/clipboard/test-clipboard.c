@@ -3918,6 +3918,256 @@ test_timeout_edit_other_named_entry (void)
     g_paste_clipboard_update_maybe_done (pending);
 }
 
+/* A record outlives a history switch, the selection still carrying what it
+ * carried; a hinted re-copy of that secret in the other history is a capture of
+ * its own there, not the first history's named entry, uuid and all -- running
+ * the countdown the record ran, not password-timeout's. */
+static void
+test_record_from_another_history (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
+    GBytes *hint = g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+
+    g_paste_history_switch (history, "another-history");
+    g_assert_true (history_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), hint);
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    GPasteItem *head = g_paste_history_get (history, 0);
+
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
+    g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (head)), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 1);
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+}
+
+/* The same, the hint unanswered twice: once with the text read failing, which
+ * leaves the record unconfirmed, then with the secret's text. That text is a
+ * capture of its own, never the secret as plain text. */
+static void
+test_record_from_another_history_unanswered (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    g_paste_history_switch (history, "another-history");
+    g_assert_true (history_loaded (history));
+    clipboard->defer_reads = TRUE;
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    g_paste_clipboard_update_maybe_done (pending);
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    pending = clipboard->pending;
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    GPasteItem *head = g_paste_history_get (history, 0);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
+    g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (head)), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
+}
+
+/* A timeout edit made while a read is out outlives a switch as the record does:
+ * the read concluding in the other history is a capture of its own there, not
+ * the first history's entry the edit was made to, uuid and all -- running the
+ * edit's countdown, not password-timeout's. */
+static void
+test_timeout_edit_from_another_history (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (bank), 600);
+    g_paste_clipboards_manager_rearm_password (manager, bank);
+    g_paste_history_switch (history, "another-history");
+    g_assert_true (history_loaded (history));
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    GPasteItem *head = g_paste_history_get (history, 0);
+
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
+    g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
+    g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 600);
+}
+
+/* A named record left unconfirmed is identified by a read the manager's dispose
+ * asks for, which lands with nothing left of the manager but that read: the
+ * hint unanswered again, its text is the record it was, nothing asked of the
+ * settings the manager no longer holds (a critical, fatal here). */
+static void
+test_record_identified_after_dispose (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+
+    /* The hint offered and not served, and the text read failing. */
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    g_paste_clipboard_update_maybe_done (pending);
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_object_run_dispose (G_OBJECT (manager));
+    pending = clipboard->pending;
+    g_assert_nonnull (pending);
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_null (clipboard->pending);
+}
+
+/* A timeout edit waiting on a read is resolved to the history's own object for
+ * that entry, the newest -- another object put in its place under the same uuid
+ * meanwhile -- and not to the one the edit was made on, which added back would
+ * stand beside it under one uuid. */
+static void
+test_timeout_edit_newest_object (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (bank), 600);
+    g_paste_clipboards_manager_rearm_password (manager, bank);
+
+    g_autofree gchar *uuid = g_paste_history_make_password (history, g_paste_item_get_uuid (bank), "bank", 600);
+
+    g_assert_cmpstr (uuid, ==, g_paste_item_get_uuid (bank));
+    g_assert_true (g_paste_history_get_by_uuid (history, uuid) != bank);
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_true (g_paste_history_get (history, 0) == g_paste_history_get_by_uuid (history, uuid));
+}
+
+/* A read of a named record concluding while its own history reloads -- a change
+ * of passphrase, an in-place migration -- is that record, taken at its word: no
+ * entry of the history is there yet to tell it from another history's. It keeps
+ * its countdown and is not added, the load bringing back what the store holds
+ * of it, rather than leaving a nameless twin with password-timeout's. */
+static void
+test_record_while_loading (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
+    g_autoptr (GMainContext) loading = g_main_context_new ();
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_main_context_push_thread_default (loading);
+    g_paste_history_flush (history);
+    g_paste_history_reload_backend (history);
+    g_main_context_pop_thread_default (loading);
+    g_assert_true (g_paste_history_is_loading (history));
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_true (g_paste_history_is_loading (history));
+
+    while (g_paste_history_is_loading (history))
+        g_main_context_iteration (loading, TRUE);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+}
+
 static void
 test_strip_after_unconfirmed_read (void)
 {
@@ -4426,6 +4676,12 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/strip_after_unconfirmed_read", test_strip_after_unconfirmed_read);
     g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
     g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);
+    g_test_add_func ("/clipboard/record_from_another_history", test_record_from_another_history);
+    g_test_add_func ("/clipboard/record_from_another_history/unanswered", test_record_from_another_history_unanswered);
+    g_test_add_func ("/clipboard/timeout_edit/from_another_history", test_timeout_edit_from_another_history);
+    g_test_add_func ("/clipboard/timeout_edit/newest_object", test_timeout_edit_newest_object);
+    g_test_add_func ("/clipboard/record_while_loading", test_record_while_loading);
+    g_test_add_func ("/clipboard/record_identified_after_dispose", test_record_identified_after_dispose);
     g_test_add_func ("/clipboard/expiry/history_before_restart", test_restart_waits_for_history);
     g_test_add_func ("/clipboard/expiry/independent_deadlines", test_expiry_independent_deadlines);
     g_test_add_func ("/clipboard/expiry/pending_preserves_waiter", test_expiry_pending_preserves_other_waiter);

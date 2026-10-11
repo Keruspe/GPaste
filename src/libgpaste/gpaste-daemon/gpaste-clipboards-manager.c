@@ -567,6 +567,51 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard           *clip,
     }
 }
 
+/* What stands, in the history in use, for @entry -- a password record, or the
+ * item a timeout edit was made on -- read back off its selection: the history's
+ * own object under @entry's uuid, the newest of that entry, while it carries
+ * @entry's value; @entry itself where no entry names it and it is a nameless
+ * capture; %NULL where it is another history's entry, a record or an edit
+ * outliving a switch, the read then being a capture of its own
+ * (capture_secret ()). Taken at its word while the history loads, or once it
+ * is gone, there being no entries to ask: update_ready () then arms it without
+ * adding it. */
+static GPasteItem *
+g_paste_clipboards_manager_entry_of (_Clipboard *clip,
+                                     GPasteItem *entry)
+{
+    GPasteHistory *history = clip->manager->history;
+
+    if (!history || g_paste_history_is_loading (history))
+        return entry;
+
+    GPasteItem *listed = g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (entry));
+
+    if (listed)
+        return (g_paste_str_equal (g_paste_item_get_real_value (listed), g_paste_item_get_real_value (entry))) ? listed : NULL;
+
+    return (g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (entry)), G_PASTE_PASSWORD_ITEM_NO_NAME)) ? entry : NULL;
+}
+
+/* @item, read off a selection carrying the value of another history's entry
+ * (entry_of ()): whatever the hint said, a capture of its own here, nameless,
+ * and never the text it was read as, which would land the secret in clear. It
+ * runs @timeout, the countdown that entry's record or edit was running, rather
+ * than password-timeout: the same secret reaching the selection again is the
+ * exposure already running out (arm_password_at ()). Rebuilt even from a read
+ * that made a password of it, that one carrying the setting. */
+static void
+g_paste_clipboards_manager_capture_secret (GPasteItem **item,
+                                           guint        timeout)
+{
+    if (!*item)
+        return;
+
+    g_autoptr (GPasteItem) captured = g_paste_password_item_new (NULL, g_paste_item_get_real_value (*item), timeout);
+
+    g_set_object (item, captured);
+}
+
 /* Resolve timeout edits before expiry: an edit may cancel or shorten the
  * deadline that elapsed during classification. Neither may synchronize an
  * overdue password back onto another selection.
@@ -607,10 +652,18 @@ g_paste_clipboards_manager_finish_expiry (_Clipboard           *clip,
              * see the note on the value alone above
              * (/clipboard/timeout_edit/plain_selection).
              *
-             * The captured twin carries the settings default, not this edit.
-             * Use the edited item throughout arming, history and sync below. */
+             * Otherwise the read is the edited entry, as in preserve_password ():
+             * the history's own object for it, the newest, or a capture running
+             * the edit's countdown for another history's. */
             if (item && *item && secret != CLIPBOARD_SECRET_NO)
-                g_set_object (item, change->item);
+            {
+                GPasteItem *entry = g_paste_clipboards_manager_entry_of (clip, change->item);
+
+                if (entry)
+                    g_set_object (item, entry);
+                else
+                    g_paste_clipboards_manager_capture_secret (item, change->timeout);
+            }
             break;
         }
     }
@@ -701,9 +754,19 @@ g_paste_clipboards_manager_preserve_password (_Clipboard           *clip,
 {
     /* A matching exposure keeps its item and deadline even when its hint is
      * readable: the captured twin only knows the global timeout default. */
-    if (*item && secret != CLIPBOARD_SECRET_NO && clip->password &&
-        g_paste_clipboards_manager_selection_holds (clip->clipboard, clip->password))
-        g_set_object (item, clip->password);
+    if (!*item || secret == CLIPBOARD_SECRET_NO || !clip->password ||
+        !g_paste_clipboards_manager_selection_holds (clip->clipboard, clip->password))
+        return;
+
+    /* The item kept is the record's entry in this history (entry_of ()): its
+     * name and uuid have no place here when it is another's, the record
+     * outliving a switch, and the read is then a capture of its own. */
+    GPasteItem *entry = g_paste_clipboards_manager_entry_of (clip, clip->password);
+
+    if (entry)
+        g_set_object (item, entry);
+    else
+        g_paste_clipboards_manager_capture_secret (item, clip->password_timeout);
 }
 
 /* A read asked so that the selection is identified, not so that a copy is
@@ -1378,6 +1441,16 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
      * still need the countdown that takes it back off. */
     g_autoptr (GPasteItem) password = (item && G_PASTE_IS_PASSWORD_ITEM (item)) ? g_object_ref (item) : NULL;
 
+    /* A named password here is a record or an edit taken at its word while the
+     * history loads (entry_of ()), a read making nameless ones alone: armed,
+     * and not added. The model holds none of the history's entries yet; the
+     * load brings this one back if it is one of them, where an add would stand
+     * beside it under the same uuid, and has no place for it if it is another
+     * history's. */
+    if (password && !g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (password)), G_PASTE_PASSWORD_ITEM_NO_NAME) &&
+        g_paste_history_is_loading (clip->manager->history))
+        g_clear_object (&item);
+
     if (!data->track && item)
         g_clear_object (&item);
 
@@ -2005,7 +2078,11 @@ g_paste_clipboards_manager_expire_password_finish (GPasteClipboardsManager *self
  * re-timing it is no business of the countdown the selected entry runs, nor of
  * the record a later deletion of that entry looks for. Nor is a named record no
  * entry names another history's entry to converge on: it is the one selected
- * there, the record outliving a switch. */
+ * there, the record outliving a switch.
+ *
+ * Not entry_of (), which asks which entry a read stands for and takes a record
+ * at its word while the history loads: asked of an edit of another entry, that
+ * would hand a named record an edit made on a different one. */
 static gboolean
 g_paste_clipboards_manager_edit_concerns (_Clipboard *clip,
                                           GPasteItem *item)
