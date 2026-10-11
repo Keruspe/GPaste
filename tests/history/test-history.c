@@ -542,6 +542,31 @@ test_delete_missing_history (void)
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
 }
 
+/* The current history is listed whether or not its store holds it yet, as a
+ * history just switched to does not until its load has read it. */
+static void
+test_list_histories_has_current (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load (history, "listed-without-store");
+
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories (&methods, &error);
+    const gchar *name = NULL;
+    guint64 size = 0;
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_variant_n_children (histories), ==, 1);
+    g_variant_get_child (histories, 0, "(&st)", &name, &size);
+    g_assert_cmpstr (name, ==, "listed-without-store");
+}
+
 static void
 test_add_password_name_conflict (void)
 {
@@ -7878,6 +7903,7 @@ main (int argc, char *argv[])
     add_test ("/history/backup_onto_current", test_backup_onto_current);
     add_test ("/history/backup_unreadable_source", test_backup_unreadable_source);
     add_test ("/history/delete_missing_history", test_delete_missing_history);
+    add_test ("/history/list_histories_has_current", test_list_histories_has_current);
 #ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/migration_detects_backend_in_use", test_migration_detects_backend_in_use);
 #endif

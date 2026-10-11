@@ -175,8 +175,9 @@ process.on('exit', () => {
     row.active = false;
     assert.equal(row.active, false);
 
-    // A listing that does not name the history in use -- the `none` storage
-    // lists nothing -- leaves its count to be asked for.
+    // A listing that does not name the history in use -- a GPaste 51.0 to
+    // 51.2 daemon's under the `none` storage -- leaves its count to be asked
+    // for.
     const sized = switcher();
     let sizeCalls = 0;
     sized._current = 'default';

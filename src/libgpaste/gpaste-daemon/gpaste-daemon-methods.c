@@ -1055,7 +1055,7 @@ g_paste_daemon_methods_get_password_timeout (const GPasteDaemonMethods *self,
 /* Every history with how many items it holds, in the order the store lists them,
  * which is the order such a listing is drawn in. The size rides along because
  * everything listing histories draws their sizes beside them, and asking one at
- * a time meant one full load of one history apiece. */
+ * a time would mean one full load of one history apiece. */
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_list_histories (const GPasteDaemonMethods *self,
                                        GError                   **error)
@@ -1082,6 +1082,15 @@ g_paste_daemon_methods_list_histories (const GPasteDaemonMethods *self,
                                *name,
                                g_paste_history_get_size (self->history, *name));
     }
+
+    /* The current history is one whether or not its store holds it yet: one
+     * just switched to has none until its load has read it, and a listing
+     * asked for on the HistoriesChanged that switch raised would otherwise
+     * leave out the very history it was raised for. */
+    const gchar *current = g_paste_history_get_current (self->history);
+
+    if (current && !g_strv_contains ((const gchar * const *) names, current))
+        g_variant_builder_add (&builder, G_PASTE_HISTORY_VARIANT_STRING, current, g_paste_history_get_size (self->history, current));
 
     return g_variant_builder_end (&builder);
 }

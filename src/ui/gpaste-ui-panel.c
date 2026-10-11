@@ -440,11 +440,12 @@ on_histories_ready (GObject      *source_object,
      * a time, but a daemon coming back announces nothing of what went while
      * it was away -- a migration run without importing leaves only the default
      * history -- and a row left standing for one would create it anew when
-     * clicked. The default row stays, as above, and so does the current one,
-     * which a storage keeping nothing does not list -- the one this listing
-     * was asked under and the one now, a switch landing while it was out. Named
-     * first and dropped after, since dropping one edits the list being
-     * walked. */
+     * clicked. The default row stays, as above, and so does the current one:
+     * the one this listing was asked under and the one now, a switch landing
+     * while it was out, and one a GPaste 51.0 to 51.2 over a storage keeping
+     * nothing leaves out of its listing, which this daemon lists whether
+     * stored or not. Named first and dropped after, since dropping one edits
+     * the list being walked. */
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
     for (const GList *h = self->histories; h; h = h->next)
