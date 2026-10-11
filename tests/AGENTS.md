@@ -184,7 +184,8 @@ reads as starting, a `History` as ready, and a daemon going away as starting for
 the grace second and absent after it -- as does a retry the bus cannot answer.
 A daemon serving only `org.gnome.GPaste2` is told apart from one serving this
 interface and from one exporting nothing yet, and only it is signalled to
-re-execute, the pid file naming the process owning the name. A
+re-execute, the pid file naming the process owning the name, and only one
+serving this interface is one the bash completion lists items from. A
 client built through `GInitable`/`GAsyncInitable` rather than its constructors
 starts out with the right presence, a handler connected before a two-step init
 hearing of it once -- the GetAll reply saying so of a daemon that serves, the

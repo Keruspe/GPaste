@@ -8,6 +8,7 @@ test('client-reexec', test_client_reexec, depends: [gpaste_schemas, test_bus_sup
 test_client_presence = executable(
   'test-client-presence',
   sources: 'test-presence.c',
+  c_args: ['-DG_PASTE_TEST_BASH_COMPLETION="@0@"'.format(meson.project_source_root() / 'data' / 'completions' / 'gpaste-client')],
   dependencies: [ gio_dep, libgpaste_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep ],
 )
 test('client-presence', test_client_presence, depends: [gpaste_schemas, test_bus_supervisor])

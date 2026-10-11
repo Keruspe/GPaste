@@ -37,7 +37,14 @@ or
 .BR \%--zero .
 
 A command that talks to the daemon refuses any argument, option value or piped
-text that is not valid UTF-8, file paths included.
+text that is not valid UTF-8, file paths included. It starts the daemon when
+none is running, and waits for it to serve a history -- while it settles its
+storage, questions to the user included, for up to two minutes -- before it
+calls it, failing at once on a GPaste 45 or 50 an update left running. Only
+.B daemon-reexec
+and
+.BR migrate ,
+which have to reach such a daemon, call it without waiting.
 
 Printed on a terminal, an item's control characters show as U+FFFD rather than
 reach the terminal, which an escape sequence would have act on it; line breaks

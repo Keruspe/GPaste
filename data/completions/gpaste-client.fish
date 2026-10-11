@@ -5,12 +5,20 @@
 
 # Is a daemon already there to answer us? Completion must never be what
 # activates one: D-Bus would start it behind the user's back and block the shell
-# until it finished loading the history.
+# until it finished loading the history. Owning the name is not enough either:
+# a daemon still settling its storage, or a GPaste 45 or 50 an update left
+# running, serves none of this interface, and gpaste-client would wait on it.
+# So the owner is asked by its unique name, which nothing activates, for one of
+# that interface's properties.
 function __gpaste_daemon_running
-    gdbus call --session --dest org.freedesktop.DBus \
-                         --object-path /org/freedesktop/DBus \
-                         --method org.freedesktop.DBus.NameHasOwner org.gnome.GPaste 2>/dev/null \
-        | string match -q '*true*'
+    set -l owner (gdbus call --session --dest org.freedesktop.DBus \
+                             --object-path /org/freedesktop/DBus \
+                             --method org.freedesktop.DBus.GetNameOwner org.gnome.GPaste 2>/dev/null)
+    or return 1
+    set owner (string replace -r "^\('(.*)',\)\$" '$1' -- $owner)
+    gdbus call --session --dest "$owner" \
+               --object-path /org/gnome/GPaste \
+               --method org.freedesktop.DBus.Properties.Get org.gnome.GPaste3 Active >/dev/null 2>&1
 end
 
 # One file per history, named <history>.<extension>. Listing them off disk keeps

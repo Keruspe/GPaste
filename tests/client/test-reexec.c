@@ -278,6 +278,57 @@ fake_list_histories_sync (GPasteClient *client G_GNUC_UNUSED,
     return g_list_append (histories, g_paste_client_history_new ("two\nlines", 2));
 }
 
+/* The presence the faked client reports, READY unless a case says otherwise,
+ * and what a follow of the daemon turns it into, once the main loop runs: a
+ * daemon coming up, or none coming. */
+static GPasteDaemonPresence fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+static GPasteDaemonPresence presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+static guint follows;
+
+static GPasteDaemonPresence
+fake_get_daemon_presence (GPasteClient *client G_GNUC_UNUSED)
+{
+    return fake_presence;
+}
+
+static void
+fake_daemon_answers (gpointer user_data G_GNUC_UNUSED)
+{
+    fake_presence = presence_after_follow;
+}
+
+static void
+fake_follow_daemon (GPasteClient *client   G_GNUC_UNUSED,
+                    gboolean      activate G_GNUC_UNUSED)
+{
+    ++follows;
+    if (fake_presence == G_PASTE_DAEMON_PRESENCE_ABSENT)
+        fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    g_source_set_name_by_id (g_idle_add_once (fake_daemon_answers, NULL), "[GPaste] test daemon answers");
+}
+
+/* What the faked check of whether a GPaste 45 or 50 owns the name answers a
+ * wait for the daemon. */
+static gboolean waited_on_legacy;
+
+static void
+fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
+                       GCancellable       *cancellable,
+                       GAsyncReadyCallback callback,
+                       gpointer            user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
+
+    g_task_return_boolean (task, waited_on_legacy);
+}
+
+static gboolean
+fake_daemon_is_legacy_finish (GAsyncResult *result,
+                              GError      **error)
+{
+    return g_task_propagate_boolean (G_TASK (result), error);
+}
+
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
 #define g_paste_util_reexecute_legacy_daemon fake_reexecute_legacy_daemon
@@ -294,7 +345,15 @@ fake_list_histories_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_client_search_sync fake_search_sync
 #define g_paste_client_add_password_sync fake_add_password_sync
 #define g_paste_client_list_histories_sync fake_list_histories_sync
+#define g_paste_client_get_daemon_presence fake_get_daemon_presence
+#define g_paste_client_follow_daemon fake_follow_daemon
+#define g_paste_util_daemon_is_legacy fake_daemon_is_legacy
+#define g_paste_util_daemon_is_legacy_finish fake_daemon_is_legacy_finish
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_util_daemon_is_legacy_finish
+#undef g_paste_util_daemon_is_legacy
+#undef g_paste_client_follow_daemon
+#undef g_paste_client_get_daemon_presence
 #undef g_paste_client_list_histories_sync
 #undef g_paste_client_add_password_sync
 #undef g_paste_client_search_sync
@@ -570,9 +629,10 @@ test_unsupported (void)
     g_assert_cmpuint (signals_sent, ==, 1);
 }
 
-/* An unknown method from a daemon libgpaste will not signal -- a current one
- * settling its storage behind a prompt, or a pid file naming another process
- * than the name's owner -- leaves the error standing. */
+/* An unknown method from a daemon libgpaste will not signal -- a pid file
+ * naming another process than the name's owner -- leaves the error standing,
+ * bar a current one settling its storage behind a prompt, which is said to be
+ * starting. */
 static void
 test_unsupported_not_legacy (void)
 {
@@ -582,6 +642,17 @@ test_unsupported_not_legacy (void)
     legacy_owner = FALSE;
     g_assert_false (reexec_fallback (NULL, FALSE, &error));
     g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_clear_error (&error);
+
+    /* A daemon of this version still starting is said to be, rather than left
+     * to GDBus' words for a path with no object. */
+    error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    g_assert_false (reexec_fallback (NULL, FALSE, &error));
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_nonnull (strstr (error->message, "still starting"));
     g_assert_cmpuint (signals_sent, ==, 0);
     legacy_owner = TRUE;
 }
@@ -1148,6 +1219,64 @@ test_merge_takes_two (void)
     g_assert_null (merged_uuids);
 }
 
+/* A command talking to the daemon waits for one to serve: a daemon just
+ * started, or re-executing, owns the name before it has anything to answer
+ * with. One that never comes fails the command rather than have it call into
+ * nothing -- bar daemon-reexec and migrate, which have to reach a daemon older
+ * than this interface, which never serves it. */
+static void
+test_waits_for_daemon (void)
+{
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), NULL });
+    follows = 0;
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+    g_assert_cmpint (run_client ((const gchar *[]) { "delete", FAKE_UUID (a), NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpstr (deleted_uuid, ==, FAKE_UUID (a));
+    g_assert_cmpuint (follows, ==, 1);
+    g_clear_pointer (&deleted_uuid, g_free);
+
+    Context ctx = {
+        .argc = 1,
+        .args = (const gchar *[]) { FAKE_UUID (a), NULL },
+    };
+    g_autoptr (GError) error = NULL;
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    g_assert_cmpint (g_paste_dispatch (2, "delete", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_null (deleted_uuid);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+
+    /* A GPaste 45 or 50 owning the name never serves: told apart at once, and
+     * the command fails pointing at daemon-reexec rather than wait it out. */
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_STARTING;
+    waited_on_legacy = TRUE;
+    g_assert_cmpint (g_paste_dispatch (2, "delete", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_nonnull (strstr (error->message, "daemon-reexec"));
+    g_assert_null (deleted_uuid);
+    waited_on_legacy = FALSE;
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+
+    /* Not followed for a re-exec, which the fallback answers. */
+    follows = 0;
+    signals_sent = 0;
+    reexec_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 1);
+    g_clear_error (&reexec_error);
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1171,6 +1300,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/output-failure", test_output_failure);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/merge-takes-two", test_merge_takes_two);
+    g_test_add_func ("/client/waits-for-daemon", test_waits_for_daemon);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
     g_test_add_func ("/client/utf8/accepted", test_utf8_accepted);

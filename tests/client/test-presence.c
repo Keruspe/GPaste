@@ -813,6 +813,62 @@ test_legacy (void)
     g_dbus_connection_close_sync (server, NULL, NULL);
 }
 
+static void
+on_shell_done (GObject      *source_object,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+    g_subprocess_wait_finish (G_SUBPROCESS (source_object), res, NULL);
+    *(gboolean *) user_data = TRUE;
+}
+
+/* Whether the bash completion takes the daemon for one to list items from,
+ * the main loop left running for whatever the shell asks of it meanwhile. */
+static gboolean
+bash_completion_sees_daemon (void)
+{
+    g_autofree gchar *command = g_strdup_printf ("source '%s' && _gpaste_client_daemon_running", G_PASTE_TEST_BASH_COMPLETION);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GSubprocess) shell = g_subprocess_new (G_SUBPROCESS_FLAGS_NONE, &error, "bash", "-c", command, NULL);
+    gboolean done = FALSE;
+
+    g_assert_no_error (error);
+    g_subprocess_wait_async (shell, NULL, on_shell_done, &done);
+    g_paste_test_bus_wait_until (is_true, &done, NULL);
+    g_assert_true (done);
+
+    return g_subprocess_get_successful (shell);
+}
+
+/* The completions list items only from a daemon that serves: one owning the
+ * name before it does -- settling its storage -- or a GPaste 45 or 50 an update
+ * left running would have gpaste-client wait on it, and the shell with it. */
+static void
+test_completion_serving_daemon (void)
+{
+    g_assert_false (bash_completion_sees_daemon ());
+
+    g_autoptr (GDBusConnection) server = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+
+    g_assert_cmpuint (g_paste_test_bus_name_call (server, "RequestName", g_variant_new ("(su)", G_PASTE_BUS_NAME, 0u)), ==, 1);
+    g_assert_false (bash_completion_sees_daemon ());
+
+    guint registration = legacy_export (server);
+
+    g_assert_false (bash_completion_sees_daemon ());
+    g_dbus_connection_unregister_object (server, registration);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    g_autoptr (GError) error = NULL;
+
+    g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (skeleton), server, G_PASTE_DAEMON_OBJECT_PATH, &error);
+    g_assert_no_error (error);
+    g_assert_true (bash_completion_sees_daemon ());
+
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (skeleton));
+    g_dbus_connection_close_sync (server, NULL, NULL);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -829,5 +885,6 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/daemon-gone-error", test_daemon_gone_error);
     g_test_add_func ("/client/invalid-utf8-refused", test_invalid_utf8_refused);
     g_test_add_func ("/client/presence/legacy", test_legacy);
+    g_test_add_func ("/client/presence/completion-serving-daemon", test_completion_serving_daemon);
     return g_paste_test_env_run ();
 }
