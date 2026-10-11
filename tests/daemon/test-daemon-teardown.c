@@ -367,6 +367,33 @@ test_startup_update (Fixture      *fixture,
     g_dbus_connection_signal_unsubscribe (listener, subscription);
 }
 
+/* Exported again, the daemon announces its properties again, as it did the
+ * first time: a client that saw it go asks the new export for them before it is
+ * there, and has only the announcement to learn them from. */
+static void
+test_reexport_announces (Fixture      *fixture,
+                         gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) listener = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    guint changes = 0;
+
+    /* Whatever the first export announced has arrived before this listens. */
+    g_paste_test_bus_round_trip (listener, fixture->connection);
+
+    guint subscription = g_dbus_connection_signal_subscribe (listener, NULL, "org.freedesktop.DBus.Properties", "PropertiesChanged",
+                                                             G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME,
+                                                             G_DBUS_SIGNAL_FLAGS_NONE, on_update, &changes, NULL);
+
+    /* And the subscription is in place on the bus before anything is sent. */
+    g_paste_test_bus_round_trip (listener, fixture->connection);
+    g_assert_cmpuint (changes, ==, 0);
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+    g_assert_true (g_paste_bus_object_register_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon), fixture->connection, NULL));
+    g_paste_test_bus_wait_for_count (&changes, 1);
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+    g_dbus_connection_signal_unsubscribe (listener, subscription);
+}
+
 /* A reload of the storage tells whoever lists the histories that their set
  * has changed: onto another flavour, it is another set, with other counts. */
 static void
@@ -1297,6 +1324,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/teardown/reload-announces-histories", Fixture, NULL, fixture_set_up, test_reload_announces_histories, fixture_tear_down);
+    g_test_add ("/daemon/teardown/reexport-announces", Fixture, NULL, fixture_set_up, test_reexport_announces, fixture_tear_down);
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);

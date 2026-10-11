@@ -1577,6 +1577,14 @@ g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
     g_clear_handle_id (&daemon->startup_changed_id, g_source_remove);
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (daemon->skeleton));
 
+    /* Off the bus, the skeleton forgets what it announced: it sends a change only
+     * for a value that moved, so exported again with the values it had, the
+     * daemon would announce none of them, and a client that asked for them too
+     * early would go without (g_paste_daemon_register_on_connection ()). */
+    g_paste_daemon3_set_active (daemon->skeleton, FALSE);
+    g_paste_daemon3_set_history (daemon->skeleton, "");
+    g_paste_daemon3_set_version (daemon->skeleton, "");
+
     g_signal_group_set_target (daemon->settings_signals, NULL);
     g_signal_group_set_target (daemon->history_signals, NULL);
     g_signal_group_set_target (daemon->screensaver_signals, NULL);
