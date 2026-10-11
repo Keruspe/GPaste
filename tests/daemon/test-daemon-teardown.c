@@ -279,6 +279,36 @@ on_uploaded (GObject      *source_object G_GNUC_UNUSED,
     *(GAsyncResult **) user_data = g_object_ref (result);
 }
 
+/* @uuid uploaded through @command, waited for: the url, or %NULL and @error. */
+static gchar *
+run_upload (Fixture     *fixture,
+            const gchar *uuid,
+            const gchar *command,
+            GError     **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_settings_set_upload_command (fixture->settings, command);
+    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_nonnull (result);
+
+    return g_paste_daemon_upload_finish (fixture->daemon, result, error);
+}
+
+/* @text added to the history, for an upload to take: its uuid. */
+static gchar *
+add_text (Fixture     *fixture,
+          const gchar *text)
+{
+    GPasteItem *item = g_paste_text_item_new (text);
+    gchar *uuid = g_strdup (g_paste_item_get_uuid (item));
+
+    g_paste_history_add (fixture->daemon->history, item);
+
+    return uuid;
+}
+
 /* Upload takes a text item alone: a password's value is the placeholder
  * standing for it, which no command is handed. */
 static void
@@ -287,15 +317,11 @@ test_upload_refuses_password (Fixture      *fixture,
 {
     GPasteItem *password = g_paste_password_item_new ("name", "secret", 0);
     g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (password));
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     g_paste_history_add (fixture->daemon->history, password);
-    g_paste_settings_set_upload_command (fixture->settings, "false");
-    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
 
-    g_autofree gchar *url = g_paste_daemon_upload_finish (fixture->daemon, result, &error);
+    g_autofree gchar *url = run_upload (fixture, uuid, "false", &error);
 
     g_assert_null (url);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_WRONG_ITEM_KIND);
@@ -382,6 +408,63 @@ test_change_passphrase_unopenable (Fixture      *fixture,
     g_assert_cmpuint (asked, ==, 0);
 }
 
+/* A command that does not stop writing is cut off once it has written more
+ * than a url, rather than read until the deadline. */
+static void
+test_upload_bounds_answer (Fixture      *fixture,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *uuid = add_text (fixture, "uploaded");
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = run_upload (fixture, uuid, "yes https://example.com/", &error);
+
+    g_assert_null (url);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+}
+
+/* A command answering before it has read the whole item -- far more than a
+ * pipe holds -- is judged by its exit and its answer, the write it left
+ * unread saying nothing about the upload. */
+static void
+test_upload_unread_input (Fixture      *fixture,
+                          gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *text = g_strnfill (1024 * 1024, 'x');
+    g_autofree gchar *uuid = add_text (fixture, text);
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = run_upload (fixture, uuid, "sh -c 'head -c 1 >/dev/null; echo https://example.com/x'", &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstr (url, ==, "https://example.com/x");
+}
+
+/* The item goes to a command reading none of it yet -- far more of it than a
+ * pipe holds -- without the daemon waiting for it to: the upload is started,
+ * and the main loop free, long before the command reads. */
+static void
+test_upload_does_not_block (Fixture      *fixture,
+                            gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *text = g_strnfill (1024 * 1024, 'x');
+    g_autofree gchar *uuid = add_text (fixture, text);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_upload_command (fixture->settings, "sh -c 'sleep 2; cat >/dev/null; echo https://example.com/x'");
+
+    gint64 start = g_get_monotonic_time ();
+
+    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
+    g_assert_cmpint (g_get_monotonic_time () - start, <, G_USEC_PER_SEC);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_nonnull (result);
+
+    g_autofree gchar *url = g_paste_daemon_upload_finish (fixture->daemon, result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstr (url, ==, "https://example.com/x");
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -398,6 +481,9 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
     g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);
+    g_test_add ("/daemon/upload/bounds-answer", Fixture, NULL, fixture_set_up, test_upload_bounds_answer, fixture_tear_down);
+    g_test_add ("/daemon/upload/unread-input", Fixture, NULL, fixture_set_up, test_upload_unread_input, fixture_tear_down);
+    g_test_add ("/daemon/upload/does-not-block", Fixture, NULL, fixture_set_up, test_upload_does_not_block, fixture_tear_down);
 
     return g_paste_test_env_run ();
 }

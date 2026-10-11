@@ -57,6 +57,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix the upload shortcut on an image or a password uploading another item: only text uploads
 - Fix adding a pipe, a device or a huge file with gpaste-client freezing or exhausting the daemon
 - Fix emptying a history deleting the images its copy kept from before a migration still shows
+- Fix uploads failing when the upload command answers before reading everything, or never stops writing
 - Fix histories and backups missing recent copies, and deleted or emptied histories coming back
 - Fix a rare crash when renaming a password
 - Fix encrypted and SQLite histories accepting a wrong passphrase or turning unreadable after rare failures

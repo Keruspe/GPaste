@@ -300,7 +300,7 @@ gpaste_daemon_headers = gpaste_daemon_public_headers + gpaste_daemon_internal_he
 # the image checksum belongs to GPasteImageItem. gtk4 itself stays, for
 # GdkTexture, GdkRGBA and gtk_accelerator_parse, but the widget stack does not:
 # gnome-shell hosts this library and can initialise neither it nor Adw.
-gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, libgpaste_internal_dep ]
+gpaste_daemon_deps = [ gcr_dep, gio_unix_dep, glib_dep, gtk4_dep, libgpaste_internal_dep ]
 
 # The optional features below append to the union lists, so their headers are
 # internal by construction: compiled and visible in-tree, but never installed and

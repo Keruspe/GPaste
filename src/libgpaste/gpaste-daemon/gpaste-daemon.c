@@ -18,6 +18,8 @@
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #endif
 
+#include <gio/gunixoutputstream.h>
+#include <glib-unix.h>
 #include <string.h>
 
 struct _GPasteDaemon
@@ -466,26 +468,43 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
  * reports nothing until it is done, so there is no progress to measure. */
 #define G_PASTE_DAEMON_UPLOAD_TIMEOUT (9 * 60)
 
-/* What the deadline needs to reach the upload it is running against, and what
- * the upload needs to call that deadline off. Held as the task's data, so its
- * life is the task's. */
+/* The most the command's answer is read of: a url is one line, and a command
+ * still writing past this is not answering one -- a "yes", a tool stuck in a
+ * verbose loop -- which unbounded would grow the daemon until the deadline, or
+ * until the system ran out of memory first. */
+#define G_PASTE_DAEMON_UPLOAD_MAX_ANSWER 8192
+
+/* What one upload has out: the item going in on the command's stdin, its answer
+ * coming back on its stdout and its exit, all three at once -- a command writing
+ * as it reads would otherwise fill one pipe while the other waits. Held as the
+ * task's data, so its life is the task's; the deadline reaches it there, and
+ * the last of the three to come back judges the upload. */
 typedef struct
 {
-    GSubprocess  *upload;      /* ref'd: the deadline has to be able to kill it */
+    GSubprocess  *upload;      /* the deadline has to be able to kill it */
     GCancellable *cancellable;
     guint         timeout_id;
+    GBytes       *item;        /* the value going in, holding its item */
+    guint         pending;     /* the write, the read and the exit still out */
+    gboolean      timed_out;
+    gboolean      overflowed;
+    GError       *read_error;
+    gsize         answered;
+    gchar         answer[G_PASTE_DAEMON_UPLOAD_MAX_ANSWER + 1];
 } UploadData;
 
 static void
-upload_data_free (gpointer user_data)
+upload_data_free (UploadData *data)
 {
-    UploadData *data = user_data;
-
     g_clear_handle_id (&data->timeout_id, g_source_remove);
     g_clear_object (&data->upload);
     g_clear_object (&data->cancellable);
+    g_clear_pointer (&data->item, g_bytes_unref);
+    g_clear_error (&data->read_error);
     g_free (data);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (UploadData, upload_data_free)
 
 static void
 on_upload_timed_out (gpointer user_data)
@@ -493,78 +512,58 @@ on_upload_timed_out (gpointer user_data)
     UploadData *data = user_data;
 
     data->timeout_id = 0;
+    data->timed_out = TRUE;
 
-    /* Held over the cancel, which is what @data's lifetime hangs on: a read that
-     * completes under the cancellation answers the task, and the last ref going
-     * with it frees @data -- so the child has to be in hand before the cancel to
-     * still be there after it. */
-    g_autoptr (GSubprocess) upload = g_object_ref (data->upload);
-
-    /* The cancel is what says this was the deadline and not the command
-     * answering, and the kill is what makes the read come back at all:
-     * cancelling g_subprocess_communicate_utf8_async () abandons the read
-     * without touching the child, which would then outlive the daemon still
-     * holding the pipes it was writing to. In this order, so that a read failing
-     * under the kill is failed as a cancellation rather than as a command that
-     * exited badly. */
+    /* The cancel gives up the write and the read, and the kill is what ends the
+     * exit's wait: the command is not trusted to stop on its own, its pipes
+     * closing included. */
     g_cancellable_cancel (data->cancellable);
-    g_subprocess_force_exit (upload);
+    g_subprocess_force_exit (data->upload);
 }
 
-/* Not on_upload_done (): that name belongs to the D-Bus handler further down,
- * which is what this task eventually answers. */
+/* Judged once all three are back, from how the command ended and what it
+ * answered. */
 static void
-on_upload_command_done (GObject      *source_object,
-                        GAsyncResult *res,
-                        gpointer      user_data)
+g_paste_daemon_upload_done (GTask *task)
 {
-    /* The ref g_subprocess_newv () handed us; the async call holds its own for
-     * as long as it needs one. */
-    g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
-    g_autoptr (GTask) task = user_data;
     UploadData *data = g_task_get_task_data (task);
-    g_autofree gchar *url = NULL;
-    GError *error = NULL;
+
+    if (--data->pending)
+        return;
 
     /* Whatever the answer is, it has arrived, so there is nothing left for the
-     * deadline to cut off. Here rather than left to upload_data_free (), which
-     * only catches it because the last ref on the task is the one this callback
-     * is holding. */
+     * deadline to cut off. */
     g_clear_handle_id (&data->timeout_id, g_source_remove);
 
-    if (!g_subprocess_communicate_utf8_finish (upload, res, &url, NULL, &error))
+    /* What the command wrote before it was killed is not an answer, and "the
+     * upload command failed" would read as one it gave. */
+    if (data->timed_out)
     {
-        /* The one cancellation there is here is the deadline's, and it is worth
-         * saying so: what the command wrote before it was killed is not an
-         * answer, and "the upload command failed" would read as one it gave. */
-        if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-        {
-            g_clear_error (&error);
-            g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                                     "The upload command did not answer within %d seconds.",
-                                     G_PASTE_DAEMON_UPLOAD_TIMEOUT);
-            return;
-        }
-
-        /* Any other failure is the read giving up on a command that has not:
-         * communicate () answers once the child has exited, so one that answers
-         * this way leaves it running, holding pipes that are ours. The deadline
-         * that would have killed it is gone with the answer that arrived -- and
-         * goes with the task either way (upload_data_free ()) -- so the kill is
-         * this path's, exactly as it is the deadline's. */
-        g_subprocess_force_exit (upload);
-        g_task_return_error (task, error);
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "The upload command did not answer within %d seconds.",
+                                 G_PASTE_DAEMON_UPLOAD_TIMEOUT);
         return;
     }
 
-    /* The command answers the url on stdout, with the newline it ended the line
-     * with; anything else means it did not upload. */
-    if (url)
-        g_strstrip (url);
+    if (data->overflowed)
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "The upload command answered more than %d bytes, which is no url.",
+                                 G_PASTE_DAEMON_UPLOAD_MAX_ANSWER);
+        return;
+    }
 
-    /* Spawning the command and reading its output is all the call above answers
-     * for: a command that exited non-zero got that far too, and what it wrote
-     * on the way out is a diagnostic rather than an address.
+    if (data->read_error)
+    {
+        g_task_return_error (task, g_steal_pointer (&data->read_error));
+        return;
+    }
+
+    GSubprocess *upload = data->upload;
+
+    /* Reading the output and seeing the command exit is all the three above
+     * answer for: a command that exited non-zero got that far too, and what it
+     * wrote on the way out is a diagnostic rather than an address.
      *
      * How it ended and not what it wrote: the item's text went in on that
      * command's standard input, and a tool that hands its input back when it
@@ -588,7 +587,21 @@ on_upload_command_done (GObject      *source_object,
         return;
     }
 
-    if (!url || !*url)
+    /* Reported without quoting it, for the reason the exit above is: a command
+     * that hands its own input back answers something that is not a url, and
+     * that something is the item. */
+    if (!g_utf8_validate (data->answer, (gssize) data->answered, NULL))
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "The upload command answered something that is not a url.");
+        return;
+    }
+
+    /* The command answers the url on stdout, with the newline it ended the line
+     * with; anything else means it did not upload. */
+    g_autofree gchar *url = g_strstrip (g_strndup (data->answer, data->answered));
+
+    if (!*url)
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "The pastebin service answered no url.");
         return;
@@ -601,11 +614,7 @@ on_upload_command_done (GObject      *source_object,
      * in the history as though it were an address. Being a valid uri does not
      * tell the two apart -- a scheme and a colon is the whole of what that
      * takes, so "Usage:", "curl:" and "Error: 429 Too Many Requests" all pass
-     * -- so the scheme has to be one a browser can open, not merely present.
-     *
-     * Reported without quoting it, for the reason the exit above is: a command
-     * that hands its own input back answers something that is not a url, and
-     * that something is the item. */
+     * -- so the scheme has to be one a browser can open, not merely present. */
     const gchar *scheme = g_uri_peek_scheme (url);
 
     if (!g_uri_is_valid (url, G_URI_FLAGS_NONE, NULL) ||
@@ -617,6 +626,59 @@ on_upload_command_done (GObject      *source_object,
     }
 
     g_task_return_pointer (task, g_steal_pointer (&url), g_free);
+}
+
+/* The item in, then the end of it. A command that answers before reading all
+ * of it -- one that only needs the start, or a pipeline that stops reading --
+ * leaves the write a broken pipe, which says it stopped reading and nothing
+ * about the upload: how it exited and what it answered say that. */
+static void
+on_upload_written (GObject      *source_object,
+                   GAsyncResult *res,
+                   gpointer      user_data)
+{
+    GOutputStream *stdin_pipe = G_OUTPUT_STREAM (source_object);
+    g_autoptr (GTask) task = user_data;
+
+    g_output_stream_write_all_finish (stdin_pipe, res, NULL, NULL);
+    g_output_stream_close (stdin_pipe, NULL, NULL);
+    g_paste_daemon_upload_done (task);
+}
+
+static void
+on_upload_read (GObject      *source_object,
+                GAsyncResult *res,
+                gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    UploadData *data = g_task_get_task_data (task);
+    g_autoptr (GError) error = NULL;
+
+    if (!g_input_stream_read_all_finish (G_INPUT_STREAM (source_object), res, &data->answered, &error) &&
+        !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        data->read_error = g_steal_pointer (&error);
+
+    /* A full buffer is a command still writing, and one whose answer can no
+     * longer be read is one with nothing left to say: either way it is killed,
+     * which is what ends the wait for its exit. */
+    data->overflowed = (data->answered > G_PASTE_DAEMON_UPLOAD_MAX_ANSWER);
+    if (data->overflowed || data->read_error)
+        g_subprocess_force_exit (data->upload);
+
+    g_paste_daemon_upload_done (task);
+}
+
+/* Waited for with no cancellable: the deadline's kill is what ends it, so the
+ * command is never left running with nothing waiting for it. */
+static void
+on_upload_exited (GObject      *source_object,
+                  GAsyncResult *res,
+                  gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+
+    g_subprocess_wait_finish (G_SUBPROCESS (source_object), res, NULL);
+    g_paste_daemon_upload_done (task);
 }
 
 /**
@@ -701,22 +763,42 @@ g_paste_daemon_upload (GPasteDaemon       *self,
         return;
     }
 
-    UploadData *data = g_new0 (UploadData, 1);
+    g_autoptr (UploadData) data = g_new0 (UploadData, 1);
 
-    data->upload = g_object_ref (upload);
+    data->upload = upload;
     data->cancellable = g_cancellable_new ();
+    /* The item's own string, which never changes once in the history, held
+     * through a reference on the item rather than copied: the history may drop
+     * the item while the command still reads it. */
+    const gchar *value = g_paste_item_get_value (item);
+
+    data->item = g_bytes_new_with_free_func (value, strlen (value), g_object_unref, g_object_ref (item));
+    data->pending = 3;
     data->timeout_id = g_timeout_add_seconds_once (G_PASTE_DAEMON_UPLOAD_TIMEOUT,
                                                    on_upload_timed_out,
                                                    data);
     g_source_set_name_by_id (data->timeout_id, "[GPaste] upload command deadline");
 
-    g_task_set_task_data (task, data, upload_data_free);
+    gsize length;
+    gconstpointer bytes = g_bytes_get_data (data->item, &length);
+    GCancellable *cancellable = data->cancellable;
+    gchar *answer = data->answer;
 
-    g_subprocess_communicate_utf8_async (upload,
-                                         g_paste_item_get_value (item),
-                                         data->cancellable,
-                                         on_upload_command_done,
-                                         g_steal_pointer (&task));
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) upload_data_free);
+
+    GOutputStream *input = g_subprocess_get_stdin_pipe (upload);
+
+    /* Written to without blocking, as g_subprocess_communicate () does: a write
+     * to a blocking pipe runs right here, on the main loop -- gnome-shell's, for
+     * the in-shell daemon -- until the command has read all but the last
+     * pipe-full of the item, and forever when it never does, the deadline and
+     * the answer's bound waiting on that very loop. */
+    g_unix_set_fd_nonblocking (g_unix_output_stream_get_fd (G_UNIX_OUTPUT_STREAM (input)), TRUE, NULL);
+    g_output_stream_write_all_async (input, bytes, length, G_PRIORITY_DEFAULT,
+                                     cancellable, on_upload_written, g_object_ref (task));
+    g_input_stream_read_all_async (g_subprocess_get_stdout_pipe (upload), answer, G_PASTE_DAEMON_UPLOAD_MAX_ANSWER + 1, G_PRIORITY_DEFAULT,
+                                   cancellable, on_upload_read, g_object_ref (task));
+    g_subprocess_wait_async (upload, NULL, on_upload_exited, g_steal_pointer (&task));
 }
 
 /**
