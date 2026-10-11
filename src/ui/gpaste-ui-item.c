@@ -870,8 +870,11 @@ g_paste_ui_item_set_property (GObject      *object,
     switch (prop_id)
     {
     case PROP_SELECTION_MODE:
+        if (self->selection_mode == g_value_get_boolean (value))
+            break;
         self->selection_mode = g_value_get_boolean (value);
         g_paste_ui_item_update_actions_visibility (self);
+        g_object_notify_by_pspec (object, pspec);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -898,7 +901,7 @@ g_paste_ui_item_class_init (GPasteUiItemClass *klass)
      * what covers rows created later and rows recycled since.
      */
     properties[PROP_SELECTION_MODE] = g_param_spec_boolean ("selection-mode", NULL, NULL, FALSE,
-                                                            G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+                                                            G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 
     g_object_class_install_properties (object_class, N_PROPERTIES, properties);
 }

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <adwaita.h>
 #include <gpaste-3/gpaste-client.h>
 #include <gpaste-3/gpaste-settings.h>
 

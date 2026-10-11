@@ -31,13 +31,14 @@ typedef struct
 } PasswordDialogData;
 
 static void
-password_dialog_data_free (gpointer user_data)
+password_dialog_data_free (PasswordDialogData *data)
 {
-    g_autofree PasswordDialogData *data = user_data;
-
     g_clear_object (&data->client);
     g_clear_pointer (&data->uuid, g_free);
+    g_free (data);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PasswordDialogData, password_dialog_data_free)
 
 /* Everything the form has to carry before it can be sent: a name, which is what
  * identifies a password, and on the add path a password to carry under it. An
@@ -270,7 +271,7 @@ password_dialog (GPasteClient *client,
     /* The dialog outlives this function and the data outlives the dialog's
      * widgets, so it hangs off the dialog rather than off the confirm button:
      * cancelling frees it just as confirming does. */
-    g_object_set_data_full (G_OBJECT (dialog), "password-dialog-data", data, password_dialog_data_free);
+    g_object_set_data_full (G_OBJECT (dialog), "password-dialog-data", data, (GDestroyNotify) password_dialog_data_free);
 
     adw_dialog_present (dialog, GTK_WIDGET (rootwin));
     gtk_widget_grab_focus (name_row);

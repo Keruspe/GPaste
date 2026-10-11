@@ -205,7 +205,8 @@ daemon gone is checked error by error, an unknown method left out.
 `test-ui-panel-history` puts one sidebar history row on the private Xvfb and
 drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
-shortcut is Delete without BackSpace.
+shortcut is Delete without BackSpace. It also checks that an item row notifies
+`selection-mode` only when it changes.
 
 `test-ui-daemon-presence` sets the window up on the private Xvfb against the
 same kind of stand-in daemon, answering `ListHistories`, `GetHistorySize` and

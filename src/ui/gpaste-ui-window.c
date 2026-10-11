@@ -98,9 +98,9 @@ G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
  * connection concluded without one. */
 typedef struct
 {
-    gchar *arg;
-    void (*run) (GPasteUiWindow *self,
-                 const gchar    *arg);
+    gchar   *arg;
+    void   (*run) (GPasteUiWindow *self,
+                   const gchar    *arg);
     gboolean needs_client;
 } DeferredAction;
 

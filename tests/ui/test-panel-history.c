@@ -6,6 +6,8 @@
 
 /* Reach the row the sidebar draws the history on, and the revealer on it. */
 #include <gpaste-ui-panel-history.c>
+#include <gpaste-ui-item.h>
+#include <gpaste-3/gpaste-settings.h>
 
 static gboolean have_display;
 
@@ -19,7 +21,7 @@ static gboolean
 row_found (gconstpointer item,
            gconstpointer arg G_GNUC_UNUSED)
 {
-    return ((const GPasteUiPanelHistory *) item)->row != NULL;
+    return ((GPasteUiPanelHistory *) item)->row != NULL;
 }
 
 /* A history row in a sidebar of its own, presented, and mapped far enough for
@@ -132,6 +134,43 @@ test_delete_key (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+static void
+count_notify (GObject    *object G_GNUC_UNUSED,
+              GParamSpec *pspec  G_GNUC_UNUSED,
+              gpointer    user_data)
+{
+    ++*(guint *) user_data;
+}
+
+/* A row's selection mode notifies when it moves, and only then: it is bound
+ * from the list's on every row, each toggle reaching all of them. */
+static void
+test_item_selection_mode_notify (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWidget *window = gtk_window_new ();
+    g_autoptr (GtkWidget) item = g_object_ref_sink (g_paste_ui_item_new (client, settings, GTK_WINDOW (window), 0));
+    guint notified = 0;
+
+    g_assert_no_error (error);
+    g_signal_connect (item, "notify::selection-mode", G_CALLBACK (count_notify), &notified);
+    g_object_set (item, "selection-mode", FALSE, NULL);
+    g_assert_cmpuint (notified, ==, 0);
+    g_object_set (item, "selection-mode", TRUE, NULL);
+    g_object_set (item, "selection-mode", TRUE, NULL);
+    g_assert_cmpuint (notified, ==, 1);
+
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -142,5 +181,6 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/ui/panel-history/revealed", test_revealed);
     g_test_add_func ("/ui/panel-history/delete-key", test_delete_key);
+    g_test_add_func ("/ui/item/selection-mode-notify", test_item_selection_mode_notify);
     return g_paste_test_env_run ();
 }
