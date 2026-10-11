@@ -1862,7 +1862,9 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (error)
     {
-        g_critical ("Couldn't connect to GPaste: %s", error->message);
+        /* A warning, as in the panel's failed listing. No test builds a client
+         * that fails: the bus the suite runs on is always there. */
+        g_warning ("Couldn't connect to GPaste: %s", error->message);
         /* No wait here, unlike a daemon that merely went away: building the
          * proxy is what failed -- the session bus unreachable, or a daemon it
          * could not start -- so there is none to follow a daemon with. The

@@ -415,10 +415,11 @@ on_histories_ready (GObject      *source_object,
 
         /* A daemon that is there and could not list: the rows stay as they
          * are, clickable again -- what they name is the best there is, and
-         * the next listing prunes what it does not have. No test shows it:
-         * the critical is fatal in the suite, and g_test_expect_message ()
-         * does not catch it under structured logging. */
-        g_critical ("Error while listing available histories: %s", error->message);
+         * the next listing prunes what it does not have
+         * (/ui/daemon-presence/listing-fails). A warning, as every failure the
+         * program did not cause is: a critical says it has a bug, and aborts
+         * a run made with fatal criticals. */
+        g_warning ("Error while listing available histories: %s", error->message);
         g_paste_ui_panel_set_rows_enabled (self, TRUE);
         return;
     }

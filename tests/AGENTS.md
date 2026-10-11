@@ -292,7 +292,10 @@ shows it. With `gpaste-ui.c` included, its `main ()` renamed, the application's
 actions do nothing with no window and bring a hidden one back. Restarting the
 daemon or stopping the tracking, confirmed once the daemon left, sends nothing,
 a filter on the client's connection counting what leaves it. A window closed
-while it is still connecting is neither set up nor presented once connected.
+while it is still connecting is neither set up nor presented once connected,
+and a daemon failing to list its histories is warned about, the rows left
+usable. The test is built without `G_LOG_USE_STRUCTURED`, as
+`test-ui-panel-history` is.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

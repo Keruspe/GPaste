@@ -95,6 +95,7 @@ typedef struct
     guint64                shift;
     GStrv                  merged;
     guint                  switches;
+    gboolean               listing_fails;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -110,7 +111,9 @@ on_list_histories (GPasteDaemon3         *skeleton,
 
     ++daemon->listings;
 
-    if (daemon->hold_listings)
+    if (daemon->listing_fails)
+        g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "unreadable");
+    else if (daemon->hold_listings)
         daemon->held_listing = invocation;
     else
         g_paste_daemon3_complete_list_histories (skeleton, invocation, g_variant_new_parsed (daemon->listing));
@@ -1803,6 +1806,38 @@ test_closed_while_connecting (void)
     g_assert_false (gtk_widget_get_visible (GTK_WIDGET (window)));
 }
 
+/* A daemon that could not list its histories is warned about -- a failure of
+ * the session's, not a bug of the program's -- and leaves the rows usable. */
+static void
+test_listing_fails (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    FakeDaemon daemon = { .size = 1, .listing_fails = TRUE };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Error while listing available histories: *unreadable");
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_for_count (&daemon.listings, 1);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_test_assert_expected_messages ();
+    g_assert_true (adw_sidebar_item_get_enabled (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
 static gboolean
 on_sigusr1 (gpointer user_data)
 {
@@ -2181,7 +2216,7 @@ test_listing_handoff (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
     g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &get_all, NULL);
     g_assert_false (sidebar_enabled (window, "work"));
-    g_assert_true (sidebar_enabled (window, G_PASTE_DEFAULT_HISTORY));
+    g_assert_true (adw_sidebar_item_get_enabled (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)));
 
     /* The old listing answering now, as a daemon that kept nothing: given
      * up on, it prunes nothing. */
@@ -3200,6 +3235,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/app-actions", test_app_actions);
     g_test_add_func ("/ui/daemon-presence/confirmed-without-daemon", test_confirmed_without_daemon);
     g_test_add_func ("/ui/daemon-presence/closed-while-connecting", test_closed_while_connecting);
+    g_test_add_func ("/ui/daemon-presence/listing-fails", test_listing_fails);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);
