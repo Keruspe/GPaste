@@ -88,6 +88,9 @@ GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteC
 gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
                                                 GdkFileList *b);
 
+gchar       *g_paste_clipboard_text_from_bytes (GBytes      *bytes,
+                                                gboolean    *not_utf8);
+
 /* How long a batch of clipboard reads may go without a single one of them
  * landing. A selection transfer has no deadline of its own: an owner that dies
  * between advertising its targets and servicing the request, or an INCR transfer

@@ -437,6 +437,20 @@ g_paste_clipboard_gdk_sync_ready (GObject      *source_object,
         g_paste_clipboard_sync_data_deliver (data, text);
 }
 
+/* Whether the selection offers its text as a bare text/plain alone, which
+ * g_paste_clipboard_gdk_on_bare_text_read () says how to read. */
+static gboolean
+g_paste_clipboard_gdk_offers_bare_text (GPasteClipboardGdk *self)
+{
+    GdkContentFormats *formats = gdk_clipboard_get_formats (self->real);
+
+    return !gdk_content_formats_contain_mime_type (formats, "text/plain;charset=utf-8") &&
+           gdk_content_formats_contain_mime_type (formats, "text/plain");
+}
+
+static void g_paste_clipboard_gdk_sync_bare_text (GPasteClipboardGdk      *self,
+                                                  GPasteClipboardSyncData *data);
+
 static void
 g_paste_clipboard_gdk_sync_text (GPasteClipboardGdk         *self,
                                  GPasteClipboardGdk         *other,
@@ -457,7 +471,10 @@ g_paste_clipboard_gdk_sync_text (GPasteClipboardGdk         *self,
         return;
     }
 
-    gdk_clipboard_read_text_async (self->real, data->guard.cancellable, g_paste_clipboard_gdk_sync_ready, data);
+    if (g_paste_clipboard_gdk_offers_bare_text (self))
+        g_paste_clipboard_gdk_sync_bare_text (self, data);
+    else
+        gdk_clipboard_read_text_async (self->real, data->guard.cancellable, g_paste_clipboard_gdk_sync_ready, data);
 }
 
 static void
@@ -801,6 +818,88 @@ g_paste_clipboard_gdk_fetch_mime (GPasteClipboardGdk             *self,
                               data);
 }
 
+/* What a selection offering nothing but a bare text/plain answers: GDK decodes
+ * that as ASCII, escaping every other byte as \XX, where the convention X11
+ * clients follow -- and g_paste_text_content_provider_new () serving one -- is
+ * UTF-8 under that name. Read as such, as the mutter backend reads every text
+ * (g_paste_clipboard_text_from_bytes ()), and through GDK's own conversion only
+ * when it is not valid UTF-8 after all. */
+static void
+g_paste_clipboard_gdk_on_bare_text_read (GPasteClipboardGdk *self,
+                                         GBytes             *bytes,
+                                         gpointer            user_data)
+{
+    GPasteClipboardGdkTextCallbackData *data = user_data;
+    gboolean convert = FALSE;
+    g_autofree gchar *text = (g_paste_clipboard_update_is_expired (data->update)) ? NULL : g_paste_clipboard_text_from_bytes (bytes, &convert);
+
+    if (convert)
+    {
+        gdk_clipboard_read_text_async (self->real,
+                                       data->update->guard.cancellable,
+                                       g_paste_clipboard_gdk_on_text_ready,
+                                       data);
+        return;
+    }
+
+    g_autofree GPasteClipboardGdkTextCallbackData *owned = data;
+    g_autoptr (GPasteClipboardGdk) ref = owned->self; /* ref taken in read_text */
+
+    if (owned->callback)
+        owned->callback (self, g_steal_pointer (&text), owned->update);
+}
+
+static void
+g_paste_clipboard_gdk_read_text (GPasteClipboardGdk            *self,
+                                 GPasteClipboardUpdate         *update,
+                                 GPasteClipboardGdkTextCallback callback)
+{
+    if (!g_paste_clipboard_gdk_offers_bare_text (self))
+    {
+        g_paste_clipboard_gdk_set_text (self, update, callback);
+        return;
+    }
+
+    GPasteClipboardGdkTextCallbackData *data = g_new (GPasteClipboardGdkTextCallbackData, 1);
+
+    data->self = g_object_ref (self);
+    data->update = update;
+    data->callback = callback;
+    g_paste_clipboard_gdk_fetch_mime (self, "text/plain", update->guard.cancellable,
+                                      g_paste_clipboard_gdk_on_bare_text_read, data);
+}
+
+/* The same for a sync's read: see g_paste_clipboard_gdk_on_bare_text_read (),
+ * asking first whether the sync still has anywhere to go, as the mutter
+ * backend's sync read does before its own copy. */
+static void
+g_paste_clipboard_gdk_on_sync_bare_text_read (GPasteClipboardGdk *self,
+                                              GBytes             *bytes,
+                                              gpointer            user_data)
+{
+    GPasteClipboardSyncData *data = user_data;
+    gboolean convert = FALSE;
+    g_autofree gchar *text = (g_paste_clipboard_sync_data_wants_text (data)) ? g_paste_clipboard_text_from_bytes (bytes, &convert) : NULL;
+
+    if (convert)
+    {
+        gdk_clipboard_read_text_async (self->real, data->guard.cancellable, g_paste_clipboard_gdk_sync_ready, data);
+        return;
+    }
+
+    g_autoptr (GPasteClipboardSyncData) owned = data; /* built in sync_text */
+
+    g_paste_clipboard_sync_data_deliver (owned, text);
+}
+
+static void
+g_paste_clipboard_gdk_sync_bare_text (GPasteClipboardGdk      *self,
+                                      GPasteClipboardSyncData *data)
+{
+    g_paste_clipboard_gdk_fetch_mime (self, "text/plain", data->guard.cancellable,
+                                      g_paste_clipboard_gdk_on_sync_bare_text_read, data);
+}
+
 /* Every read below counts into the same #GPasteClipboardUpdate: what it holds,
  * what concluding it means and what releases it are the mutter backend's too,
  * and live in gpaste-clipboard-content.c. Only the calls that fetch the bytes
@@ -1045,7 +1144,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         break;
     case CLIPBOARD_CONTENT_TEXT:
         g_paste_clipboard_update_add_read (update);
-        g_paste_clipboard_gdk_set_text (self, update, g_paste_clipboard_gdk_update_on_text_ready);
+        g_paste_clipboard_gdk_read_text (self, update, g_paste_clipboard_gdk_update_on_text_ready);
         break;
     case CLIPBOARD_CONTENT_IMAGE:
         g_paste_clipboard_update_add_read (update);

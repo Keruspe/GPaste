@@ -24,6 +24,9 @@ static gboolean hints_available;
 static GPasteClipboardX11HintsOwner hints_owner;
 /* The mimetype the last MIME read asked for, %NULL when none did. */
 static gchar *requested_mime;
+/* What a MIME read of bare text/plain answers; any other mimetype gets the
+ * hint's value. */
+static GBytes *bare_text;
 
 static GdkContentFormats *
 mock_formats (GdkClipboard *clipboard G_GNUC_UNUSED)
@@ -100,9 +103,11 @@ mock_read_mime (GdkClipboard        *clipboard G_GNUC_UNUSED,
 {
     g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
 
+    gboolean text = bare_text && g_str_equal (mime_types[0], "text/plain");
+
     g_set_str (&requested_mime, mime_types[0]);
     g_task_return_pointer (task,
-                           g_memory_input_stream_new_from_bytes (g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT)),
+                           g_memory_input_stream_new_from_bytes (text ? bare_text : g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT)),
                            g_object_unref);
 }
 
@@ -260,6 +265,7 @@ fixture_teardown (Fixture      *f,
     g_clear_object (&f->settings);
     g_clear_pointer (&formats, gdk_content_formats_unref);
     g_clear_pointer (&requested_mime, g_free);
+    g_clear_pointer (&bare_text, g_bytes_unref);
 }
 
 /* The two changes GTK raises for one external copy, in order: the empty formats
@@ -424,6 +430,114 @@ image_not_reowned (Fixture      *f,
 
     g_assert_cmpint (g_paste_item_get_kind (g_paste_history_get (f->history, 0)), ==, G_PASTE_ITEM_KIND_IMAGE);
     g_assert_cmpuint (publications, ==, before);
+}
+
+/* A selection offering nothing but a bare text/plain is read as the UTF-8 it
+ * is by convention, which GDK's own text read would decode as escaped ASCII --
+ * and through that read again when it is not valid UTF-8. */
+static void
+bare_text_plain (Fixture      *f,
+                 gconstpointer user_data)
+{
+    gboolean utf8 = GPOINTER_TO_INT (user_data);
+    /* As GDK lists such an offer: the mimetype,
+     * and the type it deserializes to. */
+    g_autoptr (GdkContentFormatsBuilder) builder = gdk_content_formats_builder_new ();
+
+    gdk_content_formats_builder_add_mime_type (builder, "text/plain");
+    gdk_content_formats_builder_add_gtype (builder, G_TYPE_STRING);
+
+    bare_text = utf8 ? g_bytes_new_static ("caf\xc3\xa9 \xe2\x82\xac", 9) : g_bytes_new_static ("caf\xe9", 4);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_clear_pointer (&formats, gdk_content_formats_unref);
+    formats = gdk_content_formats_builder_free_to_formats (g_steal_pointer (&builder));
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (10);
+
+    g_assert_cmpstr (requested_mime, ==, "text/plain");
+    if (utf8)
+    {
+        g_assert_null (pending_text);
+        g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "caf\xc3\xa9 \xe2\x82\xac");
+    }
+    else
+    {
+        g_assert_nonnull (pending_text);
+        g_task_return_pointer (pending_text, g_strdup ("caf\\E9"), g_free);
+        g_clear_object (&pending_text);
+        pump (10);
+        g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "caf\\E9");
+    }
+}
+
+/* As GDK lists a selection offering nothing but a bare text/plain: the
+ * mimetype, and the type it deserializes to. */
+static void
+set_bare_text_formats (void)
+{
+    g_autoptr (GdkContentFormatsBuilder) builder = gdk_content_formats_builder_new ();
+
+    gdk_content_formats_builder_add_mime_type (builder, "text/plain");
+    gdk_content_formats_builder_add_gtype (builder, G_TYPE_STRING);
+    g_clear_pointer (&formats, gdk_content_formats_unref);
+    formats = gdk_content_formats_builder_free_to_formats (g_steal_pointer (&builder));
+}
+
+/* An empty bare text/plain is the empty text, not a read that failed: the
+ * transfer's bytes then hold no data at all. */
+static void
+bare_text_plain_empty (Fixture      *f,
+                       gconstpointer user_data G_GNUC_UNUSED)
+{
+    bare_text = g_bytes_new_static ("", 0);
+    set_bare_text_formats ();
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (10);
+
+    g_assert_cmpstr (requested_mime, ==, "text/plain");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "");
+}
+
+/* A bare text/plain whose owner ends it with a NUL is the text before it. */
+static void
+bare_text_plain_nul_terminated (Fixture      *f,
+                                gconstpointer user_data G_GNUC_UNUSED)
+{
+    bare_text = g_bytes_new_static ("caf\xc3\xa9", 6);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    set_bare_text_formats ();
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (10);
+
+    g_assert_null (pending_text);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "caf\xc3\xa9");
+}
+
+static void
+on_synced (GPasteClipboardProvider *other G_GNUC_UNUSED,
+           const gchar             *text,
+           gpointer                 user_data)
+{
+    gchar **synced = user_data;
+
+    g_set_str (synced, text);
+}
+
+/* A sync reads a bare text/plain as the UTF-8 it is too. */
+static void
+bare_text_plain_sync (Fixture      *f,
+                      gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteClipboardGdk) other = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
+    g_autofree gchar *synced = NULL;
+
+    bare_text = g_bytes_new_static ("caf\xc3\xa9 \xe2\x82\xac", 9);
+    set_bare_text_formats ();
+    g_paste_clipboard_provider_sync_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), G_PASTE_CLIPBOARD_PROVIDER (other), on_synced, &synced, NULL);
+    pump (10);
+
+    g_assert_null (pending_text);
+    g_assert_cmpstr (synced, ==, "caf\xc3\xa9 \xe2\x82\xac");
 }
 
 static void
@@ -789,5 +903,10 @@ main (int argc, char **argv)
     g_test_add ("/gdk/update/text-before-image", Fixture, NULL, fixture_setup, text_before_image, fixture_teardown);
     g_test_add ("/gdk/update/unmade", Fixture, NULL, fixture_setup, update_unmade, fixture_teardown);
     g_test_add ("/gdk/update/image-not-reowned", Fixture, NULL, fixture_setup, image_not_reowned, fixture_teardown);
+    g_test_add ("/gdk/update/bare-text-plain", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, bare_text_plain, fixture_teardown);
+    g_test_add ("/gdk/update/bare-text-plain-not-utf8", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, bare_text_plain, fixture_teardown);
+    g_test_add ("/gdk/update/bare-text-plain-empty", Fixture, NULL, fixture_setup, bare_text_plain_empty, fixture_teardown);
+    g_test_add ("/gdk/update/bare-text-plain-nul-terminated", Fixture, NULL, fixture_setup, bare_text_plain_nul_terminated, fixture_teardown);
+    g_test_add ("/gdk/sync/bare-text-plain", Fixture, NULL, fixture_setup, bare_text_plain_sync, fixture_teardown);
     return g_paste_test_env_run ();
 }

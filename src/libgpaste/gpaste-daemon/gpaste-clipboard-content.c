@@ -342,6 +342,47 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
     return !fa && !fb;
 }
 
+/**
+ * g_paste_clipboard_text_from_bytes:
+ * @bytes: (nullable): what a text transfer brought, %NULL for one that failed
+ * @not_utf8: (out) (optional): set when @bytes holds no UTF-8 text
+ *
+ * A text as it comes off a selection, the way both backends read one: up to its
+ * first NUL, which some owners end it with, and the empty text for a transfer
+ * whose bytes hold no data at all -- what a pipe written nothing brings back.
+ *
+ * Returns: (transfer full) (nullable): the text, %NULL for a failed transfer or
+ *          one that is not UTF-8
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_clipboard_text_from_bytes (GBytes   *bytes,
+                                   gboolean *not_utf8)
+{
+    if (not_utf8)
+        *not_utf8 = FALSE;
+    if (!bytes)
+        return NULL;
+
+    gsize size = 0;
+    const gchar *text = g_bytes_get_data (bytes, &size);
+
+    if (!text)
+        return g_strdup ("");
+
+    const gchar *nul = memchr (text, '\0', size);
+
+    if (nul)
+        size = (gsize) (nul - text);
+    if (!g_utf8_validate_len (text, size, NULL))
+    {
+        if (not_utf8)
+            *not_utf8 = TRUE;
+        return NULL;
+    }
+
+    return g_strndup (text, size);
+}
+
 static void g_paste_clipboard_read_guard_set_deadline (GPasteClipboardReadGuard *guard, guint seconds);
 
 static void
