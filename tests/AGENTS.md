@@ -247,7 +247,14 @@ starting until it does, and one replacing that making it ready once
 (`handoff-after-init`); one built through the initables for a name of its own
 follows that name alone, GPaste's own changing hands leaving it ready
 (`handoff-other-name`). What `g_paste_client_is_daemon_gone_error()` counts as a
-daemon gone is checked error by error, an unknown method left out. The
+daemon gone is checked error by error, an unknown method left out. An owner
+leaving before it ever served reads as starting for the grace second, not
+absent at once (`starting-owner-leaves`); a client built under a thread-default
+context of its own moves its presence as that context runs
+(`own-context`), the reply to a request for a daemon made from another context
+included (`own-context-probe`); and one on a peer-to-peer connection, with no name, asks no
+bus of owners, a filter on that connection counting every call sent to one
+(`peer-to-peer`). The
 stand-in answers calls too, asynchronously since it answers from the client's
 own context: a refusal reaches the caller with its domain, its code and the
 daemon's words, no `GDBus.Error:` before them, whatever the method's shape; an
@@ -257,6 +264,13 @@ one's working directory included, is refused before anything is sent, and a
 NULL one at the precondition; and a Reexecute the stand-in leaves unanswered by
 closing its connection is a success where one refused with
 `G_IO_ERROR_NOT_DIRECTORY`, NoReply's code in another domain, is not.
+
+`test-client-give-up` compiles `gpaste-client.c` in with
+`G_PASTE_CLIENT_GIVE_UP_SECONDS` at two seconds, the two minutes a followed
+client waits on an owner that never serves: once they run out the owner reads as
+absent, its leaving changes nothing, and the next owner gets a wait of its own,
+already starting when a handler of the `active`, `tracking` or `history` it
+announces reads the presence.
 
 `test-ui-panel-history` puts one sidebar history row on the private Xvfb and
 drives its state flags directly: the delete button shows for the pointer and for

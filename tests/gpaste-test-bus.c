@@ -175,15 +175,15 @@ owner_reached (gconstpointer proxy,
     return g_strcmp0 (current, owner) == 0;
 }
 
-/* Until @proxy has learnt that @server owns its name: for an owner arriving
- * after the proxy's init, it learns it once its GetAll on that owner answered,
- * which can be after the daemon's own PropertiesChanged has made a
- * GPasteClient ready. */
+/* Until @proxy has learnt that @server owns its name, or with a %NULL @server
+ * that nobody does: for an owner arriving after the proxy's init, it learns it
+ * once its GetAll on that owner answered, which can be after the daemon's own
+ * PropertiesChanged has made a GPasteClient ready. */
 void
 g_paste_test_bus_wait_for_owner (GDBusProxy      *proxy,
                                  GDBusConnection *server)
 {
-    const gchar *owner = g_dbus_connection_get_unique_name (server);
+    const gchar *owner = (server) ? g_dbus_connection_get_unique_name (server) : NULL;
 
     g_paste_test_bus_wait_until (owner_reached, proxy, owner);
     g_assert_true (owner_reached (proxy, owner));

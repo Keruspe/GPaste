@@ -15,9 +15,13 @@
  * second before a name nobody owns reads as missing -- what an upgrade takes to
  * put one back -- and two minutes before an owner that never serves stops
  * reading as starting -- long enough for a re-exec, an upgrade or a manual
- * restart. Past that, trying again is the user's call. */
-#define G_PASTE_CLIENT_GRACE_SECONDS   1
-#define G_PASTE_CLIENT_GIVE_UP_SECONDS 127
+ * restart. Past that, trying again is the user's call. A test can wait the
+ * second out; the two minutes are cut short by the one compiling this file in
+ * (tests/client/test-give-up.c). */
+#define G_PASTE_CLIENT_GRACE_SECONDS 1
+#ifndef G_PASTE_CLIENT_GIVE_UP_SECONDS
+#define G_PASTE_CLIENT_GIVE_UP_SECONDS 120
+#endif
 
 struct _GPasteClient
 {
@@ -31,8 +35,11 @@ struct _GPasteClient
     gboolean             following;
     /* Whether the wait has run out with nothing served. */
     gboolean             spent;
-    guint                grace_source;
-    guint                give_up_source;
+    GSource             *grace_source;
+    GSource             *give_up_source;
+    /* What the wait's timers and its probe's reply run on: the context @self
+     * was built in, which every other callback of its is dispatched on. */
+    GMainContext        *context;
     /* The request for a daemon in flight, cancelled and replaced by the next:
      * the wait is the latest one's to start, an older one having been
      * overtaken. */
@@ -2177,7 +2184,7 @@ on_grace_over (gpointer user_data)
 
     if (self)
     {
-        self->grace_source = 0;
+        g_clear_pointer (&self->grace_source, g_source_unref);
         g_paste_client_update_presence (self);
     }
 
@@ -2191,7 +2198,7 @@ on_give_up (gpointer user_data)
 
     if (self)
     {
-        self->give_up_source = 0;
+        g_clear_pointer (&self->give_up_source, g_source_unref);
         self->spent = TRUE;
         g_paste_client_update_presence (self);
     }
@@ -2199,12 +2206,38 @@ on_give_up (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
+/* A timer of the wait's, on @self's own context rather than the global default
+ * one g_timeout_add () would put it on: a client built and followed in a thread
+ * of its own would have its presence moved, and announced, from another. */
+static GSource *
+g_paste_client_add_timer (GPasteClient *self,
+                          guint         seconds,
+                          GSourceFunc   callback,
+                          const gchar  *name)
+{
+    GSource *source = g_timeout_source_new_seconds (seconds);
+
+    g_source_set_callback (source, callback, g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    g_source_set_static_name (source, name);
+    g_source_attach (source, self->context);
+
+    return source;
+}
+
+static void
+g_paste_client_clear_timer (GSource **source)
+{
+    if (*source)
+        g_source_destroy (*source);
+    g_clear_pointer (source, g_source_unref);
+}
+
 /* Called off, whatever it was waiting on: a request out included. */
 static void
 g_paste_client_stop_waiting (GPasteClient *self)
 {
-    g_clear_handle_id (&self->grace_source, g_source_remove);
-    g_clear_handle_id (&self->give_up_source, g_source_remove);
+    g_paste_client_clear_timer (&self->grace_source);
+    g_paste_client_clear_timer (&self->give_up_source);
     g_paste_clear_cancellable (&self->probe);
     self->spent = FALSE;
 }
@@ -2214,16 +2247,12 @@ g_paste_client_stop_waiting (GPasteClient *self)
 static void
 g_paste_client_start_waiting (GPasteClient *self)
 {
-    g_clear_handle_id (&self->grace_source, g_source_remove);
-    g_clear_handle_id (&self->give_up_source, g_source_remove);
+    g_paste_client_clear_timer (&self->grace_source);
+    g_paste_client_clear_timer (&self->give_up_source);
     self->spent = FALSE;
 
-    self->grace_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, G_PASTE_CLIENT_GRACE_SECONDS, on_grace_over,
-                                                     g_paste_weak_ref_new (self), g_paste_weak_ref_free);
-    g_source_set_name_by_id (self->grace_source, "[GPaste] daemon grace");
-    self->give_up_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, G_PASTE_CLIENT_GIVE_UP_SECONDS, on_give_up,
-                                                       g_paste_weak_ref_new (self), g_paste_weak_ref_free);
-    g_source_set_name_by_id (self->give_up_source, "[GPaste] daemon give up");
+    self->grace_source = g_paste_client_add_timer (self, G_PASTE_CLIENT_GRACE_SECONDS, on_grace_over, "[GPaste] daemon grace");
+    self->give_up_source = g_paste_client_add_timer (self, G_PASTE_CLIENT_GIVE_UP_SECONDS, on_give_up, "[GPaste] daemon give up");
 }
 
 /* Tracked in @self->probe so that dispose () can cancel it, so it holds @self
@@ -2286,6 +2315,10 @@ g_paste_client_probe_daemon (GPasteClient *self)
     g_weak_ref_init (&data->self, self);
     data->cancellable = g_object_ref (self->probe);
 
+    /* A call's reply lands on the context the thread making it has as its
+     * default: @self's own, pushed, whichever the caller has, as for the
+     * wait's timers (g_paste_client_add_timer ()) that reply starts. */
+    g_main_context_push_thread_default (self->context);
     g_dbus_connection_call (g_dbus_proxy_get_connection (proxy),
                             g_dbus_proxy_get_name (proxy),
                             g_dbus_proxy_get_object_path (proxy),
@@ -2298,6 +2331,7 @@ g_paste_client_probe_daemon (GPasteClient *self)
                             self->probe,
                             on_probe_ready,
                             data);
+    g_main_context_pop_thread_default (self->context);
     g_paste_client_update_presence (self);
 }
 
@@ -2583,6 +2617,24 @@ g_paste_client_notify (GObject    *object,
     {
         g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (object));
 
+        /* A new owner is a daemon started since the last one went, which gets
+         * a wait of its own rather than what is left of its predecessor's --
+         * two minutes to serve, whether it took the name partway through that
+         * wait or after it ran out. One going before it ever served gets the
+         * grace second any daemon leaving does, rather than reading as absent
+         * the moment it goes: the proxy, which had cached nothing of it, says
+         * nothing else, and its grace from arriving has long run out. */
+        if (self->following && ((owner) ? self->presence != G_PASTE_DAEMON_PRESENCE_READY
+                                        : self->presence == G_PASTE_DAEMON_PRESENCE_STARTING))
+            g_paste_client_start_waiting (self);
+
+        /* An owner coming or going is a daemon starting or not, whatever the
+         * history says. Announced before the properties are said to have
+         * moved below, so that a handler of any of theirs reading the
+         * presence finds it starting, not a wait that ran out on the previous
+         * owner (/client/give-up/new-owner). */
+        g_paste_client_update_presence (self);
+
         if (owner)
         {
             g_object_notify (object, "active");
@@ -2590,17 +2642,6 @@ g_paste_client_notify (GObject    *object,
             g_object_notify (object, "history");
             g_object_notify (object, "version");
         }
-
-        /* A new owner is a daemon started since the last one went, which gets
-         * a wait of its own rather than what is left of its predecessor's --
-         * two minutes to serve, whether it took the name partway through that
-         * wait or after it ran out. */
-        if (owner && self->following && self->presence != G_PASTE_DAEMON_PRESENCE_READY)
-            g_paste_client_start_waiting (self);
-
-        /* An owner coming or going is a daemon starting or not, whatever the
-         * history says. */
-        g_paste_client_update_presence (self);
     }
     /* Ahead of the handlers of "notify::history" themselves, this being the
      * class handler: one that reads the presence finds it already moved. */
@@ -2687,6 +2728,7 @@ g_paste_client_dispose (GObject *object)
     GPasteClient *self = G_PASTE_CLIENT (object);
 
     g_paste_client_stop_waiting (self);
+    g_clear_pointer (&self->context, g_main_context_unref);
 
     if (self->owner_watch)
     {
@@ -2854,6 +2896,7 @@ g_paste_client_init (GPasteClient *self)
     /* Straight out of the generated binding, so the wire format this proxy
      * expects and the one the daemon serves cannot drift apart. */
     g_dbus_proxy_set_interface_info (G_DBUS_PROXY (self), g_paste_daemon3_interface_info ());
+    self->context = g_main_context_ref_thread_default ();
 }
 
 /* What the presence starts as, read once initialising the proxy has settled
@@ -2874,9 +2917,15 @@ g_paste_client_seed_presence (GPasteClient *self)
      * presence leaving ready for it. The name is the proxy's own, which a
      * client built through the initables chooses
      * (/client/presence/handoff-other-name). */
-    if (!self->owner_watch)
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (self));
+
+    /* Only for a named proxy on a message bus, as GDBusProxy subscribes for its
+     * own: a peer-to-peer connection has no bus to send it, and a proxy with no
+     * name would hear every name on the bus change hands. */
+    if (!self->owner_watch && g_dbus_proxy_get_name (G_DBUS_PROXY (self)) &&
+        (g_dbus_connection_get_flags (connection) & G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION))
     {
-        self->owner_watch = g_dbus_connection_signal_subscribe (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
+        self->owner_watch = g_dbus_connection_signal_subscribe (connection,
                                                                 "org.freedesktop.DBus",
                                                                 "org.freedesktop.DBus",
                                                                 "NameOwnerChanged",

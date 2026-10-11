@@ -13,6 +13,7 @@
 #include <glib-unix.h>
 #include <glib/gstdio.h>
 #include <signal.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 
 /* Local rather than in gpaste-test-bus, which knows no GPaste type: its
@@ -24,6 +25,23 @@ wait_for_presence (GPasteClient        *client,
                    GPasteDaemonPresence presence)
 {
     g_paste_test_bus_wait_for_enum (client, "daemon-presence", presence);
+}
+
+/* As wait_for_presence (), for a client built in @context: the shared waits
+ * run the default context alone. */
+static void
+wait_for_presence_on (GPasteClient        *client,
+                      GMainContext        *context,
+                      GPasteDaemonPresence presence)
+{
+    gint64 deadline = g_get_monotonic_time () + G_PASTE_TEST_BUS_WAIT_SECONDS * G_USEC_PER_SEC;
+
+    while (g_paste_client_get_daemon_presence (client) != presence && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (context, FALSE))
+            g_usleep (10000);
+    }
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, presence);
 }
 
 /* What a real daemon owns the name with: replaceable, and not queued once
@@ -432,9 +450,8 @@ test_daemon_gone_error (void)
     g_assert_false (g_paste_client_is_daemon_gone_error (NULL));
 }
 
-/* Not covered here: a new owner starting the wait afresh, partway through the
- * two minutes or after they ran out (g_paste_client_notify ()), which would
- * hold the suite for those two minutes. */
+/* A new owner starting the wait afresh once the two minutes ran out
+ * (g_paste_client_notify ()) is test-give-up's, which shortens them. */
 
 /* Without following, there is no wait: absent is absent at once. */
 static void
@@ -1200,6 +1217,178 @@ test_reexecute_answers (void)
     }
 }
 
+static void
+record_presence (GPasteClient *client,
+                 GParamSpec   *pspec G_GNUC_UNUSED,
+                 gpointer      user_data)
+{
+    *(GPasteDaemonPresence *) user_data = g_paste_client_get_daemon_presence (client);
+}
+
+/* An owner that leaves before it ever served gets the grace second any daemon
+ * leaving does, rather than reading as absent the moment it goes -- its own
+ * grace from arriving having long run out by then. */
+static void
+test_starting_owner_leaves (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    GPasteDaemonPresence at_gone = G_PASTE_DAEMON_PRESENCE_READY;
+    guint owner;
+
+    g_assert_no_error (error);
+    g_paste_client_follow_daemon (client, FALSE);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    g_autoptr (GDBusConnection) server = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_NONE, &owner);
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    /* Past the arrival's grace second, so that only the leave can keep the
+     * presence starting: a seconds timer fires on GLib's per-process second
+     * mark, up to 1.75 s after it is armed. */
+    g_paste_test_bus_pump (2000);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_STARTING);
+
+    g_signal_connect (client, "notify::g-name-owner", G_CALLBACK (record_presence), &at_gone);
+    g_bus_unown_name (owner);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), NULL);
+    g_assert_cmpint (at_gone, ==, G_PASTE_DAEMON_PRESENCE_STARTING);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    g_paste_client_unfollow_daemon (client);
+    g_dbus_connection_close_sync (server, NULL, NULL);
+}
+
+/* The wait runs on the context the client was built in, as its D-Bus callbacks
+ * do: one built under a thread-default context of its own sees its presence
+ * move as that context runs, and only then. */
+static void
+test_own_context (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GMainContext) context = g_main_context_new ();
+
+    g_main_context_push_thread_default (context);
+
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+
+    g_assert_no_error (error);
+    g_paste_client_follow_daemon (client, FALSE);
+    g_main_context_pop_thread_default (context);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_STARTING);
+
+    wait_for_presence_on (client, context, G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    g_paste_client_unfollow_daemon (client);
+}
+
+/* So does the request for a daemon, asked for while another context is the
+ * thread's default: its reply lands on the client's own, and the wait it
+ * starts with it, where on that other context, never run, it would keep the
+ * presence starting for good. */
+static void
+test_own_context_probe (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GMainContext) context = g_main_context_new ();
+
+    g_main_context_push_thread_default (context);
+
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+
+    g_main_context_pop_thread_default (context);
+    g_assert_no_error (error);
+    g_paste_client_follow_daemon (client, TRUE);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_STARTING);
+
+    wait_for_presence_on (client, context, G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    g_paste_client_unfollow_daemon (client);
+}
+
+static void
+on_peer_ready (GObject      *source_object G_GNUC_UNUSED,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+    g_autoptr (GError) error = NULL;
+
+    *(GDBusConnection **) user_data = g_dbus_connection_new_finish (res, &error);
+    g_assert_no_error (error);
+}
+
+static GIOStream *
+peer_stream (gint fd)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GSocket) socket = g_socket_new_from_fd (fd, &error);
+
+    g_assert_no_error (error);
+
+    return G_IO_STREAM (g_socket_connection_factory_create_connection (socket));
+}
+
+/* The calls sent to a message bus -- an owner asked for, a match added --
+ * counted on GDBus's worker thread. */
+static guint bus_calls;
+
+static GDBusMessage *
+count_bus_calls (GDBusConnection *connection G_GNUC_UNUSED,
+                 GDBusMessage    *message,
+                 gboolean         incoming,
+                 gpointer         user_data G_GNUC_UNUSED)
+{
+    if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+        g_paste_str_equal (g_dbus_message_get_destination (message), "org.freedesktop.DBus"))
+        g_atomic_int_inc (&bus_calls);
+
+    return message;
+}
+
+/* A client on a peer-to-peer connection, built through the initables with no
+ * name, as GDBusProxy allows, has no bus to hear of owners from and does not
+ * ask one: the peer would refuse such a call, which would leave the presence
+ * absent all the same. */
+static void
+test_peer_to_peer (void)
+{
+    g_autoptr (GError) error = NULL;
+    gint fds[2];
+
+    g_assert_cmpint (socketpair (AF_UNIX, SOCK_STREAM, 0, fds), ==, 0);
+
+    g_autofree gchar *guid = g_dbus_generate_guid ();
+    g_autoptr (GIOStream) server_stream = peer_stream (fds[0]);
+    g_autoptr (GIOStream) client_stream = peer_stream (fds[1]);
+    g_autoptr (GDBusConnection) server = NULL;
+
+    g_dbus_connection_new (server_stream, guid, G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_SERVER | G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_ALLOW_ANONYMOUS,
+                           NULL, NULL, on_peer_ready, &server);
+
+    g_autoptr (GDBusConnection) connection = g_dbus_connection_new_sync (client_stream, NULL, G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT, NULL, NULL, &error);
+
+    g_assert_no_error (error);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &server, NULL);
+    g_assert_nonnull (server);
+    bus_calls = 0;
+    g_dbus_connection_add_filter (connection, count_bus_calls, NULL, NULL);
+
+    g_autoptr (GPasteClient) client = g_initable_new (G_PASTE_TYPE_CLIENT, NULL, &error,
+                                                      "g-connection", connection,
+                                                      "g-object-path", G_PASTE_DAEMON_OBJECT_PATH,
+                                                      "g-interface-name", G_PASTE_DAEMON_INTERFACE_NAME,
+                                                      "g-flags", G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                      NULL);
+
+    g_assert_no_error (error);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_ABSENT);
+    /* Whatever the client sent has been through the filter once written. */
+    g_assert_true (g_dbus_connection_flush_sync (connection, NULL, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_atomic_int_get (&bus_calls), ==, 0);
+    g_dbus_connection_close_sync (connection, NULL, NULL);
+}
+
 typedef struct
 {
     gboolean done;
@@ -1388,6 +1577,10 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/wait-for-daemon", test_wait_for_daemon);
     g_test_add_func ("/client/presence/wait-for-daemon-cleanup", test_wait_for_daemon_cleanup);
     g_test_add_func ("/client/presence/completion-serving-daemon", test_completion_serving_daemon);
+    g_test_add_func ("/client/presence/starting-owner-leaves", test_starting_owner_leaves);
+    g_test_add_func ("/client/presence/own-context", test_own_context);
+    g_test_add_func ("/client/presence/own-context-probe", test_own_context_probe);
+    g_test_add_func ("/client/presence/peer-to-peer", test_peer_to_peer);
     g_test_add_func ("/client/calls/errors-stripped", test_errors_stripped);
     g_test_add_func ("/client/calls/items-read", test_items_read);
     g_test_add_func ("/client/calls/add-file-not-utf8", test_add_file_not_utf8);
