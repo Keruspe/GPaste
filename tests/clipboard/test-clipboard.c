@@ -2773,6 +2773,41 @@ test_unconfirmed_password_shutdown (gconstpointer user_data)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
+/* A selection nobody could identify is asked about once more as the manager
+ * goes, its countdown brought forward (expire_password ()), and that read holds
+ * the manager up. @user_data says whether the read identifies the selection. One
+ * that does takes the password off, with nothing to put there but the empty
+ * string, the history having gone with the manager; one that fails the same way
+ * disposes the manager again, which asks no more. */
+static void
+test_unconfirmed_password_dispose (gconstpointer user_data)
+{
+    gboolean answered = GPOINTER_TO_INT (user_data);
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
+
+    fail_password_read (fixture);
+    g_assert_null (fixture->clipboard->pending);
+
+    guint publications = fixture->clipboard->publications;
+
+    g_clear_object (&fixture->manager);
+    g_assert_nonnull (fixture->clipboard->pending);
+
+    if (answered)
+    {
+        password_read_ready (fixture, "same secret");
+        pump_for (10);
+        g_assert_cmpuint (fixture->clipboard->publications, ==, publications + 1);
+        g_assert_cmpstr (fixture->clipboard->content.str, ==, "");
+        return;
+    }
+
+    fail_password_read (fixture);
+    pump_for (10);
+    g_assert_null (fixture->clipboard->pending);
+    g_assert_cmpuint (fixture->clipboard->publications, ==, publications);
+}
+
 /* A countdown that runs out while the record is unconfirmed marks the password
  * overdue rather than taking it off, and asks for the read that settles it: no
  * other read is owed, so with nothing asked for here the deadline would wait on
@@ -2824,6 +2859,45 @@ test_overdue_password_is_reread (gconstpointer user_data)
      * comes off and the history's head goes there instead. */
     g_assert_cmpuint (fixture->clipboard->publications, ==, publications + 1);
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
+}
+
+/* A password nobody could identify taken off the selection anyway -- forced off
+ * by a daemon standing down, or its entry dropped from the history -- is only
+ * marked overdue, and the read that settles it is asked for: nothing else would
+ * ever come to identify the selection, and the cleartext would sit there for the
+ * rest of the session. */
+static void
+test_unconfirmed_password_taken_off (gconstpointer user_data)
+{
+    gboolean dropped = GPOINTER_TO_INT (user_data);
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
+
+    /* The entry the record names, for dropping to be about, below a later copy:
+     * dropping the head would publish the next one, which identifies the
+     * selection anyway. */
+    if (dropped)
+    {
+        g_paste_history_add (fixture->history, g_object_ref (fixture->password));
+        g_paste_history_add (fixture->history, g_paste_text_item_new ("a later copy"));
+    }
+    fail_password_read (fixture);
+    g_assert_null (fixture->clipboard->pending);
+
+    if (dropped)
+        g_assert_true (g_paste_history_remove_by_uuid (fixture->history, g_paste_item_get_uuid (fixture->password)));
+    else
+        g_paste_clipboards_manager_expire_password (fixture->manager);
+
+    /* Nothing is published over a selection
+     * nobody identified, but it is asked. */
+    guint publications = fixture->clipboard->publications;
+
+    g_assert_nonnull (fixture->clipboard->pending);
+
+    password_read_ready (fixture, "same secret");
+    pump_for (10);
+    g_assert_cmpuint (fixture->clipboard->publications, ==, publications + 1);
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, (dropped) ? "a later copy" : "replacement");
 }
 
 /* The read a waiter asks for is a question about the selection, not a copy made
@@ -4230,9 +4304,13 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/hinted_read", test_timeout_edit_hinted_read);
     g_test_add_data_func ("/clipboard/unconfirmed_password/shutdown", GINT_TO_POINTER (FALSE), test_unconfirmed_password_shutdown);
     g_test_add_data_func ("/clipboard/unconfirmed_password/shutdown_reread", GINT_TO_POINTER (TRUE), test_unconfirmed_password_shutdown);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/dispose", GINT_TO_POINTER (FALSE), test_unconfirmed_password_dispose);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/dispose_answered", GINT_TO_POINTER (TRUE), test_unconfirmed_password_dispose);
     g_test_add_data_func ("/clipboard/unconfirmed_password/overdue_reread", GINT_TO_POINTER (TRUE), test_overdue_password_is_reread);
     g_test_add_data_func ("/clipboard/unconfirmed_password/overdue_unanswered", GINT_TO_POINTER (FALSE), test_overdue_password_is_reread);
     g_test_add_func ("/clipboard/unconfirmed_password/reread_is_not_a_copy", test_unconfirmed_reread_is_not_a_copy);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/forced_off", GINT_TO_POINTER (FALSE), test_unconfirmed_password_taken_off);
+    g_test_add_data_func ("/clipboard/unconfirmed_password/dropped", GINT_TO_POINTER (TRUE), test_unconfirmed_password_taken_off);
     g_test_add_func ("/clipboard/unconfirmed_password/reread_keeps_record", test_unconfirmed_reread_keeps_the_record);
     g_test_add_func ("/clipboard/unconfirmed_password/reread_retires_record", test_unconfirmed_reread_retires_the_record);
     g_test_add_func ("/clipboard/edit_before_failure/cancel", test_edit_before_failed_read);

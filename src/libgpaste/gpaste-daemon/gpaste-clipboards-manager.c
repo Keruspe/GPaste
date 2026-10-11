@@ -192,6 +192,7 @@ G_PASTE_DEFINE_TYPE (ClipboardsManager, clipboards_manager, G_TYPE_OBJECT)
 static void g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard, gpointer user_data);
 static void g_paste_clipboards_manager_deselect_password (_Clipboard *clip);
 static void g_paste_clipboards_manager_publish_over_password (_Clipboard *clip);
+static void g_paste_clipboards_manager_reread_unconfirmed (GPasteClipboardsManager *self);
 static void g_paste_clipboards_manager_retire_synced_copies (_Clipboard *clip);
 static void g_paste_clipboards_manager_on_password_timeout (gpointer user_data);
 static void g_paste_clipboards_manager_ensure_not_empty (_Clipboard *clip);
@@ -1879,6 +1880,15 @@ g_paste_clipboards_manager_expire_password (GPasteClipboardsManager *self)
     }
 
     g_paste_clipboards_manager_finish_expiry_all (self);
+    /* An unconfirmed record is only marked overdue by the above, and nothing
+     * else would come to identify its selection: the read that does is asked
+     * for, and takes the password off when it answers -- after the caller let
+     * go, as often as not, which the read holding the manager allows. Asked
+     * once: with the history gone the manager was disposed already, and this
+     * is that read's answer disposing it again, which another read would
+     * repeat for as long as the selection says nothing. */
+    if (self->history)
+        g_paste_clipboards_manager_reread_unconfirmed (self);
 
     g_paste_clipboards_manager_complete_expiry (self);
 }
@@ -2395,6 +2405,10 @@ on_password_dropped (GPasteClipboardsManager *self,
              g_paste_item_equals (clip->password, item)))
         {
             g_paste_clipboards_manager_deselect_password (clip);
+            /* As in on_password_timeout (): an unconfirmed record is only
+             * marked overdue, and the read that settles it is asked for. */
+            if (clip->password_expired)
+                g_paste_clipboards_manager_reread_unconfirmed_clip (clip);
             dropped = TRUE;
         }
     }
