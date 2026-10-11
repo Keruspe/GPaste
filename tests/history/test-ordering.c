@@ -568,6 +568,47 @@ test_stopped (void)
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     }
 
+    /* A change to the model is refused as much: recorded nowhere, the reload
+     * that ends the handover would undo it. */
+    {
+        g_autoptr (GError) error = NULL;
+        g_autofree gchar *uuid = g_paste_daemon_methods_add_text (&methods, "added while handed over", &error);
+
+        g_assert_null (uuid);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_paste_daemon_methods_delete_item (&methods, "00000000-0000-4000-8000-000000000000", &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_paste_daemon_methods_delete_password (&methods, "stopped password", &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_paste_daemon_methods_set_favourite (&methods, "00000000-0000-4000-8000-000000000000", TRUE, &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_paste_daemon_methods_select (&methods, "00000000-0000-4000-8000-000000000000", &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_autofree gchar *replaced = g_paste_daemon_methods_replace (&methods, "00000000-0000-4000-8000-000000000000", "contents", &error);
+
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_paste_daemon_methods_strip_rich_text (&methods, "00000000-0000-4000-8000-000000000000", &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_clear_error (&error);
+
+        g_autofree gchar *made = g_paste_daemon_methods_make_password (&methods, "00000000-0000-4000-8000-000000000000", "name", 0, &error);
+
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    }
+
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "stopped-copy");
     g_autolist (GPasteItem) items = read_items (backend, "stopped-target");
 

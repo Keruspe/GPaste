@@ -152,6 +152,20 @@ drain (void)
 }
 
 gboolean
+g_settings_set_string (GSettings   *settings,
+                       const gchar *key,
+                       const gchar *value)
+{
+    typedef gboolean (*SetString) (GSettings *, const gchar *, const gchar *);
+    SetString original = (SetString) dlsym (RTLD_NEXT, "g_settings_set_string");
+
+    g_assert_nonnull (original);
+    if (refuse_write (settings, key))
+        return FALSE;
+    return original (settings, key, value);
+}
+
+gboolean
 g_settings_set_enum (GSettings   *settings,
                      const gchar *key,
                      gint         value)
@@ -202,6 +216,141 @@ test_set_active_unstored (void)
     unstored = TRUE;
     test_set_active_refused ();
     unstored = FALSE;
+}
+
+/* A history-name GSettings refuses to store leaves the history where it was,
+ * which SwitchHistory says rather than answer OK; and DeleteHistory of the
+ * current history, which has to switch away from it, deletes nothing then --
+ * done, the next copy would have written it back. */
+static void
+test_switch_refused (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+    const gchar *name = "switch-refused";
+
+    g_paste_history_load (history, name);
+    g_paste_settings_set_history_name (settings, name);
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+
+    refused_key = G_PASTE_HISTORY_NAME_SETTING;
+    g_paste_daemon_methods_switch_history (&methods, "switch-refused-elsewhere", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&error);
+    drain ();
+
+    g_paste_daemon_methods_delete_history (&methods, name, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    refused_key = NULL;
+    drain ();
+
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, name);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
+
+/* As test_set_active_unstored (). */
+static void
+test_switch_unstored (void)
+{
+    unstored = TRUE;
+    test_switch_refused ();
+    unstored = FALSE;
+}
+
+static void
+count_dropped (GPasteHistory *history G_GNUC_UNUSED,
+               GPasteItem    *item G_GNUC_UNUSED,
+               gpointer       user_data)
+{
+    ++*(guint *) user_data;
+}
+
+/* Deleting the current history leaves it for the default one, and the
+ * passwords it held are announced as gone: a switch announces none, and one
+ * still on a selection would stay there in clear. */
+static void
+test_delete_current_drops_passwords (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GError) error = NULL;
+    const gchar *name = "delete-current-passwords";
+    guint dropped = 0;
+
+    g_paste_history_load (history, name);
+    g_paste_settings_set_history_name (settings, name);
+    g_paste_history_add (history, g_paste_password_item_new ("bank", "the secret", 0));
+    g_paste_history_add (history, g_paste_text_item_new ("a later copy"));
+    g_signal_connect (history, "password-dropped", G_CALLBACK (count_dropped), &dropped);
+
+    g_assert_true (g_paste_history_delete (history, name, &error));
+    g_assert_no_error (error);
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_cmpuint (dropped, ==, 1);
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
+
+/* A current history whose delete fails is the current one still: it was left
+ * for the delete's sake. */
+static void
+test_delete_current_failed_stays (void)
+{
+    if (!geteuid ())
+    {
+        g_test_skip ("root removes files from a directory it cannot write");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GError) error = NULL;
+    const gchar *name = "delete-current-failed";
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+
+    g_paste_history_load (history, name);
+    g_paste_settings_set_history_name (settings, name);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    /* Held first: taking it on the way would make the history directory
+     * private again, undoing the chmod below. */
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_cmpint (g_chmod (dir, 0500), ==, 0);
+
+    /* Its mode back before anything is asserted, as in test-storage-failures'
+     * test_rekey_unlistable_images (). */
+    gboolean deleted = g_paste_history_delete (history, name, &error);
+
+    g_assert_cmpint (g_chmod (dir, 0700), ==, 0);
+    g_assert_false (deleted);
+    g_assert_nonnull (error);
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, name);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
+
+/* A backup of a history no store holds is refused as not found, rather than
+ * reading it into an empty one and backing that up. */
+static void
+test_backup_missing_source (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *source = g_paste_util_get_history_file_path ("backup-missing-source", "xml");
+    g_autofree gchar *copy = g_paste_util_get_history_file_path ("backup-missing-copy", "xml");
+
+    g_paste_history_load (history, "backup-missing-current");
+    g_paste_daemon_methods_backup_history (&methods, "backup-missing-source", "backup-missing-copy", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+    g_assert_false (g_file_test (source, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (copy, G_FILE_TEST_EXISTS));
 }
 
 static void
@@ -5804,6 +5953,11 @@ main (int argc, char *argv[])
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);
     add_test ("/history/file_count_matches_read", test_file_count_matches_read);
+    add_test ("/history/switch_refused", test_switch_refused);
+    add_test ("/history/switch_unstored", test_switch_unstored);
+    add_test ("/history/delete_current_drops_passwords", test_delete_current_drops_passwords);
+    add_test ("/history/delete_current_failed_stays", test_delete_current_failed_stays);
+    add_test ("/history/backup_missing_source", test_backup_missing_source);
 #ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/migration_detects_backend_in_use", test_migration_detects_backend_in_use);
 #endif
@@ -5875,6 +6029,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
+    g_test_add_data_func ("/history/reload_then_delete_drops_password", GINT_TO_POINTER (FALSE), test_reload_then_delete_drops_password);
     g_test_add_data_func ("/history/reload_twice_drops_password", GINT_TO_POINTER (TRUE), test_reload_then_delete_drops_password);
     add_test ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
     add_test ("/history/dir_is_private", test_history_dir_is_private);

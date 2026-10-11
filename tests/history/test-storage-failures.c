@@ -2796,7 +2796,7 @@ test_switch_writes_nothing (void)
 
     g_paste_history_load (history, "switched-from");
     g_clear_pointer (&synced, g_hash_table_unref);
-    g_paste_history_switch (history, "switched-unwritten");
+    g_assert_true (g_paste_history_switch (history, "switched-unwritten"));
     wait_load (history);
     g_paste_test_bus_pump (200);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);

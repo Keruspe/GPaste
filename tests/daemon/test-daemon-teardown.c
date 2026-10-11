@@ -115,6 +115,24 @@ fixture_tear_down (Fixture      *fixture,
     g_clear_object (&fixture->settings);
 }
 
+/* The item shortcuts change nothing while the store is handed over, as every
+ * method changing an item answers busy then: the change would be recorded
+ * nowhere, and the reload ending the handover would undo it. */
+static void
+test_shortcuts_handed_over (Fixture      *fixture,
+                            gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteHistory *history = fixture->daemon->history;
+
+    g_paste_history_add (history, g_paste_text_item_new ("kept"));
+    g_paste_history_flush (history);
+    keybinding_pop (NULL, history);
+    keybinding_make_password (NULL, fixture->daemon);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_true (G_PASTE_IS_TEXT_ITEM (g_paste_history_get (history, 0)));
+    g_paste_history_resume (history);
+}
+
 /* Disposing unregisters, so neither a second dispose nor the unregistration
  * GPasteBus makes when it lets go of the name finds an export to drop. */
 static void
@@ -296,6 +314,7 @@ main (int argc, char *argv[])
     g_test_init (&argc, &argv, NULL);
 
     g_test_add ("/daemon/teardown/dispose-twice", Fixture, NULL, fixture_set_up, test_dispose_twice, fixture_tear_down);
+    g_test_add ("/daemon/shortcuts/handed-over", Fixture, NULL, fixture_set_up, test_shortcuts_handed_over, fixture_tear_down);
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);

@@ -734,6 +734,22 @@ g_paste_daemon_upload_finish (GPasteDaemon *self,
 /* Keybindings  */
 /****************/
 
+/* Whether a shortcut may change the history's items, as every D-Bus method
+ * changing one asks (g_paste_daemon_methods_check_owned ()): while the store is
+ * handed over the change would be recorded nowhere, and the reload ending the
+ * handover would undo it. */
+static gboolean
+keybinding_may_change (GPasteHistory *history)
+{
+    g_autoptr (GError) error = NULL;
+
+    if (g_paste_history_sync (history, g_paste_history_get_current (history), &error))
+        return TRUE;
+
+    g_message ("Keyboard shortcut ignored: %s", error->message);
+    return FALSE;
+}
+
 /* Takes the daemon, not just the history: the countdown the new password calls
  * for is armed on the clipboards, which the history has no reach into. */
 static void
@@ -747,7 +763,7 @@ keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
     /* A text item alone: a password is one already, and a shortcut carries
      * neither a name nor a timeout, so there is nothing it could change about
      * one. */
-    if (!first || !G_PASTE_IS_TEXT_ITEM (first))
+    if (!first || !G_PASTE_IS_TEXT_ITEM (first) || !keybinding_may_change (history))
         return;
 
     /* No timeout of its own to hand over, so the item takes the one the settings
@@ -767,7 +783,8 @@ static void
 keybinding_pop (GPasteKeybinding *self G_GNUC_UNUSED,
                 gpointer          data)
 {
-    g_paste_history_remove (data, 0);
+    if (keybinding_may_change (data))
+        g_paste_history_remove (data, 0);
 }
 
 static void

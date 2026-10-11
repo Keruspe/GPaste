@@ -33,10 +33,14 @@
     means switching to it.
 
     BackupHistory, EmptyHistory and DeleteHistory reach the stores themselves,
-    so a daemon handing its storage over (restarting, or migrating it inside
-    GNOME Shell) refuses them with GIO's G_IO_ERROR_BUSY, which travels as
+    so a daemon handing its storage over (restarting, or migrating it or
+    changing its passphrase inside GNOME Shell or behind a prompt) refuses them
+    with GIO's G_IO_ERROR_BUSY, which travels as
     org.gtk.GDBus.UnmappedGError.Quark._g_2dio_2derror_2dquark.Code26 and comes
-    back to a GDBus client as that error. They work again once it is done.
+    back to a GDBus client as that error. So does every method changing the
+    history's items (adding, deleting, selecting, pinning, replacing, stripping,
+    making a password): recorded nowhere, the change would be undone by the
+    reload ending the handover. They work again once it is done.
 
     An item travels as (uuid, value, kind, favourite, notes): everything a client
     needs to draw a row, in one reply. @kind is the GPasteItemKind value, the
@@ -117,7 +121,8 @@
 
       Refuses with .Error.AlreadyExists rather than overwrite a history already
       called @backup: a backup silently destroying an older one of the same name
-      is a loss noticed far too late.
+      is a loss noticed far too late. A @history no store holds is
+      .Error.NotFound, there being nothing to back up.
 
       The backup holds every change the daemon has accepted for @history, those
       still on their way to the disk included. The current history cannot be
@@ -126,7 +131,9 @@
 
       The backup is written before the answer: a write that fails (a full
       disk, or no storage in use, which keeps nothing) is .Error.Failed, and
-      leaves no history called @backup, never an empty one.
+      leaves no history called @backup, never an empty one. So is a @history
+      whose store cannot be read (under another passphrase, from a newer
+      GPaste), which is left as it was.
     -->
     <method name="BackupHistory">
       <arg type="s" direction="in" name="history"/>
@@ -447,7 +454,11 @@
       Switching to a name no history goes by creates it, empty: that is how a new
       history comes into being, there being no CreateHistory of its own. The
       History property carries the outcome, and HistoriesChanged is raised when
-      the switch did create one.
+      the switch did create one. A history-name setting GSettings refuses to
+      store (a locked key, or a settings file the daemon cannot rewrite) is
+      .Error.Failed, the history staying where it was; DeleteHistory of the
+      current history, which switches to the default one first, then deletes
+      nothing either.
     -->
     <method name="SwitchHistory">
       <arg type="s" direction="in" name="name"/>

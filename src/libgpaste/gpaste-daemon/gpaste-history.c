@@ -1663,10 +1663,12 @@ g_paste_history_sync (GPasteHistory *self,
 
 /* Read a history in, synchronously, and install it as the model.
  *
- * No cap is applied to what comes back, unlike the load g_paste_history_on_loaded ()
- * installs: this one reads a history the daemon is not keeping -- another one, to
- * size it or to copy it -- and nothing saves what it read, so a trim would only
- * answer for less than the store holds. What is on disk is what is answered. */
+ * Its one caller is BackupHistory of a history the daemon is not keeping, which
+ * saves what this read as the backup. That is what the read answers: the
+ * backend's own caps applied -- no image with images-support off, the
+ * non-favourites past max-history-size left out -- and nothing more, unlike the
+ * load g_paste_history_on_loaded () installs, which applies the memory cap too:
+ * a backup is a copy of the history as GPaste reads it, not of its store. */
 static void
 g_paste_history_load_locked (GPasteHistory *self,
                              const gchar   *name)
@@ -1890,16 +1892,25 @@ g_paste_history_load_async (GPasteHistory *self,
  * @name: the name of the new history
  *
  * Switch to a new history
+ *
+ * The switch is the "history-name" setting changing, which GSettings may
+ * refuse to store -- a locked key, a settings file it cannot rewrite: the
+ * history then stays where it was, which the answer says.
+ *
+ * Returns: whether @name is the history now
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_switch (GPasteHistory *self,
                         const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (g_paste_util_history_name_is_valid (name));
-    g_return_if_fail (g_utf8_validate (name, -1, NULL));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (g_paste_util_history_name_is_valid (name), FALSE);
+    g_return_val_if_fail (g_utf8_validate (name, -1, NULL), FALSE);
 
     g_paste_settings_set_history_name (self->settings, name);
+    g_paste_settings_sync_key (self->settings, G_PASTE_HISTORY_NAME_SETTING);
+
+    return g_paste_str_equal (g_paste_settings_get_history_name (self->settings), name);
 }
 
 /* What deletes a store checks first that the backend in use can reach it. The
@@ -1928,11 +1939,17 @@ g_paste_history_check_store_reachable (GPasteHistory *self,
  * @name: (nullable): the history to delete (defaults to the configured one)
  * @error: return location for a #GError, or %NULL
  *
- * Delete the current #GPasteHistory
+ * Delete the history called @name, the current one when %NULL. A current
+ * history the history-name setting names, other than the default one, is left
+ * for the default one first, and a delete that then fails goes back to it; the
+ * passwords it held are announced as gone (GPasteHistory::password-dropped)
+ * once it is.
  *
  * Fails with %G_IO_ERROR_BUSY, having deleted nothing, when the store has been
- * handed over (see g_paste_history_flush()); otherwise errors are whatever the
- * storage backend reports for unlinking it, in %G_IO_ERROR or %G_FILE_ERROR.
+ * handed over (see g_paste_history_flush()); with %G_PASTE_ERROR_FAILED,
+ * having deleted nothing, when the history-name setting cannot be changed to
+ * leave the current history; otherwise errors are whatever the storage backend
+ * reports for unlinking it, in %G_IO_ERROR or %G_FILE_ERROR.
  *
  * Returns: whether the history was deleted
  */
@@ -1943,7 +1960,8 @@ g_paste_history_delete (GPasteHistory *self,
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
 
-    const gchar *history_name = (name) ? name : self->name;
+    /* A copy: leaving the current history below frees the name it was. */
+    g_autofree gchar *history_name = g_strdup ((name) ? name : self->name);
 
     if (!g_paste_history_check_owned (self, history_name, error))
         return FALSE;
@@ -1951,7 +1969,47 @@ g_paste_history_delete (GPasteHistory *self,
     if (!g_paste_history_check_store_reachable (self, history_name, error))
         return FALSE;
 
-    if (g_paste_str_equal (history_name, self->name))
+    g_autoslist (GPasteItem) passwords = NULL;
+    gboolean left = FALSE;
+
+    if (g_paste_str_equal (history_name, self->name) && !g_paste_str_equal (history_name, G_PASTE_DEFAULT_HISTORY) &&
+        g_paste_str_equal (history_name, g_paste_settings_get_history_name (self->settings)))
+    {
+        /* The default history is where a deleted current history leaves the
+         * daemon, and leaving comes first: a history-name GSettings refuses to
+         * store would keep it current, and deleting it then would have the next
+         * copy write it back. A switch announces no password, so those it held
+         * are kept to be announced once it is gone. One the setting does not
+         * name -- loaded by name -- is emptied where it is, below. */
+        for (guint i = 0; i < self->history->len; ++i)
+        {
+            GPasteItem *item = g_ptr_array_index (self->history, i);
+
+            if (G_PASTE_IS_PASSWORD_ITEM (item))
+                passwords = g_slist_prepend (passwords, g_object_ref (item));
+        }
+
+        /* And those a reload set aside while its load is out, which the switch
+         * lets go of unannounced: the store about to be unlinked held them. */
+        for (GSList *l = self->reload_passwords; l; l = l->next)
+            passwords = g_slist_prepend (passwords, g_object_ref (l->data));
+
+        /* The load the switch starts waits for the unlink: on the SQLite
+         * flavours it holds the backend's one lock across its whole read -- a
+         * key derivation, every row -- which the unlink, on the main thread,
+         * would then wait on. */
+        g_paste_history_saver_hold_loads (self->saver, TRUE);
+
+        if (!g_paste_history_switch (self, G_PASTE_DEFAULT_HISTORY))
+        {
+            g_paste_history_saver_hold_loads (self->saver, FALSE);
+            g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "the history-name setting cannot be changed, so the current history cannot be deleted");
+            return FALSE;
+        }
+        left = TRUE;
+    }
+    else if (g_paste_str_equal (history_name, self->name))
     {
         /* A load still in flight is reading the very history we are about to
          * unlink: its result would be installed right after, and the next
@@ -1979,9 +2037,17 @@ g_paste_history_delete (GPasteHistory *self,
 
     if (local_error)
     {
+        /* Back to the history that is still there. */
+        if (left && !g_paste_history_switch (self, history_name))
+            g_warning ("Could not go back to “%s”, which was not deleted", history_name);
+        if (left)
+            g_paste_history_saver_hold_loads (self->saver, FALSE);
         g_propagate_error (error, g_steal_pointer (&local_error));
         return FALSE;
     }
+
+    if (left)
+        g_paste_history_saver_hold_loads (self->saver, FALSE);
 
     /* Whatever we could not read back is unlinked, so there is nothing left to
      * protect: recording must resume, or the gate would stay shut for the rest
@@ -1989,6 +2055,12 @@ g_paste_history_delete (GPasteHistory *self,
      * a delete that failed leaving it to protect still. */
     if (g_paste_str_equal (history_name, self->name))
         self->unreadable = FALSE;
+
+    if (passwords)
+    {
+        G_PASTE_LOCK_HISTORY;
+        self->pending_dropped = g_slist_concat (g_steal_pointer (&passwords), self->pending_dropped);
+    }
 
     return TRUE;
 }

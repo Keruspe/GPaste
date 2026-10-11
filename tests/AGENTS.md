@@ -77,6 +77,9 @@ migration whose new backend cannot be stored keeps the old history and the
 revision, while a "Keep as is" reply still settles under the lock;
 `/history/migration_unstored_backend` and
 `/history/migration_unstored_backend_is_current` have dconf give it back.
+`/history/switch_refused` refuses `history-name` through `g_settings_set_string()`,
+and `/history/switch_unstored` has dconf give it back: SwitchHistory fails, and
+DeleteHistory of the current history deletes nothing.
 `/history/sqlite_save_elsewhere_keeps_connection` interposes `sqlite3_open_v2()`
 to count the connections opened on a history saved under another name.
 

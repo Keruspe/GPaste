@@ -51,6 +51,18 @@ g_paste_daemon_methods_items_variant (const GPtrArray *items)
     return g_variant_builder_end (&builder);
 }
 
+/* A change made while the store is handed over -- a change of passphrase's or
+ * an in-place migration's prompts up, the bus still answered -- is recorded
+ * nowhere, and the reload ending the handover undoes it: an item deleted comes
+ * back, one added is gone. Refused with %G_IO_ERROR_BUSY, as the methods
+ * reaching the stores themselves are (g_paste_history_sync ()). */
+static gboolean
+g_paste_daemon_methods_check_owned (const GPasteDaemonMethods *self,
+                                    GError                   **error)
+{
+    return g_paste_history_sync (self->history, g_paste_history_get_current (self->history), error);
+}
+
 /* An add answers the uuid of what the history holds the content under, so a
  * refusal has to be an error rather than a quiet success: the daemon's own
  * policy refusing the content is %G_PASTE_ERROR_REJECTED, which says the request
@@ -68,6 +80,9 @@ g_paste_daemon_methods_do_add_item (const GPasteDaemonMethods *self,
 
     /* g_paste_history_add takes ownership; keep our own ref for the checks below */
     g_autoptr (GPasteItem) owned = item;
+
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return NULL;
 
     /* Content the current selection already says keeps the history as it is,
      * which is what was asked for rather than a refusal: it is in the history
@@ -229,47 +244,25 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
     return g_paste_daemon_methods_do_add_item (self, g_paste_password_item_new (name, password, timeout), error);
 }
 
-/* Whether a history called @name is one the store already holds, in @exists.
- * Asked of the backend rather than tracked, since a history exists exactly as
- * long as its entry in the store does.
- *
- * Returns %FALSE with @error set when the store could not be enumerated at all,
- * which is not the same answer as "no": a caller that must not guess -- a backup,
- * which would otherwise overwrite -- refuses, while one only deciding whether to
- * raise HistoriesChanged carries on and raises it. */
-static gboolean
-g_paste_daemon_methods_history_exists (const GPasteDaemonMethods *self,
-                                       const gchar               *name,
-                                       gboolean                  *exists,
-                                       GError                   **error)
-{
-    g_auto (GStrv) histories = g_paste_history_list (self->history, error);
-
-    if (!histories)
-        return FALSE;
-
-    *exists = g_strv_contains ((const gchar * const *) histories, name);
-
-    return TRUE;
-}
-
-/* The same for the two callers that only want to know whether to announce a new
- * history: a store we could not read is no reason to refuse the operation, and
- * announcing one history too many costs a listener a re-list. */
+/* Whether no history called @name is in the store yet, for the callers that
+ * only want to know whether to announce a new one. Asked of the backend rather
+ * than tracked, since a history exists exactly as long as its entry in the
+ * store does. A store we could not read is no reason to refuse the operation,
+ * and announcing one history too many costs a listener a re-list. */
 static gboolean
 g_paste_daemon_methods_history_is_new (const GPasteDaemonMethods *self,
                                        const gchar               *name)
 {
     g_autoptr (GError) error = NULL;
-    gboolean exists = FALSE;
+    g_auto (GStrv) histories = g_paste_history_list (self->history, &error);
 
-    if (!g_paste_daemon_methods_history_exists (self, name, &exists, &error))
+    if (!histories)
     {
         g_warning ("Could not list the histories: %s", error->message);
         return TRUE;
     }
 
-    return !exists;
+    return !g_strv_contains ((const gchar * const *) histories, name);
 }
 
 G_PASTE_VISIBLE void
@@ -297,13 +290,20 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
     /* Refused rather than overwritten: a backup quietly destroying an older one
      * of the same name is a loss noticed far too late to undo. A store we cannot
      * enumerate is refused too -- not knowing is not the same as knowing there
-     * is none. */
-    gboolean exists;
+     * is none. The one listing answers for the source below as well. */
+    g_auto (GStrv) histories = g_paste_history_list (self->history, error);
 
-    if (!g_paste_daemon_methods_history_exists (self, backup, &exists, error))
+    if (!histories)
         return;
 
+    gboolean exists = g_strv_contains ((const gchar * const *) histories, backup);
+
     G_PASTE_DBUS_ASSERT (!exists, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
+
+    /* Nor is a history no store holds one to back up: reading it would create
+     * an empty one under that name, and the backup of it would answer OK. */
+    G_PASTE_DBUS_ASSERT (current || g_strv_contains ((const gchar * const *) histories, history),
+                         G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
 
     if (!g_paste_history_sync (self->history, history, error))
         return;
@@ -345,6 +345,9 @@ g_paste_daemon_methods_delete_item (const GPasteDaemonMethods *self,
                                     const gchar               *uuid,
                                     GError                   **error)
 {
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
+
     G_PASTE_DBUS_ASSERT (g_paste_history_remove_by_uuid (self->history, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
 }
 
@@ -358,9 +361,12 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
 
     GPasteHistory *history = self->history;
 
-    /* Nothing was deleted if this fails (the store is being handed over), so
-     * neither announce the deletion nor switch away from a history that is
-     * still there; the caller turns @error into the method's reply. */
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
+
+    /* Nothing was deleted if this fails, the current history left only for
+     * the time it took (g_paste_history_delete ()), so the deletion is not
+     * announced; the caller turns @error into the method's reply. */
     if (!g_paste_history_delete (history, name, error))
         return;
 
@@ -368,9 +374,6 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
     /* The set of histories is one shorter: anything merely listing them has no
      * use for the name, and would otherwise have to know about this signal. */
     g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
-
-    if (g_paste_str_equal (name, g_paste_history_get_current (self->history)))
-        g_paste_history_switch (history, G_PASTE_DEFAULT_HISTORY);
 }
 
 G_PASTE_VISIBLE void
@@ -379,6 +382,9 @@ g_paste_daemon_methods_delete_password (const GPasteDaemonMethods *self,
                                         GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to delete");
+
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
 
     G_PASTE_DBUS_ASSERT (g_paste_history_delete_password (self->history, name),
                          G_PASTE_ERROR_NOT_FOUND, "no password goes by that name");
@@ -714,6 +720,9 @@ g_paste_daemon_methods_set_favourite (const GPasteDaemonMethods *self,
                                       gboolean                   favourite,
                                       GError                   **error)
 {
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
+
     G_PASTE_DBUS_ASSERT (g_paste_history_set_favourite (self->history, uuid, favourite), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
 }
 
@@ -722,6 +731,9 @@ g_paste_daemon_methods_select (const GPasteDaemonMethods *self,
                                const gchar               *uuid,
                                GError                   **error)
 {
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
+
     G_PASTE_DBUS_ASSERT (g_paste_history_select (self->history, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
 }
 
@@ -731,6 +743,9 @@ g_paste_daemon_methods_replace (const GPasteDaemonMethods *self,
                                 const gchar               *contents,
                                 GError                   **error)
 {
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return NULL;
+
     GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
@@ -757,6 +772,9 @@ g_paste_daemon_methods_strip_rich_text (const GPasteDaemonMethods *self,
                                         const gchar               *uuid,
                                         GError                   **error)
 {
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
+
     GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
 
     G_PASTE_DBUS_ASSERT (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
@@ -791,6 +809,9 @@ g_paste_daemon_methods_make_password (const GPasteDaemonMethods *self,
                                       guint                      timeout,
                                       GError                   **error)
 {
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return NULL;
+
     GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
@@ -840,7 +861,7 @@ g_paste_daemon_methods_switch_history (const GPasteDaemonMethods *self,
      * is the set of histories growing just as much as a backup is. */
     gboolean is_new = g_paste_daemon_methods_history_is_new (self, name);
 
-    g_paste_history_switch (self->history, name);
+    G_PASTE_DBUS_ASSERT (g_paste_history_switch (self->history, name), G_PASTE_ERROR_FAILED, "the history-name setting cannot be changed");
 
     if (is_new)
         g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
