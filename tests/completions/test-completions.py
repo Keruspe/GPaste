@@ -9,8 +9,9 @@ command line answers to, and --help is printed straight from it. The three
 completion scripts and the man page cannot be generated from it -- each verb
 completes its arguments differently, and the man page says more about them than
 a table could carry -- so this checks instead that none of them has fallen
-behind: every verb and alias has to be offered by all three shells, and every
-canonical verb documented in the man page. Bash is also the one completion
+behind: every verb and alias has to be offered by all three shells where a verb
+goes (bash's by running it, zsh's and fish's from the lists they offer), and
+every canonical verb given an entry of its own in the man page. Bash is also the one completion
 offering options verb by verb, so every verb whose arguments name items has to
 be offered --use-index there; zsh and fish offer every option anywhere. And
 zsh and fish list an item's text as it is, so what their completions hand over
@@ -114,19 +115,55 @@ def fish_descriptions(scratch):
                           env=env, capture_output=True, check=True).stdout
 
 
-def words(path):
-    """Every bare word in a file, so a verb is found however it is quoted."""
-    return set(re.findall(r'[\w-]+', (ROOT / path).read_text()))
+def bash_verbs():
+    """What the bash completion offers in place of a verb, by running it."""
+    script = ('source "$1"; COMP_WORDS=(gpaste-client ""); COMP_CWORD=1; COMP_LINE="gpaste-client "; '
+              'COMP_POINT=${#COMP_LINE}; _gpaste-client gpaste-client "" gpaste-client; printf \'%s\\n\' "${COMPREPLY[@]}"')
+    out = subprocess.run(['bash', '-c', script, 'bash', str(ROOT / 'data/completions/gpaste-client')],
+                         capture_output=True, text=True, check=True).stdout
+    return set(out.split())
+
+
+def zsh_verbs():
+    """The names in the zsh completion's subcommands=( ... ) array, the
+    {verb,alias} braces expanded."""
+    body = (ROOT / 'data/completions/_gpaste-client').read_text()
+    block = body[body.index('subcommands=('):]
+    block = block[:block.index('\n    )')]
+    names = set()
+    for entry in re.findall(r'^\s*(\{[^}]*\}|[\w-]+):', block, re.M):
+        names.update(entry.strip('{}').split(','))
+    return names
+
+
+def fish_verbs():
+    """The names given to __gpaste_subcommand, all its arguments but the
+    trailing description."""
+    body = (ROOT / 'data/completions/gpaste-client.fish').read_text()
+    names = set()
+    for line in re.findall(r"^__gpaste_subcommand\s+(.*?)\s+'[^']*'\s*$", body, re.M):
+        names.update(line.split())
+    return names
+
+
+def man_verbs():
+    """The verbs the man page gives an entry of their own (a .TP heading
+    .B gpaste-client <verb> ...), the verb-less listing's [history] included:
+    not those an example elsewhere merely names."""
+    body = (ROOT / 'man/1/gpaste-client.1').read_text()
+    return {m.strip('[]') for m in re.findall(r'^\.TP\n\.B gpaste-client (\[?[\w-]+\]?)', body, re.M)}
 
 
 def main():
     canonical, every, items = verbs()
     failures = []
 
-    for completion in ('data/completions/gpaste-client',
-                       'data/completions/_gpaste-client',
-                       'data/completions/gpaste-client.fish'):
-        missing = sorted(every - words(completion))
+    offered = {'data/completions/_gpaste-client': zsh_verbs(),
+               'data/completions/gpaste-client.fish': fish_verbs()}
+    if shutil.which('bash'):
+        offered['data/completions/gpaste-client'] = bash_verbs()
+    for completion, names in offered.items():
+        missing = sorted(every - names)
         if missing:
             failures.append(f'{completion} does not offer: {", ".join(missing)}')
 
@@ -148,7 +185,7 @@ def main():
         if listed.count(b'1\ta') != 2 or controls(listed, b'\t\n'):
             failures.append(f'data/completions/gpaste-client.fish lists an item as {listed!r}')
 
-    man = words('man/1/gpaste-client.1')
+    man = man_verbs()
     missing = sorted(v for v in canonical if v not in man)
     if missing:
         failures.append(f'man/1/gpaste-client.1 does not document: {", ".join(missing)}')
