@@ -483,6 +483,23 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
     if (!g_paste_daemon_methods_check_owned (self, error))
         return;
 
+    /* A history no store holds is not found, as a uuid matching nothing is,
+     * rather than whatever unlinking a file that is not there reports. The
+     * current history is deleted whether or not anything of it was saved yet,
+     * and one another storage keeps while none is in use, which no listing
+     * shows, is g_paste_history_delete ()'s to refuse as out of reach. */
+    if (!g_paste_str_equal (name, g_paste_history_get_current (history)))
+    {
+        g_auto (GStrv) histories = g_paste_history_list (history, error);
+
+        if (!histories)
+            return;
+
+        gboolean unreachable = g_paste_settings_get_storage_backend (self->settings) == G_PASTE_STORAGE_NOOP && g_paste_util_history_is_stored_anywhere (name);
+
+        G_PASTE_DBUS_ASSERT (unreachable || g_strv_contains ((const gchar * const *) histories, name), G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
+    }
+
     /* Nothing was deleted if this fails, the current history left only for
      * the time it took (g_paste_history_delete ()), so the deletion is not
      * announced; the caller turns @error into the method's reply. */

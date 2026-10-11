@@ -176,8 +176,10 @@
     <!--
       Delete a whole history.
 
-      With no storage in use, a history another storage still keeps (an
-      encrypted store left locked, or what a migration kept) is out of its
+      A history no store holds fails with org.gnome.GPaste.Error.NotFound,
+      bar the current one, which is deleted whether or not anything of it was
+      saved yet. With no storage in use, a history another storage still keeps
+      (an encrypted store left locked, or what a migration kept) is out of its
       reach: .Error.Failed, the store and the history in use left as they were.
     -->
     <method name="DeleteHistory">

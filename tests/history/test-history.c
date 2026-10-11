@@ -358,6 +358,21 @@ test_backup_missing_source (void)
     g_assert_false (g_file_test (copy, G_FILE_TEST_EXISTS));
 }
 
+/* Deleting a history no store holds is not found, as a uuid matching nothing
+ * is, rather than whatever unlinking a missing file reports. */
+static void
+test_delete_missing_history (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load (history, "delete-missing-current");
+    g_paste_daemon_methods_delete_history (&methods, "delete-missing-typo", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+}
+
 static void
 test_add_password_name_conflict (void)
 {
@@ -1276,7 +1291,8 @@ test_empty_other_keeps_stored_images (void)
  * answered for. So are the deletion and the emptying of a history another
  * flavour still stores -- an encrypted store left locked, or what a migration
  * kept -- which the "no storage" backend cannot reach, whichever flavour that
- * is: the store stays, and so does the session's model. With none stored, the
+ * is and whether or not it is the current history: the store stays, and so
+ * does the session's model. With none stored, the
  * model is all there is to empty. */
 static void
 test_noop_refuses_unmade (void)
@@ -1311,10 +1327,13 @@ test_noop_refuses_unmade (void)
     for (gsize i = 0; i < G_N_ELEMENTS (stored); ++i)
     {
         g_autofree gchar *kept = g_paste_util_get_history_file_path ("noop-kept", g_paste_storage_get_extension (stored[i]));
+        g_autofree gchar *other = g_paste_util_get_history_file_path ("noop-other", g_paste_storage_get_extension (stored[i]));
         g_autoptr (GError) delete_error = NULL;
+        g_autoptr (GError) other_error = NULL;
         g_autoptr (GError) empty_error = NULL;
 
         g_assert_true (g_file_set_contents (kept, "kept", -1, NULL));
+        g_assert_true (g_file_set_contents (other, "kept", -1, NULL));
 
         g_paste_daemon_methods_delete_history (&methods, "noop-kept", &delete_error);
         g_assert_error (delete_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
@@ -1322,8 +1341,12 @@ test_noop_refuses_unmade (void)
         g_assert_error (empty_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
         g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+        g_paste_daemon_methods_delete_history (&methods, "noop-other", &other_error);
+        g_assert_error (other_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+        g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
 
         g_assert_cmpint (g_unlink (kept), ==, 0);
+        g_assert_cmpint (g_unlink (other), ==, 0);
     }
 
     g_autoptr (GError) error = NULL;
@@ -6748,6 +6771,7 @@ main (int argc, char *argv[])
     add_test ("/history/delete_current_drops_passwords", test_delete_current_drops_passwords);
     add_test ("/history/delete_current_failed_stays", test_delete_current_failed_stays);
     add_test ("/history/backup_missing_source", test_backup_missing_source);
+    add_test ("/history/delete_missing_history", test_delete_missing_history);
 #ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/migration_detects_backend_in_use", test_migration_detects_backend_in_use);
 #endif
