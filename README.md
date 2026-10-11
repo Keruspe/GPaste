@@ -144,9 +144,9 @@ skipped otherwise.
 |---|---|---|
 | `encryption` | `auto` | libsodium-based history encryption |
 | `sqlite` | `auto` | the SQLite storage backends (needs SQLite ≥ 3.35) |
-| `libsecret` | `auto` | remember the encryption passphrase in the keyring |
+| `libsecret` | `auto` | remember the encryption passphrase in the keyring (needs `encryption`) |
 | `pwquality` | `auto` | rate a passphrase or a password as it is typed |
-| `gnome-shell` | `true` | the GNOME Shell extension and the mutter clipboard backend |
+| `gnome-shell` | `true` | the GNOME Shell extension and the mutter clipboard backend (requires `introspection`) |
 | `introspection` | `true` | GIR data |
 | `vapi` | `true` | Vala bindings (requires `introspection`) |
 | `systemd` | `true` | the systemd user unit |

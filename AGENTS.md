@@ -22,12 +22,12 @@ missing — pass `enabled` to make that fatal.
 |---|---|---|---|
 | `encryption` | feature | auto | libsodium-based history encryption (`G_PASTE_ENABLE_ENCRYPTION`) |
 | `sqlite` | feature | auto | SQLite storage backends, needs SQLite ≥ 3.35 (`G_PASTE_ENABLE_SQLITE`) |
-| `libsecret` | feature | auto | passphrase in the keyring, only with `encryption` (`G_PASTE_ENABLE_LIBSECRET`) |
+| `libsecret` | feature | auto | passphrase in the keyring, only with `encryption`: `enabled` without it is a configure error, `auto` then disabled (`G_PASTE_ENABLE_LIBSECRET`) |
 | `pwquality` | feature | auto | password strength rating: the passphrase of an encrypted history, and a new password item (`G_PASTE_ENABLE_PWQUALITY`) |
-| `gnome-shell` | bool | true | GNOME Shell extension + mutter clipboard backend (`G_PASTE_ENABLE_GNOME_SHELL`) |
+| `gnome-shell` | bool | true | GNOME Shell extension + mutter clipboard backend, needing `introspection` (`G_PASTE_ENABLE_GNOME_SHELL`); the overview's search provider is installed either way |
 | `introspection` | bool | true | Generate GIR data |
 | `vapi` | bool | true | Generate Vala bindings (errors out without `introspection`) |
-| `systemd` | bool | true | systemd user unit |
+| `systemd` | bool | true | systemd user units, which the D-Bus service files name (`SystemdService=`) only when installed |
 | `bash-completion`, `zsh-completion`, `fish-completion` | bool | true | Shell completions |
 
 Four string options — `dbus-services-dir`, `dbus-interfaces-dir`,

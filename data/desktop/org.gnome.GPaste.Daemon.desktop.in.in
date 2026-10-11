@@ -1,5 +1,6 @@
 [Desktop Entry]
 Type=Application
 Name=GPaste
+Icon=org.gnome.GPaste.Ui
+Exec=@pkglibexecdir@/gpaste-daemon
 NoDisplay=true
-DBusActivatable=true

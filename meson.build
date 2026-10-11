@@ -83,8 +83,12 @@ if sqlite_dep.found()
 endif
 
 # Optional libsecret support to remember the encryption passphrase in the
-# keyring. Only useful alongside encryption.
-libsecret_dep = dependency('libsecret-1', required: get_option('libsecret'))
+# keyring. Only useful alongside encryption: asked for without it, the
+# configuration fails rather than quietly building without what was asked for,
+# and auto turns into disabled.
+libsecret_dep = dependency('libsecret-1',
+  required: get_option('libsecret').require(libsodium_dep.found(),
+                                            error_message: 'libsecret remembers the encryption passphrase, which needs -Dencryption'))
 if libsodium_dep.found() and libsecret_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_LIBSECRET', language: 'c')
 endif
@@ -114,6 +118,12 @@ if get_option('vapi') and not get_option('introspection')
   error('GIR generation has to be enabled via -Dintrospection=true to build vala bindings!')
 endif
 
+# Every module of the extension imports the typelibs only introspection builds:
+# installed without them, it could not load.
+if get_option('gnome-shell') and not get_option('introspection')
+  error('The GNOME Shell extension needs the typelibs: enable -Dintrospection=true, or pass -Dgnome-shell=false.')
+endif
+
 # Where the helper binaries go, relative to the prefix, and the same path made
 # absolute for the compiled-in define.
 pkglibexecdir_rel = get_option('libexecdir') / 'gpaste'
@@ -132,7 +142,8 @@ add_project_arguments(
   '-DG_PASTE_EXTENSION_NAME="GPaste@gnome-shell-extensions.gnome.org"',
   '-DG_PASTE_ICON_NAME="org.gnome.GPaste.Ui"',
   '-DGETTEXT_PACKAGE="GPaste"',
-  '-DLOCALEDIR="' + (get_option('prefix') / get_option('datadir') / 'locale') + '"',
+  # Where i18n.gettext () installs the catalogs, whatever -Dlocaledir says.
+  '-DLOCALEDIR="' + (get_option('prefix') / get_option('localedir')) + '"',
   '-DPACKAGE="gpaste"',
   '-DPACKAGE_NAME="GPaste"',
   '-DPACKAGE_STRING="GPaste ' + meson.project_version() +'"',
@@ -182,6 +193,11 @@ foreach rank : range(10)
   endforeach
 endforeach
 version_parts = meson.project_version().split('.')
+# A third component would number a micro release like the release it follows,
+# the collision the names above are refused for.
+if version_parts.length() > 2
+  error('Cannot number "@0@" for extensions.gnome.org: only MAJOR.MINOR versions can be.'.format(meson.project_version()))
+endif
 extension_version = version_parts[0].to_int() * 100
 if version_parts.length() > 1
   minor = version_parts[1]
