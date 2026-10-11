@@ -74,6 +74,12 @@ idle.
 the indicator it builds reads the extension's `GPaste.Settings` through its
 `settings` getter, which answers it until the extension is disabled.
 
+`prompt` runs the shipped GNOME Shell prompt over St, dialog and session-mode
+doubles: the strength meter and its hint wear classes the shell's theme styles;
+locking hides a dialog up and unlocking shows it again; a question or a report
+asked while locked waits for the unlock; and a shutdown dismisses a question
+still waiting, logs a report, and stops watching the session.
+
 `state-switch` runs the shipped tracking switch over a `PopupSwitchMenuItem`
 double that clicks through `toggle()`, as GNOME Shell's does: a `SetActive` the
 daemon refuses puts it back where the daemon still is, without asking again on

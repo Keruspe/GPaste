@@ -4,6 +4,7 @@
 import * as BarLevel from 'resource:///org/gnome/shell/ui/barLevel.js';
 import * as CheckBox from 'resource:///org/gnome/shell/ui/checkBox.js';
 import * as Dialog from 'resource:///org/gnome/shell/ui/dialog.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import * as ShellEntry from 'resource:///org/gnome/shell/ui/shellEntry.js';
 
@@ -142,17 +143,25 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         // instead, as the libadwaita backend does.
         if (!GPasteDaemon.Prompt.pwquality_available()) {
             content.add_child(new St.Label({
-                style_class: 'prompt-dialog-description',
+                style_class: 'message-dialog-description',
                 text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_STRENGTH_UNAVAILABLE),
             }));
             return;
         }
 
-        const box = new St.BoxLayout({style_class: 'gpaste-passphrase-strength'});
+        // The extension ships no stylesheet, so everything here wears a class
+        // the shell's theme styles, or an inline style: a BarLevel's own
+        // 'barlevel' class gets no height and no colours, the theme styling a
+        // bar only as a 'slider' or an OSD's 'level'.
+        const box = new St.BoxLayout({style: 'spacing: 12px;'});
 
         // BarLevel is normalized to 0..1, so the 0-4 rating is scaled into it.
-        this._strengthLevel = new BarLevel.BarLevel({x_expand: true});
-        this._strengthHint = new St.Label({style_class: 'prompt-dialog-description'});
+        this._strengthLevel = new BarLevel.BarLevel({
+            style_class: 'slider',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._strengthHint = new St.Label({style_class: 'message-dialog-description'});
 
         box.add_child(this._strengthLevel);
         box.add_child(this._strengthHint);
@@ -260,9 +269,10 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         this._backendButtons = new Map();
 
+        // An inline style, as the strength meter's (_addStrengthMeter ()).
         const backends = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
-            style_class: 'gpaste-storage-backends',
+            style: 'spacing: 6px;',
         });
 
         // St has no radio button, so a set of toggles kept mutually exclusive by
@@ -425,22 +435,6 @@ class GPasteReportDialog extends ModalDialog.ModalDialog {
     }
 });
 
-// ModalDialog.open() fails when it cannot take the modal grab (another system
-// modal already holds one). A dialog that never opened also never closes, so
-// nothing would ever answer the request — and the storage never settles, which
-// leaves _onNameAcquired() waiting forever with the bus name owned and no
-// daemon behind it. Treat it as a dismissal instead: the migration is simply
-// offered again next start, and an encrypted history stays locked rather than
-// being loaded empty.
-function present(dialog, request) {
-    if (dialog.open())
-        return;
-
-    console.error('GPaste: could not open the storage dialog, no modal grab available');
-    dialog.destroy();
-    request.dismiss();
-}
-
 export const GPasteShellPrompt = GObject.registerClass({
     Implements: [GPasteDaemon.Prompt],
 }, class GPasteShellPrompt extends GObject.Object {
@@ -448,16 +442,54 @@ export const GPasteShellPrompt = GObject.registerClass({
         super();
 
         this._open = new Set();
+        // What was asked while the session was locked, to be shown once it is
+        // not: see _show ().
+        this._deferred = [];
         this._shutDown = false;
+
+        Main.sessionMode.connectObject('updated', () => this._onSessionUpdated(), this);
     }
 
-    _show(dialog, request) {
+    // The extension stays enabled on the lock screen, where the in-shell daemon
+    // goes on running, and a modal dialog goes above the shield: a storage
+    // question there could be answered by anyone at the machine -- every
+    // history deleted, or re-encrypted under a passphrase of theirs. So, as
+    // GNOME Shell's own polkit dialog does, one asked while locked waits for the
+    // unlock, and one up already is hidden until then, its grab under the
+    // shield's.
+    //
+    // @create builds the dialog once it can be shown; @abandon answers for one
+    // that never is (shutdown ()).
+    _show(create, abandon) {
+        if (Main.sessionMode.isLocked) {
+            this._deferred.push({create, abandon});
+            return;
+        }
+
+        const dialog = create();
+
         // Track it so shutdown() can take it away again. Closing is what
         // answers the request, so the entry is dropped from there.
         this._open.add(dialog);
         dialog.connect('destroy', () => this._open.delete(dialog));
 
-        present(dialog, request);
+        // It cannot fail on GNOME Shell 51, the only one metadata.json declares:
+        // ModalDialog.pushModal() takes the grab whatever else holds one, a
+        // dialog opened over another modal stacking on it.
+        dialog.open();
+    }
+
+    _onSessionUpdated() {
+        const locked = Main.sessionMode.isLocked;
+
+        for (const dialog of this._open)
+            dialog.visible = !locked;
+
+        if (locked)
+            return;
+
+        for (const {create, abandon} of this._deferred.splice(0))
+            this._show(create, abandon);
     }
 
     // The extension is going away, so nothing is left to act on an answer: the
@@ -473,6 +505,10 @@ export const GPasteShellPrompt = GObject.registerClass({
         // window on screen for an extension that is already gone, still able
         // to rewrite the history on disk.
         this._shutDown = true;
+        Main.sessionMode.disconnectObject(this);
+
+        for (const {abandon} of this._deferred.splice(0))
+            abandon();
 
         for (const dialog of [...this._open])
             dialog.close();
@@ -482,34 +518,24 @@ export const GPasteShellPrompt = GObject.registerClass({
         if (this._shutDown)
             request.dismiss();
         else
-            this._show(new PassphraseDialog(request), request);
+            this._show(() => new PassphraseDialog(request), () => request.dismiss());
     }
 
     vfunc_migration(request) {
         if (this._shutDown)
             request.dismiss();
         else
-            this._show(new MigrationDialog(request), request);
+            this._show(() => new MigrationDialog(request), () => request.dismiss());
     }
 
-    // There is nothing to dismiss here, so every way of not showing the dialog
-    // ends in the log rather than in an unanswered request: the report still
-    // has to reach someone.
+    // There is nothing to dismiss here, so a report never shown ends in the
+    // log rather than nowhere: it still has to reach someone.
     vfunc_report(title, message) {
-        if (this._shutDown) {
-            console.error(`GPaste: ${title}: ${message}`);
-            return;
-        }
+        const log = () => console.error(`GPaste: ${title}: ${message}`);
 
-        const dialog = new ReportDialog(title, message);
-
-        this._open.add(dialog);
-        dialog.connect('destroy', () => this._open.delete(dialog));
-
-        if (dialog.open())
-            return;
-
-        console.error(`GPaste: ${title}: ${message}`);
-        dialog.destroy();
+        if (this._shutDown)
+            log();
+        else
+            this._show(() => new ReportDialog(title, message), log);
     }
 });
