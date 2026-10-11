@@ -393,6 +393,8 @@ struct _TestMigrationPrompt
     const gchar * const *passphrases;
     guint                passphrase_asks;
     gchar               *passphrase_error;
+    /* Whether the last passphrase was asked for twice. */
+    gboolean             confirmed;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -420,6 +422,7 @@ test_migration_prompt_passphrase (GPastePrompt        *prompt,
     const gchar *passphrase = (self->passphrases) ? self->passphrases[self->passphrase_asks] : self->passphrase;
 
     ++self->passphrase_asks;
+    self->confirmed = g_paste_prompt_request_get_confirm (request);
     g_set_str (&self->passphrase_error, g_paste_prompt_request_get_error_message (request));
     g_paste_prompt_request_reply_passphrase (request, passphrase, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 }
@@ -1371,6 +1374,11 @@ test_verification_waits_for_busy_database (void)
     GThread *closer = hold_busy (path);
 
     g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "wrong passphrase"));
+    release_busy (closer);
+
+    /* And so is asking whether it holds anything to verify against. */
+    closer = hold_busy (path);
+    g_assert_true (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings));
     release_busy (closer);
 }
 
@@ -2427,6 +2435,150 @@ test_rekey_settled_while_busy (void)
     g_assert_false (has_rekey_leftovers (name));
 }
 
+/* Asked to unlock a history there is nothing to unlock in -- a plain backend,
+ * or a passphrase already set -- the unlock completes at once and asks nothing:
+ * whatever were typed would be accepted, with nothing encrypted to refute it,
+ * and remembered in the keyring. */
+static void
+test_decryption_nothing_to_unlock (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+    prompt->passphrase = "anything";
+
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_autoptr (GAsyncResult) result = NULL;
+        g_autoptr (GError) error = NULL;
+
+        g_paste_settings_set_storage_backend (settings, (i) ? G_PASTE_STORAGE_ENCRYPTED_FILE : G_PASTE_STORAGE_FILE);
+        g_paste_storage_backend_set_passphrase ((i) ? "set" : NULL);
+        g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_assert_true (g_paste_storage_decryption_finish (result, &error));
+        g_assert_no_error (error);
+    }
+
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+    g_assert_cmpstr (g_paste_storage_backend_get_passphrase (), ==, "set");
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* An encrypted store holding nothing to check a passphrase against -- only the
+ * placeholder a first read leaves -- has it asked for twice, as a new one is:
+ * whatever is typed keys every history written from then on. One holding a
+ * history has it asked for once. */
+static void
+test_decryption_confirms_unverifiable (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xmls");
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_true (g_file_set_contents (path, "", 0, NULL));
+    prompt->passphrase = "typed once";
+
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_autoptr (GAsyncResult) result = NULL;
+        g_autoptr (GError) error = NULL;
+
+        if (i)
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "typed once");
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_paste_storage_backend_set_passphrase (NULL);
+        }
+
+        g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_assert_true (g_paste_storage_decryption_finish (result, &error));
+        g_assert_no_error (error);
+        g_assert_cmpuint (prompt->passphrase_asks, ==, i + 1);
+        g_assert_cmpint (prompt->confirmed, ==, !i);
+    }
+
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* Only what a wrong passphrase is refused over makes a store verifiable: a
+ * file that is no stream refutes nothing, nor does one cut short in its first
+ * frame, nor an encrypted database emptied -- its key check stays, but an open
+ * keys an empty one afresh for whatever it is given. Asked once there, a typo
+ * would key every history written from then on. */
+static void
+test_verifiable_needs_refutable (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *source = g_paste_util_get_history_file_path ("source", "xmls");
+    g_autofree gchar *foreign = g_paste_util_get_history_file_path ("foreign", "xmls");
+    g_autofree gchar *truncated = g_paste_util_get_history_file_path ("truncated", "xmls");
+    g_autoptr (GPasteStorageBackend) file_backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) none = NULL;
+    g_autofree gchar *stream = NULL;
+    gsize stream_length;
+
+    g_paste_storage_backend_write_history (file_backend, "source", none);
+    g_assert_true (g_file_get_contents (source, &stream, &stream_length, NULL));
+    g_assert_cmpint (g_unlink (source), ==, 0);
+
+    /* The length of a first frame where a stream has it, under another magic. */
+    g_autofree gchar *impostor = g_memdup2 (stream, stream_length);
+
+    memcpy (impostor, "NOTGPST1", 8);
+    g_assert_true (g_file_set_contents (foreign, impostor, stream_length, NULL));
+    g_assert_true (g_file_set_contents (truncated, stream, stream_length - 1, NULL));
+    g_assert_false (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_FILE, settings));
+
+    g_paste_storage_backend_write_history (file_backend, "emptied", none);
+    g_assert_true (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_FILE, settings));
+
+#ifdef G_PASTE_ENABLE_SQLITE
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+        g_paste_storage_backend_write_history (backend, "emptied", items);
+        g_assert_true (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings));
+        g_paste_storage_backend_clear_history (backend, "emptied", NULL);
+    }
+    g_assert_false (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings));
+#endif
+
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* Nor is a passphrase asked for to change the one of a store this build cannot
+ * open: it verifies none, so the unlock would take whatever is typed. */
+static void
+test_rekey_unopenable (void)
+{
+    if (!kind_hidable ())
+        return;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    hidden_kind = G_PASTE_STORAGE_ENCRYPTED_FILE;
+    prompt->passphrase = "anything";
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    hidden_kind = -1;
+
+    g_assert_false (g_paste_storage_rekey_finish (result, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+}
+
 /* What a change of passphrase left is settled only while nothing else can be
  * writing: with another process holding the storage lock -- a daemon handing
  * over, perhaps still re-keying -- it is left for a start that can take it. */
@@ -2646,6 +2798,10 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/settled-under-lock", test_rekey_settled_under_lock);
     g_test_add_func ("/storage/rekey/settled-while-busy", test_rekey_settled_while_busy);
     g_test_add_func ("/storage/rekey/busy", test_rekey_busy);
+    g_test_add_func ("/storage/decryption/nothing-to-unlock", test_decryption_nothing_to_unlock);
+    g_test_add_func ("/storage/decryption/confirms-unverifiable", test_decryption_confirms_unverifiable);
+    g_test_add_func ("/storage/decryption/verifiable-needs-refutable", test_verifiable_needs_refutable);
+    g_test_add_func ("/storage/rekey/unopenable", test_rekey_unopenable);
     g_test_add_func ("/storage/rekey/settles-valid-names", test_rekey_settles_valid_names);
     g_test_add_func ("/storage/rekey/after-leftovers", test_rekey_after_leftovers);
     g_test_add_func ("/storage/rekey/unlistable-images", test_rekey_unlistable_images);

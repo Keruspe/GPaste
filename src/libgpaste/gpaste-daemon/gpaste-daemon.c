@@ -7,6 +7,7 @@
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-keybinder.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-prompt.h>
 #include <gpaste-daemon/gpaste-screensaver-client.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
@@ -418,14 +419,21 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
  * over the bus: it is typed into the host's prompt.
  *
  * Refused outright when there is no passphrase to change, so a host never stops
- * recording and raises a dialog only to be told there was nothing to do. */
+ * recording and raises a dialog only to be told there was nothing to do -- and
+ * for a store this build cannot open, whose re-key would be refused after the
+ * host had flushed and reloaded around it. */
 static void
 g_paste_daemon_change_passphrase (GPasteDaemon *self,
                                   GError      **error)
 {
-    G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (self->settings)),
+    GPasteStorage storage = g_paste_settings_get_storage_backend (self->settings);
+
+    G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (storage),
                          G_PASTE_ERROR_NOT_ENCRYPTED,
                          "The history is not encrypted; there is no passphrase to change.");
+    G_PASTE_DBUS_ASSERT (g_paste_prompt_storage_is_offered (storage),
+                         G_PASTE_ERROR_FAILED,
+                         "This build cannot open the history to change its passphrase.");
 
     g_signal_emit (self,
                    signals[CHANGE_PASSPHRASE],

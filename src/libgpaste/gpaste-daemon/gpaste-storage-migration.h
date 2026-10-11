@@ -55,8 +55,9 @@ gboolean g_paste_storage_migration_finish (GAsyncResult        *result,
 
 /* Unlock an already-encrypted history through a passphrase prompt. Only
  * meaningful after g_paste_storage_decryption_needed() returns %TRUE (which also
- * applies a usable keyring passphrase); completes immediately when there is
- * nothing to do. */
+ * applies a usable keyring passphrase); completes immediately, asking nothing,
+ * when the backend is not an encrypted one this build opens or a passphrase is
+ * already set. */
 void     g_paste_storage_decryption_async  (GPastePrompt        *prompt,
                                             GPasteSettings      *settings,
                                             GAsyncReadyCallback  callback,

@@ -248,6 +248,47 @@ test_reexecute_in_process (Fixture      *fixture,
     g_assert_cmpuint (expiries, ==, 0);
 }
 
+/* An encrypted flavour whose passphrase a change is asked of: one this build
+ * opens when @offered, one it lacks otherwise -- G_PASTE_STORAGE_NOOP when
+ * there is none of that sort. */
+static GPasteStorage
+encrypted_flavour (gboolean offered)
+{
+    const GPasteStorage flavours[] = { G_PASTE_STORAGE_ENCRYPTED_FILE, G_PASTE_STORAGE_ENCRYPTED_SQLITE };
+
+    for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
+    {
+        if (g_paste_prompt_storage_is_offered (flavours[i]) == offered)
+            return flavours[i];
+    }
+
+    return G_PASTE_STORAGE_NOOP;
+}
+
+/* A store this build cannot open has no passphrase it could change: refused,
+ * the host never asked to flush and reload around a re-key it would refuse. */
+static void
+test_change_passphrase_unopenable (Fixture      *fixture,
+                                   gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteStorage storage = encrypted_flavour (FALSE);
+
+    if (storage == G_PASTE_STORAGE_NOOP)
+    {
+        g_test_skip ("This build opens every encrypted storage");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    guint asked = 0;
+
+    g_paste_settings_set_storage_backend (fixture->settings, storage);
+    g_signal_connect_swapped (fixture->daemon, "change-passphrase", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
+    g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_cmpuint (asked, ==, 0);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -260,6 +301,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
+    g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
 
     return g_paste_test_env_run ();
 }

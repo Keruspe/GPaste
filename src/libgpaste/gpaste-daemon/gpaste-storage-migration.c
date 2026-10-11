@@ -757,6 +757,8 @@ typedef struct
     GPastePrompt   *prompt;
     GPasteSettings *settings;
     GPasteStorage   storage_kind; /* the encrypted flavour being unlocked */
+    /* Whether the passphrase is asked twice: see unlock_prompt (). */
+    gboolean        confirm;
     UnlockDoneFunc  done;
     gpointer        user_data;
 } UnlockPrompt;
@@ -788,7 +790,7 @@ on_unlock_reply (GObject      *source,
     {
         /* Carry the switch's state into the retry: it is the same question, and
          * re-deriving it from the keyring would quietly undo the answer. */
-        g_paste_prompt_passphrase_async (prompt->prompt, FALSE,
+        g_paste_prompt_passphrase_async (prompt->prompt, prompt->confirm,
                                          _("Wrong passphrase, please try again"),
                                          remember, on_unlock_reply, prompt);
         return;
@@ -834,10 +836,14 @@ unlock_prompt (GPastePrompt   *ui,
     prompt->prompt = g_object_ref (ui);
     prompt->settings = g_object_ref (settings);
     prompt->storage_kind = storage_kind;
+    /* A store holding nothing to check a passphrase against takes whatever is
+     * typed, which then keys every history written: a new key, asked for twice
+     * as the migration and the re-key ask for one. */
+    prompt->confirm = !g_paste_storage_passphrase_verifiable (storage_kind, settings);
     prompt->done = done;
     prompt->user_data = user_data;
 
-    g_paste_prompt_passphrase_async (ui, FALSE, NULL, G_PASTE_STORAGE_REMEMBER_UNCHANGED,
+    g_paste_prompt_passphrase_async (ui, prompt->confirm, NULL, G_PASTE_STORAGE_REMEMBER_UNCHANGED,
                                      on_unlock_reply, prompt);
 }
 
@@ -1138,6 +1144,22 @@ g_paste_storage_is_busy (void)
     return g_paste_storage_workers > 0;
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Whether an encrypted history this process holds no passphrase for needs
+ * unlocking, as both g_paste_storage_decryption_needed () and
+ * g_paste_storage_decryption_async () ask, the first applying the keyring
+ * besides: only in a build that can open it, one that cannot keeping nothing
+ * at all instead and verifying no passphrase -- every one would be accepted,
+ * then used for nothing. */
+static gboolean
+decryption_pending (GPasteStorage storage_kind)
+{
+    return g_paste_storage_is_encrypted (storage_kind) &&
+           g_paste_prompt_storage_is_offered (storage_kind) &&
+           !g_paste_storage_backend_get_passphrase ();
+}
+#endif
+
 /**
  * g_paste_storage_decryption_needed:
  * @settings: a #GPasteSettings instance
@@ -1182,13 +1204,7 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
      * every read until then. */
     g_paste_file_backend_settle_rekeys ();
 
-    /* Only an encrypted history that is not already unlocked needs decrypting,
-     * and only in a build that can open it: one that cannot keeps nothing at
-     * all instead, and could verify no passphrase -- every one would be
-     * accepted, then used for nothing. */
-    if (!g_paste_storage_is_encrypted (storage_kind) ||
-        !g_paste_prompt_storage_is_offered (storage_kind) ||
-        g_paste_storage_backend_get_passphrase ())
+    if (!decryption_pending (storage_kind))
         return FALSE;
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
@@ -1238,20 +1254,28 @@ g_paste_storage_decryption_async (GPastePrompt       *prompt,
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
-    GTask *task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+    g_autoptr (GTask) task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
 
     g_task_set_source_tag (task, g_paste_storage_decryption_async);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* The task is the callback's user_data, and on_decryption_settled owns it. */
-    unlock_prompt (prompt, settings, g_paste_settings_get_storage_backend (settings),
-                   on_decryption_settled, task);
+    GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
+
+    /* Nothing to unlock otherwise, the keyring aside. Prompting then would
+     * accept whatever is typed -- a flavour holding nothing encrypted refutes
+     * nothing -- and remember it in the keyring for nothing. */
+    if (decryption_pending (storage_kind))
+    {
+        /* The task is the callback's user_data,
+         * and on_decryption_settled owns it. */
+        unlock_prompt (prompt, settings, storage_kind, on_decryption_settled, g_steal_pointer (&task));
+        return;
+    }
 #else
     (void) settings;
+#endif
 
     g_task_return_boolean (task, TRUE);
-    g_object_unref (task);
-#endif
 }
 
 /**
@@ -1617,6 +1641,16 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
 
+    /* As in decryption_pending (): a store this build cannot open verifies no
+     * passphrase, the one that would unlock it included. */
+    if (g_paste_storage_is_encrypted (storage_kind) && !g_paste_prompt_storage_is_offered (storage_kind))
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                 "This build cannot open the history to change its passphrase");
+        g_object_unref (task);
+        return;
+    }
+
     if (g_paste_storage_is_encrypted (storage_kind))
     {
         RekeyData *self = g_new0 (RekeyData, 1);
@@ -1661,8 +1695,9 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
  * Collect the outcome of g_paste_storage_rekey_async().
  *
  * Unlike the other two concerns this one can fail on its own account: a re-key
- * that could not rewrite the histories on disk reports %G_PASTE_ERROR, and so
- * does handing in the result of another operation. A failing #GPastePrompt
+ * that could not rewrite the histories on disk reports %G_PASTE_ERROR, as does
+ * handing in the result of another operation, and histories that could not
+ * even be listed report the listing's own %G_IO_ERROR. A failing #GPastePrompt
  * implementation reports in whichever domain it uses (%G_PASTE_ERROR,
  * %G_IO_ERROR, %G_DBUS_ERROR, ...).
  *

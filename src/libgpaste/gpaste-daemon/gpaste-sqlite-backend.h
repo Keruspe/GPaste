@@ -15,6 +15,8 @@ G_PASTE_FINAL_TYPE (SqliteBackend, sqlite_backend, SQLITE_BACKEND, GPasteStorage
 GPasteStorageBackend *g_paste_sqlite_backend_new_encrypted (GPasteSettings *settings,
                                                             const gchar    *passphrase);
 
+gboolean g_paste_sqlite_backend_database_has_items (const gchar *path);
+
 #endif
 
 G_END_DECLS

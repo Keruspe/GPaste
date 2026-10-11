@@ -176,6 +176,8 @@ const gchar *g_paste_storage_backend_get_passphrase (void);
 gboolean g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
                                                  GPasteSettings *settings,
                                                  const gchar    *passphrase);
+gboolean g_paste_storage_passphrase_verifiable  (GPasteStorage   storage_kind,
+                                                 GPasteSettings *settings);
 
 gboolean g_paste_storage_backend_refutes_passphrase (GPasteStorageBackend *self,
                                                      const gchar          *name);

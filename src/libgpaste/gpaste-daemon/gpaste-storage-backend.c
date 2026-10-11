@@ -27,6 +27,7 @@
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 #include <gpaste-daemon/gpaste-passphrase.h>
+#include <gpaste-daemon/gpaste-secret-stream-converter.h>
 
 /* The daemon's single master passphrase for the encrypted backend, obtained
  * once at startup (prompt or keyring). Kept process-wide in gcr secure memory
@@ -543,15 +544,15 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
         g_warning ("Could not delete the images of \"%s\": %s", name, images_error->message);
 }
 
-/* The default list_histories: enumerate the history dir for files of this
- * backend's flavour (its get_extension suffix), so e.g. plain ".xml" and
+/* The default list_histories: enumerate the history dir for files of a
+ * flavour, the ones named with its @extension, so e.g. plain ".xml" and
  * encrypted ".xmls" histories never get mixed up. */
 static GStrv
-_g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend *self,
-                                                      GError              **error)
+_g_paste_storage_list_histories (const gchar *extension,
+                                 GError     **error)
 {
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_backend_get_extension (self), NULL);
+    g_autofree gchar *suffix = g_strconcat (".", extension, NULL);
     gsize suffix_len = strlen (suffix);
     /* A fresh profile has no history dir and lists nothing, which is an empty
      * list rather than a failure. A truncated listing is a failure and comes
@@ -612,7 +613,7 @@ g_paste_storage_backend_list_histories (GPasteStorageBackend *self,
     if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories)
         return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories (self, error);
 
-    return _g_paste_storage_backend_list_histories_by_extension (self, error);
+    return _g_paste_storage_list_histories (g_paste_storage_backend_get_extension (self), error);
 }
 
 /**
@@ -1003,6 +1004,62 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
     }
 
     return TRUE;
+}
+
+/**
+ * g_paste_storage_passphrase_verifiable:
+ * @storage_kind: an encrypted #GPasteStorage flavour
+ * @settings: a #GPasteSettings instance
+ *
+ * Whether any history of @storage_kind holds what a wrong passphrase is refused
+ * over: an encrypted stream past its header, or a database holding an item.
+ * With none -- nothing stored yet, the placeholder a first read leaves, a
+ * database emptied, which an open keys afresh for whatever it is given, a
+ * foreign file -- g_paste_storage_passphrase_can_decrypt() accepts every
+ * passphrase, and the one given keys everything written from then on.
+ *
+ * Returns: whether a wrong passphrase would be refused
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_passphrase_verifiable (GPasteStorage   storage_kind,
+                                       GPasteSettings *settings)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
+
+    /* Asked of the files, by name: no key could be checked without the
+     * passphrase this is about. */
+    gboolean (*refutable) (const gchar *path);
+
+    switch (storage_kind)
+    {
+    case G_PASTE_STORAGE_ENCRYPTED_FILE:
+        refutable = g_paste_secret_stream_file_has_frame;
+        break;
+#ifdef G_PASTE_ENABLE_SQLITE
+    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
+        refutable = g_paste_sqlite_backend_database_has_items;
+        break;
+#endif
+    default:
+        return FALSE;
+    }
+
+    const gchar *extension = g_paste_storage_get_extension (storage_kind);
+    g_auto (GStrv) names = _g_paste_storage_list_histories (extension, NULL);
+
+    /* A store that cannot be listed refuses every passphrase (can_decrypt ()). */
+    if (!names)
+        return TRUE;
+
+    for (GStrv name = names; *name; ++name)
+    {
+        g_autofree gchar *path = g_paste_util_get_history_file_path (*name, extension);
+
+        if (refutable (path))
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 /**

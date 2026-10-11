@@ -2024,6 +2024,32 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
     return derived;
 }
 
+/**
+ * g_paste_sqlite_backend_database_has_items:
+ * @path: the database to look into
+ *
+ * Whether the database at @path holds an item, which is what its key check
+ * refutes a passphrase over: an empty one is keyed afresh by whatever opens it.
+ * Read-only, as verifying has to be, and with no key: nothing but the count is
+ * asked. A database that cannot be read holds nothing to go by.
+ *
+ * Returns: whether a wrong passphrase would be refused over the database
+ */
+gboolean
+g_paste_sqlite_backend_database_has_items (const gchar *path)
+{
+    g_autoptr (sqlite3) db = NULL;
+
+    if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+        return FALSE;
+
+    /* As check_passphrase () does, another connection busy with it is waited
+     * out rather than read as an empty database. */
+    sqlite3_busy_timeout (db, 5000);
+
+    return g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
+}
+
 /* See the vfunc: only encrypted data this backend's key does not open refutes
  * the passphrase. No crypto parameters (a corrupt or foreign file) and an empty
  * history both say nothing -- the latter gets re-keyed on open instead of

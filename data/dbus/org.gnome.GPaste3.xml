@@ -129,7 +129,12 @@
       <arg type="s" direction="in" name="backup"/>
     </method>
 
-    <!-- Re-encrypt the history with a new passphrase, prompted for by the daemon -->
+    <!--
+      Re-encrypt the history with a new passphrase, prompted for by the daemon.
+
+      A history that is not encrypted is .Error.NotEncrypted, and one in an
+      encrypted storage this build cannot open .Error.Failed.
+    -->
     <method name="ChangePassphrase"/>
 
     <!-- Delete a whole history -->

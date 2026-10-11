@@ -3,6 +3,8 @@
 
 #include <gpaste-daemon/gpaste-secret-stream-converter.h>
 
+#include <glib/gstdio.h>
+
 #define GCR_API_SUBJECT_TO_CHANGE
 #include <gcr/gcr.h>
 
@@ -429,6 +431,36 @@ g_paste_secret_stream_converter_iface_init (GConverterIface *iface)
 {
     iface->convert = g_paste_secret_stream_converter_convert;
     iface->reset = g_paste_secret_stream_converter_reset;
+}
+
+/**
+ * g_paste_secret_stream_file_has_frame:
+ * @path: the file to look into
+ *
+ * Whether the file at @path holds a stream's header and the whole first frame
+ * past it: what a key is told wrong by, only the stream's own key
+ * authenticating that frame. An empty placeholder, a foreign file and one cut
+ * short in its first frame hold none, and refute no passphrase.
+ *
+ * Returns: whether a wrong passphrase would be refused over the file
+ */
+gboolean
+g_paste_secret_stream_file_has_frame (const gchar *path)
+{
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autoptr (GFileInputStream) stream = g_file_read (file, NULL, NULL);
+    guchar head[STREAM_HEADER_LEN + 4];
+    gsize length = 0;
+    GStatBuf stat_buf;
+
+    if (!stream || !g_input_stream_read_all (G_INPUT_STREAM (stream), head, sizeof (head), &length, NULL, NULL) ||
+        length < sizeof (head) || memcmp (head, G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN) ||
+        g_stat (path, &stat_buf))
+        return FALSE;
+
+    guint32 clen = read_u32_le (head + STREAM_HEADER_LEN);
+
+    return clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) stat_buf.st_size >= sizeof (head) + clen;
 }
 
 static void
