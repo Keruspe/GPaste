@@ -790,6 +790,37 @@ test_timeout_parsing (void)
     g_assert_cmpuint (ctx.timeout, ==, 30);
 }
 
+/* The help goes to stdout when asked for, and to stderr when the command line
+ * was wrong, where a command substitution cannot take it for the output. */
+static void
+test_help_stream (gconstpointer user_data)
+{
+    gboolean asked = GPOINTER_TO_INT (user_data);
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        if (asked)
+        {
+            g_test_trap_assert_stdout ("*Usage*");
+            g_test_trap_assert_stderr ("");
+        }
+        else
+        {
+            g_test_trap_assert_stdout ("");
+            g_test_trap_assert_stderr ("*Usage*");
+        }
+        return;
+    }
+
+    if (asked)
+        g_assert_cmpint (run_client ((const gchar *[]) { "help", NULL }), ==, EXIT_SUCCESS);
+    else
+        g_assert_cmpint (run_client ((const gchar *[]) { "get", NULL }), ==, EXIT_FAILURE);
+    fflush (stdout);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -980,6 +1011,8 @@ main (int argc, char **argv)
     g_test_add_func ("/client/pipe/nothing-piped", test_nothing_piped);
     g_test_add_func ("/client/failure-reported", test_failure_reported);
     g_test_add_func ("/client/options/timeout", test_timeout_parsing);
+    g_test_add_data_func ("/client/help/asked", GINT_TO_POINTER (TRUE), test_help_stream);
+    g_test_add_data_func ("/client/help/misuse", GINT_TO_POINTER (FALSE), test_help_stream);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);

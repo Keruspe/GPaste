@@ -262,7 +262,7 @@ spawn (const gchar *app)
     return EXIT_SUCCESS;
 }
 
-static void show_help (void);
+static void show_help (FILE *out);
 
 static void
 show_version (void)
@@ -278,7 +278,7 @@ static gint
 g_paste_help (Context *ctx   G_GNUC_UNUSED,
               GError **error G_GNUC_UNUSED)
 {
-    show_help ();
+    show_help (stdout);
 
     return EXIT_SUCCESS;
 }
@@ -965,12 +965,14 @@ command_matches_line (const Command *command,
     return !(argc > 0 && command->verb) || command_matches (command, verb);
 }
 
+/* On @out: stdout when asked for, stderr when the command line was wrong, so
+ * that a command substitution never takes the help for the command's output. */
 static void
-show_help (void)
+show_help (FILE *out)
 {
     const char *progname = g_get_prgname ();
 
-    printf (_("Usage:\n"));
+    fprintf (out, _("Usage:\n"));
 
     for (guint64 i = 0; i < G_N_ELEMENTS (commands); ++i)
     {
@@ -982,46 +984,46 @@ show_help (void)
         /* The history is what running with no verb at all does, so it is shown
          * the way it is actually reached. */
         if (g_paste_str_equal (c->verb, "history"))
-            printf ("  %s [%s]: %s\n", progname, c->verb, _(c->doc));
+            fprintf (out, "  %s [%s]: %s\n", progname, c->verb, _(c->doc));
         else if (c->args)
-            printf ("  %s %s %s: %s\n", progname, c->verb, _(c->args), _(c->doc));
+            fprintf (out, "  %s %s %s: %s\n", progname, c->verb, _(c->args), _(c->doc));
         else
-            printf ("  %s %s: %s\n", progname, c->verb, _(c->doc));
+            fprintf (out, "  %s %s: %s\n", progname, c->verb, _(c->doc));
     }
 
     /* Not a verb: the item comes in on stdin. */
     /* Translators: the metavariable standing for any command the user pipes into GPaste. */
-    printf ("  %s | %s: %s\n", _("<command>"), progname, _("copy the output of <command> to the clipboard"));
+    fprintf (out, "  %s | %s: %s\n", _("<command>"), progname, _("copy the output of <command> to the clipboard"));
 
-    printf ("\n");
-    printf (_("Convenience options:"));
-    printf ("\n");
+    fprintf (out, "\n");
+    fprintf (out, _("Convenience options:"));
+    fprintf (out, "\n");
     /* Translators: help for --favourites */
-    printf ("  --favourites: %s\n", _("only display the pinned items"));
+    fprintf (out, "  --favourites: %s\n", _("only display the pinned items"));
     /* Translators: help for --timeout */
-    printf ("  --timeout: %s\n", _("how long a password stays on the clipboard, in seconds; 0 for as long as anything else"));
+    fprintf (out, "  --timeout: %s\n", _("how long a password stays on the clipboard, in seconds; 0 for as long as anything else"));
     /* Translators: help for --use-index */
-    printf ("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
+    fprintf (out, "  --use-index: %s\n", _("use the index of the item instead of its UUID"));
 
-    printf ("\n");
-    printf (_("Display options:"));
-    printf ("\n");
+    fprintf (out, "\n");
+    fprintf (out, _("Display options:"));
+    fprintf (out, "\n");
     /* Translators: help for --oneline */
-    printf ("  --oneline: %s\n", _("display each item on only one line"));
+    fprintf (out, "  --oneline: %s\n", _("display each item on only one line"));
     /* Translators: help for --raw */
-    printf ("  --raw: %s\n", _("display each item raw (without line numbers)"));
+    fprintf (out, "  --raw: %s\n", _("display each item raw (without line numbers)"));
     /* Translators: help for --reverse */
-    printf ("  --reverse: %s\n", _("display the items in reverse order"));
+    fprintf (out, "  --reverse: %s\n", _("display the items in reverse order"));
     /* Translators: help for --zero */
-    printf ("  --zero: %s\n", _("use a NUL character instead of a new line between each item"));
+    fprintf (out, "  --zero: %s\n", _("use a NUL character instead of a new line between each item"));
 
-    printf ("\n");
-    printf (_("Merge options:"));
-    printf ("\n");
+    fprintf (out, "\n");
+    fprintf (out, _("Merge options:"));
+    fprintf (out, "\n");
     /* Translators: help for --decoration <string> */
-    printf ("  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
+    fprintf (out, "  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
     /* Translators: help for --separator <string> */
-    printf ("  --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
+    fprintf (out, "  --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
 }
 
 /* Whether this command line can reach a command that reads a pipe, tried with
@@ -1287,7 +1289,7 @@ main (gint argc, gchar *argv[])
          * shell, and not a word printed. */
         if (status < 0)
         {
-            show_help ();
+            show_help (stderr);
             status = EXIT_FAILURE;
         }
 
@@ -1309,7 +1311,7 @@ main (gint argc, gchar *argv[])
     }
     else
     {
-        show_help ();
+        show_help (stderr);
         status = EXIT_FAILURE;
     }
 
