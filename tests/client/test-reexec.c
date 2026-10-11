@@ -734,6 +734,43 @@ test_pipe_refusals (void)
     g_assert_cmpstr (data, ==, "piped");
 }
 
+/* A command taking its last argument from a pipe that brought nothing is not
+ * the command line's: the help answers it, and no client is built to start a
+ * daemon for it. */
+static void
+test_nothing_piped (void)
+{
+    guint checked = 0;
+
+    clients_created = 0;
+    for (guint64 i = 0; i < G_N_ELEMENTS (commands); ++i)
+    {
+        const Command *c = &commands[i];
+
+        /* The verb-less line falls to the listing, a daemon's to answer. */
+        if (!c->verb || !c->reads_pipe)
+            continue;
+
+        /* The fewest arguments it takes, the pipe to bring the last. */
+        gint argc = c->argc;
+        g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+        for (gint j = 1; j < argc; ++j)
+            g_strv_builder_add (builder, "name");
+
+        g_auto (GStrv) args = g_strv_builder_end (builder);
+        Context ctx = { .argc = argc - 1, .args = (const gchar **) args };
+        g_autoptr (GError) error = NULL;
+
+        g_assert_cmpint (g_paste_dispatch (argc, c->verb, &ctx, &error), ==, -1);
+        g_assert_no_error (error);
+        g_assert_null (ctx.client);
+        ++checked;
+    }
+    g_assert_cmpuint (checked, >=, 3);
+    g_assert_cmpuint (clients_created, ==, 0);
+}
+
 /* A piped password loses the newline ending the line that printed it, and that
  * one alone; one given as an argument is taken as it is. */
 static void
@@ -884,6 +921,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/pipe/refusals", test_pipe_refusals);
     g_test_add_func ("/client/pipe/password", test_piped_password);
     g_test_add_func ("/client/password-timeout", test_password_timeout);
+    g_test_add_func ("/client/pipe/nothing-piped", test_nothing_piped);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);

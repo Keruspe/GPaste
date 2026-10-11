@@ -585,10 +585,6 @@ g_paste_add (Context *ctx,
              GError **error)
 {
     const gchar *data = (ctx->argc > 0) ? ctx->args[0] : ctx->pipe_data;
-
-    if (!data)
-        return -1;
-
     g_autofree gchar *uuid = g_paste_client_add_text_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
@@ -615,9 +611,6 @@ g_paste_add_password (Context *ctx,
                       GError **error)
 {
     const gchar *data = (ctx->argc > 1) ? ctx->args[1] : ctx->pipe_data;
-
-    if (!data)
-        return EXIT_FAILURE;
 
     /* A piped password stands in for the argument, which has no newline at its
      * end: the one ending the line the command printing it wrote is not part of
@@ -710,10 +703,6 @@ g_paste_replace (Context *ctx,
                  GError **error)
 {
     const gchar *data = (ctx->argc > 1) ? ctx->args[1] : ctx->pipe_data;
-
-    if (!data)
-        return EXIT_FAILURE;
-
     g_autofree gchar *uuid = g_paste_client_replace_sync (ctx->client, ctx->args[0], data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
@@ -1192,6 +1181,14 @@ g_paste_dispatch (gint         argc,
         if (command_matches_line (c, argc, verb))
         {
             g_autoptr (GArray) indexes = NULL;
+
+            /* A command reading its last argument from a pipe that brought
+             * nothing has nothing to send: not this row, then -- the listing
+             * for a line with no verb, the help for any other -- and decided
+             * before a client is built, which would have D-Bus start a daemon
+             * for nothing. */
+            if (command_reads_stdin (c, argc) && !ctx->pipe_data)
+                continue;
 
             /* Only a command that talks to the daemon has its strings checked:
              * the launchers and the flag actions send nothing, and --help with
