@@ -1,4 +1,10 @@
 test(
+  'apostrophes',
+  find_program('test-apostrophes.py'),
+  suite: 'gpaste',
+)
+
+test(
   'potfiles',
   find_program('test-potfiles.py'),
   suite: 'gpaste',
