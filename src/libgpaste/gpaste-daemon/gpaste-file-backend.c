@@ -101,15 +101,24 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
      * early -- forging the ones that follow, or breaking the document outright
      * so the whole history stopped being readable. g_markup_escape_text() is
      * the attribute's escaping, and the entities it writes are the ones
-     * GMarkup gives back on read. */
-    g_autofree gchar *name = g_markup_escape_text (g_paste_password_item_get_name (item), -1);
+     * GMarkup gives back on read -- bar the tab, newline and carriage return it
+     * leaves as they are, which a read normalizes to spaces, as XML has it: a
+     * name holding one would come back another, or the same as another
+     * password's. Those go as character references, which a read keeps. */
+    g_autofree gchar *escaped = g_markup_escape_text (g_paste_password_item_get_name (item), -1);
+    g_autoptr (GString) name = g_string_new_take (g_steal_pointer (&escaped));
+
+    g_string_replace (name, "\t", "&#9;", 0);
+    g_string_replace (name, "\n", "&#10;", 0);
+    g_string_replace (name, "\r", "&#13;", 0);
+
     guint timeout = g_paste_password_item_get_timeout (item);
     /* Written only when set, as the favourite attribute is: a password with no
      * timeout, which is every one an older GPaste wrote, reads back the same. */
     g_autofree gchar *timeout_attr = (timeout) ? g_strdup_printf ("\" timeout=\"%u", timeout) : NULL;
 
     return g_output_stream_write_all (stream, "\" name=\"", 8, NULL, NULL /* cancellable */, error) &&
-           g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error) &&
+           g_output_stream_write_all (stream, name->str, name->len, NULL, NULL /* cancellable */, error) &&
            (!timeout_attr || g_output_stream_write_all (stream, timeout_attr, strlen (timeout_attr), NULL, NULL /* cancellable */, error));
 }
 

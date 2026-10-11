@@ -6532,9 +6532,10 @@ test_encrypted_password_name_is_escaped (void)
 {
     const gchar *name = "encrypted-password-name";
     const gchar *secret = "s3cr3t-passw0rd";
-    /* Every character that means something in an attribute, plus the CDATA
-     * terminator the value escaping is there for. */
-    const gchar *pw_name = "a \" quote & <tag> ' and ]]> too";
+    /* Every character that means something in an attribute, the whitespace a
+     * read normalizes in one, and the CDATA terminator the value escaping is
+     * there for. */
+    const gchar *pw_name = "a \" quote & <tag> ' and ]]> too,\ta\nb\rc";
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");

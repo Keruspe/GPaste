@@ -1,6 +1,7 @@
 NEW in 51.2 (UNRELEASED)
 =============
 
+- Fix password names holding a tab or a line break changing after a restart
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 
 NEW in 51.1 (20/10/2026)
