@@ -1473,9 +1473,71 @@ g_paste_history_empty_locked (GPasteHistory *self)
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_CLEAR, NULL, NULL, FALSE);
 }
 
+/* The store has been handed over: either to a successor daemon, or -- for the
+ * in-shell one, which keeps answering the bus right through its migration --
+ * to a migration that is reading and rewriting it as we speak. Reading or
+ * writing a history behind its back would race that rewrite (and lose to it),
+ * so every synchronous operation on a store refuses rather than half-do it. */
+static gboolean
+g_paste_history_check_owned (GPasteHistory *self,
+                             const gchar   *name,
+                             GError       **error)
+{
+    if (!self->stopped)
+        return TRUE;
+
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,
+                 "The history storage is being handed over, cannot touch “%s” right now",
+                 name);
+    return FALSE;
+}
+
+/* What reads or writes a store outside the model also waits for the daemon it
+ * takes over from to be done writing it, as the first load does: until this
+ * process holds the storage lock, a write that daemon still has out for the
+ * history could land after ours and undo it. Refused rather than waited for,
+ * the main thread having no business blocking on another process. */
+static gboolean
+g_paste_history_check_store_owned (GPasteHistory *self,
+                                   const gchar   *name,
+                                   GError       **error)
+{
+    if (!g_paste_history_check_owned (self, name, error))
+        return FALSE;
+
+    if (g_paste_storage_backend_try_lock ())
+        return TRUE;
+
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,
+                 "Another GPaste daemon is still writing the history storage, cannot touch “%s” right now",
+                 name);
+    return FALSE;
+}
+
+/* What empties or deletes a store checks first that the backend in use can
+ * reach it. The "no storage" one cannot reach what another flavour keeps under
+ * @name -- an encrypted store left locked, what a migration to it kept -- and
+ * that store would bring the history back once it is used again (as in
+ * g_paste_storage_backend_delete_history ()). Refused before anything changes:
+ * the session's model, all that backend holds, can still be emptied one item
+ * at a time. */
+static gboolean
+g_paste_history_check_store_reachable (GPasteHistory *self,
+                                       const gchar   *name,
+                                       GError       **error)
+{
+    if (g_paste_storage_backend_get_kind (self->backend) != G_PASTE_STORAGE_NOOP || !g_paste_util_history_is_stored_anywhere (name))
+        return TRUE;
+
+    g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                 "“%s” is kept by a storage not in use, which this one cannot reach", name);
+    return FALSE;
+}
+
 /**
  * g_paste_history_empty:
  * @self: a #GPasteHistory instance
+ * @error: return location for a #GError, or %NULL
  *
  * Empty the #GPasteHistory, in memory and in its store
  *
@@ -1483,18 +1545,34 @@ g_paste_history_empty_locked (GPasteHistory *self)
  * abandoned, since what it read would be installed right after, and a history
  * that could not be read is written over with nothing, which is what was asked
  * for -- either way, a change recorded nowhere would have the emptied items
- * back at the next start. Only a history handed over records nothing.
+ * back at the next start.
+ *
+ * Fails with %G_IO_ERROR_BUSY, having emptied nothing, when the store has been
+ * handed over (see g_paste_history_flush()) or while a daemon this one took
+ * over from may still be writing it (see g_paste_storage_backend_try_lock());
+ * with %G_PASTE_ERROR_FAILED, having emptied nothing, when the history runs on
+ * the "no storage" backend while another flavour stores it.
+ *
+ * Returns: whether the history was emptied
  */
-G_PASTE_VISIBLE void
-g_paste_history_empty (GPasteHistory *self)
+G_PASTE_VISIBLE gboolean
+g_paste_history_empty (GPasteHistory *self,
+                       GError       **error)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
 
     G_PASTE_LOCK_HISTORY;
+
+    /* A history nobody has named has no store to
+     * reach (g_paste_history_record ()). */
+    if (self->name && (!g_paste_history_check_store_owned (self, self->name, error) || !g_paste_history_check_store_reachable (self, self->name, error)))
+        return FALSE;
 
     g_paste_history_saver_abandon_load (self->saver);
     self->unreadable = FALSE;
     g_paste_history_empty_locked (self);
+
+    return TRUE;
 }
 
 /* The name a history is about to be loaded or saved under: the one given, or
@@ -1612,25 +1690,6 @@ g_paste_history_resume (GPasteHistory *self)
     g_paste_history_saver_hold_loads (self->saver, FALSE);
 }
 
-/* The store has been handed over: either to a successor daemon, or -- for the
- * in-shell one, which keeps answering the bus right through its migration --
- * to a migration that is reading and rewriting it as we speak. Reading or
- * writing a history behind its back would race that rewrite (and lose to it),
- * so every synchronous operation on a store refuses rather than half-do it. */
-static gboolean
-g_paste_history_check_owned (GPasteHistory *self,
-                             const gchar   *name,
-                             GError       **error)
-{
-    if (!self->stopped)
-        return TRUE;
-
-    g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY,
-                 "The history storage is being handed over, cannot touch “%s” right now",
-                 name);
-    return FALSE;
-}
-
 /**
  * g_paste_history_sync:
  * @self: a #GPasteHistory instance
@@ -1647,7 +1706,9 @@ g_paste_history_check_owned (GPasteHistory *self,
  * out.
  *
  * Fails with %G_IO_ERROR_BUSY, having done nothing, when the store has been
- * handed over (see g_paste_history_flush()).
+ * handed over (see g_paste_history_flush()), or, for another history than the
+ * one the model holds, while a daemon this one took over from may still be
+ * writing it (see g_paste_storage_backend_try_lock()).
  *
  * Returns: whether @name may be read or replaced: for another history, its
  *          store being up to date; for the one the model holds, its store
@@ -1663,11 +1724,13 @@ g_paste_history_sync (GPasteHistory *self,
 
     G_PASTE_LOCK_HISTORY;
 
-    if (!g_paste_history_check_owned (self, name, error))
+    if (g_paste_str_equal (name, self->name))
+        return g_paste_history_check_owned (self, name, error);
+
+    if (!g_paste_history_check_store_owned (self, name, error))
         return FALSE;
 
-    if (!g_paste_str_equal (name, self->name))
-        g_paste_history_saver_drain_history (self->saver, name);
+    g_paste_history_saver_drain_history (self->saver, name);
 
     return TRUE;
 }
@@ -1971,26 +2034,6 @@ g_paste_history_switch (GPasteHistory *self,
     return g_paste_str_equal (g_paste_settings_get_history_name (self->settings), name);
 }
 
-/* What deletes a store checks first that the backend in use can reach it. The
- * "no storage" one cannot reach what another flavour keeps under @name -- an
- * encrypted store left locked, what a migration to it kept -- and that store
- * would bring the history back once it is used again (as in
- * g_paste_storage_backend_delete_history ()). Refused before anything changes:
- * the session's model, all that backend holds, can still be emptied one item
- * at a time. */
-static gboolean
-g_paste_history_check_store_reachable (GPasteHistory *self,
-                                       const gchar   *name,
-                                       GError       **error)
-{
-    if (g_paste_storage_backend_get_kind (self->backend) != G_PASTE_STORAGE_NOOP || !g_paste_util_history_is_stored_anywhere (name))
-        return TRUE;
-
-    g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                 "“%s” is kept by a storage not in use, which this one cannot reach", name);
-    return FALSE;
-}
-
 /**
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
@@ -2004,10 +2047,13 @@ g_paste_history_check_store_reachable (GPasteHistory *self,
  * once it is.
  *
  * Fails with %G_IO_ERROR_BUSY, having deleted nothing, when the store has been
- * handed over (see g_paste_history_flush()); with %G_PASTE_ERROR_FAILED,
- * having deleted nothing, when the history-name setting cannot be changed to
- * leave the current history; otherwise errors are whatever the storage backend
- * reports for unlinking it, in %G_IO_ERROR or %G_FILE_ERROR.
+ * handed over (see g_paste_history_flush()) or while a daemon this one took
+ * over from may still be writing it (see g_paste_storage_backend_try_lock());
+ * with %G_PASTE_ERROR_FAILED, having deleted nothing, when the history-name
+ * setting cannot be changed to leave the current history, or when the "no
+ * storage" backend is in use while another flavour stores it; otherwise errors
+ * are whatever the storage backend reports for unlinking it, in %G_IO_ERROR or
+ * %G_FILE_ERROR.
  *
  * Returns: whether the history was deleted
  */
@@ -2021,7 +2067,7 @@ g_paste_history_delete (GPasteHistory *self,
     /* A copy: leaving the current history below frees the name it was. */
     g_autofree gchar *history_name = g_strdup ((name) ? name : self->name);
 
-    if (!g_paste_history_check_owned (self, history_name, error))
+    if (!g_paste_history_check_store_owned (self, history_name, error))
         return FALSE;
 
     if (!g_paste_history_check_store_reachable (self, history_name, error))

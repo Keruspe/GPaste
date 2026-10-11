@@ -1002,10 +1002,11 @@ test_file_delete_takes_temporary (void)
 }
 
 /* With no storage in use, a backup is no copy made: refused rather than
- * answered for. So is the deletion of a history another flavour still stores
- * -- an encrypted store left locked, or what a migration kept -- which the
- * "no storage" backend cannot reach, whichever flavour that is: the store
- * stays, and so does the session's model. */
+ * answered for. So are the deletion and the emptying of a history another
+ * flavour still stores -- an encrypted store left locked, or what a migration
+ * kept -- which the "no storage" backend cannot reach, whichever flavour that
+ * is: the store stays, and so does the session's model. With none stored, the
+ * model is all there is to empty. */
 static void
 test_noop_refuses_unmade (void)
 {
@@ -1039,18 +1040,26 @@ test_noop_refuses_unmade (void)
     for (gsize i = 0; i < G_N_ELEMENTS (stored); ++i)
     {
         g_autofree gchar *kept = g_paste_util_get_history_file_path ("noop-kept", g_paste_storage_get_extension (stored[i]));
-        g_autoptr (GError) error = NULL;
+        g_autoptr (GError) delete_error = NULL;
+        g_autoptr (GError) empty_error = NULL;
 
         g_assert_true (g_file_set_contents (kept, "kept", -1, NULL));
 
-        g_paste_daemon_methods_delete_history (&methods, "noop-kept", &error);
-        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+        g_paste_daemon_methods_delete_history (&methods, "noop-kept", &delete_error);
+        g_assert_error (delete_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+        g_paste_daemon_methods_empty_history (&methods, "noop-kept", &empty_error);
+        g_assert_error (empty_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
         g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
 
         g_assert_cmpint (g_unlink (kept), ==, 0);
     }
 
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_empty_history (&methods, "noop-kept", &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 
@@ -3188,7 +3197,7 @@ test_empty (void)
     g_paste_history_add (history, g_paste_text_item_new ("b"));
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
 
-    g_paste_history_empty (history);
+    g_assert_true (g_paste_history_empty (history, NULL));
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
     g_assert_null (g_paste_history_get (history, 0));
 }
@@ -3779,7 +3788,7 @@ test_password_dropped (void)
         g_assert_true (g_paste_history_select (history, g_paste_item_get_uuid (g_paste_history_get (history, 1))));
         g_assert_cmpuint (dropped->len, ==, 1);
 
-        g_paste_history_empty (history);
+        g_assert_true (g_paste_history_empty (history, NULL));
         g_assert_cmpuint (dropped->len, ==, 2);
         g_assert_cmpstr (g_ptr_array_index (dropped, 1), ==, "emptied secret");
     }
@@ -3864,7 +3873,7 @@ test_reload_then_empty_drops_password (void)
     pump_for_ms (50);
     g_paste_history_flush (history);
     g_paste_history_reload_backend (history);
-    g_paste_history_empty (history);
+    g_assert_true (g_paste_history_empty (history, NULL));
     pump_for_ms (50);
     g_assert_cmpuint (dropped->len, ==, 1);
     g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "reloaded secret");
@@ -4683,7 +4692,7 @@ test_sqlite_incremental (void)
      * back: list_histories only enumerates the .db file on disk, whereas a read
      * would recreate it (SQLITE_OPEN_CREATE) and mask an erroneous file deletion,
      * making this assertion pass no matter what empty() did. */
-    g_paste_history_empty (history);
+    g_assert_true (g_paste_history_empty (history, NULL));
     g_paste_history_flush (history);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -5462,7 +5471,7 @@ test_sqlite_empty_unopenable (void)
 
         g_paste_history_load (history, name);
         g_assert_true (g_paste_history_is_unreadable (history));
-        g_paste_history_empty (history);
+        g_assert_true (g_paste_history_empty (history, NULL));
         g_paste_history_add (history, g_paste_text_item_new ("next"));
         g_paste_history_flush (history);
 
@@ -5971,7 +5980,7 @@ test_encrypted_sqlite_incremental (void)
     const gchar * const after_ops[] = { "a", "b", NULL };
     g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, name, after_ops, 5000));
 
-    g_paste_history_empty (history);
+    g_assert_true (g_paste_history_empty (history, NULL));
 
     const gchar * const after_empty[] = { NULL };
     g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, name, after_empty, 5000));

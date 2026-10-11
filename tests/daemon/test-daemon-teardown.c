@@ -6,7 +6,12 @@
 #include <gpaste-test-env.h>
 #include <gpaste-test-bus.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
+
+#include <fcntl.h>
+#include <glib/gstdio.h>
+#include <sys/file.h>
 
 /* The private bus has no GlobalShortcuts portal, and a daemon that cannot reach
  * it warns, which g_test makes fatal. Its constructor is never answered here,
@@ -283,6 +288,46 @@ encrypted_flavour (gboolean offered)
     return G_PASTE_STORAGE_NOOP;
 }
 
+/* A change of passphrase rewrites every store, which a daemon this one took
+ * over from may still be writing: refused BUSY, the host never asked, until
+ * this one holds the storage lock. */
+static void
+test_change_passphrase_holds_store (Fixture      *fixture,
+                                    gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteStorage storage = encrypted_flavour (TRUE);
+
+    if (storage == G_PASTE_STORAGE_NOOP)
+    {
+        g_test_skip ("This build opens no encrypted storage");
+        return;
+    }
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
+    g_autoptr (GError) error = NULL;
+    guint asked = 0;
+
+    g_paste_settings_set_storage_backend (fixture->settings, storage);
+    g_signal_connect_swapped (fixture->daemon, "change-passphrase", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
+    g_paste_storage_backend_unlock ();
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    gint held = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (held, >=, 0);
+    g_assert_cmpint (flock (held, LOCK_EX | LOCK_NB), ==, 0);
+    g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_assert_cmpuint (asked, ==, 0);
+
+    g_close (held, NULL);
+    g_clear_error (&error);
+    g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (asked, ==, 1);
+}
+
 /* A store this build cannot open has no passphrase it could change: refused,
  * the host never asked to flush and reload around a re-key it would refuse. */
 static void
@@ -320,6 +365,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
+    g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
 
     return g_paste_test_env_run ();

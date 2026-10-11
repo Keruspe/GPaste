@@ -2824,10 +2824,68 @@ stored_length (GPasteSettings *settings,
     return g_list_length (items);
 }
 
+/* Until this process holds the storage lock, the daemon it takes over from may
+ * still be writing any history down: backing another one up, emptying or
+ * deleting it is refused, as is emptying the current one while its load waits,
+ * and each goes through once the lock is ours. */
+static void
+test_store_methods_wait_for_lock (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+        g_paste_storage_backend_write_history (backend, "other", items);
+    }
+
+    gint held = hold_storage_lock ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load_async (history, "waiting");
+
+    g_paste_daemon_methods_backup_history (&methods, "other", "other-backup", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_paste_daemon_methods_empty_history (&methods, "other", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_paste_daemon_methods_delete_history (&methods, "other", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_paste_daemon_methods_empty_history (&methods, "waiting", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_assert_true (g_paste_history_is_loading (history));
+    g_assert_cmpuint (stored_length (settings, "other"), ==, 1);
+
+    g_close (held, NULL);
+    wait_load (history);
+    g_paste_daemon_methods_backup_history (&methods, "other", "other-backup", &error);
+    g_assert_no_error (error);
+    g_paste_daemon_methods_delete_history (&methods, "other", &error);
+    g_assert_no_error (error);
+    /* What the backup and the load ask for lands before the test's
+     * directories go. */
+    g_paste_history_flush (history);
+}
+
 /* Emptying reaches the store whatever state the history is in: one still
  * loading would have what the load read installed right after, and one that
  * could not be read would keep every item -- either way they were back at the
- * next start. */
+ * next start. Not before the daemon taken over from is done writing it, though:
+ * refused until then, the load left to land. */
 static void
 test_empty_reaches_the_store (void)
 {
@@ -2855,9 +2913,14 @@ test_empty_reaches_the_store (void)
         gint held = hold_storage_lock ();
         g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
 
+        g_autoptr (GError) error = NULL;
+
         g_paste_history_load_async (history, "emptied-loading");
-        g_paste_history_empty (history);
+        g_assert_false (g_paste_history_empty (history, &error));
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_assert_true (g_paste_history_is_loading (history));
         g_close (held, NULL);
+        g_assert_true (g_paste_history_empty (history, NULL));
         wait_load (history);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
         g_paste_history_flush (history);
@@ -2873,7 +2936,7 @@ test_empty_reaches_the_store (void)
 
     g_paste_history_load (history, "emptied-unreadable");
     g_assert_true (g_paste_history_is_unreadable (history));
-    g_paste_history_empty (history);
+    g_assert_true (g_paste_history_empty (history, NULL));
     g_paste_history_flush (history);
     g_assert_cmpuint (stored_length (settings, "emptied-unreadable"), ==, 0);
 }
@@ -2951,6 +3014,9 @@ test_failed_delete_keeps_unreadable (void)
 
     g_paste_history_load (history, "undeletable");
     g_assert_true (g_paste_history_is_unreadable (history));
+    /* Held, as a daemon's first load holds it: taking it on the way would
+     * make the history directory private again, undoing the chmod below. */
+    g_assert_true (g_paste_storage_backend_try_lock ());
     g_assert_cmpint (g_chmod (dir, 0500), ==, 0);
 
     /* As in test_rekey_unlistable_images (): its mode back first. */
@@ -4134,6 +4200,7 @@ main (int    argc,
     g_test_add_func ("/storage/lock/flushed-switch-supersedes-load", test_flushed_switch_supersedes_load);
     g_test_add_func ("/storage/switch-writes-nothing", test_switch_writes_nothing);
     g_test_add_func ("/storage/lock/dropped-history", test_dropped_history_ends_its_load);
+    g_test_add_func ("/storage/lock/store-methods", test_store_methods_wait_for_lock);
     g_test_add_func ("/storage/history/empty-reaches-the-store", test_empty_reaches_the_store);
     g_test_add_func ("/storage/history/failed-delete-keeps-unreadable", test_failed_delete_keeps_unreadable);
     g_test_add_func ("/storage/history/add-during-load-kept", test_add_during_load_kept);

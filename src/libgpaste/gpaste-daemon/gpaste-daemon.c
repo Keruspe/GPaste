@@ -421,7 +421,9 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
  * Refused outright when there is no passphrase to change, so a host never stops
  * recording and raises a dialog only to be told there was nothing to do -- and
  * for a store this build cannot open, whose re-key would be refused after the
- * host had flushed and reloaded around it. */
+ * host had flushed and reloaded around it. Refused with %G_IO_ERROR_BUSY while a
+ * daemon this one took over from may still be writing the stores, which every
+ * one of them a re-key rewrites (see g_paste_history_check_store_owned ()). */
 static void
 g_paste_daemon_change_passphrase (GPasteDaemon *self,
                                   GError      **error)
@@ -434,6 +436,12 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
     G_PASTE_DBUS_ASSERT (g_paste_prompt_storage_is_offered (storage),
                          G_PASTE_ERROR_FAILED,
                          "This build cannot open the history to change its passphrase.");
+
+    if (!g_paste_storage_backend_try_lock ())
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_BUSY, "Another GPaste daemon is still writing the history storage");
+        return;
+    }
 
     g_signal_emit (self,
                    signals[CHANGE_PASSPHRASE],

@@ -44,7 +44,8 @@ GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
                                                      const gchar   *name);
 gboolean            g_paste_history_delete_password (GPasteHistory *self,
                                                      const gchar   *name);
-void         g_paste_history_empty       (GPasteHistory *self);
+gboolean     g_paste_history_empty       (GPasteHistory *self,
+                                          GError       **error);
 void         g_paste_history_flush       (GPasteHistory *self);
 void         g_paste_history_resume      (GPasteHistory *self);
 gboolean     g_paste_history_sync        (GPasteHistory *self,

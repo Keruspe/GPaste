@@ -425,6 +425,8 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
     if (!g_paste_history_sync (self->history, name, error))
         return;
 
+    gboolean current = g_paste_str_equal (name, g_paste_history_get_current (self->history));
+
     /* Emptying a history there is none of writes one, empty: that is the set of
      * histories growing, which anything listing them has to hear about. Asked
      * before the write, since afterwards it always exists -- and the current
@@ -432,8 +434,11 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
      * into existence just the same. */
     gboolean is_new = g_paste_daemon_methods_history_is_new (self, name);
 
-    if (g_paste_str_equal (name, g_paste_history_get_current (self->history)))
-        g_paste_history_empty (self->history);
+    if (current)
+    {
+        if (!g_paste_history_empty (self->history, error))
+            return;
+    }
     else
     {
         g_autoptr (GPasteHistory) history = g_paste_history_new (self->settings);

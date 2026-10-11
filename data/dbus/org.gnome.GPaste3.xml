@@ -42,6 +42,16 @@
     making a password): recorded nowhere, the change would be undone by the
     reload ending the handover. They work again once it is done.
 
+    The same refusal answers BackupHistory, EmptyHistory and DeleteHistory of
+    another history than the current one, and EmptyHistory and DeleteHistory
+    of the current one while it loads, as long as a daemon this one took over
+    from may still be writing the stores: it holds the storage lock until it is
+    done, which the first load waits for. They work once the current history
+    has loaded. Nothing on the bus marks that moment, the Update naming the
+    whole history that ends the load being sent a second after the daemon comes
+    up too, and with every copy made meanwhile: a client refused this way tries
+    again later.
+
     An item travels as (uuid, value, kind, favourite, notes): everything a client
     needs to draw a row, in one reply. @kind is the GPasteItemKind value, the
     numeric one rather than its nick, which is now the storage backends'
@@ -147,7 +157,10 @@
       Re-encrypt the history with a new passphrase, prompted for by the daemon.
 
       A history that is not encrypted is .Error.NotEncrypted, and one in an
-      encrypted storage this build cannot open .Error.Failed.
+      encrypted storage this build cannot open .Error.Failed. Every store of
+      the history is rewritten, so this is refused with the same
+      G_IO_ERROR_BUSY as BackupHistory while a daemon this one took over from
+      may still be writing them (see above).
     -->
     <method name="ChangePassphrase"/>
 
@@ -181,7 +194,9 @@
 
       Another history than the current one is emptied on disk before the
       answer: a write that fails (a full disk, or no storage in use) is
-      .Error.Failed, the history left as it was.
+      .Error.Failed, the history left as it was. So is emptying the current
+      one with no storage in use while another storage keeps it, as for
+      DeleteHistory.
     -->
     <method name="EmptyHistory">
       <arg type="s" direction="in" name="name"/>

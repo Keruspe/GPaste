@@ -637,7 +637,7 @@ test_strip_retried_after_unknown_hint (gconstpointer user_data)
         gpointer plain = g_paste_history_get_by_uuid (history, uuid);
 
         g_object_add_weak_pointer (G_OBJECT (plain), &plain);
-        g_paste_history_empty (history);
+        g_assert_true (g_paste_history_empty (history, NULL));
         /* The refused slot holds its snapshot weakly, as the queued ones do: the
          * entry the user just deleted goes with the history, where a slot kept
          * for a read that may never come would hold its cleartext for the
@@ -3667,7 +3667,7 @@ test_emptied_history_clears_password (gconstpointer user_data)
     g_assert_true (g_paste_history_select (history, g_paste_item_get_uuid (g_paste_history_get (history, 1))));
     g_assert_cmpstr (clipboard->content.str, ==, value);
 
-    g_paste_history_empty (history);
+    g_assert_true (g_paste_history_empty (history, NULL));
 
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
     g_assert_cmpstr (clipboard->content.str, ==, (password) ? "" : value);
@@ -3868,7 +3868,7 @@ test_dropped_password (gconstpointer user_data)
     guint publications = primary->publications;
 
     if (emptied)
-        g_paste_history_empty (history);
+        g_assert_true (g_paste_history_empty (history, NULL));
     else
         g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
 
@@ -4942,7 +4942,7 @@ test_queued_strip (gconstpointer user_data)
     gpointer plain = g_paste_history_get_by_uuid (fixture->history, uuid);
 
     g_object_add_weak_pointer (G_OBJECT (plain), &plain);
-    g_paste_history_empty (fixture->history);
+    g_assert_true (g_paste_history_empty (fixture->history, NULL));
     g_paste_history_flush (fixture->history);
     g_assert_null (plain);
 }

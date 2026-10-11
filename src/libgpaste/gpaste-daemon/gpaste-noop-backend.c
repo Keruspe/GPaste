@@ -12,8 +12,11 @@ G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
 /* The "no storage" backend persists nothing: the history lives only in memory
  * for the current session. Reads come back empty, writes are dropped -- each
- * answering that nothing was kept, so a backup or an emptying asked of it is
- * not reported as made -- and no history is ever listed on disk. */
+ * answering that nothing was kept, so a backup, or an emptying of another
+ * history, asked of it is not reported as made -- and no history is ever
+ * listed on disk. A history another flavour stores is not emptied nor deleted
+ * through it (g_paste_history_empty (),
+ * g_paste_storage_backend_delete_history ()). */
 
 static gboolean
 g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self        G_GNUC_UNUSED,
