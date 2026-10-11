@@ -11,6 +11,7 @@
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-history-model.h>
 #include <gpaste-ui-item.h>
+#include <gpaste-ui-pick-selection.h>
 #include <gpaste-ui-window.h>
 
 struct _GPasteUiHistory
@@ -1224,27 +1225,14 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
     gboolean changed = (self->selection_mode != selection_mode);
 
     self->selection_mode = selection_mode;
+    /* Selectability is the selection model's to grant
+     * (gpaste-ui-pick-selection.c), and what was picked goes either way. */
+    g_paste_ui_pick_selection_set_picking (G_PASTE_UI_PICK_SELECTION (self->selection_model), selection_mode);
     g_array_set_size (self->selection, 0);
-
-    /* Selectability is the selection model's to grant, so swap the model rather
-     * than the rows: a #GtkMultiSelection to pick with, a #GtkNoSelection the
-     * rest of the time. Whichever is installed, the list view owns it. */
-    GListModel *model = G_LIST_MODEL (g_object_ref (self->model));
-    g_autoptr (GtkSelectionModel) selection = (selection_mode)
-        ? GTK_SELECTION_MODEL (gtk_multi_selection_new (model))
-        : GTK_SELECTION_MODEL (gtk_no_selection_new (model));
-
-    g_signal_connect_object (selection, "selection-changed", G_CALLBACK (on_selection_changed), self, 0);
-    /* The picks are positions, so a splice moves what they name, and a row handed
-     * fresh contents is no longer the row that was picked. */
-    g_signal_connect_object (selection, "items-changed", G_CALLBACK (on_selection_items_changed), self, 0);
-    gtk_list_view_set_model (self->list_view, selection);
-    self->selection_model = selection;
 
     /* Clicking picks rather than pastes while picking. */
     gtk_list_view_set_single_click_activate (self->list_view, !selection_mode);
 
-    /* The model that held the old selection is gone with it. */
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, 0u);
 
     if (changed)
@@ -1484,9 +1472,12 @@ g_paste_ui_history_new (GPasteClient   *client,
     g_signal_connect_object (factory, "bind", G_CALLBACK (g_paste_ui_history_bind_item), self, 0);
     g_signal_connect_object (factory, "unbind", G_CALLBACK (g_paste_ui_history_unbind_item), self, 0);
 
-    /* The model is installed by set_selection_mode() below, which is what picks
-     * between selectable rows and plain ones. */
-    GtkWidget *list_view = gtk_list_view_new (NULL, factory);
+    self->selection_model = GTK_SELECTION_MODEL (g_paste_ui_pick_selection_new (G_LIST_MODEL (self->model)));
+    g_signal_connect_object (self->selection_model, "selection-changed", G_CALLBACK (on_selection_changed), self, 0);
+    /* The picks are positions, so a splice moves what they name. */
+    g_signal_connect_object (self->selection_model, "items-changed", G_CALLBACK (on_selection_items_changed), self, 0);
+
+    GtkWidget *list_view = gtk_list_view_new (self->selection_model, factory);
     self->list_view = GTK_LIST_VIEW (list_view);
 
     GtkWidget *scroll = gtk_scrolled_window_new ();

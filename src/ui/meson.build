@@ -9,6 +9,7 @@ gpaste_ui_sources = [
   'gpaste-ui-panel-history.c',
   'gpaste-ui-panel.c',
   'gpaste-ui-password-dialog.c',
+  'gpaste-ui-pick-selection.c',
   'gpaste-ui-shortcuts-window.c',
   'gpaste-ui-window.c',
   'gpaste-ui.c',
@@ -25,6 +26,7 @@ gpaste_ui_headers = [
   'gpaste-ui-panel-history.h',
   'gpaste-ui-panel.h',
   'gpaste-ui-password-dialog.h',
+  'gpaste-ui-pick-selection.h',
   'gpaste-ui-shortcuts-window.h',
   'gpaste-ui-window.h',
 ]

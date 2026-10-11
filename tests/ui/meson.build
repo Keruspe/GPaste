@@ -47,7 +47,7 @@ test('test-ui-new-item', ui_new_item_test, depends: [gpaste_schemas, test_bus_su
 
 ui_history_model_test = executable(
   'gpaste-ui-history-model-test',
-  sources: ['test-history-model.c', '../../src/ui/gpaste-ui-history-model.c'],
+  sources: ['test-history-model.c', '../../src/ui/gpaste-ui-history-model.c', '../../src/ui/gpaste-ui-pick-selection.c'],
   include_directories: include_directories('../../src/ui'),
   dependencies: [gtk4_dep, gpaste_test_env_dep, libgpaste_internal_dep],
 )

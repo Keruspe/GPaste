@@ -1322,6 +1322,120 @@ test_row_read_in_place (void)
 }
 
 static gboolean
+count_tick (GtkWidget     *widget G_GNUC_UNUSED,
+            GdkFrameClock *clock  G_GNUC_UNUSED,
+            gpointer       user_data)
+{
+    ++*(guint *) user_data;
+
+    return G_SOURCE_CONTINUE;
+}
+
+static gboolean
+ticked_twice (gconstpointer ticks,
+              gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(const guint *) ticks >= 2;
+}
+
+/* Until @widget has been through a frame since now, which is what lays out
+ * what its model changed: draining the main context does not wait for one. */
+static void
+wait_for_layout (GtkWidget *widget)
+{
+    guint ticks = 0;
+    guint id = gtk_widget_add_tick_callback (widget, count_tick, &ticks, NULL);
+
+    g_paste_test_bus_wait_until (ticked_twice, &ticks, NULL);
+    gtk_widget_remove_tick_callback (widget, id);
+    g_assert_cmpuint (ticks, >=, 2);
+}
+
+/* Entering selection mode and leaving it leave the list where it was scrolled
+ * to, the focus on the row it was on, rather than back at the top with every
+ * row built anew. */
+static void
+test_selection_mode_keeps_place (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 100 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    GtkAdjustment *vadjustment = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (list_view));
+    /* The merge bar sliding in and out would leave the list's height to when
+     * a check happens to run. */
+    GtkSettings *gtk_settings = gtk_widget_get_settings (GTK_WIDGET (window));
+
+    g_object_set (gtk_settings, "gtk-enable-animations", FALSE, NULL);
+    drain ();
+
+    /* Rows past what the window shows, loaded as scrolling to the bottom does. */
+    GtkWidget *scroll = gtk_widget_get_ancestor (GTK_WIDGET (list_view), GTK_TYPE_SCROLLED_WINDOW);
+
+    for (guint i = 0; i < 3; ++i)
+    {
+        guint sized = daemon.sizings;
+
+        g_signal_emit_by_name (scroll, "edge-reached", GTK_POS_BOTTOM);
+        g_paste_test_bus_wait_for_count (&daemon.sizings, sized + 1);
+        g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+        drain ();
+        wait_for_layout (GTK_WIDGET (list_view));
+    }
+
+    /* The last row loaded, which is past what the window shows. */
+    guint last = g_list_model_get_n_items (G_LIST_MODEL (gtk_list_view_get_model (list_view))) - 1;
+    g_autofree gchar *shown = g_strdup_printf ("value %u", last);
+
+    gtk_list_view_scroll_to (list_view, last, GTK_LIST_SCROLL_FOCUS, NULL);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    wait_for_layout (GTK_WIDGET (list_view));
+
+    GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
+    GtkInscription *label = GTK_INSCRIPTION (find_widget (focus, GTK_TYPE_INSCRIPTION));
+    graphene_rect_t bounds;
+
+    /* On screen before selection mode, which is what it has to keep. */
+    g_assert_cmpfloat (gtk_adjustment_get_value (vadjustment), >, 0);
+    g_assert_cmpstr (gtk_inscription_get_text (label), ==, shown);
+    g_assert_true (gtk_widget_compute_bounds (focus, GTK_WIDGET (list_view), &bounds));
+    g_assert_cmpfloat (bounds.origin.y, <, gtk_widget_get_height (GTK_WIDGET (list_view)));
+
+    for (guint i = 0; i < 2; ++i)
+    {
+        if (i)
+            exit_selection_mode (window);
+        else
+            on_enter_selection_mode (NULL, window);
+        g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+        drain ();
+        wait_for_layout (GTK_WIDGET (list_view));
+
+        /* Not back at the top, and the very row that had the focus still has
+         * it, on screen -- in part, the merge bar coming up over the bottom of
+         * the list. */
+        g_assert_cmpfloat (gtk_adjustment_get_value (vadjustment), >, 0);
+        g_assert_true (gtk_root_get_focus (GTK_ROOT (window)) == focus);
+        g_assert_cmpstr (gtk_inscription_get_text (label), ==, shown);
+        g_assert_true (gtk_widget_compute_bounds (focus, GTK_WIDGET (list_view), &bounds));
+        g_assert_cmpfloat (bounds.origin.y, <, gtk_widget_get_height (GTK_WIDGET (list_view)));
+    }
+    gtk_settings_reset_property (gtk_settings, "gtk-enable-animations");
+    close_activation_window (window, &daemon);
+}
+
+static gboolean
 on_sigusr1 (gpointer user_data)
 {
     ++*(guint *) user_data;
@@ -2709,6 +2823,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);
     g_test_add_func ("/ui/daemon-presence/superseded-refresh", test_superseded_refresh);
     g_test_add_func ("/ui/daemon-presence/row-read-in-place", test_row_read_in_place);
+    g_test_add_func ("/ui/daemon-presence/selection-mode-keeps-place", test_selection_mode_keeps_place);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

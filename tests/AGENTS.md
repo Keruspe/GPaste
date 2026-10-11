@@ -276,7 +276,9 @@ off, and a search asked for from outside leaves selection mode. A positional
 refresh superseded before its size came back has the one superseding it
 refetch from the earlier of the two rows. A row whose item changed where it
 stands keeps its widget, the focus and its text until its read lands, then
-shows the new value, and a pick on it goes.
+shows the new value, and a pick on it goes. Entering selection mode and
+leaving it keep the list scrolled where it was and the focus on the very row
+widget that had it.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon
@@ -339,7 +341,8 @@ disposed one still holds its accelerator.
 `test-ui-history-model` checks that `GPasteUiHistoryModel` ignores an
 invalidated range past its rows, however far past, a position near the top of
 its range included, and that invalidating keeps the items and emits no
-items-changed.
+items-changed; and that `GPasteUiPickSelection` selects nothing out of
+selection mode and drops its picks with it.
 
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of
