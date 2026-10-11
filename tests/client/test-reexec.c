@@ -269,6 +269,15 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
     return items;
 }
 
+static GList *
+fake_list_histories_sync (GPasteClient *client G_GNUC_UNUSED,
+                          GError      **error  G_GNUC_UNUSED)
+{
+    GList *histories = g_list_append (NULL, g_paste_client_history_new ("work", 1));
+
+    return g_list_append (histories, g_paste_client_history_new ("two\nlines", 2));
+}
+
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
 #define g_paste_util_reexecute_legacy_daemon fake_reexecute_legacy_daemon
@@ -284,7 +293,9 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_client_add_text_sync fake_add_text_sync
 #define g_paste_client_search_sync fake_search_sync
 #define g_paste_client_add_password_sync fake_add_password_sync
+#define g_paste_client_list_histories_sync fake_list_histories_sync
 #include "../../src/client/gpaste-client.c"
+#undef g_paste_client_list_histories_sync
 #undef g_paste_client_add_password_sync
 #undef g_paste_client_search_sync
 #undef g_paste_client_add_text_sync
@@ -871,6 +882,45 @@ test_search_output (gconstpointer user_data)
     fflush (stdout);
 }
 
+/* The history names end as the items do, NUL under --zero: one may hold a
+ * line break of its own. */
+static void
+test_list_histories_zero (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stdout ("work\ntwo\nlines\n");
+        return;
+    }
+
+    /* The NUL-ended run checked here, the newline-ended one by the parent:
+     * the trap's own match stops at the first NUL. */
+    g_autofree gchar *path = NULL;
+    gint fd = g_file_open_tmp ("gpaste-client-stdout-XXXXXX", &path, NULL);
+    gint saved = dup (STDOUT_FILENO);
+
+    g_assert_cmpint (fd, >=, 0);
+    fflush (stdout);
+    g_assert_cmpint (dup2 (fd, STDOUT_FILENO), ==, STDOUT_FILENO);
+    g_assert_cmpint (run_client ((const gchar *[]) { "--zero", "list-histories", NULL }), ==, EXIT_SUCCESS);
+    fflush (stdout);
+    g_assert_cmpint (dup2 (saved, STDOUT_FILENO), ==, STDOUT_FILENO);
+
+    g_autofree gchar *contents = NULL;
+    gsize length = 0;
+
+    g_assert_true (g_file_get_contents (path, &contents, &length, NULL));
+    g_assert_cmpmem (contents, length, "work\0two\nlines\0", 15);
+    g_assert_cmpint (g_unlink (path), ==, 0);
+    g_assert_true (g_close (fd, NULL));
+    g_assert_true (g_close (saved, NULL));
+
+    g_assert_cmpint (run_client ((const gchar *[]) { "list-histories", NULL }), ==, EXIT_SUCCESS);
+    fflush (stdout);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -1066,6 +1116,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/locale", test_locale_set);
     g_test_add_data_func ("/client/search/positions", GINT_TO_POINTER (FALSE), test_search_output);
     g_test_add_data_func ("/client/search/reverse", GINT_TO_POINTER (TRUE), test_search_output);
+    g_test_add_func ("/client/list-histories/zero", test_list_histories_zero);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);

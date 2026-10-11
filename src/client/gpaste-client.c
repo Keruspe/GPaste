@@ -531,11 +531,12 @@ g_paste_list_histories (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    /* The names alone: this is what a script enumerating histories reads, and
-     * the sizes the listing now carries have gpaste-client history-size and the
-     * graphical panel for a home. */
+    /* The names alone: this is what a script enumerating histories reads, the
+     * sizes the listing also carries having gpaste-client history-size and the
+     * graphical panel for a home. Ended as the items are, --zero included: a
+     * history's name may hold a line break of its own. */
     for (const GList *h = histories; h; h = h->next)
-        printf ("%s\n", g_paste_client_history_get_name (h->data));
+        printf ("%s%c", g_paste_client_history_get_name (h->data), (ctx->zero) ? '\0' : '\n');
 
     return EXIT_SUCCESS;
 }

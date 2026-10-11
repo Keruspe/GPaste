@@ -87,6 +87,9 @@ _gpaste_client_options()
         add-password|ap)
             printf '%s' "${common} --timeout -t"
             ;;
+        list-histories|lh)
+            printf '%s' "${common} --zero -z"
+            ;;
         merge|m)
             printf '%s' "${common} --use-index -i --decoration -d --separator -s"
             ;;
