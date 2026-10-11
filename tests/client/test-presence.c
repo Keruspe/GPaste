@@ -9,6 +9,10 @@
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 
+/* Local rather than in gpaste-test-bus, which knows no GPaste type: its
+ * g_paste_test_bus_wait_for_enum () is the shared part, and what this adds is
+ * the property's name and a presence typed as one.
+ * tests/ui/test-daemon-presence.c has the same wrapper. */
 static void
 wait_for_presence (GPasteClient        *client,
                    GPasteDaemonPresence presence)

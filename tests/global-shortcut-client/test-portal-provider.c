@@ -1083,11 +1083,15 @@ close_failure (Fixture *f, gconstpointer user_data)
     g_clear_object (&f->client);
     barrier (f);
     g_assert_cmpuint (session->closes, ==, 1);
-    wait_for_timers (f, 650);
-    g_test_assert_expected_messages ();
-    g_assert_cmpuint (session->closes, ==, GPOINTER_TO_UINT (user_data) ? 11 : 2);
+    /* Waited for by count rather than for the ten retries' worth of timers: a
+     * loaded machine takes longer than the timers alone. The pump after it has
+     * the last reply land, and shows no retry follows. */
+    guint expected = GPOINTER_TO_UINT (user_data) ? 11 : 2;
+
+    g_paste_test_bus_wait_for_count (&session->closes, expected);
     wait_for_timers (f, 150);
-    g_assert_cmpuint (session->closes, ==, GPOINTER_TO_UINT (user_data) ? 11 : 2);
+    g_test_assert_expected_messages ();
+    g_assert_cmpuint (session->closes, ==, expected);
 }
 
 /* Exercise GDBus's real missing-object error, not an injected error name.

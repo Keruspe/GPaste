@@ -154,6 +154,11 @@ pump (guint milliseconds)
         while (g_main_context_iteration (NULL, FALSE));
         g_usleep (1000);
     } while (g_get_monotonic_time () < end);
+
+    /* What became due during the last sleep runs too, as in test-clipboard's
+     * pump_for (): an assertion that a timer has
+     * fired by now must not race it. */
+    while (g_main_context_iteration (NULL, FALSE));
 }
 
 static void

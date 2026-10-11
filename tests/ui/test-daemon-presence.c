@@ -271,6 +271,8 @@ count_outgoing (GDBusConnection *connection G_GNUC_UNUSED,
     return message;
 }
 
+/* As in tests/client/test-presence.c: local, gpaste-test-bus knowing no GPaste
+ * type. */
 static void
 wait_for_presence (GPasteClient        *client,
                    GPasteDaemonPresence presence)
@@ -1390,14 +1392,17 @@ test_listing_owner_size_error (void)
     g_assert_true (history_rows_are (window, GUINT_TO_POINTER (0)));
 
     AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
-    GLogLevelFlags fatal = g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 
+    /* The size failure's warning is expected at each attempt, and nothing else
+     * the error page or Retry might say. */
     for (guint attempt = 0; attempt < 2; ++attempt)
     {
         g_assert_nonnull (successor.held_size);
+        g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not get the size of history*size failed");
         g_dbus_method_invocation_return_dbus_error (g_steal_pointer (&successor.held_size),
                                                      "org.gnome.GPaste.Test.Size", "size failed");
         g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), successor.connection);
+        g_test_assert_expected_messages ();
         g_assert_cmpint (g_paste_client_get_daemon_presence (client), ==, G_PASTE_DAEMON_PRESENCE_READY);
         g_assert_true (history_rows_are (window, GUINT_TO_POINTER (0)));
         g_assert_cmpstr (adw_status_page_get_title (status), ==, _("Could Not Load History"));
@@ -1413,7 +1418,6 @@ test_listing_owner_size_error (void)
         g_assert_nonnull (adw_status_page_get_paintable (status));
     }
 
-    g_log_set_always_fatal (fatal);
     successor.hold_sizes = FALSE;
     g_paste_daemon3_complete_get_history_size (successor.skeleton, g_steal_pointer (&successor.held_size), successor.size);
     g_paste_test_bus_wait_until (history_rows_are, window, GUINT_TO_POINTER (1));

@@ -2857,8 +2857,15 @@ test_forced_expiry_after_history_update (void)
     g_paste_clipboard_update_maybe_done (untracked);
     g_paste_clipboards_manager_expire_password_async (fixture->manager, on_expired_check_history, &check);
     g_source_set_name_by_id (g_timeout_add (5, complete_new_copy_read, &check), "[GPaste] test new copy read");
-    while (!check.read_done || !check.counter.completed)
-        g_main_context_iteration (NULL, TRUE);
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    while ((!check.read_done || !check.counter.completed) && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+    g_assert_true (check.read_done);
+    g_assert_true (check.counter.completed);
     g_assert_true (check.saw_new_copy);
 }
 

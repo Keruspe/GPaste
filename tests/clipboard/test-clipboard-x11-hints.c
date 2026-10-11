@@ -261,6 +261,45 @@ pump (Owner *owner,
     } while (g_get_monotonic_time () < end);
 }
 
+/* Pump until the silent owner has deferred its first request, GDK's TARGETS on
+ * the claim, and answer the window GDK asks from. */
+static Window
+wait_for_claim_seen (Owner *owner)
+{
+    gint64 end = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+
+    while (!owner->deferred->len && g_get_monotonic_time () < end)
+        pump (owner, 10);
+    g_assert_cmpuint (owner->deferred->len, >, 0);
+
+    return g_array_index (owner->deferred, XSelectionRequestEvent, 0).requestor;
+}
+
+/* Pump until the silent owner has deferred a request from another window than
+ * @gdk_window, the workaround's, and answer its index, failing after a deadline
+ * rather than guessing how long the server takes. GDK converts TARGETS once per
+ * ownership change it has yet to process, the previous case's included, so how
+ * many of its requests come first is no number to count on; the window they
+ * come from is. */
+static guint
+wait_for_workaround_request (Owner *owner,
+                             Window gdk_window)
+{
+    gint64 end = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+
+    for (;;)
+    {
+        for (guint i = 0; i < owner->deferred->len; ++i)
+        {
+            if (g_array_index (owner->deferred, XSelectionRequestEvent, i).requestor != gdk_window)
+                return i;
+        }
+
+        g_assert_cmpint (g_get_monotonic_time (), <, end);
+        pump (owner, 10);
+    }
+}
+
 typedef struct
 {
     GPasteItem           *item;
@@ -510,12 +549,8 @@ late_reply (void)
     g_autoptr (GPasteClipboardX11Hints) hints = make_hints ();
 
     owner_claim (owner);
-    pump (owner, 100);
 
-    /* GDK asked this owner for its own TARGETS on the claim above, so what is
-     * already deferred is not ours: the conversion under test is the one that
-     * comes on top of it. */
-    guint before = owner->deferred->len;
+    Window gdk_window = wait_for_claim_seen (owner);
 
     GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (clipboard), settings,
                                                                    CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
@@ -526,9 +561,8 @@ late_reply (void)
     test_clipboard_text_ready (pending, HINT_VALUE);
     g_paste_clipboard_update_maybe_done (pending);
 
-    pump (owner, 50);
+    wait_for_workaround_request (owner, gdk_window);
     g_assert_false (result.answered);
-    g_assert_cmpuint (owner->deferred->len, >, before);
 
     /* What the update's own deadline would do to it, without waiting the
      * deadline out. */
@@ -589,10 +623,8 @@ dispose_retired (void)
     GPasteClipboardX11Hints *hints = make_hints ();
 
     owner_claim (owner);
-    pump (owner, 100);
 
-    /* As in late_reply (): what GDK deferred on the claim is not ours. */
-    guint before = owner->deferred->len;
+    Window gdk_window = wait_for_claim_seen (owner);
 
     GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (clipboard), settings,
                                                                    CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
@@ -603,10 +635,8 @@ dispose_retired (void)
     test_clipboard_text_ready (pending, HINT_VALUE);
     g_paste_clipboard_update_maybe_done (pending);
 
-    pump (owner, 50);
-    g_assert_cmpuint (owner->deferred->len, >, before);
-
-    Window requestor = g_array_index (owner->deferred, XSelectionRequestEvent, before).requestor;
+    guint ours = wait_for_workaround_request (owner, gdk_window);
+    Window requestor = g_array_index (owner->deferred, XSelectionRequestEvent, ours).requestor;
 
     g_cancellable_cancel (pending->guard.cancellable);
     pump (owner, 50);
