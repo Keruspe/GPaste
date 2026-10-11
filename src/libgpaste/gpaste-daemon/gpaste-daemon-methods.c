@@ -19,7 +19,7 @@
 #define G_PASTE_DBUS_ASSERT_HISTORY_NAME(name)                                    \
     G_PASTE_DBUS_ASSERT (g_paste_util_history_name_is_valid (name),               \
                          G_PASTE_ERROR_INVALID_ARGUMENT,                          \
-                         "a history is named, not a path")
+                         "not a history name: a path, or too long a name")
 
 /* The one shape an item takes on the wire, and the one value it carries: the
  * string a user is shown. */

@@ -280,6 +280,12 @@ g_paste_util_activate_ui_sync (const gchar *action,
  * the directory it landed in. "." and ".." name the history directory itself.
  * Names reach us from the bus, so this is a refusal, not an assertion.
  *
+ * Bounded too: a file name is 255 bytes at most on the filesystems a home
+ * directory is on, and the longest one a history needs is its own with
+ * ".xmls.rekey-old" after it, the original a change of passphrase keeps aside.
+ * A name past that has a placeholder written and listed, while no save and no
+ * re-key of it could ever land.
+ *
  * Installed and introspected, where the paths it guards are the daemon's alone:
  * a client with nowhere to report a refusal -- the GNOME Shell extension's
  * history chooser -- asks this before sending a name, and a copy of the rule
@@ -290,7 +296,8 @@ g_paste_util_activate_ui_sync (const gchar *action,
 G_PASTE_VISIBLE gboolean
 g_paste_util_history_name_is_valid (const gchar *name)
 {
-    if (!name || !*name || g_paste_str_equal (name, ".") || g_paste_str_equal (name, ".."))
+    if (!name || !*name || g_paste_str_equal (name, ".") || g_paste_str_equal (name, "..") ||
+        strlen (name) > 255 - strlen (".xmls.rekey-old"))
         return FALSE;
 
     /* Not G_IS_DIR_SEPARATOR alone: '/' separates paths wherever GLib builds,

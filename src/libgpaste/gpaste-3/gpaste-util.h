@@ -19,7 +19,8 @@ G_BEGIN_DECLS
 #define G_PASTE_DEFAULT_HISTORY "history"
 
 /* A history is named by the file it is stored in and by the images directory it
- * owns, so a name carrying a path component names something else entirely. */
+ * owns, so a name carrying a path component names something else entirely, and
+ * one too long for a file name names nothing a save could write. */
 gboolean g_paste_util_history_name_is_valid (const gchar *name);
 
 void     g_paste_util_spawn            (const gchar *app);
