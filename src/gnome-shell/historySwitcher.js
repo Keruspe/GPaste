@@ -501,6 +501,12 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this._current = this._client.get_history_name();
         this.label.text = this._current ?? '';
         this._markCurrent();
+
+        // A history in use with no row is one no listing has named yet -- a
+        // new one, or, from a GPaste 51.0 to 51.2 daemon, any under a storage
+        // keeping nothing: drawn by listing again (refresh ()).
+        if (this._current !== null && !this._rows.some(row => row.history === this._current))
+            this._refreshIfOpen();
     }
 
     // ListHistories parses inactive file histories on the daemon's main thread.
@@ -600,7 +606,7 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         const focus = global.stage.get_key_focus();
         const actionsFocused = focus !== null && this._actions.contains(focus);
 
-        if (actionsHistory !== null && actionsHistory !== GPaste.DEFAULT_HISTORY &&
+        if (actionsHistory !== null && actionsHistory !== GPaste.DEFAULT_HISTORY && actionsHistory !== this._current &&
             !histories.some(history => history.get_name() === actionsHistory))
             this._hideActions();
 
@@ -622,13 +628,21 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         for (const history of histories)
             this._addRow(history.get_name(), history.get_size());
 
+        // A listing names the history in use, stored or not, but one from a
+        // GPaste 51.0 to 51.2 daemon names only the histories there is a store
+        // for: nothing at all under the `none` storage. The one in use is drawn
+        // all the same, as the default one is and as the graphical tool's
+        // sidebar does, to be marked, deleted and given its actions, and its
+        // count asked for: its row, or the default one's, would otherwise say 0
+        // however much it holds.
+        const currentListed = histories.some(history => history.get_name() === this._current);
+
+        if (this._current !== null && !this._rows.some(row => row.history === this._current))
+            this._addRow(this._current, 0);
+
         this._markCurrent();
 
-        // A listing names the histories there is a store for, and the one in use
-        // may have none: the `none` storage lists nothing at all, and the
-        // default history is drawn whether or not it is listed. Its row would
-        // otherwise say 0 however much it holds.
-        if (this._current !== null && !histories.some(history => history.get_name() === this._current))
+        if (this._current !== null && !currentListed)
             this._sizeCurrent().catch(console.error);
 
         if (this._actions.visible) {

@@ -199,6 +199,36 @@ process.on('exit', () => {
     assert.equal(sizeCalls, 1);
     assert.equal(sized._rows.find(r => r.history === 'default').size, 3);
 
+    // A history in use that the listing does not name is drawn all the same,
+    // its count asked for, and the actions open for it stay.
+    const unlisted = switcher();
+    let unlistedSizes = 0;
+
+    unlisted._current = 'work';
+    unlisted._client.get_history_size = async () => {
+        ++unlistedSizes;
+        return 4;
+    };
+    unlisted._client.list_histories = async () => [];
+    await unlisted.refresh();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(unlisted._rows.map(r => r.history), ['default', 'work']);
+    assert.equal(unlisted._rows[1].size, 4);
+    assert.equal(unlistedSizes, 1);
+    assert.equal(unlisted._actions.visible, true);
+    // Switched to another such history, the chooser lists again to draw it;
+    // switched to one it has a row for, it does not.
+    let relisted = 0;
+
+    unlisted.label = {};
+    unlisted.refresh = async () => { ++relisted; };
+    unlisted._client.get_history_name = () => 'other';
+    unlisted._onHistoryChanged();
+    assert.equal(relisted, 1);
+    unlisted._client.get_history_name = () => 'work';
+    unlisted._onHistoryChanged();
+    assert.equal(relisted, 1);
+
     // Only an update that can change the count asks for it, and only while the
     // chooser is open.
     const {UpdateAction, UpdateTarget} = context.GPaste;

@@ -102,7 +102,9 @@ divided by the UI scale factor.
 `history-switcher` checks that hiding the switcher -- which the daemon going
 does, a handoff to another included -- gives up both its listing and its size
 read, and that nothing is sized while the presence is not `READY`, the name
-still having an owner. A revocable weak-reference double
+still having an owner; and that a history in use no listing names gets a row,
+its count and its open actions all the same, a switch to one with no row
+listing again. A revocable weak-reference double
 models collection during an upload, so its reply is finished without a
 notification from an indicator that is gone.
 
