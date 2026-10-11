@@ -343,6 +343,87 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
 }
 
 /**
+ * g_paste_clipboard_file_list_new:
+ * @uris: the URIs of the files, %NULL-terminated
+ *
+ * Returns: (transfer full): a #GdkFileList of the files @uris name, in order
+ */
+G_PASTE_VISIBLE GdkFileList *
+g_paste_clipboard_file_list_new (const gchar * const *uris)
+{
+    g_return_val_if_fail (uris, NULL);
+
+    g_autoslist (GFile) files = NULL;
+
+    for (const gchar * const *uri = uris; *uri; ++uri)
+        files = g_slist_prepend (files, g_file_new_for_uri (*uri));
+    files = g_slist_reverse (files);
+
+    return gdk_file_list_new_from_list (files);
+}
+
+/**
+ * g_paste_clipboard_file_list_from_bytes:
+ * @bytes: a text/uri-list
+ *
+ * A file list as it comes off a selection. Each of its files costs far more
+ * than its line -- a #GFile, and the nodes of every list it is copied into --
+ * and that is spent before any size policy weighs the item it makes: a few
+ * megabytes of short lines would be millions of objects, built on gnome-shell's
+ * own thread for the daemon it hosts. So a list of more than
+ * %G_PASTE_CLIPBOARD_MAX_FILES files is turned down, its lines counted before
+ * any of it is decoded.
+ *
+ * Returns: (transfer full) (nullable): the #GdkFileList @bytes lists, or %NULL
+ *          for one listing too many files
+ */
+G_PASTE_VISIBLE GdkFileList *
+g_paste_clipboard_file_list_from_bytes (GBytes *bytes)
+{
+    g_return_val_if_fail (bytes, NULL);
+
+    gsize size = 0;
+    const gchar *data = g_bytes_get_data (bytes, &size);
+    const gchar *end = data + size;
+    guint newlines = 0;
+
+    for (const gchar *nl = data; nl < end && (nl = memchr (nl, '\n', (gsize) (end - nl))); ++nl)
+    {
+        if (++newlines > G_PASTE_CLIPBOARD_MAX_FILES)
+            return NULL;
+    }
+
+    g_autofree gchar *text = g_strndup (data, size);
+    g_auto (GStrv) uris = g_uri_list_extract_uris (text);
+
+    if (g_strv_length (uris) > G_PASTE_CLIPBOARD_MAX_FILES)
+        return NULL;
+
+    return g_paste_clipboard_file_list_new ((const gchar * const *) uris);
+}
+
+/**
+ * g_paste_clipboard_file_list_get_uris:
+ * @file_list: a #GdkFileList
+ *
+ * Returns: (transfer full): the URIs of the files @file_list holds, in order
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_clipboard_file_list_get_uris (GdkFileList *file_list)
+{
+    g_return_val_if_fail (file_list, NULL);
+
+    /* (transfer container): the container is ours, the GFiles are not. */
+    g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
+    g_autoptr (GStrvBuilder) uris = g_strv_builder_new ();
+
+    for (const GSList *f = files; f; f = f->next)
+        g_strv_builder_take (uris, g_file_get_uri (G_FILE (f->data)));
+
+    return g_strv_builder_end (uris);
+}
+
+/**
  * g_paste_clipboard_text_from_bytes:
  * @bytes: (nullable): what a text transfer brought, %NULL for one that failed
  * @not_utf8: (out) (optional): set when @bytes holds no UTF-8 text

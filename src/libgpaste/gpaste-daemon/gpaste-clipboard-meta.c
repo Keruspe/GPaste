@@ -40,7 +40,9 @@
 #define META_MIME_TEXT_PLAIN "text/plain"
 /* Read-side preferences only: the canonical representation we'd rather pull when
  * several are offered (lossless PNG, the plain uri-list over a portal roundtrip).
- * The set of formats we actually accept/advertise comes from GDK, not these. */
+ * The set of formats we accept and advertise is whatever GDK can (de)serialise:
+ * in gnome-shell, exactly these, which g_paste_clipboard_meta_ensure_formats ()
+ * gives it. */
 #define META_MIME_IMAGE      "image/png"
 #define META_MIME_URIS       "text/uri-list"
 
@@ -116,6 +118,7 @@ typedef struct
 {
     GPasteClipboardMeta             *self;
     GOutputStream                   *ostream;
+    gsize                            limit;
     GPasteClipboardMetaBytesCallback callback;
     gpointer                         user_data;
 } GPasteClipboardMetaReadData;
@@ -145,8 +148,24 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
 
     g_autoptr (GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (ostream));
 
+    if (g_bytes_get_size (bytes) > data->limit)
+    {
+        g_debug ("Ignoring selection content larger than the memory limit");
+        g_clear_pointer (&bytes, g_bytes_unref);
+    }
+
     if (data->callback)
         data->callback (self, bytes, data->user_data);
+}
+
+/* @mib in bytes, made in 64 bits and clamped there, before it narrows to a
+ * gsize: on a 32-bit build, 4096 MiB or a multiple of it would wrap to 0, and
+ * every transfer be cut at its first byte and dropped. The schema allows up to
+ * 16383 MiB; no test builds 32-bit to show it. */
+static gsize
+g_paste_clipboard_meta_transfer_limit (guint64 mib)
+{
+    return (gsize) MIN (mib * 1024 * 1024, (guint64) G_MAXSSIZE - 1);
 }
 
 static void
@@ -162,17 +181,240 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
      * finalized out from under the callback (released in on_transfer_done). */
     data->self = g_object_ref (self);
     data->ostream = g_memory_output_stream_new_resizable ();
+    /* Bounded, as nothing else bounds what an owner serves, inside the
+     * compositor: an endless offer would have it buffer until the read guard's
+     * deadline. Nothing larger than the history's memory limit could be kept
+     * anyway, a secret included, so one byte past it is all a read takes, to
+     * tell such a content from one that just fits. */
+    data->limit = g_paste_clipboard_meta_transfer_limit (g_paste_settings_get_max_memory_usage (self->settings));
     data->callback = callback;
     data->user_data = user_data;
 
     meta_selection_transfer_async (self->selection,
                                    self->type,
                                    mimetype,
-                                   -1, /* size unknown */
+                                   (gssize) MIN (data->limit + 1, (gsize) G_MAXSSIZE),
                                    data->ostream,
                                    cancellable,
                                    g_paste_clipboard_meta_on_transfer_done,
                                    data);
+}
+
+/* --- the formats GPaste needs, where GTK registered none --- */
+
+/*
+ * GTK registers GDK's (de)serializers in gtk_init (), which gnome-shell -- this
+ * backend's only host -- never calls: GDK then knows no format at all, and no
+ * image, colour or file list would be read or published. Where GDK has none for
+ * one of the three types, the one format GPaste stores it as is registered for
+ * it instead: image/png, application/x-color and text/uri-list. A host that did
+ * initialise GTK keeps GDK's own, with every other format they bring.
+ */
+typedef void (*GPasteClipboardMetaDecode) (GValue  *value,
+                                           GBytes  *bytes,
+                                           GError **error);
+
+static GPasteClipboardMetaDecode g_paste_clipboard_meta_own_decode (const gchar *mimetype);
+
+static void
+g_paste_clipboard_meta_on_format_read (GObject      *source_object,
+                                       GAsyncResult *res,
+                                       gpointer      user_data)
+{
+    GdkContentDeserializer *deserializer = user_data;
+    GError *error = NULL;
+
+    if (g_output_stream_splice_finish (G_OUTPUT_STREAM (source_object), res, &error) >= 0)
+    {
+        g_autoptr (GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (source_object));
+        GPasteClipboardMetaDecode decode = (GPasteClipboardMetaDecode) gdk_content_deserializer_get_user_data (deserializer);
+
+        decode (gdk_content_deserializer_get_value (deserializer), bytes, &error);
+    }
+
+    if (error)
+        gdk_content_deserializer_return_error (deserializer, error);
+    else
+        gdk_content_deserializer_return_success (deserializer);
+}
+
+static void
+g_paste_clipboard_meta_deserialize (GdkContentDeserializer *deserializer)
+{
+    g_autoptr (GOutputStream) ostream = g_memory_output_stream_new_resizable ();
+
+    g_output_stream_splice_async (ostream,
+                                  gdk_content_deserializer_get_input_stream (deserializer),
+                                  G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                  gdk_content_deserializer_get_priority (deserializer),
+                                  gdk_content_deserializer_get_cancellable (deserializer),
+                                  g_paste_clipboard_meta_on_format_read,
+                                  deserializer);
+}
+
+static void
+g_paste_clipboard_meta_decode_texture (GValue  *value,
+                                       GBytes  *bytes,
+                                       GError **error)
+{
+    GdkTexture *texture = gdk_texture_new_from_bytes (bytes, error);
+
+    if (texture)
+        g_value_take_object (value, texture);
+}
+
+/* Four native-endian 16-bit channels, as GTK writes and reads them. */
+static void
+g_paste_clipboard_meta_decode_rgba (GValue  *value,
+                                    GBytes  *bytes,
+                                    GError **error)
+{
+    gsize size = 0;
+    const guint16 *channels = g_bytes_get_data (bytes, &size);
+
+    if (size != 4 * sizeof (guint16))
+    {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "A colour is four 16-bit channels");
+        return;
+    }
+
+    GdkRGBA rgba = {
+        .red = channels[0] / 65535.,
+        .green = channels[1] / 65535.,
+        .blue = channels[2] / 65535.,
+        .alpha = channels[3] / 65535.,
+    };
+
+    g_value_set_boxed (value, &rgba);
+}
+
+static void
+g_paste_clipboard_meta_decode_file_list (GValue  *value,
+                                         GBytes  *bytes,
+                                         GError **error)
+{
+    GdkFileList *file_list = g_paste_clipboard_file_list_from_bytes (bytes);
+
+    if (file_list)
+        g_value_take_boxed (value, file_list);
+    else
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "More than %u files", G_PASTE_CLIPBOARD_MAX_FILES);
+}
+
+static void
+g_paste_clipboard_meta_on_format_written (GObject      *source_object,
+                                          GAsyncResult *res,
+                                          gpointer      user_data)
+{
+    GdkContentSerializer *serializer = user_data;
+    GError *error = NULL;
+
+    if (g_output_stream_write_all_finish (G_OUTPUT_STREAM (source_object), res, NULL, &error))
+        gdk_content_serializer_return_success (serializer);
+    else
+        gdk_content_serializer_return_error (serializer, error);
+}
+
+static void
+g_paste_clipboard_meta_serialize (GdkContentSerializer *serializer)
+{
+    const GValue *value = gdk_content_serializer_get_value (serializer);
+    g_autoptr (GBytes) bytes = NULL;
+
+    if (G_VALUE_HOLDS (value, GDK_TYPE_TEXTURE))
+        bytes = gdk_texture_save_to_png_bytes (g_value_get_object (value));
+    else if (G_VALUE_HOLDS (value, GDK_TYPE_RGBA))
+    {
+        const GdkRGBA *rgba = g_value_get_boxed (value);
+        guint16 channels[] = {
+            (guint16) (CLAMP (rgba->red, 0., 1.) * 65535.),
+            (guint16) (CLAMP (rgba->green, 0., 1.) * 65535.),
+            (guint16) (CLAMP (rgba->blue, 0., 1.) * 65535.),
+            (guint16) (CLAMP (rgba->alpha, 0., 1.) * 65535.),
+        };
+
+        bytes = g_bytes_new (channels, sizeof (channels));
+    }
+    else
+    {
+        g_auto (GStrv) uris = g_paste_clipboard_file_list_get_uris (g_value_get_boxed (value));
+        g_autoptr (GString) list = g_string_new (NULL);
+
+        for (GStrv uri = uris; *uri; ++uri)
+            g_string_append_printf (list, "%s\r\n", *uri);
+        bytes = g_string_free_to_bytes (g_steal_pointer (&list));
+    }
+
+    /* Kept with the serializer until the write it is the buffer of lands. */
+    gdk_content_serializer_set_task_data (serializer, g_bytes_ref (bytes), (GDestroyNotify) g_bytes_unref);
+    g_output_stream_write_all_async (gdk_content_serializer_get_output_stream (serializer),
+                                     g_bytes_get_data (bytes, NULL),
+                                     g_bytes_get_size (bytes),
+                                     gdk_content_serializer_get_priority (serializer),
+                                     gdk_content_serializer_get_cancellable (serializer),
+                                     g_paste_clipboard_meta_on_format_written,
+                                     serializer);
+}
+
+/* The formats g_paste_clipboard_meta_ensure_formats () offers to give GDK, and
+ * which of them it did, GDK having none of its own: a selection's bytes in one
+ * of those are decoded here, straight off the transfer. */
+static struct
+{
+    GType                     type;
+    const gchar              *mimetype;
+    GPasteClipboardMetaDecode decode;
+    gboolean                  registered;
+} g_paste_clipboard_meta_formats[] = {
+    { G_TYPE_INVALID, META_MIME_IMAGE,       g_paste_clipboard_meta_decode_texture,   FALSE },
+    { G_TYPE_INVALID, "application/x-color", g_paste_clipboard_meta_decode_rgba,      FALSE },
+    { G_TYPE_INVALID, META_MIME_URIS,        g_paste_clipboard_meta_decode_file_list, FALSE },
+};
+
+static GPasteClipboardMetaDecode
+g_paste_clipboard_meta_own_decode (const gchar *mimetype)
+{
+    for (guint i = 0; i < G_N_ELEMENTS (g_paste_clipboard_meta_formats); ++i)
+    {
+        if (g_paste_clipboard_meta_formats[i].registered && g_paste_str_equal (g_paste_clipboard_meta_formats[i].mimetype, mimetype))
+            return g_paste_clipboard_meta_formats[i].decode;
+    }
+
+    return NULL;
+}
+
+/* The formats GPaste stores each type as, for a host that never initialised
+ * GTK. A file list then offers text/uri-list alone: the types sandboxed
+ * applications take files through (application/vnd.portal.filetransfer,
+ * application/vnd.portal.files) are GTK's own, registered against the document
+ * portal by gtk_init (), which nothing in gnome-shell calls. */
+static void
+g_paste_clipboard_meta_ensure_formats (void)
+{
+    static gsize registered = 0;
+
+    if (g_once_init_enter (&registered))
+    {
+        g_paste_clipboard_meta_formats[0].type = GDK_TYPE_TEXTURE;
+        g_paste_clipboard_meta_formats[1].type = GDK_TYPE_RGBA;
+        g_paste_clipboard_meta_formats[2].type = GDK_TYPE_FILE_LIST;
+
+        for (guint i = 0; i < G_N_ELEMENTS (g_paste_clipboard_meta_formats); ++i)
+        {
+            GType type = g_paste_clipboard_meta_formats[i].type;
+            const gchar *mimetype = g_paste_clipboard_meta_formats[i].mimetype;
+            g_autoptr (GdkContentFormats) known = gdk_content_formats_union_deserialize_mime_types (gdk_content_formats_new_for_gtype (type));
+
+            if (gdk_content_formats_contain_mime_type (known, mimetype))
+                continue;
+
+            gdk_content_register_deserializer (mimetype, type, g_paste_clipboard_meta_deserialize,
+                                               (gpointer) g_paste_clipboard_meta_formats[i].decode, NULL);
+            gdk_content_register_serializer (type, mimetype, g_paste_clipboard_meta_serialize, NULL, NULL);
+            g_paste_clipboard_meta_formats[i].registered = TRUE;
+        }
+        g_once_init_leave (&registered, 1);
+    }
 }
 
 /* --- GDK-backed format negotiation --- */
@@ -180,9 +422,11 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
 /*
  * GDK never names media formats: it negotiates through a #GType (GDK_TYPE_TEXTURE
  * for images, GDK_TYPE_RGBA for colors, GDK_TYPE_FILE_LIST for files) and lets
- * its registered (de)serializers expand that to every installed representation.
- * Reuse those sets so the mutter backend advertises (on write) and accepts (on
- * read) exactly the mimetypes the GDK backend would, without hardcoding our own.
+ * its registered (de)serializers expand that to the mimetypes they handle. That
+ * set is what the mutter backend advertises (on write) and accepts (on read):
+ * GDK's own where GTK registered them, the mimetypes the GDK backend takes too,
+ * and in gnome-shell, where it registers none, the one format per type
+ * g_paste_clipboard_meta_ensure_formats () gives.
  *
  * The daemon is single-threaded (GTK main loop), so a plain #GType -> formats
  * cache needs no extra locking beyond creating it once.
@@ -303,10 +547,11 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
 
     g_task_set_source_tag (task, g_paste_clipboard_meta_source_read_async);
 
-    /* Disposed while mutter still holds it -- a takeover swapping the owner out
-     * from under a read in flight. Everything a read is served from went with
-     * dispose, so this answers that there is nothing left rather than look in
-     * tables that are no longer there. */
+    /* Disposed, which only an explicit g_object_run_dispose () does: a read in
+     * flight holds the source, and mutter swapping the owner out only drops its
+     * own reference. Everything a read is served from went with dispose, so this
+     * answers that there is nothing left rather than look in tables that are no
+     * longer there. */
     if (!self->contents)
     {
         g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CLOSED,
@@ -530,25 +775,17 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
     /* Asked before the copy below and not only by deliver (): the bytes this read
      * landed with are the selection's whole text, and duplicating them for a sync
      * that has nowhere left to put them is the one read that is certainly wasted.
-     * The GDK twin pays nothing for the same check, the text it hands over being
-     * one it already owns. */
-    if (g_paste_clipboard_sync_data_wants_text (data) && bytes)
-    {
-        gsize size;
-        const gchar *text = g_bytes_get_data (bytes, &size);
+     * The GDK backend asks it before its own copy of a bare text/plain; its
+     * other reads hand over a text GDK already decoded. */
+    if (!g_paste_clipboard_sync_data_wants_text (data))
+        return;
 
-        /* An empty transfer is an empty text, as update_on_text () takes it, and
-         * as the GDK backend reads it: the other selection gets the empty string
-         * rather than keeping what it had. */
-        if (!size)
-            g_paste_clipboard_sync_data_deliver (data, "");
-        else if (text && g_utf8_validate (text, size, NULL))
-        {
-            g_autofree gchar *dup = g_strndup (text, size);
+    /* An empty transfer is an empty text, as update_on_text () takes it: the
+     * other selection gets the empty string rather than keeping what it had. */
+    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, NULL);
 
-            g_paste_clipboard_sync_data_deliver (data, dup);
-        }
-    }
+    if (text)
+        g_paste_clipboard_sync_data_deliver (data, text);
 }
 
 static void
@@ -656,8 +893,10 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
 
-        /* GDK advertises text/uri-list plus the portal filetransfer/files mimetypes
-         * sandboxed apps need; x-special/gnome-copied-files rides as a special value. */
+        /* GDK serialises the list to whatever it knows for files --
+         * in gnome-shell, text/uri-list alone (see
+         * g_paste_clipboard_meta_ensure_formats ());
+         * x-special/gnome-copied-files rides as a special value. */
         g_value_init (&value, GDK_TYPE_FILE_LIST);
         g_value_set_boxed (&value, file_list);
         g_paste_clipboard_meta_source_add_value (source, &value);
@@ -706,15 +945,12 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
         return;
     }
 
-    gsize size;
-    const gchar *raw = g_bytes_get_data (bytes, &size);
-
     /* An empty transfer comes back as bytes with no data at all, the stream it
      * was written to having never grown: that is an empty text, not a read that
      * failed, and it is what a password manager clearing its copy writes. It is
      * handed over as the empty string, which conclude () takes for the answer it
-     * is -- where dropping it here would leave the record of the password it
-     * replaced unconfirmed for good (see the DROP case there).
+     * is -- where dropping it would leave the record of the password it replaced
+     * unconfirmed for good (see the DROP case there).
      *
      * A source that closes its end without writing anything -- one that failed
      * to serialize, or misbehaves -- comes back exactly the same: a pipe has no
@@ -723,16 +959,12 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
      * retired over the cleartext it still holds, where the other answer leaves
      * every correct password manager's clear unconfirmed for good -- a record
      * that refuses every sync out of that selection, and, while it runs a
-     * countdown, fails every re-exec and storage migration waiting on expiry. */
-    if (!size)
-    {
-        update->produced = TRUE;
-        g_set_str (&update->text, "");
-        g_paste_clipboard_update_maybe_done (update);
-        return;
-    }
+     * countdown, fails every re-exec and storage migration waiting on expiry.
+     *
+     * A text that is not UTF-8 is no text this backend can read. */
+    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, NULL);
 
-    if (!raw || !g_utf8_validate (raw, size, NULL))
+    if (!text)
     {
         g_paste_clipboard_update_maybe_done (update);
         return;
@@ -750,7 +982,7 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
      * over whole, so it can be near twice the text it carries. The string is the
      * text's own length, and the buffer goes back as this returns. */
     update->produced = TRUE;
-    g_set_str_take (&update->text, g_strndup (raw, size));
+    g_set_str_take (&update->text, g_steal_pointer (&text));
     g_paste_clipboard_update_maybe_done (update);
 }
 
@@ -771,32 +1003,17 @@ g_paste_clipboard_meta_content_gtype (GPasteClipboardContentKind content_kind)
     }
 }
 
+/* What a value read decoded to, @value, or what kept it from decoding, @error. */
 static void
-g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object G_GNUC_UNUSED,
-                                                     GAsyncResult *res,
-                                                     gpointer      user_data)
+g_paste_clipboard_meta_update_on_value_decoded (GPasteClipboardUpdate *update,
+                                                const GValue          *value,
+                                                const GError          *error)
 {
-    GPasteClipboardUpdate *update = user_data;
-    g_auto (GValue) value = G_VALUE_INIT;
-    g_autoptr (GError) error = NULL;
-
-    /* Superseded or timed out, the cache is the only place this could reach: see
-     * g_paste_clipboard_update_is_expired (). Asked before the provider is read
-     * off @update, a concluded one having handed it on. */
-    if (g_paste_clipboard_update_is_expired (update))
-    {
-        g_paste_clipboard_update_maybe_done (update);
-        return;
-    }
-
     GPasteClipboardMeta *self = G_PASTE_CLIPBOARD_META (update->provider);
 
-    g_value_init (&value, g_paste_clipboard_meta_content_gtype (update->content_kind));
-
-    if (!gdk_content_deserialize_finish (res, &value, &error))
+    if (error)
     {
-        if (error)
-            g_debug ("Failed to decode selection: %s", error->message);
+        g_debug ("Failed to decode selection: %s", error->message);
         g_paste_clipboard_update_maybe_done (update);
         return;
     }
@@ -805,7 +1022,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     {
     case CLIPBOARD_CONTENT_IMAGE:
     {
-        g_autoptr (GdkTexture) texture = g_value_dup_object (&value);
+        g_autoptr (GdkTexture) texture = g_value_dup_object (value);
 
         if (!texture)
             break;
@@ -824,7 +1041,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     }
     case CLIPBOARD_CONTENT_COLOR:
     {
-        const GdkRGBA *rgba = g_value_get_boxed (&value);
+        const GdkRGBA *rgba = g_value_get_boxed (value);
 
         if (!rgba)
             break;
@@ -841,7 +1058,7 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     }
     case CLIPBOARD_CONTENT_FILE_LIST:
     {
-        GdkFileList *file_list = g_value_get_boxed (&value);
+        GdkFileList *file_list = g_value_get_boxed (value);
         /* (transfer container): the container is ours, the GFiles are not. */
         g_autoptr (GSList) files = (file_list) ? gdk_file_list_get_files (file_list) : NULL;
 
@@ -867,9 +1084,32 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     g_paste_clipboard_update_maybe_done (update);
 }
 
-/* image/color/file-list all decode through GDK's deserialisers, the same path
- * the GDK backend's reads take, so every representation GDK accepts (and the
- * exact byte formats it expects) is handled identically here. */
+static void
+g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object G_GNUC_UNUSED,
+                                                     GAsyncResult *res,
+                                                     gpointer      user_data)
+{
+    GPasteClipboardUpdate *update = user_data;
+    g_auto (GValue) value = G_VALUE_INIT;
+    g_autoptr (GError) error = NULL;
+
+    /* Superseded or timed out, the cache is the only place this could reach: see
+     * g_paste_clipboard_update_is_expired (). Asked before the provider is read
+     * off @update, a concluded one having handed it on. */
+    if (g_paste_clipboard_update_is_expired (update))
+    {
+        g_paste_clipboard_update_maybe_done (update);
+        return;
+    }
+
+    g_value_init (&value, g_paste_clipboard_meta_content_gtype (update->content_kind));
+    if (!gdk_content_deserialize_finish (res, &value, &error) && !error)
+        g_set_error_literal (&error, G_IO_ERROR, G_IO_ERROR_FAILED, "Nothing decoded");
+    g_paste_clipboard_meta_update_on_value_decoded (update, &value, error);
+}
+
+/* image/color/file-list all decode through GDK's deserialisers, whichever are
+ * registered for the type: see g_paste_clipboard_meta_deserialize_formats (). */
 static void
 g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                         GBytes              *bytes,
@@ -892,6 +1132,22 @@ g_paste_clipboard_meta_update_on_value (GPasteClipboardMeta *self G_GNUC_UNUSED,
      * this, that deserialisation runs on whatever was left of the deadline when
      * the transfer started. */
     g_paste_clipboard_read_guard_touch (&update->guard);
+
+    /* One of the formats this file gave GDK, decoded straight off the bytes the
+     * transfer already holds, rather than streamed into a second copy of them by
+     * the deserialiser GDK would run for it. No test tells one copy from two. */
+    GPasteClipboardMetaDecode decode = g_paste_clipboard_meta_own_decode (update->mime);
+
+    if (decode)
+    {
+        g_auto (GValue) value = G_VALUE_INIT;
+        g_autoptr (GError) error = NULL;
+
+        g_value_init (&value, g_paste_clipboard_meta_content_gtype (update->content_kind));
+        decode (&value, bytes, &error);
+        g_paste_clipboard_meta_update_on_value_decoded (update, &value, error);
+        return;
+    }
 
     g_autoptr (GInputStream) stream = g_memory_input_stream_new_from_bytes (bytes);
 
@@ -1140,6 +1396,8 @@ _g_paste_clipboard_meta_new (MetaSelection  *selection,
                              GPasteSettings *settings,
                              gboolean        is_clipboard)
 {
+    g_paste_clipboard_meta_ensure_formats ();
+
     GPasteClipboardMeta *self = g_object_new (G_PASTE_TYPE_CLIPBOARD_META, NULL);
 
     self->selection = g_object_ref (selection);

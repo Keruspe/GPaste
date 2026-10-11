@@ -3,6 +3,7 @@
 
 #include <gpaste-3/gpaste-util.h>
 
+#include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -50,14 +51,7 @@ g_paste_uris_item_get_uris (GPasteUrisItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), NULL);
 
-    /* (transfer container): the container is ours, the GFiles are not. */
-    g_autoptr (GSList) files = gdk_file_list_get_files (self->file_list);
-    g_autoptr (GStrvBuilder) uris = g_strv_builder_new ();
-
-    for (const GSList *f = files; f; f = f->next)
-        g_strv_builder_take (uris, g_file_get_uri (G_FILE (f->data)));
-
-    return g_strv_builder_end (uris);
+    return g_paste_clipboard_file_list_get_uris (self->file_list);
 }
 
 static GPasteItemKind
@@ -131,19 +125,11 @@ g_paste_uris_item_new_from_str (const gchar *str)
     g_return_val_if_fail (g_utf8_validate (str, -1, NULL), NULL);
 
     g_auto (GStrv) uris = g_strsplit (str, "\n", 0);
-    guint64 length = g_strv_length (uris);
 
-    if (!length)
+    if (!*uris)
         return NULL;
 
-    g_autoslist (GFile) files = NULL;
-    for (guint64 i = 0; i < length; ++i)
-        files = g_slist_prepend (files, g_file_new_for_uri (uris[i]));
-    files = g_slist_reverse (files);
-
-    GdkFileList *file_list = gdk_file_list_new_from_list (files);
-
-    return _g_paste_uris_item_new (str, file_list);
+    return _g_paste_uris_item_new (str, g_paste_clipboard_file_list_new ((const gchar * const *) uris));
 }
 
 /**
@@ -160,25 +146,15 @@ g_paste_uris_item_new (GdkFileList *file_list)
 {
     g_return_val_if_fail (file_list != NULL, NULL);
 
-    /* (transfer container): the container is ours, the GFiles are not. */
-    g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
+    g_auto (GStrv) uris = g_paste_clipboard_file_list_get_uris (file_list);
 
-    if (!files)
+    if (!*uris)
         return NULL;
 
-    g_autoptr (GString) uris_joined = g_string_new (NULL);
+    g_autofree gchar *uris_joined = g_strjoinv ("\n", uris);
 
-    for (const GSList *l = files; l; l = l->next)
-    {
-        g_autofree gchar *uri = g_file_get_uri (G_FILE (l->data));
-        if (uris_joined->len > 0)
-            g_string_append_c (uris_joined, '\n');
-        g_string_append (uris_joined, uri);
-    }
-
-    if (!g_utf8_validate (uris_joined->str, -1, NULL))
+    if (!g_utf8_validate (uris_joined, -1, NULL))
         return NULL;
 
-    return _g_paste_uris_item_new (uris_joined->str,
-                                   g_boxed_copy (GDK_TYPE_FILE_LIST, file_list));
+    return _g_paste_uris_item_new (uris_joined, g_boxed_copy (GDK_TYPE_FILE_LIST, file_list));
 }

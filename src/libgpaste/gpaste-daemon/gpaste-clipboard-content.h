@@ -85,11 +85,18 @@ GPasteClipboardTextAction g_paste_clipboard_content_classify_text (const GPasteC
                                                                    gboolean                      sensitive,
                                                                    gchar                       **out_value);
 
-gboolean     g_paste_clipboard_file_list_equal (GdkFileList *a,
-                                                GdkFileList *b);
+/* How many files a file list read off a selection may name: see
+ * g_paste_clipboard_file_list_from_bytes (). */
+#define G_PASTE_CLIPBOARD_MAX_FILES 100000
 
-gchar       *g_paste_clipboard_text_from_bytes (GBytes      *bytes,
-                                                gboolean    *not_utf8);
+gboolean     g_paste_clipboard_file_list_equal      (GdkFileList         *a,
+                                                     GdkFileList         *b);
+GdkFileList *g_paste_clipboard_file_list_new        (const gchar * const *uris);
+GdkFileList *g_paste_clipboard_file_list_from_bytes (GBytes              *bytes);
+GStrv        g_paste_clipboard_file_list_get_uris   (GdkFileList         *file_list);
+
+gchar       *g_paste_clipboard_text_from_bytes      (GBytes              *bytes,
+                                                     gboolean            *not_utf8);
 
 /* How long a batch of clipboard reads may go without a single one of them
  * landing. A selection transfer has no deadline of its own: an owner that dies

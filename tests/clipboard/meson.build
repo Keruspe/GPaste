@@ -40,3 +40,15 @@ test_clipboard_x11_hints = executable(
 )
 
 test('clipboard-x11-hints', test_clipboard_x11_hints, depends: [gpaste_schemas, test_bus_supervisor])
+
+# The mutter backend, against a MetaSelection of its own and with GTK never
+# initialised, as in gnome-shell.
+if get_option('gnome-shell')
+  test_clipboard_meta = executable(
+    'test-clipboard-meta',
+    sources: [ 'test-clipboard-meta.c' ],
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  )
+
+  test('clipboard-meta', test_clipboard_meta, depends: [gpaste_schemas, test_bus_supervisor])
+endif

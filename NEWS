@@ -32,6 +32,8 @@ NEW in 51.1 (UNRELEASED)
 - Fix deleted images sometimes staying on disk, and stored ones being deleted too early
 - Fix copied spreadsheet cells being kept as a picture, and copied images losing their other formats
 - Fix accented text copied by applications offering only plain text being garbled
+- Fix GPaste inside GNOME Shell ignoring copied images, colours and files
+- Fix a huge copy exhausting GNOME Shell's memory when GPaste runs inside it
 - Build: require libXfixes and Meson 1.9
 
 NEW in 51.0 (15/09/2026)
