@@ -1597,9 +1597,10 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
      * is written from the "switch" signal, which loading the history at startup
      * does not emit -- only a later change of history does. Unseeded it would
      * read "", and a client that sized or emptied "the current history" would
-     * name a history called "" instead. The setting is where the daemon's own
-     * history took its name from (g_paste_history_load_async (history, NULL)). */
-    g_paste_daemon3_set_history (daemon->skeleton, g_paste_settings_get_history_name (daemon->settings));
+     * name a history called "" instead. Asked of the history rather than of
+     * the setting it read: a setting naming no history (a path, say) leaves it
+     * on the default one, which is the one the property has to name. */
+    g_paste_daemon3_set_history (daemon->skeleton, g_paste_history_get_current (daemon->history));
 
     /* And "Version", though it never changes, for a reason of its own: a
      * client already running when this daemon took the name asked for every

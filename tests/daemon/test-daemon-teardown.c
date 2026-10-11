@@ -161,13 +161,14 @@ history_loaded (gconstpointer data,
 }
 
 /* A daemon exported on the private bus, its history loaded and its screensaver
- * client built, as a running daemon's are. */
+ * client built, as a running daemon's are. @user_data is the history-name to
+ * start with, when not the usual one. */
 static void
 fixture_set_up (Fixture      *fixture,
-                gconstpointer user_data G_GNUC_UNUSED)
+                gconstpointer user_data)
 {
     fixture->settings = g_paste_settings_new ();
-    g_paste_settings_set_history_name (fixture->settings, "daemon-teardown");
+    g_paste_settings_set_history_name (fixture->settings, (user_data) ? user_data : "daemon-teardown");
     g_paste_settings_set_storage_backend (fixture->settings, G_PASTE_STORAGE_NOOP);
     fixture->clipboard = test_clipboard_new ();
     fixture->primary = test_clipboard_new ();
@@ -940,6 +941,31 @@ test_extension_paused_written_when_set (Fixture      *fixture,
     g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
 }
 
+/* The History property names the history in use from the moment the daemon is
+ * on the bus: a history-name naming none leaves the daemon on the default
+ * history, which is the one a client has to be told about. */
+static void
+test_history_property_seed (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*does not name a history*");
+        return;
+    }
+
+    /* The setting naming no history warns, which is the case itself; a
+     * critical still fails it. */
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    Fixture fixture = { 0 };
+
+    fixture_set_up (&fixture, "not/a/name");
+    g_assert_cmpstr (g_paste_daemon3_get_history (fixture.daemon->skeleton), ==, G_PASTE_DEFAULT_HISTORY);
+    fixture_tear_down (&fixture, NULL);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -972,6 +998,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/upload/shortcut-ends-quietly", Fixture, NULL, fixture_set_up, test_upload_shortcut_ends_quietly, fixture_tear_down);
     g_test_add ("/daemon/upload/ends-with-reexec", Fixture, NULL, fixture_set_up, test_upload_ends_with_reexec, fixture_tear_down);
     g_test_add ("/daemon/upload/survives-in-process-reexec", Fixture, NULL, fixture_set_up, test_upload_survives_in_process_reexec, fixture_tear_down);
+    g_test_add_func ("/daemon/history-property/seed", test_history_property_seed);
 
     return g_paste_test_env_run ();
 }
