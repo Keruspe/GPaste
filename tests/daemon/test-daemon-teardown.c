@@ -5,6 +5,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-test-bus.h>
+#include <gpaste-daemon/gpaste-bus.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
@@ -966,6 +967,96 @@ test_history_property_seed (void)
     fixture_tear_down (&fixture, NULL);
 }
 
+/* An object for the bus to export, which refuses to be when told to and counts
+ * the times it is asked. */
+#define TEST_TYPE_BUS_OBJECT (test_bus_object_get_type ())
+G_DECLARE_FINAL_TYPE (TestBusObject, test_bus_object, TEST, BUS_OBJECT, GPasteBusObject)
+
+struct _TestBusObject
+{
+    GPasteBusObject parent_instance;
+
+    gboolean refuse;
+    guint    registrations;
+};
+
+G_DEFINE_TYPE (TestBusObject, test_bus_object, G_PASTE_TYPE_BUS_OBJECT)
+
+static gboolean
+test_bus_object_register (GPasteBusObject *object,
+                          GDBusConnection *connection G_GNUC_UNUSED,
+                          GError         **error)
+{
+    TestBusObject *self = TEST_BUS_OBJECT (object);
+
+    ++self->registrations;
+    if (!self->refuse)
+        return TRUE;
+
+    g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_EXISTS, "refused");
+    return FALSE;
+}
+
+static void
+test_bus_object_unregister (GPasteBusObject *object G_GNUC_UNUSED)
+{
+}
+
+static void
+test_bus_object_class_init (TestBusObjectClass *klass)
+{
+    GPasteBusObjectClass *bus_object_class = G_PASTE_BUS_OBJECT_CLASS (klass);
+
+    bus_object_class->register_on_connection = test_bus_object_register;
+    bus_object_class->unregister_on_connection = test_bus_object_unregister;
+}
+
+static void
+test_bus_object_init (TestBusObject *self G_GNUC_UNUSED)
+{
+}
+
+static void
+stand_down (GPasteBus *bus,
+            gpointer   user_data)
+{
+    ++*(guint *) user_data;
+    g_paste_bus_unown_name (bus);
+}
+
+/* An export failing as the bus connects is told once, every object having been
+ * tried, and from outside GDBus's callback: a listener standing down then,
+ * unowning the name, is one GDBus would otherwise trip over (a critical). */
+static void
+test_bus_export_failed_told_once (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to export an object on the bus: refused*");
+        return;
+    }
+
+    /* The refusal warns, which is the case itself. */
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteBus) bus = g_paste_bus_new ();
+    g_autoptr (TestBusObject) refused = g_object_new (TEST_TYPE_BUS_OBJECT, NULL);
+    g_autoptr (TestBusObject) next = g_object_new (TEST_TYPE_BUS_OBJECT, NULL);
+    guint failures = 0;
+
+    refused->refuse = TRUE;
+    g_paste_bus_add_object (bus, G_PASTE_BUS_OBJECT (refused));
+    g_paste_bus_add_object (bus, G_PASTE_BUS_OBJECT (next));
+    g_signal_connect (bus, "export-failed", G_CALLBACK (stand_down), &failures);
+    g_paste_bus_own_name_full (bus, FALSE);
+    g_paste_test_bus_wait_for_count (&failures, 1);
+
+    g_assert_cmpuint (failures, ==, 1);
+    g_assert_cmpuint (next->registrations, ==, 1);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -989,6 +1080,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
+    g_test_add_func ("/daemon/bus/export-failed-told-once", test_bus_export_failed_told_once);
     g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);
     g_test_add ("/daemon/upload/bounds-answer", Fixture, NULL, fixture_set_up, test_upload_bounds_answer, fixture_tear_down);
     g_test_add ("/daemon/upload/unread-input", Fixture, NULL, fixture_set_up, test_upload_unread_input, fixture_tear_down);

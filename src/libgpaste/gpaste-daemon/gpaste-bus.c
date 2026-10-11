@@ -29,7 +29,9 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-static void
+/* Whether @object made it on the bus. Failing to is reported by the callers,
+ * through "export-failed" (g_paste_bus_export_failed ()). */
+static gboolean
 g_paste_bus_register_object (GPasteBus       *self,
                              GPasteBusObject *object)
 {
@@ -46,8 +48,27 @@ g_paste_bus_register_object (GPasteBus       *self,
         /* The cause is ours to report (we are the ones holding the GError); what
          * to do about it is the listener's. */
         g_warning ("Failed to export an object on the bus: %s", (error) ? error->message : "unknown error");
-        g_signal_emit (self, signals[EXPORT_FAILED], 0);
+        return FALSE;
     }
+
+    return TRUE;
+}
+
+static void
+g_paste_bus_export_failed (GPasteBus *self)
+{
+    g_signal_emit (self, signals[EXPORT_FAILED], 0);
+}
+
+static gboolean
+g_paste_bus_export_failed_idle (gpointer user_data)
+{
+    g_autoptr (GPasteBus) self = g_weak_ref_get (user_data);
+
+    if (self)
+        g_paste_bus_export_failed (self);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -56,11 +77,24 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
                              gpointer         user_data)
 {
     GPasteBus *self = user_data;
+    gboolean failed = FALSE;
 
     self->connection = g_object_ref (connection);
 
     for (guint i = 0; i < self->objects->len; ++i)
-        g_paste_bus_register_object (self, g_ptr_array_index (self->objects, i));
+        failed |= !g_paste_bus_register_object (self, g_ptr_array_index (self->objects, i));
+
+    /* Once, and from an idle rather than from here: a listener standing down
+     * unowns the name, which GDBus cannot take from inside the callback that
+     * hands it the connection -- it goes on to use that connection once this
+     * returns. */
+    if (failed)
+    {
+        guint id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, g_paste_bus_export_failed_idle,
+                                    g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+
+        g_source_set_name_by_id (id, "[GPaste] export failure");
+    }
 }
 
 static void
@@ -108,8 +142,8 @@ g_paste_bus_add_object (GPasteBus       *self,
 
     g_ptr_array_add (self->objects, g_object_ref (object));
 
-    if (self->connection)
-        g_paste_bus_register_object (self, object);
+    if (self->connection && !g_paste_bus_register_object (self, object))
+        g_paste_bus_export_failed (self);
 }
 
 /**
@@ -228,7 +262,9 @@ g_paste_bus_class_init (GPasteBusClass *klass)
      * reason is warned about by the bus itself). The name may well be ours, but
      * that object's methods are unreachable, so a daemon is expected to treat
      * this as a startup failure — a distinct one from "name-lost", which is
-     * about another daemon owning the name.
+     * about another daemon owning the name. Emitted once however many failed,
+     * and for the objects re-exported as the connection comes up, from an idle:
+     * a listener can unown the name from its handler either way.
      */
     signals[EXPORT_FAILED] = g_signal_new ("export-failed",
                                            G_PASTE_TYPE_BUS,
