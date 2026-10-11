@@ -127,6 +127,10 @@ error while any other refusal is logged, and the indicator it builds reads the
 extension's `GPaste.Settings` through its `settings` getter, which answers it
 until the extension is disabled.
 
+`item-actions` runs the shipped item actions row the same way: the keyboard
+reaching either of its buttons scrolls the row into the history's view, and the
+buttons act on the item the row was opened for.
+
 `daemon` runs the shipped in-shell daemon runner over bus, daemon, storage and
 main loop doubles: a takeover, a failed export and a dropped connection all
 flush and dispose the daemon, and a takeover, a failed export and a failed

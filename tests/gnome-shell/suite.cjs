@@ -3,6 +3,21 @@
 
 // What the Node suites share, required from beside them.
 
+// Signals as the shell's actors carry them, enough to emit one by hand.
+class Signals {
+    connect(signal, handler) {
+        (this._handlers ??= []).push({signal, handler});
+        return this._handlers.length;
+    }
+
+    emit(signal, ...args) {
+        for (const {signal: name, handler} of this._handlers ?? []) {
+            if (name === signal)
+                handler(this, ...args);
+        }
+    }
+}
+
 // Runs @body, the suite @name says it is. Node exits 0 once nothing is left to
 // run, so an await that never settles would end the suite there, every
 // assertion after it skipped: only the body settling counts as having run, a
@@ -25,4 +40,4 @@ function runSuite(name, body) {
     });
 }
 
-module.exports = {runSuite};
+module.exports = {Signals, runSuite};

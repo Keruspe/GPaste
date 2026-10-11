@@ -246,7 +246,7 @@ class GPasteIndicator extends Button {
         // One row of actions for every item row, moved under whichever asked
         // for it rather than one built per row: the list holds as many rows as
         // the menu is scrolled through, and only ever one of them is asked.
-        this._itemActions = new GPasteItemActionsItem();
+        this._itemActions = new GPasteItemActionsItem(this._scrollView);
         this._itemActions.connect('strip-rich-text', (item, uuid) => this._stripRichText(uuid));
         this._itemActions.connect('upload', (item, uuid) => this._upload(uuid));
         this._historySection.addMenuItem(this._itemActions);

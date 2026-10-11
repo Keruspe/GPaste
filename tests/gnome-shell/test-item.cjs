@@ -9,24 +9,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {Signals} = require('./suite.cjs');
 
 const errors = [];
 const debugged = [];
-
-// Signals as the shell's actors carry them, enough to emit one by hand.
-class Signals {
-    connect(signal, handler) {
-        (this._handlers ??= []).push({signal, handler});
-        return this._handlers.length;
-    }
-
-    emit(signal, ...args) {
-        for (const {signal: name, handler} of this._handlers ?? []) {
-            if (name === signal)
-                handler(this, ...args);
-        }
-    }
-}
 
 class Text {
     set_text(text) { this.text = text; }

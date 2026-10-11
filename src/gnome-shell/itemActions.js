@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {PopupBaseMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import GObject from 'gi://GObject';
@@ -29,7 +30,8 @@ export const GPasteItemActionsItem = GObject.registerClass({
         'upload': {param_types: [GObject.TYPE_STRING]},
     },
 }, class GPasteItemActionsItem extends PopupBaseMenuItem {
-    constructor() {
+    // @scrollView is the one the rows are in, which these are moved among.
+    constructor(scrollView) {
         // Not activatable, as the history actions are not: what acts is a
         // button, and a row that activated would close the menu.
         super({
@@ -46,8 +48,15 @@ export const GPasteItemActionsItem = GObject.registerClass({
             style: 'spacing: 6px;',
         });
         this._firstButton = addActionButton(this._buttons, _('Remove Rich Text'), () => this.emit('strip-rich-text', this._uuid));
-        addActionButton(this._buttons, _('Upload'), () => this.emit('upload', this._uuid));
+        const upload = addActionButton(this._buttons, _('Upload'), () => this.emit('upload', this._uuid));
+
         this.add_child(this._buttons);
+
+        // As a row does (GPasteIndicator._createRow ()): the keyboard moving
+        // here from a row at the viewport's edge reaches a button clipped
+        // outside it, which nothing would scroll in.
+        for (const button of [this._firstButton, upload])
+            button.connect('key-focus-in', () => ensureActorVisibleInScrollView(scrollView, this));
 
         this.reset();
     }
