@@ -28,6 +28,11 @@ counted_reexecute_legacy_daemon (GPasteClient *client,
 #undef g_paste_util_reexecute_legacy_daemon
 #include <gpaste-ui-item.h>
 
+/* And the application's actions, its main () put out of the way. */
+#define main gpaste_ui_main
+#include <gpaste-ui.c>
+#undef main
+
 #include <gpaste-3/gpaste-daemon3.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 
@@ -1690,6 +1695,42 @@ test_sidebar_choice (void)
     close_activation_window (window, &daemon);
 }
 
+/* The application's actions bring the window to the front, and do nothing once
+ * it is gone rather than reach for it. */
+static void
+test_app_actions (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+    g_assert_null (gtk_application_get_windows (app));
+    about_activated (NULL, NULL, app);
+    prefs_activated (NULL, NULL, app);
+    search_activated (NULL, g_variant_new_string ("value"), app);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
+    search_activated (NULL, g_variant_new_string ("value"), app);
+    g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
+    gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
+    about_activated (NULL, NULL, app);
+    g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
+    adw_dialog_force_close (adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window)));
+    gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
+    prefs_activated (NULL, NULL, app);
+    g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
+    close_activation_window (window, &daemon);
+}
+
 static gboolean
 on_sigusr1 (gpointer user_data)
 {
@@ -3084,6 +3125,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/image-preview-off", test_image_preview_off);
     g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
+    g_test_add_func ("/ui/daemon-presence/app-actions", test_app_actions);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

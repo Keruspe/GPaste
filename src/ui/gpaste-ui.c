@@ -6,10 +6,14 @@
 
 #include <gpaste-ui-window.h>
 
+/* %NULL once the window is gone: an action can still be dispatched in the
+ * iteration that closed it, the application quitting at its end. */
 static GPasteUiWindow *
 get_ui_window (gpointer user_data)
 {
-    return G_PASTE_UI_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data);
+    GList *windows = gtk_application_get_windows (GTK_APPLICATION (user_data));
+
+    return (windows) ? G_PASTE_UI_WINDOW (windows->data) : NULL;
 }
 
 static void
@@ -17,7 +21,10 @@ prefs_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_paste_ui_window_show_prefs (get_ui_window (user_data));
+    GPasteUiWindow *window = get_ui_window (user_data);
+
+    if (window)
+        g_paste_ui_window_show_prefs (window);
 }
 
 static void
@@ -25,7 +32,10 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_paste_ui_window_show_about (get_ui_window (user_data));
+    GPasteUiWindow *window = get_ui_window (user_data);
+
+    if (window)
+        g_paste_ui_window_show_about (window);
 }
 
 static void
@@ -41,7 +51,10 @@ search_activated (GSimpleAction *action    G_GNUC_UNUSED,
                   GVariant      *parameter,
                   gpointer       user_data)
 {
-    g_paste_ui_window_search (get_ui_window (user_data), g_variant_get_string (parameter, NULL));
+    GPasteUiWindow *window = get_ui_window (user_data);
+
+    if (window)
+        g_paste_ui_window_search (window, g_variant_get_string (parameter, NULL));
 }
 
 gint

@@ -287,7 +287,8 @@ while previews are off, and read it as they are turned on. A history filled
 one item at a time shows every item while they fit the window. Moving the
 sidebar's selection switches nothing and goes back to the history in use,
 activating a row switches, and activating the one in use in a collapsed window
-shows it.
+shows it. With `gpaste-ui.c` included, its `main ()` renamed, the application's
+actions do nothing with no window and bring a hidden one back.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

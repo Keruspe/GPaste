@@ -309,12 +309,18 @@ static void g_paste_ui_window_update_key_capture (GPasteUiWindow *self);
 static void g_paste_ui_window_release_focus      (GPasteUiWindow *self,
                                                   GtkWidget      *widget);
 
-/* A search asked for from outside is the user's, and the picks name rows of the
- * list it replaces, so selection mode goes first. */
+/* The three the application's own actions run -- from the search provider,
+ * the launcher's desktop actions or gpaste-client -- bring the window to the
+ * front: an ActivateAction emits no activate, and the window may be behind
+ * others, minimized or on another workspace. A search asked for from outside
+ * is the user's, and the picks name rows of the list it replaces, so selection
+ * mode goes first. */
 static void
 do_search (GPasteUiWindow *self,
            const gchar    *search)
 {
+    gtk_window_present (GTK_WINDOW (self));
+
     if (g_paste_ui_history_get_selection_mode (self->history))
         exit_selection_mode (self);
 
@@ -343,6 +349,7 @@ static void
 do_show_prefs (GPasteUiWindow *self,
                const gchar    *arg G_GNUC_UNUSED)
 {
+    gtk_window_present (GTK_WINDOW (self));
     g_action_group_activate_action (G_ACTION_GROUP (self), "preferences", NULL);
 }
 
@@ -350,6 +357,7 @@ static void
 do_show_about (GPasteUiWindow *self,
                const gchar    *arg G_GNUC_UNUSED)
 {
+    gtk_window_present (GTK_WINDOW (self));
     g_action_group_activate_action (G_ACTION_GROUP (self), "about", NULL);
 }
 
