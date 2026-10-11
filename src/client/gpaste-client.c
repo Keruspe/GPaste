@@ -868,9 +868,9 @@ static const Command commands[] = {
         { 1, "history-size",      "hs",              0,        TRUE,  FALSE, 0,        NULL,                         N_ ("print the size of the current history"),                                                   g_paste_history_size },
         { 2, "search",            NULL,              0,        TRUE,  FALSE, 0,        N_ ("<pattern>"),             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
         { 1, "get-history",       "gh",              0,        TRUE,  FALSE, 0,        NULL,                         N_ ("get the name of the current history"),                                                     g_paste_get_history },
-        { 2, "backup-history",    "bh",              1,        TRUE,  FALSE, 0,        N_ ("<name>"),                N_ ("back up the current history"),                                                             g_paste_backup_history },
+        { 2, "backup-history",    "bh",              1,        TRUE,  FALSE, 0,        N_ ("[<history>] <backup>"),  N_ ("back up <history>, the current one if not given, as <backup>"),                            g_paste_backup_history },
         { 2, "switch-history",    "sh",              0,        TRUE,  FALSE, 0,        N_ ("<name>"),                N_ ("switch to another history"),                                                               g_paste_switch_history },
-        { 1, "delete-history",    "dh",              1,        TRUE,  FALSE, 0,        N_ ("<name>"),                N_ ("delete a history"),                                                                        g_paste_delete_history },
+        { 1, "delete-history",    "dh",              1,        TRUE,  FALSE, 0,        N_ ("[<name>]"),              N_ ("delete the history <name>, the current one if not given"),                                 g_paste_delete_history },
         { 1, "list-histories",    "lh",              0,        TRUE,  FALSE, 0,        NULL,                         N_ ("list available histories"),                                                                g_paste_list_histories },
         { 1, "add",               "a",               1,        TRUE,  TRUE,  0,        N_ ("<text>"),                N_ ("set text to clipboard"),                                                                   g_paste_add },
         { 2, "add-password",      "ap",              1,        TRUE,  TRUE,  0,        N_ ("<name> [<password>]"),   N_ ("add the <name> / <password> pair to the clipboard, <password> read from stdin if absent"), g_paste_add_password },
@@ -885,7 +885,7 @@ static const Command commands[] = {
         { 2, "unfavourite",       "unfav",           0,        TRUE,  FALSE, 1,        N_ ("<uuid>"),                N_ ("unpin item <uuid>, letting the history drop it again"),                                    g_paste_unfavourite },
         { 2, "delete-password",   "dp",              0,        TRUE,  FALSE, 0,        N_ ("<name>"),                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
         { 2, "file",              "f",               0,        TRUE,  FALSE, 0,        N_ ("<path>"),                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
-        { 1, "empty",             "e",               1,        TRUE,  FALSE, 0,        NULL,                         N_ ("empty the history"),                                                                       g_paste_empty },
+        { 1, "empty",             "e",               1,        TRUE,  FALSE, 0,        N_ ("[<name>]"),              N_ ("empty the history <name>, the current one if not given"),                                  g_paste_empty },
         { 1, "start",             "d daemon",        0,        TRUE,  FALSE, 0,        NULL,                         N_ ("start tracking clipboard changes"),                                                        g_paste_start },
         { 1, "stop",              "q quit",          0,        TRUE,  FALSE, 0,        NULL,                         N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
         { 1, "daemon-reexec",     "dr",              0,        TRUE,  FALSE, 0,        NULL,                         N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
@@ -998,31 +998,37 @@ show_help (FILE *out)
     fprintf (out, "  %s | %s: %s\n", _("<command>"), progname, _("copy the output of <command> to the clipboard"));
 
     fprintf (out, "\n");
+    fprintf (out, "%s\n", _("General options:"));
+    /* The verbs' own words: each option does what its verb does. */
+    fprintf (out, "  -h, --help: %s\n", _("display this help"));
+    fprintf (out, "  -v, --version: %s\n", _("display the version"));
+
+    fprintf (out, "\n");
     fprintf (out, "%s\n", _("Convenience options:"));
     /* Translators: help for --favourites */
-    fprintf (out, "  --favourites: %s\n", _("only display the pinned items"));
+    fprintf (out, "  -f, --favourites: %s\n", _("only display the pinned items"));
     /* Translators: help for --timeout */
-    fprintf (out, "  --timeout: %s\n", _("how long a password stays on the clipboard, in seconds; 0 for as long as anything else"));
+    fprintf (out, "  -t, --timeout: %s\n", _("how long a password stays on the clipboard, in seconds; 0 for as long as anything else"));
     /* Translators: help for --use-index */
-    fprintf (out, "  --use-index: %s\n", _("use the index of the item instead of its UUID"));
+    fprintf (out, "  -i, --use-index: %s\n", _("use the index of the item instead of its UUID"));
 
     fprintf (out, "\n");
     fprintf (out, "%s\n", _("Display options:"));
     /* Translators: help for --oneline */
-    fprintf (out, "  --oneline: %s\n", _("display each item on only one line"));
+    fprintf (out, "  -o, --oneline: %s\n", _("display each item on only one line"));
     /* Translators: help for --raw */
-    fprintf (out, "  --raw: %s\n", _("display each item raw (without line numbers)"));
+    fprintf (out, "  -r, --raw: %s\n", _("display each item raw (without line numbers)"));
     /* Translators: help for --reverse */
-    fprintf (out, "  --reverse: %s\n", _("display the items in reverse order"));
+    fprintf (out, "  -e, --reverse: %s\n", _("display the items in reverse order"));
     /* Translators: help for --zero */
-    fprintf (out, "  --zero: %s\n", _("use a NUL character instead of a new line between each item"));
+    fprintf (out, "  -z, --zero: %s\n", _("use a NUL character instead of a new line between each item"));
 
     fprintf (out, "\n");
     fprintf (out, "%s\n", _("Merge options:"));
     /* Translators: help for --decoration <string> */
-    fprintf (out, "  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
+    fprintf (out, "  -d, --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
     /* Translators: help for --separator <string> */
-    fprintf (out, "  --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
+    fprintf (out, "  -s, --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
 }
 
 /* Whether this command line can reach a command that reads a pipe, tried with

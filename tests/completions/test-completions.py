@@ -154,6 +154,25 @@ def man_verbs():
     return {m.strip('[]') for m in re.findall(r'^\.TP\n\.B gpaste-client (\[?[\w-]+\]?)', body, re.M)}
 
 
+def undocumented_options():
+    """The options parse_cmdline () takes that --help (show_help ()) or the man
+    page's OPTIONS leave out, each written with its short form beside it."""
+    body = (ROOT / 'src/client/gpaste-client.c').read_text()
+    table = body[body.index('struct option long_options[] = {'):]
+    table = table[:table.index('};')]
+    options = re.findall(r'\{\s*"([\w-]+)",\s*\w+,\s*NULL,\s*\'(\w)\'\s*\}', table)
+    if not options:
+        sys.exit('found no long_options[] to check against')
+    help_body = body[body.index('show_help (FILE *out)\n{'):]
+    help_body = help_body[:help_body.index('\n}\n')]
+    man = (ROOT / 'man/1/gpaste-client.1').read_text()
+    man = man[man.index('.SH "OPTIONS"'):]
+
+    return ([f'--help leaves out -{short}, --{name}' for name, short in options if f'-{short}, --{name}' not in help_body] +
+            [f'the man page leaves out -{short}, --{name}' for name, short in options
+             if not re.search(rf'^\.B -{short}, --{name}\b', man, re.M)])
+
+
 def main():
     canonical, every, items = verbs()
     failures = []
@@ -189,6 +208,7 @@ def main():
     missing = sorted(v for v in canonical if v not in man)
     if missing:
         failures.append(f'man/1/gpaste-client.1 does not document: {", ".join(missing)}')
+    failures += undocumented_options()
 
     for f in failures:
         print(f'FAIL: {f}', file=sys.stderr)

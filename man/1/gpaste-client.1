@@ -62,16 +62,16 @@ Display the items of the history matching <pattern>
 Get the name of the current history
 .br
 .TP
-.B gpaste-client backup-history
-Back up the current history
+.B gpaste-client backup-history [<history>] <backup>
+Back up <history>, the current one when not given, as <backup>
 .br
 .TP
-.B gpaste-client switch-history
-Switch to another history
+.B gpaste-client switch-history <name>
+Switch to the history <name>, starting a new one when there is none
 .br
 .TP
-.B gpaste-client delete-history
-Delete a history
+.B gpaste-client delete-history [<name>]
+Delete the history <name>, the current one when not given
 .br
 .TP
 .B gpaste-client list-histories
@@ -151,8 +151,8 @@ Put the content of the file at <path> into the clipboard
 Put the output of the command into the history
 .br
 .TP
-.B gpaste-client empty
-Empty the history
+.B gpaste-client empty [<name>]
+Empty the history <name>, the current one when not given
 .br
 .TP
 .B gpaste-client start
@@ -214,11 +214,23 @@ Make the GNOME Shell extension display the history
 .SH "OPTIONS"
 
 .TP
-.B --favourites
+.B -h, --help
+Display the help, as
+.B help
+does
+.br
+.TP
+.B -v, --version
+Display the version, as
+.B version
+does
+.br
+.TP
+.B -f, --favourites
 Only display the pinned items, when listing the history or a search
 .br
 .TP
-.B --use-index
+.B -i, --use-index
 Address items by their index rather than their uuid: their position in the history, starting at zero, as
 .B gpaste-client history \%--use-index
 displays it. Every argument naming an item is read as an index then, each of
@@ -226,7 +238,7 @@ displays it. Every argument naming an item is read as an index then, each of
 included, while text, names, search patterns, paths and history names keep their usual meaning. An index is an unsigned decimal number and nothing else: one with a sign or a space in front, or anything after its digits, is refused
 .br
 .TP
-.B --timeout <seconds>
+.B -t, --timeout <seconds>
 How long a password stays on the clipboard once it is the active item, for
 .B add-password
 and
@@ -236,18 +248,30 @@ When it runs out, the next item that is not a password is selected, or the clipb
 setting
 .br
 .TP
-.B --oneline
+.B -o, --oneline
 Display each item on one line, without new lines
 .br
 .TP
-.B --raw
+.B -r, --raw
 Display the item raw (without index)
 .br
 .TP
-.B --reverse
+.B -e, --reverse
 Display the items in reverse order
 .br
 .TP
-.B --zero
+.B -z, --zero
 Use NUL character instead of new lines between each item
+.br
+.TP
+.B -d, --decoration <string>
+Add <string> to the beginning and the end of each item
+.B merge
+joins
+.br
+.TP
+.B -s, --separator <string>
+Add <string> between each item
+.B merge
+joins
 .br
