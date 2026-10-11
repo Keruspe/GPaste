@@ -662,6 +662,61 @@ test_reads_stdin (void)
     g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
 }
 
+/* @length bytes of @contents as the client's stdin, from a file of their own. */
+static void
+stdin_from (const gchar *contents,
+            gsize        length)
+{
+    g_autofree gchar *path = NULL;
+    gint fd = g_file_open_tmp ("gpaste-client-stdin-XXXXXX", &path, NULL);
+
+    g_assert_cmpint (fd, >=, 0);
+    g_assert_cmpint (write (fd, contents, length), ==, (gssize) length);
+    g_assert_cmpint (lseek (fd, 0, SEEK_SET), ==, 0);
+    g_assert_cmpint (dup2 (fd, STDIN_FILENO), ==, STDIN_FILENO);
+    g_assert_true (g_close (fd, NULL));
+    g_assert_cmpint (g_unlink (path), ==, 0);
+    clearerr (stdin);
+}
+
+/* Piped input is read whole or refused: a NUL in it, which no D-Bus string can
+ * carry, is not where it ends, and neither is a read that fails. */
+static void
+test_pipe_refusals (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *data = NULL;
+
+    stdin_from ("a\0b", 3);
+    g_assert_false (extract_pipe_data (&data, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_null (data);
+    g_clear_error (&error);
+
+    gint directory = g_open (g_get_tmp_dir (), O_RDONLY | O_DIRECTORY | O_CLOEXEC, 0);
+
+    g_assert_cmpint (directory, >=, 0);
+    g_assert_cmpint (dup2 (directory, STDIN_FILENO), ==, STDIN_FILENO);
+    g_assert_true (g_close (directory, NULL));
+    clearerr (stdin);
+    g_assert_false (extract_pipe_data (&data, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY);
+    g_assert_null (data);
+    g_clear_error (&error);
+
+    stdin_from ("piped", 5);
+    g_assert_true (extract_pipe_data (&data, &error));
+    g_assert_no_error (error);
+    g_assert_cmpstr (data, ==, "piped");
+}
+
 /* On a terminal, an item's control characters are shown rather than acted on:
  * an escape sequence copied off a web page neither retitles the window nor
  * writes the terminal's own clipboard -- line feeds, tabs and the carriage
@@ -750,6 +805,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/reexec/refusal", test_refusal);
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
+    g_test_add_func ("/client/pipe/refusals", test_pipe_refusals);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);

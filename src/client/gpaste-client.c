@@ -7,8 +7,10 @@
 #include <gpaste-3/gpaste-settings.h>
 #include <gpaste-3/gpaste-util.h>
 
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef struct
 {
@@ -128,20 +130,45 @@ parse_cmdline (int     *argc,
     return TRUE;
 }
 
-static gchar *
-extract_pipe_data (void)
+/* What is piped in, whole, in @data -- %NULL for nothing piped. A read that
+ * fails, or input carrying a NUL byte, which no D-Bus string can carry, is
+ * refused rather than cut short: a prefix of the input would otherwise go for
+ * all of it, and an empty one for nothing piped -- the listing, then, on a
+ * line with no verb. */
+static gboolean
+extract_pipe_data (gchar  **data,
+                   GError **error)
 {
+    *data = NULL;
+
     if (isatty (STDIN_FILENO))
-        return NULL; /* We're not being piped */
+        return TRUE;
 
-    g_autoptr (GString) data = g_string_new (NULL);
-    gint64 c;
+    g_autoptr (GString) input = g_string_new (NULL);
+    gchar buffer[8192];
+    gsize length;
 
-    while ((c = fgetc (stdin)) != EOF)
-        data = g_string_append_c (data, (guchar)c);
-    g_string_append_c (data, '\0');
+    while ((length = fread (buffer, 1, sizeof (buffer), stdin)) > 0)
+        g_string_append_len (input, buffer, (gssize) length);
 
-    return (*data->str) ? g_strdup (data->str) : NULL;
+    if (ferror (stdin))
+    {
+        gint saved_errno = errno;
+
+        g_set_error (error, G_IO_ERROR, g_io_error_from_errno (saved_errno), _("Could not read the input: %s"), g_strerror (saved_errno));
+        return FALSE;
+    }
+
+    if (memchr (input->str, '\0', input->len))
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, _("Cannot use input carrying a NUL byte."));
+        return FALSE;
+    }
+
+    if (input->len)
+        *data = g_string_free_and_steal (g_steal_pointer (&input));
+
+    return TRUE;
 }
 
 /* @text as it goes out: on a terminal, a control character an application put
@@ -1226,10 +1253,14 @@ main (gint argc, gchar *argv[])
         /* Only where a pipe is what the command line is for: extract_pipe_data ()
          * reads stdin to its end, and an end is not something every caller is
          * going to provide (see command_reads_stdin ()). */
-        if (dispatch_reads_stdin (argc, (argc > 0) ? argv[0] : NULL, &ctx))
-            ctx.pipe_data = pipe_data = extract_pipe_data ();
+        if (dispatch_reads_stdin (argc, (argc > 0) ? argv[0] : NULL, &ctx) && !extract_pipe_data (&pipe_data, &error))
+            status = EXIT_FAILURE;
+        else
+        {
+            ctx.pipe_data = pipe_data;
+            status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
+        }
 
-        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
         g_autoptr (GPasteClient) client = ctx.client;
 
         /* Nothing matched the command line at all: a verb we do not know, or one

@@ -6,6 +6,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix a history just switched away from being listed with the wrong number of items
 - Fix searches listing images that have nothing to do with what was typed
 - Fix merging an image or a password putting a checksum or a mask in the merged text
+- Fix gpaste-client cutting piped input at a NUL byte, or taking a failed read for its end
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 
 NEW in 51.1 (20/10/2026)
