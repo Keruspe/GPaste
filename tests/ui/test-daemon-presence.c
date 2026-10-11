@@ -83,6 +83,8 @@ typedef struct
     gchar                 *selected;
     /* The lowest index read since the test last set it. */
     guint64                lowest_read;
+    /* Appended to every item's value, as an edit would. */
+    const gchar           *edited;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -225,7 +227,7 @@ complete_item (FakeDaemon            *daemon,
     daemon->lowest_read = MIN (daemon->lowest_read, index);
 
     g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index);
-    g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT, index);
+    g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT "%s", index, (daemon->edited) ? daemon->edited : "");
     GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
 
     g_paste_daemon3_complete_get_item_at_index (daemon->skeleton, invocation,
@@ -1257,6 +1259,65 @@ test_superseded_refresh (void)
     drain ();
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
     g_assert_cmpuint (daemon.lowest_read, ==, 2);
+    close_activation_window (window, &daemon);
+}
+
+/* A row whose item changed where it stands is read again in place: the widget
+ * stays, with the keyboard focus and what it shows until the read lands, rather
+ * than being unbound and blanked as a recycled row is. A pick on it goes, what
+ * it shows no longer being what was picked. */
+static void
+test_row_read_in_place (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 6 };
+    guint picks = 0;
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+
+    drain ();
+    gtk_list_view_scroll_to (list_view, 3, GTK_LIST_SCROLL_FOCUS, NULL);
+    drain ();
+
+    GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
+
+    g_assert_nonnull (focus);
+
+    GtkInscription *label = GTK_INSCRIPTION (find_widget (focus, GTK_TYPE_INSCRIPTION));
+
+    g_assert_cmpstr (gtk_inscription_get_text (label), ==, "value 3");
+
+    /* Until its read lands, the row goes on showing what it showed. */
+    daemon.hold_items = TRUE;
+    daemon.edited = " edited";
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, "", (guint64) 3);
+    g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
+    g_assert_cmpstr (gtk_inscription_get_text (label), ==, "value 3");
+
+    daemon.lowest_read = G_MAXUINT64;
+    release_items (&daemon);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_cmpuint (daemon.lowest_read, ==, 3);
+    g_assert_true (gtk_root_get_focus (GTK_ROOT (window)) == focus);
+    g_assert_cmpstr (gtk_inscription_get_text (label), ==, "value 3 edited");
+
+    g_signal_connect (window->history, "selection-changed", G_CALLBACK (count_picks), &picks);
+    on_enter_selection_mode (NULL, window);
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 2));
+    g_assert_cmpuint (picks, ==, 1);
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, "", (guint64) 2);
+    g_assert_cmpuint (picks, ==, 0);
     close_activation_window (window, &daemon);
 }
 
@@ -2647,6 +2708,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/activate-unread-rows", test_activate_unread_rows);
     g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);
     g_test_add_func ("/ui/daemon-presence/superseded-refresh", test_superseded_refresh);
+    g_test_add_func ("/ui/daemon-presence/row-read-in-place", test_row_read_in_place);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

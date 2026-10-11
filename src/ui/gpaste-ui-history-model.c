@@ -109,6 +109,15 @@ struct _GPasteUiHistoryModel
     gboolean   by_uuid; /* the rows are named (a search, the favourites) rather than history positions */
 };
 
+enum
+{
+    INVALIDATED,
+
+    LAST_SIGNAL
+};
+
+static guint signals[LAST_SIGNAL] = { 0 };
+
 static void g_paste_ui_history_model_list_model_iface_init (GListModelInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (UiHistoryModel, ui_history_model, G_TYPE_OBJECT,
@@ -262,7 +271,8 @@ g_paste_ui_history_model_set_uuids (GPasteUiHistoryModel *self,
  *
  * Report that @n_items rows from @position still exist at those positions but no
  * longer show the same thing — history entries shift when one is added or
- * removed. The bound rows refetch; the rest are none of the view's business.
+ * removed — through #GPasteUiHistoryModel::invalidated, for the bound rows to
+ * read their items again; the rest are none of the view's business.
  */
 void
 g_paste_ui_history_model_invalidate (GPasteUiHistoryModel *self,
@@ -276,24 +286,12 @@ g_paste_ui_history_model_invalidate (GPasteUiHistoryModel *self,
     if (!n_items || position >= self->items->len || n_items > self->items->len - position)
         return;
 
-    /* Fresh objects for the range, not just the signal. #GtkListView pairs each
-     * released row widget with the item pointer it was bound to, so being handed
-     * the same pointers back it reuses each widget for its own item and runs
-     * neither unbind nor bind — the rows would keep showing what they showed.
-     * Replacing the items is what makes "same position, different content"
-     * visible to it. */
-    for (guint64 i = position; i < position + n_items; ++i)
-    {
-        GPasteUiHistoryItem *old = g_ptr_array_index (self->items, i);
-
-        /* A search row is identified by its uuid, which the invalidation does
-         * not change; a positional one carries none. */
-        g_ptr_array_index (self->items, i) = g_paste_ui_history_item_new (g_paste_ui_history_item_get_uuid (old));
-
-        g_object_unref (old);
-    }
-
-    g_list_model_items_changed (G_LIST_MODEL (self), position, n_items, n_items);
+    /* Not items-changed: #GtkListView answers that by binding the rows afresh,
+     * all but the one with the keyboard focus, whose widget it keeps on the
+     * item it showed -- stale, and the focus with it
+     * (/ui/daemon-presence/row-read-in-place). The rows stay as they are, and
+     * read again. */
+    g_signal_emit (self, signals[INVALIDATED], 0, position, n_items);
 }
 
 /**
@@ -354,6 +352,27 @@ static void
 g_paste_ui_history_model_class_init (GPasteUiHistoryModelClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_history_model_dispose;
+
+    /**
+     * GPasteUiHistoryModel::invalidated:
+     * @model: the model
+     * @position: the first row whose contents changed
+     * @n_items: how many rows from @position
+     *
+     * Rows that kept their place but no longer show what they did, which the
+     * rows bound to them read again (g_paste_ui_history_model_invalidate ()).
+     */
+    signals[INVALIDATED] = g_signal_new ("invalidated",
+                                         G_PASTE_TYPE_UI_HISTORY_MODEL,
+                                         G_SIGNAL_RUN_LAST,
+                                         0, /* class offset */
+                                         NULL, /* accumulator */
+                                         NULL, /* accumulator data */
+                                         NULL, /* generic marshaller */
+                                         G_TYPE_NONE,
+                                         2,
+                                         G_TYPE_UINT64,
+                                         G_TYPE_UINT64);
 }
 
 static void

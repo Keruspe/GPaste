@@ -276,6 +276,36 @@ widget_mapped (gconstpointer widget,
     return gtk_widget_get_mapped ((GtkWidget *) widget);
 }
 
+/* A row handed to another item shows nothing of the one it showed, and offers
+ * nothing on the one it now answers for until that item is read. */
+static void
+test_item_rebound_blank (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWidget *window = gtk_window_new ();
+    g_autoptr (GtkWidget) item = g_object_ref_sink (g_paste_ui_item_new (client, settings, GTK_WINDOW (window), 0));
+    GPasteUiItem *row = G_PASTE_UI_ITEM (item);
+
+    g_assert_no_error (error);
+    g_paste_ui_item_set_text (row, "previous");
+    g_paste_ui_item_set_index (row, (guint64) -1);
+    g_assert_cmpstr (gtk_inscription_get_text (row->label), ==, "");
+
+    g_paste_ui_item_set_uuid (row, "00000000-0000-4000-8000-000000000001");
+    g_assert_false (g_action_get_enabled (G_ACTION (item_action (row, "delete"))));
+    g_assert_false (g_action_get_enabled (G_ACTION (item_action (row, "pin"))));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 /* A sidebar listing "work" and "work_backup", in a window that hosts dialogs. */
 static GPasteUiPanel *
 panel_window (GPasteClient *client,
@@ -435,6 +465,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/panel-history/delete-key", test_delete_key);
     g_test_add_func ("/ui/item/selection-mode-notify", test_item_selection_mode_notify);
     g_test_add_func ("/ui/item/star-named", test_item_star_named);
+    g_test_add_func ("/ui/item/rebound-blank", test_item_rebound_blank);
     g_test_add_func ("/ui/panel/switch-name", test_panel_switch_name);
     g_test_add_func ("/ui/panel/backup-name", test_panel_backup_name);
     g_test_add_func ("/ui/panel/backup-window-gone", test_panel_backup_window_gone);

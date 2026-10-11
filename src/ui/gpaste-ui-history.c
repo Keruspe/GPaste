@@ -1092,14 +1092,6 @@ g_paste_ui_history_picked_at (GPasteUiHistory *self,
  * way -- otherwise a merge acts on whatever slid into the remembered positions,
  * or on a row that is no longer there at all.
  *
- * A history that is being watched changes under the picking whenever the
- * clipboard does, and it arrives as rows keeping their positions and being
- * handed fresh items to refetch with, so what they show is no longer what was
- * picked. #GtkMultiSelection re-selects only the items it still recognizes,
- * which those are not, so the checkmarks go -- and this drops the picks that
- * named them, in the same pass, rather than leaving Merge holding rows the list
- * no longer shows as picked.
- *
  * The order the picks are held in is the order they were made in, which the
  * merge depends on, so they are edited in place rather than rebuilt. */
 static void
@@ -1134,6 +1126,40 @@ on_selection_items_changed (GListModel *model G_GNUC_UNUSED,
 
     if (dropped)
         g_signal_emit (self, signals[SELECTION_CHANGED], 0, self->selection->len);
+}
+
+/* Rows that kept their place but show something else: a history that is being
+ * watched changes under the picking whenever the clipboard does. Each bound
+ * row reads its item again where it stands, keeping its widget and with it the
+ * keyboard focus, and what was picked there is no longer what the row shows,
+ * so the pick goes -- unselected, which on_selection_changed () drops from the
+ * picks in the same pass, rather than leaving Merge holding rows the list no
+ * longer shows as picked. */
+static void
+on_rows_invalidated (GPasteUiHistoryModel *model,
+                     guint64               position,
+                     guint64               n_items,
+                     gpointer              user_data)
+{
+    GPasteUiHistory *self = user_data;
+
+    for (guint64 i = position; i < position + n_items; ++i)
+    {
+        GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (model, i);
+        GtkWidget *widget = g_paste_ui_history_item_get_widget (item);
+        const gchar *uuid = g_paste_ui_history_item_get_uuid (item);
+
+        if (!widget)
+            continue;
+
+        if (uuid)
+            g_paste_ui_item_set_uuid (G_PASTE_UI_ITEM (widget), uuid);
+        else
+            g_paste_ui_item_set_index (G_PASTE_UI_ITEM (widget), i);
+    }
+
+    if (self->selection_mode && self->selection_model)
+        gtk_selection_model_unselect_range (self->selection_model, (guint) position, (guint) n_items);
 }
 
 /* The selection model tracks which positions are picked; the merge wants them in
@@ -1402,6 +1428,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 {
     self->selection = g_array_new (FALSE, FALSE, sizeof (guint));
     self->model = g_paste_ui_history_model_new ();
+    g_signal_connect (self->model, "invalidated", G_CALLBACK (on_rows_invalidated), self);
 }
 
 /**

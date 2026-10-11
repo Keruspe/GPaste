@@ -39,8 +39,8 @@ struct _GPasteUiItem
     GtkWidget          *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
     /* Every action's availability follows the kind, so the row keeps that rather
      * than a flag per action, which could go stale against it. INVALID is what a
-     * row holds before it has an item, where the missing uuid disables
-     * everything anyway. */
+     * row holds until the item it answers for has been read, and disarms every
+     * action (g_paste_ui_item_update_actions ()). */
     GPasteItemKind      kind;
     gboolean            favourited;
     gboolean            hovered;
@@ -138,15 +138,16 @@ item_action (GPasteUiItem *self,
     return G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (self->actions), name));
 }
 
-/* A row is on screen before the item it stands for has been fetched, and a
- * recycled one is no longer the item it is still showing, so what it can do
- * follows the uuid it currently answers for: with none, every action is
- * disabled, which leaves the buttons insensitive and the menu items greyed
- * rather than aimed at whatever the row used to hold. */
+/* Armed once the row has read the item it answers for, every action disabled
+ * until then -- the buttons insensitive, the menu items greyed: a row is on
+ * screen before its item has been fetched, a search row knows its uuid from the
+ * moment it is bound yet shows nothing of the item until it lands, and a row
+ * read again where it stands still shows the item before -- a pin or a
+ * deletion would act on what the user cannot see. */
 static void
 g_paste_ui_item_update_actions (GPasteUiItem *self)
 {
-    gboolean armed = (self->uuid != NULL);
+    gboolean armed = (self->uuid != NULL && self->kind != G_PASTE_ITEM_KIND_INVALID);
     gboolean text = (self->kind == G_PASTE_ITEM_KIND_TEXT);
 
     /* Edit covers a password too, where it opens the make-password composer
@@ -758,18 +759,23 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
      * wrong way, so it is reset too: whatever the next item turns out to be, the
      * row is drawing nothing about it yet.
      *
-     * What the row draws for itself goes with them, swatch and thumbnail alike:
-     * a thumbnail is two round trips away (the item, then its bytes) and the
-     * widget is handed straight to the next row, so the next image would be
-     * shown as the previous one for that whole while — and for good, should the
-     * call fail. A colour arrives with its item, but the row is drawing nothing
-     * about that item yet either. */
+     * What the row draws for itself goes with them, text, swatch and thumbnail
+     * alike: the widget is handed straight to the next row, which would show
+     * the previous item until its own read lands -- for good, should that read
+     * fail -- and a thumbnail is two round trips away (the item, then its
+     * bytes). A colour arrives with its item, but the row is drawing nothing
+     * about that item yet either.
+     *
+     * A row read again where it stands (on_rows_invalidated () in
+     * gpaste-ui-history.c) keeps all of that until its read lands: it is the
+     * same row, and blanking it would flicker. */
     if (index != (guint64) -1)
         g_paste_ui_item_reset_text (self);
     else
     {
         g_clear_pointer (&self->uuid, g_free);
         g_paste_ui_item_apply_index (self, index);
+        g_paste_ui_item_set_text (self, "");
         g_paste_ui_item_set_favourited (self, FALSE);
         g_paste_ui_color_swatch_set_color (self->swatch, NULL);
         g_paste_ui_item_set_thumbnail (self, NULL);

@@ -210,7 +210,8 @@ drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace. It also checks that an item row notifies
 `selection-mode` only when it changes, and that its star is named for what
-clicking it does. It includes `gpaste-ui-panel.c` too, its switch and backup
+clicking it does, and that a row handed to another item blanks its text and
+offers no action until that item is read. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
 that Switch or Create keeps its text until the switch is answered, that Back Up
 waits for a name neither refused nor listed and backs up on Enter, and that its
@@ -273,7 +274,9 @@ search again and an update listing it again; a row bound before its item was rea
 loaded, activate by index; in selection mode an activation picks and Ctrl+F is
 off, and a search asked for from outside leaves selection mode. A positional
 refresh superseded before its size came back has the one superseding it
-refetch from the earlier of the two rows.
+refetch from the earlier of the two rows. A row whose item changed where it
+stands keeps its widget, the focus and its text until its read lands, then
+shows the new value, and a pick on it goes.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon
@@ -335,7 +338,8 @@ disposed one still holds its accelerator.
 
 `test-ui-history-model` checks that `GPasteUiHistoryModel` ignores an
 invalidated range past its rows, however far past, a position near the top of
-its range included.
+its range included, and that invalidating keeps the items and emits no
+items-changed.
 
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of
