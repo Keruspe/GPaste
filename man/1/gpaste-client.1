@@ -160,11 +160,11 @@ Stop tracking clipboard changes
 .br
 .TP
 .B gpaste-client upload <uuid>
-Upload the item matching <uuid> to a pastebin service, and print the url it landed at
+Upload the item matching <uuid> to a pastebin service, and print the url it landed at; only a text item can be uploaded, any other is refused
 .br
 .TP
 .B gpaste-client upload-and-copy <uuid>
-Upload the item matching <uuid> to a pastebin service, and print the url it landed at, as upload does; the daemon then puts the url where it can be pasted, as the keyboard shortcut does: in the history, or on the clipboard alone should the history refuse it
+Upload the item matching <uuid> to a pastebin service, and print the url it landed at, as upload does, a text item alone; the daemon then puts the url where it can be pasted, as the keyboard shortcut does: in the history, or on the clipboard alone should the history refuse it
 .br
 .TP
 .B gpaste-client ui

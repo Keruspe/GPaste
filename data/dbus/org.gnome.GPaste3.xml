@@ -494,7 +494,9 @@
       The reply comes when the upload has finished, not when it has started, and
       an upload that failed fails this call. What to do with the url is the
       caller's business: it is not added to the history. An empty @uuid means the
-      current item, which is what the keyboard shortcut uploads.
+      current item, which is what the keyboard shortcut uploads. An item that is
+      not a text fails with org.gnome.GPaste.Error.WrongItemKind, the value of
+      any other kind being something else than what its row shows.
     -->
     <method name="Upload">
       <arg type="s" direction="in"  name="uuid"/>

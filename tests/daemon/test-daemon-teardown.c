@@ -271,6 +271,36 @@ test_reexecute_in_process (Fixture      *fixture,
     g_assert_cmpuint (expiries, ==, 0);
 }
 
+static void
+on_uploaded (GObject      *source_object G_GNUC_UNUSED,
+             GAsyncResult *result,
+             gpointer      user_data)
+{
+    *(GAsyncResult **) user_data = g_object_ref (result);
+}
+
+/* Upload takes a text item alone: a password's value is the placeholder
+ * standing for it, which no command is handed. */
+static void
+test_upload_refuses_password (Fixture      *fixture,
+                              gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteItem *password = g_paste_password_item_new ("name", "secret", 0);
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (password));
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_add (fixture->daemon->history, password);
+    g_paste_settings_set_upload_command (fixture->settings, "false");
+    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+
+    g_autofree gchar *url = g_paste_daemon_upload_finish (fixture->daemon, result, &error);
+
+    g_assert_null (url);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_WRONG_ITEM_KIND);
+}
+
 /* An encrypted flavour whose passphrase a change is asked of: one this build
  * opens when @offered, one it lacks otherwise -- G_PASTE_STORAGE_NOOP when
  * there is none of that sort. */
@@ -367,6 +397,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
+    g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);
 
     return g_paste_test_env_run ();
 }

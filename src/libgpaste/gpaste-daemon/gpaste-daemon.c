@@ -455,10 +455,8 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
  * connection closed, waits for as long as the process lives -- and with it the
  * task, the child, and the pipes the daemon opened for it.
  *
- * Nothing secret waits with them: Upload is a text item's action, and what it
- * hands the command is g_paste_item_get_value (), which a password answers with
- * G_PASTE_PASSWORD_ITEM_NO_NAME -- the cleartext is get_real_value ()'s and
- * nothing on this path asks for it.
+ * Nothing secret waits with them: Upload takes a text item alone, a password
+ * being refused before anything runs (g_paste_daemon_upload ()).
  *
  * Comfortably inside the ten minutes GPasteClient allows either upload call, so
  * what the caller is told is the deadline that ran out rather than a proxy
@@ -661,6 +659,15 @@ g_paste_daemon_upload (GPasteDaemon       *self,
         return;
     }
 
+    /* A pastebin takes text, and every other kind's value is something else
+     * than what the user picked: an image's is the checksum naming its file, a
+     * password's the placeholder standing for it. */
+    if (!G_PASTE_IS_TEXT_ITEM (item))
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_WRONG_ITEM_KIND, "Only a text item can be uploaded.");
+        return;
+    }
+
     const gchar *command = g_paste_settings_get_upload_command (self->settings);
 
     if (!command || !*command)
@@ -721,7 +728,8 @@ g_paste_daemon_upload (GPasteDaemon       *self,
  * Finish an upload started with g_paste_daemon_upload().
  *
  * Errors are in %G_PASTE_ERROR (%G_PASTE_ERROR_NOT_FOUND for a uuid matching
- * nothing, %G_PASTE_ERROR_INVALID_ARGUMENT for an "upload-command" that is
+ * nothing, %G_PASTE_ERROR_WRONG_ITEM_KIND for an item that is not a text,
+ * %G_PASTE_ERROR_INVALID_ARGUMENT for an "upload-command" that is
  * empty or does not parse, %G_PASTE_ERROR_FAILED when the tool could not be run
  * or answered something that is not a url) or whatever running it reported.
  *

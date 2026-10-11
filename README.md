@@ -170,7 +170,7 @@ meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd> | Mark the active item as a password, if it is a text one |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd> | Sync the clipboard to the primary selection |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> | Sync the primary selection to the clipboard |
-| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> | Upload the active item to a pastebin |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> | Upload the active item to a pastebin, if it is a text one |
 
 All of them are configurable in the preferences.
 
