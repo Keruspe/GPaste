@@ -22,6 +22,9 @@ NEW in 51.1 (UNRELEASED)
 - Fix clearing a number in the preferences setting its minimum, trimming the history to five items
 - Fix the upload command changing with every key typed
 - Fix shortcut rows in the preferences taking Shift alone, or still waiting once the focus left them
+- Fix a file named in another encoding than UTF-8 breaking GNOME Shell's menu and search
+- Fix home files not shown from ~ when HOME ends with a slash
+- Fix Unicode line breaks splitting an item's row
 - Fix a password staying on the clipboard when its history entry is deleted, or the history emptied or decrypted
 - Fix a password taken off the clipboard coming back as plain text, or leaving it needlessly blank
 - Fix GNOME Shell taking a password off the clipboard early when asked to restart GPaste

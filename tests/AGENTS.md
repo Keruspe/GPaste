@@ -313,7 +313,12 @@ bound to it comes back after a refused flip. This settings-only suite uses
 and calls faked, and checks how both `g_paste_util_activate_ui()` flavours take
 their argument, whether the proxy comes up or is refused: a floating one is
 consumed, a caller's own reference left to the caller -- who may drop it before
-the asynchronous flavour's proxy is up, the call still made with it.
+the asynchronous flavour's proxy is up, the call still made with it. It also
+checks what a client draws for an item: one line, the Unicode line breaks
+folded too; each kind's decoration, a kind it does not know shown as it
+arrived; and a files item's paths percent-decoded, a home file from "~" --
+a whole leading component only, a `$HOME` ending in a slash included, set in a
+subprocess since GLib reads it once -- and a name not in UTF-8 shown as text.
 
 `test-util` also reads back pid files: the positive decimal pid written in one,
 and -1 for anything else, a 0 above all, which `kill ()` takes for the caller's

@@ -223,12 +223,98 @@ test_pid_file (void)
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
+/* Every line break Pango honours is folded, the Unicode ones included. */
+static void
+test_one_line (void)
+{
+    g_autofree gchar *line = g_paste_util_one_line ("a\nb\rc\td\u2028e\u2029f\xc2\x85g");
+
+    g_assert_cmpstr (line, ==, "a b c d e f g");
+}
+
+static void
+assert_files_shown (const gchar *uris,
+                    const gchar *expected)
+{
+    g_autofree gchar *shown = g_paste_util_display_string (uris, G_PASTE_ITEM_KIND_URIS);
+
+    g_assert_cmpstr (shown, ==, expected);
+    g_assert_true (g_utf8_validate (shown, -1, NULL));
+}
+
+/* Run in subprocesses, GLib reading $HOME and the filename encoding once:
+ * with $HOME spelled without, then with, a trailing slash, then with names
+ * set to be in Latin-1. */
+static void
+test_files_shown (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_auto (GStrv) envp = g_get_environ ();
+
+        for (guint i = 0; i < 3; ++i)
+        {
+            g_auto (GStrv) child_envp = g_environ_setenv (g_strdupv (envp), "HOME", (i == 1) ? "/home/joe/" : "/home/joe", TRUE);
+
+            child_envp = (i == 2) ? g_environ_setenv (child_envp, "G_FILENAME_ENCODING", "ISO-8859-1", TRUE)
+                                  : g_environ_unsetenv (child_envp, "G_FILENAME_ENCODING");
+            g_test_trap_subprocess_with_envp (NULL, (const gchar * const *) child_envp, 0, G_TEST_SUBPROCESS_DEFAULT);
+            g_test_trap_assert_passed ();
+        }
+        return;
+    }
+
+    gboolean latin1 = !g_strcmp0 (g_getenv ("G_FILENAME_ENCODING"), "ISO-8859-1");
+
+    /* A home file reads from "~", a whole leading component only. */
+    assert_files_shown ("file:///home/joe/a", "[Files] ~/a");
+    assert_files_shown ("file:///home/joe", "[Files] ~");
+    assert_files_shown ("file:///home/joey/a", "[Files] /home/joey/a");
+    /* Percent-decoded; one line, a trailing newline hanging nothing off it. */
+    assert_files_shown ("file:///tmp/a%20b\nfile:///tmp/c\n", "[Files] /tmp/a b /tmp/c");
+    /* Anything but a local file is shown as the uri it is. */
+    assert_files_shown ("sftp://host/a%20b", "[Files] sftp://host/a%20b");
+    /* With an authority naming this host, read as the same file. */
+    assert_files_shown ("file://localhost/home/joe/a", "[Files] ~/a");
+    /* A name not in UTF-8 is shown as text all the same: in the encoding names
+     * are set to be in, or with what is not text replaced. */
+    assert_files_shown ("file:///tmp/caf%E9", (latin1) ? "[Files] /tmp/caf\u00e9" : "[Files] /tmp/caf\uFFFD");
+}
+
+/* Each kind wears its decoration, text none, and a kind this library does not
+ * know is shown as it arrived. */
+static void
+test_display_string (void)
+{
+    static const struct
+    {
+        GPasteItemKind kind;
+        const gchar   *expected;
+    } cases[] = {
+        { G_PASTE_ITEM_KIND_TEXT,     "value"           },
+        { G_PASTE_ITEM_KIND_IMAGE,    "[Image, value]"  },
+        { G_PASTE_ITEM_KIND_COLOR,    "[Color] value"   },
+        { G_PASTE_ITEM_KIND_PASSWORD, "[Password] value" },
+        { (GPasteItemKind) 99,        "value"           },
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_autofree gchar *shown = g_paste_util_display_string ("value", cases[i].kind);
+
+        g_assert_cmpstr (shown, ==, cases[i].expected);
+    }
+}
+
 int
 main (int argc, char **argv)
 {
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/util/pid-file", test_pid_file);
+    g_test_add_func ("/util/one-line", test_one_line);
+    g_test_add_func ("/util/display-string/files", test_files_shown);
+    g_test_add_func ("/util/display-string/kinds", test_display_string);
     for (gsize i = 0; i < G_N_ELEMENTS (activation_cases); ++i)
         g_test_add_data_func (activation_cases[i].path, &activation_cases[i], test_activation_argument);
     return g_paste_test_env_run ();

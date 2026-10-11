@@ -322,9 +322,11 @@ g_paste_util_history_name_is_valid (const gchar *name)
  * g_paste_util_one_line:
  * @text: the initial text
  *
- * Fold @text onto a single line, replacing every carriage return, line feed and
- * tabulation with a space. This is what everything displaying an item in a
- * one-line context — the command line's --oneline, the history rows, the search
+ * Fold @text onto a single line, replacing every carriage return, line feed,
+ * tabulation and Unicode line break -- the next-line, line and paragraph
+ * separators (U+0085, U+2028, U+2029), which Pango breaks a line at too --
+ * with a space. This is what everything displaying an item in a one-line
+ * context — the command line's --oneline, the history rows, the search
  * provider's results — has to do to it first.
  *
  * Returns: the newly allocated string
@@ -334,7 +336,14 @@ g_paste_util_one_line (const gchar *text)
 {
     g_return_val_if_fail (text, NULL);
 
-    return g_strdelimit (g_strdup (text), "\n\r\t", ' ');
+    g_autoptr (GString) line = g_string_new (text);
+
+    /* NEL as its UTF-8 bytes: C has no universal character name below U+00A0. */
+    g_string_replace (line, "\xc2\x85", " ", 0);
+    g_string_replace (line, "\u2028", " ", 0);
+    g_string_replace (line, "\u2029", " ", 0);
+
+    return g_strdelimit (g_string_free_and_steal (g_steal_pointer (&line)), "\n\r\t", ' ');
 }
 
 /* The uris a files item holds, as a line to read rather than a list to act on:
@@ -352,6 +361,11 @@ g_paste_util_uris_display_string (const gchar *value)
     const gchar *home = g_get_home_dir ();
     gsize home_len = (home) ? strlen (home) : 0;
 
+    /* A $HOME spelled with a trailing slash names the same directory, which
+     * the comparison below would otherwise only ever find itself in. */
+    while (home_len > 1 && home[home_len - 1] == '/')
+        --home_len;
+
     for (GStrv u = uris; *u; ++u)
     {
         const gchar *uri = *u;
@@ -364,21 +378,33 @@ g_paste_util_uris_display_string (const gchar *value)
         if (shown->len)
             g_string_append_c (shown, ' ');
 
-        if (!g_str_has_prefix (uri, "file://"))
+        g_autofree gchar *path = g_filename_from_uri (uri, NULL, NULL);
+
+        /* Anything but a local file -- another scheme, a uri that does not
+         * decode -- is shown as the uri it is. */
+        if (!path)
         {
             g_string_append (shown, uri);
             continue;
         }
 
-        const gchar *escaped = uri + strlen ("file://");
-        g_autofree gchar *path = g_uri_unescape_string (escaped, NULL);
-        const gchar *p = (path) ? path : escaped;
+        const gchar *p = path;
 
         /* Only a whole leading component, so /home/joe never shortens /home/joey. */
-        if (home_len && g_str_has_prefix (p, home) && (!p[home_len] || p[home_len] == '/'))
-            g_string_append_printf (shown, "~%s", p + home_len);
-        else
-            g_string_append (shown, p);
+        if (home_len && !strncmp (p, home, home_len) && (!p[home_len] || p[home_len] == '/'))
+        {
+            g_string_append_c (shown, '~');
+            p += home_len;
+        }
+
+        /* A name in another encoding than UTF-8 -- an old archive's Latin-1 --
+         * decodes to bytes no label can draw and no D-Bus string can carry: it
+         * is read in the filename encoding the user set (G_FILENAME_ENCODING),
+         * and failing that, what reads as text is kept, the rest shown as
+         * U+FFFD. */
+        g_autofree gchar *display = g_filename_display_name (p);
+
+        g_string_append (shown, display);
     }
 
     return g_string_free_and_steal (g_steal_pointer (&shown));
