@@ -19,7 +19,10 @@
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-3/gpaste-util.h>
@@ -380,6 +383,137 @@ test_add_password_name_conflict (void)
         g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (original)), ==, PASSWORD_TIMEOUT);
         g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "clipboard text");
     }
+}
+
+/* Past the text cap with trim-items off, a file whose first bytes hold a NUL
+ * begins no text: a TIFF, its header "II*\0", is added as the image it is
+ * rather than refused as too long a text. */
+static void
+test_add_file_tiff (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autofree gchar *dir = g_build_filename (g_get_user_cache_dir (), "add-file-tiff", NULL);
+    g_autofree gchar *path = g_build_filename (dir, "image.tiff", NULL);
+    /* Noise, so that the TIFF is more than the head read of it. */
+    g_autoptr (GRand) rand = g_rand_new_with_seed (7);
+    guint32 *pixels = g_malloc (64 * 64 * 4);
+
+    for (gsize i = 0; i < 64 * 64; ++i)
+        pixels[i] = g_rand_int (rand) | 0xff000000;
+
+    g_autoptr (GBytes) pixel_bytes = g_bytes_new_take (pixels, 64 * 64 * 4);
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (64, 64, GDK_MEMORY_R8G8B8A8, pixel_bytes, 64 * 4);
+    g_autoptr (GBytes) tiff = gdk_texture_save_to_tiff_bytes (texture);
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpuint (g_bytes_get_size (tiff), >, 4096);
+    g_assert_cmpmem (g_bytes_get_data (tiff, NULL), 4, "II*\0", 4);
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (path, g_bytes_get_data (tiff, NULL), (gssize) g_bytes_get_size (tiff), NULL));
+    g_paste_settings_set_trim_items (settings, FALSE);
+    g_paste_settings_set_max_text_item_size (settings, 1024);
+
+    g_autofree gchar *uuid = g_paste_daemon_methods_add_file (&methods, path, &error);
+
+    g_assert_no_error (error);
+    g_assert_nonnull (uuid);
+    g_assert_true (G_PASTE_IS_IMAGE_ITEM (g_paste_history_get (history, 0)));
+
+    g_assert_cmpint (g_unlink (path), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
+/* The file g_file_get_contents () fails the case for being asked to read. */
+static const gchar *unread_path = NULL;
+
+gboolean
+g_file_get_contents (const gchar *filename,
+                     gchar      **contents,
+                     gsize       *length,
+                     GError     **error)
+{
+    typedef gboolean (*GetContents) (const gchar *, gchar **, gsize *, GError **);
+    GetContents original = (GetContents) dlsym (RTLD_NEXT, "g_file_get_contents");
+
+    g_assert_nonnull (original);
+    g_assert_false (g_paste_str_equal (filename, unread_path));
+    return original (filename, contents, length, error);
+}
+
+/* AddFile reads only a regular file the history could keep: a FIFO would hold
+ * the daemon until something wrote to it, and a file over the memory cap is
+ * refused unread, as unread_path holds it to, root or not. Past the
+ * text cap with trim-items off, one beginning as a text is refused on its first
+ * bytes, the NULs past them, which a whole read would find, never looked at;
+ * with trimming on it is read, since what trimming leaves may fit. */
+static void
+test_add_file_refusals (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    /* The add selects what it adds: a manager with no clipboard to put it on. */
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    /* Under the test environment's own directories, which go with it whatever
+     * this case ends in. */
+    g_autofree gchar *dir = g_build_filename (g_get_user_cache_dir (), "add-file", NULL);
+    g_autofree gchar *fifo = g_build_filename (dir, "fifo", NULL);
+    g_autofree gchar *big = g_build_filename (dir, "big", NULL);
+    g_autofree gchar *long_text = g_build_filename (dir, "long-text", NULL);
+    g_autofree gchar *padded = g_build_filename (dir, "padded", NULL);
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_cmpint (mkfifo (fifo, 0600), ==, 0);
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, fifo, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_clear_error (&error);
+
+    gint fd = g_open (big, O_WRONLY | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (fd, >=, 0);
+    g_assert_cmpint (ftruncate (fd, 6 * 1024 * 1024), ==, 0);
+    g_assert_true (g_close (fd, NULL));
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    unread_path = big;
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, big, &error));
+    unread_path = NULL;
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_clear_error (&error);
+
+    g_autofree gchar *head = g_strnfill (4096, 'a');
+
+    g_assert_true (g_file_set_contents (long_text, head, -1, NULL));
+    g_assert_cmpint (truncate (long_text, 2 * 1024 * 1024), ==, 0);
+    g_paste_settings_set_max_text_item_size (settings, 1024 * 1024);
+    unread_path = long_text;
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, long_text, &error));
+    unread_path = NULL;
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_clear_error (&error);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    g_autofree gchar *spaces = g_strnfill (1024 * 1024, ' ');
+    g_autofree gchar *padded_text = g_strconcat (spaces, "kept", spaces, NULL);
+
+    g_assert_true (g_file_set_contents (padded, padded_text, -1, NULL));
+    g_paste_settings_set_trim_items (settings, TRUE);
+
+    g_autofree gchar *uuid = g_paste_daemon_methods_add_file (&methods, padded, &error);
+
+    g_assert_no_error (error);
+    g_assert_nonnull (uuid);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "kept");
+
+    g_assert_cmpint (g_unlink (fifo), ==, 0);
+    g_assert_cmpint (g_unlink (big), ==, 0);
+    g_assert_cmpint (g_unlink (long_text), ==, 0);
+    g_assert_cmpint (g_unlink (padded), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
 /* Like make_history but without forcing a name into GSettings (which would emit
@@ -6215,6 +6349,8 @@ main (int argc, char *argv[])
     add_test ("/history/favourite_survives_replace", test_favourite_survives_replace);
     add_test ("/history/add_password_name_conflict", test_add_password_name_conflict);
     add_test ("/history/password_names_wait_for_load", test_password_names_wait_for_load);
+    add_test ("/history/add_file_refusals", test_add_file_refusals);
+    add_test ("/history/add_file_tiff", test_add_file_tiff);
     add_test ("/history/set_active_refused", test_set_active_refused);
     add_test ("/history/set_active_unstored", test_set_active_unstored);
     add_test ("/history/migration_refused_backend", test_migration_refused_backend);

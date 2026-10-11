@@ -97,7 +97,11 @@
 
       @path is read by the daemon, so it must be one the daemon can reach; a
       client resolves a relative one against its own directory first. A file that
-      is not valid UTF-8 is tried as an image.
+      is not valid UTF-8 is tried as an image. A path naming no regular file (a
+      FIFO, a device) fails with org.gnome.GPaste.Error.InvalidArgument, and a
+      file larger than "max-memory-usage" with org.gnome.GPaste.Error.Rejected,
+      neither being read. With "trim-items" off, so does a file larger than
+      "max-text-item-size" whose first bytes begin a text, read no further.
     -->
     <method name="AddFile">
       <arg type="s" direction="in"  name="path"/>

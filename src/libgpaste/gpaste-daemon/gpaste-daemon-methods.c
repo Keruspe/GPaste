@@ -210,6 +210,40 @@ g_paste_daemon_methods_add_text (const GPasteDaemonMethods *self,
     return g_paste_daemon_methods_do_add (self, text, (text) ? strlen (text) : 0, error);
 }
 
+/* Whether the first bytes of @file could begin a UTF-8 text, which is what
+ * AddFile adds a file as text by, a sequence cut short by the end of the bytes
+ * read included. An image's do not: PNG, JPEG and TIFF open with a byte or a
+ * NUL that UTF-8 has no place for, and binary data meets one well within this
+ * many bytes. */
+static gboolean
+g_paste_daemon_methods_starts_as_text (GFile    *file,
+                                       gboolean *text,
+                                       GError  **error)
+{
+    g_autoptr (GFileInputStream) stream = g_file_read (file, NULL /* cancellable */, error);
+    gchar head[4096];
+    gsize read;
+
+    if (!stream || !g_input_stream_read_all (G_INPUT_STREAM (stream), head, sizeof (head), &read, NULL /* cancellable */, error))
+        return FALSE;
+
+    const gchar *end;
+
+    if (g_utf8_validate (head, (gssize) read, &end))
+    {
+        *text = TRUE;
+        return TRUE;
+    }
+
+    /* g_utf8_get_char_validated () answers a sequence holding a NUL as it does
+     * one cut short: a TIFF's "II*\0" is no text begun. */
+    gsize rest = (gsize) (head + read - end);
+
+    *text = read == sizeof (head) && !memchr (end, '\0', rest) && g_utf8_get_char_validated (end, (gssize) rest) == (gunichar) -2;
+
+    return TRUE;
+}
+
 G_PASTE_VISIBLE gchar *
 g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
                                  const gchar               *path,
@@ -220,11 +254,49 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
 
     G_PASTE_DBUS_ASSERT_FULL (path && *path, G_PASTE_ERROR_INVALID_ARGUMENT, "no file to add", NULL);
 
-    if (!g_file_get_contents (path, &content, &length, error))
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autoptr (GFileInfo) info = g_file_query_info (file,
+                                                    G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_SIZE,
+                                                    G_FILE_QUERY_INFO_NONE,
+                                                    NULL /* cancellable */,
+                                                    error);
+
+    if (!info)
         return NULL;
 
-    if (g_utf8_validate (content, length, NULL))
-        return g_paste_daemon_methods_do_add (self, content, length, error);
+    /* Read whole and on the main loop, so only what is sure to end, at a size
+     * the history can keep: a FIFO or a terminal would hold the daemon until
+     * something wrote to it, /dev/zero would never stop, and a file over the
+     * memory cap would only be refused once read. */
+    G_PASTE_DBUS_ASSERT_FULL (g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR,
+                              G_PASTE_ERROR_INVALID_ARGUMENT, "the path names no regular file", NULL);
+
+    guint64 size = (guint64) g_file_info_get_size (info);
+
+    G_PASTE_DBUS_ASSERT_FULL (size <= g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024,
+                              G_PASTE_ERROR_REJECTED, "the file is larger than max-memory-usage", NULL);
+
+    /* The text cap, tighter, holds for a text alone, and judges the item stored
+     * (g_paste_daemon_methods_do_add ()): with trim-items off that is the whole
+     * file, so one past it is refused unread if it begins as a text, and handed
+     * straight to the image loader if not. With trimming on, whatever
+     * whitespace is taken off is unbounded, so the file is read to know. */
+    if (!g_paste_settings_get_trim_items (self->settings) && size > g_paste_settings_get_max_text_item_size (self->settings))
+    {
+        gboolean text;
+
+        if (!g_paste_daemon_methods_starts_as_text (file, &text, error))
+            return NULL;
+        G_PASTE_DBUS_ASSERT_FULL (!text, G_PASTE_ERROR_REJECTED, "the content is longer than max-text-item-size", NULL);
+    }
+    else
+    {
+        if (!g_file_get_contents (path, &content, &length, error))
+            return NULL;
+
+        if (g_utf8_validate (content, length, NULL))
+            return g_paste_daemon_methods_do_add (self, content, length, error);
+    }
 
     g_autoptr (GError) img_error = NULL;
     g_autoptr (GdkTexture) img = gdk_texture_new_from_filename (path, &img_error);
