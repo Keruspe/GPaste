@@ -967,6 +967,36 @@ test_history_property_seed (void)
     fixture_tear_down (&fixture, NULL);
 }
 
+/* Every method the interface declares has a handler, so none answers "not
+ * implemented" on the bus. The handler signal is named after the method as
+ * gdbus-codegen names it: hyphenated where a capital follows a small letter. */
+static void
+test_every_method_handled (Fixture      *fixture,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    GDBusInterfaceInfo *info = g_paste_daemon3_interface_info ();
+    GPasteDaemon3 *skeleton = fixture->daemon->skeleton;
+
+    for (GDBusMethodInfo **method = info->methods; *method; ++method)
+    {
+        const gchar *name = (*method)->name;
+        g_autoptr (GString) signal_name = g_string_new ("handle-");
+
+        for (const gchar *c = name; *c; ++c)
+        {
+            if (c != name && g_ascii_isupper (*c) && g_ascii_islower (c[-1]))
+                g_string_append_c (signal_name, '-');
+            g_string_append_c (signal_name, g_ascii_tolower (*c));
+        }
+
+        guint id = g_signal_lookup (signal_name->str, G_TYPE_FROM_INSTANCE (skeleton));
+
+        g_assert_cmpuint (id, !=, 0);
+        if (!g_signal_has_handler_pending (skeleton, id, 0, FALSE))
+            g_error ("%s has no handler", name);
+    }
+}
+
 /* An object for the bus to export, which refuses to be when told to and counts
  * the times it is asked. */
 #define TEST_TYPE_BUS_OBJECT (test_bus_object_get_type ())
@@ -1076,6 +1106,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
     g_test_add ("/daemon/reexport-follows-screensaver", Fixture, NULL, fixture_set_up, test_reexport_follows_screensaver, fixture_tear_down);
+    g_test_add ("/daemon/methods/every-method-handled", Fixture, NULL, fixture_set_up, test_every_method_handled, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-state", Fixture, NULL, fixture_set_up, test_extension_state, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);

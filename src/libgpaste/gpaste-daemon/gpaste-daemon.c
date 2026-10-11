@@ -1379,9 +1379,10 @@ g_paste_daemon_handle_upload_and_copy (GPasteDaemon          *self,
 
 #undef ARGLIST
 
-/* Every method the interface declares, wired in one place so a method added to
- * the XML without a handler here shows up as a missing symbol rather than a
- * silent "not implemented" on the bus. Swapped, so @self leads. */
+/* Every method the interface declares, wired in one place: a method added to the
+ * XML without a handler here fails /daemon/methods/every-method-handled rather
+ * than answering a silent "not implemented" on the bus. Swapped, so @self
+ * leads. */
 static void
 g_paste_daemon_connect_handlers (GPasteDaemon *self)
 {
