@@ -81,6 +81,8 @@ typedef struct
     GPtrArray             *held_items;
     guint                  selects;
     gchar                 *selected;
+    /* The lowest index read since the test last set it. */
+    guint64                lowest_read;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -220,6 +222,8 @@ complete_item (FakeDaemon            *daemon,
                GDBusMethodInvocation *invocation,
                guint64                index)
 {
+    daemon->lowest_read = MIN (daemon->lowest_read, index);
+
     g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index);
     g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT, index);
     GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
@@ -1211,6 +1215,48 @@ test_selection_mode_keys (void)
     g_assert_false (g_paste_ui_history_get_selection_mode (window->history));
     g_assert_true (gtk_search_bar_get_search_mode (window->search_bar));
     g_assert_true (action_enabled (window, "toggle-search"));
+    close_activation_window (window, &daemon);
+}
+
+/* A positional refresh superseded by another before its size came back would
+ * have refetched from its own row on; the one that supersedes it does so from
+ * the earlier of the two rows, its reply alone landing. */
+static void
+test_superseded_refresh (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 10 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    drain ();
+    daemon.hold_sizes = TRUE;
+    daemon.sizings = 0;
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, "", (guint64) 2);
+    g_paste_test_bus_wait_for_count (&daemon.sizings, 1);
+
+    GDBusMethodInvocation *superseded = g_steal_pointer (&daemon.held_size);
+
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, "", (guint64) 5);
+    g_paste_test_bus_wait_for_count (&daemon.sizings, 2);
+
+    daemon.lowest_read = G_MAXUINT64;
+    daemon.size = 8;
+    g_paste_daemon3_complete_get_history_size (daemon.skeleton, superseded, daemon.size);
+    g_paste_daemon3_complete_get_history_size (daemon.skeleton, g_steal_pointer (&daemon.held_size), daemon.size);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_cmpuint (daemon.lowest_read, ==, 2);
     close_activation_window (window, &daemon);
 }
 
@@ -2600,6 +2646,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/search-enter-survives-update", test_search_enter_survives_update);
     g_test_add_func ("/ui/daemon-presence/activate-unread-rows", test_activate_unread_rows);
     g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);
+    g_test_add_func ("/ui/daemon-presence/superseded-refresh", test_superseded_refresh);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

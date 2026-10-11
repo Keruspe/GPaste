@@ -271,7 +271,9 @@ g_paste_ui_history_model_invalidate (GPasteUiHistoryModel *self,
 {
     g_return_if_fail (G_PASTE_IS_UI_HISTORY_MODEL (self));
 
-    if (!n_items || position + n_items > self->items->len)
+    /* Not position + n_items, which a position from the daemon near the top of
+     * its range wraps past. */
+    if (!n_items || position >= self->items->len || n_items > self->items->len - position)
         return;
 
     /* Fresh objects for the range, not just the signal. #GtkListView pairs each

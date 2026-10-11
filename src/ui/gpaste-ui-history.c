@@ -38,10 +38,11 @@ struct _GPasteUiHistory
      * than trusting that to last. */
     GtkWindow            *rootwin;
 
-    guint64               size;       /* number of rows currently in the model */
-    guint64               limit;      /* how many items we currently allow on screen; grows lazily */
-    guint64               available;  /* last known total size of the history */
-    gboolean              loading;    /* a lazy-growth refresh is in flight */
+    guint64               size;         /* number of rows currently in the model */
+    guint64               limit;        /* how many items we currently allow on screen; grows lazily */
+    guint64               available;    /* last known total size of the history */
+    gboolean              loading;      /* a positional refresh is in flight */
+    guint64               loading_from; /* the first row it refetches */
 
     /* The call listing the rows, cancelled and replaced by every refresh and
      * every search. Refresh and filter write the same rows (indices vs. uuids),
@@ -521,7 +522,14 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         return;
     }
 
+    /* The refresh this one supersedes would have refetched from its own index
+     * on, which its reply, dropped, now never does: this one takes over from
+     * the earlier of the two. */
+    if (self->loading)
+        from_index = MIN (from_index, self->loading_from);
+
     self->loading = TRUE;
+    self->loading_from = from_index;
 
     DisplayCallbackData *cdata = display_callback_data_new (self, from_index);
 

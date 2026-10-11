@@ -271,7 +271,9 @@ and the `GetItemAtIndex` reads: Enter in the search selects the first match of
 what was typed once that is listed, past the entry's delay saying the same
 search again and an update listing it again; a row bound before its item was read, and one past the rows
 loaded, activate by index; in selection mode an activation picks and Ctrl+F is
-off, and a search asked for from outside leaves selection mode.
+off, and a search asked for from outside leaves selection mode. A positional
+refresh superseded before its size came back has the one superseding it
+refetch from the earlier of the two rows.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon
@@ -330,6 +332,10 @@ its setting once applied, not as typed; a row destroyed with its reset menu up
 takes the menu with it; Shift alone makes no global shortcut, bar on a
 function key; an armed shortcut row the focus leaves is disarmed; and a
 disposed one still holds its accelerator.
+
+`test-ui-history-model` checks that `GPasteUiHistoryModel` ignores an
+invalidated range past its rows, however far past, a position near the top of
+its range included.
 
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of

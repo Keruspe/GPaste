@@ -45,6 +45,15 @@ ui_new_item_test = executable(
 
 test('test-ui-new-item', ui_new_item_test, depends: [gpaste_schemas, test_bus_supervisor])
 
+ui_history_model_test = executable(
+  'gpaste-ui-history-model-test',
+  sources: ['test-history-model.c', '../../src/ui/gpaste-ui-history-model.c'],
+  include_directories: include_directories('../../src/ui'),
+  dependencies: [gtk4_dep, gpaste_test_env_dep, libgpaste_internal_dep],
+)
+
+test('test-ui-history-model', ui_history_model_test, depends: [gpaste_schemas, test_bus_supervisor])
+
 ui_text_dialog_test = executable(
   'gpaste-ui-text-dialog-test',
   sources: ['test-text-dialog.c'],
