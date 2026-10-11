@@ -210,8 +210,9 @@ drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace. It also checks that an item row notifies
 `selection-mode` only when it changes, and that its star is named for what
-clicking it does, and that a row handed to another item blanks its text and
-offers no action until that item is read. It includes `gpaste-ui-panel.c` too, its switch and backup
+clicking it does, that a row handed to another item blanks its text and
+offers no action until that item is read, and that a row lays out a bounded part
+of a long item's text. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
 that Switch or Create keeps its text until the switch is answered, that Back Up
 waits for a name neither refused nor listed and backs up on Enter, and that its
@@ -281,7 +282,8 @@ leaving it keep the list scrolled where it was and the focus on the very row
 widget that had it. The stand-in answers `Merge`, its items' uuids following a
 shift the test sets: a merge joins the rows picked as they showed when picked,
 though the history moved before the refresh came back, and rows picked before
-they were read are read by their position alone.
+they were read are read by their position alone. Image rows read no thumbnail
+while previews are off, and read it as they are turned on.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

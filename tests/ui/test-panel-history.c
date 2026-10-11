@@ -306,6 +306,38 @@ test_item_rebound_blank (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+/* A row lays out a bounded part of a long item's text, said to go on, and a
+ * short one whole. */
+static void
+test_item_long_text_bounded (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWidget *window = gtk_window_new ();
+    g_autoptr (GtkWidget) item = g_object_ref_sink (g_paste_ui_item_new (client, settings, GTK_WINDOW (window), 0));
+    GPasteUiItem *row = G_PASTE_UI_ITEM (item);
+    g_autofree gchar *long_text = g_strnfill (300000, 'a');
+    g_autoptr (GPasteClientItem) long_item = g_paste_client_item_new ("00000000-0000-4000-8000-000000000001", long_text, G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
+    g_autoptr (GPasteClientItem) short_item = g_paste_client_item_new ("00000000-0000-4000-8000-000000000002", "short", G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
+
+    g_assert_no_error (error);
+    _g_paste_ui_item_ready (row, long_item);
+    g_assert_cmpuint (g_utf8_strlen (gtk_inscription_get_text (row->label), -1), ==, G_PASTE_UI_ITEM_MAX_SHOWN_CHARS + 1);
+    g_assert_true (g_str_has_suffix (gtk_inscription_get_text (row->label), "…"));
+
+    _g_paste_ui_item_ready (row, short_item);
+    g_assert_cmpstr (gtk_inscription_get_text (row->label), ==, "short");
+
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 /* A sidebar listing "work" and "work_backup", in a window that hosts dialogs. */
 static GPasteUiPanel *
 panel_window (GPasteClient *client,
@@ -466,6 +498,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/item/selection-mode-notify", test_item_selection_mode_notify);
     g_test_add_func ("/ui/item/star-named", test_item_star_named);
     g_test_add_func ("/ui/item/rebound-blank", test_item_rebound_blank);
+    g_test_add_func ("/ui/item/long-text-bounded", test_item_long_text_bounded);
     g_test_add_func ("/ui/panel/switch-name", test_panel_switch_name);
     g_test_add_func ("/ui/panel/backup-name", test_panel_backup_name);
     g_test_add_func ("/ui/panel/backup-window-gone", test_panel_backup_window_gone);

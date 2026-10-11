@@ -1553,6 +1553,38 @@ test_merge_picks_unread (void)
     close_activation_window (window, &daemon);
 }
 
+/* An image row reads its thumbnail only while previews are on, and reads it as
+ * they are turned on. */
+static void
+test_image_preview_off (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    FakeDaemon daemon = { .size = 3, .images = TRUE };
+
+    g_assert_no_error (error);
+    g_paste_settings_set_images_preview (settings, FALSE);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    drain ();
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_cmpuint (daemon.image_reads, ==, 0);
+
+    g_paste_settings_set_images_preview (settings, TRUE);
+    g_paste_test_bus_wait_for_count (&daemon.image_reads, 3);
+    g_paste_settings_reset (settings, G_PASTE_IMAGES_PREVIEW_SETTING);
+    close_activation_window (window, &daemon);
+}
+
 static gboolean
 on_sigusr1 (gpointer user_data)
 {
@@ -2944,6 +2976,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/selection-mode-keeps-place", test_selection_mode_keeps_place);
     g_test_add_func ("/ui/daemon-presence/merge-picks-shown", test_merge_picks_shown);
     g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
+    g_test_add_func ("/ui/daemon-presence/image-preview-off", test_image_preview_off);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

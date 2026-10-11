@@ -131,6 +131,24 @@ g_paste_ui_item_on_images_preview_changed (GPasteSettings *settings,
     gtk_widget_set_visible (GTK_WIDGET (self->thumbnail), has_image && g_paste_settings_get_images_preview (settings));
 }
 
+static void g_paste_ui_item_read_image (GPasteUiItem *self);
+
+/* An image's thumbnail is read only while previews are on, so turning them on
+ * reads the one this row has not. */
+static void
+g_paste_ui_item_on_images_preview_enabled (GPasteSettings *settings,
+                                           GParamSpec     *pspec,
+                                           gpointer        user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    if (self->kind == G_PASTE_ITEM_KIND_IMAGE && g_paste_settings_get_images_preview (settings) &&
+        self->thumbnail && !gtk_picture_get_paintable (self->thumbnail))
+        g_paste_ui_item_read_image (self);
+
+    g_paste_ui_item_on_images_preview_changed (settings, pspec, self);
+}
+
 static GSimpleAction *
 item_action (GPasteUiItem *self,
              const gchar  *name)
@@ -627,6 +645,19 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
+g_paste_ui_item_read_image (GPasteUiItem *self)
+{
+    g_paste_client_get_image (self->client, self->uuid, self->fill, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
+}
+
+/* The most of an item's text a row lays out, in characters. A #GtkInscription
+ * lays the whole of its text out to ellipsize it, which on one long line costs
+ * tens of milliseconds a binding past a hundred kilobytes, and past three
+ * hundred no longer fits its allocation at all; no window is wide enough to
+ * show more than this. */
+#define G_PASTE_UI_ITEM_MAX_SHOWN_CHARS 1000
+
+static void
 _g_paste_ui_item_ready (GPasteUiItem     *self,
                         GPasteClientItem *item)
 {
@@ -637,6 +668,17 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
 
     GPasteItemKind kind = g_paste_client_item_get_kind (item);
     g_autofree gchar *oneline = g_paste_util_one_line (txt);
+    const gchar *end = oneline;
+
+    for (guint i = 0; *end && i < G_PASTE_UI_ITEM_MAX_SHOWN_CHARS; ++i)
+        end = g_utf8_next_char (end);
+
+    if (*end)
+    {
+        g_autofree gchar *shown = g_strndup (oneline, (gsize) (end - oneline));
+
+        g_set_str_take (&oneline, g_strconcat (shown, "…", NULL));
+    }
 
     g_paste_ui_item_apply_index (self, self->index);
 
@@ -645,8 +687,11 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     g_paste_ui_item_set_favourited (self, g_paste_client_item_is_favourite (item));
     g_paste_ui_item_update_actions (self);
 
-    if (kind == G_PASTE_ITEM_KIND_IMAGE)
-        g_paste_client_get_image (self->client, self->uuid, self->fill, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
+    /* Not while previews are off: the whole image would cross the bus and be
+     * decoded only to stay hidden
+     * (g_paste_ui_item_on_images_preview_enabled ()). */
+    if (kind == G_PASTE_ITEM_KIND_IMAGE && g_paste_settings_get_images_preview (self->settings))
+        g_paste_ui_item_read_image (self);
     else
         g_paste_ui_item_set_thumbnail (self, NULL);
 
@@ -1118,7 +1163,7 @@ g_paste_ui_item_new (GPasteClient   *client,
                             self);
     g_signal_group_connect (settings_signals,
                             "notify::" G_PASTE_IMAGES_PREVIEW_SETTING,
-                            G_CALLBACK (g_paste_ui_item_on_images_preview_changed),
+                            G_CALLBACK (g_paste_ui_item_on_images_preview_enabled),
                             self);
     g_signal_group_connect (settings_signals,
                             "notify::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
