@@ -1269,6 +1269,13 @@ g_paste_daemon_methods_strip_rich_text (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND,
                          "attempted to strip the rich text of an item other than GPasteTextItem");
 
+    /* Held so that what the strip leaves can be told apart from it: an item
+     * with no rich text to drop stays the very object it was. Refreshing every
+     * selection holding its text would then only take them from whichever
+     * application owns them, for a call that changed nothing -- bar one still
+     * owed an earlier strip of it, which asking again is how a user retries. */
+    g_autoptr (GPasteItem) before = g_object_ref (item);
+
     /* Asked again rather than taken for granted: an item that had no rich text to
      * begin with is stripped successfully, but the lookup above is unlocked, so
      * the item can be evicted, deleted or replaced by one of another kind before
@@ -1286,7 +1293,9 @@ g_paste_daemon_methods_strip_rich_text (const GPasteDaemonMethods *self,
                          "attempted to strip the rich text of an item other than GPasteTextItem");
 
     item = g_paste_history_get_by_uuid (self->history, uuid);
-    if (item)
+    if (item == before)
+        g_paste_clipboards_manager_retry_refresh (self->clipboards_manager, item);
+    else if (item)
         g_paste_clipboards_manager_refresh_text (self->clipboards_manager, item);
 }
 

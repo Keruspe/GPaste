@@ -369,6 +369,35 @@ test_select_refused (void)
     g_assert_null (g_paste_history_get_by_uuid (history, uuid));
 }
 
+/* Stripping an item with no rich text changes nothing, so nothing is
+ * republished: the selection holding its text stays its owner's. */
+static void
+test_strip_plain_publishes_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    GPasteItem *plain = g_paste_text_item_new ("plain text");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (plain));
+
+    g_paste_history_add (history, plain);
+
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_clipboard_content_set_text (&primary->content, "plain text");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_track_changes (settings, FALSE);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_strip_rich_text (&methods, uuid, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (primary->publications, ==, 0);
+    g_assert_true (g_paste_history_get_by_uuid (history, uuid) == plain);
+}
+
 static void
 text_ready (TestClipboard         *self G_GNUC_UNUSED,
             GPasteSettings        *settings G_GNUC_UNUSED,
@@ -5223,6 +5252,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/copy_uploaded/refused", GINT_TO_POINTER (TRUE), test_copy_uploaded);
     g_test_add_func ("/clipboard/methods/add_password_default_timeout", test_add_password_default_timeout);
     g_test_add_func ("/clipboard/methods/select_refused", test_select_refused);
+    g_test_add_func ("/clipboard/methods/strip_plain_publishes_nothing", test_strip_plain_publishes_nothing);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_password", GINT_TO_POINTER (TRUE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_text", GINT_TO_POINTER (FALSE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/emptied_password", GINT_TO_POINTER (TRUE), test_emptied_history_clears_password);

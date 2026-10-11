@@ -2315,6 +2315,68 @@ g_paste_clipboards_manager_rearm_password (GPasteClipboardsManager *self,
     g_paste_clipboards_manager_finish_expiry_all (self);
 }
 
+/* Refresh @clip if it still carries @item's text: see
+ * g_paste_clipboards_manager_refresh_text (). */
+static void
+g_paste_clipboards_manager_refresh_clip (_Clipboard *clip,
+                                         GPasteItem *item)
+{
+    /* As in sync_from_to (): this is one of the routes that reads the record
+     * below, so one the selection has moved on from goes before it is asked.
+     * A strip refused down there is refused by nothing at all -- neither
+     * published, nor queued, nor kept as refused -- so the record answering
+     * for the selection has to be one that still names what it carries. */
+    g_paste_clipboards_manager_forget_stale_password (clip);
+
+    /* A hidden cache can be a pending or inconclusive read. The next answer
+     * checks the selection before publishing; completed I/O alone cannot
+     * spend a strip while its secrecy remains unresolved. */
+    if (g_paste_clipboard_provider_is_reading (clip->clipboard) || clip->password_unconfirmed || clip->sensitive)
+    {
+        g_paste_clipboards_manager_queue_refresh (clip, item);
+        gint64 now = g_get_monotonic_time ();
+
+        if (!g_paste_clipboard_provider_is_reading (clip->clipboard) && now >= clip->refresh_read_after)
+        {
+            clip->refresh_read_after = now + G_USEC_PER_SEC;
+            g_paste_clipboards_manager_identify (clip);
+        }
+    }
+    /* A value match does not authorize stripping a password's hint. As in
+     * finish_refresh (), classification takes precedence over the text. */
+    else if (!g_paste_clipboards_manager_may_carry_secret (clip) &&
+             g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
+    {
+        if (g_paste_clipboards_manager_publish_item (clip, item, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+            g_paste_clipboards_manager_refuse_refresh (clip, item);
+    }
+}
+
+/* Whether @clip is still owed a strip publishing @item: queued behind a read,
+ * or kept from one that could not be given. */
+static gboolean
+g_paste_clipboards_manager_owes_refresh (_Clipboard *clip,
+                                         GPasteItem *item)
+{
+    if (clip->refused_refresh)
+    {
+        g_autoptr (GPasteItem) refused = g_weak_ref_get (clip->refused_refresh);
+
+        if (refused == item)
+            return TRUE;
+    }
+
+    for (const GSList *l = clip->pending_refreshes; l; l = l->next)
+    {
+        g_autoptr (GPasteItem) pending = g_weak_ref_get (l->data);
+
+        if (pending == item)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 /**
  * g_paste_clipboards_manager_refresh_text:
  * @self: a #GPasteClipboardsManager instance
@@ -2332,38 +2394,33 @@ g_paste_clipboards_manager_refresh_text (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
 
     for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+        g_paste_clipboards_manager_refresh_clip (clipboard->data, item);
+}
+
+/**
+ * g_paste_clipboards_manager_retry_refresh:
+ * @self: a #GPasteClipboardsManager instance
+ * @item: the text item a strip was asked of again, which had nothing left to
+ *        strip
+ *
+ * Retry the refresh g_paste_clipboards_manager_refresh_text() could not give
+ * for @item, on the selections still owed it alone: one merely holding the same
+ * text was never served the rich flavours, and publishing over it would only
+ * take it from whichever application owns it.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_retry_refresh (GPasteClipboardsManager *self,
+                                          GPasteItem              *item)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+
+    for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *clip = clipboard->data;
 
-        /* As in sync_from_to (): this is one of the routes that reads the record
-         * below, so one the selection has moved on from goes before it is asked.
-         * A strip refused down there is refused by nothing at all -- neither
-         * published, nor queued, nor kept as refused -- so the record answering
-         * for the selection has to be one that still names what it carries. */
-        g_paste_clipboards_manager_forget_stale_password (clip);
-
-        /* A hidden cache can be a pending or inconclusive read. The next answer
-         * checks the selection before publishing; completed I/O alone cannot
-         * spend a strip while its secrecy remains unresolved. */
-        if (g_paste_clipboard_provider_is_reading (clip->clipboard) || clip->password_unconfirmed || clip->sensitive)
-        {
-            g_paste_clipboards_manager_queue_refresh (clip, item);
-            gint64 now = g_get_monotonic_time ();
-
-            if (!g_paste_clipboard_provider_is_reading (clip->clipboard) && now >= clip->refresh_read_after)
-            {
-                clip->refresh_read_after = now + G_USEC_PER_SEC;
-                g_paste_clipboards_manager_identify (clip);
-            }
-        }
-        /* A value match does not authorize stripping a password's hint. As in
-         * finish_refresh (), classification takes precedence over the text. */
-        else if (!g_paste_clipboards_manager_may_carry_secret (clip) &&
-                 g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
-        {
-            if (g_paste_clipboards_manager_publish_item (clip, item, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
-                g_paste_clipboards_manager_refuse_refresh (clip, item);
-        }
+        if (g_paste_clipboards_manager_owes_refresh (clip, item))
+            g_paste_clipboards_manager_refresh_clip (clip, item);
     }
 }
 
