@@ -500,7 +500,11 @@
       caller's business: it is not added to the history. An empty @uuid means the
       current item, which is what the keyboard shortcut uploads. An item that is
       not a text fails with org.gnome.GPaste.Error.WrongItemKind, the value of
-      any other kind being something else than what its row shows.
+      any other kind being something else than what its row shows. An upload
+      still out when the daemon leaves the bus, re-executing or the one in
+      GNOME Shell turned off, is given up: it fails with GIO's
+      G_IO_ERROR_CANCELLED, which travels as
+      org.gtk.GDBus.UnmappedGError.Quark._g_2dio_2derror_2dquark.Code19.
     -->
     <method name="Upload">
       <arg type="s" direction="in"  name="uuid"/>

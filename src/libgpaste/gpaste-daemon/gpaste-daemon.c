@@ -43,6 +43,10 @@ struct _GPasteDaemon
     /* Built by g_paste_daemon_new_meta (), for gnome-shell: see
      * g_paste_daemon_reexecute_after_expiry (). */
     gboolean                 in_process;
+
+    /* The uploads out (UploadData), borrowed from their tasks: what leaving the
+     * bus ends (g_paste_daemon_cancel_uploads ()). */
+    GList                   *uploads;
 };
 
 G_PASTE_DEFINE_TYPE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
@@ -285,6 +289,8 @@ g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
     return TRUE;
 }
 
+static void g_paste_daemon_cancel_uploads (GPasteDaemon *self);
+
 static void
 g_paste_daemon_reexecute_now (GPasteDaemon          *self,
                               GDBusMethodInvocation *invocation)
@@ -293,6 +299,13 @@ g_paste_daemon_reexecute_now (GPasteDaemon          *self,
         return;
 
     g_paste_clipboards_manager_store (self->clipboards_manager);
+
+    /* An exec replaces this process with one that has no idea of the commands
+     * it left running, so their uploads end here -- for good, should the exec
+     * fail and this daemon carry on. Nothing execs in gnome-shell, which keeps
+     * them, and a host waiting on the store execs later, cancelling them then. */
+    if (!self->in_process && !g_paste_storage_is_busy ())
+        g_paste_daemon_cancel_uploads (self);
 
     gboolean accepted = FALSE;
 
@@ -531,6 +544,10 @@ g_paste_daemon_upload_done (GTask *task)
     if (--data->pending)
         return;
 
+    GPasteDaemon *self = g_task_get_source_object (task);
+
+    self->uploads = g_list_remove (self->uploads, data);
+
     /* Whatever the answer is, it has arrived, so there is nothing left for the
      * deadline to cut off. */
     g_clear_handle_id (&data->timeout_id, g_source_remove);
@@ -542,6 +559,15 @@ g_paste_daemon_upload_done (GTask *task)
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "The upload command did not answer within %d seconds.",
                                  G_PASTE_DAEMON_UPLOAD_TIMEOUT);
+        return;
+    }
+
+    /* Given up on by the daemon going away (g_paste_daemon_cancel_uploads ()):
+     * the kill that ended the command is not an answer it gave, and nobody is
+     * left to put an address anywhere. */
+    if (g_cancellable_is_cancelled (data->cancellable))
+    {
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CANCELLED, "The upload was given up on, the daemon going away.");
         return;
     }
 
@@ -681,6 +707,20 @@ on_upload_exited (GObject      *source_object,
     g_paste_daemon_upload_done (task);
 }
 
+/* Each upload out given up on and its command killed, which brings all three of
+ * its parts back at once: what answers it then is the cancellation. */
+static void
+g_paste_daemon_cancel_uploads (GPasteDaemon *self)
+{
+    for (const GList *u = self->uploads; u; u = u->next)
+    {
+        UploadData *data = u->data;
+
+        g_cancellable_cancel (data->cancellable);
+        g_subprocess_force_exit (data->upload);
+    }
+}
+
 /**
  * g_paste_daemon_upload:
  * @self: (transfer none): the #GPasteDaemon
@@ -784,6 +824,14 @@ g_paste_daemon_upload (GPasteDaemon       *self,
     GCancellable *cancellable = data->cancellable;
     gchar *answer = data->answer;
 
+    /* The task holds the daemon, as any GIO call holds the object it was
+     * started on, where what a daemon's teardown has to end would otherwise hold
+     * it weakly: callers read the daemon off the result, and the teardown every
+     * host runs -- leaving the bus, which dispose does too -- is reachable with
+     * that reference held. It ends the upload there, through
+     * g_paste_daemon_cancel_uploads (), so the reference goes one main loop turn
+     * later; a host doing neither waits out the deadline at most. */
+    self->uploads = g_list_prepend (self->uploads, data);
     g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) upload_data_free);
 
     GOutputStream *input = g_subprocess_get_stdin_pipe (upload);
@@ -813,7 +861,8 @@ g_paste_daemon_upload (GPasteDaemon       *self,
  * nothing, %G_PASTE_ERROR_WRONG_ITEM_KIND for an item that is not a text,
  * %G_PASTE_ERROR_INVALID_ARGUMENT for an "upload-command" that is
  * empty or does not parse, %G_PASTE_ERROR_FAILED when the tool could not be run
- * or answered something that is not a url) or whatever running it reported.
+ * or answered something that is not a url), %G_IO_ERROR_CANCELLED for an upload
+ * the daemon left the bus with still out, or whatever running it reported.
  *
  * Returns: (transfer full) (nullable): the url the item was uploaded to
  */
@@ -925,6 +974,9 @@ on_keybinding_upload_done (GObject      *source_object,
     GPasteDaemon *self = G_PASTE_DAEMON (source_object);
     g_autoptr (GError) error = NULL;
     g_autofree gchar *url = g_paste_daemon_upload_finish (self, res, &error);
+
+    if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        return;
 
     if (!url)
     {
@@ -1331,6 +1383,10 @@ static void
 g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
 {
     GPasteDaemon *daemon = G_PASTE_DAEMON (self);
+
+    /* A daemon off the bus is one going away: an upload finishing later would
+     * put its address on a clipboard the user has since moved on from. */
+    g_paste_daemon_cancel_uploads (daemon);
 
     if (!daemon->registered)
         return;
