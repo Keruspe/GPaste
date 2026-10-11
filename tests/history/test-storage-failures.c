@@ -1242,6 +1242,37 @@ test_failed_write_keeps_images (void)
     g_assert_cmpuint (g_list_length (kept), ==, 1);
 }
 
+/* An image under a history whose name is not UTF-8 -- one read off the disk,
+ * or a home directory in a legacy 8-bit encoding -- has a path no document can
+ * hold: it is named by its file name alone, and read back from the history's
+ * images directory, rather than left out of the write or taking the daemon down
+ * with it. */
+static void
+test_image_name_not_utf8 (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "d\xe9" "sir\xe9" "e";
+    const guchar pixel[] = { 52, 62, 72, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *checksum = g_strdup (g_paste_image_item_get_checksum (items->data));
+
+    items = g_list_append (items, g_paste_text_item_new ("saved"));
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_storage_backend_write_history (backend, name, items);
+
+    g_autolist (GPasteItem) loaded = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &loaded, &size));
+    g_assert_cmpuint (g_list_length (loaded), ==, 2);
+    g_assert_true (G_PASTE_IS_IMAGE_ITEM (loaded->data));
+    g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+    g_assert_cmpstr (g_paste_item_get_value (loaded->next->data), ==, "saved");
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Only a key that opens nothing refutes a passphrase: a history damaged past its
  * first chunk, or a foreign file under the flavour's name, leaves the right one
@@ -2044,6 +2075,7 @@ main (int    argc,
 
     g_test_add_func ("/storage/failed-write-images", test_failed_write_keeps_images);
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
+    g_test_add_func ("/storage/image-name-not-utf8", test_image_name_not_utf8);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-synced-before-install", test_encrypted_synced_before_install);
 #endif

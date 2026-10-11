@@ -735,6 +735,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         const gchar *kind_str = g_paste_item_kind_to_string (kind);
 
         g_autofree gchar *image_reference = NULL;
+        g_autofree gchar *image_value = NULL;
         g_autofree gchar *png_checksum = NULL;
 
         if (G_PASTE_IS_IMAGE_ITEM (item))
@@ -748,6 +749,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
              * own on the next save. Derived from the checksum, which every
              * image item has -- building one is what computes it. */
             image_reference = g_paste_file_backend_image_path (history_name, g_paste_image_item_get_checksum (image));
+
             _g_paste_file_backend_ensure_image_file (real_self, image, image_reference);
 
             gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
@@ -763,6 +765,16 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
 
             if (file_name)
                 g_hash_table_add (referenced, file_name);
+
+            /* A document holds UTF-8 alone, and the data directory and a
+             * history name read off the disk need not be: a home directory in
+             * a legacy 8-bit encoding. Such an image is named by its file
+             * name alone, which a read finds under the history's images
+             * directory as it finds every other (add_item ()), where writing
+             * the whole path would end on a NULL encoding -- and take the
+             * daemon, or gnome-shell, with it. GPaste 51.0, which read the
+             * path alone, finds no image named so. */
+            image_value = (g_utf8_validate (image_reference, -1, NULL)) ? g_strdup (image_reference) : g_path_get_basename (image_reference);
         }
 
         const GSList *special_values = g_paste_item_get_special_values (item);
@@ -772,7 +784,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
          * own content is the text: get_value only differs from get_real_value
          * for passwords (it masks them), and those are skipped above unless
          * encrypted, so the real value is always what we want to persist. */
-        g_autofree gchar *text = g_paste_util_xml_encode ((image_reference) ? image_reference : g_paste_item_get_real_value (item));
+        g_autofree gchar *text = g_paste_util_xml_encode ((image_value) ? image_value : g_paste_item_get_real_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, kind_str, strlen (kind_str), NULL, NULL /* cancellable */, &error) ||
@@ -1388,8 +1400,23 @@ add_item (Data *data)
                 item = g_paste_image_item_new_from_bytes_at_path (path, png, date_time, data->checksum);
             else if (g_paste_storage_backend_is_encrypted (data->backend))
                 item = _g_paste_file_backend_read_fallback_image (data->backend, path, date_time, data->checksum);
-            else
+            else if (g_utf8_validate (path, -1, NULL))
                 item = g_paste_image_item_new_from_file (path, date_time, data->checksum);
+            /* g_paste_image_item_new_from_file () takes a UTF-8 path alone, which
+             * a data directory in a legacy 8-bit encoding does not give: such an
+             * image is read into bytes instead. */
+            else
+            {
+                gchar *contents = NULL;
+                gsize length = 0;
+
+                if (g_file_get_contents (path, &contents, &length, NULL))
+                {
+                    g_autoptr (GBytes) bytes = g_bytes_new_take (contents, length);
+
+                    item = g_paste_image_item_new_from_bytes_at_path (path, bytes, date_time, data->checksum);
+                }
+            }
         }
         /* An image read with images turned off, or without the date to restore
          * it with, is skipped and its file left where it is: this may be no read
