@@ -23,6 +23,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix a failed image save losing the image for good
 - Fix encrypted histories accepting an image swapped in on disk
 - Fix histories with a very long name being created but never saved
+- Fix one damaged encrypted history making the right passphrase look wrong for all of them
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard

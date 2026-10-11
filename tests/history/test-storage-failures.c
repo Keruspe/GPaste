@@ -1242,6 +1242,72 @@ test_failed_write_keeps_images (void)
     g_assert_cmpuint (g_list_length (kept), ==, 1);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Only a key that opens nothing refutes a passphrase: a history damaged past its
+ * first chunk, or a foreign file under the flavour's name, leaves the right one
+ * accepted, where it would otherwise be refused for every history. */
+static void
+test_passphrase_survives_damage (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase");
+    g_autofree gchar *long_text = g_strnfill (3 * 4096, 'x');
+    g_autolist (GPasteItem) intact = g_list_append (NULL, g_paste_text_item_new ("intact"));
+    g_autolist (GPasteItem) damaged = g_list_append (NULL, g_paste_text_item_new (long_text));
+
+    g_paste_storage_backend_write_history (backend, "intact", intact);
+    g_paste_storage_backend_write_history (backend, "damaged", damaged);
+
+    g_autofree gchar *damaged_path = g_paste_util_get_history_file_path ("damaged", "xmls");
+    g_autofree gchar *foreign_path = g_paste_util_get_history_file_path ("foreign", "xmls");
+    g_autofree gchar *contents = NULL;
+    gsize length = 0;
+    /* The stream header, the first chunk's length and ciphertext, and the
+     * second's length: what follows is the second chunk's ciphertext. */
+    const gsize second_chunk = 64 + 4 + 4096 + 17 + 4;
+
+    g_assert_true (g_file_get_contents (damaged_path, &contents, &length, NULL));
+    g_assert_cmpuint (length, >, second_chunk + 16);
+    contents[second_chunk + 16] ^= 1;
+    g_assert_true (g_file_set_contents (damaged_path, contents, (gssize) length, NULL));
+    g_assert_true (g_file_set_contents (foreign_path, "a file of somebody else's, long enough to hold a stream header and then some", -1, NULL));
+
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase"));
+    g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "wrong passphrase"));
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A history the user may not read refutes nothing either: its open fails with
+ * the error the converter answers a wrong key with. */
+static void
+test_passphrase_survives_unreadable (void)
+{
+    if (!geteuid ())
+    {
+        g_test_skip ("root reads a file of mode 0");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase");
+    g_autolist (GPasteItem) intact = g_list_append (NULL, g_paste_text_item_new ("intact"));
+    g_autolist (GPasteItem) locked = g_list_append (NULL, g_paste_text_item_new ("locked"));
+
+    g_paste_storage_backend_write_history (backend, "intact", intact);
+    g_paste_storage_backend_write_history (backend, "locked", locked);
+
+    g_autofree gchar *locked_path = g_paste_util_get_history_file_path ("locked", "xmls");
+
+    g_assert_cmpint (g_chmod (locked_path, 0), ==, 0);
+    gboolean right = g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase");
+    gboolean wrong = g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "wrong passphrase");
+    g_assert_cmpint (g_chmod (locked_path, 0600), ==, 0);
+
+    g_assert_true (right);
+    g_assert_false (wrong);
+}
+#endif
 /* What a write renames into place, a history or an image, is on the disk by
  * then; and an image whose write fails leaves nothing at its name, so the next
  * save writes it again rather than skip a file it takes for complete. */
@@ -1980,6 +2046,10 @@ main (int    argc,
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-synced-before-install", test_encrypted_synced_before_install);
+#endif
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
+    g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
 #endif
     g_test_add_data_func ("/storage/empty-alternative/file", GUINT_TO_POINTER (G_PASTE_STORAGE_FILE), test_empty_alternative);
 #ifdef G_PASTE_ENABLE_SQLITE

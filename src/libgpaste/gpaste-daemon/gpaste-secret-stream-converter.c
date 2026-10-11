@@ -55,6 +55,7 @@ struct _GPasteSecretStreamConverter
 
     gboolean                    header_done; /* header emitted (encrypt) or parsed (decrypt) */
     gboolean                    finished;    /* FINAL chunk produced/consumed */
+    gboolean                    opened;      /* a chunk decrypted: the key is the stream's */
 
     crypto_secretstream_xchacha20poly1305_state state;
     guchar                     *key; /* KEYBYTES, in gcr secure (non-swappable) memory */
@@ -304,13 +305,32 @@ decrypt_process (GPasteSecretStreamConverter *self,
         unsigned long long mlen = 0;
         unsigned char tag = 0;
 
+        /* Only the first chunk failing says anything about the key: once one
+         * has decrypted, the key is the stream's and what fails is the data.
+         * %G_IO_ERROR_PERMISSION_DENIED is the answer a wrong passphrase gets,
+         * and %G_IO_ERROR_INVALID_DATA every other -- a foreign file, a length
+         * or a parameter out of range, a chunk damaged further on -- which says
+         * nothing of the passphrase (see history_refutes_passphrase in
+         * #GPasteStorageBackendClass). What the first chunk failing cannot tell
+         * apart is a wrong key from damage to it or to the header before it, a
+         * salt or a parameter within range: the stream carries no key check of
+         * its own, as the SQLite flavour's database does, so such damage to a
+         * history refuses the right passphrase until the file goes, and only a
+         * change of format could say otherwise. */
         if (crypto_secretstream_xchacha20poly1305_pull (&self->state, plain, &mlen, &tag,
                                                         self->in->data + 4, clen, NULL, 0) != 0)
         {
-            g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
-                                 "Could not decrypt the stream (wrong passphrase or corrupted data)");
+            if (self->opened)
+                g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "Corrupted encrypted stream");
+            else
+            {
+                g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED,
+                                     "Could not decrypt the stream (wrong passphrase or corrupted data)");
+            }
             return FALSE;
         }
+
+        self->opened = TRUE;
 
         g_byte_array_append (self->out, plain, mlen);
         /* The chunk is in @out now; the stack it was decrypted on keeps whatever
@@ -397,6 +417,7 @@ g_paste_secret_stream_converter_reset (GConverter *converter)
 
     self->header_done = FALSE;
     self->finished = FALSE;
+    self->opened = FALSE;
     sodium_memzero (self->key, KEYBYTES);
     sodium_memzero (&self->state, sizeof (self->state));
     g_byte_array_set_size (self->in, 0);
