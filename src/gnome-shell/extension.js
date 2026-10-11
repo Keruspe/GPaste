@@ -35,6 +35,12 @@ export default class GPasteExtension extends Extension {
         this._sync();
     }
 
+    // The one GPaste.Settings of the process, from enable() to disable():
+    // see GPasteDaemonRunner.
+    get settings() {
+        return this._settings;
+    }
+
     disable() {
         if (this._sessionUpdatedId) {
             Main.sessionMode.disconnect(this._sessionUpdatedId);

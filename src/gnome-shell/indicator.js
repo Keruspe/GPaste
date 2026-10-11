@@ -67,7 +67,10 @@ class GPasteIndicator extends Button {
         }));
         this.add_child(this._statusIcon);
 
-        this._settings = new GPaste.Settings();
+        // The extension's, shared with the in-shell daemon when there is one:
+        // one settings instance per process (GPasteDaemonRunner), however many
+        // times an unlock builds the indicator again.
+        this._settings = extension.settings;
         this._destroyed = false;
 
         // The rows currently materialised in the scrollable history section.

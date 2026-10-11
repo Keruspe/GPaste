@@ -485,30 +485,12 @@ on_transferred (GObject      *source,
     transfer->done = TRUE;
 }
 
-/* An image put back on the clipboard is offered as a PNG, which reads back as
- * the same image. */
+/* The image the selection serves as PNG, read as another application would:
+ * the one select_image () put there, pixel for pixel. */
 static void
-publish_image (Fixture      *f,
-               gconstpointer user_data G_GNUC_UNUSED)
+assert_serves_image (Fixture *f)
 {
-    g_autoptr (GBytes) png = png_bytes ();
     Transfer transfer = { 0 };
-    g_autoptr (GDateTime) date = g_date_time_new_now_local ();
-    g_autoptr (GPasteItem) item = g_paste_image_item_new_from_bytes (png, date, NULL);
-
-    /* Active, as the history's head is when it is published. */
-    g_assert_nonnull (item);
-    g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
-    g_assert_true (g_paste_clipboard_provider_select_item (f->clipboard, item));
-
-    GList *mimetypes = meta_selection_get_mimetypes (f->selection, META_SELECTION_CLIPBOARD);
-    gboolean offered = FALSE;
-
-    for (const GList *m = mimetypes; m; m = m->next)
-        offered |= g_str_equal (m->data, "image/png");
-    g_list_free_full (mimetypes, g_free);
-    g_assert_true (offered);
-
     g_autoptr (GOutputStream) stream = g_memory_output_stream_new_resizable ();
     gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
 
@@ -525,9 +507,63 @@ publish_image (Fixture      *f,
     g_autoptr (GBytes) served = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (stream));
     g_autoptr (GdkTexture) texture = gdk_texture_new_from_bytes (served, NULL);
 
+    g_autoptr (GBytes) png = png_bytes ();
+    g_autoptr (GdkTexture) expected = gdk_texture_new_from_bytes (png, NULL);
+    guchar pixels[2 * 4], expected_pixels[2 * 4];
+
     g_assert_nonnull (texture);
     g_assert_cmpint (gdk_texture_get_width (texture), ==, 2);
     g_assert_cmpint (gdk_texture_get_height (texture), ==, 1);
+    gdk_texture_download (texture, pixels, 2 * 4);
+    gdk_texture_download (expected, expected_pixels, 2 * 4);
+    g_assert_cmpmem (pixels, sizeof (pixels), expected_pixels, sizeof (expected_pixels));
+}
+
+static void
+select_image (Fixture *f)
+{
+    g_autoptr (GBytes) png = png_bytes ();
+    g_autoptr (GDateTime) date = g_date_time_new_now_local ();
+    g_autoptr (GPasteItem) item = g_paste_image_item_new_from_bytes (png, date, NULL);
+
+    /* Active, as the history's head is when it is published. */
+    g_assert_nonnull (item);
+    g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
+    g_assert_true (g_paste_clipboard_provider_select_item (f->clipboard, item));
+}
+
+/* An image put back on the clipboard is offered as a PNG, which reads back as
+ * the same image. */
+static void
+publish_image (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    select_image (f);
+
+    GList *mimetypes = meta_selection_get_mimetypes (f->selection, META_SELECTION_CLIPBOARD);
+    gboolean offered = FALSE;
+
+    for (const GList *m = mimetypes; m; m = m->next)
+        offered |= g_str_equal (m->data, "image/png");
+    g_list_free_full (mimetypes, g_free);
+    g_assert_true (offered);
+
+    assert_serves_image (f);
+}
+
+/* gnome-shell disposes a daemon it lets go of, and its clipboards with it, but
+ * mutter still holds the source they published until something else is
+ * copied: that source serves what it was given on its own. */
+static void
+publish_outlives_clipboard (Fixture      *f,
+                            gconstpointer user_data G_GNUC_UNUSED)
+{
+    select_image (f);
+    g_clear_object (&f->manager);
+    g_object_run_dispose (G_OBJECT (f->clipboard));
+    g_clear_object (&f->clipboard);
+
+    assert_serves_image (f);
 }
 
 int
@@ -540,6 +576,7 @@ main (int argc, char *argv[])
     g_test_add ("/meta/capture/color", Fixture, GINT_TO_POINTER (G_PASTE_ITEM_KIND_COLOR), fixture_setup, capture, fixture_teardown);
     g_test_add ("/meta/capture/uris", Fixture, GINT_TO_POINTER (G_PASTE_ITEM_KIND_URIS), fixture_setup, capture, fixture_teardown);
     g_test_add ("/meta/publish/image", Fixture, NULL, fixture_setup, publish_image, fixture_teardown);
+    g_test_add ("/meta/publish/outlives-clipboard", Fixture, NULL, fixture_setup, publish_outlives_clipboard, fixture_teardown);
     g_test_add ("/meta/read/nul-terminated", Fixture, NULL, fixture_setup, nul_terminated_text, fixture_teardown);
     g_test_add ("/meta/read/bounded", Fixture, NULL, fixture_setup, bounded_read, fixture_teardown);
     g_test_add ("/meta/read/secret-bounded", Fixture, NULL, fixture_setup, secret_bounded, fixture_teardown);

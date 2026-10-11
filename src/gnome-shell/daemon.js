@@ -34,6 +34,28 @@ function callStorageConcern(concernAsync, concernFinish, prompt, settings) {
 // being written. A runner acquiring the name meanwhile takes the lock over as it
 // stands, so the pending release is dropped. 0 when none is pending.
 let pendingStorageRelease = 0;
+// Whether that release wipes the passphrase too: see forgetPassphrase ().
+let passphraseToForget = false;
+
+// The master passphrase leaves gcr's secure memory once a runner stops for
+// good, as the standalone daemon wipes it before exiting -- but only with the
+// lock, the store idle: a concern past its prompt finishes what the user
+// confirmed, and sets the passphrase it settled on as it does
+// (GPasteDaemon.storage_is_busy() turning false in that same main-thread
+// callback), which a wipe made earlier would leave behind. A runner acquiring
+// the name meanwhile takes the passphrase over with the lock (keepStorage ()).
+//
+// StorageBackend.set_passphrase is compiled only with encryption support
+// (G_PASTE_ENABLE_ENCRYPTION), so its binding is missing from builds without it.
+function forgetPassphrase() {
+    if (pendingStorageRelease) {
+        passphraseToForget = true;
+        return;
+    }
+
+    passphraseToForget = false;
+    GPasteDaemon.StorageBackend.set_passphrase?.(null);
+}
 
 function releaseStorageWhenIdle() {
     if (pendingStorageRelease)
@@ -50,12 +72,16 @@ function releaseStorageWhenIdle() {
 
         pendingStorageRelease = 0;
         GPasteDaemon.StorageBackend.unlock();
+        if (passphraseToForget)
+            forgetPassphrase();
         return GLib.SOURCE_REMOVE;
     });
     GLib.Source.set_name_by_id(pendingStorageRelease, '[GPaste] release the storage once idle');
 }
 
 function keepStorage() {
+    passphraseToForget = false;
+
     if (!pendingStorageRelease)
         return;
 
@@ -78,9 +104,9 @@ function keepStorage() {
 // evict any standalone daemon that happens to hold the name.
 export class GPasteDaemonRunner {
     constructor(settings) {
-        // Shared with the extension (and, through new_meta(), with the daemon,
-        // its history and both clipboard providers): one settings instance per
-        // process, as the C daemon does.
+        // Shared with the extension and its indicator (and, through new_meta(),
+        // with the daemon, its history and both clipboard providers): one
+        // settings instance per process, as the C daemon does.
         this._settings = settings;
         this._prompt = new GPasteShellPrompt();
         this._standDown = false;
@@ -89,6 +115,9 @@ export class GPasteDaemonRunner {
         // The deferred jobs (_deferOnce) currently in flight: signal name to the
         // id of the idle still waiting to run it, 0 once the job has started.
         this._pending = new Map();
+
+        // The wait _storageIdle () has out, if any: its source, and what ends it.
+        this._storageWait = null;
 
         // Resolves once the daemon has been built and registered on the bus, or
         // the runner has given up; the indicator awaits it before connecting so
@@ -112,10 +141,12 @@ export class GPasteDaemonRunner {
         this._bus.connectObject(
             'export-failed', () => this._onExportFailed(),
             'name-lost', (_bus, wasOwned) => this._onNameLost(wasOwned),
+            // Holding the name with nothing, or only part of it, exported is
+            // what _onExportFailed() stands down to avoid, whatever threw.
             'name-acquired', () => {
                 this._onNameAcquired().catch(e => {
                     console.error(e);
-                    this._resolveReady();
+                    this._standDownForGood();
                 });
             },
             this);
@@ -130,9 +161,7 @@ export class GPasteDaemonRunner {
     // this as a startup failure and exiting. (The bus warned about the cause.)
     _onExportFailed() {
         console.error('GPaste: could not export our objects on the session bus, standing down');
-        this._standDown = true;
-        this._releaseDaemon();
-        this._resolveReady();
+        this._standDownForGood();
     }
 
     _onNameLost(wasOwned) {
@@ -146,8 +175,8 @@ export class GPasteDaemonRunner {
             // other daemon exits, and we would then own it with nothing exported
             // (_onNameAcquired bails on _standDown), breaking every client.
             console.log('GPaste: the D-Bus name was taken over by another daemon, standing down');
-            this._standDown = true;
-            this._releaseDaemon();
+            this._standDownForGood();
+            return;
         } else if (wasOwned) {
             // We held the name but the *connection* went away (a session-bus
             // restart), not a deliberate takeover: rebuild on a fresh connection
@@ -206,6 +235,8 @@ export class GPasteDaemonRunner {
         // a daemon.
         const bus = this._bus;
 
+        await this._storageIdle();
+
         // Settle the storage backend before the daemon loads the history, exactly
         // as the standalone daemon does from its own main loop. Deciding what is
         // needed stays here, in the launcher.
@@ -234,17 +265,44 @@ export class GPasteDaemonRunner {
             'change-passphrase', () => this._deferOnce('change-passphrase', () => this._changePassphraseInPlace()),
             this);
 
+        // An export that fails stands us down from inside add_object (), the
+        // connection being up by now (_onExportFailed ()), and the second
+        // object is then one _stop () has already let go of.
         bus.add_object(this._daemon);
-
-        // Exporting can fail, which stands us down and drops the daemon (see
-        // _onExportFailed, which runs from inside add_object and resolves ready
-        // itself): there is nothing left to export then.
         if (this._stopped)
             return;
-
         bus.add_object(this._searchProvider);
 
         this._resolveReady();
+    }
+
+    // Resolves once no concern a runner let go of is rewriting the store, which a
+    // runner taking the lock over waits for before it settles: a settle reads the
+    // store, and asks again what that concern is still answering. A stop ends
+    // the wait too, the source going with it, and what awaits it bails.
+    _storageIdle() {
+        if (!GPasteDaemon.storage_is_busy())
+            return Promise.resolve();
+        if (this._storageWait)
+            return this._storageWait.promise;
+
+        const wait = {};
+
+        wait.promise = new Promise(resolve => {
+            wait.resolve = resolve;
+        });
+        wait.id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+            if (GPasteDaemon.storage_is_busy())
+                return GLib.SOURCE_CONTINUE;
+
+            this._storageWait = null;
+            wait.resolve();
+            return GLib.SOURCE_REMOVE;
+        });
+        GLib.Source.set_name_by_id(wait.id, '[GPaste] wait for the storage to be idle');
+        this._storageWait = wait;
+
+        return wait.promise;
     }
 
     // Settle the storage backend (migration, then encrypted-history unlock) before
@@ -357,7 +415,7 @@ export class GPasteDaemonRunner {
         if (this._pending.has(name))
             return;
 
-        const id = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+        const id = GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => {
             this._pending.set(name, 0);
             // Promise.resolve() so that a job returning early (or throwing)
             // rather than a promise still clears @name: leaving it behind would
@@ -365,7 +423,6 @@ export class GPasteDaemonRunner {
             Promise.resolve().then(job)
                 .catch(e => console.error(e))
                 .finally(() => this._pending.delete(name));
-            return GLib.SOURCE_REMOVE;
         });
 
         this._pending.set(name, id);
@@ -390,7 +447,10 @@ export class GPasteDaemonRunner {
         const daemon = this._daemon;
 
         await this._serializeStorage(() => {
-            daemon.flush();
+            // Unless a reconnect let it go while this waited for its turn,
+            // flushing and disposing it (_releaseDaemon ()).
+            if (daemon === this._daemon)
+                daemon.flush();
             return concern();
         });
 
@@ -425,19 +485,18 @@ export class GPasteDaemonRunner {
             GPasteDaemon.storage_rekey_finish));
     }
 
-    // Flush the history, release the storage lock, drop the daemon/search
-    // provider and release the bus name — which, after a takeover, also
-    // dequeues our pending re-request for it. Shared by an orderly shutdown
-    // (extension disable) and standing down after a takeover.
+    // Flush the history, release the storage lock, end the daemon and release
+    // the bus name — which, after a takeover, also dequeues our pending
+    // re-request for it. Shared by an orderly shutdown (extension disable),
+    // standing down and a reconnect.
     _releaseDaemon() {
         this._daemon?.disconnectObject(this);
 
         // Before the flush, so the selection this changes is recorded with the
         // rest of it: a password whose countdown is running has to come off
-        // while there is a daemon to take it off with. Dropping our reference
-        // below only hands the wrapper to the garbage collector, and mutter goes
-        // on serving the source we published until the manager behind it is
-        // actually disposed -- which for a password is its cleartext, on the
+        // while there is a daemon to take it off with. Mutter goes on serving
+        // the source we published after the daemon is gone, until something
+        // else is copied -- which for a password is its cleartext, on the
         // clipboard, with nothing left to take it back off.
         //
         // A countdown is all it brings forward, and on a stock install there is
@@ -460,6 +519,17 @@ export class GPasteDaemonRunner {
         // them alive — and their object paths taken — on gnome-shell's shared
         // session-bus connection, making the next enable() fail to register.
         this._bus?.unown_name();
+
+        // Disposed rather than left to GJS' collector, which nothing forces to
+        // run: until it does, a daemon let go of goes on reading every copy off
+        // MetaSelection, putting its own history back on an emptied one and
+        // answering the shortcuts through its portal session, beside the one
+        // that took over -- another process's, or the next enable's. Once off
+        // the bus, nothing reaches it any more; what it had in flight holds it
+        // weakly. The search provider, off the bus too, holds nothing of the
+        // shell's and is left to the collector: a search still out holds it,
+        // and its dispose() expects none to be.
+        this._daemon?.run_dispose();
 
         releaseStorageWhenIdle();
 
@@ -484,10 +554,25 @@ export class GPasteDaemonRunner {
 
     shutdown() {
         this._shutDown = true;
+        this._stop();
+    }
 
-        // Abandon any storage prompt still on screen: with the extension going
-        // away there is nobody left to act on the answer, and a request nobody
-        // answers leaves _settleStorage() pending for good.
+    // Standing down is for good, as a shutdown is, the next enable starting a
+    // runner over; the indicator waiting on ready goes ahead without a daemon
+    // of ours, which lets D-Bus activate the standalone one.
+    _standDownForGood() {
+        this._standDown = true;
+        this._stop();
+        this._resolveReady();
+    }
+
+    // What a shutdown and standing down share. Safe to run twice: a disable
+    // reaches a runner that may have stood down already.
+    _stop() {
+        // Abandon any storage prompt still on screen: nobody is left to act on
+        // the answer -- the extension is going away, or another daemon owns the
+        // store -- and a request nobody answers leaves _settleStorage() pending
+        // for good.
         this._prompt.shutdown();
 
         // A reconnect may be scheduled after a bus drop; drop it so it never
@@ -495,6 +580,12 @@ export class GPasteDaemonRunner {
         if (this._reconnectId) {
             GLib.Source.remove(this._reconnectId);
             this._reconnectId = 0;
+        }
+
+        if (this._storageWait) {
+            GLib.Source.remove(this._storageWait.id);
+            this._storageWait.resolve();
+            this._storageWait = null;
         }
 
         // Same for a deferred job whose idle has not run yet: the jobs bail out
@@ -512,14 +603,6 @@ export class GPasteDaemonRunner {
         // drop our reference to the extension's settings too.
         this._settings = null;
 
-        // Wipe the master passphrase from gcr secure memory on teardown, the way
-        // the standalone daemon does before exiting.
-        //
-        // StorageBackend.set_passphrase is compiled only with encryption support
-        // (G_PASTE_ENABLE_ENCRYPTION), so its binding is missing from builds without
-        // it; calling it unconditionally would throw on the undefined member, hence
-        // the existence check.
-        if (GPasteDaemon.StorageBackend.set_passphrase)
-            GPasteDaemon.StorageBackend.set_passphrase(null);
+        forgetPassphrase();
     }
 }

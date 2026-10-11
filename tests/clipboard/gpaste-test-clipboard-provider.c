@@ -50,6 +50,7 @@ update (GPasteClipboardProvider              *provider,
         GPasteClipboardProviderUpdateCallback callback,
         gpointer                              user_data)
 {
+    ++TEST_CLIPBOARD (provider)->updates;
     if (callback)
         callback (provider, NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
 }

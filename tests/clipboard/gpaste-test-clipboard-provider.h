@@ -26,6 +26,7 @@ struct _TestClipboard
     GPasteClipboardContent content;
     GPasteClipboardUpdate *pending;
     guint                  stores;
+    guint                  updates;
 };
 
 TestClipboard *test_clipboard_new        (void);

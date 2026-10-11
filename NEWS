@@ -13,6 +13,8 @@ NEW in 51.1 (UNRELEASED)
 - Fix an uploaded item's address being lost when the history refuses to keep it
 - Fix the graphical tool's header not fitting in its narrowest window, and a narrow window opening on the histories
 - Fix pausing the tracking being undone at unlock or when GPaste restarts, with tracking following the extension
+- Fix GPaste inside GNOME Shell still recording copies and answering shortcuts once replaced or turned off
+- Fix GPaste inside GNOME Shell keeping its passphrase, or its questions, after being replaced or turned off during a migration
 - Fix a password staying on the clipboard when its history entry is deleted, or the history emptied or decrypted
 - Fix a password taken off the clipboard coming back as plain text, or leaving it needlessly blank
 - Fix GNOME Shell taking a password off the clipboard early when asked to restart GPaste

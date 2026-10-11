@@ -169,7 +169,12 @@ function withActions(uuids) {
     class Constructed extends context.Indicator {
         _setup() { return Promise.resolve(); }
     }
-    const built = new Constructed({});
+    const shared = new context.GPaste.Settings();
+    const built = new Constructed({settings: shared});
+
+    // It reads the extension's settings rather than building its own, the one
+    // instance the process has.
+    assert.equal(built._settings, shared);
     built.destroy();
     assert.equal(built._destroyed, true);
     assert.equal(built.buttonDestroyed, 1);

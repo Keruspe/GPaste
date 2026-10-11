@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
+#include <gpaste-daemon/gpaste-screensaver-client.h>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -32,14 +33,59 @@ g_settings_set_boolean (GSettings   *settings,
     return original (settings, key, value);
 }
 
-/* The private bus has no GlobalShortcuts portal, and a daemon that cannot reach
- * it warns, which g_test makes fatal. Its constructor is never answered here,
- * the reference on the daemon it is handed dropped at once. */
+/* Set by a case that has the daemon's clients built for real, each answer
+ * counted once the daemon has had it. */
+static gboolean forward_clients;
+static guint    client_answers;
+
+typedef struct
+{
+    GAsyncReadyCallback callback;
+    gpointer            user_data;
+} Relay;
+
 static void
-no_portal (GAsyncReadyCallback callback G_GNUC_UNUSED,
+relay_answer (GObject      *source_object,
+              GAsyncResult *res,
+              gpointer      data)
+{
+    g_autofree Relay *relay = data;
+
+    relay->callback (source_object, res, relay->user_data);
+    ++client_answers;
+}
+
+static Relay *
+relay_new (GAsyncReadyCallback callback,
            gpointer            user_data)
 {
-    g_object_unref (user_data);
+    Relay *relay = g_new (Relay, 1);
+
+    relay->callback = callback;
+    relay->user_data = user_data;
+
+    return relay;
+}
+
+/* The private bus has no GlobalShortcuts portal, and a daemon that cannot reach
+ * it warns, which g_test makes fatal. Its constructor is never answered here,
+ * the weak reference to the daemon it is handed freed at once -- bar a case
+ * forwarding it, where the daemon has to be gone before the answer. */
+static void
+no_portal (GAsyncReadyCallback callback,
+           gpointer            user_data)
+{
+    if (forward_clients)
+        g_paste_global_shortcut_client_new (relay_answer, relay_new (callback, user_data));
+    else
+        g_paste_weak_ref_free (user_data);
+}
+
+static void
+counted_screensaver_client (GAsyncReadyCallback callback,
+                            gpointer            user_data)
+{
+    g_paste_screensaver_client_new (relay_answer, relay_new (callback, user_data));
 }
 
 /* The expiries a re-exec asked for, and those that have answered. */
@@ -86,11 +132,13 @@ test_storage_is_busy (void)
 }
 
 #define g_paste_global_shortcut_client_new no_portal
+#define g_paste_screensaver_client_new counted_screensaver_client
 #define g_paste_clipboards_manager_expire_password_async counting_expiry
 #define g_paste_storage_is_busy test_storage_is_busy
 #include <gpaste-daemon/gpaste-daemon.c>
 #undef g_paste_storage_is_busy
 #undef g_paste_clipboards_manager_expire_password_async
+#undef g_paste_screensaver_client_new
 #undef g_paste_global_shortcut_client_new
 
 typedef struct
@@ -113,9 +161,7 @@ history_loaded (gconstpointer data,
 }
 
 /* A daemon exported on the private bus, its history loaded and its screensaver
- * client built: that client's constructor holds a reference on the daemon until
- * it answers, and its answer expects a daemon still up, so a case taking the
- * daemon down waits for it first. */
+ * client built, as a running daemon's are. */
 static void
 fixture_set_up (Fixture      *fixture,
                 gconstpointer user_data G_GNUC_UNUSED)
@@ -178,6 +224,52 @@ test_dispose_twice (Fixture      *fixture,
     g_assert_null (fixture->daemon->skeleton);
     g_object_run_dispose (G_OBJECT (fixture->daemon));
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+}
+
+/* A daemon disposed while something still holds its clipboards manager -- a
+ * read in flight does -- takes the manager down with it: an owner change after
+ * that is read by nobody, rather than synchronized and answered beside the
+ * daemon that took over. */
+static void
+test_dispose_ends_manager (Fixture      *fixture,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteClipboardsManager) manager = g_object_ref (fixture->daemon->clipboards_manager);
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (fixture->clipboard));
+    g_assert_cmpuint (fixture->clipboard->updates, >, 0);
+    fixture->clipboard->updates = 0;
+    g_object_run_dispose (G_OBJECT (fixture->daemon));
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (fixture->clipboard));
+    g_assert_cmpuint (fixture->clipboard->updates, ==, 0);
+}
+
+/* gnome-shell disposes a daemon it lets go of, which can be before the
+ * screensaver and the portal have answered it, and their answers then find no
+ * daemon to watch the lock or grab the shortcuts for: nothing is warned about,
+ * and nothing set on what dispose left. */
+static void
+test_dispose_before_clients (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_history_name (settings, "daemon-teardown");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
+    g_autoptr (TestClipboard) primary = test_clipboard_new ();
+
+    forward_clients = TRUE;
+    client_answers = 0;
+
+    g_autoptr (GPasteDaemon) daemon = g_paste_daemon_new (settings, G_PASTE_CLIPBOARD_PROVIDER (clipboard), G_PASTE_CLIPBOARD_PROVIDER (primary));
+
+    g_object_run_dispose (G_OBJECT (daemon));
+    g_paste_test_bus_wait_for_count (&client_answers, 2);
+    g_assert_cmpuint (client_answers, ==, 2);
+    g_assert_null (daemon->screensaver);
+    g_assert_null (daemon->keybinder);
+    forward_clients = FALSE;
 }
 
 /* The startup update, looked up through the field the daemon tracks it in. */
@@ -819,8 +911,10 @@ main (int argc, char *argv[])
     g_test_init (&argc, &argv, NULL);
 
     g_test_add ("/daemon/teardown/dispose-twice", Fixture, NULL, fixture_set_up, test_dispose_twice, fixture_tear_down);
+    g_test_add ("/daemon/teardown/dispose-ends-manager", Fixture, NULL, fixture_set_up, test_dispose_ends_manager, fixture_tear_down);
     g_test_add ("/daemon/shortcuts/handed-over", Fixture, NULL, fixture_set_up, test_shortcuts_handed_over, fixture_tear_down);
     g_test_add_func ("/daemon/methods/extension-pause-carried-over", test_extension_pause_carried_over);
+    g_test_add_func ("/daemon/teardown/dispose-before-clients", test_dispose_before_clients);
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);

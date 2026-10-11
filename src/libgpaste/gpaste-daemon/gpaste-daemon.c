@@ -1519,6 +1519,14 @@ g_paste_daemon_dispose (GObject *object)
     g_clear_object (&self->screensaver_signals);
     g_clear_object (&self->history);
     g_clear_object (&self->settings);
+    /* Disposed rather than only let go of: a read in flight holds the manager
+     * (update_data_new ()), which until its last read lands would go on
+     * reading every owner change off the providers -- synchronizing them, and
+     * putting this history's head back on a released selection beside the
+     * daemon that took over. Its dispose leaves such a read what it needs to
+     * take a password off when it answers. */
+    if (self->clipboards_manager)
+        g_object_run_dispose (G_OBJECT (self->clipboards_manager));
     g_clear_object (&self->clipboards_manager);
     g_clear_object (&self->keybinder);
     g_clear_object (&self->screensaver);
@@ -1630,17 +1638,23 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
                              GAsyncResult *res,
                              gpointer      user_data)
 {
-    g_autoptr (GPasteDaemon) self = user_data; /* ref taken at the call site */
+    g_autoptr (GPasteDaemon) self = g_weak_ref_get (user_data);
     g_autoptr (GError) error = NULL;
-    GPasteScreensaverClient *screensaver = self->screensaver = g_paste_screensaver_client_new_finish (res, &error);
+    g_autoptr (GPasteScreensaverClient) screensaver = g_paste_screensaver_client_new_finish (res, &error);
+
+    g_paste_weak_ref_free (user_data);
+
+    if (!self)
+        return;
 
     if (error)
     {
         g_warning ("Couldn't watch screensaver state: %s", error->message);
-        g_clear_object (&self->screensaver);
+        return;
     }
-    else if (screensaver)
-        g_signal_group_set_target (self->screensaver_signals, screensaver);
+
+    self->screensaver = g_steal_pointer (&screensaver);
+    g_signal_group_set_target (self->screensaver_signals, self->screensaver);
 }
 
 static void
@@ -1648,9 +1662,16 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
                         GAsyncResult *res,
                         gpointer      user_data)
 {
-    g_autoptr (GPasteDaemon) self = user_data; /* ref taken at the call site */
+    g_autoptr (GPasteDaemon) self = g_weak_ref_get (user_data);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGlobalShortcutClient) portal_client = g_paste_global_shortcut_client_new_finish (res, &error);
+
+    g_paste_weak_ref_free (user_data);
+
+    /* A session opened for a daemon gone meanwhile would grab its shortcuts
+     * for nobody: dropped with the client, as the screensaver's is. */
+    if (!self)
+        return;
 
     if (error)
     {
@@ -1697,10 +1718,12 @@ g_paste_daemon_init (GPasteDaemon *self)
                                     G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
                                     self);
 
-    /* Hold a ref across each async call: the callback owns it (g_autoptr), so the
-     * daemon cannot be finalized out from under the in-flight client creation. */
-    g_paste_screensaver_client_new (on_screensaver_client_ready, g_object_ref (self));
-    g_paste_global_shortcut_client_new (on_portal_client_ready, g_object_ref (self));
+    /* Held weakly, as anything a dispose () has to end is (AGENTS.md):
+     * gnome-shell disposes a daemon it lets go of (g_object_run_dispose () in
+     * daemon.js), which clears the reference, and a client arriving after that
+     * has no daemon to serve. */
+    g_paste_screensaver_client_new (on_screensaver_client_ready, g_paste_weak_ref_new (self));
+    g_paste_global_shortcut_client_new (on_portal_client_ready, g_paste_weak_ref_new (self));
 }
 
 /**
