@@ -2878,6 +2878,45 @@ test_empty_reaches_the_store (void)
     g_assert_cmpuint (stored_length (settings, "emptied-unreadable"), ==, 0);
 }
 
+/* What is added while a load is out -- a copy, an AddText -- is put on top of
+ * what the load read and stored, rather than replaced by it and recorded
+ * nowhere: the uuid its caller was answered with would name nothing. */
+static void
+test_add_during_load_kept (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("stored one"));
+
+        items = g_list_append (items, g_paste_text_item_new ("stored two"));
+        g_paste_storage_backend_write_history (backend, "added-during-load", items);
+    }
+
+    gint held = hold_storage_lock ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    GPasteItem *added = g_paste_text_item_new ("added during the load");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (added));
+
+    g_paste_history_load_async (history, "added-during-load");
+    g_paste_history_add (history, added);
+    g_close (held, NULL);
+    wait_load (history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuid));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "added during the load");
+    g_paste_history_flush (history);
+    g_assert_cmpuint (stored_length (settings, "added-during-load"), ==, 3);
+}
+
 /* A delete of an unreadable history that fails leaves it unreadable: recording
  * resumed then would write the next copy over the data it could not read. */
 static void
@@ -4097,6 +4136,7 @@ main (int    argc,
     g_test_add_func ("/storage/lock/dropped-history", test_dropped_history_ends_its_load);
     g_test_add_func ("/storage/history/empty-reaches-the-store", test_empty_reaches_the_store);
     g_test_add_func ("/storage/history/failed-delete-keeps-unreadable", test_failed_delete_keeps_unreadable);
+    g_test_add_func ("/storage/history/add-during-load-kept", test_add_during_load_kept);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-stream-bounds", test_encrypted_stream_bounds);
 #endif

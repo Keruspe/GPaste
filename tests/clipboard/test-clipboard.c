@@ -4645,6 +4645,8 @@ typedef enum
     BOOTSTRAP_BEFORE_LOAD_UNCONFIRMED,
     /* The same, with the load finishing after the stored timeout has run out. */
     BOOTSTRAP_BEFORE_LOAD_OVERDUE,
+    /* A password copied since stands above the entry, published over nothing. */
+    BOOTSTRAP_BEFORE_LOAD_ENTRY_BELOW_HEAD,
 } BootstrapBeforeLoad;
 
 /* A bootstrap read that concludes before the history has loaded finds no head to
@@ -4655,16 +4657,19 @@ typedef enum
  * itself, bringing no head, leaves the link waiting.
  *
  * add_during_load: an add made while the load is in flight shows a head the
- * load then throws away, and must not spend the link. The load runs on a
- * context of its own, so that the manager's idle runs while it is still
- * loading, deterministically.
+ * load then replaces, adding it back on top of what it read, and must not spend
+ * the link. The load runs on a context of its own, so that the manager's idle
+ * runs while it is still loading, deterministically.
  *
  * unconfirmed: linking reads nothing, so a record a later read left unconfirmed
  * stays so, and a sync out of that selection is still refused.
  *
  * overdue: a link landing past the stored deadline is that countdown running
  * out, and asks for the read that identifies the unconfirmed selection, as the
- * countdown itself would; that read then takes the password off. */
+ * countdown itself would; that read then takes the password off.
+ *
+ * entry_below_head: the entry the capture is a copy of is linked to wherever it
+ * sits, a password added above it being no head to spend the link on. */
 static void
 test_bootstrap_before_load (gconstpointer user_data)
 {
@@ -4720,7 +4725,7 @@ test_bootstrap_before_load (gconstpointer user_data)
         g_main_context_pop_thread_default (loading);
 
         /* Added under the load, and the manager's idle run while it still is. */
-        g_paste_history_add (history, g_paste_text_item_new ("thrown away by the load"));
+        g_paste_history_add (history, g_paste_text_item_new ("added during the load"));
         pump_for (10);
         g_assert_true (g_paste_history_is_loading (history));
 
@@ -4735,6 +4740,9 @@ test_bootstrap_before_load (gconstpointer user_data)
     }
 
     g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
+
+    if (variant == BOOTSTRAP_BEFORE_LOAD_ENTRY_BELOW_HEAD)
+        g_paste_history_add (history, g_paste_password_item_new (NULL, "another secret", 0));
 
     if (variant == BOOTSTRAP_BEFORE_LOAD_OVERDUE)
     {
@@ -4757,17 +4765,17 @@ test_bootstrap_before_load (gconstpointer user_data)
         return;
     }
 
-    /* Taken off at the stored timeout, with nothing else in the history to put
-     * there instead. */
+    /* Taken off at the stored timeout, for what else the history holds: the
+     * add made during the load, or nothing. */
     pump_for (1100);
-    g_assert_cmpstr (clipboard->content.str, ==, "");
+    g_assert_cmpstr (clipboard->content.str, ==, (variant == BOOTSTRAP_BEFORE_LOAD_ADD_DURING_LOAD) ? "added during the load" : "");
 }
 
 /* A bootstrap read concluding while the history is still loading is linked once
  * it has loaded, even when something was added in the meantime: the head it
- * sees then is one the load throws away, not the one to link against (see
- * identify_ready ()). The load runs on a context of its own, so that it is
- * still in flight when the read concludes. */
+ * sees then is one the load replaces -- adding it back on top of what it read
+ * -- not the one to link against (see identify_ready ()). The load runs on a
+ * context of its own, so that it is still in flight when the read concludes. */
 static void
 test_bootstrap_during_load (void)
 {
@@ -4785,7 +4793,7 @@ test_bootstrap_during_load (void)
     g_main_context_push_thread_default (loading);
     g_paste_history_load_async (history, "clipboard-tests");
     g_main_context_pop_thread_default (loading);
-    g_paste_history_add (history, g_paste_text_item_new ("thrown away by the load"));
+    g_paste_history_add (history, g_paste_text_item_new ("added during the load"));
 
     clipboard->is_clipboard = TRUE;
     clipboard->defer_reads = TRUE;
@@ -4806,8 +4814,9 @@ test_bootstrap_during_load (void)
 
     g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
 
+    /* Taken off at the stored timeout, for the add made during the load. */
     pump_for (1100);
-    g_assert_cmpstr (clipboard->content.str, ==, "");
+    g_assert_cmpstr (clipboard->content.str, ==, "added during the load");
 }
 
 static void
@@ -5134,6 +5143,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/bootstrap_before_load/add_during_load", GUINT_TO_POINTER (BOOTSTRAP_BEFORE_LOAD_ADD_DURING_LOAD), test_bootstrap_before_load);
     g_test_add_data_func ("/clipboard/bootstrap_before_load/unconfirmed", GUINT_TO_POINTER (BOOTSTRAP_BEFORE_LOAD_UNCONFIRMED), test_bootstrap_before_load);
     g_test_add_data_func ("/clipboard/bootstrap_before_load/overdue", GUINT_TO_POINTER (BOOTSTRAP_BEFORE_LOAD_OVERDUE), test_bootstrap_before_load);
+    g_test_add_data_func ("/clipboard/bootstrap_before_load/entry_below_head", GUINT_TO_POINTER (BOOTSTRAP_BEFORE_LOAD_ENTRY_BELOW_HEAD), test_bootstrap_before_load);
     g_test_add_func ("/clipboard/bootstrap_before_load/identify_during_load", test_bootstrap_during_load);
     g_test_add_data_func ("/clipboard/unconfirmed_password/sync", GUINT_TO_POINTER (0), test_unconfirmed_password);
     g_test_add_data_func ("/clipboard/unconfirmed_password/expiry", GUINT_TO_POINTER (1), test_unconfirmed_password);

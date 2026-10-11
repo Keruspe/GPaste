@@ -823,8 +823,9 @@ g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_
         if (!data->clip->password)
         {
             /* A head seen while the history is still loading is one the load is
-             * about to throw away -- an add made in the meantime -- and not the
-             * one to link against, as link_captures () says for itself
+             * about to replace -- an add made in the meantime, which it then puts
+             * back on top of what it read -- and not the one to link against, as
+             * link_captures () says for itself
              * (/clipboard/bootstrap_before_load/identify_during_load). */
             gboolean loading = g_paste_history_is_loading (data->manager->history);
             g_autoptr (GPasteItem) head = (loading) ? NULL : g_paste_history_dup (data->manager->history, 0);
@@ -2440,7 +2441,7 @@ g_paste_clipboards_manager_select_text (GPasteClipboardsManager *self,
 }
 
 /* A capture identify_ready () could not link to the history's head, for want of
- * one, is linked once the history has loaded.
+ * one, is linked once the history has loaded, to the entry it equals.
  *
  * g_paste_daemon_new () starts both bootstrap reads before the history load, and
  * nothing orders the two: the mutter backend has the formats at once, so its
@@ -2450,11 +2451,13 @@ g_paste_clipboards_manager_select_text (GPasteClipboardsManager *self,
  * the one thing linking is for (/clipboard/bootstrap_before_load).
  *
  * Nothing is tried while the load is still in flight (g_paste_history_is_loading ()):
- * an add made in the meantime shows a head too, but the load throws it away and
- * installs the one a read would have linked against, so trying that add would
- * spend the link on a head that is about to disappear
- * (/clipboard/bootstrap_before_load/add_during_load). Once loaded, the first head
- * seen is tried once: a copy made since is that head, and simply does not match.
+ * the model then holds only what was added in the meantime, none of the store's
+ * entries the capture could be a copy of
+ * (/clipboard/bootstrap_before_load/add_during_load). Once loaded, the link is
+ * tried once, against the entry the capture equals wherever it sits: what was
+ * added during the load is put back on top of what it read, and a password
+ * copied since may stand above it too, neither published over the capture
+ * (/clipboard/bootstrap_before_load/entry_below_head).
  *
  * The link is the one identify_ready () would have made, with two things kept as
  * they were:
@@ -2484,10 +2487,7 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
     if (!self->history || g_paste_history_is_loading (self->history))
         return G_SOURCE_REMOVE;
 
-    g_autoptr (GPasteItem) head = g_paste_history_dup (self->history, 0);
-
-    if (!head)
-        return G_SOURCE_REMOVE;
+    guint64 length = g_paste_history_get_length (self->history);
 
     for (GSList *l = self->clipboards; l; l = g_slist_next (l))
     {
@@ -2498,15 +2498,28 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
 
         clip->link_on_load = FALSE;
 
-        if (!clip->password || head == clip->password || !G_PASTE_IS_PASSWORD_ITEM (head) ||
-            !g_paste_item_equals (clip->password, head))
+        if (!clip->password)
             continue;
 
-        guint timeout = g_paste_clipboards_manager_password_timeout (head);
+        g_autoptr (GPasteItem) entry = NULL;
+
+        for (guint64 i = 0; !entry && i < length; ++i)
+        {
+            g_autoptr (GPasteItem) candidate = g_paste_history_dup (self->history, i);
+
+            if (candidate && candidate != clip->password && G_PASTE_IS_PASSWORD_ITEM (candidate) &&
+                g_paste_item_equals (clip->password, candidate))
+                entry = g_steal_pointer (&candidate);
+        }
+
+        if (!entry)
+            continue;
+
+        guint timeout = g_paste_clipboards_manager_password_timeout (entry);
         gboolean unconfirmed = clip->password_unconfirmed;
 
         g_debug ("clipboards-manager: linking a startup capture to the history loaded after it");
-        g_paste_clipboards_manager_arm_password_at (clip, head, timeout, clip->armed_from + (gint64) timeout * G_USEC_PER_SEC, FALSE);
+        g_paste_clipboards_manager_arm_password_at (clip, entry, timeout, clip->armed_from + (gint64) timeout * G_USEC_PER_SEC, FALSE);
         clip->password_unconfirmed = unconfirmed;
         /* Handled as the countdown running out, and so as on_password_timeout ()
          * handles it: an unconfirmed record is only marked overdue there, and

@@ -3865,6 +3865,157 @@ test_reload_then_delete_drops_password (gconstpointer data)
     g_paste_history_flush (history);
 }
 
+/* A history whose store holds @value alone, pinned or not, and a reader of it
+ * whose load is out: nothing reaches it before the main loop runs. */
+static GPasteHistory *
+loading_history (GPasteSettings **settings,
+                 const gchar     *value,
+                 gboolean         pinned)
+{
+    g_autofree gchar *name = NULL;
+
+    {
+        g_autoptr (GPasteHistory) seed = make_history (settings, 10);
+
+        name = g_strdup (g_paste_history_get_current (seed));
+        g_paste_history_add (seed, g_paste_text_item_new (value));
+        if (pinned)
+        {
+            g_autofree gchar *uuid = dup_uuid_at (seed, 0);
+
+            g_assert_true (g_paste_history_set_favourite (seed, uuid, TRUE));
+        }
+        g_paste_history_flush (seed);
+    }
+
+    GPasteHistory *history = g_paste_history_new (*settings);
+
+    g_paste_history_load_async (history, name);
+    return history;
+}
+
+/* Whether a name is taken is a question about every password the history holds,
+ * which a load out has yet to bring back: a named AddPassword or MakePassword,
+ * and a DeletePassword, are refused BUSY until it lands. */
+static void
+test_password_names_wait_for_load (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = loading_history (&settings, "stored", FALSE);
+    const GPasteDaemonMethods methods = { .history = history };
+    g_autoptr (GError) error = NULL;
+
+    g_assert_true (g_paste_history_is_loading (history));
+    g_assert_null (g_paste_daemon_methods_add_password (&methods, "Work", "secret", 0, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_assert_null (g_paste_daemon_methods_make_password (&methods, "00000000-0000-4000-8000-000000000000", "Work", 0, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_paste_daemon_methods_delete_password (&methods, "Work", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+
+    g_assert_true (pump_until_loaded (history));
+    g_paste_daemon_methods_delete_password (&methods, "Work", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
+}
+
+static void
+record_selected (GPasteHistory *history G_GNUC_UNUSED,
+                 GPasteItem    *item,
+                 gpointer       user_data)
+{
+    g_set_str ((gchar **) user_data, (item) ? g_paste_item_get_real_value (item) : NULL);
+}
+
+/* What is added while a load is out ends up on top of what it read, and so on
+ * the selections: the read head is not published over the last copy. */
+static void
+test_load_selects_last_add (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = loading_history (&settings, "stored", FALSE);
+    g_autofree gchar *selected = NULL;
+
+    g_signal_connect (history, "selected", G_CALLBACK (record_selected), &selected);
+    g_paste_history_add (history, g_paste_text_item_new ("copied during the load"));
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpstr (value_at (history, 0), ==, "copied during the load");
+    g_assert_cmpstr (selected, ==, "copied during the load");
+}
+
+/* A password copied while a load is out is the head the load leaves, and no
+ * selection is told to take the head the load read: published over the
+ * password, it would take the copy just made off the clipboard. */
+static void
+test_load_keeps_password_selected (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = loading_history (&settings, "stored head", FALSE);
+    g_autofree gchar *selected = NULL;
+
+    g_signal_connect (history, "selected", G_CALLBACK (record_selected), &selected);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "copied secret", 0));
+    g_assert_true (pump_until_loaded (history));
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+    g_assert_null (selected);
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+/* An add made while a load is out, equal to the head it reads, takes that
+ * head's place in the store too: the database keeps one row of it, not the
+ * read head's beside the add's. */
+static void
+test_load_add_replaces_stored_head (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "load-add-replaces-stored-head";
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    {
+        g_autoptr (GPasteHistory) seed = g_paste_history_new (settings);
+
+        g_paste_history_load (seed, name);
+        g_paste_history_add (seed, g_paste_text_item_new ("older"));
+        g_paste_history_add (seed, g_paste_text_item_new ("twin"));
+        g_paste_history_flush (seed);
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load_async (history, name);
+    g_paste_history_add (history, g_paste_text_item_new ("twin"));
+    g_assert_true (pump_until_loaded (history));
+    g_paste_history_flush (history);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) stored = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (stored), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (stored->data), ==, "twin");
+    g_assert_cmpstr (g_paste_item_get_value (stored->next->data), ==, "older");
+}
+#endif
+
+/* An add made while a load is out, equal to the head it reads, keeps the uuid
+ * its caller was answered with, and takes the pin that head had. */
+static void
+test_load_keeps_add_uuid (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = loading_history (&settings, "twin", TRUE);
+    GPasteItem *added = g_paste_text_item_new ("twin");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (added));
+
+    g_paste_history_add (history, added);
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuid));
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* The encrypted file backend must round-trip a history (keeping password
  * entries and their real value), and the on-disk ".xmls" file must actually be
@@ -5994,6 +6145,7 @@ main (int argc, char *argv[])
     add_test ("/history/favourite_roundtrip", test_favourite_roundtrip);
     add_test ("/history/favourite_survives_replace", test_favourite_survives_replace);
     add_test ("/history/add_password_name_conflict", test_add_password_name_conflict);
+    add_test ("/history/password_names_wait_for_load", test_password_names_wait_for_load);
     add_test ("/history/set_active_refused", test_set_active_refused);
     add_test ("/history/set_active_unstored", test_set_active_unstored);
     add_test ("/history/migration_refused_backend", test_migration_refused_backend);
@@ -6031,6 +6183,12 @@ main (int argc, char *argv[])
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
     g_test_add_data_func ("/history/reload_then_delete_drops_password", GINT_TO_POINTER (FALSE), test_reload_then_delete_drops_password);
     g_test_add_data_func ("/history/reload_twice_drops_password", GINT_TO_POINTER (TRUE), test_reload_then_delete_drops_password);
+    add_test ("/history/load_selects_last_add", test_load_selects_last_add);
+    add_test ("/history/load_keeps_add_uuid", test_load_keeps_add_uuid);
+    add_test ("/history/load_keeps_password_selected", test_load_keeps_password_selected);
+#ifdef G_PASTE_ENABLE_SQLITE
+    add_test ("/history/load_add_replaces_stored_head", test_load_add_replaces_stored_head);
+#endif
     add_test ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
     add_test ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

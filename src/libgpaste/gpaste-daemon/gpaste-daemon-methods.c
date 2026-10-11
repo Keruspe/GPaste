@@ -63,6 +63,25 @@ g_paste_daemon_methods_check_owned (const GPasteDaemonMethods *self,
     return g_paste_history_sync (self->history, g_paste_history_get_current (self->history), error);
 }
 
+/* Whether a password called @name exists is asked of every password the
+ * history holds, which a load out has yet to bring back: looked up then, a name
+ * would be checked against what was added during the load alone, and the load
+ * would put a stored namesake beside the new one -- two passwords DeletePassword
+ * cannot tell apart. Refused with %G_IO_ERROR_BUSY until the load lands, as
+ * BackupHistory of a loading history is. The nameless placeholder collides with
+ * nothing; a %NULL @name is a lookup by name, which no name lets through. */
+static gboolean
+g_paste_daemon_methods_check_names_loaded (const GPasteDaemonMethods *self,
+                                           const gchar               *name,
+                                           GError                   **error)
+{
+    if ((name && g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) || !g_paste_history_is_loading (self->history))
+        return TRUE;
+
+    g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_BUSY, "The history is still loading the passwords it holds");
+    return FALSE;
+}
+
 /* An add answers the uuid of what the history holds the content under, so a
  * refusal has to be an error rather than a quiet success: the daemon's own
  * policy refusing the content is %G_PASTE_ERROR_REJECTED, which says the request
@@ -232,6 +251,9 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no name for the password to add", NULL);
     G_PASTE_DBUS_ASSERT_FULL (password && *password, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to add", NULL);
 
+    if (!g_paste_daemon_methods_check_names_loaded (self, name, error))
+        return NULL;
+
     /* As in g_paste_daemon_methods_make_password(): the nameless placeholder
      * is shared by passwords that have no user-chosen name. */
     GPastePasswordItem *namesake = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
@@ -383,7 +405,7 @@ g_paste_daemon_methods_delete_password (const GPasteDaemonMethods *self,
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to delete");
 
-    if (!g_paste_daemon_methods_check_owned (self, error))
+    if (!g_paste_daemon_methods_check_owned (self, error) || !g_paste_daemon_methods_check_names_loaded (self, NULL, error))
         return;
 
     G_PASTE_DBUS_ASSERT (g_paste_history_delete_password (self->history, name),
@@ -809,7 +831,8 @@ g_paste_daemon_methods_make_password (const GPasteDaemonMethods *self,
                                       guint                      timeout,
                                       GError                   **error)
 {
-    if (!g_paste_daemon_methods_check_owned (self, error))
+    /* The item a load has yet to bring back is not found either. */
+    if (!g_paste_daemon_methods_check_owned (self, error) || !g_paste_daemon_methods_check_names_loaded (self, name, error))
         return NULL;
 
     GPasteItem *item = g_paste_history_get_by_uuid (self->history, uuid);

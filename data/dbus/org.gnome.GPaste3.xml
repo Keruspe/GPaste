@@ -99,7 +99,10 @@
 
       An existing name fails with org.gnome.GPaste.Error.AlreadyExists without
       changing the history or clipboard. The nameless placeholder "******"
-      may be shared by multiple passwords.
+      may be shared by multiple passwords. A name is checked against every
+      password the current history holds, which it knows once it has loaded:
+      until then, a name other than the placeholder is refused with the same
+      G_IO_ERROR_BUSY as a storage handover (see above).
 
       @timeout is as in MakePassword: seconds, 0 for none.
     -->
@@ -164,7 +167,11 @@
       <arg type="s" direction="in" name="uuid"/>
     </method>
 
-    <!-- Delete a password item, by name -->
+    <!--
+      Delete a password item, by name. Refused with the same G_IO_ERROR_BUSY as
+      a storage handover (see above) while the current history is loading: the
+      passwords it holds are not known until then.
+    -->
     <method name="DeletePassword">
       <arg type="s" direction="in" name="name"/>
     </method>
@@ -326,7 +333,9 @@
 
       Anything else is .Error.WrongItemKind. A name already carried by ANOTHER
       password is .Error.AlreadyExists; a password keeping its own name has
-      collided with nothing.
+      collided with nothing. As for AddPassword, a name other than the nameless
+      placeholder is refused with G_IO_ERROR_BUSY while the current history is
+      loading.
     -->
     <method name="MakePassword">
       <arg type="s" direction="in"  name="uuid"/>

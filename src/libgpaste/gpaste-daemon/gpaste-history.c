@@ -1733,6 +1733,15 @@ g_paste_history_on_loaded (gpointer user_data,
     GPasteHistory *self = user_data;
     G_PASTE_LOCK_HISTORY;
 
+    /* What was added while the load was out -- a copy, an AddText -- is in the
+     * model and nowhere else, recording waiting for the load (see
+     * g_paste_history_update ()), and the read list is about to take its
+     * place. Kept aside, oldest first, to be added on top of what was read. */
+    g_autolist (GPasteItem) added = NULL;
+
+    for (guint i = 0; i < self->history->len; ++i)
+        added = g_list_prepend (added, g_object_ref (g_ptr_array_index (self->history, i)));
+
     g_paste_history_private_set_from_list (self, history);
     self->size = size;
 
@@ -1743,7 +1752,11 @@ g_paste_history_on_loaded (gpointer user_data,
     }
     g_clear_slist (&self->reload_passwords, g_object_unref);
 
-    g_paste_history_activate_first (self, TRUE);
+    /* The head read is no head the selections get when adds go on top of it:
+     * the last of those is (see below), and a selection told to take the read
+     * one instead would have it published over a password just copied --
+     * dropped, even, as an image whose texture the adds idle. */
+    g_paste_history_activate_first (self, !added);
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
     g_paste_history_private_elect_new_biggest (self);
@@ -1789,6 +1802,40 @@ g_paste_history_on_loaded (gpointer user_data,
         g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
     else
         g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, NULL, 0);
+
+    /* Recorded as the adds they were, under the uuids their callers were
+     * answered with, now that a load no longer holds recording back. An add
+     * keeps the head it equals, and its uuid: here the head makes way, as a twin
+     * further down would. */
+    gboolean head_made_way = FALSE;
+
+    for (GList *l = added; l; l = l->next)
+    {
+        GPasteItem *item = l->data;
+
+        if (self->history->len && g_paste_item_equals (g_ptr_array_index (self->history, 0), item))
+        {
+            g_autoptr (GPasteItem) head = g_ptr_array_index (self->history, 0);
+
+            if (g_paste_item_is_favourite (head))
+                g_paste_item_set_favourite (item, TRUE);
+            g_paste_history_private_remove (self, 0, FALSE);
+            head_made_way = TRUE;
+        }
+        _g_paste_history_add (self, g_object_ref (item), TRUE);
+    }
+
+    /* A head taken out by hand is no displacement the add saw, so an
+     * incremental store would keep the read head's row beside the add's: the
+     * whole history is written instead, which reconciles it away. */
+    if (head_made_way)
+        g_paste_history_record (self, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+
+    /* The selections get the head those adds left, the last copy, rather than
+     * the one the load read -- nothing, when that is a password, which is on
+     * the selection it was copied from already. */
+    if (added)
+        g_paste_history_activate_first (self, TRUE);
 }
 
 /**
@@ -2072,6 +2119,9 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 
     g_debug ("history: name changed to '%s'", self->name);
 
+    /* What was added while a load of the history being left was out goes with
+     * it, unrecorded: only the list that load was reading could have taken it
+     * on top, a file history being written whole, and that load is given up. */
     g_paste_history_private_clear (self);
     g_clear_slist (&self->reload_passwords, g_object_unref);
     self->size = 0;
@@ -2293,7 +2343,8 @@ g_paste_history_get_history (GPasteHistory *self)
  * @self: a #GPasteHistory instance
  *
  * Whether a load is still replacing the history: what it holds until then is
- * what the load is about to throw away, adds made in the meantime included.
+ * what the load is about to replace, adds made in the meantime then being
+ * added on top of what it read.
  *
  * Returns: whether a load is in flight
  */
