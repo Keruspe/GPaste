@@ -81,3 +81,11 @@ ui_daemon_presence_test = executable(
 # Some twenty seconds of real daemons coming and going and windows resizing:
 # the default thirty would leave a loaded builder little room.
 test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
+
+ui_preferences_test = executable(
+  'gpaste-ui-preferences-test',
+  sources: ['test-preferences.c'],
+  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+)
+
+test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])

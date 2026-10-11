@@ -3,6 +3,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
 #include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 struct _GPasteGtkPreferencesGroup
 {
@@ -15,6 +16,8 @@ G_PASTE_GTK_DEFINE_TYPE (PreferencesGroup, preferences_group, ADW_TYPE_PREFERENC
  * row binds straight to its setting with g_object_bind_property(). A right-click
  * menu restores the key's default through the same notify path. */
 
+/* The setting a row stands for: what its menu resets, and what a text row's
+ * Apply writes. */
 typedef struct
 {
     GPasteSettings *settings; /* not owned: outlives the row */
@@ -40,7 +43,9 @@ on_reset_menu_clicked (GtkButton *button,
 }
 
 /* The menu popover is built on demand and unparents itself once closed, so it
- * is never a lingering child of the row when the row is finalized. */
+ * is never a lingering child of the row when the row is finalized -- nor when
+ * the row goes with the popover still up, which closes nothing: it goes with
+ * the row's "destroy" then. */
 static void
 on_reset_popover_closed (GtkPopover *popover,
                          gpointer    user_data G_GNUC_UNUSED)
@@ -72,6 +77,7 @@ popup_reset_menu (GtkGesture *gesture,
     gtk_widget_set_parent (popover, row);
     gtk_popover_set_pointing_to (GTK_POPOVER (popover), &rect);
     g_signal_connect (popover, "closed", G_CALLBACK (on_reset_popover_closed), NULL);
+    g_signal_connect_object (row, "destroy", G_CALLBACK (gtk_widget_unparent), popover, G_CONNECT_SWAPPED);
 
     gtk_gesture_set_state (gesture, GTK_EVENT_SEQUENCE_CLAIMED);
     gtk_popover_popup (GTK_POPOVER (popover));
@@ -201,7 +207,9 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
     g_return_val_if_fail (key, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    AdwSpinRow *row = ADW_SPIN_ROW (adw_spin_row_new_with_range (min, max, step));
+    /* Only a value the range takes reaches the setting (see
+     * g_paste_gtk_util_spin_row_new ()). */
+    AdwSpinRow *row = ADW_SPIN_ROW (g_paste_gtk_util_spin_row_new (min, max, step));
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
     /* The setting is a guint64, the row value a gdouble. */
@@ -215,6 +223,33 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
     return row;
 }
 
+static void
+on_text_applied (AdwEntryRow *row,
+                 gpointer     user_data G_GNUC_UNUSED)
+{
+    const ResetData *data = g_object_get_data (G_OBJECT (row), "gpaste-reset-data");
+
+    g_object_set (data->settings, data->key, gtk_editable_get_text (GTK_EDITABLE (row)), NULL);
+}
+
+/* The setting's value, written wherever it came from -- this row's own Reset to
+ * Default, gpaste-client, dconf -- shown as what it is: no edit to apply, which
+ * the apply button AdwEntryRow reveals for any text set would say. An edit in
+ * progress is replaced by it, the setting being what the row stands for. */
+static void
+on_text_setting_changed (GObject    *settings,
+                         GParamSpec *pspec,
+                         gpointer    user_data)
+{
+    AdwEntryRow *row = user_data;
+    g_autofree gchar *value = NULL;
+
+    g_object_get (settings, pspec->name, &value, NULL);
+    adw_entry_row_set_show_apply_button (row, FALSE);
+    gtk_editable_set_text (GTK_EDITABLE (row), (value) ? value : "");
+    adw_entry_row_set_show_apply_button (row, TRUE);
+}
+
 /**
  * g_paste_gtk_preferences_group_add_text_setting:
  * @self: a #GPasteGtkPreferencesGroup instance
@@ -222,7 +257,8 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
  * @key: the settings key (and property name) this row tracks
  * @settings: a #GPasteSettings instance
  *
- * Add a new text setting to the current pane, bound to @key.
+ * Add a new text setting to the current pane, bound to @key. What is typed
+ * reaches the setting only once applied, with the row's apply button or Enter.
  *
  * Returns: (transfer none): the #AdwEntryRow we just added
  */
@@ -240,8 +276,17 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
     AdwEntryRow *row = ADW_ENTRY_ROW (adw_entry_row_new ());
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
-    g_object_bind_property (settings, key, row, "text", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+    /* Applied rather than bound both ways: every keystroke would be a write,
+     * and each half-typed value the setting -- for the upload command, the
+     * command an upload asked for meanwhile runs, an emptied field included. */
+    adw_entry_row_set_show_apply_button (row, TRUE);
+
+    g_autofree gchar *notify = g_strconcat ("notify::", key, NULL);
+
+    g_signal_connect_object (settings, notify, G_CALLBACK (on_text_setting_changed), row, 0);
+    on_text_setting_changed (G_OBJECT (settings), g_object_class_find_property (G_OBJECT_GET_CLASS (settings), key), row);
     add_reset_menu (GTK_WIDGET (row), settings, key);
+    g_signal_connect (row, "apply", G_CALLBACK (on_text_applied), NULL);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 

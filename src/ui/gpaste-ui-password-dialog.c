@@ -193,8 +193,10 @@ password_dialog (GPasteClient *client,
     GtkWidget *name_row = adw_entry_row_new ();
     /* The range a password timeout has, which the "password-timeout" key and the
      * preferences row offer the same way: a value this refused would be one no
-     * other surface can produce. */
-    GtkWidget *timeout_row = adw_spin_row_new_with_range (0, (gdouble) G_PASTE_PASSWORD_TIMEOUT_MAX, 5);
+     * other surface can produce. A cleared field keeps the timeout it had, as
+     * the preferences row does, rather than turning it into 0, which never
+     * takes the password off the clipboard. */
+    GtkWidget *timeout_row = g_paste_gtk_util_spin_row_new (0, (gdouble) G_PASTE_PASSWORD_TIMEOUT_MAX, 5);
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (name_row), _("Name"));
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (timeout_row), _("Clear After (seconds)"));

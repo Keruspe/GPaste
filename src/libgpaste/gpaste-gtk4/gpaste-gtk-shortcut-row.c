@@ -135,6 +135,20 @@ g_paste_gtk_shortcut_row_stop_capture (GPasteGtkShortcutRow *self)
     adw_action_row_set_subtitle (ADW_ACTION_ROW (self), "");
 }
 
+/* A modifier-less key would be grabbed globally and break ordinary typing, so
+ * only a bare key meaningful alone is accepted (the function keys); everything
+ * else needs a real modifier. Shift is none: with it a key still types -- a
+ * capital, a "!" -- or selects, and a grab of Shift+A would take every capital
+ * A from every application. */
+static gboolean
+g_paste_gtk_shortcut_row_accepts (guint           keyval,
+                                  GdkModifierType mods)
+{
+    gboolean standalone_ok = keyval >= GDK_KEY_F1 && keyval <= GDK_KEY_F35;
+
+    return gtk_accelerator_valid (keyval, mods) && ((mods & ~GDK_SHIFT_MASK) || standalone_ok);
+}
+
 static gboolean
 g_paste_gtk_shortcut_row_on_key_pressed (GtkEventControllerKey *controller,
                                          guint                  keyval,
@@ -173,12 +187,7 @@ g_paste_gtk_shortcut_row_on_key_pressed (GtkEventControllerKey *controller,
      * name the same key. */
     keyval = g_paste_keyval_canonicalize (keyval);
 
-    /* A modifier-less key would be grabbed globally and break ordinary typing,
-     * so only accept a bare key for things that are meaningful alone (the
-     * function keys); everything else needs a real modifier. */
-    gboolean standalone_ok = keyval >= GDK_KEY_F1 && keyval <= GDK_KEY_F35;
-
-    if (gtk_accelerator_valid (keyval, mods) && (mods || standalone_ok))
+    if (g_paste_gtk_shortcut_row_accepts (keyval, mods))
     {
         g_autofree gchar *name = gtk_accelerator_name (keyval, mods);
 
@@ -204,14 +213,27 @@ g_paste_gtk_shortcut_row_on_activated (AdwActionRow *row)
     gtk_widget_grab_focus (GTK_WIDGET (self));
 }
 
+/* Armed and left, by a click or Tab elsewhere, the row would go on saying it
+ * waits for a shortcut -- beside another one armed after it -- and swallow
+ * every key once the focus came back, Tab and the arrows included. */
 static void
-g_paste_gtk_shortcut_row_dispose (GObject *object)
+g_paste_gtk_shortcut_row_on_focus_left (GtkEventControllerFocus *controller G_GNUC_UNUSED,
+                                        gpointer                 user_data)
+{
+    GPasteGtkShortcutRow *self = user_data;
+
+    if (self->capturing)
+        g_paste_gtk_shortcut_row_stop_capture (self);
+}
+
+static void
+g_paste_gtk_shortcut_row_finalize (GObject *object)
 {
     GPasteGtkShortcutRow *self = G_PASTE_GTK_SHORTCUT_ROW (object);
 
-    g_clear_pointer (&self->accelerator, g_free);
+    g_free (self->accelerator);
 
-    G_OBJECT_CLASS (g_paste_gtk_shortcut_row_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_gtk_shortcut_row_parent_class)->finalize (object);
 }
 
 static void
@@ -219,7 +241,7 @@ g_paste_gtk_shortcut_row_class_init (GPasteGtkShortcutRowClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-    object_class->dispose = g_paste_gtk_shortcut_row_dispose;
+    object_class->finalize = g_paste_gtk_shortcut_row_finalize;
     object_class->get_property = g_paste_gtk_shortcut_row_get_property;
     object_class->set_property = g_paste_gtk_shortcut_row_set_property;
 
@@ -268,6 +290,10 @@ g_paste_gtk_shortcut_row_init (GPasteGtkShortcutRow *self)
     gtk_event_controller_set_propagation_phase (key, GTK_PHASE_CAPTURE);
     g_signal_connect (key, "key-pressed", G_CALLBACK (g_paste_gtk_shortcut_row_on_key_pressed), self);
     gtk_widget_add_controller (GTK_WIDGET (self), key);
+
+    GtkEventController *focus = gtk_event_controller_focus_new ();
+    g_signal_connect (focus, "leave", G_CALLBACK (g_paste_gtk_shortcut_row_on_focus_left), self);
+    gtk_widget_add_controller (GTK_WIDGET (self), focus);
 
     g_signal_connect (self, "activated", G_CALLBACK (g_paste_gtk_shortcut_row_on_activated), NULL);
 }

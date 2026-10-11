@@ -278,6 +278,14 @@ has not arrived just after setup: no toast is offered yet, and the in-shell
 daemon's Restart action is disabled then. Some twenty seconds of it all, the
 suite runs under a 120-second Meson timeout.
 
+`test-ui-preferences` compiles the preferences' group and shortcut row in
+and drives them on the private Xvfb: a range row emptied, or holding no
+number, keeps its setting even where the range starts at 0; a text row writes
+its setting once applied, not as typed; a row destroyed with its reset menu up
+takes the menu with it; Shift alone makes no global shortcut, bar on a
+function key; an armed shortcut row the focus leaves is disarmed; and a
+disposed one still holds its accelerator.
+
 `test-ui-text-dialog` covers what the item composer will open: a line past
 `MAX_COMPOSABLE_LINE` is refused and puts no dialog up, the same number of
 characters spread over many lines opens, and a line that long cannot be pasted

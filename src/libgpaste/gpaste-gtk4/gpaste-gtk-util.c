@@ -836,3 +836,43 @@ g_paste_gtk_util_password_strength_row_rate (GtkWidget   *row,
     rating->id = g_timeout_add_once (G_PASTE_UTIL_STRENGTH_RATING_DELAY, g_paste_gtk_strength_rating_apply, rating);
     g_source_set_name_by_id (rating->id, "[GPaste] password strength rating");
 }
+
+/* Nothing to read a number from is no number: left alone, a cleared field
+ * would commit 0 as it loses the focus. */
+static gint
+refuse_blank_input (AdwSpinRow *row,
+                    gdouble    *new_value G_GNUC_UNUSED,
+                    gpointer    user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *text = g_strdup (gtk_editable_get_text (GTK_EDITABLE (row)));
+
+    return (*g_strstrip (text)) ? FALSE : GTK_INPUT_ERROR;
+}
+
+/**
+ * g_paste_gtk_util_spin_row_new:
+ * @min: the smallest value the row takes
+ * @max: the largest value the row takes
+ * @step: the step between proposed values
+ *
+ * A row for a number in that range which commits only a value the range takes:
+ * anything else puts the row's own value back. Committing whatever is there --
+ * a field cleared to type another number into, or holding no number at all --
+ * would set the range's minimum as it loses the focus: a maximum history size
+ * trimming the history to five items there and then, a password's timeout going
+ * to 0, which never takes it off the clipboard.
+ *
+ * Returns: (transfer floating): a newly created #AdwSpinRow
+ */
+G_PASTE_VISIBLE GtkWidget *
+g_paste_gtk_util_spin_row_new (gdouble min,
+                               gdouble max,
+                               gdouble step)
+{
+    AdwSpinRow *row = ADW_SPIN_ROW (adw_spin_row_new_with_range (min, max, step));
+
+    adw_spin_row_set_update_policy (row, GTK_UPDATE_IF_VALID);
+    g_signal_connect (row, "input", G_CALLBACK (refuse_blank_input), NULL);
+
+    return GTK_WIDGET (row);
+}

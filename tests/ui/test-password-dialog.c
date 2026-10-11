@@ -59,16 +59,45 @@ finish_timeout (GPasteClient *client G_GNUC_UNUSED,
     return 42;
 }
 
+static void make_password (GPasteClient       *client,
+                           const gchar        *uuid,
+                           const gchar        *name,
+                           guint               timeout,
+                           GCancellable       *cancellable,
+                           GAsyncReadyCallback callback,
+                           gpointer            data);
+
 /* Keep GTK's real window/dialog lifetime while controlling both reply orders. */
 #define g_paste_client_get_item read_item
 #define g_paste_client_get_password_timeout read_timeout
 #define g_paste_client_get_item_finish finish_item
 #define g_paste_client_get_password_timeout_finish finish_timeout
+#define g_paste_client_make_password make_password
 #include "../../src/ui/gpaste-ui-password-dialog.c"
+#undef g_paste_client_make_password
 #undef g_paste_client_get_password_timeout_finish
 #undef g_paste_client_get_item_finish
 #undef g_paste_client_get_password_timeout
 #undef g_paste_client_get_item
+
+/* The timeout a confirmed edit sends, G_MAXUINT before one is sent. */
+static guint made_timeout = G_MAXUINT;
+
+static void
+make_password (GPasteClient       *client G_GNUC_UNUSED,
+               const gchar        *uuid G_GNUC_UNUSED,
+               const gchar        *name G_GNUC_UNUSED,
+               guint               timeout,
+               GCancellable       *cancellable G_GNUC_UNUSED,
+               GAsyncReadyCallback callback G_GNUC_UNUSED,
+               gpointer            data)
+{
+    PasswordRequest *request = data;
+
+    made_timeout = timeout;
+    g_weak_ref_clear (&request->dialog);
+    g_free (request);
+}
 
 static void
 reply (GPasteClient *client,
@@ -146,6 +175,61 @@ edit_window_lifetime (gconstpointer user_data)
     }
 }
 
+static AdwSpinRow *
+find_spin_row (GtkWidget *widget)
+{
+    if (ADW_IS_SPIN_ROW (widget))
+        return ADW_SPIN_ROW (widget);
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
+    {
+        AdwSpinRow *row = find_spin_row (child);
+
+        if (row)
+            return row;
+    }
+
+    return NULL;
+}
+
+/* A timeout field cleared to type another number into, or holding none, keeps
+ * the timeout the password had rather than sending 0, which would never take it
+ * off the clipboard. */
+static void
+timeout_keeps_blank (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+
+    gtk_window_present (window);
+    g_paste_ui_password_dialog_edit (client, window, "00000000-0000-4000-8000-000000000001");
+    reply (client, 0);
+    reply (client, 1);
+
+    AdwDialog *dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+    PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
+    AdwSpinRow *timeout = find_spin_row (GTK_WIDGET (dialog));
+
+    g_assert_nonnull (timeout);
+    for (guint i = 0; i < 2; ++i)
+    {
+        gtk_editable_set_text (GTK_EDITABLE (timeout), (i) ? "abc" : "");
+        adw_spin_row_update (timeout);
+        made_timeout = G_MAXUINT;
+        data->submitted = FALSE;
+        g_signal_emit_by_name (data->confirm, "clicked");
+        g_assert_cmpuint (made_timeout, ==, 42);
+    }
+
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -159,5 +243,6 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/password/close_between_replies", GUINT_TO_POINTER (2), edit_window_lifetime);
     g_test_add_data_func ("/ui/password/hidden_parent", GUINT_TO_POINTER (3), edit_window_lifetime);
     g_test_add_data_func ("/ui/password/retained_closed_parent", GUINT_TO_POINTER (4), edit_window_lifetime);
+    g_test_add_func ("/ui/password/timeout_keeps_blank", timeout_keeps_blank);
     return g_paste_test_env_run ();
 }

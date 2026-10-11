@@ -19,6 +19,9 @@ NEW in 51.1 (UNRELEASED)
 - Fix the passphrase strength meter missing from GPaste's questions inside GNOME Shell
 - Fix the storage migration window picking a storage for you when the one in use cannot be kept
 - Fix the passphrase and migration windows going blank where a message holds a & or a <
+- Fix clearing a number in the preferences setting its minimum, trimming the history to five items
+- Fix the upload command changing with every key typed
+- Fix shortcut rows in the preferences taking Shift alone, or still waiting once the focus left them
 - Fix a password staying on the clipboard when its history entry is deleted, or the history emptied or decrypted
 - Fix a password taken off the clipboard coming back as plain text, or leaving it needlessly blank
 - Fix GNOME Shell taking a password off the clipboard early when asked to restart GPaste
