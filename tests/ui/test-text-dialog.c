@@ -274,6 +274,55 @@ join_into_a_long_line (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+static GtkWidget *
+find_button (GtkWidget   *root,
+             const gchar *label)
+{
+    if (GTK_IS_BUTTON (root) && !g_strcmp0 (gtk_button_get_label (GTK_BUTTON (root)), label))
+        return root;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
+    {
+        GtkWidget *found = find_button (child, label);
+
+        if (found)
+            return found;
+    }
+
+    return NULL;
+}
+
+/* An empty text cannot be confirmed, whether the dialog opened on one or the
+ * user emptied it. */
+static void
+empty_not_confirmed (void)
+{
+    gboolean refused = FALSE;
+
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
+
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Add New Item", "Add", NULL, on_answer, &refused);
+
+    AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
+    GtkWidget *confirm = find_button (GTK_WIDGET (dialog), "Add");
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer (find_text_view (GTK_WIDGET (dialog)));
+
+    g_assert_false (gtk_widget_get_sensitive (confirm));
+    gtk_text_buffer_set_text (buffer, "x", -1);
+    g_assert_true (gtk_widget_get_sensitive (confirm));
+    gtk_text_buffer_set_text (buffer, "", -1);
+    g_assert_false (gtk_widget_get_sensitive (confirm));
+
+    adw_dialog_force_close (dialog);
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 static void
 count_answer (gboolean confirmed,
               gpointer user_data)
@@ -336,6 +385,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog/crlf_lines_opened", "\r\n", open_other_delimiters);
     g_test_add_data_func ("/ui/text_dialog/paragraph_separator_lines_opened", "\u2029", open_other_delimiters);
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
+    g_test_add_func ("/ui/text_dialog/empty_not_confirmed", empty_not_confirmed);
     g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (FALSE), confirm_answered_once);
     g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (TRUE), confirm_answered_once);
     return g_paste_test_env_run ();

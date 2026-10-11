@@ -33,20 +33,35 @@ finish_item (GPasteClient *client G_GNUC_UNUSED,
     return g_paste_client_item_new ("00000000-0000-4000-8000-000000000001", "Text", G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
 }
 
+static guint replaces;
+
+/* Counted and never answered: how a failed save is reported is the window's
+ * business, and linking it in would bring the whole graphical tool along. */
+static void
+send_replace (GPasteClient       *client G_GNUC_UNUSED,
+              const gchar        *uuid G_GNUC_UNUSED,
+              const gchar        *contents G_GNUC_UNUSED,
+              GCancellable       *cancellable G_GNUC_UNUSED,
+              GAsyncReadyCallback callback G_GNUC_UNUSED,
+              gpointer            data G_GNUC_UNUSED)
+{
+    ++replaces;
+}
+
 #define g_paste_client_get_item read_item
 #define g_paste_client_get_item_finish finish_item
+#define g_paste_client_replace send_replace
 #include "../../src/ui/gpaste-ui-edit-item.c"
+#undef g_paste_client_replace
 #undef g_paste_client_get_item_finish
 #undef g_paste_client_get_item
 
-/* Only the edit's own read is under test: saving what was edited is the window's
- * business, and linking it in would bring the whole graphical tool along. */
 gpointer
 g_paste_ui_report_string (GtkWidget           *origin G_GNUC_UNUSED,
                           GPasteUiStringFinish finish G_GNUC_UNUSED,
                           const gchar         *message G_GNUC_UNUSED)
 {
-    g_assert_not_reached ();
+    return NULL;
 }
 
 void
@@ -222,6 +237,84 @@ unhostable_window_refused (void)
     g_test_trap_assert_stderr ("*CRITICAL*g_paste_ui_edit_item_show*g_paste_gtk_util_can_host_dialog*");
 }
 
+static GtkWidget *
+find_button (GtkWidget   *root,
+             const gchar *label)
+{
+    if (GTK_IS_BUTTON (root) && !g_strcmp0 (gtk_button_get_label (GTK_BUTTON (root)), label))
+        return root;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
+    {
+        GtkWidget *found = find_button (child, label);
+
+        if (found)
+            return found;
+    }
+
+    return NULL;
+}
+
+static GtkTextBuffer *
+find_buffer (GtkWidget *root)
+{
+    if (GTK_IS_TEXT_VIEW (root))
+        return gtk_text_view_get_buffer (GTK_TEXT_VIEW (root));
+
+    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
+    {
+        GtkTextBuffer *found = find_buffer (child);
+
+        if (found)
+            return found;
+    }
+
+    return NULL;
+}
+
+/* Save on the edit dialog over @window, its text set to @text first unless
+ * %NULL, waiting for the dialog to answer. */
+static void
+save_edit (GPasteClient *client,
+           GtkWindow    *window,
+           const gchar  *text)
+{
+    g_paste_ui_edit_item_show (client, window, "00000000-0000-4000-8000-000000000001");
+    reply (client);
+
+    AdwDialog *dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+
+    g_assert_nonnull (dialog);
+    if (text)
+        gtk_text_buffer_set_text (find_buffer (GTK_WIDGET (dialog)), text, -1);
+    g_signal_emit_by_name (find_button (GTK_WIDGET (dialog), "Save"), "clicked");
+    while (adw_window_get_visible_dialog (ADW_WINDOW (window)))
+        g_main_context_iteration (NULL, TRUE);
+}
+
+/* Saving the text as it was read sends nothing: Replace would make a new item
+ * of it all the same, and drop its rich text. */
+static void
+unchanged_not_saved (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+
+    gtk_window_present (window);
+    replaces = 0;
+    save_edit (client, window, NULL);
+    g_assert_cmpuint (replaces, ==, 0);
+    save_edit (client, window, "Text edited");
+    g_assert_cmpuint (replaces, ==, 1);
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -237,5 +330,6 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog_answer/foreign_parent_refused", GINT_TO_POINTER (FALSE), foreign_parent_refused);
     g_test_add_data_func ("/ui/text_dialog_answer/fixed_size_parent_refused", GINT_TO_POINTER (TRUE), foreign_parent_refused);
     g_test_add_func ("/ui/edit_item/unhostable_window_refused", unhostable_window_refused);
+    g_test_add_func ("/ui/edit_item/unchanged_not_saved", unchanged_not_saved);
     return g_paste_test_env_run ();
 }

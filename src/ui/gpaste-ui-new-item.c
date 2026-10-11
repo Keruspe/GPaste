@@ -32,9 +32,9 @@ on_new_item (const gchar *text,
     g_autoptr (NewItemData) data = user_data;
     g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
 
-    /* %NULL means cancelled, empty means nothing was written; a window gone took
-     * the dialog with it, which answers as a cancellation. */
-    if (!text || !*text || !rootwin)
+    /* %NULL means cancelled; a window gone took the dialog with it, which
+     * answers as a cancellation. */
+    if (!text || !rootwin)
         return;
 
     g_paste_client_add_text (data->client, text,

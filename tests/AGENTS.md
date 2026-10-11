@@ -333,7 +333,8 @@ into a view that did open -- whether it is the first line of the paste or one
 below it, while a paste of many short lines still goes in. Lines broken by
 `\r`, `\r\n` or U+2029 count as lines, the way the view breaks them, and
 deleting the break between two lines is refused when the line it would make is
-past the limit. It also checks that `g_paste_gtk_util_confirm_dialog()` answers
+past the limit. An empty text cannot be confirmed, whether the dialog opened on
+one or it was emptied. It also checks that `g_paste_gtk_util_confirm_dialog()` answers
 exactly once, a window destroyed under it answering a refusal and freeing the
 dialog. It uses real GTK on the private Xvfb and skips without one.
 
@@ -424,7 +425,8 @@ read to the same: a closed parent and a retained closed one get no dialog, an
 open one does, and a window closed under the dialog goes and frees what the edit
 held, even while something else holds the dialog; a text dialog refuses a
 parent libadwaita would not host it in, answering once as a cancellation, and
-Edit Item refuses such a window before its read goes out.
+Edit Item refuses such a window before its read goes out. Saving the text as
+it was read sends no Replace, a changed one does.
 `test-ui-new-item` checks that a window closed under the New Item composer
 goes and frees what the composer held, and that a window the dialog would
 refuse is refused on the way in.

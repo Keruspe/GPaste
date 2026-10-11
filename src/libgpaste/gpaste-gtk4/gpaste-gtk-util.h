@@ -46,9 +46,9 @@ AdwDialog *g_paste_gtk_util_form_dialog    (const gchar  *heading,
                                             gint          height,
                                             GtkWidget   **confirm);
 
-/* @text is what the user wrote, or %NULL if nothing was confirmed: the user
- * cancelled, the window went under the dialog, or the call was refused (see
- * g_paste_gtk_util_text_dialog ()). */
+/* @text is what the user wrote, never empty, or %NULL if nothing was
+ * confirmed: the user cancelled, the window went under the dialog, or the call
+ * was refused (see g_paste_gtk_util_text_dialog ()). */
 typedef void (*GPasteGtkTextDialogCallback) (const gchar *text,
                                              gpointer     user_data);
 

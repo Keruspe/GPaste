@@ -567,6 +567,15 @@ on_text_dialog_closed (AdwDialog *dialog,
     g_paste_gtk_text_dialog_answer (dialog, FALSE);
 }
 
+/* An empty text is no item: nothing to add, and an edit emptying one would be a
+ * deletion, which is not what confirming asks for. */
+static void
+on_text_dialog_changed (GtkTextBuffer *buffer,
+                        gpointer       user_data)
+{
+    gtk_widget_set_sensitive (user_data, gtk_text_buffer_get_char_count (buffer) > 0);
+}
+
 static void
 on_text_dialog_confirm (GtkButton *button,
                         gpointer   user_data G_GNUC_UNUSED)
@@ -608,9 +617,9 @@ g_paste_gtk_util_can_host_dialog (GtkWindow *window)
  * @confirm_label: the label of the confirm button
  * @text: (nullable): what the text view starts with
  * @callback: (closure user_data) (scope async): handed what the user wrote,
- *            or %NULL if they cancelled -- called exactly once, a dialog whose
- *            window is destroyed under it and a call that is refused both
- *            answering %NULL
+ *            never empty, or %NULL if they cancelled -- called exactly once, a
+ *            dialog whose window is destroyed under it and a call that is
+ *            refused both answering %NULL
  *
  * The dialog for composing an item: a wrapping, scrollable text view in the shell
  * g_paste_gtk_util_form_dialog () puts up. Both adding a new item and editing an
@@ -683,6 +692,8 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
     AdwDialog *dialog = g_paste_gtk_util_form_dialog (heading, confirm_label, scroll, 600, 400, &confirm);
 
     g_signal_connect (confirm, "clicked", G_CALLBACK (on_text_dialog_confirm), NULL);
+    g_signal_connect_object (buffer, "changed", G_CALLBACK (on_text_dialog_changed), confirm, 0);
+    on_text_dialog_changed (buffer, confirm);
 
     GPasteGtkTextDialogData *data = g_new0 (GPasteGtkTextDialogData, 1);
 

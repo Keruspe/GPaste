@@ -20,6 +20,7 @@ typedef struct
 {
     GPasteClient *client;
     gchar        *uuid;
+    gchar        *original;
     GWeakRef      rootwin;
     GCancellable *cancellable;
 } EditData;
@@ -29,6 +30,7 @@ edit_data_free (EditData *data)
 {
     g_clear_object (&data->client);
     g_free (data->uuid);
+    g_free (data->original);
     g_weak_ref_clear (&data->rootwin);
     g_clear_object (&data->cancellable);
     g_free (data);
@@ -43,10 +45,11 @@ on_edit_response (const gchar *text,
     g_autoptr (EditData) data = user_data;
     g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
 
-    /* %NULL means cancelled, empty means the item was emptied -- which is not
-     * an edit but a deletion, and is not what Save was asked for. A window gone
-     * took the dialog with it, which answers as a cancellation. */
-    if (!text || !*text || !rootwin)
+    /* %NULL means cancelled, and a window gone took the dialog with it, which
+     * answers as a cancellation. The text left as it was read is no edit:
+     * Replace would still make a new item of it, dropping its rich text, and
+     * put it back on the clipboard as plain text were it the head. */
+    if (!text || !rootwin || g_paste_str_equal (text, data->original))
         return;
 
     g_paste_client_replace (data->client, data->uuid, text,
@@ -84,7 +87,10 @@ on_item_ready (GObject      *source_object,
         return;
     }
 
-    g_paste_gtk_util_text_dialog (rootwin, _("Edit Item"), _("Save"), g_paste_client_item_get_value (item), on_edit_response, g_steal_pointer (&data));
+    const gchar *value = g_paste_client_item_get_value (item);
+
+    data->original = g_strdup (value);
+    g_paste_gtk_util_text_dialog (rootwin, _("Edit Item"), _("Save"), value, on_edit_response, g_steal_pointer (&data));
 }
 
 /**
