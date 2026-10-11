@@ -35,6 +35,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix a failed save losing a change for good or reporting a failed backup as done
 - Fix an encrypted history file with data appended to it opening as if intact
 - Fix the daemon rarely hanging when it restarts, or losing what was copied just before
+- Fix emptying a history while it loads, or one that could not be read, leaving its items on disk
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard

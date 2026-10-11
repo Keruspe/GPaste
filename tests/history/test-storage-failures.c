@@ -2783,6 +2783,127 @@ test_switch_writes_nothing (void)
     g_paste_history_flush (history);
 }
 
+/* Read @name back through a plain file backend. */
+static guint
+stored_length (GPasteSettings *settings,
+               const gchar    *name)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+
+    return g_list_length (items);
+}
+
+/* Emptying reaches the store whatever state the history is in: one still
+ * loading would have what the load read installed right after, and one that
+ * could not be read would keep every item -- either way they were back at the
+ * next start. */
+static void
+test_empty_reaches_the_store (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not read the history back*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("one"));
+
+        items = g_list_append (items, g_paste_text_item_new ("two"));
+        g_paste_storage_backend_write_history (backend, "emptied-loading", items);
+    }
+
+    {
+        gint held = hold_storage_lock ();
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+        g_paste_history_load_async (history, "emptied-loading");
+        g_paste_history_empty (history);
+        g_close (held, NULL);
+        wait_load (history);
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+        g_paste_history_flush (history);
+        g_assert_cmpuint (stored_length (settings, "emptied-loading"), ==, 0);
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("emptied-unreadable", "xml");
+
+    g_assert_true (g_file_set_contents (path, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<history version=\"2.0\">\n"
+                                              "  <item kind=\"Text\"><value><![CDATA[secret]]></value></item>\n", -1, NULL));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "emptied-unreadable");
+    g_assert_true (g_paste_history_is_unreadable (history));
+    g_paste_history_empty (history);
+    g_paste_history_flush (history);
+    g_assert_cmpuint (stored_length (settings, "emptied-unreadable"), ==, 0);
+}
+
+/* A delete of an unreadable history that fails leaves it unreadable: recording
+ * resumed then would write the next copy over the data it could not read. */
+static void
+test_failed_delete_keeps_unreadable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!geteuid ())
+        {
+            g_test_skip ("root removes files from a directory it cannot write");
+            return;
+        }
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not read the history back*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("undeletable", "xml");
+    const gchar *contents = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<history version=\"2.0\">\n";
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_true (g_file_set_contents (path, contents, -1, NULL));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load (history, "undeletable");
+    g_assert_true (g_paste_history_is_unreadable (history));
+    g_assert_cmpint (g_chmod (dir, 0500), ==, 0);
+
+    /* As in test_rekey_unlistable_images (): its mode back first. */
+    gboolean deleted = g_paste_history_delete (history, NULL, &error);
+
+    g_assert_cmpint (g_chmod (dir, 0700), ==, 0);
+    g_assert_false (deleted);
+    g_assert_nonnull (error);
+    g_assert_true (g_paste_history_is_unreadable (history));
+
+    g_paste_history_add (history, g_paste_text_item_new ("next copy"));
+    g_paste_history_flush (history);
+
+    g_autofree gchar *raw = NULL;
+
+    g_assert_true (g_file_get_contents (path, &raw, NULL, NULL));
+    g_assert_cmpstr (raw, ==, contents);
+}
+
 /* What a write renames into place, a history or an image, is on the disk by
  * then; and an image whose write fails leaves nothing at its name, so the next
  * save writes it again rather than skip a file it takes for complete. */
@@ -3946,6 +4067,8 @@ main (int    argc,
     g_test_add_func ("/storage/lock/flushed-history", test_flushed_history_loads_nothing);
     g_test_add_func ("/storage/lock/flushed-switch-supersedes-load", test_flushed_switch_supersedes_load);
     g_test_add_func ("/storage/switch-writes-nothing", test_switch_writes_nothing);
+    g_test_add_func ("/storage/history/empty-reaches-the-store", test_empty_reaches_the_store);
+    g_test_add_func ("/storage/history/failed-delete-keeps-unreadable", test_failed_delete_keeps_unreadable);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-stream-bounds", test_encrypted_stream_bounds);
 #endif

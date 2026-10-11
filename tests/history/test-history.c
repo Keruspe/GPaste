@@ -5069,6 +5069,53 @@ test_sqlite_version_guard (void)
 
     G_PASTE_TEST_TRAP_SUBPROCESS ("*newer GPaste*");
 }
+
+/* Emptying a history whose database will not open -- a newer GPaste's -- writes
+ * over it as the file flavour does, rather than leave every item in it while
+ * answering that it was emptied: an empty database in its place, which takes
+ * what is copied next. */
+static void
+test_sqlite_empty_unopenable (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "sqlite-empty-newer";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+
+        g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+            g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+        }
+
+        sqlite3 *db = NULL;
+
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "PRAGMA user_version = 99;", NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+        g_paste_history_load (history, name);
+        g_assert_true (g_paste_history_is_unreadable (history));
+        g_paste_history_empty (history);
+        g_paste_history_add (history, g_paste_text_item_new ("next"));
+        g_paste_history_flush (history);
+
+        g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), <, 99);
+        g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*newer GPaste*");
+}
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -5859,6 +5906,7 @@ main (int argc, char *argv[])
     add_test ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
     add_test ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);
     add_test ("/history/sqlite_version_guard", test_sqlite_version_guard);
+    add_test ("/history/sqlite_empty_unopenable", test_sqlite_empty_unopenable);
     add_test ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     add_test ("/history/encrypted_sqlite_absurd_kdf_params", test_encrypted_sqlite_absurd_kdf_params);

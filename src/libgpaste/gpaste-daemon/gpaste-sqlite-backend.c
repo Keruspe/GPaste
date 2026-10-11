@@ -2002,9 +2002,29 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
 
     /* Keep the (now empty) database so the history is still listed. */
     if (db && g_paste_sqlite_backend_exec (db, "DELETE FROM items;"))
+    {
         g_paste_sqlite_backend_forget_deleted (db);
-    else
-        g_paste_sqlite_backend_diverge (backend, name);
+        return;
+    }
+
+    /* One open () refuses -- under another passphrase, from a newer GPaste --
+     * is replaced by an empty one: emptying a history that could not be read
+     * writes over it (g_paste_history_empty ()), as the file flavour's empty
+     * document does. */
+    if (!db)
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_sqlite_backend_unlink (backend, db_path, &error);
+
+        if (!error && g_paste_sqlite_backend_open (self, db_path))
+            return;
+
+        if (error)
+            g_warning ("sqlite: could not replace “%s” with an empty history: %s", db_path, error->message);
+    }
+
+    g_paste_sqlite_backend_diverge (backend, name);
 }
 
 /**************/

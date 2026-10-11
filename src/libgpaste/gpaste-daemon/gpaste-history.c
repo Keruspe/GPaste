@@ -1437,19 +1437,11 @@ g_paste_history_delete_password (GPasteHistory *self,
     return TRUE;
 }
 
-/**
- * g_paste_history_empty:
- * @self: a #GPasteHistory instance
- *
- * Empty the #GPasteHistory
- */
-G_PASTE_VISIBLE void
-g_paste_history_empty (GPasteHistory *self)
+/* Empty the model, recording the emptying as any change is: see
+ * g_paste_history_update () for when that is. */
+static void
+g_paste_history_empty_locked (GPasteHistory *self)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-
-    G_PASTE_LOCK_HISTORY;
-
     /* Through private_remove rather than the array's own free func: emptying
      * keeps the uuid index in step, and announces every password it takes with
      * it -- their cleartext would
@@ -1468,6 +1460,30 @@ g_paste_history_empty (GPasteHistory *self)
 
     g_paste_history_private_elect_new_biggest (self);
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_CLEAR, NULL, NULL, FALSE);
+}
+
+/**
+ * g_paste_history_empty:
+ * @self: a #GPasteHistory instance
+ *
+ * Empty the #GPasteHistory, in memory and in its store
+ *
+ * The store too whatever state the history is in: a load still in flight is
+ * abandoned, since what it read would be installed right after, and a history
+ * that could not be read is written over with nothing, which is what was asked
+ * for -- either way, a change recorded nowhere would have the emptied items
+ * back at the next start. Only a history handed over records nothing.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_empty (GPasteHistory *self)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+
+    G_PASTE_LOCK_HISTORY;
+
+    g_paste_history_saver_abandon_load (self->saver);
+    self->unreadable = FALSE;
+    g_paste_history_empty_locked (self);
 }
 
 /* The name a history is about to be loaded or saved under: the one given, or
@@ -1944,13 +1960,10 @@ g_paste_history_delete (GPasteHistory *self,
          * skipped while a load is in progress). */
         g_paste_history_saver_abandon_load (self->saver);
 
-        g_paste_history_empty (self);
-
-        /* Whatever we could not read back is about to be unlinked, so there is
-         * nothing left to protect: recording must resume, or the gate would stay
-         * shut for the rest of the process and nothing would ever be persisted
-         * again. */
-        self->unreadable = FALSE;
+        /* Not g_paste_history_empty (): a history that could not be read stays
+         * so until its store is gone, the unlink below being free to fail. */
+        G_PASTE_LOCK_HISTORY;
+        g_paste_history_empty_locked (self);
     }
 
     /* The saver may still hold writes for this history: the emptying above, or
@@ -1969,6 +1982,13 @@ g_paste_history_delete (GPasteHistory *self,
         g_propagate_error (error, g_steal_pointer (&local_error));
         return FALSE;
     }
+
+    /* Whatever we could not read back is unlinked, so there is nothing left to
+     * protect: recording must resume, or the gate would stay shut for the rest
+     * of the process and nothing would ever be persisted again. Only now,
+     * a delete that failed leaving it to protect still. */
+    if (g_paste_str_equal (history_name, self->name))
+        self->unreadable = FALSE;
 
     return TRUE;
 }
