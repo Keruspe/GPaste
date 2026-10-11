@@ -27,6 +27,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix a crash saving an image when the home directory name is not UTF-8
 - Fix decrypted passwords lingering in memory after reading or saving an encrypted history
 - Fix storage migrations taking an old copy left by an earlier one for the history in use
+- Fix encrypted histories left on two passphrases by a failed change never opening again
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard

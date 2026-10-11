@@ -2621,6 +2621,29 @@ g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
 
     return opened && g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED);
 }
+
+/* A history whose document the key decrypts whole holds what it encrypted,
+ * bar the empty placeholder a read leaves for one, which says nothing. The
+ * document alone: its images, each a stream of its own salted apart, cost a
+ * derivation each, which the full read the verification would otherwise fall
+ * back on pays on the thread it runs on -- the compositor's, when the unlock
+ * happens inside GNOME Shell (/storage/passphrase/verify-cost). */
+static gboolean
+g_paste_file_backend_history_confirms_passphrase (GPasteStorageBackend *self,
+                                                  const gchar          *name)
+{
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autoptr (GPasteCleartext) text = NULL;
+    gsize text_length;
+    gboolean opened;
+    GStatBuf stat_buf;
+
+    if (g_stat (path, &stat_buf) || !stat_buf.st_size)
+        return FALSE;
+
+    return g_paste_file_backend_load_contents (self, path, file, &text, &text_length, &opened, NULL);
+}
 #endif
 
 static void
@@ -2639,6 +2662,7 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     storage_class->rekey = g_paste_file_backend_rekey;
     storage_class->history_refutes_passphrase = g_paste_file_backend_history_refutes_passphrase;
+    storage_class->history_confirms_passphrase = g_paste_file_backend_history_confirms_passphrase;
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_file_backend_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_file_backend_finalize;

@@ -1450,16 +1450,15 @@ g_paste_history_resolve_name (GPasteHistory *self,
     if (!name)
         name = g_paste_settings_get_history_name (self->settings);
 
-    if (g_paste_util_history_name_is_valid (name))
-        return name;
+    const gchar *resolved = g_paste_util_resolve_history_name (name);
 
     /* @name is what a NULL setting resolved to, so it can still be NULL here,
      * and printf ("%s", NULL) is undefined -- it is glibc that prints
      * "(null)", not C. */
-    g_warning ("“%s” does not name a history; using “%s” instead",
-               (name) ?: "(none)", G_PASTE_DEFAULT_HISTORY);
+    if (resolved != name)
+        g_warning ("“%s” does not name a history; using “%s” instead", (name) ?: "(none)", resolved);
 
-    return G_PASTE_DEFAULT_HISTORY;
+    return resolved;
 }
 
 /**

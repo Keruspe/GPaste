@@ -43,6 +43,11 @@ gboolean g_paste_util_history_is_stored (const gchar  *name,
 
 gboolean g_paste_util_ensure_history_dir_exists (void);
 
+/* The history @name stands for: itself, or G_PASTE_DEFAULT_HISTORY in place of
+ * a name no history can have -- which, for the configured name, is the one a
+ * daemon loads, so a storage check looks at the history that daemon would. */
+const gchar *g_paste_util_resolve_history_name (const gchar *name);
+
 /* Wiping what was decrypted. A read hands back the very thing the passphrase was
  * protecting, and releasing it with g_free() leaves it in the heap for whatever
  * allocates that block next -- and in any core dump taken meanwhile.

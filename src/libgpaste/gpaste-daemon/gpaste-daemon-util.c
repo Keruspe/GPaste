@@ -130,6 +130,12 @@ g_paste_util_xml_encode (const gchar *text)
     return encoded;
 }
 
+G_PASTE_VISIBLE const gchar *
+g_paste_util_resolve_history_name (const gchar *name)
+{
+    return (g_paste_util_history_name_is_valid (name)) ? name : G_PASTE_DEFAULT_HISTORY;
+}
+
 /**
  * g_paste_util_get_history_dir_path:
  *

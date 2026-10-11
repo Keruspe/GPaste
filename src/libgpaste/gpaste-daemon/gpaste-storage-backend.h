@@ -65,8 +65,13 @@ struct _GPasteStorageBackendClass
      * corrupt file tells the user their correct one is wrong.
      *
      * Only ever asked of a backend built with the passphrase under test. */
-    gboolean (*history_refutes_passphrase) (GPasteStorageBackend *self,
-                                            const gchar          *name);
+    gboolean (*history_refutes_passphrase)  (GPasteStorageBackend *self,
+                                             const gchar          *name);
+    /* Whether it proves the passphrase right: it holds what this backend
+     * encrypted under it. Read-only too, as verifying has to be, and set by
+     * every backend setting history_refutes_passphrase. */
+    gboolean (*history_confirms_passphrase) (GPasteStorageBackend *self,
+                                             const gchar          *name);
 
     /*< protected, optional: re-encrypt an existing history under a new key >*/
     /* @self holds the passphrase the history is currently encrypted with; only
@@ -170,6 +175,9 @@ const gchar *g_paste_storage_backend_get_passphrase (void);
 gboolean g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
                                                  GPasteSettings *settings,
                                                  const gchar    *passphrase);
+
+gboolean g_paste_storage_backend_refutes_passphrase (GPasteStorageBackend *self,
+                                                     const gchar          *name);
 #endif
 
 G_END_DECLS

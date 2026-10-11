@@ -1973,18 +1973,20 @@ g_paste_sqlite_backend_finalize (GObject *object)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-/* See the vfunc: only encrypted data this backend's key does not open refutes
- * the passphrase. No crypto parameters (a corrupt or foreign file) and an empty
- * history both say nothing -- the latter gets re-keyed on open instead of
- * locking the user out. */
+/* Whether the database of the history called @name keys this backend's
+ * passphrase -- %FALSE when there is no key to check it against, @checks_out
+ * then saying nothing -- and, when @has_data is asked for, whether it holds any
+ * item. Read-only: verification must never create or touch anything, and open ()
+ * re-keys an empty database for whatever passphrase it is given. */
 static gboolean
-g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
-                                                   const gchar          *name)
+g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
+                                         const gchar          *name,
+                                         gboolean             *checks_out,
+                                         gboolean             *has_data)
 {
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (sqlite3) db = NULL;
 
-    /* Read-only: verification must never create or touch anything. */
     if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
         return FALSE;
 
@@ -2008,17 +2010,43 @@ g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
      * can reach the swap between here and the memzero below. */
     guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
     gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
-    gboolean checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
-    /* A count that still cannot be read is inconclusive, which the vfunc asks
-     * to answer as no refutation rather than condemn a passphrase over an I/O
-     * error. Accepting a wrong one here costs no data: the open that follows
+
+    *checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
+    gcr_secure_memory_free (key);
+    /* A count that still cannot be read is inconclusive, which refuting asks to
+     * answer as no refutation rather than condemn a passphrase over an I/O
+     * error. Accepting a wrong one there costs no data: the open that follows
      * refuses it on the same count (setup_crypto()), and the history stays
      * unreadable rather than written over. */
-    gboolean has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
+    if (has_data)
+        *has_data = g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
 
-    gcr_secure_memory_free (key);
+    return derived;
+}
 
-    return derived && !checks_out && has_data;
+/* See the vfunc: only encrypted data this backend's key does not open refutes
+ * the passphrase. No crypto parameters (a corrupt or foreign file) and an empty
+ * history both say nothing -- the latter gets re-keyed on open instead of
+ * locking the user out. */
+static gboolean
+g_paste_sqlite_backend_history_refutes_passphrase (GPasteStorageBackend *self,
+                                                   const gchar          *name)
+{
+    gboolean checks_out = FALSE;
+    gboolean has_data = FALSE;
+
+    return g_paste_sqlite_backend_check_passphrase (self, name, &checks_out, &has_data) && !checks_out && has_data;
+}
+
+/* See the vfunc: the key check proves it, empty database or not -- one that
+ * fails proving nothing, since open () would re-key an empty one for it. */
+static gboolean
+g_paste_sqlite_backend_history_confirms_passphrase (GPasteStorageBackend *self,
+                                                    const gchar          *name)
+{
+    gboolean checks_out = FALSE;
+
+    return g_paste_sqlite_backend_check_passphrase (self, name, &checks_out, NULL) && checks_out;
 }
 #endif
 
@@ -2041,6 +2069,7 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     storage_class->rekey = g_paste_sqlite_backend_rekey;
     storage_class->history_refutes_passphrase = g_paste_sqlite_backend_history_refutes_passphrase;
+    storage_class->history_confirms_passphrase = g_paste_sqlite_backend_history_confirms_passphrase;
 #endif
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_sqlite_backend_finalize;

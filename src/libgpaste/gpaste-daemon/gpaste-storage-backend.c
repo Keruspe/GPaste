@@ -8,6 +8,8 @@
 #include <gpaste-daemon/gpaste-noop-backend.h>
 #include <gpaste-daemon/gpaste-prompt.h>
 
+#include <glib/gstdio.h>
+
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
 #endif
@@ -835,24 +837,28 @@ g_paste_storage_get_extension (GPasteStorage storage_kind)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+static GPasteStorageBackend *_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
+                                                                     GPasteSettings *settings,
+                                                                     const gchar    *passphrase);
+
 /**
  * g_paste_storage_passphrase_can_decrypt:
  * @storage_kind: the encrypted #GPasteStorage kind to verify against
  * @settings: a #GPasteSettings instance
  * @passphrase: the passphrase to check
  *
- * Check whether @passphrase actually unlocks the existing encrypted history of
- * the @storage_kind flavor, so a wrong (or stale keyring) passphrase is never
- * accepted and given the chance to overwrite the real data.
+ * Check whether @passphrase actually unlocks the existing encrypted histories
+ * of the @storage_kind flavor, so a wrong (or stale keyring) passphrase is never
+ * accepted and given the chance to overwrite the real data. Nothing is written
+ * to find out. The active history decides when it holds data, which may leave
+ * others on another passphrase -- what a change of passphrase whose rollback
+ * failed leaves -- and every history decides otherwise.
  *
- * Returns: %FALSE when encrypted data is present and @passphrase does not
- *          unlock it, and when the histories could not be listed at all -- an
- *          unverifiable passphrase is refused rather than assumed good
+ * Returns: %FALSE when the active history holds data @passphrase does not
+ *          unlock, or holds none and another history does; and when the
+ *          histories could not be listed at all -- an unverifiable passphrase
+ *          is refused rather than assumed good
  */
-static GPasteStorageBackend *_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
-                                                                     GPasteSettings *settings,
-                                                                     const gchar    *passphrase);
-
 G_PASTE_VISIBLE gboolean
 g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
                                         GPasteSettings *settings,
@@ -871,6 +877,8 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
 
     if (!klass->history_refutes_passphrase)
         return TRUE;
+    /* The vfunc's contract: the one answers with the other. */
+    g_return_val_if_fail (klass->history_confirms_passphrase, FALSE);
 
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &error);
@@ -884,10 +892,24 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
         return FALSE;
     }
 
-    /* Every history, not just up to the first that opens: they can be keyed
-     * differently (one re-keyed while empty, then filled), and accepting a
-     * passphrase that fails a data-holding one would load that history empty
-     * and let its next save overwrite the real content. */
+    /* The active history decides when it holds what this flavour encrypted:
+     * the one the daemon loads, and the one a wrong passphrase would cost. The
+     * others may be keyed differently -- what a change of passphrase whose
+     * rollback failed leaves -- and stay closed under this one, read as
+     * unreadable and so never written over: refusing a passphrase over them
+     * would refuse every passphrase, and nothing could open again. */
+    const gchar *active = g_paste_util_resolve_history_name (g_paste_settings_get_history_name (settings));
+
+    if (klass->history_refutes_passphrase (backend, active))
+        return FALSE;
+    if (klass->history_confirms_passphrase (backend, active))
+        return TRUE;
+
+    /* Otherwise every history, not just up to the first that opens: with
+     * nothing to go by in the active one -- absent, never written -- a
+     * passphrase the others refute is a typo as likely as not, and the active
+     * history written under it would be one more under a passphrase of its
+     * own. */
     for (GStrv name = names; name && *name; ++name)
     {
         if (klass->history_refutes_passphrase (backend, *name))
@@ -895,6 +917,28 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
     }
 
     return TRUE;
+}
+
+/**
+ * g_paste_storage_backend_refutes_passphrase:
+ * @self: a #GPasteStorageBackend instance, built with the passphrase in question
+ * @name: the name of a history
+ *
+ * Whether the history called @name proves @self's passphrase wrong: see
+ * history_refutes_passphrase in #GPasteStorageBackendClass.
+ *
+ * Returns: whether @name refutes the passphrase
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_refutes_passphrase (GPasteStorageBackend *self,
+                                            const gchar          *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (name, FALSE);
+
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+
+    return klass->history_refutes_passphrase && klass->history_refutes_passphrase (self, name);
 }
 
 /* NULL when this build cannot construct the requested encrypted flavor. */

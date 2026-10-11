@@ -24,6 +24,9 @@
  * store is written with cost a third of a second and 256 MiB a derivation. The
  * parameters stored are still those, and every derivation here goes through
  * this one, a read's as much as a write's, so the two still agree. */
+/* How many keys were derived, which is what a passphrase check costs. */
+static gint derivations;
+
 int
 crypto_pwhash (unsigned char * const       out,
                unsigned long long          outlen,
@@ -39,6 +42,7 @@ crypto_pwhash (unsigned char * const       out,
     Derive original = (Derive) dlsym (RTLD_NEXT, "crypto_pwhash");
 
     g_assert_nonnull (original);
+    g_atomic_int_inc (&derivations);
 
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
 }
@@ -1248,6 +1252,36 @@ test_verification_waits_for_busy_database (void)
     g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "wrong passphrase"));
     release_busy (closer);
 }
+
+/* An empty active database proves nothing: verifying reads it without keying
+ * it afresh for the passphrase under test, as opening it would, and the
+ * histories holding data decide. Nothing in the store changes to find out. */
+static void
+test_verification_empty_active_database (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *active = g_paste_settings_get_history_name (settings);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+        g_paste_storage_backend_write_history (backend, "beside-the-empty-one", items);
+        g_paste_storage_backend_write_history (backend, active, NULL);
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (active, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
+    g_autofree gchar *before = NULL;
+    g_autofree gchar *after = NULL;
+    gsize before_length = 0;
+    gsize after_length = 0;
+
+    g_assert_true (g_file_get_contents (path, &before, &before_length, NULL));
+    g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "typo"));
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "passphrase"));
+    g_assert_true (g_file_get_contents (path, &after, &after_length, NULL));
+    g_assert_cmpmem (before, before_length, after, after_length);
+}
 #endif
 
 /* A full write that does not land sweeps nothing: what is on disk is still the
@@ -1321,6 +1355,43 @@ test_image_name_not_utf8 (void)
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
     g_assert_cmpstr (g_paste_item_get_value (loaded->next->data), ==, "saved");
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Checking a passphrase against the active history decrypts its document --
+ * once to see whether the key refutes it, once to see whether it confirms it
+ * -- and none of its images, each a stream salted apart, a derivation of its
+ * own: on the thread the unlock runs on, the compositor's inside GNOME Shell,
+ * each is a stall. */
+static void
+test_passphrase_verify_cost (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_settings_set_history_name (settings, "verify-cost");
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("text"));
+
+        for (guchar i = 0; i < 3; ++i)
+        {
+            const guchar pixel[4] = { i, 2 * i, 3 * i, 255 };
+            g_autoptr (GBytes) data = g_bytes_new (pixel, sizeof (pixel));
+            g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, data, 4);
+
+            items = g_list_append (items, g_paste_image_item_new (texture));
+        }
+
+        g_paste_storage_backend_write_history (backend, "verify-cost", items);
+    }
+
+    g_atomic_int_set (&derivations, 0);
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase"));
+    g_assert_cmpint (g_atomic_int_get (&derivations), ==, 2);
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
+#endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Only a key that opens nothing refutes a passphrase: a history damaged past its
@@ -2111,6 +2182,101 @@ on_rekey_settled (GObject      *source G_GNUC_UNUSED,
     g_set_object ((GAsyncResult **) user_data, result);
 }
 
+/* A change of passphrase reads each history it re-keys once: asked first
+ * whether the passphrase in use opens it, every history would have a key
+ * derived and its document decrypted twice. */
+static void
+test_rekey_cost (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "one");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("active"));
+
+        g_paste_storage_backend_write_history (backend, name, items);
+        g_paste_storage_backend_write_history (backend, "other", items);
+    }
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    prompt->passphrase = "two";
+    g_atomic_int_set (&derivations, 0);
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_no_error (error);
+    /* Two checking the passphrase in use, then per history its document read
+     * with the old key, and written and read back with the new one. */
+    g_assert_cmpint (g_atomic_int_get (&derivations), ==, 2 + 2 * 3);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* Histories split across two passphrases -- what a change whose rollback failed
+ * leaves -- are opened by the one the active history takes, the others staying
+ * closed on theirs, and a change of passphrase re-keys the ones it opens rather
+ * than fail on the rest: refusing every passphrase, nothing would open again. */
+static void
+test_rekey_split_passphrases (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*is on another passphrase, which it keeps*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    {
+        g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
+        g_autoptr (GPasteStorageBackend) two = g_paste_file_backend_new_encrypted (settings, "two");
+        g_autolist (GPasteItem) active = g_list_append (NULL, g_paste_text_item_new ("active"));
+        g_autolist (GPasteItem) other = g_list_append (NULL, g_paste_text_item_new ("other"));
+
+        g_paste_storage_backend_write_history (one, name, active);
+        g_paste_storage_backend_write_history (two, "other", other);
+    }
+
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "one"));
+    g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "two"));
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    prompt->passphrase = "three";
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteStorageBackend) three = g_paste_file_backend_new_encrypted (settings, "three");
+    g_autoptr (GPasteStorageBackend) two = g_paste_file_backend_new_encrypted (settings, "two");
+    g_autolist (GPasteItem) active = NULL;
+    g_autolist (GPasteItem) other = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (three, name, NULL, &active, &size));
+    g_assert_cmpuint (g_list_length (active), ==, 1);
+    g_assert_true (g_paste_storage_backend_read_history (two, "other", NULL, &other, &size));
+    g_assert_cmpuint (g_list_length (other), ==, 1);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
 /* What the user is told about a re-key that left the history split is that it
  * did, not that the history still takes the passphrase it had. */
 static void
@@ -2168,6 +2334,7 @@ main (int    argc,
 #endif
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
+    g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
 #endif
     g_test_add_data_func ("/storage/empty-alternative/file", GUINT_TO_POINTER (G_PASTE_STORAGE_FILE), test_empty_alternative);
@@ -2192,6 +2359,8 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/unsettled-unwritten", test_rekey_unsettled_unwritten);
     g_test_add_func ("/storage/encrypted-read-oversized", test_encrypted_read_oversized);
     g_test_add_func ("/storage/rekey/settled-without-history", test_rekey_settled_without_history);
+    g_test_add_func ("/storage/rekey/split-passphrases", test_rekey_split_passphrases);
+    g_test_add_func ("/storage/rekey/cost", test_rekey_cost);
     g_test_add_func ("/storage/rekey/settles-valid-names", test_rekey_settles_valid_names);
     g_test_add_func ("/storage/rekey/after-leftovers", test_rekey_after_leftovers);
     g_test_add_func ("/storage/rekey/unlistable-images", test_rekey_unlistable_images);
@@ -2210,6 +2379,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);
     g_test_add_func ("/storage/sqlite/uncounted-crypto", test_uncounted_crypto);
     g_test_add_func ("/storage/sqlite/busy-verification", test_verification_waits_for_busy_database);
+    g_test_add_func ("/storage/sqlite/verification-empty-active-database", test_verification_empty_active_database);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);

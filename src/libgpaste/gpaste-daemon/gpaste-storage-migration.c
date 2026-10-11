@@ -82,10 +82,7 @@ detect_current_backend (GPasteSettings *settings,
         G_PASTE_STORAGE_FILE,
     };
 
-    /* As g_paste_history_resolve_name () has it: a name that is no history's
-     * is the default one, which is the history the daemon then loads. */
-    const gchar *configured = g_paste_settings_get_history_name (settings);
-    const gchar *name = (g_paste_util_history_name_is_valid (configured)) ? configured : G_PASTE_DEFAULT_HISTORY;
+    const gchar *name = g_paste_util_resolve_history_name (g_paste_settings_get_history_name (settings));
     GPasteStorage set = g_paste_settings_get_storage_backend (settings);
 
     /* The flavour storage-backend was set to, when the active history is stored
@@ -195,8 +192,19 @@ known_passphrase_for (GPasteStorage   storage_kind,
         return known;
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
+    /* The keyring's replaces the process passphrase to be verified, and a
+     * refusal clears it: the one the daemon is persisting with is put back
+     * then, or a prompt dismissed afterwards would leave it nothing to persist
+     * with -- the reload that follows building the backend that stores
+     * nothing. No test shows it: it takes a keyring holding a passphrase, and
+     * the test environment runs no secret service. */
+    g_autoptr (GPastePassphrase) held = (known) ? g_paste_passphrase_new (known) : NULL;
+
     if (g_paste_storage_keyring_apply_verified (storage_kind, settings))
         return g_paste_storage_backend_get_passphrase ();
+
+    if (held)
+        g_paste_storage_backend_set_passphrase (g_paste_passphrase_peek (held));
 #else
     (void) settings;
 #endif
@@ -1292,10 +1300,11 @@ rekey_history (RekeyData   *self,
 
 /* Re-encrypt every history of the current flavor with @passphrase. Each one is
  * re-keyed whole or put back as it was, short of the filesystem refusing even
- * that, but they go one at a time: stop at the first failure rather than
- * carrying on, so what is left is "these are on the new passphrase, those are
- * still on the old" — recoverable by running again — instead of a set silently
- * split further apart. */
+ * that, and they go one at a time: the first failure stops the loop and puts
+ * the ones already re-keyed back on the passphrase they all shared, so the set
+ * is left on one passphrase -- or, where something could not be put back,
+ * reported split (@split in #RekeyData), which no later change repairs: it
+ * keeps every history the passphrase in use does not open where it is. */
 static gboolean
 rekey_histories (RekeyData   *self,
                  const gchar *passphrase,
@@ -1318,12 +1327,36 @@ rekey_histories (RekeyData   *self,
         return FALSE;
     }
 
+    /* The ones re-keyed so far, which are what a failure puts back. */
+    g_autoptr (GPtrArray) rekeyed = g_ptr_array_new ();
+
     for (GStrv name = names; *name; ++name)
     {
         gboolean split = FALSE;
 
         if (rekey_history (self, *name, current, passphrase, &split))
+        {
+            g_ptr_array_add (rekeyed, *name);
             continue;
+        }
+
+        /* A history this passphrase does not open is on another -- what a
+         * change whose rollback failed leaves -- and stays on it: the active
+         * history decides the passphrase (g_paste_storage_passphrase_can_decrypt
+         * ()), and re-keying the ones it opens is what lets the user carry on.
+         * Asked once its re-key has failed, which changed nothing then, it
+         * having nothing it could read: asked first, every history would have
+         * a key derived and its document decrypted twice. Not asked of one
+         * whose re-key could not put back what it changed, which is the
+         * failure to report whatever its document now refutes -- no test
+         * leaves that document on the new passphrase, the moves
+         * /storage/rekey/split fails stopping a re-key before it is
+         * installed. */
+        if (!split && g_paste_storage_backend_refutes_passphrase (backend, *name))
+        {
+            g_warning ("The history \"%s\" is on another passphrase, which it keeps", *name);
+            continue;
+        }
 
         /* The failing one has put back what it had changed, unless it says it
          * could not: then it is on both passphrases whatever happens to the
@@ -1338,12 +1371,14 @@ rekey_histories (RekeyData   *self,
          * shared a moment ago, rather than leave the set split between two — a
          * split one cannot be repaired by running this again, since it starts
          * from a single passphrase. */
-        for (GStrv done = names; done != name; ++done)
+        for (guint i = 0; i < rekeyed->len; ++i)
         {
-            if (rekey_history (self, *done, passphrase, current, NULL))
+            const gchar *done = g_ptr_array_index (rekeyed, i);
+
+            if (rekey_history (self, done, passphrase, current, NULL))
                 continue;
 
-            g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", *done);
+            g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", done);
             self->split = TRUE;
         }
 
@@ -1357,7 +1392,7 @@ rekey_histories (RekeyData   *self,
      * meaningfully re-key, and it is also what a flavor this build cannot
      * construct degrades to — adopting a passphrase then, and remembering it,
      * would hand out a key that opens nothing. */
-    if (!*names)
+    if (!rekeyed->len)
     {
         g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND,
                              "There is no stored history to change the passphrase of");
