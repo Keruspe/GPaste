@@ -258,6 +258,25 @@ sqlite3_step (sqlite3_stmt *statement)
     return original (statement);
 }
 
+/* How many checkpoints were asked of SQLite. */
+static guint checkpoints;
+
+int
+sqlite3_wal_checkpoint_v2 (sqlite3    *db,
+                           const char *database,
+                           int         mode,
+                           int        *log_frames,
+                           int        *checkpointed_frames)
+{
+    typedef int (*Checkpoint) (sqlite3 *, const char *, int, int *, int *);
+    Checkpoint original = (Checkpoint) dlsym (RTLD_NEXT, "sqlite3_wal_checkpoint_v2");
+
+    g_assert_nonnull (original);
+    ++checkpoints;
+
+    return original (db, database, mode, log_frames, checkpointed_frames);
+}
+
 /* One integer out of @path, through a connection of its own: test-history.c's
  * sqlite_raw_count() is the same, in a binary that shares no fixture with
  * this one. */
@@ -931,6 +950,37 @@ test_import_needs_readable_copy (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
+/* An add evicting the oldest item, which every copy does once the history is
+ * full, leaves the write-ahead log to SQLite's own checkpoints: what a delete
+ * takes is checkpointed out of it at once, but an item aged out is nothing the
+ * user deleted, and a checkpoint on every copy syncs the disk on every copy. */
+static void
+test_sqlite_eviction_checkpoints_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "eviction-checkpoints";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) c = g_paste_text_item_new ("c");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, a), b);
+
+    g_paste_storage_backend_write_history (backend, name, history);
+
+    /* a evicted by c. */
+    g_autoptr (GList) evicted = g_list_prepend (g_list_prepend (NULL, b), c);
+
+    checkpoints = 0;
+    g_paste_storage_backend_add_item (backend, name, c, evicted);
+    g_assert_cmpuint (checkpoints, ==, 0);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+
+    evicted = g_list_remove (evicted, b);
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (b), evicted);
+    g_assert_cmpuint (checkpoints, ==, 1);
+}
+
 /* A version 1 database as an older GPaste left it, at @path, holding one item
  * whose value is "precious". */
 static void
@@ -2816,6 +2866,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/checksum-refused", test_sqlite_checksum_refused);
     g_test_add_func ("/storage/sqlite/schema/unreadable-version", test_schema_version_unreadable);
     g_test_add_func ("/storage/sqlite/schema/upgraded-meanwhile", test_schema_upgraded_meanwhile);
+    g_test_add_func ("/storage/sqlite/eviction-checkpoints-nothing", test_sqlite_eviction_checkpoints_nothing);
 #endif
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
     g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);

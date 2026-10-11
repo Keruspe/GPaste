@@ -713,10 +713,15 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
 
     sqlite3_busy_timeout (db, 5000);
 
+    /* secure_delete zeroes what a delete frees, which SQLite keeps otherwise
+     * unless built with SQLITE_SECURE_DELETE -- as Fedora's is, which is why no
+     * test here can tell it apart: see forget_deleted () for the other copy, in
+     * the write-ahead log, which /history/sqlite_deleted_text_gone pins. */
     if (!g_paste_sqlite_backend_exec (db,
                                       "PRAGMA journal_mode = WAL;"
                                       "PRAGMA synchronous = NORMAL;"
-                                      "PRAGMA foreign_keys = ON;"))
+                                      "PRAGMA foreign_keys = ON;"
+                                      "PRAGMA secure_delete = ON;"))
         return NULL;
 
     gint64 version = g_paste_sqlite_backend_schema_version (db, db_path);
@@ -1067,6 +1072,21 @@ g_paste_sqlite_backend_count_stored (const guchar *key,
     return count;
 }
 
+/* What a delete took -- a text made a password, an item deleted or edited, a
+ * history emptied -- has to be in no file afterwards, as it is in none once the
+ * plain file flavour rewrites its document. secure_delete zeroes it in the
+ * database, and the write-ahead log still holds the pages it was on until a
+ * checkpoint, for as long as the connection lives: truncated here, which writes
+ * those pages back and empties the log. The encrypted flavour's too: an image's
+ * date and checksum and an alternative's mime are stored in clear. Best effort:
+ * a reader holding the log defers it to the next delete. */
+static void
+g_paste_sqlite_backend_forget_deleted (sqlite3 *db)
+{
+    if (sqlite3_wal_checkpoint_v2 (db, NULL, SQLITE_CHECKPOINT_TRUNCATE, NULL, NULL) != SQLITE_OK)
+        g_debug ("sqlite: could not empty the write-ahead log: %s", sqlite3_errmsg (db));
+}
+
 static void
 g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
                                            const gchar          *name,
@@ -1102,7 +1122,8 @@ g_paste_sqlite_backend_write_history_file (GPasteStorageBackend *self,
         success = g_paste_sqlite_backend_upsert_item (db, key, item, rank--);
     }
 
-    g_paste_sqlite_backend_finish_transaction (db, success);
+    if (g_paste_sqlite_backend_finish_transaction (db, success))
+        g_paste_sqlite_backend_forget_deleted (db);
 }
 
 /*****************/
@@ -1707,6 +1728,10 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     if (success && history)
         g_paste_sqlite_backend_reconcile (db, key, history);
 
+    /* No forget_deleted (): what an add displaces is the oldest item evicted,
+     * on every copy once the history is full, or an older copy of what it
+     * adds -- nothing the user deleted. A checkpoint with its syncs on every
+     * copy is what SQLite's own, every thousand pages, spares. */
     g_paste_sqlite_backend_finish_transaction (db, success);
 }
 
@@ -1737,6 +1762,7 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
         g_warning ("sqlite: failed to remove an item: %s", sqlite3_errmsg (db));
 
     sqlite3_finalize (stmt);
+    g_paste_sqlite_backend_forget_deleted (db);
 }
 
 static void
@@ -1802,7 +1828,8 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     if (success && found)
         success = g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 
-    g_paste_sqlite_backend_finish_transaction (db, success);
+    if (g_paste_sqlite_backend_finish_transaction (db, success))
+        g_paste_sqlite_backend_forget_deleted (db);
 }
 
 static void
@@ -1815,8 +1842,8 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
     /* Keep the (now empty) database so the history is still listed. */
-    if (db)
-        g_paste_sqlite_backend_exec (db, "DELETE FROM items;");
+    if (db && g_paste_sqlite_backend_exec (db, "DELETE FROM items;"))
+        g_paste_sqlite_backend_forget_deleted (db);
 }
 
 /**************/

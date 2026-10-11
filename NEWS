@@ -30,6 +30,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix encrypted histories left on two passphrases by a failed change never opening again
 - Fix migrating to encrypted storage that already holds histories splitting them across two passphrases
 - Fix logging out or restarting GPaste during a migration or a passphrase change leaving the history half written
+- Fix deleted items and texts made passwords staying readable on disk in the SQLite storage
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard

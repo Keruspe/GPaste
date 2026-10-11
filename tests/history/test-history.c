@@ -4578,6 +4578,87 @@ test_sqlite_migration_takes_source_images (void)
     g_assert_cmpuint (g_list_length (imported), ==, 1);
 }
 
+/* What the plain database flavour deletes is in no file afterwards: a text made a
+ * password, an item deleted, a text edited, rich text stripped, a history
+ * emptied. Neither the database, whose freed cells SQLite keeps unless told
+ * otherwise, nor the write-ahead log, which holds the pages they were on for as
+ * long as the connection lives. */
+static void
+test_sqlite_deleted_text_gone (void)
+{
+    const gchar *name = "sqlite-deleted-text-gone";
+    const gchar *texts[] = { "made-a-password-52", "deleted-52", "edited-52", "stripped-52", "emptied-52" };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autofree gchar *db = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autofree gchar *wal = g_strconcat (db, "-wal", NULL);
+    g_autolist (GPasteItem) items = NULL;
+
+    for (guint i = 0; i < G_N_ELEMENTS (texts); ++i)
+    {
+        /* The one to strip carries the text as its rich alternative alone. */
+        GPasteItem *item = g_paste_text_item_new ((i == 3) ? "stripped" : texts[i]);
+
+        if (i == 3)
+            g_paste_item_add_special_value (item, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_static (texts[i], strlen (texts[i]))));
+        items = g_list_append (items, item);
+    }
+    g_paste_storage_backend_write_history (backend, name, items);
+    for (guint i = 0; i < G_N_ELEMENTS (texts); ++i)
+        g_assert_true (file_contains (db, texts[i]) || file_contains (wal, texts[i]));
+
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "password-52", 0);
+    g_autoptr (GPasteItem) edited = g_paste_text_item_new ("edited into another");
+    g_autoptr (GPasteItem) stripped = g_paste_text_item_new ("stripped");
+
+    g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (g_list_nth_data (items, 0)), password, NULL);
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (g_list_nth_data (items, 1)), NULL);
+    g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (g_list_nth_data (items, 2)), edited, NULL);
+    g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (g_list_nth_data (items, 3)), stripped, NULL);
+    for (guint i = 0; i < 4; ++i)
+    {
+        g_assert_false (file_contains (db, texts[i]));
+        g_assert_false (file_contains (wal, texts[i]));
+    }
+
+    g_paste_storage_backend_clear_history (backend, name, NULL);
+    g_assert_false (file_contains (db, texts[4]));
+    g_assert_false (file_contains (wal, texts[4]));
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* The encrypted database flavour stores an image's checksum in clear, which a
+ * delete leaves in no file either. */
+static void
+test_sqlite_encrypted_deleted_checksum_gone (void)
+{
+    const gchar *name = "sqlite-deleted-checksum-gone";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "passphrase");
+    g_autofree gchar *db = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autofree gchar *wal = g_strconcat (db, "-wal", NULL);
+    g_autoptr (GBytes) png = test_png_bytes_colored (52, 53, 54);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autofree gchar *checksum = g_strdup (g_paste_image_item_get_checksum (items->data));
+
+    items = g_list_append (items, g_paste_text_item_new ("kept"));
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (file_contains (db, checksum) || file_contains (wal, checksum));
+
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (items->data), NULL);
+    g_assert_false (file_contains (db, checksum));
+    g_assert_false (file_contains (wal, checksum));
+
+    /* Gone, rather than left to the cases after this one under a passphrase
+     * of its own: the data directory is the whole binary's. */
+    g_paste_storage_backend_delete_history (backend, name, NULL);
+}
+#endif
+
 /* The images/<name>/ directory belongs to the history *name*, shared across
  * backend flavors: a migration imports into the destination and then deletes
  * the source under the same name, which must not sweep the images the
@@ -5629,6 +5710,10 @@ main (int argc, char *argv[])
     add_test ("/history/sqlite_cascade", test_sqlite_cascade);
     add_test ("/history/sqlite_migration_keeps_destination_images", test_sqlite_migration_keeps_destination_images);
     add_test ("/history/sqlite_migration_takes_source_images", test_sqlite_migration_takes_source_images);
+    add_test ("/history/sqlite_deleted_text_gone", test_sqlite_deleted_text_gone);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    add_test ("/history/sqlite_encrypted_deleted_checksum_gone", test_sqlite_encrypted_deleted_checksum_gone);
+#endif
     add_test ("/history/sqlite_image_blob", test_sqlite_image_blob);
     add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
