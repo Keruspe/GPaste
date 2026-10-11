@@ -195,38 +195,7 @@ The portal suite also exercises `GPasteKeybinder` with real settings changes:
 starting enabled or disabled, toggling both ways, preserving unchanged sessions,
 and disposal with a rebind pending.
 
-`test-client-reexec` covers the command line tool by `#include`-ing
-`src/client/gpaste-client.c` with `main` renamed, so a case calls a verb's own
-handler directly. Anything that would leave the test — the re-exec call,
-libgpaste's re-exec of an older daemon, the version the proxy caches — is a
-`#define` over the name the file uses, which is how the empty cases (a daemon that has not answered for
-its version, one that refused a re-exec) are reached without a daemon to go
-missing, and so is `g_paste_client_upload_and_copy_sync ()`, recorded rather
-than sent. It covers the re-exec fallback, the migration gate across it,
-an item's control characters shown on a terminal rather than acted on
-(`/client/terminal-controls`),
-`daemon-version` with and without an answer, `upload-and-copy` making
-`UploadAndCopy` and not `Upload`, and which command lines
-`dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
-verb and so have the verb-less add's shape, and the listing's own flags
-included -- and how it is read: a non-blocking stdin waited on to its end, a
-thread writing the rest once the client is waiting (`/client/pipe/nonblocking`),
-and a stdin nothing can be read from taken for nothing piped by a line with no
-verb, refused by a verb (`/client/pipe/unreadable`). The client's constructor is `#define`d too, counting the clients
-built: none for help, version or a verb nobody knows. So are the daemon's
-lookups, answering from a history the case sets, for what `--use-index`
-resolves: a malformed index -- a sign, a space or a vertical tab in front,
-anything after the digits, past `guint64` -- refused before any lookup or
-client, a single index on its own, every argument of a merge off one listing
-even when a copy lands after the first answer, a merge index past the end
-refused with the error the daemon gives a single one, and text and patterns
-left alone on an empty history. A case runs its command line through
-`gpaste_client_main ()`, `optind` rewound, a refusal printed and exiting with a
-failure there as it is for the user (`failure-reported`), or through
-`g_paste_dispatch ()` where the case reads the error itself. Every argument of
-every verb that talks to the daemon, walked off `commands[]`, the text piped in
-for one and merge's decoration and separator are refused when not UTF-8, before
-any client is built, while UTF-8 beyond ASCII goes through.
+`test-client-reexec` covers the command line tool by `#include`-ing `src/client/gpaste-client.c` with `main` renamed, so a case calls a verb's own handler directly. Anything that would leave the test — the re-exec call, libgpaste's re-exec of an older daemon, the version the proxy caches — is a `#define` over the name the file uses, which is how the empty cases (a daemon that has not answered for its version, one that refused a re-exec) are reached without a daemon to go missing, and so is `g_paste_client_upload_and_copy_sync ()`, recorded rather than sent. It covers the re-exec fallback, the migration gate across it, an item's control characters shown on a terminal rather than acted on (`/client/terminal-controls`), `daemon-version` with and without an answer, `upload-and-copy` making `UploadAndCopy` and not `Upload`, and which command lines `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no verb and so have the verb-less add's shape, and the listing's own flags included -- and how it is read: a non-blocking stdin waited on to its end, a thread writing the rest once the client is waiting (`/client/pipe/nonblocking`), and a stdin nothing can be read from taken for nothing piped by a line with no verb, refused by a verb (`/client/pipe/unreadable`). The client's constructor is `#define`d too, counting the clients built: none for help, version or a verb nobody knows. So are the daemon's lookups, answering from a history the case sets, for what `--use-index` resolves: a malformed index -- a sign, a space or a vertical tab in front, anything after the digits, past `guint64` -- refused before any lookup or client, a single index on its own, every argument of a merge off one listing even when a copy lands after the first answer, a merge index past the end refused with the error the daemon gives a single one, and text and patterns left alone on an empty history. A case runs its command line through `gpaste_client_main ()`, `optind` rewound, a refusal printed and exiting with a failure there as it is for the user (`failure-reported`), or through `g_paste_dispatch ()` where the case reads the error itself. Every argument of every verb that talks to the daemon, walked off `commands[]`, the text piped in for one and merge's decoration and separator are refused when not UTF-8, before any client is built, while UTF-8 beyond ASCII goes through.
 
 `test-client-presence` follows `GPasteClient:daemon-presence` on the private
 bus, which has nothing to activate, with the generated skeleton standing in for
