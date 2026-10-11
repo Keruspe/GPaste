@@ -279,6 +279,10 @@ their argument, whether the proxy comes up or is refused: a floating one is
 consumed, a caller's own reference left to the caller -- who may drop it before
 the asynchronous flavour's proxy is up, the call still made with it.
 
+`test-util` also reads back pid files: the positive decimal pid written in one,
+and -1 for anything else, a 0 above all, which `kill ()` takes for the caller's
+own process group (`/util/pid-file`).
+
 `test-portal-provider` runs the GlobalShortcuts client against a fake portal on
 private buses, without GTK initialization or a desktop session. It controls
 method replies and `Response` signals independently, including both reply

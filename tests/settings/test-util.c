@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-test-env.h>
+#include <glib/gstdio.h>
+#include <unistd.h>
 #include <gpaste-3/gpaste-util.h>
 
 static GAsyncReadyCallback proxy_callback;
@@ -195,11 +197,38 @@ test_activation_argument (gconstpointer data)
     g_assert_cmpuint (calls, ==, !c->refused);
 }
 
+/* A pid file reads back as the positive decimal pid written in it, and as -1
+ * otherwise: missing -- no failure, and not warned about -- or holding what
+ * names no process, a 0 above all, which kill () reads as the caller's own
+ * process group. */
+static void
+test_pid_file (void)
+{
+    g_autofree gchar *dir = g_strdup_printf ("%s/" PACKAGE_NAME "/PidTest", g_get_user_runtime_dir ());
+    g_autofree gchar *path = g_build_filename (dir, "pid", NULL);
+    const gchar *damaged[] = { "0", "-1", "abc", "", " 12", "12x" };
+
+    g_assert_cmpint (g_paste_util_read_pid_file ("PidTest"), ==, -1);
+
+    g_paste_util_write_pid_file ("PidTest");
+    g_assert_cmpint (g_paste_util_read_pid_file ("PidTest"), ==, getpid ());
+
+    for (guint i = 0; i < G_N_ELEMENTS (damaged); ++i)
+    {
+        g_assert_true (g_file_set_contents (path, damaged[i], -1, NULL));
+        g_assert_cmpint (g_paste_util_read_pid_file ("PidTest"), ==, -1);
+    }
+
+    g_assert_cmpint (g_unlink (path), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
 int
 main (int argc, char **argv)
 {
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
+    g_test_add_func ("/util/pid-file", test_pid_file);
     for (gsize i = 0; i < G_N_ELEMENTS (activation_cases); ++i)
         g_test_add_data_func (activation_cases[i].path, &activation_cases[i], test_activation_argument);
     return g_paste_test_env_run ();

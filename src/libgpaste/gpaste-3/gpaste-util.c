@@ -707,7 +707,10 @@ g_paste_util_write_pid_file (const gchar *component)
  *
  * Read the pid file
  *
- * Returns: the pid
+ * A component that wrote none -- one not started yet, or hosted somewhere that
+ * writes no pid file -- is no failure of its own, and goes unreported.
+ *
+ * Returns: the pid, or -1 when there is no pid file or it names no process
  */
 G_PASTE_VISIBLE GPid
 g_paste_util_read_pid_file (const gchar *component)
@@ -722,11 +725,19 @@ g_paste_util_read_pid_file (const gchar *component)
     g_autoptr (GError) error = NULL;
     if (!g_file_get_contents (pidfile, &contents, NULL, &error))
     {
-        g_warning ("Failed to read pid file: %s", error->message);
+        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            g_warning ("Failed to read pid file: %s", error->message);
         return (GPid) -1;
     }
 
-    return (GPid) g_ascii_strtoll (contents, NULL, 0);
+    /* Decimal and positive, as written: a 0 read out of a damaged file would
+     * have the caller's kill () signal its own whole process group. */
+    guint64 pid = 0;
+
+    if (!g_ascii_isdigit (*contents) || !g_ascii_string_to_unsigned (contents, 10, 1, G_MAXINT, &pid, NULL))
+        return (GPid) -1;
+
+    return (GPid) pid;
 #else
     return (GPid) -1;
 #endif

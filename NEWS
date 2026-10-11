@@ -61,6 +61,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix an upload finishing after GPaste was turned off putting its address on the clipboard
 - Fix a pastebin answering more than an address having it all copied as the link
 - Fix gpaste-client passing escape sequences copied from a web page on to the terminal
+- Fix gpaste-client daemon-reexec and migrate sometimes stopping another program, or a daemon still starting
 - Fix histories and backups missing recent copies, and deleted or emptied histories coming back
 - Fix a rare crash when renaming a password
 - Fix encrypted and SQLite histories accepting a wrong passphrase or turning unreadable after rare failures
