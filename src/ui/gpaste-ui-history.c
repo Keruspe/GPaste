@@ -52,7 +52,7 @@ struct _GPasteUiHistory
     GCancellable         *display;
 
     gboolean              selection_mode; /* merge mode: rows are multi-selectable */
-    GArray               *selection;       /* selected positions, in the order they were picked */
+    GArray               *selection;       /* the Picks, in the order they were made */
     gint32                item_height;
 
     gchar                *search;
@@ -1072,6 +1072,22 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
         g_paste_ui_history_refresh (self, position);
 }
 
+/* A row picked for a merge: where it sits, and the uuid of what it showed when
+ * it was picked, or %NULL for a row that showed nothing yet -- its read not
+ * back, or never on screen, as select-all reaches -- which the merge reads by
+ * its position. */
+typedef struct
+{
+    guint  position;
+    gchar *uuid;
+} Pick;
+
+static void
+pick_clear (gpointer data)
+{
+    g_free (((Pick *) data)->uuid);
+}
+
 /* Where @position sits in the pick order, or -1 when it is not picked. */
 static gint
 g_paste_ui_history_picked_at (GPasteUiHistory *self,
@@ -1079,7 +1095,7 @@ g_paste_ui_history_picked_at (GPasteUiHistory *self,
 {
     for (guint i = 0; i < self->selection->len; ++i)
     {
-        if (g_array_index (self->selection, guint, i) == position)
+        if (g_array_index (self->selection, Pick, i).position == position)
             return (gint) i;
     }
 
@@ -1111,18 +1127,18 @@ on_selection_items_changed (GListModel *model G_GNUC_UNUSED,
 
     for (guint i = self->selection->len; i > 0; --i)
     {
-        guint *picked = &g_array_index (self->selection, guint, i - 1);
+        Pick *picked = &g_array_index (self->selection, Pick, i - 1);
 
-        if (*picked < position)
+        if (picked->position < position)
             continue;
 
-        if (*picked < position + removed)
+        if (picked->position < position + removed)
         {
             g_array_remove_index (self->selection, i - 1);
             dropped = TRUE;
         }
         else
-            *picked += added - removed;
+            picked->position += added - removed;
     }
 
     if (dropped)
@@ -1163,13 +1179,30 @@ on_rows_invalidated (GPasteUiHistoryModel *model,
         gtk_selection_model_unselect_range (self->selection_model, (guint) position, (guint) n_items);
 }
 
+/* The uuid of what the row at @position shows, or %NULL when it shows nothing
+ * yet: a search row's is in the model, and a positional one's is the one its
+ * read brought, which a row not bound or not read yet does not have. */
+static const gchar *
+g_paste_ui_history_shown_uuid (GPasteUiHistory *self,
+                               guint            position)
+{
+    GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (self->model, position);
+    const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
+    GtkWidget *widget = (item) ? g_paste_ui_history_item_get_widget (item) : NULL;
+
+    if (uuid || !widget)
+        return uuid;
+
+    return g_paste_ui_item_get_uuid (G_PASTE_UI_ITEM (widget));
+}
+
 /* The selection model tracks which positions are picked; the merge wants them in
  * the order they were picked, which a #GtkBitset cannot express. So mirror each
  * change into @selection, which keeps that order.
  *
- * Positions, not uuids: a row that is not realised has no widget to read a uuid
- * off, and select-all over a lazily loaded history picks plenty of those. They
- * are resolved in one go by g_paste_ui_history_get_selected_uuids (). */
+ * With the uuid of what each row showed as it was picked: the history may move
+ * under the picks before the refresh that would drop them lands, and the merge
+ * is of what the user picked, not of whatever sits at those positions then. */
 static void
 on_selection_changed (GtkSelectionModel *model,
                       guint              position,
@@ -1185,7 +1218,11 @@ on_selection_changed (GtkSelectionModel *model,
         if (gtk_selection_model_is_selected (model, i))
         {
             if (at < 0)
-                g_array_append_val (self->selection, i);
+            {
+                Pick pick = { i, g_strdup (g_paste_ui_history_shown_uuid (self, i)) };
+
+                g_array_append_val (self->selection, pick);
+            }
         }
         else if (at >= 0)
             g_array_remove_index (self->selection, at);
@@ -1239,72 +1276,139 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
         g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SELECTION_MODE]);
 }
 
+/* What resolving the picks waits on: one slot per pick, in pick order, the ones
+ * a pick could not fill read by their position. */
+typedef struct
+{
+    GPtrArray *uuids;
+    guint      pending;
+    GError    *error;
+} Resolution;
+
+static void
+resolution_free (Resolution *resolution)
+{
+    g_ptr_array_unref (resolution->uuids);
+    g_clear_error (&resolution->error);
+    g_free (resolution);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (Resolution, resolution_free)
+
+/* The last read to land answers, a failed one failing the whole merge. */
+static void
+resolution_done (GTask *task)
+{
+    Resolution *resolution = g_task_get_task_data (task);
+
+    if (--resolution->pending)
+        return;
+
+    if (resolution->error)
+    {
+        g_task_return_error (task, g_steal_pointer (&resolution->error));
+        return;
+    }
+
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    for (guint i = 0; i < resolution->uuids->len; ++i)
+        g_strv_builder_add (builder, resolution->uuids->pdata[i]);
+
+    g_task_return_pointer (task, g_strv_builder_end (builder), (GDestroyNotify) g_strfreev);
+}
+
+typedef struct
+{
+    GTask *task;
+    guint  slot;
+} ResolutionRead;
+
+static void
+on_pick_read (GObject      *source_object,
+              GAsyncResult *res,
+              gpointer      user_data)
+{
+    g_autofree ResolutionRead *read = user_data;
+    g_autoptr (GTask) task = read->task;
+    Resolution *resolution = g_task_get_task_data (task);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_finish (G_PASTE_CLIENT (source_object), res, &error);
+
+    if (item)
+        g_set_str ((gchar **) &resolution->uuids->pdata[read->slot], g_paste_client_item_get_uuid (item));
+    else if (!resolution->error)
+        resolution->error = (error) ? g_steal_pointer (&error) : g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the daemon answered with no usable item");
+
+    resolution_done (task);
+}
+
 /**
  * g_paste_ui_history_get_selected_uuids:
  * @self: a #GPasteUiHistory instance
- * @length: (out): the number of returned uuids
+ * @callback: called once the picks are resolved
+ * @user_data: data for @callback
  *
- * Collect the uuids of the rows selected in merge mode, in the order they were
- * picked (so the merge keeps that order).
- *
- * Search rows carry their uuid; positional ones are the history index they sit
- * at, so those are resolved against the history itself -- one round trip for the
- * whole selection, however much of it was ever on screen.
- *
- * Returns: (transfer full) (nullable): a NULL-terminated array of uuids, or
- *          %NULL if the selection could not be resolved
+ * Collect the uuids of the rows picked in merge mode, in the order they were
+ * picked (so the merge keeps that order): each the uuid of what its row showed
+ * as it was picked, and a row never shown read by its position, alone.
  */
-GStrv
-g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
-                                       guint64         *length)
+void
+g_paste_ui_history_get_selected_uuids (GPasteUiHistory    *self,
+                                       GAsyncReadyCallback callback,
+                                       gpointer            user_data)
 {
-    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), NULL);
-    g_return_val_if_fail (length, NULL);
+    g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
 
-    *length = 0;
+    g_autoptr (GTask) task = g_task_new (self, NULL, callback, user_data);
+    Resolution *resolution = g_new0 (Resolution, 1);
 
-    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-    g_autolist (GPasteClientItem) history = NULL;
-    gboolean fetched = FALSE;
+    resolution->uuids = g_ptr_array_new_with_free_func (g_free);
+    /* One for the picks gone through below, so that no read landing at once
+     * answers before the last of them is out. */
+    resolution->pending = 1;
+    g_task_set_task_data (task, resolution, (GDestroyNotify) resolution_free);
 
     for (guint i = 0; i < self->selection->len; ++i)
     {
-        guint position = g_array_index (self->selection, guint, i);
-        GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (self->model, position);
-        const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
+        Pick *pick = &g_array_index (self->selection, Pick, i);
 
-        if (!uuid)
-        {
-            /* Positional row: its position is its history index. Fetched once,
-             * on the first one that needs it. */
-            if (!fetched)
-            {
-                g_autoptr (GError) error = NULL;
+        g_ptr_array_add (resolution->uuids, g_strdup (pick->uuid));
 
-                history = g_paste_client_get_history_sync (self->client, &error);
-                fetched = TRUE;
+        if (pick->uuid || !self->client)
+            continue;
 
-                if (error)
-                {
-                    g_warning ("Could not read the history to resolve the selection: %s", error->message);
-                    g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not read the history"));
-                    return NULL;
-                }
-            }
+        ResolutionRead *read = g_new (ResolutionRead, 1);
 
-            GPasteClientItem *client_item = g_list_nth_data (history, position);
-
-            if (!client_item)
-                continue;
-
-            uuid = g_paste_client_item_get_uuid (client_item);
-        }
-
-        g_strv_builder_add (builder, uuid);
-        ++*length;
+        read->task = g_object_ref (task);
+        read->slot = i;
+        ++resolution->pending;
+        g_paste_client_get_item_at_index (self->client, pick->position, NULL /* cancellable */, on_pick_read, read);
     }
 
-    return g_strv_builder_end (builder);
+    resolution_done (task);
+}
+
+/**
+ * g_paste_ui_history_get_selected_uuids_finish:
+ * @self: a #GPasteUiHistory instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Finish g_paste_ui_history_get_selected_uuids (). Fails with the
+ * #GPasteClient domains when a row never shown could not be read.
+ *
+ * Returns: (transfer full): a %NULL-terminated array of uuids, or %NULL on
+ *          failure
+ */
+GStrv
+g_paste_ui_history_get_selected_uuids_finish (GPasteUiHistory *self,
+                                              GAsyncResult    *result,
+                                              GError         **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, self), NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 static void
@@ -1414,7 +1518,8 @@ g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 static void
 g_paste_ui_history_init (GPasteUiHistory *self)
 {
-    self->selection = g_array_new (FALSE, FALSE, sizeof (guint));
+    self->selection = g_array_new (FALSE, FALSE, sizeof (Pick));
+    g_array_set_clear_func (self->selection, pick_clear);
     self->model = g_paste_ui_history_model_new ();
     g_signal_connect (self->model, "invalidated", G_CALLBACK (on_rows_invalidated), self);
 }

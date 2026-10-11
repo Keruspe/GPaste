@@ -1379,30 +1379,63 @@ on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
     gtk_widget_set_sensitive (self->merge_button, count >= 2);
 }
 
+typedef struct
+{
+    GPasteUiWindow *window;
+    gchar          *separator;
+} MergeData;
+
+static void
+merge_data_free (MergeData *data)
+{
+    g_clear_object (&data->window);
+    g_free (data->separator);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (MergeData, merge_data_free)
+
+static void
+on_selection_resolved (GObject      *source_object,
+                       GAsyncResult *res,
+                       gpointer      user_data)
+{
+    g_autoptr (MergeData) data = user_data;
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) uuids = g_paste_ui_history_get_selected_uuids_finish (G_PASTE_UI_HISTORY (source_object), res, &error);
+
+    if (!uuids)
+    {
+        g_warning ("Could not read the history to resolve the selection: %s", error->message);
+        g_paste_gtk_util_toast (GTK_WIDGET (data->window), _("Could not read the history"));
+        return;
+    }
+
+    /* uuids are in selection order, so the merge keeps it. */
+    if (g_strv_length (uuids) >= 2)
+    {
+        g_paste_client_merge (data->window->client, "", data->separator, (const gchar * const *) uuids,
+                              NULL /* cancellable */,
+                              g_paste_ui_report_string_cb,
+                              g_paste_ui_report_string (GTK_WIDGET (data->window), g_paste_client_merge_finish,
+                                                        _("Could not merge the selected items")));
+    }
+}
+
+/* The picks are resolved as they stand, and selection mode left at once: what
+ * the merge needs of them is already in hand. */
 static void
 do_merge (GPasteUiWindow *self,
           GtkWidget      *origin,
           const gchar    *separator)
 {
-    guint64 n = 0;
-    g_auto (GStrv) uuids = g_paste_ui_history_get_selected_uuids (self->history, &n);
+    MergeData *data = g_new0 (MergeData, 1);
+
+    data->window = g_object_ref (self);
+    data->separator = g_strdup (separator);
 
     gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_ancestor (origin, GTK_TYPE_POPOVER)));
-
-    /* uuids are in selection order, so the merge keeps it. Asked of the answer
-     * and not of the count alone: a selection that could not be resolved comes
-     * back %NULL, and the two only agree today because the one call that can
-     * fail is made before any uuid has been collected -- which is an invariant
-     * of another file, not something this one can see. */
-    if (uuids && n >= 2)
-    {
-        g_paste_client_merge (self->client, "", separator, (const gchar * const *) uuids,
-                              NULL /* cancellable */,
-                              g_paste_ui_report_string_cb,
-                              g_paste_ui_report_string (GTK_WIDGET (self), g_paste_client_merge_finish,
-                                                        _("Could not merge the selected items")));
-    }
-
+    g_paste_ui_history_get_selected_uuids (self->history, on_selection_resolved, data);
     exit_selection_mode (self);
 }
 

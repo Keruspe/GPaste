@@ -278,7 +278,10 @@ refetch from the earlier of the two rows. A row whose item changed where it
 stands keeps its widget, the focus and its text until its read lands, then
 shows the new value, and a pick on it goes. Entering selection mode and
 leaving it keep the list scrolled where it was and the focus on the very row
-widget that had it.
+widget that had it. The stand-in answers `Merge`, its items' uuids following a
+shift the test sets: a merge joins the rows picked as they showed when picked,
+though the history moved before the refresh came back, and rows picked before
+they were read are read by their position alone.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

@@ -85,6 +85,10 @@ typedef struct
     guint64                lowest_read;
     /* Appended to every item's value, as an edit would. */
     const gchar           *edited;
+    /* How many items went in above the ones the indexes named so far, which
+     * their uuids follow. */
+    guint64                shift;
+    GStrv                  merged;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -173,6 +177,22 @@ answer_filter (FakeDaemon *daemon)
 }
 
 static gboolean
+on_merge (GPasteDaemon3         *skeleton,
+          GDBusMethodInvocation *invocation,
+          const gchar           *decoration G_GNUC_UNUSED,
+          const gchar           *separator G_GNUC_UNUSED,
+          const gchar * const   *uuids,
+          gpointer               user_data)
+{
+    FakeDaemon *daemon = user_data;
+
+    g_set_strv (&daemon->merged, uuids);
+    g_paste_daemon3_complete_merge (skeleton, invocation, "00000000-0000-4000-8000-0000000000ee");
+
+    return TRUE;
+}
+
+static gboolean
 on_select (GPasteDaemon3         *skeleton,
            GDBusMethodInvocation *invocation,
            const gchar           *uuid,
@@ -226,7 +246,7 @@ complete_item (FakeDaemon            *daemon,
 {
     daemon->lowest_read = MIN (daemon->lowest_read, index);
 
-    g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index);
+    g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index + daemon->shift);
     g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT "%s", index, (daemon->edited) ? daemon->edited : "");
     GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
 
@@ -316,6 +336,7 @@ fake_daemon_start (FakeDaemon *daemon)
     g_signal_connect (daemon->skeleton, "handle-upload-and-copy", G_CALLBACK (on_upload_and_copy), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-favourites", G_CALLBACK (on_get_favourites), daemon);
     g_signal_connect (daemon->skeleton, "handle-select", G_CALLBACK (on_select), daemon);
+    g_signal_connect (daemon->skeleton, "handle-merge", G_CALLBACK (on_merge), daemon);
     daemon->held_items = g_ptr_array_new ();
     g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (daemon->skeleton), daemon->connection,
                                       G_PASTE_DAEMON_OBJECT_PATH, &error);
@@ -341,6 +362,7 @@ fake_daemon_stop (FakeDaemon *daemon)
     g_clear_object (&daemon->connection);
     g_clear_pointer (&daemon->held_items, g_ptr_array_unref);
     g_clear_pointer (&daemon->selected, g_free);
+    g_clear_pointer (&daemon->merged, g_strfreev);
 }
 
 /* The calls the window sends the daemon's name that are its own to make -- a
@@ -1000,6 +1022,59 @@ activation_window (GPasteClient *client,
     return window;
 }
 
+static gboolean
+count_tick (GtkWidget     *widget G_GNUC_UNUSED,
+            GdkFrameClock *clock  G_GNUC_UNUSED,
+            gpointer       user_data)
+{
+    ++*(guint *) user_data;
+
+    return G_SOURCE_CONTINUE;
+}
+
+static gboolean
+ticked_twice (gconstpointer ticks,
+              gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(const guint *) ticks >= 2;
+}
+
+/* Until @widget has been through a frame since now, which is what lays out
+ * what its model changed: draining the main context does not wait for one. */
+static void
+wait_for_layout (GtkWidget *widget)
+{
+    guint ticks = 0;
+    guint id = gtk_widget_add_tick_callback (widget, count_tick, &ticks, NULL);
+
+    g_paste_test_bus_wait_until (ticked_twice, &ticks, NULL);
+    gtk_widget_remove_tick_callback (widget, id);
+    g_assert_cmpuint (ticks, >=, 2);
+}
+
+/* Rows past what the window shows, loaded as scrolling to the bottom does,
+ * @times batches of them. */
+static void
+grow_list (GPasteUiWindow *window,
+           GPasteClient   *client,
+           FakeDaemon     *daemon,
+           guint           times)
+{
+    GtkWidget *list_view = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+    GtkWidget *scroll = gtk_widget_get_ancestor (list_view, GTK_TYPE_SCROLLED_WINDOW);
+
+    for (guint i = 0; i < times; ++i)
+    {
+        guint sized = daemon->sizings;
+
+        g_signal_emit_by_name (scroll, "edge-reached", GTK_POS_BOTTOM);
+        g_paste_test_bus_wait_for_count (&daemon->sizings, sized + 1);
+        g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon->connection);
+        drain ();
+        wait_for_layout (list_view);
+    }
+}
+
 static void
 close_activation_window (GPasteUiWindow *window,
                          FakeDaemon     *daemon)
@@ -1321,36 +1396,6 @@ test_row_read_in_place (void)
     close_activation_window (window, &daemon);
 }
 
-static gboolean
-count_tick (GtkWidget     *widget G_GNUC_UNUSED,
-            GdkFrameClock *clock  G_GNUC_UNUSED,
-            gpointer       user_data)
-{
-    ++*(guint *) user_data;
-
-    return G_SOURCE_CONTINUE;
-}
-
-static gboolean
-ticked_twice (gconstpointer ticks,
-              gconstpointer arg G_GNUC_UNUSED)
-{
-    return *(const guint *) ticks >= 2;
-}
-
-/* Until @widget has been through a frame since now, which is what lays out
- * what its model changed: draining the main context does not wait for one. */
-static void
-wait_for_layout (GtkWidget *widget)
-{
-    guint ticks = 0;
-    guint id = gtk_widget_add_tick_callback (widget, count_tick, &ticks, NULL);
-
-    g_paste_test_bus_wait_until (ticked_twice, &ticks, NULL);
-    gtk_widget_remove_tick_callback (widget, id);
-    g_assert_cmpuint (ticks, >=, 2);
-}
-
 /* Entering selection mode and leaving it leave the list where it was scrolled
  * to, the focus on the row it was on, rather than back at the top with every
  * row built anew. */
@@ -1379,19 +1424,7 @@ test_selection_mode_keeps_place (void)
     g_object_set (gtk_settings, "gtk-enable-animations", FALSE, NULL);
     drain ();
 
-    /* Rows past what the window shows, loaded as scrolling to the bottom does. */
-    GtkWidget *scroll = gtk_widget_get_ancestor (GTK_WIDGET (list_view), GTK_TYPE_SCROLLED_WINDOW);
-
-    for (guint i = 0; i < 3; ++i)
-    {
-        guint sized = daemon.sizings;
-
-        g_signal_emit_by_name (scroll, "edge-reached", GTK_POS_BOTTOM);
-        g_paste_test_bus_wait_for_count (&daemon.sizings, sized + 1);
-        g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-        drain ();
-        wait_for_layout (GTK_WIDGET (list_view));
-    }
+    grow_list (window, client, &daemon, 3);
 
     /* The last row loaded, which is past what the window shows. */
     guint last = g_list_model_get_n_items (G_LIST_MODEL (gtk_list_view_get_model (list_view))) - 1;
@@ -1432,6 +1465,91 @@ test_selection_mode_keeps_place (void)
         g_assert_cmpfloat (bounds.origin.y, <, gtk_widget_get_height (GTK_WIDGET (list_view)));
     }
     gtk_settings_reset_property (gtk_settings, "gtk-enable-animations");
+    close_activation_window (window, &daemon);
+}
+
+static gboolean
+merged (gconstpointer daemon,
+        gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((FakeDaemon *) daemon)->merged != NULL;
+}
+
+/* A merge joins what the user picked, in the order picked, each row as it
+ * showed when it was picked: the history moved under the picks before the
+ * refresh that would drop them came back. */
+static void
+test_merge_picks_shown (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 10 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    drain ();
+    on_enter_selection_mode (NULL, window);
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 2));
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 1));
+
+    /* A new item above them all, its refresh not back yet. */
+    daemon.shift = 1;
+    daemon.hold_sizes = TRUE;
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", (guint64) 0);
+
+    const gchar *expected[] = { "00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000001", NULL };
+
+    do_merge (window, gtk_widget_get_next_sibling (window->merge_entry), ",");
+    g_paste_test_bus_wait_until (merged, &daemon, NULL);
+    g_assert_cmpstrv (daemon.merged, expected);
+    g_assert_false (g_paste_ui_history_get_selection_mode (window->history));
+
+    g_paste_daemon3_complete_get_history_size (daemon.skeleton, g_steal_pointer (&daemon.held_size), daemon.size);
+    close_activation_window (window, &daemon);
+}
+
+/* A row picked before it showed anything is read by its position as the merge
+ * goes out, alone, rather than the whole history being read to find it. */
+static void
+test_merge_picks_unread (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 10, .hold_items = TRUE };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
+    g_assert_cmpuint (daemon.held_items->len, >, 0);
+    drain ();
+    on_enter_selection_mode (NULL, window);
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 3));
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
+
+    guint held = daemon.held_items->len;
+    const gchar *expected[] = { "00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000000", NULL };
+
+    do_merge (window, gtk_widget_get_next_sibling (window->merge_entry), ",");
+    g_paste_test_bus_wait_for_count (&daemon.held_items->len, held + 2);
+    release_items (&daemon);
+    g_paste_test_bus_wait_until (merged, &daemon, NULL);
+    g_assert_cmpstrv (daemon.merged, expected);
     close_activation_window (window, &daemon);
 }
 
@@ -2824,6 +2942,8 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/superseded-refresh", test_superseded_refresh);
     g_test_add_func ("/ui/daemon-presence/row-read-in-place", test_row_read_in_place);
     g_test_add_func ("/ui/daemon-presence/selection-mode-keeps-place", test_selection_mode_keeps_place);
+    g_test_add_func ("/ui/daemon-presence/merge-picks-shown", test_merge_picks_shown);
+    g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);
