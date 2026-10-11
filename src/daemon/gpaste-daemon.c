@@ -552,6 +552,14 @@ main (gint argc, gchar *argv[])
     g_paste_storage_backend_set_passphrase (NULL);
 #endif
 
+    /* g_bus_own_name () holds a reference on the bus until the name is unowned,
+     * and the bus holds the objects it exports: only the unown lets the
+     * references dropped below be the last ones, so that the daemon is disposed
+     * -- its history, its clipboards and its portal session with it. Nothing
+     * tests this executable's exit, which is why this says so here. */
+    if (ctx.bus)
+        g_paste_bus_unown_name (ctx.bus);
+
     g_clear_object (&ctx.search_provider);
     g_clear_object (&ctx.daemon);
     g_clear_object (&ctx.bus);
