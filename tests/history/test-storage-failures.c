@@ -13,6 +13,7 @@
 #include <glib/gstdio.h>
 
 #include <dlfcn.h>
+#include <errno.h>
 #include <string.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -47,6 +48,53 @@ crypto_pwhash (unsigned char * const       out,
 /* Moves whose source ends with one of these fail, as a filesystem giving out
  * would fail them: NULL for none. */
 static const gchar * const *failed_moves;
+/* The files fsync () fails for, by suffix, and every path it synced with its
+ * size then (a gint64), which g_file_move () below checks what it installs
+ * against: one that has grown since was synced before its last write. */
+static const gchar * const *failed_syncs;
+static GHashTable *synced;
+static gboolean moved_unsynced;
+
+/* The path @fd was opened on, through /proc. */
+static gchar *
+fd_path (gint fd)
+{
+    g_autofree gchar *link = g_strdup_printf ("/proc/self/fd/%d", fd);
+
+    return g_file_read_link (link, NULL);
+}
+
+int
+fsync (int fd)
+{
+    typedef int (*Sync) (int);
+    Sync original = (Sync) dlsym (RTLD_NEXT, "fsync");
+    g_autofree gchar *path = fd_path (fd);
+
+    g_assert_nonnull (original);
+    for (const gchar * const *suffix = failed_syncs; path && suffix && *suffix; ++suffix)
+    {
+        if (g_str_has_suffix (path, *suffix))
+        {
+            errno = EIO;
+
+            return -1;
+        }
+    }
+
+    GStatBuf st;
+
+    if (!synced)
+        synced = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    if (path && fstat (fd, &st) == 0)
+    {
+        gint64 size = st.st_size;
+
+        g_hash_table_insert (synced, g_steal_pointer (&path), g_memdup2 (&size, sizeof (size)));
+    }
+
+    return original (fd);
+}
 
 /* Whether link () fails as a filesystem without hard links has it fail. */
 static gboolean refused_links;
@@ -92,6 +140,16 @@ g_file_move (GFile                *source,
             return FALSE;
         }
     }
+
+    /* Resolved, as fd_path () reads it back: the test directories may be
+     * reached through a symlink, a TMPDIR or a home that is one. */
+    g_autofree gchar *real = realpath (path, NULL);
+    const gint64 *synced_size = (synced && real) ? g_hash_table_lookup (synced, real) : NULL;
+    GStatBuf st;
+
+    if ((g_str_has_suffix (path, ".tmp") || g_str_has_suffix (path, ".rekey")) &&
+        !(synced_size && g_stat (real, &st) == 0 && st.st_size == *synced_size))
+        moved_unsynced = TRUE;
 
     return original (source, destination, flags, cancellable, progress, data, error);
 }
@@ -1184,6 +1242,72 @@ test_failed_write_keeps_images (void)
     g_assert_cmpuint (g_list_length (kept), ==, 1);
 }
 
+/* What a write renames into place, a history or an image, is on the disk by
+ * then; and an image whose write fails leaves nothing at its name, so the next
+ * save writes it again rather than skip a file it takes for complete. */
+static void
+test_synced_before_install (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to materialize image*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "synced-before-install";
+    const guchar pixel[] = { 51, 61, 71, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *image = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (items->data)));
+    g_autofree gchar *image_tmp = g_strconcat (image, ".tmp", NULL);
+    const gchar * const image_sync[] = { ".png.tmp", NULL };
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    failed_syncs = image_sync;
+    g_paste_storage_backend_write_history (backend, name, items);
+    failed_syncs = NULL;
+    g_assert_false (g_file_test (image, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (image_tmp, G_FILE_TEST_EXISTS));
+
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+    g_assert_false (moved_unsynced);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* As test_synced_before_install (), through the encryption converter, which
+ * writes its final chunk as the stream closes: a history or an image synced
+ * before then would be installed without it. */
+static void
+test_encrypted_synced_before_install (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    const gchar *name = "encrypted-synced-before-install";
+    const guchar pixel[] = { 52, 62, 72, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    g_autofree gchar *image = g_paste_file_backend_image_path (name, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (items->data)));
+    g_autofree gchar *encrypted_image = g_paste_file_backend_encrypted_path (image);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    moved_unsynced = FALSE;
+    g_paste_storage_backend_write_history (backend, name, items);
+    g_assert_true (g_file_test (encrypted_image, G_FILE_TEST_EXISTS));
+    g_assert_false (moved_unsynced);
+}
+#endif
+
 /* An alternative representation that decodes to nothing -- base64 a corrupt
  * file cut to nothing, an empty blob in a database -- is no representation:
  * the item is read without it, from its plain value, and written back so. */
@@ -1391,8 +1515,9 @@ test_rekey_split (void)
 }
 
 /* A re-key that goes through leaves nothing beside the files, and every one
- * of them opens with the new passphrase -- on a filesystem without hard links
- * too, the originals then copied aside. */
+ * of them opens with the new passphrase, each replacement on the disk before it
+ * was renamed into place and the renames once their directory is synced -- on
+ * a filesystem without hard links too, the originals then copied aside. */
 static void
 test_rekey_success (gconstpointer data)
 {
@@ -1406,12 +1531,20 @@ test_rekey_success (gconstpointer data)
 
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+        g_autofree gchar *history_dir = g_path_get_dirname (history);
+        g_autofree gchar *real_dir = realpath (history_dir, NULL);
         gboolean split = TRUE;
 
+        moved_unsynced = FALSE;
         refused_links = without_links;
+        g_clear_pointer (&synced, g_hash_table_unref);
         g_assert_true (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
         refused_links = FALSE;
         g_assert_false (split);
+        g_assert_false (moved_unsynced);
+        /* The renames are on the disk once their directory is. */
+        g_assert_nonnull (real_dir);
+        g_assert_true (synced && g_hash_table_contains (synced, real_dir));
     }
 
     g_assert_false (has_rekey_leftovers (name));
@@ -1555,22 +1688,30 @@ test_rekey_unsettled_refused (void)
     g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
 }
 
-/* Deleting a history takes what a re-key left beside it along. */
+/* Deleting a history takes what a re-key left beside it along -- its images'
+ * leftovers too, a plain history of the same name keeping their directory. */
 static void
 test_rekey_leftovers_deleted (void)
 {
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    const gchar *name = "rekey-deleted";
-    g_autofree gchar *history = NULL;
-    g_autofree gchar *image = NULL;
 
-    write_interrupted_rekey (name, &history, &image);
+    for (guint plain_twin = 0; plain_twin < 2; ++plain_twin)
+    {
+        const gchar *name = (plain_twin) ? "rekey-deleted-twin" : "rekey-deleted";
+        g_autofree gchar *history = NULL;
+        g_autofree gchar *image = NULL;
+        g_autofree gchar *plain = g_paste_util_get_history_file_path (name, "xml");
 
-    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        write_interrupted_rekey (name, &history, &image);
+        if (plain_twin)
+            write_file (plain, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<history version=\"2.0\">\n</history>\n");
 
-    g_paste_storage_backend_delete_history (backend, name, NULL);
-    g_assert_false (g_file_test (history, G_FILE_TEST_EXISTS));
-    g_assert_false (has_rekey_leftovers (name));
+        g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+        g_paste_storage_backend_delete_history (backend, name, NULL);
+        g_assert_false (g_file_test (history, G_FILE_TEST_EXISTS));
+        g_assert_false (has_rekey_leftovers (name));
+    }
 }
 
 /* A history whose delete fails keeps what says its re-key did not finish:
@@ -1836,6 +1977,10 @@ main (int    argc,
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
 
     g_test_add_func ("/storage/failed-write-images", test_failed_write_keeps_images);
+    g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/encrypted-synced-before-install", test_encrypted_synced_before_install);
+#endif
     g_test_add_data_func ("/storage/empty-alternative/file", GUINT_TO_POINTER (G_PASTE_STORAGE_FILE), test_empty_alternative);
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/empty-alternative/sqlite", GUINT_TO_POINTER (G_PASTE_STORAGE_SQLITE), test_empty_alternative);

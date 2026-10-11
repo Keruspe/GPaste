@@ -729,6 +729,28 @@ test_history_image_names_no_file (void)
     g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (item)));
 }
 
+/* Deleting a history takes the temporary a save cut short between its write and
+ * its move left beside it: the whole history, in clear, which no listing shows
+ * and nothing else would ever remove. */
+static void
+test_file_delete_takes_temporary (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("saved"));
+    g_autofree gchar *document = g_paste_util_get_history_file_path ("delete-temporary", "xml");
+    g_autofree gchar *temporary = g_strconcat (document, ".tmp", NULL);
+    g_autoptr (GError) error = NULL;
+
+    g_paste_storage_backend_write_history (backend, "delete-temporary", items);
+    g_assert_true (g_file_test (document, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_set_contents (temporary, "a save cut short", -1, NULL));
+    g_paste_storage_backend_delete_history (backend, "delete-temporary", &error);
+    g_assert_no_error (error);
+    g_assert_false (g_file_test (document, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (temporary, G_FILE_TEST_EXISTS));
+}
+
 /* The same image copied in two histories gets one file each: evicting or
  * deleting it from one history must never break the other. */
 static void
@@ -1090,9 +1112,9 @@ test_file_skipped_image_swept_by_save (void)
 
 /* What a full write sweeps is its own: under its history's images directory,
  * the files of its own flavour named after a checksum, which the snapshot does
- * not reference. Another history's directory, the other file flavour's images
- * of the same history, and any file named otherwise stay, as does everything a
- * database write leaves. */
+ * not reference, and what a crash left of either flavour's image writes. Another
+ * history's directory, the other file flavour's images of the same history, and
+ * any file named otherwise stay, as does everything a database write leaves. */
 static void
 test_file_sweep_bounds (void)
 {
@@ -1110,7 +1132,13 @@ test_file_sweep_bounds (void)
         g_autofree gchar *encrypted_orphan = g_build_filename (images, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.pngs", NULL);
         g_autofree gchar *orphan = g_build_filename (images, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.png", NULL);
         g_autofree gchar *other_orphan = g_strconcat (other, ".bak", NULL);
+        g_autofree gchar *plain_temporary = g_strconcat (orphan, ".tmp", NULL);
+        g_autofree gchar *encrypted_temporary = g_build_filename (images, "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff.pngs.tmp", NULL);
+        g_autofree gchar *foreign_temporary = g_strconcat (foreign, ".tmp", NULL);
 
+        g_assert_true (g_file_set_contents (plain_temporary, "a screenshot in clear", -1, NULL));
+        g_assert_true (g_file_set_contents (encrypted_temporary, "cut short", -1, NULL));
+        g_assert_true (g_file_set_contents (foreign_temporary, "not ours", -1, NULL));
         g_assert_true (g_file_set_contents (foreign, "not ours", -1, NULL));
         g_assert_true (g_file_set_contents (encrypted_orphan, "the other flavour's", -1, NULL));
         g_assert_true (g_file_set_contents (orphan, "nobody's", -1, NULL));
@@ -1134,6 +1162,9 @@ test_file_sweep_bounds (void)
 
         g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
         g_assert_false (g_file_test (orphan, G_FILE_TEST_EXISTS));
+        g_assert_false (g_file_test (plain_temporary, G_FILE_TEST_EXISTS));
+        g_assert_false (g_file_test (encrypted_temporary, G_FILE_TEST_EXISTS));
+        g_assert_true (g_file_test (foreign_temporary, G_FILE_TEST_EXISTS));
         g_assert_true (g_file_test (encrypted_orphan, G_FILE_TEST_EXISTS));
         g_assert_true (g_file_test (foreign, G_FILE_TEST_EXISTS));
         g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
@@ -5161,6 +5192,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_image_materialization", test_file_image_materialization);
     add_test ("/history/history_image_names_no_file", test_history_image_names_no_file);
     add_test ("/history/file_image_per_history", test_file_image_per_history);
+    add_test ("/history/file_delete_takes_temporary", test_file_delete_takes_temporary);
     add_test ("/history/file_backup_owns_images", test_file_backup_owns_images);
     add_test ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
     add_test ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);

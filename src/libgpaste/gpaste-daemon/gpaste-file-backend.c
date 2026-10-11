@@ -16,6 +16,7 @@
 #include <glib/gstdio.h>
 
 #include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -141,6 +142,52 @@ g_paste_file_backend_encrypted_path (const gchar *path)
     return g_strconcat (path, "s", NULL);
 }
 
+/* Have what was written to @file reach the disk before it is renamed into
+ * place. A crash after a rename the filesystem committed first leaves the
+ * renamed file there but empty -- no rename heuristic on XFS, nor on ext4
+ * mounted with noauto_da_alloc -- and an empty history reads as an empty one,
+ * which the next save makes for good. g_file_set_contents () syncs for the same
+ * reason; the streams here are synced once closed, the encryption converter
+ * writing its last chunk on close. */
+static gboolean
+_g_paste_file_backend_sync (GFile   *file,
+                            GError **error)
+{
+    g_autofree gchar *path = g_file_get_path (file);
+    gint fd = g_open (path, O_RDONLY | O_CLOEXEC, 0);
+    gint saved_errno = errno;
+
+    if (fd >= 0)
+    {
+        gboolean synced = !fsync (fd);
+
+        saved_errno = errno;
+        g_close (fd, NULL);
+        if (synced)
+            return TRUE;
+    }
+
+    g_set_error (error, G_IO_ERROR, g_io_error_from_errno (saved_errno), "Could not sync %s: %s", path, g_strerror (saved_errno));
+
+    return FALSE;
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Sync @path, a directory: what was renamed into it is on the disk then. Best
+ * effort, a filesystem that cannot sync a directory having nothing more to
+ * offer, and a change it holds being made either way. */
+static void
+_g_paste_file_backend_sync_directory (const gchar *path)
+{
+    gint fd = g_open (path, O_RDONLY | O_DIRECTORY | O_CLOEXEC, 0);
+
+    if (fd < 0 || (fsync (fd) && errno != EINVAL))
+        g_warning ("Could not sync %s: %s", path, g_strerror (errno));
+    if (fd >= 0)
+        g_close (fd, NULL);
+}
+#endif
+
 /* The XML history references images by their canonical <checksum>.png path
  * (@reference, derived from the item's checksum under the history being
  * written, which is the backup's own when writing under another name); writing
@@ -193,9 +240,17 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     }
 
     /* get_output_stream wraps the file with the encryption converter exactly
-     * when this backend has a passphrase, matching the target chosen above. */
+     * when this backend has a passphrase, matching the target chosen above.
+     *
+     * Written beside the target and renamed over it, as the history is: the
+     * check above takes any file there for a complete one, so a write cut
+     * short at its final name -- a full disk, a key derivation that failed, a
+     * crash -- would have every later save skip the image and the next read
+     * drop it. */
     g_autoptr (GFile) target_file = g_file_new_for_path (target);
-    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, target_file);
+    g_autofree gchar *tmp = g_strconcat (target, ".tmp", NULL);
+    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, tmp_file);
 
     if (!stream)
         return;
@@ -203,9 +258,14 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     gsize length;
     gconstpointer data = g_bytes_get_data (png, &length);
 
-    if (!g_output_stream_write_all (stream, data, length, NULL, NULL /* cancellable */, &error) ||
-        !g_output_stream_close (stream, NULL /* cancellable */, &error))
-        g_warning ("Failed to materialize image to %s: %s", target, error->message);
+    if (g_output_stream_write_all (stream, data, length, NULL, NULL /* cancellable */, &error) &&
+        g_output_stream_close (stream, NULL /* cancellable */, &error) &&
+        _g_paste_file_backend_sync (tmp_file, &error) &&
+        g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+        return;
+
+    g_warning ("Failed to materialize image to %s: %s", target, error->message);
+    g_file_delete (tmp_file, NULL, NULL);
 }
 
 /* For the encrypted flavor, load and decrypt an image's "<checksum>.pngs"
@@ -333,6 +393,41 @@ _g_paste_file_backend_is_image_file_name (const gchar *file_name,
     return g_paste_image_item_is_checksum (checksum);
 }
 
+/* Whether @file_name is what writing an image of either flavour leaves when it
+ * is cut short between the write and the move into place: an image's name with
+ * ".tmp" after it (_g_paste_file_backend_ensure_image_file ()). */
+static gboolean
+_g_paste_file_backend_is_image_temp_name (const gchar *file_name)
+{
+    if (!g_str_has_suffix (file_name, ".tmp"))
+        return FALSE;
+
+    g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (".tmp"));
+
+    return _g_paste_file_backend_is_image_file_name (image, TRUE) || _g_paste_file_backend_is_image_file_name (image, FALSE);
+}
+
+/* Whether @file_name is what a re-key leaves beside an encrypted image: its
+ * replacement or its original kept aside, named from the image's own name. */
+static gboolean
+_g_paste_file_backend_is_image_rekey_name (const gchar *file_name)
+{
+    static const gchar *suffixes[] = { ".rekey", ".rekey-old" };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (suffixes); ++i)
+    {
+        if (!g_str_has_suffix (file_name, suffixes[i]))
+            continue;
+
+        g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (suffixes[i]));
+
+        if (_g_paste_file_backend_is_image_file_name (image, TRUE))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 /* Delete the image files under images/@history_name/ that no history of that
  * name can read any more, once the store of this flavour has been written in
  * full (@referenced, the file names its snapshot references) or deleted
@@ -354,9 +449,13 @@ _g_paste_file_backend_is_image_file_name (const gchar *file_name,
  * beside it is not. Past that it is the secret the encrypted flavour exists to
  * keep off the disk: a screenshot a migration to it left in clear.
  *
+ * A temporary an image's write left, cut short by a crash before its move into
+ * place, is nothing any history reads: either sweep takes it, a plain one
+ * being a screenshot in clear.
+ *
  * What is never touched: anything outside images/<history_name>/, and in it
  * anything but files named after a checksum the way this backend names its
- * own. */
+ * own, or their temporaries. */
 static void
 _g_paste_file_backend_sweep_images (const gchar *history_name,
                                     gboolean     encrypted,
@@ -379,6 +478,25 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
     for (GStrv file = files; *file; ++file)
     {
         g_autofree gchar *path = g_build_filename (images_dir, *file, NULL);
+
+        if (_g_paste_file_backend_is_image_temp_name (*file))
+        {
+            if (g_unlink (path) && errno != ENOENT)
+                g_warning ("Could not remove %s, which a cut-short write left: %s", path, g_strerror (errno));
+            continue;
+        }
+
+        /* What a re-key left beside an encrypted image goes with the encrypted
+         * history being deleted: the settle that would otherwise take it finds
+         * a history by its document alone, gone now, and the directory itself
+         * stays while a plain history of that name stores it. A write leaves
+         * it to that settle. */
+        if (_g_paste_file_backend_is_image_rekey_name (*file))
+        {
+            if (encrypted && !referenced && g_unlink (path) && errno != ENOENT)
+                g_warning ("Could not remove %s, which a change of passphrase left: %s", path, g_strerror (errno));
+            continue;
+        }
 
         if (_g_paste_file_backend_is_image_file_name (*file, encrypted))
         {
@@ -616,7 +734,8 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         success = FALSE;
     }
 
-    if (success && !g_output_stream_close (stream, NULL /* cancellable */, &error))
+    if (success && (!g_output_stream_close (stream, NULL /* cancellable */, &error) ||
+                    !_g_paste_file_backend_sync (tmp_file, &error)))
     {
         g_warning ("Failed to close history temp file: %s", error->message);
         g_clear_error (&error);
@@ -1630,13 +1749,19 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
     if (delete_error)
         g_propagate_error (error, g_steal_pointer (&delete_error));
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* Once the history is gone, and only then, what a re-key left beside it
-     * goes: its original under the passphrase being changed most of all. The
+    /* Once the history is gone, and only then, what is left beside it goes:
+     * the temporary a save cut short between its write and its move left --
+     * the whole history, in clear on the plain flavour -- and what a re-key
+     * left, its original under the passphrase being changed most of all. The
      * replacement says a re-key did not finish, which a history still there
-     * needs said. Its images' go with their directory. */
+     * needs said. */
     g_autofree gchar *path = g_file_get_path (history_file);
+    g_autofree gchar *tmp = g_strconcat (path, ".tmp", NULL);
 
+    if (g_unlink (tmp) && errno != ENOENT)
+        g_warning ("Could not remove %s, which a cut-short save left: %s", tmp, g_strerror (errno));
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
     _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_OLD);
 #endif
@@ -1680,7 +1805,8 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
     }
 
     gboolean ok = g_output_stream_write_all (stream, text, length, NULL, NULL /* cancellable */, &error) &&
-                  g_output_stream_close (stream, NULL /* cancellable */, &error);
+                  g_output_stream_close (stream, NULL /* cancellable */, &error) &&
+                  _g_paste_file_backend_sync (tmp_file, &error);
 
     if (ok)
     {
@@ -1954,9 +2080,9 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     /* A hard link, which is what keeps every original at its path while the
      * renames below happen, and copies nothing. A filesystem without them --
      * vfat, exFAT, most network and FUSE mounts -- has the original copied
-     * aside instead: the same bytes under the second name, which is all a
-     * settle puts back, the inode only telling it whether the original is
-     * still at its path. */
+     * aside instead, synced as a replacement is: the same bytes under the
+     * second name, which is all a settle puts back, the inode only telling it
+     * whether the original is still at its path. */
     for (guint i = 0; i < n_paths; ++i)
     {
         g_autofree gchar *aside = _g_paste_file_backend_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
@@ -1969,7 +2095,7 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
         g_autoptr (GFile) copy = g_file_new_for_path (aside);
         g_autoptr (GError) error = NULL;
 
-        if (g_file_copy (original, copy, G_FILE_COPY_NONE, NULL, NULL, NULL, &error))
+        if (g_file_copy (original, copy, G_FILE_COPY_NONE, NULL, NULL, NULL, &error) && _g_paste_file_backend_sync (copy, &error))
             continue;
 
         g_warning ("Could not keep the original of %s aside, by a hard link (%s) nor a copy (%s)", paths[i], g_strerror (link_errno), error->message);
@@ -2006,6 +2132,17 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
 
     if (installed == n_paths)
     {
+        /* The renames are what make the re-key happen, and a rename is on the
+         * disk once its directory is: synced before the change is answered as
+         * done -- the new passphrase then adopted, and remembered -- or a power
+         * loss would bring the histories back under the one just retired. */
+        g_autofree gchar *history_dir = g_path_get_dirname (paths[0]);
+        g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
+
+        _g_paste_file_backend_sync_directory (history_dir);
+        if (n_paths > 1)
+            _g_paste_file_backend_sync_directory (images_dir);
+
         for (guint i = 0; i < n_paths; ++i)
             _g_paste_file_backend_remove_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
 
