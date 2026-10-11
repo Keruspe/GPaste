@@ -631,7 +631,13 @@ main (gint argc, gchar *argv[])
 
     gboolean replace = extract_replace_arg (&argc, argv);
 
-    G_PASTE_GTK_INIT_APPLICATION ("Daemon");
+    /* Not unique as an application: owning org.gnome.GPaste is what decides
+     * between two daemons -- a second one queued behind the first fails to
+     * start, one run with --replace takes the name over. A daemon unique by its
+     * application id would never get that far, the second process being made a
+     * remote one that only activates the first and exits. No test runs this
+     * executable, two of them on one session bus least of all. */
+    G_PASTE_GTK_INIT_APPLICATION_FULL ("Daemon", G_APPLICATION_NON_UNIQUE);
 
     /* Nothing holds the application otherwise: the daemon has no window. */
     g_application_hold (gapp);
