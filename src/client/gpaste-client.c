@@ -1341,5 +1341,16 @@ main (gint argc, gchar *argv[])
         status = EXIT_FAILURE;
     }
 
+    /* What a command prints is what it is run for -- a script saving an item,
+     * a backup reading the history -- so output that could not be written is
+     * a failure: a full disk, a closed pipe. */
+    if (fflush (stdout) || ferror (stdout))
+    {
+        gint saved_errno = errno;
+
+        g_printerr ("%s: %s\n", _("Could not write the output"), g_strerror (saved_errno));
+        status = EXIT_FAILURE;
+    }
+
     return status;
 }

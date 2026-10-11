@@ -921,6 +921,36 @@ test_list_histories_zero (void)
     fflush (stdout);
 }
 
+/* Output that could not be written fails the command: a script trusting the
+ * exit status of `gpaste-client get` into a full disk would lose the item. */
+static void
+test_output_failure (void)
+{
+    /* Decided before the trap: a child skipping exits 77, which the trap
+     * takes for a failure, and the suite would end there. */
+    if (!g_file_test ("/dev/full", G_FILE_TEST_EXISTS))
+    {
+        g_test_skip ("No /dev/full to write to");
+        return;
+    }
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("Could not write the output: *");
+        return;
+    }
+
+    gint full = g_open ("/dev/full", O_WRONLY | O_CLOEXEC, 0);
+
+    g_assert_cmpint (full, >=, 0);
+    g_assert_cmpint (dup2 (full, STDOUT_FILENO), ==, STDOUT_FILENO);
+    g_assert_true (g_close (full, NULL));
+    g_assert_cmpint (run_client ((const gchar *[]) { "version", NULL }), ==, EXIT_FAILURE);
+    clearerr (stdout);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -1117,6 +1147,7 @@ main (int argc, char **argv)
     g_test_add_data_func ("/client/search/positions", GINT_TO_POINTER (FALSE), test_search_output);
     g_test_add_data_func ("/client/search/reverse", GINT_TO_POINTER (TRUE), test_search_output);
     g_test_add_func ("/client/list-histories/zero", test_list_histories_zero);
+    g_test_add_func ("/client/output-failure", test_output_failure);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
