@@ -2961,6 +2961,10 @@ g_paste_history_get_size (GPasteHistory *self,
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
     g_return_val_if_fail (name, 0);
 
+    /* The model, even while a load fills it: the store is the load's to read
+     * until then, and on an encrypted flavour a read of our own would derive
+     * the key again, on the main thread. The update the load raises once it is
+     * in is what a listing asks again on (GetHistorySize in the interface). */
     if (g_paste_str_equal (name, g_paste_history_get_current (self)))
         return g_paste_history_get_length (self);
 

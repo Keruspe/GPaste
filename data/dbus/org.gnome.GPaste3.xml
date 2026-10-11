@@ -262,8 +262,13 @@
       How many items the current history holds.
 
       The sizes of the *other* histories come from ListHistories, which answers
-      all of them at once: asking here for one history at a time is what used to
-      make a sidebar listing every history cost the daemon one full load each.
+      all of them at once: asking here for one history at a time would make a
+      sidebar listing every history cost the daemon one full load each.
+
+      While the current history loads, at startup or after a switch, this is
+      what it holds so far: the store is the load's to read until then. The
+      Update naming the whole history that the load raises once it is in is the
+      cue to ask again.
     -->
     <method name="GetHistorySize">
       <arg type="t" direction="out" name="size"/>
@@ -345,9 +350,10 @@
       Every known history, each with how many items it holds.
 
       The size rides along because everything that lists histories draws their
-      sizes beside them, and asking per history meant one full load of one
+      sizes beside them, and asking per history would mean one full load of one
       history apiece, inside the daemon's main loop. The order is the storage
-      backend's, which is the order such a listing is drawn in.
+      backend's, which is the order such a listing is drawn in. The current
+      history's size is GetHistorySize's, loading or not.
     -->
     <method name="ListHistories">
       <arg type="a(st)" direction="out" name="histories"/>
