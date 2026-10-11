@@ -1057,6 +1057,47 @@ test_sqlite_checksum_refused (void)
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
 }
 
+/* Ranks past the compaction threshold are brought back down on open whatever
+ * order the rows are in: one selected again holds a rank above older rows with
+ * a higher id, which the compaction's unique index would otherwise trip on. */
+static void
+test_sqlite_rank_compaction (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rank-compaction";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) items = NULL;
+
+        items = g_list_append (items, g_paste_text_item_new ("first"));
+        items = g_list_append (items, g_paste_text_item_new ("second"));
+        items = g_list_append (items, g_paste_text_item_new ("third"));
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    {
+        g_autoptr (sqlite3) db = NULL;
+
+        /* The oldest row selected again past the threshold. The write inserted
+         * the list front first, so 'first' has the lowest id and rank 3: the
+         * compaction moves it to rank 2 while 'second' still holds it. */
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "UPDATE items SET rank = 4611686018427387914 WHERE value = 'third';", NULL, NULL, NULL), ==, SQLITE_OK);
+    }
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "third");
+    g_clear_object (&backend);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT MAX (rank) FROM items;"), ==, 3);
+}
+
 /* A destination already holding the history in a form this build cannot read
  * -- a newer GPaste's database -- is one the import stops before, rather than
  * one its rollback deletes after the write refused to touch it. */
@@ -2881,6 +2922,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
     g_test_add_func ("/storage/migration/import-busy", test_import_busy);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
+    g_test_add_func ("/storage/sqlite/rank-compaction", test_sqlite_rank_compaction);
 #endif
 
     return g_paste_test_env_run ();

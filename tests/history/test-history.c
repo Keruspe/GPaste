@@ -4706,6 +4706,44 @@ test_sqlite_migration_keeps_destination_images (void)
     g_list_free_full (items, g_object_unref);
 }
 
+/* An image row whose date GDateTime cannot hold is dropped like one with no
+ * date, the rest of the history read with it, rather than reaching the image
+ * constructor's own refusal and taking the whole history down. */
+static void
+test_sqlite_image_date_out_of_range (void)
+{
+    const gchar *name = "sqlite-image-date";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (54, 55, 56);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+    items = g_list_append (items, g_paste_text_item_new ("kept"));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+        g_paste_storage_backend_write_history (backend, name, items);
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+    sqlite3 *db = NULL;
+
+    /* Past year 9999. */
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (db, "UPDATE items SET date = 100000000000000 WHERE kind = 'Image';", NULL, NULL, NULL), ==, SQLITE_OK);
+    sqlite3_close (db);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
+}
+
 /* The stored blob is the source of truth for images: an item must survive the
  * complete absence of its on-disk cache file — including rebuilding its
  * texture — while a plain database visibly contains the PNG. */
@@ -5111,6 +5149,52 @@ test_encrypted_sqlite_absurd_kdf_params (void)
         g_assert_cmpuint (g_list_length (loaded), ==, 1);
         g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "precious");
 
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Unreasonable key-derivation parameters*");
+}
+
+/* The same parameters in a history holding nothing are no store to lose: it is
+ * keyed afresh for the passphrase, as one with parameters missing is, rather
+ * than refused for good -- no write would ever land in it again. */
+static void
+test_encrypted_sqlite_absurd_kdf_params_empty (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "sqlite-absurd-kdf-empty";
+        const gchar *passphrase = "correct horse battery staple";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
+
+            g_paste_storage_backend_write_history (backend, name, NULL);
+        }
+
+        g_autofree gchar *path = g_paste_util_get_history_file_path (name, "dbs");
+        sqlite3 *db = NULL;
+
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "UPDATE meta SET value = 4000000000 WHERE key = 'opslimit';", NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
+        g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
         return;
     }
 
@@ -5715,6 +5799,7 @@ main (int argc, char *argv[])
     add_test ("/history/sqlite_encrypted_deleted_checksum_gone", test_sqlite_encrypted_deleted_checksum_gone);
 #endif
     add_test ("/history/sqlite_image_blob", test_sqlite_image_blob);
+    add_test ("/history/sqlite_image_date_out_of_range", test_sqlite_image_date_out_of_range);
     add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     add_test ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
@@ -5723,6 +5808,7 @@ main (int argc, char *argv[])
     add_test ("/history/sqlite_schema_migration", test_sqlite_schema_migration);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     add_test ("/history/encrypted_sqlite_absurd_kdf_params", test_encrypted_sqlite_absurd_kdf_params);
+    add_test ("/history/encrypted_sqlite_absurd_kdf_params_empty", test_encrypted_sqlite_absurd_kdf_params_empty);
     add_test ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);
     add_test ("/history/encrypted_sqlite_wrong_passphrase", test_encrypted_sqlite_wrong_passphrase);
     add_test ("/history/encrypted_sqlite_rekey", test_encrypted_sqlite_rekey);

@@ -461,11 +461,12 @@ g_paste_sqlite_backend_rekey_column (sqlite3      *db,
         }
         else
         {
+            /* The blob first, then its length, as in load_crypto_params (): one
+             * call's arguments are evaluated in no order C promises. */
+            gconstpointer cipher = sqlite3_column_blob (select, 0);
+            gsize cipher_length = sqlite3_column_bytes (select, 0);
             gsize length = 0;
-            g_autofree guchar *plain = g_paste_sqlite_backend_decrypt (old_key,
-                                                                       sqlite3_column_blob (select, 0),
-                                                                       sqlite3_column_bytes (select, 0),
-                                                                       &length);
+            g_autofree guchar *plain = g_paste_sqlite_backend_decrypt (old_key, cipher, cipher_length, &length);
 
             if (!plain)
             {
@@ -555,29 +556,25 @@ g_paste_sqlite_backend_setup_crypto (sqlite3     *db,
     gsize check_length = 0;
 
     gboolean loaded = g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length);
+    /* derive_key () says why when it refuses the parameters. */
+    gboolean derived = loaded && g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
 
-    if (loaded)
-    {
-        /* derive_key() has already said why. */
-        if (!g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key))
-            return FALSE;
-
-        if (g_paste_sqlite_backend_key_checks_out (key, check, check_length))
-            return TRUE;
-    }
+    if (derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length))
+        return TRUE;
 
     /* The wrong passphrase for a history that still holds data must be
      * refused: accepting it would load empty and the next save would destroy
-     * the real content. So must incomplete parameters, which are no new store,
-     * replacing them being what would make the content unreadable for good.
-     * An empty history has nothing to lose, so it is (re-)keyed for this
-     * passphrase instead of locking the user out -- and a count that cannot be
-     * read is no proof of empty. */
+     * the real content. So must parameters that are incomplete or that no key
+     * can be derived with, which are no new store, replacing them being what
+     * would make the content unreadable for good. An empty history has nothing
+     * to lose, so it is (re-)keyed for this passphrase instead of locking the
+     * user out, whichever of those it was -- and a count that cannot be read is
+     * no proof of empty. */
     if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
     {
-        if (loaded)
+        if (derived)
             *wrong_passphrase = TRUE;
-        else
+        else if (!loaded)
             g_warning ("sqlite: incomplete encryption parameters in a history holding data; not touching it");
 
         return FALSE;
@@ -785,12 +782,21 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
     }
 #endif
 
-    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", 0) > G_PASTE_SQLITE_RANK_COMPACT_THRESHOLD)
+    /* Through the negative ranks, in one transaction: rows are updated in id
+     * order, which is not rank order once an older item is selected again, so
+     * a row given its new rank directly could take one another row still holds
+     * -- and the unique index on rank refuses the whole update. No positive
+     * rank is ever negated twice, nor clashes with a negative one. */
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", 0) > G_PASTE_SQLITE_RANK_COMPACT_THRESHOLD &&
+        g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
     {
-        g_paste_sqlite_backend_exec (db,
-                                     "UPDATE items SET rank = ranked.new_rank "
-                                     "FROM (SELECT id, ROW_NUMBER () OVER (ORDER BY rank) AS new_rank FROM items) AS ranked "
-                                     "WHERE items.id = ranked.id;");
+        gboolean compacted = g_paste_sqlite_backend_exec (db,
+                                                          "UPDATE items SET rank = -ranked.new_rank "
+                                                          "FROM (SELECT id, ROW_NUMBER () OVER (ORDER BY rank) AS new_rank FROM items) AS ranked "
+                                                          "WHERE items.id = ranked.id;"
+                                                          "UPDATE items SET rank = -rank;");
+
+        g_paste_sqlite_backend_finish_transaction (db, compacted);
     }
 
     backend->db = g_steal_pointer (&db);
@@ -868,7 +874,7 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
         return FALSE;
     }
 
-    GEnumClass *mime_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_MIME);
+    GEnumClass *mime_class = g_type_class_get (G_PASTE_TYPE_SPECIAL_MIME);
     gboolean success = TRUE;
     gint64 position = 0;
 
@@ -904,7 +910,6 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
         sqlite3_clear_bindings (stmt);
     }
 
-    g_type_class_unref (mime_class);
     sqlite3_finalize (stmt);
 
     return success;
@@ -1328,16 +1333,20 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         return g_paste_sqlite_backend_built_item (g_paste_color_item_new_from_str (value), unreadable);
     case G_PASTE_ITEM_KIND_IMAGE:
     {
-        /* Images turned off, a row with no date, or one holding no blob: the
-         * blob is the whole of such a row, so an image that is not in it is
-         * nowhere -- a row names no file, its value being the checksum. Nothing
-         * this build failed at, and nothing left on disk to go looking for. */
+        /* Images turned off, a row with no date -- or one GDateTime cannot
+         * hold, which is as good as none -- or one holding no blob: the blob is
+         * the whole of such a row, so an image that is not in it is nowhere -- a
+         * row names no file, its value being the checksum. Nothing this build
+         * failed at, and nothing left on disk to go looking for. */
         if (!images_support ||
             sqlite3_column_type (stmt, 4) == SQLITE_NULL ||
             sqlite3_column_type (stmt, 7) == SQLITE_NULL)
             return NULL;
 
         g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 4));
+
+        if (!date)
+            return NULL;
         const gchar *checksum = (const gchar *) sqlite3_column_text (stmt, 5);
         gsize length = 0;
         guchar *data = g_paste_sqlite_backend_read_content (stmt, 7, key, &length);
@@ -1408,11 +1417,13 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
                                       const gchar          *name)
 {
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
-    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (sqlite3) db = NULL;
 
+    /* A connection of its own, and none of the backend's state: so not the
+     * backend's lock either, which a load holds across the key derivation and
+     * the decoding of every image -- and this runs on the main loop, which in
+     * gnome-shell is the compositor's. A stall no test measures. */
     if (sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
         return 0;
 
@@ -1531,7 +1542,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
         return FALSE;
     }
 
-    GEnumClass *mime_class = g_type_class_ref (G_PASTE_TYPE_SPECIAL_MIME);
+    GEnumClass *mime_class = g_type_class_get (G_PASTE_TYPE_SPECIAL_MIME);
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean images_support = g_paste_settings_get_images_support (settings);
 
@@ -1591,7 +1602,6 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
                    (rc == SQLITE_DONE) ? "a row could not be read back" : sqlite3_errmsg (db));
     }
 
-    g_type_class_unref (mime_class);
     sqlite3_finalize (sv_stmt);
     sqlite3_finalize (stmt);
 
