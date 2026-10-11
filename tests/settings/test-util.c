@@ -95,6 +95,18 @@ fake_proxy_call_sync (GDBusProxy    *proxy G_GNUC_UNUSED,
     return g_variant_ref_sink (g_variant_new ("()"));
 }
 
+/* A reset GSettings refuses, as it does a key an administrator locked. */
+static gboolean refuse_reset;
+
+static void
+fake_settings_reset (GPasteSettings *settings,
+                     const gchar    *key)
+{
+    if (!refuse_reset)
+        g_paste_settings_reset (settings, key);
+}
+
+#define g_paste_settings_reset fake_settings_reset
 #define g_dbus_proxy_new_for_bus fake_proxy_new
 #define g_dbus_proxy_new_for_bus_finish fake_proxy_new_finish
 #define g_dbus_proxy_new_for_bus_sync fake_proxy_new_sync
@@ -106,6 +118,7 @@ fake_proxy_call_sync (GDBusProxy    *proxy G_GNUC_UNUSED,
 #undef g_dbus_proxy_new_for_bus_sync
 #undef g_dbus_proxy_new_for_bus_finish
 #undef g_dbus_proxy_new_for_bus
+#undef g_paste_settings_reset
 
 typedef struct
 {
@@ -306,6 +319,29 @@ test_display_string (void)
     }
 }
 
+/* The migration gate is read back once opened: a reset GSettings refused is
+ * no gate open, and says so, rather than a migration asked for that the
+ * daemon's successor would find nothing to do for. */
+static void
+test_migration_gate_refused (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GError) error = NULL;
+    guint64 revision = 0;
+
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    refuse_reset = TRUE;
+    g_assert_false (g_paste_util_open_storage_migration (&revision, &error));
+    refuse_reset = FALSE;
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&error);
+
+    g_assert_true (g_paste_util_open_storage_migration (&revision, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (revision, ==, 37);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -313,6 +349,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/util/pid-file", test_pid_file);
     g_test_add_func ("/util/one-line", test_one_line);
+    g_test_add_func ("/util/migration-gate/refused", test_migration_gate_refused);
     g_test_add_func ("/util/display-string/files", test_files_shown);
     g_test_add_func ("/util/display-string/kinds", test_display_string);
     for (gsize i = 0; i < G_N_ELEMENTS (activation_cases); ++i)

@@ -155,6 +155,56 @@ drain (void)
     while (g_main_context_iteration (NULL, FALSE));
 }
 
+/* The history whose lock a settings reload checks it is not held under, when
+ * set: a reload announces what moved, and nothing is emitted under that lock.
+ * Asked of another thread, which waits on the lock if this one holds it. */
+static GPasteHistory *reloading;
+static gboolean       reloaded_locked;
+static GThread       *lock_probe;
+
+typedef struct
+{
+    GMutex   mutex;
+    GCond    cond;
+    gboolean locked;
+} LockProbe;
+
+static LockProbe probe;
+
+static gpointer
+probe_lock (gpointer data)
+{
+    g_paste_history_get_length (data);
+
+    g_mutex_lock (&probe.mutex);
+    probe.locked = TRUE;
+    g_cond_signal (&probe.cond);
+    g_mutex_unlock (&probe.mutex);
+
+    return NULL;
+}
+
+void
+g_paste_settings_reload (GPasteSettings *settings)
+{
+    typedef void (*Reload) (GPasteSettings *);
+    Reload original = (Reload) dlsym (RTLD_NEXT, "g_paste_settings_reload");
+
+    g_assert_nonnull (original);
+    if (reloading)
+    {
+        gint64 deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
+
+        lock_probe = g_thread_new ("lock-probe", probe_lock, reloading);
+        g_mutex_lock (&probe.mutex);
+        while (!probe.locked && g_cond_wait_until (&probe.cond, &probe.mutex, deadline))
+            ;
+        reloaded_locked = !probe.locked;
+        g_mutex_unlock (&probe.mutex);
+    }
+    original (settings);
+}
+
 gboolean
 g_settings_set_string (GSettings   *settings,
                        const gchar *key,
@@ -4274,6 +4324,28 @@ test_password_dropped (void)
 #endif
 }
 
+/* A storage reload reads the settings back with the history's lock free: the
+ * reload announces what moved, and a handler calling back into the history
+ * would otherwise wait on the lock forever. */
+static void
+test_reload_settings_unlocked (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    probe.locked = FALSE;
+    reloaded_locked = FALSE;
+    reloading = history;
+    g_paste_history_flush (history);
+    g_paste_history_reload_backend (history);
+    reloading = NULL;
+    g_thread_join (g_steal_pointer (&lock_probe));
+    g_assert_false (reloaded_locked);
+    /* The model is already empty: what is waited for is the reload's load. */
+    for (guint i = 0; i < 5000 && g_paste_history_is_loading (history); ++i)
+        pump_once ();
+    g_assert_false (g_paste_history_is_loading (history));
+}
+
 /* A reload's passwords left out of what it carries are announced when the
  * history is emptied before its load lands, as that load would have. */
 static void
@@ -6901,6 +6973,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
+    add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
     g_test_add_data_func ("/history/reload_then_delete_drops_password", GINT_TO_POINTER (FALSE), test_reload_then_delete_drops_password);

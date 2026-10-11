@@ -64,5 +64,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_EXTENSION_ENABLED_SETTING          "extension-enabled"
 #define G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING   "enabled-extensions"
+#define G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING  "disabled-extensions"
+#define G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING "disable-user-extensions"
 
 G_END_DECLS

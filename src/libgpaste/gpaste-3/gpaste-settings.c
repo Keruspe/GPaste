@@ -15,6 +15,9 @@ struct _GPasteSettings
     GSettings    *shell_settings;
     GSignalGroup *settings_signals;
     GSignalGroup *shell_settings_signals;
+    /* The file the settings live in, %NULL for dconf: see
+     * g_paste_settings_private_keyfile_path (). */
+    gchar        *keyfile_path;
 
     gboolean      close_on_select;
     guint64       element_size;
@@ -699,19 +702,73 @@ g_paste_settings_get_extension_enabled (GPasteSettings *self)
     return self->extension_enabled;
 }
 
-static inline gchar **
-g_paste_settings_private_get_enabled_extensions (GPasteSettings *self)
+/* Whether the shell's schema has @key: older ones lack some, and reading a key
+ * a schema lacks is a critical. */
+static gboolean
+g_paste_settings_private_shell_has (GPasteSettings *self,
+                                    const gchar    *key)
 {
-    return (self->shell_settings) ? g_settings_get_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
+    g_autoptr (GSettingsSchema) schema = NULL;
+
+    g_object_get (self->shell_settings, "settings-schema", &schema, NULL);
+
+    return g_settings_schema_has_key (schema, key);
 }
 
-/* Announced only when GPaste's own membership moves: the list changes with
+/* Whether GNOME Shell runs GPaste's extension, decided the way the shell does
+ * (_getEnabledExtensions () in extensionSystem.js): listed as enabled, user
+ * extensions not all turned off, and not listed as disabled, which wins. */
+static gboolean
+g_paste_settings_private_extension_runs (GPasteSettings *self)
+{
+    if (!self->shell_settings)
+        return FALSE;
+
+    g_auto (GStrv) enabled = g_settings_get_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING);
+
+    if (!g_strv_contains ((const gchar * const *) enabled, G_PASTE_EXTENSION_NAME))
+        return FALSE;
+
+    if (g_paste_settings_private_shell_has (self, G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING) &&
+        g_settings_get_boolean (self->shell_settings, G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING))
+        return FALSE;
+
+    if (!g_paste_settings_private_shell_has (self, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING))
+        return TRUE;
+
+    g_auto (GStrv) disabled = g_settings_get_strv (self->shell_settings, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING);
+
+    return !g_strv_contains ((const gchar * const *) disabled, G_PASTE_EXTENSION_NAME);
+}
+
+/* @list with GPaste's extension in or out, as @in says, the rest kept. */
+static void
+g_paste_settings_private_set_listed (GPasteSettings *self,
+                                     const gchar    *list,
+                                     gboolean        in)
+{
+    g_auto (GStrv) extensions = g_settings_get_strv (self->shell_settings, list);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    for (GStrv e = extensions; *e; ++e)
+    {
+        if (!g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
+            g_strv_builder_add (builder, *e);
+    }
+    if (in)
+        g_strv_builder_add (builder, G_PASTE_EXTENSION_NAME);
+
+    g_auto (GStrv) updated = g_strv_builder_end (builder);
+
+    g_settings_set_strv (self->shell_settings, list, (const gchar * const *) updated);
+}
+
+/* Announced only when whether the extension runs moves: the lists change with
  * every other extension enabled or disabled. */
 static void
 g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettings *self)
 {
-    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (self);
-    gboolean enabled = g_strv_contains ((const gchar * const *) extensions, G_PASTE_EXTENSION_NAME);
+    gboolean enabled = g_paste_settings_private_extension_runs (self);
 
     if (self->extension_enabled == enabled)
         return;
@@ -736,32 +793,26 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
     if (!self->shell_settings || (value == self->extension_enabled))
         return;
 
-    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (self);
-    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-
-    for (GStrv e = extensions; *e; ++e)
-    {
-        if (!g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
-            g_strv_builder_add (builder, *e);
-    }
-    if (value)
-        g_strv_builder_add (builder, G_PASTE_EXTENSION_NAME);
-
-    g_auto (GStrv) updated = g_strv_builder_end (builder);
-
-    /* As for the other settings, the "changed"
-     * handler is what moves the cache. */
-    g_settings_set_strv (self->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) updated);
+    /* As GNOME Shell's own enableExtension () and disableExtension () do: in one
+     * list and out of the other. User extensions all turned off stays the
+     * user's to undo, and the setting then reads what the shell does. As for
+     * the other settings, the "changed" handler is what moves the cache. */
+    g_paste_settings_private_set_listed (self, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, value);
+    if (g_paste_settings_private_shell_has (self, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING))
+        g_paste_settings_private_set_listed (self, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING, !value);
 }
 
 static void
 g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
-                                         const gchar *key      G_GNUC_UNUSED,
+                                         const gchar *key,
                                          gpointer     user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
 
-    g_paste_settings_private_set_extension_enabled_from_dconf (self);
+    if (g_paste_str_equal (key, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) ||
+        g_paste_str_equal (key, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING) ||
+        g_paste_str_equal (key, G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING))
+        g_paste_settings_private_set_extension_enabled_from_dconf (self);
 }
 
 static void
@@ -1085,11 +1136,18 @@ g_paste_settings_sync (GPasteSettings *self)
     g_settings_sync ();
 }
 
+static void
+g_paste_settings_private_read (GPasteSettings *self)
+{
+    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
+        setting_entries[i].from_dconf (self);
+}
+
 /**
  * g_paste_settings_reload:
  * @self: a #GPasteSettings instance
  *
- * Re-read every key from the backend, as if the instance had just been created.
+ * Refresh every cached value from what is stored, extension-enabled included.
  *
  * The cached values are normally refreshed from GSettings' "changed"
  * notification, which is delivered by the dconf service on its own schedule: a
@@ -1097,14 +1155,37 @@ g_paste_settings_sync (GPasteSettings *self)
  * re-execute right after `gpaste-client migrate` rewrote the backend revision)
  * has no ordering guarantee that the notification landed first. Reloading before acting
  * on such a key reads the value that is actually stored.
+ *
+ * Nothing is announced but extension-enabled, as ever when it moves: the
+ * backend's own "changed" notification announces the rest when it lands.
  */
 G_PASTE_VISIBLE void
 g_paste_settings_reload (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
-    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
-        setting_entries[i].from_dconf (self);
+    /* A keyfile backend answers from the copy of the file it holds, which only
+     * its file monitor refreshes, from the main loop: right after another
+     * process wrote the file, that copy is still the old one. So the values are
+     * read through a backend of their own, fresh from the file -- while there
+     * is one: a backend fresh from a file removed since would answer every key
+     * with its default, where the live one keeps its copy (GLib ignores the
+     * deletion), the copy this process goes on writing to. */
+    if (self->keyfile_path && g_file_test (self->keyfile_path, G_FILE_TEST_EXISTS))
+    {
+        g_autoptr (GSettingsBackend) backend = g_keyfile_settings_backend_new (self->keyfile_path, G_PASTE_SETTINGS_PATH, PACKAGE_NAME);
+        g_autoptr (GSettings) fresh = g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
+        GSettings *live = self->settings;
+
+        self->settings = fresh;
+        g_paste_settings_private_read (self);
+        self->settings = live;
+    }
+    else
+        g_paste_settings_private_read (self);
+
+    if (self->shell_settings)
+        g_paste_settings_private_set_extension_enabled_from_dconf (self);
 }
 
 /**
@@ -1169,6 +1250,7 @@ g_paste_settings_finalize (GObject *object)
     g_free (self->sync_primary_to_clipboard);
     g_free (self->upload);
     g_free (self->upload_command);
+    g_free (self->keyfile_path);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -1220,26 +1302,68 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     signals[REBIND]  = NEW_SIGNAL_DETAILED        ("rebind" , STRING);
 }
 
-static GSettings *
-create_g_settings (void)
+/* The file GPaste's settings live in rather than dconf, if the user made one:
+ * under PACKAGE ("gpaste"), or else PACKAGE_NAME ("GPaste"), where the meson
+ * builds defining PACKAGE as "GPaste" too looked for it. The first is read
+ * when both are there, where the history's directory
+ * (g_paste_util_get_history_dir_path ()) prefers the second. %NULL for none. */
+static gchar *
+g_paste_settings_private_keyfile_path (void)
 {
-    g_autofree gchar *config_file_path = g_build_filename (g_get_user_config_dir (), PACKAGE, "settings", NULL);
-    g_autoptr (GFile) config_file = g_file_new_for_path (config_file_path);
+    const gchar *directories[] = { PACKAGE, PACKAGE_NAME };
 
-    if (g_file_query_exists (config_file, NULL /* cancellable */))
+    for (guint i = 0; i < G_N_ELEMENTS (directories); ++i)
     {
-        g_autoptr (GSettingsBackend) backend = g_keyfile_settings_backend_new (config_file_path, G_PASTE_SETTINGS_PATH, PACKAGE_NAME);
+        g_autofree gchar *path = g_build_filename (g_get_user_config_dir (), directories[i], "settings", NULL);
 
-        return g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
+        if (g_file_test (path, G_FILE_TEST_EXISTS))
+            return g_steal_pointer (&path);
     }
-    else
-        return g_settings_new (G_PASTE_SETTINGS_NAME);
+
+    return NULL;
+}
+
+/* One keyfile backend per file for the whole process: each holds the file in a
+ * copy of its own and rewrites all of it from that copy on every write, so two
+ * instances would each undo what the other wrote a moment before. Processes
+ * still have one each, which is the keyfile backend's own limit -- its file
+ * monitor is what reconciles them. Kept for the life of the process. */
+static GSettingsBackend *
+g_paste_settings_private_keyfile_backend (const gchar *path)
+{
+    static GMutex lock;
+    static GHashTable *backends;
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&lock);
+
+    if (!backends)
+        backends = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+
+    GSettingsBackend *backend = g_hash_table_lookup (backends, path);
+
+    if (!backend)
+    {
+        backend = g_keyfile_settings_backend_new (path, G_PASTE_SETTINGS_PATH, PACKAGE_NAME);
+        g_hash_table_insert (backends, g_strdup (path), backend);
+    }
+
+    return g_object_ref (backend);
 }
 
 static void
 g_paste_settings_init (GPasteSettings *self)
 {
-    GSettings *settings = self->settings = create_g_settings ();
+    self->keyfile_path = g_paste_settings_private_keyfile_path ();
+
+    if (self->keyfile_path)
+    {
+        g_autoptr (GSettingsBackend) backend = g_paste_settings_private_keyfile_backend (self->keyfile_path);
+
+        self->settings = g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
+    }
+    else
+        self->settings = g_settings_new (G_PASTE_SETTINGS_NAME);
+
+    GSettings *settings = self->settings;
 
     self->history_name = NULL;
     self->launch_ui = NULL;
@@ -1255,14 +1379,14 @@ g_paste_settings_init (GPasteSettings *self)
     g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_settings_settings_changed), self);
     g_signal_group_set_target (settings_signals, settings);
 
-    g_paste_settings_reload (self);
+    g_paste_settings_private_read (self);
 
     self->shell_settings = NULL;
     self->extension_enabled = FALSE;
 
     GSignalGroup *shell_settings_signals = self->shell_settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
     g_signal_group_connect (shell_settings_signals,
-                            "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                            "changed",
                             G_CALLBACK (g_paste_settings_shell_settings_changed),
                             self);
 

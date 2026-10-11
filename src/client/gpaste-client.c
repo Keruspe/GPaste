@@ -426,7 +426,10 @@ g_paste_migrate (Context *ctx,
      * the method call reports: the signal reexec_fallback () sends is that same
      * re-exec happening by another route, and a gate closed before it would hand
      * the successor nothing to migrate while this printed a success. */
-    guint64 revision = g_paste_util_prepare_storage_migration ();
+    guint64 revision;
+
+    if (!g_paste_util_open_storage_migration (&revision, error))
+        return EXIT_FAILURE;
 
     if (!reexec_fallback (ctx->client, g_paste_util_reexecute_daemon (ctx->client, error), error))
     {

@@ -413,21 +413,29 @@ nothing. It uses real GTK on the private Xvfb and skips without one.
 directories to check ordinary and detailed `rebind` signal key arguments and
 detail filtering, and that a write GSettings refuses leaves a non-default value
 in place and announces nothing -- a property write announcing the setting again
-once it is over -- without reading or writing user preferences.
+once it is over -- without reading or writing user preferences. With a
+settings file in the isolated configuration directory, two instances of one
+process share its backend, neither undoing the other's write; a reload reads
+what another process just wrote to the file; and a file where older builds
+spelled the directory `GPaste` is found.
 
 `test-shell-settings` supplies a minimal test-local Shell schema and real memory
 and non-writable GSettings backends. It compiles the shipped settings source,
 substituting only the optional Shell detection and settings construction, and
 checks effective extension membership after accepted and refused writes, that
-other extensions' changes do not notify `extension-enabled`, and that a row
-bound to it comes back after a refused flip. This settings-only suite uses
+other extensions' changes do not notify `extension-enabled`, that a row
+bound to it comes back after a refused flip, and that it reads what the Shell
+decides -- `disabled-extensions` winning over `enabled-extensions`,
+`disable-user-extensions` turning it off -- and is written into one list and
+out of the other. This settings-only suite uses
 `G_PASTE_TEST_ENV_OWN_BUS` to leave both bus addresses unreachable.
 
 `test-util` compiles `gpaste-util.c` with the session bus proxy's constructors
 and calls faked, and checks how both `g_paste_util_activate_ui()` flavours take
 their argument, whether the proxy comes up or is refused: a floating one is
 consumed, a caller's own reference left to the caller -- who may drop it before
-the asynchronous flavour's proxy is up, the call still made with it. It also
+the asynchronous flavour's proxy is up, the call still made with it. A
+migration gate whose reset GSettings refuses, faked there, fails to open. It also
 checks what a client draws for an item: one line, the Unicode line breaks
 folded too; each kind's decoration, a kind it does not know shown as it
 arrived; and a files item's paths percent-decoded, a home file from "~" --

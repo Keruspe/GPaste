@@ -150,8 +150,14 @@ on_daemon_request_answered (GObject      *source,
 static void
 daemon_request_send (DaemonRequest *self)
 {
-    if (self->migration)
-        self->revision = g_paste_util_prepare_storage_migration ();
+    g_autoptr (GError) error = NULL;
+
+    if (self->migration && !g_paste_util_open_storage_migration (&self->revision, &error))
+    {
+        daemon_request_complete (self, error);
+        return;
+    }
+
     self->call (self->client, NULL, on_daemon_request_answered, self);
 }
 

@@ -1145,12 +1145,19 @@ g_paste_util_reexecute_legacy_daemon (GPasteClient *client,
 }
 
 /**
- * g_paste_util_prepare_storage_migration:
+ * g_paste_util_open_storage_migration:
+ * @revision: (out): where to put the revision to restore if re-execution fails
+ * @error: return location for a #GError, or %NULL
  *
  * Open the storage-migration gate before requesting daemon re-execution.
  * Resetting the revision marks the backend as never migrated. Call this on
  * the main context: the temporary #GPasteSettings wrapper caches settings and
  * receives their notifications there.
+ *
+ * The reset is read back, as the settings ask of a caller that has to know
+ * whether a write took: one refused -- a key an administrator locked --
+ * fails with %G_PASTE_ERROR_FAILED, so that nothing re-executes the daemon
+ * for a migration its successor would find the gate closed on.
  *
  * The re-exec is the caller's own, and so is closing the gate again
  * (g_paste_util_cancel_storage_migration()) once there is no re-exec left to
@@ -1158,17 +1165,52 @@ g_paste_util_reexecute_legacy_daemon (GPasteClient *client,
  * daemon too old for the method -- and a gate closed on the first route's
  * failure would leave that successor nothing to migrate.
  *
+ * Returns: whether the gate is open
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_open_storage_migration (guint64 *revision,
+                                     GError **error)
+{
+    g_return_val_if_fail (revision, FALSE);
+    g_return_val_if_fail (!error || !(*error), FALSE);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    *revision = g_paste_settings_get_storage_backend_revision (settings);
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+    g_paste_settings_sync (settings);
+    g_paste_settings_reload (settings);
+
+    /* The revision the daemon will read, as reload () just read it from what is
+     * stored -- not whether a user value is left: a system default, or a reset
+     * the keyfile backend took in memory but could not write, leaves none and
+     * the gate closed all the same. Back at the schema's 0 or refused, with no
+     * revision of the daemon's own to compare to on this side. */
+    if (g_paste_settings_get_storage_backend_revision (settings))
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the storage backend revision cannot be reset, so no migration can be asked for");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/**
+ * g_paste_util_prepare_storage_migration:
+ *
+ * Open the storage-migration gate, as g_paste_util_open_storage_migration ()
+ * does, without saying whether it opened.
+ *
  * Returns: the revision to restore if re-execution fails
  */
 G_PASTE_VISIBLE guint64
 g_paste_util_prepare_storage_migration (void)
 {
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    guint64 revision = 0;
 
-    guint64 revision = g_paste_settings_get_storage_backend_revision (settings);
+    g_paste_util_open_storage_migration (&revision, NULL);
 
-    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
-    g_paste_settings_sync (settings);
     return revision;
 }
 

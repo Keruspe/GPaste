@@ -4,5 +4,11 @@
     <key name="enabled-extensions" type="as">
       <default>[]</default>
     </key>
+    <key name="disabled-extensions" type="as">
+      <default>[]</default>
+    </key>
+    <key name="disable-user-extensions" type="b">
+      <default>false</default>
+    </key>
   </schema>
 </schemalist>

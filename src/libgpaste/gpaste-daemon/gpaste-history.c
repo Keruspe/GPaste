@@ -1962,12 +1962,14 @@ g_paste_history_reload_backend (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
-    G_PASTE_LOCK_HISTORY;
-
     /* The migration ran out of process (or in a re-exec'd one), so the new
      * "storage-backend" value may not have reached our cached settings yet: read
-     * it back before rebuilding, or we would resurrect the flavour we just left. */
+     * it back before rebuilding, or we would resurrect the flavour we just left.
+     * Before the lock: a reload announces extension-enabled when it moved, and
+     * nothing is emitted under the lock. */
     g_paste_settings_reload (self->settings);
+
+    G_PASTE_LOCK_HISTORY;
 
     /* What the store does not hold is in the model alone: kept in the model the
      * reload starts from, the load adds it on top of what it reads

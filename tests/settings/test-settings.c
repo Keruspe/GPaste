@@ -5,7 +5,10 @@
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-settings.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
+
+#include <glib/gstdio.h>
 
 typedef struct
 {
@@ -110,6 +113,134 @@ rejected_write (void)
     g_paste_settings_reset (settings, G_PASTE_MAX_HISTORY_SIZE_SETTING);
 }
 
+/* A settings file under @directory of the configuration directory, holding
+ * @contents, as a user opting into the keyfile backend makes one. */
+static gchar *
+keyfile_new (const gchar *directory,
+             const gchar *contents)
+{
+    g_autofree gchar *dir = g_build_filename (g_get_user_config_dir (), directory, NULL);
+    gchar *path = g_build_filename (dir, "settings", NULL);
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (path, contents, -1, NULL));
+
+    return path;
+}
+
+static gchar *
+keyfile_value (const gchar *path,
+               const gchar *key)
+{
+    g_autoptr (GKeyFile) keyfile = g_key_file_new ();
+
+    g_assert_true (g_key_file_load_from_file (keyfile, path, G_KEY_FILE_NONE, NULL));
+
+    return g_key_file_get_value (keyfile, PACKAGE_NAME, key, NULL);
+}
+
+/* Two settings instances in one process share the file's backend: what one
+ * writes is not undone by the other writing the whole file from a copy of its
+ * own taken before. */
+static void
+keyfile_shared (void)
+{
+    g_autofree gchar *path = keyfile_new (PACKAGE, "");
+    g_autoptr (GPasteSettings) first = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) second = g_paste_settings_new ();
+
+    g_paste_settings_set_max_history_size (first, 100);
+    g_paste_settings_set_track_changes (second, FALSE);
+
+    g_autofree gchar *size = keyfile_value (path, G_PASTE_MAX_HISTORY_SIZE_SETTING);
+    g_autofree gchar *track = keyfile_value (path, G_PASTE_TRACK_CHANGES_SETTING);
+
+    g_assert_cmpstr (size, ==, "100");
+    g_assert_cmpstr (track, ==, "false");
+}
+
+/* A reload reads what the file holds now, another process having written it,
+ * without waiting for the backend's file monitor. */
+static void
+keyfile_reload (void)
+{
+    g_autofree gchar *path = keyfile_new (PACKAGE, "");
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_assert_true (g_file_set_contents (path, "[" PACKAGE_NAME "]\nmax-history-size=77\n", -1, NULL));
+    g_paste_settings_reload (settings);
+    g_assert_cmpuint (g_paste_settings_get_max_history_size (settings), ==, 77);
+}
+
+/* A reload after the file is removed keeps what the process was using -- what
+ * its backend still holds and writes to -- rather than reading every key as
+ * its default. */
+static void
+keyfile_removed (void)
+{
+    g_autofree gchar *path = keyfile_new (PACKAGE, "[" PACKAGE_NAME "]\nmax-history-size=77\nhistory-name='work'\n");
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_assert_cmpuint (g_paste_settings_get_max_history_size (settings), ==, 77);
+    g_assert_cmpint (g_unlink (path), ==, 0);
+    g_paste_settings_reload (settings);
+    g_assert_cmpuint (g_paste_settings_get_max_history_size (settings), ==, 77);
+    g_assert_cmpstr (g_paste_settings_get_history_name (settings), ==, "work");
+}
+
+/* A gate the settings file could not be rewritten to open is none: the reset
+ * the keyfile backend takes in memory is not what the file, which the daemon
+ * reads, still says. */
+static void
+keyfile_gate_unwritable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!geteuid ())
+        {
+            g_test_skip ("root writes a directory of mode 0500");
+            return;
+        }
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*GLib-GIO-WARNING*Failed to write keyfile*");
+        g_test_trap_assert_stderr_unmatched ("*WARNING*WARNING*");
+        g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
+        return;
+    }
+
+    /* Writing the file fails with a warning of GLib's, which is the case, and
+     * the parent checks it is the only thing logged. */
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+    g_autofree gchar *path = keyfile_new (PACKAGE, "[" PACKAGE_NAME "]\nstorage-backend-revision=37\n");
+    g_autofree gchar *dir = g_path_get_dirname (path);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GError) error = NULL;
+    guint64 revision = 0;
+
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_assert_cmpint (g_chmod (dir, 0500), ==, 0);
+
+    gboolean opened = g_paste_util_open_storage_migration (&revision, &error);
+
+    g_assert_cmpint (g_chmod (dir, 0700), ==, 0);
+    g_assert_false (opened);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+}
+
+/* A settings file where the meson builds defining PACKAGE as "GPaste" looked
+ * for it is still found. */
+static void
+keyfile_legacy_path (void)
+{
+    g_autofree gchar *path = keyfile_new (PACKAGE_NAME, "[" PACKAGE_NAME "]\nmax-history-size=88\n");
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_assert_cmpuint (g_paste_settings_get_max_history_size (settings), ==, 88);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -119,5 +250,10 @@ main (int argc, char **argv)
     g_test_add_func ("/settings/rebind-key", rebind_key);
     g_test_add_func ("/settings/migration-gate", migration_gate);
     g_test_add_func ("/settings/rejected-write", rejected_write);
+    g_test_add_func ("/settings/keyfile/shared", keyfile_shared);
+    g_test_add_func ("/settings/keyfile/reload", keyfile_reload);
+    g_test_add_func ("/settings/keyfile/removed", keyfile_removed);
+    g_test_add_func ("/settings/keyfile/gate-unwritable", keyfile_gate_unwritable);
+    g_test_add_func ("/settings/keyfile/legacy-path", keyfile_legacy_path);
     return g_paste_test_env_run ();
 }
