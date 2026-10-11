@@ -21,7 +21,8 @@ void g_paste_ui_history_search (GPasteUiHistory *self,
 void g_paste_ui_history_set_favourites (GPasteUiHistory *self,
                                         gboolean         favourites);
 
-gboolean g_paste_ui_history_select_first (GPasteUiHistory *self);
+gboolean g_paste_ui_history_select_first (GPasteUiHistory *self,
+                                          const gchar     *search);
 gboolean g_paste_ui_history_activate_index (GPasteUiHistory *self,
                                             guint64          index);
 

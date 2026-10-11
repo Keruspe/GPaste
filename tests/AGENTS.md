@@ -266,7 +266,12 @@ answers `UploadAndCopy`, which is all a row's upload calls -- what the daemon
 keeps of the address is its own business, `/clipboard/copy_uploaded`'s -- and
 the window toasts how it went, even for a row taken off the list while its
 upload is out, the outcome going through the window the upload started from
-rather than through the row.
+rather than through the row. It answers `Select` too, and can hold a `Search`
+and the `GetItemAtIndex` reads: Enter in the search selects the first match of
+what was typed once that is listed, past the entry's delay saying the same
+search again and an update listing it again; a row bound before its item was read, and one past the rows
+loaded, activate by index; in selection mode an activation picks and Ctrl+F is
+off, and a search asked for from outside leaves selection mode.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

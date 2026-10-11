@@ -72,6 +72,15 @@ typedef struct
     /* Serve image items, whose image cannot be read. */
     gboolean               images;
     guint                  image_reads;
+    /* What a search matches: one text item of this uuid, or nothing. */
+    const gchar           *match;
+    gboolean               hold_filters;
+    GDBusMethodInvocation *held_filter;
+    /* Items read by index, held for the test to answer (release_items ()). */
+    gboolean               hold_items;
+    GPtrArray             *held_items;
+    guint                  selects;
+    gchar                 *selected;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -132,8 +141,44 @@ on_get_favourites (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
     ++daemon->filters;
     if (daemon->filters_gone)
         return_gone (invocation);
+    else if (daemon->hold_filters)
+    {
+        /* One held at a time: the listing it replaces, which the client gave
+         * up asking for that one, is answered with nothing. */
+        if (daemon->held_filter)
+        {
+            g_dbus_method_invocation_return_value (g_steal_pointer (&daemon->held_filter),
+                                                   g_variant_new_parsed ("(@" G_PASTE_ITEMS_VARIANT_STRING " [],)"));
+        }
+        daemon->held_filter = invocation;
+    }
     else
         g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("(@a(ssubas) [],)"));
+
+    return TRUE;
+}
+
+/* The held search answered with @daemon's match. */
+static void
+answer_filter (FakeDaemon *daemon)
+{
+    g_auto (GVariantBuilder) items = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("a(ssubas)"));
+
+    g_variant_builder_add (&items, "(ssub@as)", daemon->match, "match", G_PASTE_ITEM_KIND_TEXT, FALSE, g_variant_new_strv (NULL, 0));
+    g_dbus_method_invocation_return_value (g_steal_pointer (&daemon->held_filter), g_variant_new ("(@a(ssubas))", g_variant_builder_end (&items)));
+}
+
+static gboolean
+on_select (GPasteDaemon3         *skeleton,
+           GDBusMethodInvocation *invocation,
+           const gchar           *uuid,
+           gpointer               user_data)
+{
+    FakeDaemon *daemon = user_data;
+
+    g_set_str (&daemon->selected, uuid);
+    ++daemon->selects;
+    g_paste_daemon3_complete_select (skeleton, invocation);
 
     return TRUE;
 }
@@ -170,22 +215,52 @@ on_upload_and_copy (GPasteDaemon3         *skeleton,
     return TRUE;
 }
 
+static void
+complete_item (FakeDaemon            *daemon,
+               GDBusMethodInvocation *invocation,
+               guint64                index)
+{
+    g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index);
+    g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT, index);
+    GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
+
+    g_paste_daemon3_complete_get_item_at_index (daemon->skeleton, invocation,
+                                                g_variant_new ("(ssub@as)", uuid, value, kind, FALSE,
+                                                               g_variant_new_strv (NULL, 0)));
+}
+
 static gboolean
-on_get_item_at_index (GPasteDaemon3         *skeleton,
+on_get_item_at_index (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
                       GDBusMethodInvocation *invocation,
                       guint64                index,
                       gpointer               user_data)
 {
     FakeDaemon *daemon = user_data;
-    g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-%012" G_GUINT64_FORMAT, index);
-    g_autofree gchar *value = g_strdup_printf ("value %" G_GUINT64_FORMAT, index);
-    GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
 
-    g_paste_daemon3_complete_get_item_at_index (skeleton, invocation,
-                                                g_variant_new ("(ssub@as)", uuid, value, kind, FALSE,
-                                                               g_variant_new_strv (NULL, 0)));
+    if (daemon->hold_items)
+        g_ptr_array_add (daemon->held_items, invocation);
+    else
+        complete_item (daemon, invocation, index);
 
     return TRUE;
+}
+
+/* Every item read held so far answered, and the reads after it too. */
+static void
+release_items (FakeDaemon *daemon)
+{
+    daemon->hold_items = FALSE;
+
+    for (guint i = 0; i < daemon->held_items->len; ++i)
+    {
+        GDBusMethodInvocation *invocation = daemon->held_items->pdata[i];
+        guint64 index;
+
+        g_variant_get (g_dbus_method_invocation_get_parameters (invocation), "(t)", &index);
+        complete_item (daemon, invocation, index);
+    }
+
+    g_ptr_array_set_size (daemon->held_items, 0);
 }
 
 /* An image the daemon cannot read back, as one whose cache file went. */
@@ -234,6 +309,8 @@ fake_daemon_start (FakeDaemon *daemon)
     g_signal_connect (daemon->skeleton, "handle-search", G_CALLBACK (on_fake_search), daemon);
     g_signal_connect (daemon->skeleton, "handle-upload-and-copy", G_CALLBACK (on_upload_and_copy), daemon);
     g_signal_connect (daemon->skeleton, "handle-get-favourites", G_CALLBACK (on_get_favourites), daemon);
+    g_signal_connect (daemon->skeleton, "handle-select", G_CALLBACK (on_select), daemon);
+    daemon->held_items = g_ptr_array_new ();
     g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (daemon->skeleton), daemon->connection,
                                       G_PASTE_DAEMON_OBJECT_PATH, &error);
     g_assert_no_error (error);
@@ -256,6 +333,8 @@ fake_daemon_stop (FakeDaemon *daemon)
     g_clear_handle_id (&daemon->owner, g_bus_unown_name);
     g_clear_handle_id (&daemon->shell_owner, g_bus_unown_name);
     g_clear_object (&daemon->connection);
+    g_clear_pointer (&daemon->held_items, g_ptr_array_unref);
+    g_clear_pointer (&daemon->selected, g_free);
 }
 
 /* The calls the window sends the daemon's name that are its own to make -- a
@@ -894,6 +973,245 @@ test_reply_after_close (void)
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
 
     fake_daemon_stop (&daemon);
+}
+
+/* A window over @daemon, started, its rows shown, that pastes without
+ * closing. */
+static GPasteUiWindow *
+activation_window (GPasteClient *client,
+                   FakeDaemon   *daemon)
+{
+    GPasteUiWindow *window = test_window ();
+
+    fake_daemon_start (daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_paste_settings_set_close_on_select (window->settings, FALSE);
+    g_paste_test_bus_wait_for_count (&daemon->sizings, 1);
+    g_paste_test_bus_wait_until (list_shown, window, NULL);
+    g_assert_true (list_shown (window, NULL));
+
+    return window;
+}
+
+static void
+close_activation_window (GPasteUiWindow *window,
+                         FakeDaemon     *daemon)
+{
+    g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (daemon);
+}
+
+static gboolean
+has_held_items (gconstpointer daemon,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((FakeDaemon *) daemon)->held_items->len > 0;
+}
+
+static gboolean
+selected (gconstpointer daemon,
+          gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((FakeDaemon *) daemon)->selects > 0;
+}
+
+/* Enter in the search selects the first match of what was typed, once that is
+ * listed -- not the first row of whatever the list showed when it was pressed,
+ * the entry's delay having applied nothing yet. */
+static void
+test_search_enter_waits (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    daemon.hold_filters = TRUE;
+    gtk_search_bar_set_search_mode (window->search_bar, TRUE);
+    gtk_editable_set_text (GTK_EDITABLE (window->search_entry), "match");
+    g_signal_emit_by_name (window->search_entry, "activate");
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_cmpuint (daemon.selects, ==, 0);
+
+    /* Past the entry's delay, which says the same search again. */
+    g_paste_test_bus_pump (300);
+    g_assert_cmpuint (daemon.filters, ==, 1);
+    answer_filter (&daemon);
+    g_paste_test_bus_wait_until (selected, &daemon, NULL);
+    g_assert_cmpstr (daemon.selected, ==, daemon.match);
+    close_activation_window (window, &daemon);
+}
+
+/* An Enter waiting on a search the daemon has not answered goes with that
+ * daemon: the next one lists the search again, and is not told to select its
+ * first match -- which would replace the clipboard, and close the window by
+ * default, a daemon's restart after the key was pressed. */
+static void
+test_search_enter_restart (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon old = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+    FakeDaemon successor = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &old);
+
+    old.hold_filters = TRUE;
+    gtk_search_bar_set_search_mode (window->search_bar, TRUE);
+    gtk_editable_set_text (GTK_EDITABLE (window->search_entry), "match");
+    g_signal_emit_by_name (window->search_entry, "activate");
+    g_paste_test_bus_wait_for_count (&old.filters, 1);
+
+    /* Gone with the search unanswered, which the next daemon lists again:
+     * the presence edge, cancelling it, comes before the call's failure. */
+    fake_daemon_stop (&old);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+    g_clear_object (&old.held_filter);
+    fake_daemon_start (&successor);
+    g_paste_test_bus_wait_for_count (&successor.filters, 1);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), successor.connection);
+    g_paste_test_bus_pump (300);
+    g_assert_cmpuint (successor.selects, ==, 0);
+    g_assert_cmpuint (old.selects, ==, 0);
+
+    close_activation_window (window, &successor);
+}
+
+/* Nor does an update listing the same search again while Enter waits on it --
+ * a new copy, a removal -- lose the key: the listing replacing the one Enter
+ * was asked of answers it. */
+static void
+test_search_enter_survives_update (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    daemon.hold_filters = TRUE;
+    gtk_search_bar_set_search_mode (window->search_bar, TRUE);
+    gtk_editable_set_text (GTK_EDITABLE (window->search_entry), "match");
+    g_signal_emit_by_name (window->search_entry, "activate");
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+
+    g_paste_daemon3_emit_raw_update (daemon.skeleton, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0);
+    g_paste_test_bus_wait_for_count (&daemon.filters, 2);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_cmpuint (daemon.selects, ==, 0);
+
+    answer_filter (&daemon);
+    g_paste_test_bus_wait_until (selected, &daemon, NULL);
+    g_assert_cmpstr (daemon.selected, ==, daemon.match);
+    close_activation_window (window, &daemon);
+}
+
+/* A row bound before its item has been read activates all the same, read by its
+ * index, as is one past the rows loaded so far, as far as the history goes. */
+static void
+test_activate_unread_rows (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 500, .hold_items = TRUE };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
+    release_items (&daemon);
+    g_paste_test_bus_wait_until (selected, &daemon, NULL);
+    g_assert_cmpstr (daemon.selected, ==, "00000000-0000-4000-8000-000000000000");
+
+    daemon.selects = 0;
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 400));
+    g_paste_test_bus_wait_until (selected, &daemon, NULL);
+    g_assert_cmpstr (daemon.selected, ==, "00000000-0000-4000-8000-000000000400");
+    g_assert_false (g_paste_ui_history_activate_index (window->history, 500));
+    close_activation_window (window, &daemon);
+}
+
+static void
+count_picks (GPasteUiHistory *history G_GNUC_UNUSED,
+             guint            count,
+             gpointer         user_data)
+{
+    *(guint *) user_data = count;
+}
+
+/* While items are being picked, Ctrl+1 picks the second row as a click would,
+ * and Ctrl+F opens no search over the picks. A search asked for from outside
+ * leaves selection mode first. */
+static void
+test_selection_mode_keys (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 3 };
+    guint picks = 0;
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    g_signal_connect (window->history, "selection-changed", G_CALLBACK (count_picks), &picks);
+    g_assert_true (action_enabled (window, "toggle-search"));
+    on_enter_selection_mode (NULL, window);
+    g_assert_false (action_enabled (window, "toggle-search"));
+
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 1));
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_cmpuint (picks, ==, 1);
+    g_assert_cmpuint (daemon.selects, ==, 0);
+
+    g_paste_ui_window_search (window, "value");
+    g_assert_false (g_paste_ui_history_get_selection_mode (window->history));
+    g_assert_true (gtk_search_bar_get_search_mode (window->search_bar));
+    g_assert_true (action_enabled (window, "toggle-search"));
+    close_activation_window (window, &daemon);
 }
 
 static gboolean
@@ -2277,6 +2595,11 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/entry-focus-released", test_entry_focus_released);
     g_test_add_func ("/ui/daemon-presence/merge-entry-focus-released", test_merge_entry_focus_released);
     g_test_add_func ("/ui/daemon-presence/reply-after-close", test_reply_after_close);
+    g_test_add_func ("/ui/daemon-presence/search-enter-waits", test_search_enter_waits);
+    g_test_add_func ("/ui/daemon-presence/search-enter-restart", test_search_enter_restart);
+    g_test_add_func ("/ui/daemon-presence/search-enter-survives-update", test_search_enter_survives_update);
+    g_test_add_func ("/ui/daemon-presence/activate-unread-rows", test_activate_unread_rows);
+    g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

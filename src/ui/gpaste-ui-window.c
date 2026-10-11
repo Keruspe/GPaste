@@ -304,10 +304,20 @@ on_favourites_toggled (GPasteUiWindow  *self,
     g_paste_ui_history_set_favourites (self->history, gtk_toggle_button_get_active (button));
 }
 
+static void exit_selection_mode                  (GPasteUiWindow *self);
+static void g_paste_ui_window_update_key_capture (GPasteUiWindow *self);
+static void g_paste_ui_window_release_focus      (GPasteUiWindow *self,
+                                                  GtkWidget      *widget);
+
+/* A search asked for from outside is the user's, and the picks name rows of the
+ * list it replaces, so selection mode goes first. */
 static void
 do_search (GPasteUiWindow *self,
            const gchar    *search)
 {
+    if (g_paste_ui_history_get_selection_mode (self->history))
+        exit_selection_mode (self);
+
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (self->header)), TRUE);
     gtk_editable_set_text (GTK_EDITABLE (self->search_entry), search);
 }
@@ -725,11 +735,6 @@ add_window_actions (GPasteUiWindow *self)
     }
 }
 
-static void exit_selection_mode                  (GPasteUiWindow *self);
-static void g_paste_ui_window_update_key_capture (GPasteUiWindow *self);
-static void g_paste_ui_window_release_focus      (GPasteUiWindow *self,
-                                                  GtkWidget      *widget);
-
 /* Ctrl+0-9 activates the item displayed at that index, mirroring the GNOME
  * Shell extension (the index is shown to the left of each item). Only once
  * there is a list: a window presented for the connection-failure banner alone
@@ -812,7 +817,7 @@ on_search_activate (GtkSearchEntry *entry,
     const gchar *search = gtk_editable_get_text (GTK_EDITABLE (entry));
 
     if (self->history && search && *search)
-        g_paste_ui_history_select_first (self->history);
+        g_paste_ui_history_select_first (self->history, search);
 }
 
 static void
@@ -900,7 +905,8 @@ g_paste_ui_window_update_restart (GPasteUiWindow *self)
 static void
 g_paste_ui_window_update_sensitivity (GPasteUiWindow *self)
 {
-    static const gchar * const daemon_actions[] = { "new-item", "new-password", "toggle-search", "track-changes" };
+    /* toggle-search too, which g_paste_ui_window_update_key_capture () holds. */
+    static const gchar * const daemon_actions[] = { "new-item", "new-password", "track-changes" };
     gboolean ready = g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY;
 
     for (guint i = 0; i < G_N_ELEMENTS (daemon_actions); ++i)
@@ -1293,19 +1299,20 @@ g_paste_ui_window_release_focus (GPasteUiWindow *self,
         gtk_window_set_focus (GTK_WINDOW (self), NULL);
 }
 
-/* Typing is how the search bar opens itself, which is an offer only while
- * there is a daemon to search and no items are being picked -- keys belong to
- * the list then. */
+/* Typing is how the search bar opens itself, and Ctrl+F the other way, which
+ * are offers only while there is a daemon to search and no items are being
+ * picked -- keys belong to the list then, and a search typed would narrow the
+ * rows being picked from, dropping the picks. */
 static void
 g_paste_ui_window_update_key_capture (GPasteUiWindow *self)
 {
-    if (!self->search_bar)
-        return;
-
     gboolean capture = !g_paste_ui_history_get_selection_mode (self->history) &&
                        g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY;
 
-    gtk_search_bar_set_key_capture_widget (self->search_bar, (capture) ? GTK_WIDGET (self) : NULL);
+    g_simple_action_set_enabled (G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (self), "toggle-search")), capture);
+
+    if (self->search_bar)
+        gtk_search_bar_set_key_capture_widget (self->search_bar, (capture) ? GTK_WIDGET (self) : NULL);
 }
 
 static void

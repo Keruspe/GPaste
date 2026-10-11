@@ -6,6 +6,9 @@ NEW in 51.2 (UNRELEASED)
 - Fix the keyboard shortcuts leaving out the keys that open an item's menu
 - Fix a refused history switch emptying the name that was typed
 - Fix saving an unchanged item dropping its formatting, and saving an emptied one silently doing nothing
+- Fix Enter in the search pasting the top item instead of the first match when typed quickly
+- Fix Ctrl+0 to Ctrl+9 doing nothing on items not shown yet, and pasting while items are being picked
+- Fix Ctrl+F opening a search that drops the items being picked
 - Fix password names holding a tab or a line break changing after a restart
 - Fix items still showing, but no longer usable, while a migration or passphrase change reloads the history
 - Fix a history just switched away from being listed with the wrong number of items

@@ -55,6 +55,10 @@ struct _GPasteUiHistory
 
     gchar                *search;
     gboolean              favourites; /* show only the pinned items */
+    /* A filter is out, and Enter in the search asked for its first match:
+     * see g_paste_ui_history_select_first (). */
+    gboolean              filtering;
+    gboolean              select_first;
 
     /* Whether the list had the focus before a daemon change hid it, and gets it
      * back once rows are shown again, including after a failed load and retry. */
@@ -183,6 +187,17 @@ on_list_view_mapped (GtkWidget *list_view,
     gtk_widget_grab_focus (list_view);
 }
 
+/* What picking a row is in selection mode, a click and an activation alike. */
+static void
+g_paste_ui_history_toggle_pick (GPasteUiHistory *self,
+                                guint            position)
+{
+    if (gtk_selection_model_is_selected (self->selection_model, position))
+        gtk_selection_model_unselect_item (self->selection_model, position);
+    else
+        gtk_selection_model_select_item (self->selection_model, position, FALSE);
+}
+
 /* In merge mode a plain click should toggle that one row, where the list view
  * would otherwise replace the whole selection, so claim the press before its own
  * gesture runs. The gesture lives on the row widget, which its #GtkListItem owns
@@ -206,11 +221,7 @@ on_row_pressed (GtkGestureClick *gesture,
         return;
 
     gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-
-    if (gtk_selection_model_is_selected (self->selection_model, position))
-        gtk_selection_model_unselect_item (self->selection_model, position);
-    else
-        gtk_selection_model_select_item (self->selection_model, position, FALSE);
+    g_paste_ui_history_toggle_pick (self, position);
 }
 
 /* The list view recycles a small pool of row widgets: "setup" builds one empty
@@ -275,9 +286,11 @@ g_paste_ui_history_unbind_item (GtkListItemFactory *factory G_GNUC_UNUSED,
     g_paste_ui_item_set_index (G_PASTE_UI_ITEM (widget), (guint64) -1);
 }
 
-static void g_paste_ui_history_filter  (GPasteUiHistory *self);
-static void g_paste_ui_history_refresh (GPasteUiHistory *self,
-                                        guint64          from_index);
+static void     g_paste_ui_history_filter            (GPasteUiHistory *self);
+static void     g_paste_ui_history_refresh           (GPasteUiHistory *self,
+                                                      guint64          from_index);
+static gboolean g_paste_ui_history_activate_position (GPasteUiHistory *self,
+                                                      guint64          position);
 
 /* One batch is a viewport's worth of items: enough to fill the visible area so
  * the list always has something to scroll to while more history remains. Until
@@ -465,6 +478,8 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
     {
         g_paste_clear_cancellable (&self->display);
         self->loading = FALSE;
+        self->filtering = FALSE;
+        self->select_first = FALSE;
 
         return;
     }
@@ -475,6 +490,9 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         g_paste_ui_history_filter (self);
         return;
     }
+
+    self->filtering = FALSE;
+    self->select_first = FALSE;
 
     /* Sizing the history is the only call; its name is a cached property, and is
      * needed here only to tell the panel which row to update. That cache is
@@ -602,6 +620,11 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
     if (g_cancellable_is_cancelled (cdata->cancellable))
         return;
 
+    gboolean select_first = self->select_first;
+
+    self->filtering = FALSE;
+    self->select_first = FALSE;
+
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) items = (cdata->searched)
         ? g_paste_client_search_finish (self->client, res, &error)
@@ -646,6 +669,9 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
         g_paste_ui_history_show_answer (self, "non-starred-symbolic", _("No Pinned Items"),
                                         _("Pin an item to keep it out of reach of the size and memory limits."));
     }
+
+    if (select_first && self->size)
+        g_paste_ui_history_activate_position (self, 0);
 }
 
 /* List by uuid rather than by position: a search asks the daemon to match, the
@@ -658,8 +684,11 @@ g_paste_ui_history_filter (GPasteUiHistory *self)
 
     /* This supersedes any positional refresh in flight, and that one now bails
      * before clearing the flag it set. Nothing here grows lazily, so taking the
-     * flag down is the whole of the handover. */
+     * flag down is the whole of the handover. Enter's first match stays asked
+     * for: an update listing the same search again answers it as well, and a
+     * search of its own takes it down (g_paste_ui_history_search ()). */
     self->loading = FALSE;
+    self->filtering = TRUE;
 
     cdata->searched = (self->search != NULL);
 
@@ -685,11 +714,21 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     if (!self->client)
         return;
 
+    /* The same search again while its listing is out -- the search entry's
+     * delay running out after Enter applied it (g_paste_ui_history_select_first
+     * ()) -- leaves that listing be: it answers this one too, and Enter waits
+     * on it. */
+    if (self->filtering && g_paste_str_equal ((search && *search) ? search : NULL, self->search))
+        return;
+
     if (g_paste_str_equal (search, ""))
         g_clear_pointer (&self->search, g_free);
     else
         g_set_str (&self->search, search);
 
+    /* Enter's first match, asked of the search this replaces, is not to be
+     * taken from this one. */
+    self->select_first = FALSE;
     g_paste_ui_history_refresh (self, 0);
 }
 
@@ -713,6 +752,17 @@ g_paste_ui_history_clear_display (GPasteUiHistory *self,
     self->size = 0;
     self->available = 0;
     g_paste_ui_history_model_set_size (self->model, 0);
+
+    /* An Enter waiting on the search given up here goes with it, as the
+     * refresh of a daemon not there drops it: the listing answers at its
+     * cancelled check, which leaves both flags to whoever clears them, and the
+     * next daemon's first listing of that search would select its first match
+     * -- replacing the clipboard, and with close-on-select closing the window.
+     * Whether the listing fails before the presence edge cancels it is the
+     * bus's ordering, which /ui/daemon-presence/search-enter-restart cannot
+     * choose; this makes the order not matter. */
+    self->filtering = FALSE;
+    self->select_first = FALSE;
 
     /* The banner says why a daemon is unavailable. */
     if (waiting)
@@ -802,8 +852,13 @@ on_activate_element_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 /* Rows are only realised while they are on screen, so the item to activate may
- * have no widget to ask: for a search row the model still holds its uuid, and a
- * positional one is at the index it sits at, which is a round trip away. */
+ * have no widget to ask, or one whose fetch has not landed: for a search row the
+ * model still holds its uuid, and a positional one is at the index it sits at,
+ * which is a round trip away. That holds past the rows loaded so far too, as far
+ * as the history goes, which is where Ctrl+9 reaches in a short window.
+ *
+ * In selection mode, activating picks, as a click does: what the row would
+ * paste is not what the mode is for. */
 static gboolean
 g_paste_ui_history_activate_position (GPasteUiHistory *self,
                                       guint64          position)
@@ -813,15 +868,27 @@ g_paste_ui_history_activate_position (GPasteUiHistory *self,
 
     GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (self->model, position);
 
-    if (!item)
+    if (self->selection_mode)
+    {
+        if (!item || !self->selection_model)
+            return FALSE;
+
+        g_paste_ui_history_toggle_pick (self, (guint) position);
+
+        return TRUE;
+    }
+
+    gboolean positional = !self->search && !self->favourites;
+
+    if (!item && !(positional && position < self->available))
         return FALSE;
 
-    GtkWidget *widget = g_paste_ui_history_item_get_widget (item);
+    GtkWidget *widget = (item) ? g_paste_ui_history_item_get_widget (item) : NULL;
 
-    if (widget)
-        return g_paste_ui_item_activate (G_PASTE_UI_ITEM (widget));
+    if (widget && g_paste_ui_item_activate (G_PASTE_UI_ITEM (widget)))
+        return TRUE;
 
-    const gchar *uuid = g_paste_ui_history_item_get_uuid (item);
+    const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
 
     if (uuid)
         g_paste_ui_history_select_uuid (self, uuid);
@@ -893,15 +960,29 @@ on_item_activated (GtkListView *list_view G_GNUC_UNUSED,
 /**
  * g_paste_ui_history_select_first:
  * @self: a #GPasteUiHistory instance
+ * @search: the search the first match is to be of
  *
- * Select the first element
+ * Select the first match of @search, which is what Enter in the search asks
+ * for: once that search is listed, rather than whatever the list shows the
+ * moment the key is pressed -- the entry's delay may not have applied it yet,
+ * or its listing may still be out.
  *
- * returns: whether anything was selected or not
+ * returns: whether anything was, or will be, selected
  */
 gboolean
-g_paste_ui_history_select_first (GPasteUiHistory *self)
+g_paste_ui_history_select_first (GPasteUiHistory *self,
+                                 const gchar     *search)
 {
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
+    g_return_val_if_fail (search, FALSE);
+
+    g_paste_ui_history_search (self, search);
+
+    if (self->filtering)
+    {
+        self->select_first = TRUE;
+        return TRUE;
+    }
 
     return g_paste_ui_history_activate_position (self, 0);
 }
@@ -911,9 +992,11 @@ g_paste_ui_history_select_first (GPasteUiHistory *self)
  * @self: a #GPasteUiHistory instance
  * @index: the position (0-based) of the item to activate
  *
- * Activate the item currently displayed at @index, if any.
+ * Activate the item at @index of the history or the search listed -- read when
+ * its row is not loaded yet, up to what the listing holds -- or, in selection
+ * mode, pick it or leave it out.
  *
- * returns: whether anything was activated or not
+ * Returns: whether there is an item at @index
  */
 gboolean
 g_paste_ui_history_activate_index (GPasteUiHistory *self,
