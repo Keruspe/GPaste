@@ -51,6 +51,7 @@ struct _GPasteHistory
     GPtrArray            *history;
     GHashTable           *by_uuid;
     gsize                 size;
+    guint64               passwords; /* among the items: see g_paste_history_stored_length () */
 
     gchar                *name;
 
@@ -224,6 +225,8 @@ g_paste_history_private_remove (GPasteHistory *self,
     GPasteItem *item = g_ptr_array_index (self->history, index);
 
     self->size -= g_paste_item_get_size (item);
+    if (G_PASTE_IS_PASSWORD_ITEM (item))
+        --self->passwords;
 
     /* Before the steal: the key belongs to the item. */
     g_hash_table_remove (self->by_uuid, g_paste_item_get_uuid (item));
@@ -305,6 +308,7 @@ g_paste_history_private_clear (GPasteHistory *self)
 {
     g_ptr_array_set_size (self->history, 0);
     g_hash_table_remove_all (self->by_uuid);
+    self->passwords = 0;
 }
 
 /* Take over an item list from the storage layer (transfer full) and install it
@@ -321,6 +325,8 @@ g_paste_history_private_set_from_list (GPasteHistory *self,
 
         g_ptr_array_add (self->history, item);
         g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);
+        if (G_PASTE_IS_PASSWORD_ITEM (item))
+            ++self->passwords;
     }
 
     /* The refs moved into the array; only the links are ours to free. */
@@ -344,6 +350,19 @@ g_paste_history_emit_update (GPasteHistory     *self,
                    (uuid) ?: "",
                    position,
                    NULL);
+}
+
+/* How many of the model's items its store holds once they are written, which
+ * is what a history just left is counted as until they are when the write
+ * still out carries no snapshot (g_paste_history_saver_count_pending ()): every
+ * one on an encrypted flavour, all but the passwords otherwise, as
+ * g_paste_storage_backend_stores_item () rules. The passwords are counted as
+ * the model changes, every recorded change asking this, rather than walked
+ * each time. */
+static guint64
+g_paste_history_stored_length (GPasteHistory *self)
+{
+    return self->history->len - ((g_paste_storage_backend_is_encrypted (self->backend)) ? 0 : self->passwords);
 }
 
 /* Have the saver persist a change to the history. @displaced says whether
@@ -378,7 +397,7 @@ g_paste_history_record (GPasteHistory      *self,
         ? g_paste_history_snapshot (self)
         : NULL;
 
-    g_paste_history_saver_record (self->saver, op, self->name, item, uuid, snapshot);
+    g_paste_history_saver_record (self->saver, op, self->name, item, uuid, snapshot, g_paste_history_stored_length (self));
 }
 
 /* A write the saver had out left the store of @name behind the model: see
@@ -767,6 +786,8 @@ _g_paste_history_add (GPasteHistory *self,
 
     g_ptr_array_insert (self->history, 0, item);
     g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);
+    if (G_PASTE_IS_PASSWORD_ITEM (item))
+        ++self->passwords;
     g_steal_pointer (&owned); /* ownership transferred to the history */
 
     if (new_selection && self->stopped)
@@ -1043,6 +1064,10 @@ _g_paste_history_replace (GPasteHistory *self,
      * not run) so we drop it ourselves, and @new takes the same slot. */
     g_hash_table_remove (self->by_uuid, old_uuid);
     g_ptr_array_steal_index (self->history, index);
+    if (G_PASTE_IS_PASSWORD_ITEM (old))
+        --self->passwords;
+    if (G_PASTE_IS_PASSWORD_ITEM (new))
+        ++self->passwords;
     g_object_unref (old);
     g_ptr_array_insert (self->history, index, new);
     g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (new), new);
@@ -1674,7 +1699,7 @@ g_paste_history_flush (GPasteHistory *self)
     if (self->name && !self->unreadable && !g_paste_history_saver_is_loading (self->saver) &&
         g_paste_storage_backend_has_diverged (self->backend, self->name))
     {
-        g_paste_history_saver_record (self->saver, G_PASTE_HISTORY_SAVE_FULL, self->name, NULL, NULL, g_paste_history_snapshot (self));
+        g_paste_history_saver_record (self->saver, G_PASTE_HISTORY_SAVE_FULL, self->name, NULL, NULL, g_paste_history_snapshot (self), g_paste_history_stored_length (self));
         g_paste_history_saver_drain (self->saver);
     }
 }

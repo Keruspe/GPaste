@@ -63,7 +63,8 @@ void     g_paste_history_saver_record        (GPasteHistorySaver  *self,
                                               const gchar         *name,
                                               GPasteItem          *item,
                                               const gchar         *uuid,
-                                              GList               *history);
+                                              GList               *history,
+                                              guint64              count);
 void     g_paste_history_saver_load          (GPasteHistorySaver *self,
                                               const gchar        *name,
                                               gboolean            save_after);

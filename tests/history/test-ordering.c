@@ -45,11 +45,13 @@ typedef struct
 static Barrier barrier;
 static gboolean (*real_write) (GPasteStorageBackend *, const gchar *, const GList *);
 static gboolean (*real_read) (GPasteStorageBackend *, const gchar *, GCancellable *, GList **, gsize *);
+static void (*real_add_item) (GPasteStorageBackend *, const gchar *, GPasteItem *, const GList *);
 
-gboolean
-g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
-                                       const gchar          *name,
-                                       const GList          *items)
+/* Holds the worker writing @name, when the case asked for that, until the case
+ * releases it; answers whether it did. */
+static gboolean
+hold_write (const gchar *name,
+            const GList *items)
 {
     gboolean held = FALSE;
 
@@ -79,16 +81,44 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
         g_mutex_unlock (&barrier.mutex);
     }
 
+    return held;
+}
+
+static void
+mark_written (gboolean held)
+{
+    if (!held)
+        return;
+
+    g_mutex_lock (&barrier.mutex);
+    barrier.written = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+}
+
+gboolean
+g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
+                                       const gchar          *name,
+                                       const GList          *items)
+{
+    gboolean held = hold_write (name, items);
     gboolean written = real_write (backend, name, items);
 
-    if (held)
-    {
-        g_mutex_lock (&barrier.mutex);
-        barrier.written = TRUE;
-        g_mutex_unlock (&barrier.mutex);
-    }
+    mark_written (held);
 
     return written;
+}
+
+/* What an incremental backend is handed for an add, held the same way. */
+void
+g_paste_storage_backend_add_item (GPasteStorageBackend *backend,
+                                  const gchar          *name,
+                                  GPasteItem           *item,
+                                  const GList          *history)
+{
+    gboolean held = hold_write (name, history);
+
+    real_add_item (backend, name, item, history);
+    mark_written (held);
 }
 
 gboolean
@@ -187,12 +217,14 @@ finish_history (GPasteHistory *history)
         ;
 }
 
-/* A history called @name holding one stored item, loaded, with nothing held. */
+/* A history called @name holding one stored item in @storage, loaded, with
+ * nothing held. */
 static void
-fixture (GPasteSettings       **settings,
-         GPasteStorageBackend **backend,
-         GPasteHistory        **history,
-         const gchar           *name)
+fixture_in (GPasteSettings       **settings,
+            GPasteStorageBackend **backend,
+            GPasteHistory        **history,
+            const gchar           *name,
+            GPasteStorage          storage)
 {
     *settings = g_paste_settings_new ();
 
@@ -210,8 +242,8 @@ fixture (GPasteSettings       **settings,
     for (guint i = 0; i < G_N_ELEMENTS (reset_keys); ++i)
         g_paste_settings_reset (*settings, reset_keys[i]);
     g_paste_settings_set_growing_lines (*settings, FALSE);
-    g_paste_settings_set_storage_backend (*settings, G_PASTE_STORAGE_FILE);
-    *backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, *settings);
+    g_paste_settings_set_storage_backend (*settings, storage);
+    *backend = g_paste_storage_backend_new (storage, *settings);
 
     g_autolist (GPasteItem) old = g_list_prepend (NULL, g_paste_text_item_new ("old stored item"));
 
@@ -229,6 +261,15 @@ fixture (GPasteSettings       **settings,
     g_clear_pointer (&barrier.password_name, g_free);
     barrier.password_timeout = 0;
     g_mutex_unlock (&barrier.mutex);
+}
+
+static void
+fixture (GPasteSettings       **settings,
+         GPasteStorageBackend **backend,
+         GPasteHistory        **history,
+         const gchar           *name)
+{
+    fixture_in (settings, backend, history, name, G_PASTE_STORAGE_FILE);
 }
 
 /* What @name holds on disk, as test-history's read_history_ok () reads it: a
@@ -773,6 +814,61 @@ test_count_pending_passwords (void)
     g_assert_cmpuint (g_paste_history_get_size (history, "count-passwords"), ==, 2);
 }
 
+#ifdef G_PASTE_ENABLE_SQLITE
+/* The passwords a write carrying no snapshot is counted without follow the
+ * history as it changes: one an item was made, one deleted, one added. */
+static void
+test_count_pending_password_changes (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture_in (&settings, &backend, &history, "count-changes", G_PASTE_STORAGE_SQLITE);
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_password_item_new ("deleted", "secret", 0));
+    wait_worker ();
+    g_paste_history_add (history, g_paste_text_item_new ("made"));
+
+    g_autofree gchar *made = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 0)));
+    g_autofree gchar *password = g_paste_history_make_password (history, made, "made", 0);
+
+    g_assert_nonnull (password);
+    g_assert_true (g_paste_history_delete_password (history, "deleted"));
+    g_paste_history_add (history, g_paste_password_item_new ("added", "secret", 0));
+    g_paste_history_add (history, g_paste_text_item_new ("last"));
+    g_paste_history_switch (history, "count-changes-next");
+
+    /* "last" and the stored item, of four. */
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-changes"), ==, 2);
+    release_worker ();
+    wait_load (history);
+    finish_history (history);
+}
+
+/* An incremental store's add carries no snapshot, and a history just left is
+ * still counted by what its writes still out leave it holding. */
+static void
+test_count_pending_incremental (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture_in (&settings, &backend, &history, "count-incremental", G_PASTE_STORAGE_SQLITE);
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+    wait_worker ();
+    g_paste_history_switch (history, "count-incremental-next");
+
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-incremental"), ==, 2);
+    release_worker ();
+    wait_load (history);
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-incremental"), ==, 2);
+}
+#endif
+
 /* A password renamed while a write holding it is out: the write stores the
  * name and timeout it was recorded with, the rename putting a new item in its
  * place rather than writing over the one a worker reads. */
@@ -890,8 +986,10 @@ main (int    argc,
     barrier.main_thread = g_thread_self ();
     real_write = dlsym (RTLD_NEXT, "g_paste_storage_backend_write_history");
     real_read = dlsym (RTLD_NEXT, "g_paste_storage_backend_read_history");
+    real_add_item = dlsym (RTLD_NEXT, "g_paste_storage_backend_add_item");
     g_assert_nonnull (real_write);
     g_assert_nonnull (real_read);
+    g_assert_nonnull (real_add_item);
 
     g_test_add_func ("/history-ordering/delete-pending", test_delete_pending);
     g_test_add_func ("/history-ordering/delete-other", test_delete_other);
@@ -908,6 +1006,10 @@ main (int    argc,
     g_test_add_func ("/history-ordering/count-pending-passwords", test_count_pending_passwords);
     g_test_add_data_func ("/history-ordering/count-pending-images-off", GINT_TO_POINTER (TRUE), test_count_pending_settings);
     g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (FALSE), test_count_pending_settings);
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_func ("/history-ordering/count-pending-password-changes", test_count_pending_password_changes);
+    g_test_add_func ("/history-ordering/count-pending-incremental", test_count_pending_incremental);
+#endif
     g_test_add_func ("/history-ordering/rename-during-write", test_rename_during_write);
     g_test_add_func ("/history-ordering/remove-image-during-write", test_remove_image_during_write);
     g_test_add_func ("/history-ordering/flush-holds-pending-load", test_flush_holds_pending_load);

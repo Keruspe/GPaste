@@ -262,7 +262,7 @@ record (GPasteHistorySaver *saver,
         const gchar        *name,
         const gchar        *head)
 {
-    g_paste_history_saver_record (saver, G_PASTE_HISTORY_SAVE_FULL, name, NULL, NULL, g_list_prepend (NULL, g_paste_text_item_new (head)));
+    g_paste_history_saver_record (saver, G_PASTE_HISTORY_SAVE_FULL, name, NULL, NULL, g_list_prepend (NULL, g_paste_text_item_new (head)), 1);
 }
 
 /* A store rewritten whole coalesces its writes, but each history's on its
@@ -301,7 +301,7 @@ test_incremental_load_waits (void)
     gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
 
     g_assert_true (g_paste_storage_backend_is_incremental (G_PASTE_STORAGE_BACKEND (backend)));
-    g_paste_history_saver_record (saver, G_PASTE_HISTORY_SAVE_ADD, "A", added, NULL, NULL);
+    g_paste_history_saver_record (saver, G_PASTE_HISTORY_SAVE_ADD, "A", added, NULL, NULL, 1);
 
     g_mutex_lock (&backend->mutex);
     while (!backend->started)
