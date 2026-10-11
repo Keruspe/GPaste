@@ -249,6 +249,12 @@ _g_paste_image_item_new (const gchar *cache_path,
                          GdkTexture  *image,
                          gchar       *checksum)
 {
+    /* What a store hands over names the image's file and is written back as it
+     * is, from any flavour into any other: one that is not a checksum is
+     * computed again rather than taken. */
+    if (checksum && !g_paste_image_item_is_checksum (checksum))
+        g_clear_pointer (&checksum, g_free);
+
     /* An image item's value is its checksum: what says *which* image this is,
      * wherever its bytes happen to live. An item being loaded off a file has
      * none yet -- activating it below is what computes one -- so the value
@@ -320,6 +326,23 @@ g_paste_image_item_compute_checksum (GdkTexture *image)
 }
 
 /**
+ * g_paste_image_item_is_checksum:
+ * @checksum: (nullable): a string
+ *
+ * Whether @checksum is one g_paste_image_item_compute_checksum() could have
+ * produced: a SHA-256, in lowercase hex.
+ *
+ * Returns: whether @checksum is an image's checksum
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_image_item_is_checksum (const gchar *checksum)
+{
+    gsize length = 2 * (gsize) g_checksum_type_get_length (G_CHECKSUM_SHA256);
+
+    return checksum && strspn (checksum, "0123456789abcdef") == length && !checksum[length];
+}
+
+/**
  * g_paste_image_item_new:
  * @texture: (transfer none): the GdkTexture we want to be contained in the #GPasteImageItem
  *
@@ -386,7 +409,8 @@ _g_paste_image_item_new_from_bytes (const gchar *cache_path,
  * g_paste_image_item_new_from_bytes:
  * @png: the encoded PNG we want to be contained in the #GPasteImageItem
  * @date: (transfer none): the date at which the image was created
- * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute
+ *            it, as one that is not a checksum is
  *
  * Create a new instance of #GPasteImageItem from its encoded bytes (e.g. a
  * storage backend's blob), touching no file at all: the item carries the image
@@ -411,7 +435,8 @@ g_paste_image_item_new_from_bytes (GBytes      *png,
  * @path: the on-disk location the image was stored with
  * @png: the encoded PNG we want to be contained in the #GPasteImageItem
  * @date: (transfer none): the date at which the image was created
- * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute
+ *            it, as one that is not a checksum is
  *
  * Like g_paste_image_item_new_from_bytes() but for bytes that came out of a
  * file (e.g. the encrypted file backend reading an image side file): the item
@@ -438,7 +463,8 @@ g_paste_image_item_new_from_bytes_at_path (const gchar *path,
  * g_paste_image_item_new_from_file:
  * @path: the file holding the image we want to be contained in the #GPasteImageItem
  * @date: (transfer none): the date at which the image was created
- * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute
+ *            it, as one that is not a checksum is
  *
  * Create a new instance of #GPasteImageItem from a file, which becomes the
  * item's cache path: the image is read from it now (that is what computes the

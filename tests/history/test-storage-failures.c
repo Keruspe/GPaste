@@ -786,6 +786,41 @@ read_version_1 (GPasteSettings *settings,
     return TRUE;
 }
 
+/* A checksum names an image's file and is written back as it is, from any
+ * flavour into any other: one a database row holds that is not a checksum is
+ * computed again, as the file flavour's read does with its attribute. */
+static void
+test_sqlite_checksum_refused (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "checksum-refused";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    const guchar pixel[] = { 83, 93, 103, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+    const gchar *checksum = g_paste_image_item_get_checksum (items->data);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autoptr (sqlite3) db = NULL;
+
+        g_paste_storage_backend_write_history (backend, name, items);
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "UPDATE items SET checksum = '../../escaped\" kind=\"Password';", NULL, NULL, NULL), ==, SQLITE_OK);
+    }
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) loaded = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &loaded, &size));
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+}
+
 /* A version 1 database whose upgrade fails at the statement @data names has
  * to come out of it exactly as it went in, so that the next open upgrades it
  * whole. */
@@ -1832,6 +1867,7 @@ main (int    argc,
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);
     g_test_add_data_func ("/storage/sqlite/schema/version", "PRAGMA user_version = 3", test_schema_failure);
     g_test_add_data_func ("/storage/sqlite/schema/commit", "COMMIT;", test_schema_failure);
+    g_test_add_func ("/storage/sqlite/checksum-refused", test_sqlite_checksum_refused);
     g_test_add_func ("/storage/sqlite/schema/unreadable-version", test_schema_version_unreadable);
     g_test_add_func ("/storage/sqlite/schema/upgraded-meanwhile", test_schema_upgraded_meanwhile);
 #endif

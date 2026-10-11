@@ -492,7 +492,10 @@ _g_paste_storage_backend_list_histories_by_extension (GPasteStorageBackend *self
         g_autofree gchar *name = g_strdup (*file);
 
         name[strlen (name) - suffix_len] = '\0';
-        g_strv_builder_take (history_names, g_steal_pointer (&name));
+        /* A stray file -- ".xml", or one an older GPaste wrote for an empty name
+         * -- names nothing a history could be read, counted or deleted under. */
+        if (g_paste_util_history_name_is_valid (name))
+            g_strv_builder_take (history_names, g_steal_pointer (&name));
     }
 
     return g_strv_builder_end (history_names);

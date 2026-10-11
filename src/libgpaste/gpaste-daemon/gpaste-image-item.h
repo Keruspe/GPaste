@@ -38,5 +38,6 @@ GPasteItem      *g_paste_image_item_new_from_bytes_at_path (const gchar *path,
  * libgpaste-gtk4: this library must not pull the widget stack into
  * gnome-shell, which cannot initialise it. */
 gchar           *g_paste_image_item_compute_checksum       (GdkTexture  *image);
+gboolean         g_paste_image_item_is_checksum            (const gchar *checksum);
 
 G_END_DECLS

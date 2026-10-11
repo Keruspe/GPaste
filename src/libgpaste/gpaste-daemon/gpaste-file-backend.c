@@ -323,10 +323,14 @@ static gboolean
 _g_paste_file_backend_is_image_file_name (const gchar *file_name,
                                           gboolean     encrypted)
 {
-    const gsize checksum_length = 2 * 32; /* SHA-256, in hex */
+    const gchar *suffix = (encrypted) ? ".pngs" : ".png";
 
-    return strspn (file_name, "0123456789abcdef") == checksum_length &&
-           g_str_equal (file_name + checksum_length, (encrypted) ? ".pngs" : ".png");
+    if (!g_str_has_suffix (file_name, suffix))
+        return FALSE;
+
+    g_autofree gchar *checksum = g_strndup (file_name, strlen (file_name) - strlen (suffix));
+
+    return g_paste_image_item_is_checksum (checksum);
 }
 
 /* Delete the image files under images/@history_name/ that no history of that
@@ -685,13 +689,29 @@ typedef struct
     gboolean              favourite;
     guint                 timeout;
     gchar                *uuid;
-    gchar                *date;
+    /* The image date the attribute was checked as, kept rather than parsed a
+     * second time. */
+    GDateTime            *date;
     gchar                *checksum;
     gchar                *name;
     gchar                *text;
     GSList               *special_values;
     HistoryVersion        version;
     GPasteSpecialMime     mime;
+    /* A <value> whose mime this build does not know, which is skipped rather
+     * than taken for the plain value @mime INVALID otherwise stands for. */
+    gboolean              unknown_mime;
+    /* The uuids of the items read so far, borrowed from them, so that one
+     * repeated is given a new one in a single lookup. */
+    GHashTable           *uuids;
+    /* An element was found where the format has none, or GMarkup reported an
+     * error, which only a document we did not write has: read as unreadable,
+     * so that what the parse made of it is never saved over it. */
+    gboolean              malformed;
+    /* How deep inside an element this version does not know the parse is,
+     * which is read around whole: what it holds, known elements included, is
+     * a newer GPaste's or no GPaste's, and not the item's around it. */
+    guint                 unknown_depth;
 } Data;
 
 /* Where the parser currently is, for a diagnostic. An encrypted history is
@@ -794,6 +814,7 @@ parse_kind_name (GPasteItemKind kind)
     {                                                                                    \
         WARN_AT ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT,       \
                  x, data->state);                                                        \
+        data->malformed = TRUE;                                                          \
         return;                                                                          \
     }
 #define ASSERT_STATE(x) ASSERT_STATE_FULL (data->state == (x), x)
@@ -812,21 +833,6 @@ parse_kind_name (GPasteItemKind kind)
         data->state = y;                                                          \
     } while (0)
 
-static gboolean
-history_contains_uuid (const GList *history,
-                       const gchar *uuid)
-{
-    for (; history; history = g_list_next (history))
-    {
-        GPasteItem *item = history->data;
-
-        if (g_paste_str_equal (g_paste_item_get_uuid (item), uuid))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
 static void
 start_tag (GMarkupParseContext *context,
            const gchar         *element_name,
@@ -836,6 +842,12 @@ start_tag (GMarkupParseContext *context,
            GError             **error G_GNUC_UNUSED)
 {
     Data *data = user_data;
+
+    if (data->unknown_depth)
+    {
+        ++data->unknown_depth;
+        return;
+    }
 
     if (g_paste_str_equal (element_name, "history"))
     {
@@ -867,7 +879,7 @@ start_tag (GMarkupParseContext *context,
         data->favourite = FALSE;
         data->timeout = 0;
         g_clear_pointer (&data->uuid, g_free);
-        g_clear_pointer (&data->date, g_free);
+        g_clear_pointer (&data->date, g_date_time_unref);
         g_clear_pointer (&data->checksum, g_free);
         g_clear_pointer (&data->name, g_paste_util_free_cleartext);
         g_clear_pointer (&data->text, g_paste_util_free_cleartext);
@@ -880,10 +892,12 @@ start_tag (GMarkupParseContext *context,
                 if (data->type == G_PASTE_ITEM_KIND_INVALID)
                     WARN_AT_ATTR (a, "Unknown item kind: %s", *v);
             }
+            /* Each attribute may be given twice, which GMarkup lets through:
+             * the last one is what holds. */
             else if (g_paste_str_equal (*a, "uuid"))
             {
-                if (g_uuid_string_is_valid (*v) && !history_contains_uuid (data->history, *v))
-                    data->uuid = g_strdup (*v);
+                if (g_uuid_string_is_valid (*v) && !g_hash_table_contains (data->uuids, *v))
+                    g_set_str (&data->uuid, *v);
             }
             /* An attribute that does not belong to this kind is skipped, not a
              * reason to abandon the item: returning here would also drop the
@@ -895,7 +909,21 @@ start_tag (GMarkupParseContext *context,
                     WARN_AT_ATTR (a, "Expected an Image item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
-                data->date = g_strdup (*v);
+
+                gint64 date = 0;
+                g_autoptr (GDateTime) date_time = NULL;
+
+                /* Checked here rather than when the item is built, so that a
+                 * count skips what a read would: a date GDateTime cannot hold is
+                 * as good as none. */
+                if (!g_ascii_string_to_signed (*v, 10, G_MININT64, G_MAXINT64, &date, NULL) ||
+                    !(date_time = g_date_time_new_from_unix_local (date)))
+                {
+                    WARN_AT_ATTR (a, "Invalid image date: %s", *v);
+                    continue;
+                }
+                g_clear_pointer (&data->date, g_date_time_unref);
+                data->date = g_steal_pointer (&date_time);
             }
             else if (g_paste_str_equal (*a, "checksum"))
             {
@@ -904,7 +932,14 @@ start_tag (GMarkupParseContext *context,
                     WARN_AT_ATTR (a, "Expected an Image item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
-                data->checksum = g_strdup (*v);
+                /* Recomputed from the image when it is not one, which the item
+                 * would do anyway: said here, where the document is. */
+                if (!g_paste_image_item_is_checksum (*v))
+                {
+                    WARN_AT_ATTR (a, "Invalid image checksum");
+                    continue;
+                }
+                g_set_str (&data->checksum, *v);
             }
             else if (g_paste_str_equal (*a, "name"))
             {
@@ -913,6 +948,7 @@ start_tag (GMarkupParseContext *context,
                     WARN_AT_ATTR (a, "Expected a Password item, but the kind is %s", parse_kind_name (data->type));
                     continue;
                 }
+                g_clear_pointer (&data->name, g_paste_util_free_cleartext);
                 data->name = g_strdup (*v);
             }
             else if (g_paste_str_equal (*a, "timeout"))
@@ -945,11 +981,14 @@ start_tag (GMarkupParseContext *context,
     {
         SWITCH_STATE (IN_ITEM, IN_VALUE);
         data->mime = G_PASTE_SPECIAL_MIME_INVALID;
+        data->unknown_mime = FALSE;
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "mime"))
             {
                 GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_get (G_PASTE_TYPE_SPECIAL_MIME), *v);
+
+                data->unknown_mime = !gev;
                 if (gev)
                     data->mime = gev->value;
                 else
@@ -958,7 +997,13 @@ start_tag (GMarkupParseContext *context,
         }
     }
     else
+    {
         WARN_AT ("Unknown element: %s", element_name);
+        /* A value is text: markup in one makes it no value GPaste wrote. */
+        if (data->state == IN_VALUE || data->state == IN_VALUE_WITH_TEXT)
+            data->malformed = TRUE;
+        data->unknown_depth = 1;
+    }
 }
 
 /* Where an image of the history read is: in its images directory, under the
@@ -1019,8 +1064,8 @@ add_item (Data *data)
 
     /* Every kind is built from the item's value, and every constructor rejects a
      * %NULL one with a critical: an <item> with no usable kind, or with no
-     * <value> at all (absent, empty or whitespace-only), carries nothing we can
-     * restore and is skipped — along with its special values, released below. */
+     * <value> at all (absent or empty), carries nothing we can restore and is
+     * skipped — along with its special values, released below. */
     GPasteItemKind type = (data->text) ? data->type : G_PASTE_ITEM_KIND_INVALID;
 
     if (type == G_PASTE_ITEM_KIND_INVALID)
@@ -1043,9 +1088,7 @@ add_item (Data *data)
     case G_PASTE_ITEM_KIND_IMAGE:
         if (data->images_support && data->date)
         {
-            g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
-                                                                                                NULL, /* end */
-                                                                                                0)); /* base */
+            GDateTime *date_time = data->date;
             /* The encrypted flavor stores the image in an encrypted side file
              * rather than at the referenced (plaintext) path. Either way the
              * item keeps the path it was read at: that is where its
@@ -1072,6 +1115,7 @@ add_item (Data *data)
             data->uuid = g_uuid_string_random ();
 
         g_paste_item_set_uuid (item, data->uuid);
+        g_hash_table_add (data->uuids, (gpointer) g_paste_item_get_uuid (item));
         g_paste_item_set_favourite (item, data->favourite);
         /* Prepended and reversed once at the end of the parse: appending walks
          * the list per item, which is quadratic over a history that goes up to
@@ -1109,27 +1153,34 @@ end_tag (GMarkupParseContext *context,
 {
     Data *data = user_data;
 
+    if (data->unknown_depth)
+    {
+        --data->unknown_depth;
+        return;
+    }
+
     if (g_paste_str_equal (element_name, "history"))
         SWITCH_STATE (IN_HISTORY, END);
     else if (g_paste_str_equal (element_name, "item"))
     {
+        /* Leave the item even when the version is unknown: staying inside it
+         * would make every element that follows fail its assert — including the
+         * next <item>, whose scratch reset would then be skipped, so the items
+         * of an unreadable history would bleed into each other. And add nothing
+         * from any other state: an </item> closing no item of ours closes one
+         * whose start was refused, and what is in scratch is the item before. */
+        ASSERT_STATE (IN_ITEM);
+
         /* An unknown (or missing) version collects neither the item's value nor
          * its special values (see on_text), so there is nothing to restore.
          * A favourite is always taken: the cap does not apply to it, and
          * current_size counts only the items it does apply to. */
         if (data->version != HISTORY_INVALID && (data->favourite || data->current_size < data->max_size))
             add_item (data);
-        /* Leave the item even when the version is unknown: staying inside it
-         * would make every element that follows fail its assert — including the
-         * next <item>, whose scratch reset would then be skipped, so the items
-         * of an unreadable history would bleed into each other. IN_ITEM is the
-         * only state we can be in here: no format carries text inside <item>. */
-        SWITCH_STATE (IN_ITEM, IN_HISTORY);
+        data->state = IN_HISTORY;
     }
     else if (g_paste_str_equal (element_name, "value"))
         SWITCH_STATE_OR_EMPTY (IN_VALUE_WITH_TEXT, IN_VALUE, IN_ITEM);
-    else
-        WARN_AT ("Unknown element: %s", element_name);
 }
 
 static void
@@ -1140,6 +1191,9 @@ on_text (GMarkupParseContext *context,
          GError             **error G_GNUC_UNUSED)
 {
     Data *data = user_data;
+
+    if (data->unknown_depth)
+        return;
 
     g_autofree gchar *txt = g_strndup (text, text_len);
     switch (data->state)
@@ -1162,25 +1216,37 @@ on_text (GMarkupParseContext *context,
         if (data->version == HISTORY_2_0)
         {
             g_autofree gchar *value = g_paste_util_xml_decode (txt);
-            if (*g_strstrip (txt))
+            gboolean plain = data->mime == G_PASTE_SPECIAL_MIME_INVALID && !data->unknown_mime;
+
+            /* GMarkup hands the runs either side of a CDATA section over apart
+             * from it, so whitespace alone may be the indentation around the
+             * value rather than the value: it stands only until a run that is
+             * not whitespace comes. A plain value of whitespace alone -- blank
+             * lines copied -- is written verbatim and kept, where a special
+             * value is base64, which whitespace alone is none of. */
+            if (!*g_strstrip (txt))
             {
-                SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
-                if (data->mime == G_PASTE_SPECIAL_MIME_INVALID)
-                    g_set_str_take (&data->text, g_steal_pointer (&value));
-                else
+                if (plain && *value && !data->text)
+                    data->text = g_steal_pointer (&value);
+                break;
+            }
+
+            SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
+            if (plain)
+                g_set_str_take (&data->text, g_steal_pointer (&value));
+            else if (!data->unknown_mime)
+            {
+                gsize raw_length;
+                g_autofree guchar *raw = g_base64_decode (value, &raw_length);
+
+                /* Base64 decoding to nothing (a damaged file) is no
+                 * representation, which GPasteBinaryData refuses; the item is
+                 * still read from its plain value. */
+                if (raw_length)
                 {
-                    gsize raw_length;
-                    g_autofree guchar *raw = g_base64_decode (value, &raw_length);
+                    GBytes *bytes = g_bytes_new_take (g_steal_pointer (&raw), raw_length);
 
-                    /* Base64 decoding to nothing (a damaged file) is no
-                     * representation, which GPasteBinaryData refuses; the item
-                     * is still read from its plain value. */
-                    if (raw_length)
-                    {
-                        GBytes *bytes = g_bytes_new_take (g_steal_pointer (&raw), raw_length);
-
-                        data->special_values = g_slist_prepend (data->special_values, g_paste_binary_data_new (data->mime, bytes));
-                    }
+                    data->special_values = g_slist_prepend (data->special_values, g_paste_binary_data_new (data->mime, bytes));
                 }
             }
         }
@@ -1198,8 +1264,11 @@ on_error (GMarkupParseContext *context,
           GError              *error,
           gpointer             user_data)
 {
-    const Data *data = user_data;
+    Data *data = user_data;
 
+    /* GMarkup reads on past a CDATA section not in UTF-8, the parse still
+     * succeeding without the item that held it. */
+    data->malformed = TRUE;
     WARN_AT ("error: %s", error->message);
 }
 
@@ -1365,6 +1434,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
             NULL,
             on_error
         };
+        g_autoptr (GHashTable) uuids = g_hash_table_new (g_str_hash, g_str_equal);
         Data data = {
             self,
             name,
@@ -1387,8 +1457,13 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
             NULL, /* text */
             NULL, /* special_values */
             HISTORY_INVALID,
-            G_PASTE_SPECIAL_MIME_INVALID
+            G_PASTE_SPECIAL_MIME_INVALID,
+            FALSE, /* unknown_mime: set per value from its "mime" attribute */
+            uuids,
+            FALSE, /* malformed */
+            0, /* unknown_depth */
         };
+
         g_autoptr (GMarkupParseContext) ctx = g_markup_parse_context_new (&parser,
                                                                           G_MARKUP_TREAT_CDATA_AS_TEXT,
                                                                           &data,
@@ -1447,7 +1522,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
         }
 
         g_clear_pointer (&data.uuid, g_free);
-        g_clear_pointer (&data.date, g_free);
+        g_clear_pointer (&data.date, g_date_time_unref);
         g_clear_pointer (&data.checksum, g_free);
         g_clear_pointer (&data.name, g_paste_util_free_cleartext);
         g_clear_pointer (&data.text, g_paste_util_free_cleartext);
@@ -1461,7 +1536,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
          * the caller persist that empty model over the file on the very next
          * clipboard change — destroying exactly what the untouched-file rule
          * above just protected. */
-        return parsed && data.version != HISTORY_INVALID;
+        return parsed && data.state == END && !data.malformed && data.version != HISTORY_INVALID;
     }
     else if (!count_only)
     {

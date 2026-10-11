@@ -2901,6 +2901,148 @@ test_file_v1_refused_and_preserved (void)
     G_PASTE_TEST_TRAP_SUBPROCESS ("*History version 1.0 is no longer supported*");
 }
 
+/* What a plain history document reads as: written as is under @name, then read
+ * back, its read having to be @readable, and its items' values joined by '|'. */
+static gchar *
+read_document (const gchar *name,
+               const gchar *items,
+               gboolean     readable)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+    g_autofree gchar *document = g_strconcat ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<history version=\"2.0\">\n", items, "</history>\n", NULL);
+    gboolean ok = FALSE;
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_true (g_file_set_contents (path, document, -1, NULL));
+
+    g_autolist (GPasteItem) loaded = read_history_full (backend, name, &ok);
+    g_autoptr (GStrvBuilder) values = g_strv_builder_new ();
+
+    g_assert_cmpint (ok, ==, readable);
+    for (const GList *l = loaded; l; l = l->next)
+        g_strv_builder_add (values, g_paste_item_get_real_value (l->data));
+
+    g_auto (GStrv) joined = g_strv_builder_end (values);
+
+    return g_strjoinv ("|", joined);
+}
+
+/* What the parser makes of a document no GPaste wrote. A value under a mime this
+ * build does not know is dropped, not taken for the plain value; a value of
+ * whitespace alone is kept, the indentation around a CDATA section is not. An
+ * element out of place makes the document unreadable rather than read
+ * around, which an </item> re-adding the item before it, or a nested
+ * <history> closing the document early, would have been, and so does a value
+ * not in UTF-8, which GMarkup reads on past without its item, or markup in a
+ * value; an element this version does not know is read around, nothing in it
+ * taken for the item's own. An image date
+ * GDateTime cannot hold, or a checksum that is not a SHA-256, is refused as
+ * data -- the checksum then recomputed -- and no history name the format
+ * refuses is listed. */
+static void
+test_file_parser_malformed (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        g_autofree gchar *mime = read_document ("parser-mime",
+                                                "  <item kind=\"Text\"><value><![CDATA[the plain text]]></value>"
+                                                "<value mime=\"text-from-the-future\"><![CDATA[QkFTRTY0]]></value></item>\n",
+                                                TRUE);
+        g_autofree gchar *blank = read_document ("parser-blank",
+                                                 "  <item kind=\"Text\"><value><![CDATA[\n\n\n\n]]></value></item>\n"
+                                                 "  <item kind=\"Text\"><value>\n    <![CDATA[indented]]>\n  </value></item>\n",
+                                                 TRUE);
+        g_autofree gchar *nested_item = read_document ("parser-nested-item",
+                                                       "  <item kind=\"Text\"><value>a</value><item kind=\"Text\"><value>b</value></item></item>\n",
+                                                       FALSE);
+        g_autofree gchar *nested_history = read_document ("parser-nested-history",
+                                                          "  <item kind=\"Text\"><value>a</value></item><history></history>\n"
+                                                          "  <item kind=\"Text\"><value>b</value></item>\n",
+                                                          FALSE);
+        g_autofree gchar *notes = read_document ("parser-unknown-in-item",
+                                                 "  <item kind=\"Text\"><value><![CDATA[own]]></value>"
+                                                 "<notes><value><![CDATA[a note]]></value></notes></item>\n",
+                                                 TRUE);
+        g_autofree gchar *wrapped = read_document ("parser-unknown-wrapping",
+                                                   "  <item kind=\"Text\"><future><value>inside</value></future>"
+                                                   "<value>own too</value></item>\n",
+                                                   TRUE);
+
+        g_assert_cmpstr (notes, ==, "own");
+        g_assert_cmpstr (wrapped, ==, "own too");
+        g_free (read_document ("parser-markup-in-value",
+                               "  <item kind=\"Text\"><value>before<b>bold</b>after</value></item>\n",
+                               FALSE));
+        g_free (read_document ("parser-bad-utf8",
+                               "  <item kind=\"Text\"><value><![CDATA[a value damaged \xc3]]></value></item>\n"
+                               "  <item kind=\"Text\"><value><![CDATA[another value damaged \xff]]></value></item>\n"
+                               "  <item kind=\"Text\"><value><![CDATA[intact]]></value></item>\n",
+                               FALSE));
+        g_autofree gchar *date = read_document ("parser-date",
+                                                "  <item kind=\"Image\" date=\"99999999999999\"><value>/nowhere.png</value></item>\n",
+                                                TRUE);
+
+        g_assert_cmpstr (mime, ==, "the plain text");
+        g_assert_cmpstr (blank, ==, "\n\n\n\n|indented");
+        g_assert_cmpstr (nested_item, ==, "b");
+        g_assert_cmpstr (nested_history, ==, "a");
+        g_assert_cmpstr (date, ==, "");
+
+        g_autoptr (GBytes) png = test_png_bytes_colored (45, 46, 47);
+        g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+        g_autofree gchar *png_path = g_build_filename (history_dir, "parser-checksum.png", NULL);
+
+        g_assert_true (g_file_set_contents (png_path, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+
+        g_autofree gchar *image = g_strdup_printf ("  <item kind=\"Image\" date=\"1234567890\" checksum=\"../../escaped&quot;x\"><value>%s</value></item>\n", png_path);
+        g_autofree gchar *checksum = read_document ("parser-checksum", image, TRUE);
+
+        g_assert_cmpuint (strlen (checksum), ==, 64);
+        g_assert_cmpuint (strspn (checksum, "0123456789abcdef"), ==, 64);
+
+        /* A date is restored as the decimal it was checked as, a leading zero
+         * included. */
+        {
+            g_autoptr (GPasteSettings) images = g_paste_settings_new ();
+            g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, images);
+            g_autofree gchar *padded_path = g_paste_util_get_history_file_path ("parser-padded-date", "xml");
+            g_autofree gchar *padded = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<history version=\"2.0\">\n"
+                                                        "  <item kind=\"Image\" date=\"01234567890\"><value>%s</value></item>\n"
+                                                        "</history>\n", png_path);
+            gboolean ok = FALSE;
+
+            g_paste_settings_set_images_support (images, TRUE);
+            g_assert_true (g_file_set_contents (padded_path, padded, -1, NULL));
+
+            g_autolist (GPasteItem) loaded = read_history_full (file, "parser-padded-date", &ok);
+
+            g_assert_true (ok);
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+            g_assert_cmpint (g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (loaded->data)), ==, 1234567890);
+        }
+
+        g_autofree gchar *stray = g_build_filename (history_dir, ".xml", NULL);
+
+        g_assert_true (g_file_set_contents (stray, "", -1, NULL));
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
+
+        g_assert_nonnull (names);
+        g_assert_false (g_strv_contains ((const gchar * const *) names, ""));
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Unknown mime*");
+    g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
+}
+
 /* A history written by a newer GPaste (an unknown <history version=>) is a read
  * *failure*, not an empty one: every item is skipped, so passing it off as empty
  * would have the very next clipboard change overwrite it. Once loaded it must
@@ -5016,6 +5158,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
     add_test ("/history/file_sweep_bounds", test_file_sweep_bounds);
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
+    add_test ("/history/file_parser_malformed", test_file_parser_malformed);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     add_test ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);
     add_test ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
