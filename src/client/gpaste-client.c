@@ -324,52 +324,6 @@ g_paste_about (Context *ctx G_GNUC_UNUSED,
     return EXIT_SUCCESS;
 }
 
-#ifdef G_OS_UNIX
-/* Whether the daemon owning the name predates this interface -- a GPaste 45 or
- * 50, which knows no Reexecute here but re-executes on SIGUSR1 -- rather than
- * being a current one that owns the name but has yet to export anything,
- * settling its storage behind a prompt that signal would tear down. GDBus
- * answers both with an unknown method, so the daemon's path is asked what it
- * serves. */
-static gboolean
-legacy_daemon (GPasteClient *client)
-{
-    g_autoptr (GVariant) answer = g_dbus_connection_call_sync (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)),
-                                                               G_PASTE_BUS_NAME, G_PASTE_DAEMON_OBJECT_PATH,
-                                                               "org.freedesktop.DBus.Introspectable", "Introspect",
-                                                               NULL, G_VARIANT_TYPE ("(s)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL);
-    const gchar *xml = NULL;
-
-    if (!answer)
-        return FALSE;
-
-    g_variant_get (answer, "(&s)", &xml);
-
-    g_autoptr (GDBusNodeInfo) node = g_dbus_node_info_new_for_xml (xml, NULL);
-
-    return node && g_dbus_node_info_lookup_interface (node, "org.gnome.GPaste2");
-}
-
-/* The process owning the name, as the bus knows it, or -1. */
-static GPid
-name_owner_pid (GPasteClient *client)
-{
-    g_autoptr (GVariant) answer = g_dbus_connection_call_sync (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)),
-                                                               "org.freedesktop.DBus", "/org/freedesktop/DBus",
-                                                               "org.freedesktop.DBus", "GetConnectionUnixProcessID",
-                                                               g_variant_new ("(s)", G_PASTE_BUS_NAME), G_VARIANT_TYPE ("(u)"),
-                                                               G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL);
-    guint32 pid = 0;
-
-    if (!answer)
-        return (GPid) -1;
-
-    g_variant_get (answer, "(u)", &pid);
-
-    return (GPid) pid;
-}
-#endif
-
 /* A daemon that honours the re-exec tears its D-Bus connection down before
  * replying, so @triggered is already TRUE for the expected missing reply; this
  * only covers an unsupported method by signalling the recorded daemon pid. */
@@ -378,25 +332,17 @@ reexec_fallback (GPasteClient *client,
                  gboolean      triggered,
                  GError      **error)
 {
-#ifdef G_OS_UNIX
-    /* Only an unsupported method warrants the legacy signal path. A daemon's
-     * refusal (including an expiry deadline) must reach the caller unchanged. */
-    if (!triggered && error && g_error_matches (*error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD) && legacy_daemon (client))
+    /* Only an unsupported method warrants the legacy signal path, which
+     * g_paste_util_reexecute_legacy_daemon () takes only for a daemon that
+     * predates this interface. A daemon's refusal (including an expiry
+     * deadline) must reach the caller unchanged, and so does the unsupported
+     * method when the signal cannot be sent. */
+    if (!triggered && error && g_error_matches (*error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD) &&
+        g_paste_util_reexecute_legacy_daemon (client, NULL))
     {
-        GPid pid = g_paste_util_read_pid_file ("Daemon");
-
-        /* The pid file names the daemon that wrote it, and outlives it: only
-         * when it names the process owning the name now does the signal reach
-         * a daemon, rather than whatever process got that pid since. */
-        if (pid > 0 && pid == name_owner_pid (client) && !kill (pid, SIGUSR1))
-        {
-            g_clear_error (error);
-            triggered = TRUE;
-        }
+        g_clear_error (error);
+        triggered = TRUE;
     }
-#else
-    (void) client;
-#endif
 
     return triggered;
 }

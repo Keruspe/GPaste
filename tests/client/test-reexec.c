@@ -70,20 +70,22 @@ fake_reexecute_daemon (GPasteClient *client G_GNUC_UNUSED,
     return FALSE;
 }
 
-static GPid
-fake_pid (const gchar *name G_GNUC_UNUSED)
-{
-    return 123;
-}
+/* Whether a GPaste 45 or 50 owns the name, to be signalled: what makes that so
+ * is libgpaste's to tell (/client/presence/legacy). */
+static gboolean legacy_owner = TRUE;
 
-static gint
-fake_kill (GPid pid,
-           gint signal_number)
+static gboolean
+fake_reexecute_legacy_daemon (GPasteClient *client G_GNUC_UNUSED,
+                              GError      **error)
 {
-    g_assert_cmpint (pid, ==, 123);
-    g_assert_cmpint (signal_number, ==, SIGUSR1);
+    if (!legacy_owner)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "not a legacy daemon");
+        return FALSE;
+    }
+
     ++signals_sent;
-    return 0;
+    return TRUE;
 }
 
 static gchar *daemon_version;
@@ -243,49 +245,9 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
     return NULL;
 }
 
-/* What the bus answers the fallback's two questions with: the interface the
- * daemon's path serves, none when %NULL -- a daemon that has yet to export
- * anything -- and the pid of the process owning the name. */
-static const gchar *introspected_interface = "org.gnome.GPaste2";
-static guint32 owner_pid = 123;
-
-static GDBusConnection *
-fake_get_connection (GDBusProxy *proxy G_GNUC_UNUSED)
-{
-    return NULL;
-}
-
-static GVariant *
-fake_call_sync (GDBusConnection    *connection  G_GNUC_UNUSED,
-                const gchar        *bus_name    G_GNUC_UNUSED,
-                const gchar        *object_path G_GNUC_UNUSED,
-                const gchar        *interface   G_GNUC_UNUSED,
-                const gchar        *method,
-                GVariant           *parameters,
-                const GVariantType *reply_type  G_GNUC_UNUSED,
-                GDBusCallFlags      flags       G_GNUC_UNUSED,
-                gint                timeout     G_GNUC_UNUSED,
-                GCancellable       *cancellable G_GNUC_UNUSED,
-                GError            **error       G_GNUC_UNUSED)
-{
-    if (parameters)
-        g_variant_unref (g_variant_ref_sink (parameters));
-
-    if (g_paste_str_equal (method, "Introspect"))
-    {
-        g_autofree gchar *xml = (introspected_interface) ? g_strdup_printf ("<node><interface name='%s'/></node>", introspected_interface)
-                                                         : g_strdup ("<node/>");
-
-        return g_variant_ref_sink (g_variant_new ("(s)", xml));
-    }
-
-    return g_variant_ref_sink (g_variant_new ("(u)", owner_pid));
-}
-
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
-#define kill fake_kill
-#define g_paste_util_read_pid_file fake_pid
+#define g_paste_util_reexecute_legacy_daemon fake_reexecute_legacy_daemon
 #define g_paste_util_reexecute_daemon fake_reexecute_daemon
 #define g_paste_client_get_version fake_get_version
 #define g_paste_client_upload_and_copy_sync fake_upload_and_copy_sync
@@ -297,11 +259,7 @@ fake_call_sync (GDBusConnection    *connection  G_GNUC_UNUSED,
 #define g_paste_client_merge_sync fake_merge_sync
 #define g_paste_client_add_text_sync fake_add_text_sync
 #define g_paste_client_search_sync fake_search_sync
-#define g_dbus_proxy_get_connection fake_get_connection
-#define g_dbus_connection_call_sync fake_call_sync
 #include "../../src/client/gpaste-client.c"
-#undef g_dbus_connection_call_sync
-#undef g_dbus_proxy_get_connection
 #undef g_paste_client_search_sync
 #undef g_paste_client_add_text_sync
 #undef g_paste_client_merge_sync
@@ -313,8 +271,7 @@ fake_call_sync (GDBusConnection    *connection  G_GNUC_UNUSED,
 #undef g_paste_client_upload_and_copy_sync
 #undef g_paste_client_get_version
 #undef g_paste_util_reexecute_daemon
-#undef g_paste_util_read_pid_file
-#undef kill
+#undef g_paste_util_reexecute_legacy_daemon
 #undef main
 
 /* `gpaste-client` @args as a shell would run it, getopt () rewound first: it
@@ -576,29 +533,20 @@ test_unsupported (void)
     g_assert_cmpuint (signals_sent, ==, 1);
 }
 
-/* An unknown method is no legacy daemon when the path it was asked on serves
- * nothing yet -- a current daemon settling its storage behind a prompt -- nor
- * is the pid file's process the daemon when another owns the name: a file a
- * daemon gone since left names whatever got that pid after it. Neither is
- * signalled, and the error stands. */
+/* An unknown method from a daemon libgpaste will not signal -- a current one
+ * settling its storage behind a prompt, or a pid file naming another process
+ * than the name's owner -- leaves the error standing. */
 static void
-test_unsupported_not_legacy (gconstpointer user_data)
+test_unsupported_not_legacy (void)
 {
-    gboolean stale = GPOINTER_TO_INT (user_data);
     g_autoptr (GError) error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
 
     signals_sent = 0;
-    if (stale)
-        owner_pid = 456;
-    else
-        introspected_interface = NULL;
-
+    legacy_owner = FALSE;
     g_assert_false (reexec_fallback (NULL, FALSE, &error));
     g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD);
     g_assert_cmpuint (signals_sent, ==, 0);
-
-    owner_pid = 123;
-    introspected_interface = "org.gnome.GPaste2";
+    legacy_owner = TRUE;
 }
 
 /* `gpaste-client migrate` opens the migration gate, and what closes it again is
@@ -812,8 +760,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/index/merge-past-end", test_merge_past_end);
     g_test_add_func ("/client/index/nonitem-arguments", test_nonitem_arguments);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
-    g_test_add_data_func ("/client/reexec/stale-pid", GINT_TO_POINTER (TRUE), test_unsupported_not_legacy);
-    g_test_add_data_func ("/client/reexec/not-exported", GINT_TO_POINTER (FALSE), test_unsupported_not_legacy);
+    g_test_add_func ("/client/reexec/not-legacy", test_unsupported_not_legacy);
     g_test_add_data_func ("/client/daemon_version/answered", "51.1", test_daemon_version);
     g_test_add_data_func ("/client/daemon_version/unanswered", NULL, test_daemon_version);
     g_test_add_data_func ("/client/migrate/gate_survives_fallback", GINT_TO_POINTER (TRUE), test_migrate_gate);

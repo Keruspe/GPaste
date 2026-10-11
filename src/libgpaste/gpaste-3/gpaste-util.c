@@ -2,10 +2,17 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-client-history.h>
+#include <gpaste-3/gpaste-error.h>
+#include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 
+#include <errno.h>
 #include <string.h>
+
+#ifdef G_OS_UNIX
+#include <signal.h>
+#endif
 
 #ifdef G_PASTE_ENABLE_PWQUALITY
 #include <pwquality.h>
@@ -779,6 +786,182 @@ g_paste_util_reexecute_daemon (GPasteClient *client,
     g_propagate_error (error, err);
 
     return FALSE;
+}
+
+/* The interface a GPaste 45 or 50 serves, which knows no Reexecute of ours but
+ * re-executes on SIGUSR1: a package update leaves one running until the
+ * session ends. */
+#define G_PASTE_LEGACY_IFACE "org.gnome.GPaste2"
+
+/* Whether an Introspect answer of the daemon's path serves that interface. */
+static gboolean
+g_paste_util_introspected_legacy (GVariant *answer)
+{
+    const gchar *xml = NULL;
+
+    g_variant_get (answer, "(&s)", &xml);
+
+    g_autoptr (GDBusNodeInfo) node = g_dbus_node_info_new_for_xml (xml, NULL);
+
+    return node && g_dbus_node_info_lookup_interface (node, G_PASTE_LEGACY_IFACE);
+}
+
+static void
+on_legacy_introspected (GObject      *source_object,
+                        GAsyncResult *res,
+                        gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    GError *error = NULL;
+    g_autoptr (GVariant) answer = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
+
+    if (!answer)
+        g_task_return_error (task, error);
+    else
+        g_task_return_boolean (task, g_paste_util_introspected_legacy (answer));
+}
+
+/**
+ * g_paste_util_daemon_is_legacy:
+ * @client: a #GPasteClient
+ * @cancellable: (nullable): a #GCancellable
+ * @callback: (scope async): called with the answer
+ * @user_data: data for @callback
+ *
+ * Ask whether the daemon owning the name is a GPaste 45 or 50, which serves an
+ * interface of its own rather than this one: what a package update leaves
+ * running until the session ends, and what a client of this version can never
+ * reach (g_paste_util_reexecute_legacy_daemon ()).
+ *
+ * The daemon's path is asked what it serves: GDBus answers an unknown method
+ * alike for such a daemon and for a current one that owns the name but has yet
+ * to export anything.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_daemon_is_legacy (GPasteClient       *client,
+                               GCancellable       *cancellable,
+                               GAsyncReadyCallback callback,
+                               gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+    GTask *task = g_task_new (NULL, cancellable, callback, user_data);
+
+    g_task_set_source_tag (task, g_paste_util_daemon_is_legacy);
+    g_dbus_connection_call (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)),
+                            G_PASTE_BUS_NAME, G_PASTE_DAEMON_OBJECT_PATH,
+                            "org.freedesktop.DBus.Introspectable", "Introspect",
+                            NULL, G_VARIANT_TYPE ("(s)"), G_DBUS_CALL_FLAGS_NO_AUTO_START, -1,
+                            cancellable, on_legacy_introspected, task);
+}
+
+/**
+ * g_paste_util_daemon_is_legacy_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Finish g_paste_util_daemon_is_legacy (). Fails with %G_DBUS_ERROR or
+ * %G_IO_ERROR when the daemon's path could not be asked -- no daemon there,
+ * above all.
+ *
+ * Returns: whether the daemon owning the name is a GPaste 45 or 50
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_daemon_is_legacy_finish (GAsyncResult *result,
+                                      GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+/**
+ * g_paste_util_reexecute_legacy_daemon:
+ * @client: a #GPasteClient
+ * @error: return location for a #GError, or %NULL
+ *
+ * Have a GPaste 45 or 50 owning the name re-execute, which it does on SIGUSR1:
+ * a package update has replaced its binary, so what comes back is this
+ * version's daemon. Two short calls to the bus, made synchronously.
+ *
+ * Only that daemon is signalled: one serving this interface has Reexecute, and
+ * may be settling its storage behind a prompt the signal would tear down; and
+ * the pid file names the daemon that wrote it and outlives it, so only when it
+ * names the process owning the name does the signal reach a daemon rather than
+ * whatever process got that pid since. Anything else fails with
+ * %G_PASTE_ERROR_FAILED, and a question the bus could not answer with
+ * %G_DBUS_ERROR or %G_IO_ERROR, as does a platform with no signals.
+ *
+ * Returns: whether the daemon was signalled
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_reexecute_legacy_daemon (GPasteClient *client,
+                                      GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), FALSE);
+    g_return_val_if_fail (!error || !*error, FALSE);
+
+#ifdef G_OS_UNIX
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    /* Both questions are asked of this one owner: asked of the name, the second
+     * could reach a daemon that took it once the first was answered. */
+    g_autofree gchar *unique = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (client));
+
+    if (!unique)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "nobody owns the name");
+        return FALSE;
+    }
+
+    g_autoptr (GVariant) introspected = g_dbus_connection_call_sync (connection, unique, G_PASTE_DAEMON_OBJECT_PATH,
+                                                                     "org.freedesktop.DBus.Introspectable", "Introspect",
+                                                                     NULL, G_VARIANT_TYPE ("(s)"), G_DBUS_CALL_FLAGS_NO_AUTO_START, -1,
+                                                                     NULL, error);
+
+    if (!introspected)
+        return FALSE;
+
+    if (!g_paste_util_introspected_legacy (introspected))
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the daemon owning the name is not a GPaste 45 or 50");
+        return FALSE;
+    }
+
+    g_autoptr (GVariant) owner = g_dbus_connection_call_sync (connection, "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                                              "org.freedesktop.DBus", "GetConnectionUnixProcessID",
+                                                              g_variant_new ("(s)", unique), G_VARIANT_TYPE ("(u)"),
+                                                              G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
+
+    if (!owner)
+        return FALSE;
+
+    guint32 owner_pid = 0;
+    GPid pid = g_paste_util_read_pid_file ("Daemon");
+
+    g_variant_get (owner, "(u)", &owner_pid);
+
+    if (pid <= 0 || pid != (GPid) owner_pid)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "no pid file names the daemon owning the name");
+        return FALSE;
+    }
+
+    if (kill (pid, SIGUSR1))
+    {
+        gint saved = errno;
+
+        g_set_error_literal (error, G_IO_ERROR, g_io_error_from_errno (saved), g_strerror (saved));
+        return FALSE;
+    }
+
+    return TRUE;
+#else
+    (void) client;
+    g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED, "no signal to re-execute a daemon with");
+
+    return FALSE;
+#endif
 }
 
 /**

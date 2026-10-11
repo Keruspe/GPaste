@@ -80,6 +80,13 @@ struct _GPasteUiWindow
      * there is no client to follow the daemon (see
      * g_paste_client_follow_daemon ()). */
     gboolean                connecting;
+
+    /* Whether the daemon owning the name is a GPaste 45 or 50, and the
+     * question out to find out: see g_paste_ui_window_probe_legacy (). */
+    gboolean                legacy;
+    GCancellable           *legacy_probe;
+    /* A restart of that daemon is out: see on_banner_retry (). */
+    gboolean                legacy_restarting;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -832,6 +839,16 @@ g_paste_ui_window_update_banner (GPasteUiWindow *self)
      * refuse. */
     gboolean starting = self->connecting || presence == G_PASTE_DAEMON_PRESENCE_STARTING;
 
+    /* One that will never be ready for this version, however long it is
+     * waited for or retried: what it takes is restarting it. */
+    if (self->legacy && !self->connecting)
+    {
+        adw_banner_set_title (self->banner, _("An older GPaste daemon is still running"));
+        adw_banner_set_button_label (self->banner, _("Restart"));
+        adw_banner_set_revealed (self->banner, TRUE);
+        return;
+    }
+
     adw_banner_set_title (self->banner, (starting) ? _("Connecting to GPaste…") : _("Couldn’t connect to GPaste"));
     adw_banner_set_button_label (self->banner, (starting) ? NULL : _("Retry"));
     adw_banner_set_revealed (self->banner, TRUE);
@@ -1071,6 +1088,50 @@ on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
     g_paste_ui_window_on_shell_owner (user_data, NULL);
 }
 
+static void
+on_legacy_probed (GObject      *source_object G_GNUC_UNUSED,
+                  GAsyncResult *res,
+                  gpointer      user_data)
+{
+    g_autoptr (GPasteUiWindow) self = g_weak_ref_get (user_data);
+    g_autoptr (GError) error = NULL;
+    gboolean legacy = g_paste_util_daemon_is_legacy_finish (res, &error);
+
+    g_paste_weak_ref_free (user_data);
+
+    /* Given up on by a newer question, or by dispose (). Any other failure
+     * reads as no older daemon: the banner's usual offer stands then. */
+    if (!self || g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        return;
+
+    g_clear_object (&self->legacy_probe);
+    self->legacy = legacy;
+    g_paste_ui_window_update_banner (self);
+}
+
+/* A GPaste 45 or 50 left running by a package update owns the name and serves
+ * none of this interface, so it is never ready for this version: the window
+ * would say it is connecting, then offer a retry that waits for it forever.
+ * Asked whenever the presence moves while something owns the name, the window
+ * held weakly, as the question is one dispose () ends. */
+static void
+g_paste_ui_window_probe_legacy (GPasteUiWindow *self)
+{
+    g_paste_clear_cancellable (&self->legacy_probe);
+    self->legacy = FALSE;
+
+    if (g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY)
+        return;
+
+    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
+
+    if (!owner)
+        return;
+
+    self->legacy_probe = g_cancellable_new ();
+    g_paste_util_daemon_is_legacy (self->client, self->legacy_probe, on_legacy_probed, g_paste_weak_ref_new (self));
+}
+
 /* The list and the sidebar follow the daemon on their own; the window says so
  * and takes away what would act on one that is not there. */
 static void
@@ -1080,6 +1141,7 @@ on_daemon_presence_changed (GPasteClient *client G_GNUC_UNUSED,
 {
     GPasteUiWindow *self = user_data;
 
+    g_paste_ui_window_probe_legacy (self);
     g_paste_ui_window_update_banner (self);
     g_paste_ui_window_update_sensitivity (self);
     g_paste_ui_window_update_version_toast (self);
@@ -1088,6 +1150,52 @@ on_daemon_presence_changed (GPasteClient *client G_GNUC_UNUSED,
 static void on_client_ready (GObject      *source_object,
                              GAsyncResult *res,
                              gpointer      user_data);
+
+/* Its two calls to the bus made off the main thread, short as they are. */
+static void
+reexecute_legacy_in_thread (GTask        *task,
+                            gpointer      source_object G_GNUC_UNUSED,
+                            gpointer      task_data,
+                            GCancellable *cancellable G_GNUC_UNUSED)
+{
+    GError *error = NULL;
+
+    if (g_paste_util_reexecute_legacy_daemon (task_data, &error))
+        g_task_return_boolean (task, TRUE);
+    else
+        g_task_return_error (task, error);
+}
+
+static void
+on_legacy_reexecuted (GObject      *source_object G_GNUC_UNUSED,
+                      GAsyncResult *res,
+                      gpointer      user_data)
+{
+    g_autoptr (GPasteUiWindow) self = user_data;
+    g_autoptr (GError) error = NULL;
+    gboolean restarted = g_task_propagate_boolean (G_TASK (res), &error);
+
+    self->legacy_restarting = FALSE;
+
+    if (!restarted)
+        g_warning ("Could not restart the older daemon: %s", error->message);
+
+    /* As in on_client_ready (): a window disposed meanwhile has no widgets left
+     * to say anything with. Closing it does not get there, gtk_window_destroy ()
+     * leaving the dispose to the last reference, which this callback holds --
+     * so no test can, short of disposing it by hand. */
+    if (!self->banner)
+        return;
+
+    /* What comes back is a daemon starting, until the presence says more. */
+    if (restarted)
+    {
+        self->legacy = FALSE;
+        g_paste_ui_window_update_banner (self);
+    }
+    else
+        g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not restart the older daemon"));
+}
 
 /* The banner's button, an offer only while there is no daemon: ask for one now,
  * this being the user asking, and wait for it from the start again. */
@@ -1101,6 +1209,24 @@ on_banner_retry (AdwBanner *banner G_GNUC_UNUSED,
      * started here would build the window's content twice over. */
     if (self->connecting)
         return;
+
+    /* Restarted by signal (g_paste_util_reexecute_legacy_daemon ()): what comes
+     * back is this version's daemon, which the presence follows. Once: a
+     * second press would find the new daemon and say the restart failed, or
+     * signal the old one again as it execs, before the new one handles it. */
+    if (self->legacy)
+    {
+        if (self->legacy_restarting)
+            return;
+
+        g_autoptr (GTask) task = g_task_new (NULL, NULL, on_legacy_reexecuted, g_object_ref (self));
+
+        self->legacy_restarting = TRUE;
+
+        g_task_set_task_data (task, g_object_ref (self->client), g_object_unref);
+        g_task_run_in_thread (task, reexecute_legacy_in_thread);
+        return;
+    }
 
     /* No proxy at all (see on_client_ready ()), so what it takes is asking for
      * one again. */
@@ -1349,6 +1475,7 @@ g_paste_ui_window_dispose (GObject *object)
 
     g_clear_object (&self->search_signals);
     g_clear_object (&self->client_signals);
+    g_paste_clear_cancellable (&self->legacy_probe);
     /* The panel and the list hold the client too, until the widgets below go:
      * its wait for a daemon is ours to stop. */
     if (self->client)

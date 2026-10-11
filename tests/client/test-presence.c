@@ -9,6 +9,11 @@
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 
+#include <glib-unix.h>
+#include <glib/gstdio.h>
+#include <signal.h>
+#include <sys/wait.h>
+
 /* Local rather than in gpaste-test-bus, which knows no GPaste type: its
  * g_paste_test_bus_wait_for_enum () is the shared part, and what this adds is
  * the property's name and a presence typed as one.
@@ -528,6 +533,205 @@ test_seed_announced (void)
     g_bus_unown_name (owner);
 }
 
+/* A GPaste 45 or 50 stood in for: the name, and its own interface on the
+ * daemon's path, which knows nothing of this one. */
+static guint
+legacy_export (GDBusConnection *server)
+{
+    static const GDBusInterfaceVTable vtable = { 0 };
+    g_autoptr (GDBusNodeInfo) node = g_dbus_node_info_new_for_xml ("<node><interface name='org.gnome.GPaste2'/></node>", NULL);
+    g_autoptr (GError) error = NULL;
+    guint id = g_dbus_connection_register_object (server, G_PASTE_DAEMON_OBJECT_PATH, node->interfaces[0], &vtable, NULL, NULL, &error);
+
+    g_assert_no_error (error);
+
+    return id;
+}
+
+typedef struct
+{
+    gboolean done;
+    gboolean legacy;
+    GError  *error;
+} LegacyAnswer;
+
+static void
+on_legacy_answered (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *res,
+                    gpointer      user_data)
+{
+    LegacyAnswer *answer = user_data;
+
+    answer->legacy = g_paste_util_daemon_is_legacy_finish (res, &answer->error);
+    answer->done = TRUE;
+}
+
+static gboolean
+legacy_asked (GPasteClient *client,
+              GError      **error)
+{
+    LegacyAnswer answer = { 0 };
+
+    g_paste_util_daemon_is_legacy (client, NULL, on_legacy_answered, &answer);
+    g_paste_test_bus_wait_until (is_true, &answer.done, NULL);
+    /* An answer still out would also land in a frame gone by then. */
+    g_assert_true (answer.done);
+    if (answer.error)
+        g_propagate_error (error, answer.error);
+
+    return answer.legacy;
+}
+
+static gboolean
+on_sigusr1 (gpointer user_data)
+{
+    ++*(guint *) user_data;
+
+    return G_SOURCE_CONTINUE;
+}
+
+static gboolean
+signalled (gconstpointer count,
+           gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(const guint *) count > 0;
+}
+
+/* Whom the re-execution asks what it is, and whose pid it asks the bus for. */
+typedef struct
+{
+    GMutex mutex;
+    gchar *introspected;
+    gchar *pid_of;
+} Asked;
+
+static GDBusMessage *
+note_asked (GDBusConnection *connection G_GNUC_UNUSED,
+            GDBusMessage    *message,
+            gboolean         incoming,
+            gpointer         user_data)
+{
+    Asked *asked = user_data;
+    const gchar *member = g_dbus_message_get_member (message);
+
+    if (incoming || g_dbus_message_get_message_type (message) != G_DBUS_MESSAGE_TYPE_METHOD_CALL)
+        return message;
+
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&asked->mutex);
+
+    if (g_paste_str_equal (member, "Introspect"))
+        g_set_str (&asked->introspected, g_dbus_message_get_destination (message));
+    else if (g_paste_str_equal (member, "GetConnectionUnixProcessID"))
+        g_variant_get (g_dbus_message_get_body (message), "(s)", &asked->pid_of);
+
+    return message;
+}
+
+/* A daemon serving only the interface of a GPaste 45 or 50 is told apart from
+ * one serving this interface, and from one that exports nothing yet -- GDBus
+ * answering an unknown method alike for all three. It is the one re-executed by
+ * signal, the pid file naming the process owning the name; a pid file naming
+ * another process, or a daemon of this version, is signalled nothing. */
+static void
+test_legacy (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    guint signals = 0;
+    guint source = g_unix_signal_add (SIGUSR1, on_sigusr1, &signals);
+    guint owner;
+
+    g_source_set_name_by_id (source, "[GPaste] test SIGUSR1 counter");
+    g_assert_no_error (error);
+
+    g_autoptr (GDBusConnection) server = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_NONE, &owner);
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    /* Nothing exported yet: not one of those. */
+    g_assert_false (legacy_asked (client, &error));
+    g_assert_no_error (error);
+    g_assert_false (g_paste_util_reexecute_legacy_daemon (client, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&error);
+
+    guint registration = legacy_export (server);
+
+    g_assert_true (legacy_asked (client, &error));
+    g_assert_no_error (error);
+
+    /* The stand-in is this very process, so is the name's owner. Both
+     * questions go to that one owner by its unique name, as
+     * g_paste_util_reexecute_legacy_daemon () says why, and that is what is
+     * checked: two owners racing for the name here would share this pid. */
+    Asked asked = { 0 };
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    guint filter = g_dbus_connection_add_filter (connection, note_asked, &asked, NULL);
+
+    g_mutex_init (&asked.mutex);
+    g_paste_util_write_pid_file ("Daemon");
+    g_assert_true (g_paste_util_reexecute_legacy_daemon (client, &error));
+    g_assert_no_error (error);
+    g_paste_test_bus_wait_until (signalled, &signals, NULL);
+    g_assert_cmpuint (signals, ==, 1);
+    g_dbus_connection_remove_filter (connection, filter);
+    g_mutex_lock (&asked.mutex);
+    g_assert_cmpstr (asked.introspected, ==, g_dbus_connection_get_unique_name (server));
+    g_assert_cmpstr (asked.pid_of, ==, g_dbus_connection_get_unique_name (server));
+    g_mutex_unlock (&asked.mutex);
+    g_mutex_clear (&asked.mutex);
+    g_free (asked.introspected);
+    g_free (asked.pid_of);
+
+    /* Where g_paste_util_write_pid_file () put it, as
+     * g_paste_util_get_runtime_dir () spells the directory. */
+    g_autofree gchar *pid_file = g_build_filename (g_get_user_runtime_dir (), PACKAGE_NAME, "Daemon", "pid", NULL);
+
+    /* A process of the test's own, which SIGUSR1 would end: what a pid file
+     * left stale names can be anything, and nothing outside the test is to be
+     * signalled should the check fail. */
+    const gchar *sleeper[] = { "sleep", "60", NULL };
+    GPid stale;
+
+    g_assert_true (g_spawn_async (NULL, (gchar **) sleeper, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
+                                  NULL, NULL, &stale, &error));
+    g_assert_no_error (error);
+
+    g_autofree gchar *stale_pid = g_strdup_printf ("%" G_PID_FORMAT, stale);
+
+    signals = 0;
+    g_assert_true (g_file_set_contents (pid_file, stale_pid, -1, NULL));
+    g_assert_false (g_paste_util_reexecute_legacy_daemon (client, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&error);
+    g_paste_test_bus_pump (100);
+    g_assert_cmpuint (signals, ==, 0);
+    g_assert_cmpint (waitpid (stale, NULL, WNOHANG), ==, 0);
+    kill (stale, SIGTERM);
+    g_assert_cmpint (waitpid (stale, NULL, 0), ==, stale);
+    g_spawn_close_pid (stale);
+
+    g_dbus_connection_unregister_object (server, registration);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+
+    g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (skeleton), server, G_PASTE_DAEMON_OBJECT_PATH, &error);
+    g_assert_no_error (error);
+    g_paste_util_write_pid_file ("Daemon");
+    g_assert_false (legacy_asked (client, &error));
+    g_assert_no_error (error);
+    g_assert_false (g_paste_util_reexecute_legacy_daemon (client, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&error);
+    g_paste_test_bus_pump (100);
+    g_assert_cmpuint (signals, ==, 0);
+
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (skeleton));
+    g_unlink (pid_file);
+    g_source_remove (source);
+    g_bus_unown_name (owner);
+    g_dbus_connection_close_sync (server, NULL, NULL);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -542,5 +746,6 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/handoff-after-init", test_handoff_after_init);
     g_test_add_func ("/client/presence/handoff-other-name", test_handoff_other_name);
     g_test_add_func ("/client/presence/daemon-gone-error", test_daemon_gone_error);
+    g_test_add_func ("/client/presence/legacy", test_legacy);
     return g_paste_test_env_run ();
 }

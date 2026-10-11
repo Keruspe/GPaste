@@ -97,9 +97,9 @@ and disposal with a rebind pending.
 
 `test-client-reexec` covers the command line tool by `#include`-ing
 `src/client/gpaste-client.c` with `main` renamed, so a case calls a verb's own
-handler directly. Anything that would leave the test — `kill ()`, the re-exec
-call, the pid file, the version the proxy caches — is a `#define` over the name
-the file uses, which is how the empty cases (a daemon that has not answered for
+handler directly. Anything that would leave the test — the re-exec call,
+libgpaste's re-exec of an older daemon, the version the proxy caches — is a
+`#define` over the name the file uses, which is how the empty cases (a daemon that has not answered for
 its version, one that refused a re-exec) are reached without a daemon to go
 missing, and so is `g_paste_client_upload_and_copy_sync ()`, recorded rather
 than sent. It covers the re-exec fallback, the migration gate across it,
@@ -129,7 +129,10 @@ any client is built, while UTF-8 beyond ASCII goes through.
 bus, which has nothing to activate, with the generated skeleton standing in for
 a daemon on a connection of its own: owning the name before it exports anything
 reads as starting, a `History` as ready, and a daemon going away as starting for
-the grace second and absent after it -- as does a retry the bus cannot answer. A
+the grace second and absent after it -- as does a retry the bus cannot answer.
+A daemon serving only `org.gnome.GPaste2` is told apart from one serving this
+interface and from one exporting nothing yet, and only it is signalled to
+re-execute, the pid file naming the process owning the name. A
 client built through `GInitable`/`GAsyncInitable` rather than its constructors
 starts out with the right presence, a handler connected before a two-step init
 hearing of it once -- the GetAll reply saying so of a daemon that serves, the
@@ -179,7 +182,9 @@ order; only the newer one may keep or remove sidebar rows, one still out when
 its daemon goes is given up on rather than reported, and one out when the
 window closes lets the sidebar go. A window presented
 for a failed connection and set up again into a daemon already there takes its
-banner down.
+banner down. A daemon serving only `org.gnome.GPaste2` gets the banner offering to
+restart it, which signals it, this process standing in for it and the pid file
+naming it.
 A window closed and let go of while the list's size request is out leaves the
 list standing, held by the reply, and the reply lands without reaching for the
 sidebar that went with the window. With the widest window buttons (KDE's

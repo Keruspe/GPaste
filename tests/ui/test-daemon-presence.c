@@ -4,8 +4,28 @@
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 
+#include <gpaste-3/gpaste-util.h>
+
+#include <glib-unix.h>
+#include <signal.h>
+
+/* Every restart the window asks of a GPaste 45 or 50, before handing it on:
+ * two signals sent together are as good as one. */
+static gint legacy_restarts;
+
+static gboolean
+counted_reexecute_legacy_daemon (GPasteClient *client,
+                                 GError      **error)
+{
+    g_atomic_int_inc (&legacy_restarts);
+
+    return g_paste_util_reexecute_legacy_daemon (client, error);
+}
+
 /* Reach the window's banner, actions and setup. */
+#define g_paste_util_reexecute_legacy_daemon counted_reexecute_legacy_daemon
 #include <gpaste-ui-window.c>
+#undef g_paste_util_reexecute_legacy_daemon
 #include <gpaste-ui-item.h>
 
 #include <gpaste-3/gpaste-daemon3.h>
@@ -872,6 +892,90 @@ test_reply_after_close (void)
     g_assert_no_error (error);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
 
+    fake_daemon_stop (&daemon);
+}
+
+static gboolean
+on_sigusr1 (gpointer user_data)
+{
+    ++*(guint *) user_data;
+
+    return G_SOURCE_CONTINUE;
+}
+
+static gboolean
+counted (gconstpointer count,
+         gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(const guint *) count > 0;
+}
+
+static gboolean
+banner_says (gconstpointer window,
+             gconstpointer title)
+{
+    return g_paste_str_equal (adw_banner_get_title (((GPasteUiWindow *) window)->banner), title);
+}
+
+/* A GPaste 45 or 50 owning the name, as a package update leaves it until the
+ * session ends: the banner says so and offers to restart it, which signals it
+ * once however often it is pressed, the pid file naming this very process as
+ * its owner here. What comes back is this version's daemon. */
+static void
+test_legacy_daemon (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteUiWindow) window = test_window ();
+    g_autoptr (GDBusConnection) legacy = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    g_autoptr (GDBusNodeInfo) node = g_dbus_node_info_new_for_xml ("<node><interface name='org.gnome.GPaste2'/></node>", NULL);
+    static const GDBusInterfaceVTable vtable = { 0 };
+    FakeDaemon daemon = { .size = 1 };
+    guint signals = 0;
+    guint source = g_unix_signal_add (SIGUSR1, on_sigusr1, &signals);
+
+    g_source_set_name_by_id (source, "[GPaste] test SIGUSR1 counter");
+    g_assert_no_error (error);
+
+    guint owner = g_bus_own_name_on_connection (legacy, G_PASTE_BUS_NAME, G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
+    guint registration = g_dbus_connection_register_object (legacy, G_PASTE_DAEMON_OBJECT_PATH, node->interfaces[0], &vtable, NULL, NULL, &error);
+
+    g_assert_no_error (error);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_until (banner_says, window, _("An older GPaste daemon is still running"));
+    g_assert_cmpstr (adw_banner_get_title (window->banner), ==, _("An older GPaste daemon is still running"));
+    g_assert_cmpstr (adw_banner_get_button_label (window->banner), ==, _("Restart"));
+
+    g_paste_util_write_pid_file ("Daemon");
+    /* Pressed twice, as an impatient user would: restarted once. */
+    g_signal_emit_by_name (window->banner, "button-clicked");
+    g_signal_emit_by_name (window->banner, "button-clicked");
+    g_paste_test_bus_wait_until (counted, &signals, NULL);
+    g_paste_test_bus_pump (100);
+    g_assert_cmpuint (signals, ==, 1);
+    g_assert_cmpint (g_atomic_int_get (&legacy_restarts), ==, 1);
+    g_paste_test_bus_wait_until (banner_says, window, _("Connecting to GPaste…"));
+    g_assert_cmpstr (adw_banner_get_title (window->banner), ==, _("Connecting to GPaste…"));
+
+    /* The daemon re-executed, as this version's. */
+    g_dbus_connection_unregister_object (legacy, registration);
+    g_bus_unown_name (owner);
+    g_dbus_connection_close_sync (legacy, NULL, NULL);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    drain ();
+    g_assert_false (adw_banner_get_revealed (window->banner));
+
+    g_source_remove (source);
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -2171,6 +2275,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/entry-focus-released", test_entry_focus_released);
     g_test_add_func ("/ui/daemon-presence/merge-entry-focus-released", test_merge_entry_focus_released);
     g_test_add_func ("/ui/daemon-presence/reply-after-close", test_reply_after_close);
+    g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);
     g_test_add_func ("/ui/daemon-presence/listing-abandoned", test_listing_abandoned);
