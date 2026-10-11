@@ -2057,6 +2057,9 @@ g_paste_history_dispose (GObject *object)
 {
     GPasteHistory *self = G_PASTE_HISTORY (object);
 
+    if (self->saver)
+        g_paste_history_saver_detach (self->saver);
+
     g_clear_object (&self->saver);
     g_clear_object (&self->backend);
     g_clear_object (&self->pending_selection);

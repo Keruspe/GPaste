@@ -22,8 +22,11 @@ static void g_paste_history_saver_load_data_free (gpointer data);
  * it completes on the context that write was recorded from rather than on the
  * one its caller had: a caller pushing a context of its own around a load while
  * writes are out would iterate that context in vain. Every caller runs on the
- * default one. The @owner GObject is used as the GTask source so
- * it stays alive for the whole duration of every in-flight operation. Each task also
+ * default one. A write's GTask takes the @owner GObject as its source, so it
+ * stays alive until the write has landed. A load's takes none: a load can wait on
+ * the storage lock for as long as another process holds it, and what gives that
+ * wait up is the owner's dispose (), through g_paste_history_saver_detach (), which
+ * a reference held for the wait would keep from ever running. Each task also
  * holds its own ref on the saver (released in its done callback), so an owner that
  * swaps its saver out mid-flight (g_paste_history_reload_backend) cannot free one
  * whose completion callback has not fired yet. */
@@ -61,9 +64,9 @@ struct _GPasteHistorySaver
      * is the lock wait and then a whole history off disk. */
     GCancellable                  *load_cancellable;
 
-    /* Set by g_paste_history_saver_detach(): the owner has replaced us, so an
-     * in-flight load (which keeps us alive through the task's own reference) must
-     * not hand its now-stale result back to it. */
+    /* Set by g_paste_history_saver_detach(): the owner has replaced us or is
+     * going away, so an in-flight load (which keeps us alive through the task's
+     * own reference) must not hand its result back to it. */
     gboolean                       detached;
     /* Set while the owner has handed the store over (g_paste_history_flush ()):
      * the load it left pending behind a write stays pending, rather than take
@@ -479,10 +482,12 @@ g_paste_history_saver_count_pending (GPasteHistorySaver *self,
  * g_paste_history_saver_detach:
  * @self: a #GPasteHistorySaver
  *
- * Stop handing results back to the owner. An in-flight load keeps the saver alive
- * through its own reference, so a saver that has been replaced (see
- * g_paste_history_reload_backend()) would otherwise still install its stale, old-
- * backend history over the one the new saver just loaded.
+ * Stop handing results back to the owner, and give up the load in flight. An
+ * in-flight load keeps the saver alive through its own reference, so a saver that
+ * has been replaced (see g_paste_history_reload_backend()) would otherwise still
+ * install its stale, old-backend history over the one the new saver just loaded,
+ * and one whose owner is going away would hand its result to an owner that is
+ * gone: an owner detaches its saver before dropping it either way.
  */
 G_PASTE_VISIBLE void
 g_paste_history_saver_detach (GPasteHistorySaver *self)
@@ -653,8 +658,9 @@ g_paste_history_saver_start_load (GPasteHistorySaver *self)
     g_autoptr (GPasteHistorySaverLoadData) data = g_steal_pointer (&self->pending_load);
 
     /* Hold our own ref for the task (see start_write): reload_backend may drop
-     * the owner's ref to us while this load is still in flight. */
-    g_autoptr (GTask) task = g_task_new (self->owner, self->load_cancellable, g_paste_history_saver_load_done, g_object_ref (self));
+     * the owner's ref to us while this load is still in flight. None on the
+     * owner, though (see the top of this file). */
+    g_autoptr (GTask) task = g_task_new (NULL, self->load_cancellable, g_paste_history_saver_load_done, g_object_ref (self));
     /* The result is what says whether the read completed (@readable), and the
      * generation and @detached are what say whether anyone still wants it, so
      * GTask must not turn a cancelled load into an error of its own on top. */
@@ -842,9 +848,10 @@ g_paste_history_saver_init (GPasteHistorySaver *self)
 /**
  * g_paste_history_saver_new:
  * @backend: the #GPasteStorageBackend to read and write through
- * @owner: the GObject driving this saver; used as the async source so it (and
- *         therefore this saver, which it owns) stays alive during operations,
- *         and passed back to @loaded and @diverged
+ * @owner: the GObject driving this saver, which detaches it before dropping
+ *         it; the source of every write, which keeps it (and therefore this
+ *         saver, which it owns) alive until the write lands, and passed back
+ *         to @loaded and @diverged
  * @loaded: (scope notified): invoked when an async load completes
  * @diverged: (scope notified): invoked when a write left its store behind
  *

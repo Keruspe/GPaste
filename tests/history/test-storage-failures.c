@@ -2668,6 +2668,33 @@ test_load_after_release_reads_nothing (void)
     g_close (held, NULL);
 }
 
+/* A history dropped while its load waits for the lock goes there and then, and
+ * the wait goes with it: nothing takes the lock once its holder lets go. */
+static void
+test_dropped_history_ends_its_load (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    gint held = hold_storage_lock ();
+    GPasteHistory *history = g_paste_history_new (settings);
+
+    g_object_add_weak_pointer (G_OBJECT (history), (gpointer *) &history);
+    g_paste_history_load_async (history, "dropped-loading");
+    g_usleep (G_USEC_PER_SEC / 4);
+    g_object_unref (history);
+    g_assert_null (history);
+    g_paste_test_bus_pump (500);
+    g_close (held, NULL);
+    g_paste_test_bus_pump (500);
+    g_close (hold_storage_lock (), NULL);
+}
+
 /* A history handed over -- flushed, its process's lock released -- starts no
  * load when its name changes, which would take the lock back from the daemon it
  * was handed to; resuming starts it, so that the history recorded into from
@@ -4067,6 +4094,7 @@ main (int    argc,
     g_test_add_func ("/storage/lock/flushed-history", test_flushed_history_loads_nothing);
     g_test_add_func ("/storage/lock/flushed-switch-supersedes-load", test_flushed_switch_supersedes_load);
     g_test_add_func ("/storage/switch-writes-nothing", test_switch_writes_nothing);
+    g_test_add_func ("/storage/lock/dropped-history", test_dropped_history_ends_its_load);
     g_test_add_func ("/storage/history/empty-reaches-the-store", test_empty_reaches_the_store);
     g_test_add_func ("/storage/history/failed-delete-keeps-unreadable", test_failed_delete_keeps_unreadable);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
