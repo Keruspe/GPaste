@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-history.h>
 #include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -51,6 +52,84 @@ crypto_pwhash (unsigned char * const       out,
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
 }
 
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <malloc.h>
+
+/* Found once, before anything here asks for it: dlsym () frees on its own,
+ * which would come back into free () while it is being resolved. A block freed
+ * before that -- the dynamic linker's own -- is left alone. glibc's
+ * __libc_free () would spare the lookup, but musl does not export it. */
+typedef void (*LibcFree) (void *);
+typedef void *(*LibcRealloc) (void *, size_t);
+static LibcFree original_free;
+static LibcRealloc original_realloc;
+
+__attribute__ ((constructor)) static void
+resolve_free (void)
+{
+    original_free = (LibcFree) dlsym (RTLD_NEXT, "free");
+    original_realloc = (LibcRealloc) dlsym (RTLD_NEXT, "realloc");
+}
+
+/* Every block freed while @freed_secret is set is searched for it, and counted
+ * when it still holds it: how a copy of a decrypted password left behind in
+ * freed memory shows. GMarkup's own buffers, freed with the parser's context,
+ * are not GPaste's to wipe (see _g_paste_file_backend_read_or_count ()), and
+ * go uncounted. */
+static const gchar *freed_secret;
+static guint freed_holding_secret;
+static gboolean freeing_markup;
+
+void
+free (void *memory)
+{
+    const gchar *secret = freed_secret;
+
+    if (memory && secret && !freeing_markup && memmem (memory, malloc_usable_size (memory), secret, strlen (secret)))
+        ++freed_holding_secret;
+
+    if (original_free)
+        original_free (memory);
+}
+
+/* A block realloc () moves is released holding what it held, which free ()
+ * never sees. Whether it moves is the heap's call, so while @freed_secret is
+ * set every one does, and one holding half the secret or more -- what a growing
+ * buffer had decoded of it so far -- is counted as a copy left behind too. */
+void *
+realloc (void   *memory,
+         size_t  size)
+{
+    const gchar *secret = freed_secret;
+
+    if (original_realloc && !(memory && size && secret && !freeing_markup))
+        return original_realloc (memory, size);
+
+    /* Moved by hand: there is no realloc () to call before resolve_free (). */
+    void *moved = (size) ? malloc (size) : NULL;
+
+    if (moved && memory)
+        memcpy (moved, memory, MIN (size, malloc_usable_size (memory)));
+    if (memory && secret && !freeing_markup && memmem (memory, malloc_usable_size (memory), secret, strlen (secret) / 2))
+        ++freed_holding_secret;
+    if (original_free)
+        original_free (memory);
+
+    return moved;
+}
+
+void
+g_markup_parse_context_unref (GMarkupParseContext *context)
+{
+    typedef void (*Unref) (GMarkupParseContext *);
+    Unref original = (Unref) dlsym (RTLD_NEXT, "g_markup_parse_context_unref");
+
+    freeing_markup = TRUE;
+    original (context);
+    freeing_markup = FALSE;
+}
 #endif
 
 /* Moves whose source ends with one of these fail, as a filesystem giving out
@@ -772,6 +851,32 @@ test_migration_destination_passphrase (void)
     g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_ENCRYPTED_FILE);
     g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "old"));
     g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* A read of an encrypted history leaves no copy of a password it holds in freed
+ * memory: the decrypted document, the text the parser hands over and the value
+ * decoded from it are all wiped before they go. */
+static void
+test_encrypted_read_leaves_no_copy (void)
+{
+    const gchar *name = "no-copy-left";
+    const gchar *secret = "a-password-nobody-should-find-in-freed-memory";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_password_item_new ("name", secret, 0));
+
+    items = g_list_append (items, g_paste_text_item_new ("a text"));
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+
+    g_autolist (GPasteItem) loaded = NULL;
+    gsize size;
+
+    freed_holding_secret = 0;
+    freed_secret = secret;
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &loaded, &size));
+    freed_secret = NULL;
+    g_assert_cmpuint (g_list_length (loaded), ==, 2);
+    g_assert_cmpuint (freed_holding_secret, ==, 0);
 }
 #endif
 
@@ -2300,6 +2405,64 @@ test_passphrase_survives_unreadable (void)
     g_assert_false (wrong);
 }
 #endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An encrypted history goes through the converter's fixed buffers a frame at a
+ * time, many chunks of it reading back whole; carried on past its FINAL frame
+ * -- bytes appended, or a second stream after the first -- it is refused rather
+ * than read as its first stream alone. */
+static void
+test_encrypted_stream_bounds (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Data past the end of the encrypted stream*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    const gchar *name = "stream-bounds";
+    g_autofree gchar *long_text = g_strnfill (5 * 4096 + 123, 'y');
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (long_text));
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xmls");
+    g_autofree gchar *contents = NULL;
+    gsize length = 0;
+    gsize size;
+
+    g_paste_storage_backend_write_history (backend, name, items);
+
+    {
+        g_autolist (GPasteItem) loaded = NULL;
+
+        g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &loaded, &size));
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, long_text);
+    }
+
+    g_assert_true (g_file_get_contents (path, &contents, &length, NULL));
+
+    g_autofree gchar *twice = g_malloc (2 * length);
+
+    memcpy (twice, contents, length);
+    memcpy (twice + length, contents, length);
+
+    const gsize extended_lengths[] = { length + 7, 2 * length };
+
+    for (guint i = 0; i < G_N_ELEMENTS (extended_lengths); ++i)
+    {
+        g_autolist (GPasteItem) loaded = NULL;
+
+        g_assert_true (g_file_set_contents (path, twice, (gssize) extended_lengths[i], NULL));
+        g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &loaded, &size));
+    }
+}
+#endif
+
 /* What a write renames into place, a history or an image, is on the disk by
  * then; and an image whose write fails leaves nothing at its name, so the next
  * save writes it again rather than skip a file it takes for complete. */
@@ -2634,6 +2797,62 @@ assert_contents (const gchar *path,
 
     g_assert_true (g_file_get_contents (path, &contents, NULL, NULL));
     g_assert_cmpstr (contents, ==, expected);
+}
+
+/* An image's side file carried on past its stream -- a sync tool appending a
+ * second version, a shorter file written over a longer one -- is read as its
+ * first stream, which the checksum the history holds vouches for: refused, the
+ * image would be dropped by the read and its file deleted by the next save. A
+ * history document carried on stays refused, being read as unreadable and so
+ * never written over. */
+static void
+test_side_file_carried_on (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "side-file-carried-on";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "passphrase", &history, &image);
+
+    g_autoptr (GBytes) side_file = read_bytes (image);
+    g_autoptr (GByteArray) carried_on = g_byte_array_new ();
+
+    g_byte_array_append (carried_on, g_bytes_get_data (side_file, NULL), g_bytes_get_size (side_file));
+    g_byte_array_append (carried_on, (const guint8 *) "and then some", 13);
+    g_assert_true (g_file_set_contents (image, (const gchar *) carried_on->data, carried_on->len, NULL));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+    {
+        g_autolist (GPasteItem) items = NULL;
+        gsize size;
+
+        g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+        g_assert_cmpuint (g_list_length (items), ==, 2);
+        g_assert_true (G_PASTE_IS_IMAGE_ITEM (items->next->data));
+    }
+
+    g_autoptr (GBytes) document = read_bytes (history);
+    g_autoptr (GByteArray) document_carried_on = g_byte_array_new ();
+
+    g_byte_array_append (document_carried_on, g_bytes_get_data (document, NULL), g_bytes_get_size (document));
+    g_byte_array_append (document_carried_on, (const guint8 *) "and then some", 13);
+    g_assert_true (g_file_set_contents (history, (const gchar *) document_carried_on->data, document_carried_on->len, NULL));
+
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
 }
 
 /* What a process dying while a re-key installs its files leaves: the image
@@ -3408,6 +3627,9 @@ main (int    argc,
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
     g_test_add_func ("/storage/lock/file-unusable", test_lock_file_unusable);
     g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/encrypted-stream-bounds", test_encrypted_stream_bounds);
+#endif
     g_test_add_func ("/storage/image-name-not-utf8", test_image_name_not_utf8);
     g_test_add_func ("/storage/image-write-failed", test_image_write_failed);
     g_test_add_func ("/storage/new-history-write-failed", test_new_history_write_failed);
@@ -3429,6 +3651,7 @@ main (int    argc,
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/unlock/unopenable-flavour", test_unlock_skips_unopenable_flavour);
     g_test_add_func ("/storage/rekey/rollback", test_rekey_rollback);
+    g_test_add_func ("/storage/side-file-carried-on", test_side_file_carried_on);
     g_test_add_func ("/storage/rekey/split", test_rekey_split);
     g_test_add_data_func ("/storage/rekey/success", GINT_TO_POINTER (FALSE), test_rekey_success);
     g_test_add_data_func ("/storage/rekey/without-hard-links", GINT_TO_POINTER (TRUE), test_rekey_success);
@@ -3456,6 +3679,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/foreign-side-file", test_rekey_foreign_side_file);
     g_test_add_func ("/storage/migration/import-failure-cleartext", test_import_failure_leaves_no_cleartext);
     g_test_add_func ("/storage/migration/destination-passphrase", test_migration_destination_passphrase);
+    g_test_add_func ("/storage/encrypted-read-leaves-no-copy", test_encrypted_read_leaves_no_copy);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);

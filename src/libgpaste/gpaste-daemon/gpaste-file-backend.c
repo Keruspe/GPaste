@@ -82,6 +82,7 @@ _g_paste_file_backend_png_checksum (GPasteStorageBackend *self,
 static gboolean g_paste_file_backend_load_contents (GPasteStorageBackend *self,
                                                     const gchar          *history_file_path,
                                                     GFile                *history_file,
+                                                    gboolean              side_file,
                                                     gchar               **text,
                                                     gsize                *text_length,
                                                     gboolean             *opened,
@@ -347,7 +348,7 @@ _g_paste_file_backend_load_image_bytes (GPasteStorageBackend *self,
     gsize length = 0;
     g_autoptr (GError) error = NULL;
 
-    if (!g_paste_file_backend_load_contents (self, encrypted_path, encrypted_file, &data, &length, NULL, &error))
+    if (!g_paste_file_backend_load_contents (self, encrypted_path, encrypted_file, TRUE, &data, &length, NULL, &error))
     {
         g_warning ("Failed to load image from %s: %s", encrypted_path, error->message);
         return NULL;
@@ -1710,11 +1711,17 @@ on_error (GMarkupParseContext *context,
  * @opened, when given, says whether an encrypted file opened, so that a failure
  * past that is the stream's own: a file the user may not read fails its open
  * with the very %G_IO_ERROR_PERMISSION_DENIED the converter answers a wrong key
- * with. */
+ * with. A @side_file -- an image's, which the checksum its history holds
+ * vouches for -- ends at its stream's FINAL chunk, what follows it left
+ * (g_paste_secret_stream_converter_end_at_final ()): refused, the image would
+ * be dropped by the read and its file deleted by the next save. A history
+ * document is refused over it, being read as unreadable and so never written
+ * over. */
 static gboolean
 g_paste_file_backend_load_contents (GPasteStorageBackend *self,
                                     const gchar          *history_file_path,
                                     GFile                *history_file,
+                                    gboolean              side_file G_GNUC_UNUSED,
                                     gchar               **text,
                                     gsize                *text_length,
                                     gboolean             *opened,
@@ -1798,6 +1805,9 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
          * through @cipher. */
         g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_DECRYPT, passphrase);
         g_autofree gchar *cipher = g_malloc (G_PASTE_FILE_BACKEND_READ_SIZE);
+
+        if (side_file)
+            g_paste_secret_stream_converter_end_at_final (G_PASTE_SECRET_STREAM_CONVERTER (converter));
         gsize cipher_length = 0;
         gsize length = 0;
         gboolean at_end = FALSE;
@@ -1995,7 +2005,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
         if (g_cancellable_is_cancelled (cancellable))
             return FALSE;
 
-        if (!g_paste_file_backend_load_contents (self, history_file_path, history_file, &text, &text_length, NULL, &error))
+        if (!g_paste_file_backend_load_contents (self, history_file_path, history_file, FALSE, &text, &text_length, NULL, &error))
         {
             /* Present but unreadable (e.g. a wrong passphrase failing the
              * authenticated decryption, or an I/O error): report the failure so
@@ -2158,6 +2168,8 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                       const gchar          *path)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
+    /* An image's, named by g_paste_file_backend_encrypted_path (). */
+    gboolean side_file = g_str_has_suffix (path, ".pngs");
     /* The file's plaintext -- an image's pixels as readily as a history's
      * passwords -- so it is wiped by length rather than as a string, as is the
      * @check read back below: neither is text. */
@@ -2165,7 +2177,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
     gsize length = 0;
     g_autoptr (GError) error = NULL;
 
-    if (!g_paste_file_backend_load_contents (self, path, file, &text, &length, NULL, &error))
+    if (!g_paste_file_backend_load_contents (self, path, file, side_file, &text, &length, NULL, &error))
     {
         g_warning ("Failed to read %s with the current passphrase: %s", path, error->message);
         return FALSE;
@@ -2192,7 +2204,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
         g_autofree gchar *check = NULL;
         gsize check_length = 0;
 
-        ok = g_paste_file_backend_load_contents (rekeyed, tmp, tmp_file, &check, &check_length, NULL, &error) &&
+        ok = g_paste_file_backend_load_contents (rekeyed, tmp, tmp_file, side_file, &check, &check_length, NULL, &error) &&
              check_length == length && !memcmp (check, text, length);
 
         g_paste_util_wipe (check, check_length);
@@ -2660,7 +2672,7 @@ g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
     gboolean opened;
     g_autoptr (GError) error = NULL;
 
-    if (g_paste_file_backend_load_contents (self, path, file, &text, &text_length, &opened, &error))
+    if (g_paste_file_backend_load_contents (self, path, file, FALSE, &text, &text_length, &opened, &error))
         return FALSE;
 
     return opened && g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED);
@@ -2686,7 +2698,7 @@ g_paste_file_backend_history_confirms_passphrase (GPasteStorageBackend *self,
     if (g_stat (path, &stat_buf) || !stat_buf.st_size)
         return FALSE;
 
-    return g_paste_file_backend_load_contents (self, path, file, &text, &text_length, &opened, NULL);
+    return g_paste_file_backend_load_contents (self, path, file, FALSE, &text, &text_length, &opened, NULL);
 }
 #endif
 
