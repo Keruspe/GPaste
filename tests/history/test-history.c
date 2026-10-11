@@ -3051,6 +3051,126 @@ test_password_dropped (void)
         g_assert_cmpuint (dropped->len, ==, 3);
         g_assert_cmpstr (g_ptr_array_index (dropped, 2), ==, "evicted secret");
     }
+
+    /* A reload whose store holds the password no more -- a migration to a plain
+     * flavour imports none -- is its departure too. */
+    {
+        g_autoptr (GPasteSettings) settings = NULL;
+        g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+
+        g_paste_history_add (history, g_paste_text_item_new ("a kept text"));
+        g_paste_history_add (history, g_paste_password_item_new (NULL, "reloaded secret", 0));
+        pump_for_ms (50);
+        g_paste_history_flush (history);
+        g_paste_history_reload_backend (history);
+        g_assert_true (pump_until_length (history, 1, 5000));
+        g_assert_cmpuint (dropped->len, ==, 4);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 3), ==, "reloaded secret");
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* A reload whose store keeps it -- an encrypted flavour stores passwords,
+     * as a passphrase change rewrites them -- is none, as a switch is none. */
+    {
+        g_paste_storage_backend_set_passphrase ("reload passphrase");
+
+        /* Set before the history is made, so that it loads from that flavour:
+         * the settings all share the one memory backend. */
+        {
+            g_autoptr (GPasteSettings) encrypted = g_paste_settings_new ();
+
+            g_paste_settings_set_storage_backend (encrypted, G_PASTE_STORAGE_ENCRYPTED_FILE);
+        }
+
+        g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+
+        g_paste_history_add (history, g_paste_text_item_new ("a kept text"));
+        g_paste_history_add (history, g_paste_password_item_new (NULL, "kept secret", 0));
+        g_paste_history_flush (history);
+        g_paste_history_reload_backend (history);
+        g_assert_true (pump_until_length (history, 2, 5000));
+        g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "kept secret");
+        g_assert_cmpuint (dropped->len, ==, 4);
+        g_paste_storage_backend_set_passphrase (NULL);
+    }
+#endif
+}
+
+/* A reload's passwords left out of what it carries are announced when the
+ * history is emptied before its load lands, as that load would have. */
+static void
+test_reload_then_empty_drops_password (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+    g_paste_history_add (history, g_paste_text_item_new ("a text"));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "reloaded secret", 0));
+    pump_for_ms (50);
+    g_paste_history_flush (history);
+    g_paste_history_reload_backend (history);
+    g_paste_history_empty (history);
+    pump_for_ms (50);
+    g_assert_cmpuint (dropped->len, ==, 1);
+    g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "reloaded secret");
+}
+
+/* A load waited for as the daemon's main loop would. */
+static gboolean
+pump_until_loaded (GPasteHistory *history)
+{
+    for (guint i = 0; i < 5000 && g_paste_history_is_loading (history); ++i)
+        pump_once ();
+    return !g_paste_history_is_loading (history);
+}
+
+/* So are they when the history, the one history-name names, is deleted before
+ * that load lands -- leaving it for the default history first lets go of them
+ * -- and when a second reload comes before it, which gives that load up. */
+static void
+test_reload_then_delete_drops_password (gconstpointer data)
+{
+    gboolean twice = GPOINTER_TO_INT (data);
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    g_paste_settings_set_history_name (settings, g_paste_history_get_current (history));
+    /* Writing the name the history already has loads it again, which is
+     * waited for before anything is added. */
+    g_assert_true (pump_until_loaded (history));
+    g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+    g_paste_history_add (history, g_paste_text_item_new ("a text"));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "reloaded secret", 0));
+    pump_for_ms (50);
+    g_paste_history_flush (history);
+    g_paste_history_reload_backend (history);
+
+    if (twice)
+    {
+        g_paste_history_flush (history);
+        g_paste_history_reload_backend (history);
+        g_assert_true (pump_until_loaded (history));
+    }
+    else
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_assert_true (g_paste_history_delete (history, NULL, &error));
+        g_assert_no_error (error);
+        g_assert_true (pump_until_loaded (history));
+    }
+
+    pump_for_ms (50);
+    g_assert_cmpuint (dropped->len, ==, 1);
+    g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "reloaded secret");
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    g_paste_history_flush (history);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -4957,6 +5077,8 @@ main (int argc, char *argv[])
     add_test ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
+    add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
+    g_test_add_data_func ("/history/reload_twice_drops_password", GINT_TO_POINTER (TRUE), test_reload_then_delete_drops_password);
     add_test ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
     add_test ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

@@ -87,6 +87,13 @@ struct _GPasteHistory
     GPasteItem           *pending_selection;
     gboolean              pending_clear;
     GSList               *pending_dropped;
+
+    /* The passwords the model held when reload_backend () swapped it out, until
+     * the reloaded model arrives: one it no longer holds -- a migration to a
+     * plain flavour imports none -- has left the history, and is announced as
+     * any other departure is. A switch starting another load drops them: that
+     * is a history swapped out, which no password leaves. */
+    GSList               *reload_passwords;
 };
 
 G_PASTE_DEFINE_TYPE (History, history, G_TYPE_OBJECT)
@@ -284,7 +291,8 @@ g_paste_history_snapshot (GPasteHistory *self)
 
 /* Drop every item, keeping the containers. Releases the array's refs through
  * its free func (a plain unref: unlike g_paste_history_empty this is a history
- * being swapped out, not thrown away, so no password leaves it). */
+ * being swapped out, not thrown away -- what the reload of one leaves out being
+ * reload_backend ()'s to announce). */
 static void
 g_paste_history_private_clear (GPasteHistory *self)
 {
@@ -1419,6 +1427,10 @@ g_paste_history_empty (GPasteHistory *self)
     while (self->history->len)
         g_paste_history_private_remove (self, self->history->len - 1, TRUE);
 
+    /* So are those a reload set aside: the load that was to announce what it
+     * left out is given up before an emptying (g_paste_history_empty (),
+     * g_paste_history_delete ()). */
+    self->pending_dropped = g_slist_concat (g_steal_pointer (&self->reload_passwords), self->pending_dropped);
     self->size = 0;
 
     g_paste_history_private_elect_new_biggest (self);
@@ -1655,6 +1667,13 @@ g_paste_history_on_loaded (gpointer user_data,
     g_paste_history_private_set_from_list (self, history);
     self->size = size;
 
+    for (GSList *l = self->reload_passwords; l; l = l->next)
+    {
+        if (!g_hash_table_contains (self->by_uuid, g_paste_item_get_uuid (l->data)))
+            self->pending_dropped = g_slist_prepend (self->pending_dropped, g_object_ref (l->data));
+    }
+    g_clear_slist (&self->reload_passwords, g_object_unref);
+
     g_paste_history_activate_first (self, TRUE);
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
@@ -1736,6 +1755,15 @@ g_paste_history_reload_backend (GPasteHistory *self)
     self->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (self->settings), self->settings);
     self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded);
 
+    /* Added to what a reload before this one set aside, its load given up
+     * above before it could say which of them it found again. */
+    for (guint i = 0; i < self->history->len; ++i)
+    {
+        GPasteItem *item = g_ptr_array_index (self->history, i);
+
+        if (G_PASTE_IS_PASSWORD_ITEM (item))
+            self->reload_passwords = g_slist_prepend (self->reload_passwords, g_object_ref (item));
+    }
     g_paste_history_private_clear (self);
     self->size = 0;
     g_paste_history_private_elect_new_biggest (self);
@@ -1879,6 +1907,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     g_debug ("history: name changed to '%s'", self->name);
 
     g_paste_history_private_clear (self);
+    g_clear_slist (&self->reload_passwords, g_object_unref);
     self->size = 0;
     /* Switching away from an unreadable history resumes recording: the new one
      * stands on its own (see g_paste_history_load_async). A flushed history
@@ -1928,6 +1957,7 @@ g_paste_history_dispose (GObject *object)
     g_clear_object (&self->backend);
     g_clear_object (&self->pending_selection);
     g_clear_slist (&self->pending_dropped, g_object_unref);
+    g_clear_slist (&self->reload_passwords, g_object_unref);
     g_clear_pointer (&self->history, g_ptr_array_unref);
     g_clear_pointer (&self->by_uuid, g_hash_table_unref);
     g_clear_object (&self->settings_signals);
