@@ -640,10 +640,24 @@ g_paste_daemon_upload_done (GTask *task)
      * in the history as though it were an address. Being a valid uri does not
      * tell the two apart -- a scheme and a colon is the whole of what that
      * takes, so "Usage:", "curl:" and "Error: 429 Too Many Requests" all pass
-     * -- so the scheme has to be one a browser can open, not merely present. */
+     * -- so the scheme has to be one a browser can open, not merely present.
+     *
+     * Nor does g_uri_is_valid () refuse what may follow a url: a line break, a
+     * space, an escape sequence. Whoever answers the command -- the pastebin,
+     * for the default one -- would then have whatever it put after the address
+     * pasted as the link, a second line run by the terminal it lands in, so a
+     * url is one run of visible characters. */
     const gchar *scheme = g_uri_peek_scheme (url);
+    gboolean visible = TRUE;
 
-    if (!g_uri_is_valid (url, G_URI_FLAGS_NONE, NULL) ||
+    for (const gchar *c = url; visible && *c; c = g_utf8_next_char (c))
+    {
+        gunichar u = g_utf8_get_char (c);
+
+        visible = !g_unichar_isspace (u) && !g_unichar_iscntrl (u) && g_unichar_type (u) != G_UNICODE_FORMAT;
+    }
+
+    if (!visible || !g_uri_is_valid (url, G_URI_FLAGS_NONE, NULL) ||
         (!g_paste_str_equal (scheme, "http") && !g_paste_str_equal (scheme, "https")))
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,

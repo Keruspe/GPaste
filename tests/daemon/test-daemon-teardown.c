@@ -476,6 +476,30 @@ test_upload_does_not_block (Fixture      *fixture,
     g_assert_cmpstr (url, ==, "https://example.com/x");
 }
 
+/* An answer is one url: whatever follows it on another line, or in an escape
+ * sequence, fails the upload rather than going on the clipboard as the link. */
+static void
+test_upload_answer_is_one_url (Fixture      *fixture,
+                               gconstpointer user_data G_GNUC_UNUSED)
+{
+    const gchar *commands[] = {
+        "printf 'https://example.com/a\\necho injected\\n'",
+        "printf 'https://example.com/a\\033]52;c;eA==\\a'",
+        "printf 'https://example.com/\\342\\200\\256a'",
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (commands); ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("uploaded %u", i);
+        g_autofree gchar *uuid = add_text (fixture, text);
+        g_autoptr (GError) error = NULL;
+        g_autofree gchar *url = run_upload (fixture, uuid, commands[i], &error);
+
+        g_assert_null (url);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    }
+}
+
 /* An upload out when the daemon leaves the bus is given up on there, its
  * command killed: answered as cancelled at once rather than at the deadline,
  * it lets the daemon go with it. */
@@ -648,6 +672,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/upload/bounds-answer", Fixture, NULL, fixture_set_up, test_upload_bounds_answer, fixture_tear_down);
     g_test_add ("/daemon/upload/unread-input", Fixture, NULL, fixture_set_up, test_upload_unread_input, fixture_tear_down);
     g_test_add ("/daemon/upload/does-not-block", Fixture, NULL, fixture_set_up, test_upload_does_not_block, fixture_tear_down);
+    g_test_add ("/daemon/upload/answer-is-one-url", Fixture, NULL, fixture_set_up, test_upload_answer_is_one_url, fixture_tear_down);
     g_test_add ("/daemon/upload/ends-with-export", Fixture, NULL, fixture_set_up, test_upload_ends_with_export, fixture_tear_down);
     g_test_add ("/daemon/upload/shortcut-ends-quietly", Fixture, NULL, fixture_set_up, test_upload_shortcut_ends_quietly, fixture_tear_down);
     g_test_add ("/daemon/upload/ends-with-reexec", Fixture, NULL, fixture_set_up, test_upload_ends_with_reexec, fixture_tear_down);
