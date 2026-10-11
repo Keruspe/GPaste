@@ -372,9 +372,11 @@
     <!--
       Merge several items into a new one.
 
-      Daemon-side because it has to be: what gets joined is each item's real
+      Daemon-side because it has to be: what gets joined is each item's whole
       value, and the only string an item travels with here is the one a user is
-      shown. @decoration wraps each item, @separator goes between them.
+      shown. @decoration wraps each item, @separator goes between them. An image
+      or a password has no text to join, and fails with
+      org.gnome.GPaste.Error.WrongItemKind, the history left as it was.
     -->
     <method name="Merge">
       <arg type="s"  direction="in"  name="decoration"/>

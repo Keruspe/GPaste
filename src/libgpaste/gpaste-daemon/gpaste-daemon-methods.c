@@ -878,9 +878,11 @@ g_paste_daemon_methods_list_histories (const GPasteDaemonMethods *self,
     return g_variant_builder_end (&builder);
 }
 
-/* Daemon-side because it has to be: what gets joined is each item's real value,
- * and the only string an item travels over the bus with is the one a user is
- * shown. */
+/* Daemon-side because it has to be: what gets joined is each item's whole
+ * value, and the only string an item travels over the bus with is the one a
+ * user is shown. An image's value is the checksum naming its file and a
+ * password's the placeholder standing for it, neither of which is anything to
+ * join, so both are refused before anything is. */
 G_PASTE_VISIBLE gchar *
 g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
                               const gchar               *decoration,
@@ -900,6 +902,8 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
         GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
 
         G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "no item matching this uuid", NULL);
+        G_PASTE_DBUS_ASSERT_FULL (!G_PASTE_IS_IMAGE_ITEM (item) && !G_PASTE_IS_PASSWORD_ITEM (item),
+                                  G_PASTE_ERROR_WRONG_ITEM_KIND, "an image or a password has no text to merge", NULL);
 
         g_string_append_printf (str, "%s%s%s%s",
                                 (i) ? separator : "",

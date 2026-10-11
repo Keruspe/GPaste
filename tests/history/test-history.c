@@ -2476,6 +2476,42 @@ test_search_image_by_what_it_shows (void)
     g_assert_cmpuint (g_strv_length (by_size), ==, 1);
 }
 
+/* Merge joins text: an image's value is a checksum and a password's a
+ * placeholder, so either is refused, and nothing is added. */
+static void
+test_merge_refuses_image_and_password (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    g_paste_history_add (history, g_paste_text_item_new ("text"));
+
+    g_autofree gchar *text = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, uniform_image (4));
+
+    g_autofree gchar *image = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_password_item_new ("name", "secret", 0));
+
+    g_autofree gchar *password = dup_uuid_at (history, 0);
+
+    /* No clipboard manager: the refusal comes before anything is added. */
+    const GPasteDaemonMethods methods = { .history = history };
+    const gchar *with_image[] = { text, image, NULL };
+    const gchar *with_password[] = { text, password, NULL };
+    const gchar * const *merges[] = { with_image, with_password };
+
+    for (guint i = 0; i < G_N_ELEMENTS (merges); ++i)
+    {
+        g_autoptr (GError) error = NULL;
+        g_autofree gchar *merged = g_paste_daemon_methods_merge (&methods, "", "\n", merges[i], &error);
+
+        g_assert_null (merged);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_WRONG_ITEM_KIND);
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    }
+}
+
 /* Selecting an idle image decodes it again, and the history's total has to
  * count that texture once: counted twice, the memory cap evicts entries to pay
  * for memory nothing uses -- here every one but the head, the image weighing
@@ -6738,6 +6774,7 @@ main (int argc, char *argv[])
     add_test ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     add_test ("/history/select_counts_image_once", test_select_counts_image_once);
     add_test ("/history/search_image_by_what_it_shows", test_search_image_by_what_it_shows);
+    add_test ("/history/merge_refuses_image_and_password", test_merge_refuses_image_and_password);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
