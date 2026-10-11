@@ -215,6 +215,7 @@ gpaste-client ui                    # open the graphical tool
 gpaste-client preferences           # open the settings
 gpaste-client migrate               # switch storage backend
 gpaste-client change-passphrase     # re-key an encrypted history
+gpaste-client doctor                # check the stored histories, putting right what can be
 ```
 
 `gpaste-client help` lists every subcommand; see also `man gpaste-client`.

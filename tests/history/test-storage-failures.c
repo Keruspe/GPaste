@@ -693,6 +693,51 @@ kind_hidable (void)
 }
 #endif
 
+/* A folder of the history directory swapped for a link to @swap_target right
+ * after the store check has looked at it, when set: whichever look it takes,
+ * by path or by its parent's descriptor. */
+static const gchar *swap_dir;
+static const gchar *swap_target;
+
+static void
+swap_looked_at (const gchar *looked)
+{
+    if (!swap_dir || (!g_str_has_suffix (looked, "/swapped-for-link") && !g_paste_str_equal (looked, "swapped-for-link")))
+        return;
+
+    g_autofree gchar *entry = g_build_filename (swap_dir, "swapped-for-link", NULL);
+
+    swap_dir = NULL;
+    g_assert_cmpint (g_rmdir (entry), ==, 0);
+    g_assert_cmpint (symlink (swap_target, entry), ==, 0);
+}
+
+int
+lstat (const char  *path,
+       struct stat *buf)
+{
+    typedef int (*Lstat) (const char *, struct stat *);
+    Lstat original = (Lstat) dlsym (RTLD_NEXT, "lstat");
+    int result = original (path, buf);
+
+    swap_looked_at (path);
+    return result;
+}
+
+int
+fstatat (int          dirfd,
+         const char  *path,
+         struct stat *buf,
+         int          flags)
+{
+    typedef int (*Fstatat) (int, const char *, struct stat *, int);
+    Fstatat original = (Fstatat) dlsym (RTLD_NEXT, "fstatat");
+    int result = original (dirfd, path, buf, flags);
+
+    swap_looked_at (path);
+    return result;
+}
+
 /* The migration's own static helpers, detect_current_backend() and
  * import_histories() among them, are what these cases drive. */
 #include "../../src/libgpaste/gpaste-daemon/gpaste-storage-migration.c"
@@ -721,6 +766,9 @@ struct _TestMigrationPrompt
     gchar               *passphrase_error;
     /* Whether the last passphrase was asked for twice. */
     gboolean             confirmed;
+    /* What the last request explained, and whether it offered to remember. */
+    gchar               *passphrase_description;
+    gboolean             offered_remember;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -745,11 +793,21 @@ test_migration_prompt_passphrase (GPastePrompt        *prompt,
                                   GPastePromptRequest *request)
 {
     TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
-    const gchar *passphrase = (self->passphrases) ? self->passphrases[self->passphrase_asks] : self->passphrase;
+    const gchar *passphrase = self->passphrase;
+
+    /* A list ends with NULL, and asked once more than it holds answers that: a
+     * dismissal, rather than whatever follows the list. */
+    if (self->passphrases)
+    {
+        g_assert_cmpuint (self->passphrase_asks, <=, g_strv_length ((GStrv) self->passphrases));
+        passphrase = self->passphrases[self->passphrase_asks];
+    }
 
     ++self->passphrase_asks;
     self->confirmed = g_paste_prompt_request_get_confirm (request);
     g_set_str (&self->passphrase_error, g_paste_prompt_request_get_error_message (request));
+    g_set_str (&self->passphrase_description, g_paste_prompt_request_get_description (request));
+    self->offered_remember = g_paste_prompt_request_offers_remember (request);
     g_paste_prompt_request_reply_passphrase (request, passphrase, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 }
 
@@ -794,6 +852,7 @@ test_migration_prompt_finalize (GObject *object)
     g_free (TEST_MIGRATION_PROMPT (object)->title);
     g_free (TEST_MIGRATION_PROMPT (object)->message);
     g_free (TEST_MIGRATION_PROMPT (object)->passphrase_error);
+    g_free (TEST_MIGRATION_PROMPT (object)->passphrase_description);
 
     G_OBJECT_CLASS (test_migration_prompt_parent_class)->finalize (object);
 }
@@ -4869,6 +4928,483 @@ test_rekey_split_reported (void)
 }
 #endif
 
+static void
+on_doctor_settled (GObject      *source G_GNUC_UNUSED,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* Check the store through @prompt, handing back its report. */
+static GStrv
+run_doctor (GPasteSettings      *settings,
+            TestMigrationPrompt *prompt,
+            gboolean            *healthy)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+    GStrv report = NULL;
+
+    g_paste_storage_doctor_async (G_PASTE_PROMPT (prompt), settings, on_doctor_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_doctor_finish (result, &report, healthy, &error));
+    g_assert_no_error (error);
+    g_assert_false (g_paste_storage_is_busy ());
+
+    return report;
+}
+
+static guint
+mode_of (const gchar *path)
+{
+    GStatBuf st;
+
+    g_assert_cmpint (g_stat (path, &st), ==, 0);
+
+    return st.st_mode & 0777;
+}
+
+/* A line of the report is one line, whatever the name it carries: a folder
+ * named with line breaks -- anybody able to write into the history folder can
+ * make one -- would otherwise add lines of its own choosing to the report,
+ * which has one finding per line. Its control characters are shown as U+FFFD. */
+static void
+test_doctor_name_one_line (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *forged = g_build_filename (history_dir, "x\nRestricted forged to its owner\ny", NULL);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_cmpint (g_mkdir_with_parents (forged, 0755), ==, 0);
+    g_assert_cmpint (g_chmod (forged, 0755), ==, 0);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+    gboolean named = FALSE;
+
+    g_assert_true (healthy);
+    for (GStrv line = report; *line; ++line)
+    {
+        g_assert_null (strchr (*line, '\n'));
+        named |= strstr (*line, "x\xef\xbf\xbdRestricted forged to its owner\xef\xbf\xbdy") != NULL;
+    }
+    g_assert_true (named);
+    g_assert_cmpint (g_rmdir (forged), ==, 0);
+}
+
+/* The history folder and every folder in it are restricted to their owner, and
+ * said to be once; a second check finds nothing to say. */
+static void
+test_doctor_permissions (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *images_root = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *images = g_paste_file_backend_images_dir ("doctor");
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    /* Held, as the daemon running the check holds it: taking it on the way would
+     * make the history directory private again, undoing the chmod below. */
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_cmpint (g_mkdir_with_parents (images, 0755), ==, 0);
+    /* Every one of the three, whatever the umask made them. */
+    g_assert_cmpint (g_chmod (history_dir, 0755), ==, 0);
+    g_assert_cmpint (g_chmod (images_root, 0755), ==, 0);
+    g_assert_cmpint (g_chmod (images, 0755), ==, 0);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_true (healthy);
+    g_assert_cmpuint (g_strv_length (report), ==, 3);
+    g_assert_cmpuint (mode_of (history_dir), ==, 0700);
+    g_assert_cmpuint (mode_of (images_root), ==, 0700);
+    g_assert_cmpuint (mode_of (images), ==, 0700);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+
+    g_auto (GStrv) again = run_doctor (settings, prompt, &healthy);
+
+    g_assert_true (healthy);
+    g_assert_cmpstrv (again, (const gchar * const []) { NULL });
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* What a change of passphrase that could not be undone left -- the split it
+ * sends the user to the check for -- is settled by the check, as at a start,
+ * rather than reported as a history that cannot be read. */
+static void
+test_doctor_settles_rekey (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to install the re-encrypted*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "doctor-split";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+        const gchar * const no_way_back[] = { ".xmls.rekey", ".xmls.rekey-old", ".pngs.rekey-old", NULL };
+        gboolean split = FALSE;
+
+        failed_moves = no_way_back;
+        g_assert_false (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+        failed_moves = NULL;
+        g_assert_true (split);
+    }
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("old passphrase");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_paste_storage_backend_set_passphrase (NULL);
+    for (GStrv line = report; *line; ++line)
+        g_assert_null (strstr (*line, name));
+    g_assert_true (healthy);
+    g_assert_false (has_rekey_leftovers (name));
+}
+#endif
+
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
+/* The check reads every row a history stores, past max-history-size: damage
+ * in a row the load leaves unread is damage all the same, and what the check
+ * is there to report. */
+static void
+test_doctor_reads_whole (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*failed to decrypt an item*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "doctor-whole";
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_SQLITE));
+    g_autolist (GPasteItem) items = NULL;
+    sqlite3 *db = NULL;
+
+    for (guint i = 0; i < 6; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("item %u", i);
+
+        items = g_list_append (items, g_paste_text_item_new (value));
+    }
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "passphrase");
+
+        g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+    }
+
+    /* The back row, past the 5 a load reads. */
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (db, "UPDATE items SET value = X'00' WHERE rank = (SELECT MIN (rank) FROM items);", NULL, NULL, NULL), ==, SQLITE_OK);
+    sqlite3_close (db);
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_SQLITE);
+    g_paste_storage_backend_set_passphrase ("passphrase");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = TRUE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+    gboolean named = FALSE;
+
+    g_assert_false (healthy);
+    for (GStrv line = report; *line; ++line)
+        named |= strstr (*line, name) != NULL;
+    g_assert_true (named);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+#endif
+
+static void
+on_other_passphrase (GObject      *source G_GNUC_UNUSED,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* What a prompt is handed is UTF-8, whatever history names it carries: a
+ * file's name need not be, the Adwaita dialog shows nothing of a description
+ * that is not, and the in-shell one throws on it, the user then told nothing
+ * or asked for nothing. */
+static void
+test_prompt_texts_valid (void)
+{
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_prompt_report (G_PASTE_PROMPT (prompt), "Could not read \xff", "The history \xe9 could not be read");
+    g_assert_true (g_utf8_validate (prompt->title, -1, NULL));
+    g_assert_true (g_utf8_validate (prompt->message, -1, NULL));
+
+    prompt->passphrase = "other";
+    g_paste_prompt_other_passphrase_async (G_PASTE_PROMPT (prompt), "The histories \xe9 take another passphrase",
+                                           "Wrong for \xff", on_other_passphrase, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_utf8_validate (prompt->passphrase_description, -1, NULL));
+    g_assert_true (g_utf8_validate (prompt->passphrase_error, -1, NULL));
+}
+
+/* A folder in the history directory swapped for a link once the check has
+ * looked at it is not followed: what the link points at is not GPaste's to
+ * restrict, nor to walk. */
+static void
+test_doctor_link_swapped_in (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *entry = g_build_filename (history_dir, "swapped-for-link", NULL);
+    g_autofree gchar *outside = g_build_filename (g_get_user_cache_dir (), "not-gpaste's", NULL);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    /* Open to others, as the folder's would be once swapped: a look at it
+     * restricts it, and so whatever stands in its place by then. */
+    g_assert_cmpint (g_mkdir_with_parents (entry, 0755), ==, 0);
+    g_assert_cmpint (g_chmod (entry, 0755), ==, 0);
+    g_assert_cmpint (g_mkdir_with_parents (outside, 0755), ==, 0);
+    g_assert_cmpint (g_chmod (outside, 0755), ==, 0);
+    swap_dir = history_dir;
+    swap_target = outside;
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_null (swap_dir);
+    g_assert_cmpuint (mode_of (outside), ==, 0755);
+    for (GStrv line = report; *line; ++line)
+        g_assert_null (strstr (*line, "not-gpaste's"));
+    g_assert_cmpint (g_unlink (entry), ==, 0);
+    g_assert_cmpint (g_rmdir (outside), ==, 0);
+}
+
+/* A history folder moved elsewhere and linked back is the one checked: the
+ * folder it links to is restricted as the folder itself would be. */
+static void
+test_doctor_linked_folder (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *moved = g_strconcat (history_dir, "-moved", NULL);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_cmpint (g_rename (history_dir, moved), ==, 0);
+    g_assert_cmpint (symlink (moved, history_dir), ==, 0);
+    /* Held, as in /storage/doctor/permissions: taking it on the way would make
+     * the folder private again through the link, undoing the chmod below. */
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_assert_cmpint (g_chmod (moved, 0755), ==, 0);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+    guint mode = mode_of (moved);
+
+    g_assert_cmpint (g_unlink (history_dir), ==, 0);
+    g_assert_cmpint (g_rename (moved, history_dir), ==, 0);
+    g_assert_true (healthy);
+    g_assert_cmpuint (mode, ==, 0700);
+    g_assert_cmpuint (g_strv_length (report), ==, 1);
+}
+
+/* A history that cannot be read is said to be, and leaves the store unhealthy:
+ * nothing can put it right. The report is UTF-8 whatever the names of the
+ * files it tells of. */
+static void
+test_doctor_unreadable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to parse history file*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("fine"));
+        g_autofree gchar *broken = g_paste_storage_backend_get_history_file_path (backend, "broken");
+
+        g_autofree gchar *misnamed = g_paste_storage_backend_get_history_file_path (backend, "\xff\xfe");
+
+        g_paste_storage_backend_write_history (backend, "fine", items);
+        g_assert_true (g_file_set_contents (broken, "<history version=\"2.0\"><item", -1, NULL));
+        g_assert_true (g_file_set_contents (misnamed, "<history version=\"2.0\"><item", -1, NULL));
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = TRUE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_false (healthy);
+    g_assert_cmpuint (g_strv_length (report), ==, 2);
+
+    guint broken_lines = 0;
+
+    for (GStrv line = report; *line; ++line)
+    {
+        g_assert_true (g_utf8_validate (*line, -1, NULL));
+        broken_lines += strstr (*line, "“broken”") != NULL;
+    }
+    g_assert_cmpuint (broken_lines, ==, 1);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+static void
+write_under (GPasteSettings *settings,
+             const gchar    *passphrase,
+             const gchar    *name)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (name));
+
+    g_paste_storage_backend_write_history (backend, name, items);
+}
+
+static gboolean
+opens_under (GPasteSettings *settings,
+             const gchar    *passphrase,
+             const gchar    *name)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
+    g_autolist (GPasteItem) items = NULL;
+    gsize size = 0;
+
+    return g_paste_storage_backend_read_history (backend, name, NULL, &items, &size) && g_list_length (items) == 1;
+}
+
+/* Histories left on another passphrase are encrypted with the one the history
+ * in use takes once the user types theirs, which is asked for naming them and
+ * never offered to be remembered; one opening none of them is asked again,
+ * saying so. */
+static void
+test_doctor_split_repaired (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    write_under (settings, "one", name);
+    write_under (settings, "two", "other");
+    write_under (settings, "two", "third");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    const gchar * const typed[] = { "wrong", "two", NULL };
+    gboolean healthy = FALSE;
+
+    prompt->passphrases = typed;
+
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_true (healthy);
+    g_assert_cmpuint (g_strv_length (report), ==, 2);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 2);
+    g_assert_cmpstr (prompt->passphrase_error, ==, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG));
+    g_assert_nonnull (strstr (prompt->passphrase_description, "other"));
+    g_assert_nonnull (strstr (prompt->passphrase_description, "third"));
+    g_assert_false (prompt->offered_remember);
+    g_assert_true (opens_under (settings, "one", name));
+    g_assert_true (opens_under (settings, "one", "other"));
+    g_assert_true (opens_under (settings, "one", "third"));
+    g_assert_cmpstr (g_paste_storage_backend_get_passphrase (), ==, "one");
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* Dismissed, the passphrase asked for leaves those histories as they are and
+ * the store unhealthy, each of them said to be still on another passphrase. */
+static void
+test_doctor_split_dismissed (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    write_under (settings, "one", name);
+    write_under (settings, "two", "other");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = TRUE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_false (healthy);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+    g_assert_cmpuint (g_strv_length (report), ==, 1);
+    g_assert_nonnull (strstr (report[0], "“other”"));
+    g_assert_true (opens_under (settings, "two", "other"));
+    g_assert_true (opens_under (settings, "one", name));
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* A locked history is unlocked first; left locked, what it holds is not
+ * checked and the store is not called healthy. */
+static void
+test_doctor_locked (void)
+{
+    /* The keyring is looked up first, which the test bus has none of. */
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not look up the history passphrase in the keyring*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    write_under (settings, "one", name);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = TRUE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_false (healthy);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+    g_assert_null (prompt->passphrase_description);
+    g_assert_cmpuint (g_strv_length (report), ==, 1);
+    g_assert_null (g_paste_storage_backend_get_passphrase ());
+}
+#endif
+
 int
 main (int    argc,
       char **argv)
@@ -4880,6 +5416,18 @@ main (int    argc,
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
     g_test_add_func ("/storage/lock/file-unusable", test_lock_file_unusable);
     g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
+    g_test_add_func ("/storage/doctor/permissions", test_doctor_permissions);
+    g_test_add_func ("/storage/doctor/name-one-line", test_doctor_name_one_line);
+    g_test_add_func ("/storage/doctor/linked-folder", test_doctor_linked_folder);
+    g_test_add_func ("/storage/doctor/link-swapped-in", test_doctor_link_swapped_in);
+    g_test_add_func ("/storage/prompt/texts-valid", test_prompt_texts_valid);
+#if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
+    g_test_add_func ("/storage/doctor/reads-whole", test_doctor_reads_whole);
+#endif
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/doctor/settles-rekey", test_doctor_settles_rekey);
+#endif
+    g_test_add_func ("/storage/doctor/unreadable", test_doctor_unreadable);
     g_test_add_func ("/storage/lock/two-waits", test_storage_lock_two_waits);
     g_test_add_func ("/storage/lock/taken-is-ours", test_taken_lock_is_ours);
     g_test_add_func ("/storage/lock/load-after-release", test_load_after_release_reads_nothing);
@@ -4938,6 +5486,9 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/cost", test_rekey_cost);
     g_test_add_func ("/storage/rekey/cut-short", test_rekey_cut_short);
     g_test_add_func ("/storage/rekey/failed-leaves-no-journal", test_rekey_failed_leaves_no_journal);
+    g_test_add_func ("/storage/doctor/split-repaired", test_doctor_split_repaired);
+    g_test_add_func ("/storage/doctor/split-dismissed", test_doctor_split_dismissed);
+    g_test_add_func ("/storage/doctor/locked", test_doctor_locked);
     g_test_add_func ("/storage/rekey/settled-under-lock", test_rekey_settled_under_lock);
     g_test_add_func ("/storage/rekey/settled-while-busy", test_rekey_settled_while_busy);
     g_test_add_func ("/storage/rekey/busy", test_rekey_busy);

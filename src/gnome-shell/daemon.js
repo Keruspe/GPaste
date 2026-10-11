@@ -6,7 +6,7 @@ import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 
 import {GPasteShellPrompt} from './prompt.js';
 
-// The three storage concerns are ordinary GAsyncResult operations, but they are
+// The storage concerns are ordinary GAsyncResult operations, but they are
 // static functions on the namespace rather than methods on a prototype, so
 // Gio._promisify is not usable on them: the wrapper assignment is subject to the
 // same silent no-op as a static constructor inside gnome-shell, and its body
@@ -18,8 +18,7 @@ function callStorageConcern(concernAsync, concernFinish, prompt, settings) {
     return new Promise((resolve, reject) => {
         concernAsync(prompt, settings, (_source, result) => {
             try {
-                concernFinish(result);
-                resolve();
+                resolve(concernFinish(result));
             } catch (e) {
                 reject(e);
             }
@@ -27,9 +26,9 @@ function callStorageConcern(concernAsync, concernFinish, prompt, settings) {
     });
 }
 
-// The storage lock is the process's, and a daemon let go of while an import or
-// a change of passphrase is still rewriting the store on a thread of its own
-// keeps it until that write is done (GPasteDaemon.storage_is_busy()):
+// The storage lock is the process's, and a daemon let go of while an import, a
+// change of passphrase or a check is still rewriting the store on a thread of
+// its own keeps it until that write is done (GPasteDaemon.storage_is_busy()):
 // released under it, the daemon taking over would settle and read a store still
 // being written. A runner acquiring the name meanwhile takes the lock over as it
 // stands, so the pending release is dropped. 0 when none is pending.
@@ -256,13 +255,15 @@ export class GPasteDaemonRunner {
         // still a no-op here; but an on-demand storage migration (the client
         // resets the backend revision before asking for a re-exec) is handled in
         // place by reloading the daemon's storage — see _migrateInPlace(). Same
-        // deal for a passphrase change — see _changePassphraseInPlace().
+        // deal for a passphrase change — see _changePassphraseInPlace() — and a
+        // check of the store, _checkStoreInPlace().
         this._daemon.connectObject(
             'reexecute-self', () => {
                 this._deferOnce('reexecute-self', () => this._migrateInPlace());
                 return true;
             },
             'change-passphrase', () => this._deferOnce('change-passphrase', () => this._changePassphraseInPlace()),
+            'doctor', () => this._deferOnce('doctor', () => this._checkStoreInPlace()),
             this);
 
         // An export that fails stands us down from inside add_object (), the
@@ -404,9 +405,10 @@ export class GPasteDaemonRunner {
         }
     }
 
-    // Both signals fire synchronously from inside the daemon's own D-Bus
-    // dispatch (Reexecute, ChangePassphrase), which keeps using the daemon after
-    // we return: defer @job to an idle so that dispatch fully unwinds first.
+    // These signals fire synchronously from inside the daemon's own D-Bus
+    // dispatch (Reexecute, ChangePassphrase, Doctor), which keeps using the
+    // daemon after we return: defer @job to an idle so that dispatch fully
+    // unwinds first.
     //
     // Keep coalescing under @name until the whole (async) job has settled, not
     // merely until the idle runs, so a second request arriving mid-job cannot
@@ -430,8 +432,8 @@ export class GPasteDaemonRunner {
     }
 
     // Run a storage concern against the live daemon and rebuild its backend
-    // around whatever the concern settled on. Shared by the on-demand migration
-    // and the re-key, which differ only in the concern they run.
+    // around whatever the concern settled on. Shared by the on-demand migration,
+    // the re-key and the store check, which differ only in the concern they run.
     //
     // Flushing happens inside our own turn on the chain, together with the
     // concern: the flush has to cover our complete state before the store is
@@ -483,6 +485,27 @@ export class GPasteDaemonRunner {
     _changePassphraseInPlace() {
         return this._reloadStorageAfter(() => this._runStorageConcern(GPasteDaemon.storage_rekey_async,
             GPasteDaemon.storage_rekey_finish));
+    }
+
+    // The callers of Doctor are waiting for what the check found, which the
+    // daemon that asked answers them with once its backend is reloaded; one let
+    // go of meanwhile has answered them already, as it was disposed. Only a
+    // prompt that failed throws, and is then the one thing to report.
+    async _checkStoreInPlace() {
+        const daemon = this._daemon;
+        let report = [];
+        let healthy = false;
+
+        await this._reloadStorageAfter(async () => {
+            try {
+                [, report, healthy] = await callStorageConcern(GPasteDaemon.storage_doctor_async,
+                    GPasteDaemon.storage_doctor_finish, this._prompt, this._settings);
+            } catch (e) {
+                report = [e.message];
+            }
+        });
+
+        daemon?.doctor_done(report, healthy);
     }
 
     // Flush the history, release the storage lock, end the daemon and release

@@ -327,10 +327,12 @@ test_passphrase_error_shown (void)
     g_paste_prompt_passphrase_async (prompt, FALSE, error, G_PASTE_STORAGE_REMEMBER_UNCHANGED, on_passphrase_answered, &answer);
 
     GtkWindow *window = shown_window ();
+    PassphraseDialog *dialog = g_object_get_data (G_OBJECT (window), "gpaste-passphrase-dialog");
 
     assert_plain_rows (window);
     g_assert_true (shows (window, error));
     g_assert_true (shows (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION)));
+    g_assert_cmpint (dialog->remember != NULL, ==, g_paste_prompt_keyring_available ());
 
     gtk_window_destroy (window);
     wait_for (&answer);
@@ -373,6 +375,41 @@ test_passphrase_confirmed (gconstpointer user_data)
     wait_for (&answer);
     g_assert_nonnull (answer.passphrase);
     g_assert_cmpstr (g_paste_passphrase_peek (answer.passphrase), ==, "correct horse");
+    g_clear_pointer (&answer.passphrase, g_paste_passphrase_free);
+}
+
+/* A passphrase asked for other histories says what it is wanted for in place
+ * of the standing explanation, and offers no switch to remember it, which the
+ * one for the history in use does in a build with a keyring. */
+static void
+test_passphrase_other_histories (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    static const gchar *description = "Wanted for \"a & b <c>\"";
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
+    Answer answer = { 0 };
+
+    g_paste_prompt_other_passphrase_async (prompt, description, NULL, on_passphrase_answered, &answer);
+
+    GtkWindow *window = shown_window ();
+    PassphraseDialog *dialog = g_object_get_data (G_OBJECT (window), "gpaste-passphrase-dialog");
+
+    assert_plain_rows (window);
+    g_assert_true (shows (window, description));
+    g_assert_false (shows (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION)));
+    g_assert_null (dialog->remember);
+
+    gtk_editable_set_text (dialog->entry, "previous one");
+    g_signal_emit_by_name (dialog->entry, "entry-activated");
+    wait_for (&answer);
+    g_assert_nonnull (answer.passphrase);
+    g_assert_cmpstr (g_paste_passphrase_peek (answer.passphrase), ==, "previous one");
+    g_assert_cmpint (answer.remember, ==, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
     g_clear_pointer (&answer.passphrase, g_paste_passphrase_free);
 }
 
@@ -423,6 +460,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/prompt-adw/passphrase/error-shown", test_passphrase_error_shown);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed", GINT_TO_POINTER (TRUE), test_passphrase_confirmed);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed_first_entry", GINT_TO_POINTER (FALSE), test_passphrase_confirmed);
+    g_test_add_func ("/prompt-adw/passphrase/other-histories", test_passphrase_other_histories);
     g_test_add_func ("/prompt-adw/report/shown", test_report_shown);
 
     return g_paste_test_env_run ();

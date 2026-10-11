@@ -27,6 +27,7 @@ enum
     C_NAME_LOST,
     C_REEXECUTE_SELF,
     C_CHANGE_PASSPHRASE,
+    C_DOCTOR,
 
     C_LAST_SIGNAL
 };
@@ -48,6 +49,12 @@ typedef struct
      * it would then fail against the histories that first one re-keyed, on top of
      * stacking a second prompt over the first. */
     gboolean         changing_passphrase;
+
+    /* A check of the store is running (Doctor), which re-keys histories the
+     * same way: one or the other at a time, a change asked for during a check
+     * owed until it is done. */
+    gboolean         checking;
+    gboolean         passphrase_change_owed;
 
     /* The startup storage settle (migration, then encrypted-history unlock) is
      * running. It can sit on a dialog for minutes, and the bus dropping and
@@ -297,9 +304,16 @@ change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 {
     DaemonContext *ctx = user_data;
 
-    /* Coalesce, as the gnome-shell host does: one change at a time. */
+    /* Coalesce, as the gnome-shell host does: one change at a time, and one
+     * asked for during a check run once the check is done, the gnome-shell
+     * host queueing it the same way. */
     if (ctx->changing_passphrase)
         return;
+    if (ctx->checking)
+    {
+        ctx->passphrase_change_owed = TRUE;
+        return;
+    }
 
     ctx->changing_passphrase = TRUE;
 
@@ -309,6 +323,74 @@ change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
      * loop — the caller's synchronous call included, until it times out on a
      * change that is merely slow. Defer, as the gnome-shell host does. */
     g_source_set_name_by_id (g_idle_add (do_change_passphrase, ctx), "[GPaste] passphrase change");
+}
+
+/* Hand what the check found to the callers waiting on it, once the backend is
+ * rebuilt around the passphrase the store now speaks -- the one the check
+ * unlocked it with, where it had to -- which also resumes the recording the
+ * flush below stopped. */
+static void
+on_store_checked (GObject      *source G_GNUC_UNUSED,
+                  GAsyncResult *result,
+                  gpointer      user_data)
+{
+    DaemonContext *ctx = user_data;
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) report = NULL;
+    gboolean healthy = FALSE;
+
+    ctx->checking = FALSE;
+
+    /* Only the prompt failing ends the check with an error, which then is the
+     * one thing the report has to say. */
+    if (!g_paste_storage_doctor_finish (result, &report, &healthy, &error))
+        g_set_strv (&report, (const gchar * const []) { error->message, NULL });
+
+    if (ctx->daemon)
+    {
+        g_paste_daemon_reload_storage (ctx->daemon);
+        g_paste_daemon_doctor_done (ctx->daemon, (const gchar * const *) report, healthy);
+
+        if (ctx->passphrase_change_owed)
+        {
+            ctx->passphrase_change_owed = FALSE;
+            change_passphrase (ctx->daemon, ctx);
+        }
+    }
+}
+
+/* As do_change_passphrase (): the history down on disk first, then the check
+ * over it. */
+static void
+do_check_store (gpointer user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    g_paste_daemon_flush (ctx->daemon);
+    g_paste_storage_doctor_async (ctx->prompt, ctx->settings, on_store_checked, ctx);
+}
+
+static void
+check_store (GPasteDaemon *daemon,
+             gpointer      user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    /* A change of passphrase is rewriting the store: it would be the check's
+     * histories under its feet. A call made during a check is answered with it
+     * by the daemon, and never gets here. */
+    if (ctx->changing_passphrase)
+    {
+        const gchar *busy[] = { _("The passphrase is being changed: check again once that is done"), NULL };
+
+        g_paste_daemon_doctor_done (daemon, busy, FALSE);
+        return;
+    }
+
+    ctx->checking = TRUE;
+
+    /* Deferred for the reason change_passphrase () is. */
+    g_source_set_name_by_id (g_idle_add_once (do_check_store, ctx), "[GPaste] store check");
 }
 
 /* Final step, once the name is owned, the backend choice is settled and any
@@ -331,6 +413,7 @@ on_storage_ready (DaemonContext *ctx)
                                                          G_CALLBACK (reexec), ctx);
     ctx->c_signals[C_CHANGE_PASSPHRASE] = g_signal_connect (ctx->daemon, "change-passphrase",
                                                             G_CALLBACK (change_passphrase), ctx);
+    ctx->c_signals[C_DOCTOR] = g_signal_connect (ctx->daemon, "doctor", G_CALLBACK (check_store), ctx);
 
     /* The name is already owned, so the bus registers these immediately. */
     g_paste_bus_add_object (ctx->bus, G_PASTE_BUS_OBJECT (ctx->daemon));
@@ -545,6 +628,7 @@ main (gint argc, gchar *argv[])
     {
         g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_REEXECUTE_SELF]);
         g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_CHANGE_PASSPHRASE]);
+        g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_DOCTOR]);
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

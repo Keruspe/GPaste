@@ -47,3 +47,12 @@ if get_option('gnome-shell')
     suite: 'gpaste',
   )
 endif
+
+if get_option('introspection')
+  test(
+    'gir-finish-funcs',
+    find_program('test-gir-finish-funcs.py'),
+    args: [libgpaste_gir[0], libgpaste_gtk4_gir[0], libgpaste_daemon_gir[0]],
+    suite: 'gpaste',
+  )
+endif

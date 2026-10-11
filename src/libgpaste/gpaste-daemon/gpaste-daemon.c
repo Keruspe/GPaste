@@ -47,6 +47,10 @@ struct _GPasteDaemon
     /* The uploads out (UploadData), borrowed from their tasks: what leaving the
      * bus ends (g_paste_daemon_cancel_uploads ()). */
     GList                   *uploads;
+
+    /* The Doctor calls waiting on the host's check: see
+     * g_paste_daemon_handle_doctor (). */
+    GSList                  *doctor_calls;
 };
 
 G_PASTE_DEFINE_TYPE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
@@ -55,6 +59,7 @@ enum
 {
     REEXECUTE_SELF,
     CHANGE_PASSPHRASE,
+    DOCTOR,
 
     LAST_SIGNAL
 };
@@ -1100,9 +1105,9 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
  * joining them -- disappearing when the list is empty.
  *
  * A handler's signature is not checked against the vfunc it is connected to, so
- * concentrating them here is also what keeps that hazard in three places rather
- * than thirty-three: compare these against struct _GPasteDaemon3Iface by hand
- * when a method changes. */
+ * concentrating them here is also what keeps that hazard in three places, and
+ * Doctor's handler of its own, rather than thirty-four: compare these against
+ * struct _GPasteDaemon3Iface by hand when a method changes. */
 #define ARGLIST(...) , ##__VA_ARGS__
 
 #define G_PASTE_DAEMON_ANSWER(complete_call)                                            \
@@ -1182,6 +1187,70 @@ g_paste_daemon_handle_change_passphrase (GPasteDaemon          *self,
 }
 
 G_PASTE_DAEMON_HANDLER_ERR (delete_item, (const gchar *uuid), (uuid))
+
+/* The check is the host's to run, as a change of passphrase is, since it asks
+ * through the host's prompt and rewrites the store under it -- but unlike that
+ * one, the caller is waiting for what it found, so the call is answered when
+ * the host hands that over (g_paste_daemon_doctor_done ()). A call arriving
+ * while one runs is answered with it rather than starting another. */
+static gboolean
+g_paste_daemon_handle_doctor (GPasteDaemon          *self,
+                              GDBusMethodInvocation *invocation)
+{
+    if (!g_signal_has_handler_pending (self, signals[DOCTOR], 0, FALSE))
+    {
+        g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                                       "Nothing hosting this daemon can check its store.");
+        return TRUE;
+    }
+
+    gboolean running = (self->doctor_calls != NULL);
+
+    /* It reads and rewrites the store, as a change of passphrase does, which a
+     * daemon this one took over from may still be writing: refused the same
+     * way until this one holds the storage lock, rather than left to the
+     * startup gates having waited for it. */
+    if (!running && !g_paste_storage_backend_try_lock ())
+    {
+        g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_BUSY,
+                                                       "Another GPaste daemon is still writing the history storage");
+        return TRUE;
+    }
+
+    self->doctor_calls = g_slist_prepend (self->doctor_calls, invocation);
+
+    if (!running)
+    {
+        g_signal_emit (self,
+                       signals[DOCTOR],
+                       0); /* detail */
+    }
+
+    return TRUE;
+}
+
+/**
+ * g_paste_daemon_doctor_done:
+ * @self: (transfer none): the #GPasteDaemon
+ * @report: (array zero-terminated=1) (nullable): what the check found and did,
+ *          one line each, as g_paste_storage_doctor_finish() hands it back
+ * @healthy: whether nothing is left wrong
+ *
+ * Answer the Doctor calls waiting since #GPasteDaemon::doctor was emitted.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_doctor_done (GPasteDaemon        *self,
+                            const gchar * const *report,
+                            gboolean             healthy)
+{
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    static const gchar * const nothing[] = { NULL };
+    g_autoptr (GSList) calls = g_steal_pointer (&self->doctor_calls);
+
+    for (GSList *call = calls; call; call = call->next)
+        g_paste_daemon3_complete_doctor (self->skeleton, call->data, (report) ? report : nothing, healthy);
+}
 
 G_PASTE_DAEMON_HANDLER_ERR (delete_history, (const gchar *name), (name))
 
@@ -1399,6 +1468,7 @@ g_paste_daemon_connect_handlers (GPasteDaemon *self)
         { "handle-delete-history",              G_CALLBACK (g_paste_daemon_handle_delete_history)              },
         { "handle-delete-item",                 G_CALLBACK (g_paste_daemon_handle_delete_item)                 },
         { "handle-delete-password",             G_CALLBACK (g_paste_daemon_handle_delete_password)             },
+        { "handle-doctor",                      G_CALLBACK (g_paste_daemon_handle_doctor)                      },
         { "handle-empty-history",               G_CALLBACK (g_paste_daemon_handle_empty_history)               },
         { "handle-get-favourites",              G_CALLBACK (g_paste_daemon_handle_get_favourites)              },
         { "handle-get-history",                 G_CALLBACK (g_paste_daemon_handle_get_history)                 },
@@ -1546,6 +1616,16 @@ g_paste_daemon_dispose (GObject *object)
 
     g_paste_daemon_unregister_on_connection (G_PASTE_BUS_OBJECT (self));
 
+    /* Nothing would answer these now: the host hands its outcome to this
+     * daemon, which is going. */
+    g_autoptr (GSList) doctor_calls = g_steal_pointer (&self->doctor_calls);
+
+    for (GSList *call = doctor_calls; call; call = call->next)
+    {
+        g_dbus_method_invocation_return_error_literal (call->data, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                                                       "The daemon stood down before its store was checked.");
+    }
+
     g_clear_object (&self->skeleton);
     g_clear_object (&self->history_signals);
     g_clear_object (&self->settings_signals);
@@ -1668,6 +1748,27 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
                                                g_cclosure_marshal_VOID__VOID,
                                                G_TYPE_NONE,
                                                0);
+
+    /**
+     * GPasteDaemon::doctor:
+     * @gpaste_daemon: the object on which the signal was emitted
+     *
+     * The "doctor" signal is emitted when the store should be checked, which
+     * is the host's to do as "change-passphrase" is: run
+     * g_paste_storage_doctor_async() between g_paste_daemon_flush() and
+     * g_paste_daemon_reload_storage(), and hand what it found to
+     * g_paste_daemon_doctor_done(), which the caller is waiting for. A daemon
+     * nobody handles this for refuses the Doctor method.
+     */
+    signals[DOCTOR] = g_signal_new ("doctor",
+                                    G_PASTE_TYPE_DAEMON,
+                                    G_SIGNAL_RUN_LAST,
+                                    0, /* class offset */
+                                    NULL, /* accumulator */
+                                    NULL, /* accumulator data */
+                                    g_cclosure_marshal_VOID__VOID,
+                                    G_TYPE_NONE,
+                                    0);
 }
 
 static void

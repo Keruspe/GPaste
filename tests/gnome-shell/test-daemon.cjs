@@ -3,8 +3,9 @@
 
 // Execute the shipped in-shell daemon runner with doubles for the bus, the
 // daemon, the storage and the main loop: what standing down, a reconnect and a
-// shutdown leave behind, and how a runner waits on a store another is still
-// rewriting. Not the daemon itself, which the C suites cover.
+// shutdown leave behind, how a runner waits on a store another is still
+// rewriting, and how it runs a check of the store for the daemon. Not the
+// daemon itself, which the C suites cover.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -13,7 +14,9 @@ const errors = [];
 // Every main loop source, by id: what runs it is the test.
 const sources = new Map();
 let nextSource = 1;
-const storage = {busy: false, unlocks: 0, passphrases: [], migrationChecks: 0};
+const storage = {busy: false, unlocks: 0, passphrases: [], migrationChecks: 0, doctorError: null};
+// What the daemon and the storage were asked for, in the order they were.
+const happened = [];
 const buses = [];
 const daemons = [];
 let failDaemon = false;
@@ -88,11 +91,15 @@ class Daemon extends Connected {
         super();
         this.disposed = false;
         this.flushes = 0;
+        this.reloads = 0;
+        this.doctored = null;
         daemons.push(this);
     }
 
     expire_password() {}
-    flush() { assert.equal(this.disposed, false); ++this.flushes; }
+    flush() { assert.equal(this.disposed, false); ++this.flushes; happened.push('flush'); }
+    reload_storage() { ++this.reloads; happened.push('reload'); }
+    doctor_done(report, healthy) { this.doctored = [report, healthy]; }
     run_dispose() { this.disposed = true; }
 }
 
@@ -134,6 +141,18 @@ const context = vm.createContext({
             return false;
         },
         storage_decryption_needed: () => false,
+        storage_doctor_async: (prompt, settings, callback) => {
+            happened.push('check');
+            if (storage.holdDoctor)
+                storage.heldDoctor = () => callback(null, {});
+            else
+                callback(null, {});
+        },
+        storage_doctor_finish: () => {
+            if (storage.doctorError)
+                throw new Error(storage.doctorError);
+            return [true, ['Restricted the folder'], true];
+        },
     },
     GPasteShellPrompt: class {
         constructor() { this.shutDowns = 0; }
@@ -340,6 +359,52 @@ process.on('exit', () => {
     runSources('idle');
     await settle();
     assert.equal(migrations, 1);
+    runner.shutdown();
+
+    // A check of the store the daemon asks for runs once, from an idle,
+    // between a flush and a reload, and what it found goes back to the daemon
+    // that asked; a prompt that failed is reported in its place.
+    [runner, bus] = await acquired();
+    [daemon] = daemons.slice(-1);
+    happened.length = 0;
+    daemon.handlers['doctor']();
+    daemon.handlers['doctor']();
+    assert.equal([...sources.values()].filter(s => s.kind === 'idle').length, 1);
+    runSources('idle');
+    for (let i = 0; i < 10 && !daemon.doctored; ++i)
+        await settle();
+    assert.equal(daemon.flushes, 1);
+    assert.equal(daemon.reloads, 1);
+    assert.deepEqual(happened, ['flush', 'check', 'reload']);
+    assert.deepEqual(daemon.doctored, [['Restricted the folder'], true]);
+
+    storage.doctorError = 'The prompt failed';
+    daemon.doctored = null;
+    daemon.handlers['doctor']();
+    runSources('idle');
+    for (let i = 0; i < 10 && !daemon.doctored; ++i)
+        await settle();
+    storage.doctorError = null;
+    // Spread: an array the runner builds is the vm context's, of another Array.
+    assert.deepEqual([[...daemon.doctored[0]], daemon.doctored[1]], [['The prompt failed'], false]);
+
+    // And to the daemon that asked, whichever is there once the check is done.
+    const other = {flush() {}, reload_storage() {}, doctor_done() { other.doctored = true; }};
+
+    storage.holdDoctor = true;
+    daemon.doctored = null;
+    daemon.handlers['doctor']();
+    runSources('idle');
+    for (let i = 0; i < 10 && !storage.heldDoctor; ++i)
+        await settle();
+    runner._daemon = other;
+    storage.holdDoctor = false;
+    storage.heldDoctor();
+    for (let i = 0; i < 10 && !daemon.doctored; ++i)
+        await settle();
+    assert.deepEqual(daemon.doctored, [['Restricted the folder'], true]);
+    assert.equal(other.doctored, undefined);
+    runner._daemon = daemon;
     runner.shutdown();
 
     assert.deepEqual(errors, []);

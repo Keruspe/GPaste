@@ -19,6 +19,9 @@ void g_paste_daemon_resume       (GPasteDaemon *self);
 void g_paste_daemon_expire_password (GPasteDaemon *self);
 void g_paste_daemon_reexecute (GPasteDaemon *self);
 void g_paste_daemon_reload_storage (GPasteDaemon *self);
+void g_paste_daemon_doctor_done (GPasteDaemon        *self,
+                                 const gchar * const *report,
+                                 gboolean             healthy);
 void g_paste_daemon_extension_state_changed (GPasteDaemon *self,
                                              gboolean      state);
 void   g_paste_daemon_upload        (GPasteDaemon       *self,

@@ -91,8 +91,10 @@ struct _GPastePromptInterface
 /* What the prompt was asked. Only the getters matching the vfunc that received
  * the request are meaningful. */
 gboolean              g_paste_prompt_request_get_confirm       (GPastePromptRequest *self);
+const gchar          *g_paste_prompt_request_get_description   (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_error_message (GPastePromptRequest *self);
 GPasteStorageRemember g_paste_prompt_request_get_remember      (GPastePromptRequest *self);
+gboolean              g_paste_prompt_request_offers_remember   (GPastePromptRequest *self);
 const GPasteStorage  *g_paste_prompt_request_get_offered       (GPastePromptRequest *self,
                                                                 guint               *n_offered);
 GPasteStorage         g_paste_prompt_request_get_current       (GPastePromptRequest *self);
@@ -129,6 +131,15 @@ GPastePassphrase *g_paste_prompt_passphrase_finish (GPastePrompt          *self,
                                                     GAsyncResult          *result,
                                                     GPasteStorageRemember *remember,
                                                     GError               **error);
+
+/* A passphrase for histories other than the one in use, which is never
+ * remembered: answered through the same vfunc, and collected with
+ * g_paste_prompt_passphrase_finish(). */
+void g_paste_prompt_other_passphrase_async (GPastePrompt       *self,
+                                            const gchar        *description,
+                                            const gchar        *error_message,
+                                            GAsyncReadyCallback callback,
+                                            gpointer            user_data);
 
 void     g_paste_prompt_migration_async  (GPastePrompt        *self,
                                           const GPasteStorage *offered,
@@ -207,9 +218,15 @@ typedef enum
     G_PASTE_PROMPT_TEXT_CLOSE,
     G_PASTE_PROMPT_TEXT_CANCEL,
     /* G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION for a dialog offering no "Keep
-     * as is": the backend in use is one this build cannot open. Last, so that
-     * the values before it keep their numbers. */
+     * as is": the backend in use is one this build cannot open. After CANCEL
+     * rather than beside MIGRATION_DESCRIPTION, so that the values before it
+     * keep their numbers. */
     G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,
+    /* What g_paste_prompt_other_passphrase_async() is asked with: a format
+     * string, its %s the names of the histories the passphrase is wanted for,
+     * so only C reads it. */
+    G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,
+    G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,
 } GPastePromptText;
 
 #define G_PASTE_TYPE_PROMPT_TEXT (g_paste_prompt_text_get_type ())

@@ -51,13 +51,14 @@ g_paste_daemon_methods_items_variant (const GPtrArray *items)
     return g_variant_builder_end (&builder);
 }
 
-/* A change made while the store is handed over -- a change of passphrase's or
- * an in-place migration's prompts up, the bus still answered -- is recorded
- * nowhere, and the reload ending the handover undoes it: an item deleted comes
- * back, one moved goes back where it was. Refused with %G_IO_ERROR_BUSY, as the
- * methods reaching the stores themselves are (g_paste_history_sync ()). An add
- * is not: the reload keeps what was added meanwhile, as it keeps a copy
- * (@stopped_adds in gpaste-history.c), so do_add_item () asks nothing of this. */
+/* A change made while the store is handed over -- the prompts of a change of
+ * passphrase, a check of the store or an in-place migration up, the bus still
+ * answered -- is recorded nowhere, and the reload ending the handover undoes
+ * it: an item deleted comes back, one moved goes back where it was. Refused
+ * with %G_IO_ERROR_BUSY, as the methods reaching the stores themselves are
+ * (g_paste_history_sync ()). An add is not: the reload keeps what was added
+ * meanwhile, as it keeps a copy (@stopped_adds in gpaste-history.c), so
+ * do_add_item () asks nothing of this. */
 static gboolean
 g_paste_daemon_methods_check_owned (const GPasteDaemonMethods *self,
                                     GError                   **error)

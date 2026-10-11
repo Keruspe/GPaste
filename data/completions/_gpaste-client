@@ -91,6 +91,7 @@ _gpaste-client_subcommands() {
         {delete,del,d,remove,rm}:"Delete an element of the history"
         {delete-history,dh}:"Delete a history"
         {delete-password,dp}:"Delete a password"
+        doctor:"Check the history folder and every history"
         {empty,e}:"Empty the history"
         {favourite,fav}:"Pin an item so the history never drops it automatically"
         {file,f}:"Put the content of a file into the clipboard"

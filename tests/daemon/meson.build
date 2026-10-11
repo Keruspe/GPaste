@@ -24,3 +24,19 @@ test_search_provider = executable(
 )
 
 test('search-provider', test_search_provider, depends: [gpaste_schemas, test_bus_supervisor])
+
+# The standalone daemon's host, compiled in with what it is built of.
+test_daemon_host = executable(
+  'test-daemon-host',
+  sources: [
+    'test-daemon-host.c',
+    '../../src/daemon/gpaste-clipboard-gdk.c',
+    '../../src/daemon/gpaste-clipboard-x11-hints.c',
+    '../../src/daemon/gpaste-prompt-adw.c',
+    '../../src/daemon/gpaste-text-content-provider.c',
+  ],
+  include_directories: include_directories('../../src/daemon'),
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, gtk4x11_dep, libadwaita_dep, libgpaste_gtk4_internal_dep, xfixes_dep ],
+)
+
+test('daemon-host', test_daemon_host, depends: [gpaste_schemas, test_bus_supervisor])

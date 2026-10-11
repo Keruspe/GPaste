@@ -3,8 +3,8 @@
 
 // Execute the shipped GNOME Shell prompt with doubles for St, the shell's
 // dialogs and the session mode: what a locked session hides and holds back,
-// and which theme classes the passphrase's strength meter wears. Not Shell
-// rendering.
+// which theme classes the passphrase's strength meter wears, and what a
+// passphrase asked for other histories says and offers. Not Shell rendering.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -37,6 +37,13 @@ class Actor {
     get_text() { return ''; }
 }
 
+class CheckBox extends Actor {
+    constructor(label) {
+        super();
+        this.label = label;
+    }
+}
+
 class ModalDialog extends Actor {
     constructor(params) {
         super(params);
@@ -65,7 +72,7 @@ const sessionMode = {
 const context = vm.createContext({
     console: {error: message => errors.push(message)},
     BarLevel: {BarLevel: Actor},
-    CheckBox: {CheckBox: Actor},
+    CheckBox: {CheckBox},
     Dialog: {MessageDialogContent: Actor},
     Main: {sessionMode},
     ModalDialog: {ModalDialog},
@@ -77,12 +84,12 @@ const context = vm.createContext({
     St: {Label: Actor, BoxLayout: Actor, PasswordEntry: Actor},
     GPasteDaemon: {
         Prompt: {
-            keyring_available: () => false,
             pwquality_available: () => true,
             passphrase_is_complete: () => false,
             storage_label: storage => `storage ${storage}`,
             can_import: () => false,
             backend_changes: () => false,
+            remember_state: () => [false, false],
         },
         PromptText: new Proxy({}, {get: (target, name) => name}),
         StorageRemember: {UNCHANGED: 0, YES: 1, NO: 2},
@@ -97,8 +104,10 @@ function request() {
     return {
         answers: [],
         get_confirm: () => true,
+        get_description: () => null,
         get_error_message: () => null,
         get_remember: () => 0,
+        offers_remember: () => false,
         reply_passphrase(passphrase) { this.answers.push(passphrase); },
         dismiss() { this.answers.push('dismissed'); },
     };
@@ -189,4 +198,31 @@ for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], 
 
 migrationPrompt.shutdown();
 
-console.log('Prompt: lock screen, strength meter and migration description passed');
+// A passphrase asked for other histories says what it is wanted for, and
+// offers no switch to remember it; the history's own offers one whenever the
+// request says to.
+sessionMode.update(false);
+const unlocked = new context.Prompt();
+const other = Object.assign(request(), {
+    get_confirm: () => false,
+    get_description: () => 'Other histories',
+});
+const own = Object.assign(request(), {
+    get_confirm: () => false,
+    offers_remember: () => true,
+});
+
+unlocked.vfunc_passphrase(other);
+unlocked.vfunc_passphrase(own);
+
+const [otherContent] = dialogs.at(-2).contentLayout.children;
+const [ownContent] = dialogs.at(-1).contentLayout.children;
+const switches = content => [...actors(content)].filter(actor => actor instanceof CheckBox);
+
+assert.equal(otherContent.description, 'Other histories');
+assert.equal(switches(otherContent).length, 0);
+assert.equal(ownContent.description, 'PASSPHRASE_DESCRIPTION');
+assert.deepEqual(switches(ownContent).map(box => box.label), ['REMEMBER']);
+dialogs.slice(-2).forEach(dialog => dialog.close());
+
+console.log('Prompt: lock screen, strength meter, migration description and other histories passed');

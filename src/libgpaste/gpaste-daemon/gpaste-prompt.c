@@ -27,6 +27,7 @@ struct _GPastePromptRequest
     RequestKind           kind;
 
     gboolean              confirm;
+    gchar                *description;
     gchar                *error_message;
     GPasteStorageRemember remember;
 
@@ -84,6 +85,7 @@ g_paste_prompt_request_finalize (GObject *object)
 {
     GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (object);
 
+    g_free (self->description);
     g_free (self->error_message);
     g_free (self->offered);
 
@@ -166,6 +168,24 @@ g_paste_prompt_request_get_confirm (GPastePromptRequest *self)
 }
 
 /**
+ * g_paste_prompt_request_get_description:
+ * @self: a #GPastePromptRequest
+ *
+ * What to explain in place of the standing description, for a passphrase asked
+ * for histories other than the one in use
+ * (g_paste_prompt_other_passphrase_async()).
+ *
+ * Returns: (nullable): read-only string, or %NULL for the standing description
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_description (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    return self->description;
+}
+
+/**
  * g_paste_prompt_request_get_error_message:
  * @self: a #GPastePromptRequest
  *
@@ -196,6 +216,25 @@ g_paste_prompt_request_get_remember (GPastePromptRequest *self)
     g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 
     return self->remember;
+}
+
+/**
+ * g_paste_prompt_request_offers_remember:
+ * @self: a #GPastePromptRequest
+ *
+ * Whether to offer the "Remember this passphrase" switch: only when this build
+ * has a keyring to remember it in, and only for the passphrase of the history
+ * in use. The keyring holds one passphrase, so the one asked for other
+ * histories would replace the one every start needs.
+ *
+ * Returns: whether to show the switch
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_request_offers_remember (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), FALSE);
+
+    return g_paste_prompt_keyring_available () && !self->description;
 }
 
 /**
@@ -419,6 +458,13 @@ g_paste_prompt_default_init (GPastePromptInterface *iface)
     iface->report = g_paste_prompt_default_report;
 }
 
+/* @text, nullable, as UTF-8: see g_paste_prompt_report (). */
+static gchar *
+g_paste_prompt_valid (const gchar *text)
+{
+    return (text) ? g_utf8_make_valid (text, -1) : NULL;
+}
+
 /**
  * g_paste_prompt_report:
  * @self: a #GPastePrompt instance
@@ -437,7 +483,14 @@ g_paste_prompt_report (GPastePrompt *self,
     g_return_if_fail (title);
     g_return_if_fail (message);
 
-    G_PASTE_PROMPT_GET_IFACE (self)->report (self, title, message);
+    /* What the storage layer reports names histories by their files, whose
+     * names need not be UTF-8: the Adwaita dialog shows nothing of a text that
+     * is not, and GJS throws on it, so a report would say nothing at all. The
+     * passphrase requests' texts go the same way (g_paste_prompt_valid ()). */
+    g_autofree gchar *valid_title = g_utf8_make_valid (title, -1);
+    g_autofree gchar *valid_message = g_utf8_make_valid (message, -1);
+
+    G_PASTE_PROMPT_GET_IFACE (self)->report (self, valid_title, valid_message);
 }
 
 /**
@@ -471,7 +524,7 @@ g_paste_prompt_passphrase_async (GPastePrompt         *self,
                                                                           g_paste_prompt_passphrase_async,
                                                                           callback, user_data);
     request->confirm = confirm;
-    request->error_message = g_strdup (error_message);
+    request->error_message = g_paste_prompt_valid (error_message);
     request->remember = remember;
 
     G_PASTE_PROMPT_GET_IFACE (self)->passphrase (self, request);
@@ -527,6 +580,44 @@ g_paste_prompt_passphrase_finish (GPastePrompt          *self,
     g_free (reply);
 
     return passphrase;
+}
+
+/**
+ * g_paste_prompt_other_passphrase_async: (finish-func passphrase_finish)
+ * @self: a #GPastePrompt instance
+ * @description: what the passphrase is wanted for, shown in place of the
+ *               standing description
+ * @error_message: (nullable): an error to show above the entry, e.g. when
+ *                 re-prompting after a passphrase that opened nothing
+ * @callback: (scope async): called once the prompt is answered or dismissed
+ * @user_data: data passed to @callback
+ *
+ * Ask the user for the passphrase of histories other than the one in use. It
+ * is answered through the same #GPastePromptInterface.passphrase as the
+ * history's own, without the "Remember this passphrase" switch
+ * (g_paste_prompt_request_offers_remember()), and collected with
+ * g_paste_prompt_passphrase_finish().
+ */
+G_PASTE_VISIBLE void
+g_paste_prompt_other_passphrase_async (GPastePrompt       *self,
+                                       const gchar        *description,
+                                       const gchar        *error_message,
+                                       GAsyncReadyCallback callback,
+                                       gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT (self));
+    g_return_if_fail (description && *description);
+
+    /* As in g_paste_prompt_passphrase_async (), whose tag this carries so that
+     * one _finish() collects both. */
+    g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_PASSPHRASE,
+                                                                          g_paste_prompt_passphrase_async,
+                                                                          callback, user_data);
+    request->description = g_paste_prompt_valid (description);
+    request->error_message = g_paste_prompt_valid (error_message);
+    request->remember = G_PASTE_STORAGE_REMEMBER_UNCHANGED;
+
+    G_PASTE_PROMPT_GET_IFACE (self)->passphrase (self, request);
 }
 
 /**
@@ -911,7 +1002,9 @@ G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_IMPORT_FAILED_DESCRIPTION,       "import-failed-description"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CLOSE,                           "close"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"),
-                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,    "migration-description-unkept"))
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,    "migration-description-unkept"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,    "other-passphrase-description"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,          "other-passphrase-wrong"))
 
 /**
  * g_paste_prompt_text:
@@ -978,7 +1071,8 @@ g_paste_prompt_text (GPastePromptText text)
     case G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION:
         return _("Your history is still encrypted with the passphrase it had before.");
     case G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION:
-        return _("Some of your histories are now encrypted with the new passphrase while the others keep the previous one, and GPaste could not put them back. Both passphrases are needed to open them all; the system log says which is which.");
+        /* Translators: the quoted words are a command to type, not to translate. */
+        return _("Some of your histories are now encrypted with the new passphrase while the others keep the previous one, and GPaste could not put them back. Run “gpaste-client doctor” to encrypt them all with the passphrase the history in use takes.");
     case G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_TITLE:
         return _("The old data was not deleted");
     case G_PASTE_PROMPT_TEXT_CLEANUP_FAILED_DESCRIPTION:
@@ -993,6 +1087,11 @@ g_paste_prompt_text (GPastePromptText text)
         return _("Cancel");
     case G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT:
         return _("Choose where GPaste should store your clipboard history. Nothing is kept on disk unless you pick a storing backend here. Closing this window asks it again next time.");
+    case G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION:
+        /* Translators: %s is the names of the histories, separated by commas. */
+        return _("These histories are encrypted with another passphrase than the history in use: %s. Enter it to encrypt them with the passphrase in use.");
+    case G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG:
+        return _("This passphrase opens none of them, please try again");
     default:
         return "";
     }

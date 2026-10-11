@@ -33,9 +33,9 @@
     means switching to it.
 
     BackupHistory, EmptyHistory and DeleteHistory reach the stores themselves,
-    so a daemon handing its storage over (restarting, or migrating it or
-    changing its passphrase inside GNOME Shell or behind a prompt) refuses them
-    with GIO's G_IO_ERROR_BUSY, which travels as
+    so a daemon handing its storage over (restarting, or migrating it,
+    changing its passphrase or checking it inside GNOME Shell or behind a
+    prompt) refuses them with GIO's G_IO_ERROR_BUSY, which travels as
     org.gtk.GDBus.UnmappedGError.Quark._g_2dio_2derror_2dquark.Code26 and comes
     back to a GDBus client as that error. So does every method changing the
     history's items (deleting, selecting, pinning, replacing, stripping, making
@@ -198,6 +198,28 @@
     -->
     <method name="DeletePassword">
       <arg type="s" direction="in" name="name"/>
+    </method>
+
+    <!--
+      Check the store and put right what can be: the history folder and every
+      folder in it restricted to their owner, every history read, and the
+      histories left under another passphrase encrypted with the one the
+      history in use takes, their own asked for through the daemon's prompt.
+
+      Answered once that is done, which waits on the user: report says what was
+      found and done, one line each, and healthy whether anything is left
+      wrong. Calls made meanwhile are answered with the same check, and the
+      storage is handed over for its duration (see above).
+
+      A prompt failing ends the check with what it says as the one line of the
+      report, healthy false. Fails with org.gnome.GPaste.Error.Failed when
+      nothing hosting the daemon can run the check, or when the daemon stops
+      before the check is done, and with G_IO_ERROR_BUSY, as ChangePassphrase
+      does, while a daemon this one took over from is still writing the store.
+    -->
+    <method name="Doctor">
+      <arg type="as" direction="out" name="report"/>
+      <arg type="b" direction="out" name="healthy"/>
     </method>
 
     <!--

@@ -103,6 +103,7 @@ __gpaste_subcommand daemon-version dv                  'Display the daemon versi
 __gpaste_subcommand delete del d remove rm             'Delete an element of the history'
 __gpaste_subcommand delete-history dh                  'Delete a history'
 __gpaste_subcommand delete-password dp                 'Delete a password'
+__gpaste_subcommand doctor                             'Check the history folder and every history'
 __gpaste_subcommand empty e                            'Empty the history'
 __gpaste_subcommand favourite fav                      'Pin an item so the history never drops it automatically'
 __gpaste_subcommand file f                             'Put the content of a file into the clipboard'

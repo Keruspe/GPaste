@@ -1,6 +1,7 @@
 NEW in 51.2 (UNRELEASED)
 =============
 
+- Check the stored histories from the command line, re-encrypting those left on another passphrase
 - Back up a history with Enter, and see as you type when a history name cannot be used
 - Fix screen readers giving no name, or a stale one, to some of the graphical tool's buttons
 - Fix the keyboard shortcuts leaving out the keys that open an item's menu

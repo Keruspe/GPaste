@@ -69,6 +69,9 @@ void     g_paste_client_delete_history_sync             (GPasteClient  *self,
 void     g_paste_client_delete_password_sync            (GPasteClient  *self,
                                                          const gchar   *name,
                                                          GError       **error);
+GStrv    g_paste_client_doctor_sync                     (GPasteClient  *self,
+                                                         gboolean      *healthy,
+                                                         GError       **error);
 void     g_paste_client_empty_history_sync              (GPasteClient  *self,
                                                          const gchar   *name,
                                                          GError       **error);
@@ -188,6 +191,10 @@ void g_paste_client_delete_history             (GPasteClient       *self,
                                                 gpointer            user_data);
 void g_paste_client_delete_password            (GPasteClient       *self,
                                                 const gchar        *name,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_doctor                     (GPasteClient       *self,
                                                 GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -344,6 +351,10 @@ void     g_paste_client_delete_history_finish             (GPasteClient *self,
                                                            GError      **error);
 void     g_paste_client_delete_password_finish            (GPasteClient *self,
                                                            GAsyncResult *result,
+                                                           GError      **error);
+GStrv    g_paste_client_doctor_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           gboolean     *healthy,
                                                            GError      **error);
 void     g_paste_client_empty_history_finish              (GPasteClient *self,
                                                            GAsyncResult *result,

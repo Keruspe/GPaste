@@ -17,11 +17,15 @@
 
 #include <glib/gstdio.h>
 
+#include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-/* The import and re-key workers running: see g_paste_storage_is_busy (). Each
- * starts and reports on the main thread, which is the one place this is
- * counted. */
+/* The import, re-key and store check workers running: see
+ * g_paste_storage_is_busy (). Each starts and reports on the main thread, which
+ * is the one place this is counted. */
 static guint g_paste_storage_workers;
 
 /* What a storage worker leaves while it runs, so that the next start can tell
@@ -409,8 +413,8 @@ remember_passphrase (GPasteStorageRemember remember,
 
 /* Hand a concern's outcome to whoever started it: the failure that ended it, or
  * plain success -- a dismissal included, since what the user chose has already
- * been applied by the time this runs. Shared by all three, which is what keeps
- * them from disagreeing about what a %TRUE means. */
+ * been applied by the time this runs. Shared by the three that answer nothing
+ * else, which is what keeps them from disagreeing about what a %TRUE means. */
 static void
 storage_concern_return (GTask  *task,
                         GError *error) /* (transfer full) (nullable) */
@@ -421,11 +425,12 @@ storage_concern_return (GTask  *task,
         g_task_return_boolean (task, TRUE);
 }
 
-/* One shape for the three _finish(): the source tag is what keeps one concern's
- * result from being read as another's. A mismatch is a wiring mistake rather
- * than anything the user can cause, but it still comes back as a #GError --
- * every caller prints the message it gets, so leaving @error unset would turn
- * the diagnostic into a crash. */
+/* One shape for those three _finish(): the source tag is what keeps one
+ * concern's result from being read as another's. A mismatch is a wiring mistake
+ * rather than anything the user can cause, but it still comes back as a
+ * #GError -- every caller prints the message it gets, so leaving @error unset
+ * would turn the diagnostic into a crash. g_paste_storage_doctor_finish () does
+ * the same for its own. */
 static gboolean
 storage_concern_finish (GAsyncResult *result,
                         gpointer      source_tag,
@@ -1326,8 +1331,8 @@ g_paste_storage_migration_async (GPastePrompt       *prompt,
     self->held_passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
 #endif
 
-    /* The three concerns hand their results back through the same task type, so
-     * the tag is what keeps one from being read as another. */
+    /* The concerns hand their results back through the same task type, so the
+     * tag is what keeps one from being read as another. */
     g_task_set_source_tag (self->task, g_paste_storage_migration_async);
 
     ask_migration (self);
@@ -1358,11 +1363,11 @@ g_paste_storage_migration_finish (GAsyncResult *result,
 /**
  * g_paste_storage_is_busy:
  *
- * Whether a migration's import or a change of passphrase is rewriting the
- * store, on a thread of its own. The process ending, exec'ing or letting go of
- * the storage lock meanwhile cuts that write short, leaving a copy the next
- * start may take for the history or a history half re-keyed: a host waits for
- * this to answer %FALSE first.
+ * Whether a migration's import, a change of passphrase or a check of the store
+ * is rewriting the store, on a thread of its own. The process ending, exec'ing
+ * or letting go of the storage lock meanwhile cuts that write short, leaving a
+ * copy the next start may take for the history or a history half re-keyed: a
+ * host waits for this to answer %FALSE first.
  *
  * Returns: whether a storage worker is running
  */
@@ -1593,15 +1598,14 @@ rekey_finish (RekeyData *self,
  * giving each history a fresh one keeps a re-keyed database from being reopened
  * through an instance that still holds the old key. */
 static gboolean
-rekey_history (RekeyData   *self,
-               const gchar *name,
-               const gchar *from,
-               const gchar *to,
-               gboolean    *split)
+rekey_history (GPasteStorage   storage_kind,
+               GPasteSettings *settings,
+               const gchar    *name,
+               const gchar    *from,
+               const gchar    *to,
+               gboolean       *split)
 {
-    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
-                                                                                            self->settings,
-                                                                                            from);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (storage_kind, settings, from);
 
     return g_paste_storage_backend_rekey (backend, name, to, split);
 }
@@ -1643,7 +1647,7 @@ rekey_histories (RekeyData   *self,
         gboolean split = FALSE;
         g_autoptr (GError) journal_error = NULL;
 
-        if (rekey_history (self, *name, current, passphrase, &split))
+        if (rekey_history (self->storage_kind, self->settings, *name, current, passphrase, &split))
         {
             g_ptr_array_add (rekeyed, *name);
             /* Recorded before the next is touched, so that a process dying
@@ -1691,7 +1695,7 @@ rekey_histories (RekeyData   *self,
         {
             const gchar *done = g_ptr_array_index (rekeyed, i - 1);
 
-            if (!rekey_history (self, done, passphrase, current, NULL))
+            if (!rekey_history (self->storage_kind, self->settings, done, passphrase, current, NULL))
             {
                 g_warning ("The history \"%s\" is left on the new passphrase while the others keep the old one", done);
                 self->split = TRUE;
@@ -1976,4 +1980,633 @@ g_paste_storage_rekey_finish (GAsyncResult *result,
                               GError      **error)
 {
     return storage_concern_finish (result, g_paste_storage_rekey_async, error);
+}
+
+/* What a check of the store found, carried from one step to the next: the
+ * steps that read or rewrite histories run on a worker thread, and the ones
+ * asking for a passphrase back on the main one, each starting once the one
+ * before it is done with this. */
+typedef struct
+{
+    GPastePrompt     *prompt;
+    GPasteSettings   *settings;
+    GTask            *task;
+    GPasteStorage     storage_kind;
+
+    /* The passphrase the history in use takes, %NULL unless the store is
+     * encrypted and unlocked; the one last typed for @refuting; and the
+     * histories that one is wanted for, which this one does not open. */
+    GPastePassphrase *passphrase;
+    GPastePassphrase *other;
+    GPtrArray        *refuting;
+    gboolean          other_opened;
+
+    GStrvBuilder     *report;
+    gboolean          healthy;
+} DoctorData;
+
+typedef struct
+{
+    GStrv    report;
+    gboolean healthy;
+} DoctorOutcome;
+
+static void
+doctor_outcome_free (gpointer data)
+{
+    DoctorOutcome *outcome = data;
+
+    g_strfreev (outcome->report);
+    g_free (outcome);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (DoctorOutcome, doctor_outcome_free)
+
+/* As migration_finish(): the one way out. A prompt that failed is what ends the
+ * check with @error; everything else it found is in the report. */
+static void
+doctor_finish (DoctorData *self,
+               GError     *error) /* (transfer full) (nullable) */
+{
+    g_autoptr (GTask) task = self->task;
+    g_autoptr (GStrvBuilder) report = self->report;
+    gboolean healthy = self->healthy;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_paste_passphrase_free (self->passphrase);
+    g_paste_passphrase_free (self->other);
+#endif
+    g_clear_pointer (&self->refuting, g_ptr_array_unref);
+    g_object_unref (self->settings);
+    g_object_unref (self->prompt);
+    g_free (self);
+
+    if (error)
+    {
+        g_task_return_error (task, error);
+        return;
+    }
+
+    DoctorOutcome *outcome = g_new0 (DoctorOutcome, 1);
+
+    outcome->report = g_strv_builder_end (report);
+    outcome->healthy = healthy;
+
+    g_task_return_pointer (task, outcome, doctor_outcome_free);
+}
+
+/* One line of the report. @fixed says what the line tells is done with --
+ * repaired, or in order -- rather than something still wrong, which is what
+ * makes the store unhealthy. */
+G_GNUC_PRINTF (3, 4)
+static void
+doctor_note (DoctorData  *self,
+             gboolean     fixed,
+             const gchar *format,
+             ...)
+{
+    va_list args;
+
+    va_start (args, format);
+
+    g_autofree gchar *line = g_strdup_vprintf (format, args);
+
+    va_end (args);
+    /* The report goes out as UTF-8 strings, over D-Bus or into GJS, and the
+     * names it carries are files', which need not be UTF-8. Nor need they be
+     * one line, anybody able to write into the history folder naming a file
+     * there: a line break in one would add lines of its choosing to a report
+     * of one finding per line, so every control character is shown as
+     * U+FFFD. */
+    g_autofree gchar *valid = g_utf8_make_valid (line, -1);
+    GString *shown = g_string_new (NULL);
+
+    for (const gchar *c = valid; *c; c = g_utf8_next_char (c))
+    {
+        gunichar u = g_utf8_get_char (c);
+
+        if (g_unichar_iscntrl (u))
+            g_string_append (shown, "\xef\xbf\xbd");
+        else
+            g_string_append_unichar (shown, u);
+    }
+    g_strv_builder_take (self->report, g_string_free_and_steal (shown));
+
+    if (!fixed)
+        self->healthy = FALSE;
+}
+
+/* Restrict the directory @fd stands for, @path, and every directory under it,
+ * to its owner, and say what in there belongs to somebody else. Only
+ * directories have their mode changed: what is in them can be reached through
+ * them alone, and the backends write their files through the umask, so
+ * restricting those would only be undone by the next write and reported again
+ * by the next check. A symbolic link in there is not followed, what it points
+ * at not being GPaste's: each entry is looked at, changed and walked through a
+ * descriptor opened relative to its parent's, never by its name again, so one
+ * swapped for a link once looked at is refused rather than followed. */
+static void
+doctor_restrict_at (DoctorData  *self,
+                    gint         fd,
+                    const gchar *path)
+{
+    /* The report travels as UTF-8, which a file name need not be. */
+    g_autofree gchar *shown = g_filename_display_name (path);
+    struct stat st;
+
+    if (fstat (fd, &st) < 0)
+    {
+        gint saved_errno = errno;
+
+        doctor_note (self, FALSE, _("Could not inspect %s: %s"), shown, g_strerror (saved_errno));
+        return;
+    }
+
+    if (st.st_uid != getuid ())
+        doctor_note (self, FALSE, _("%s belongs to another user"), shown);
+
+    if (st.st_mode & 077)
+    {
+        if (fchmod (fd, 0700) < 0)
+        {
+            gint saved_errno = errno;
+
+            doctor_note (self, FALSE, _("Could not restrict %s to its owner: %s"), shown, g_strerror (saved_errno));
+        }
+        else
+            doctor_note (self, TRUE, _("Restricted %s to its owner"), shown);
+    }
+
+    /* Its own descriptor, which closedir () closes. */
+    gint listed = dup (fd);
+    DIR *dir = (listed < 0) ? NULL : fdopendir (listed);
+
+    if (!dir)
+    {
+        gint saved_errno = errno;
+
+        if (listed >= 0)
+            close (listed);
+        doctor_note (self, FALSE, _("Could not inspect %s: %s"), shown, g_strerror (saved_errno));
+        return;
+    }
+
+    /* A listing cut short fails there, rather than end quietly and have what
+     * follows go unchecked; no suite makes a read fail part way. */
+    for (;;)
+    {
+        errno = 0;
+
+        struct dirent *entry = readdir (dir);
+
+        if (!entry)
+        {
+            gint saved_errno = errno;
+
+            if (saved_errno)
+                doctor_note (self, FALSE, _("Could not inspect %s: %s"), shown, g_strerror (saved_errno));
+            break;
+        }
+        if (g_paste_str_equal (entry->d_name, ".") || g_paste_str_equal (entry->d_name, ".."))
+            continue;
+
+        g_autofree gchar *child = g_build_filename (path, entry->d_name, NULL);
+        g_autofree gchar *child_shown = g_filename_display_name (child);
+        struct stat child_st;
+
+        if (fstatat (fd, entry->d_name, &child_st, AT_SYMLINK_NOFOLLOW) < 0)
+        {
+            gint saved_errno = errno;
+
+            if (saved_errno != ENOENT)
+                doctor_note (self, FALSE, _("Could not inspect %s: %s"), child_shown, g_strerror (saved_errno));
+            continue;
+        }
+
+        if (!S_ISDIR (child_st.st_mode))
+        {
+            if (child_st.st_uid != getuid ())
+                doctor_note (self, FALSE, _("%s belongs to another user"), child_shown);
+            continue;
+        }
+
+        gint child_fd = openat (fd, entry->d_name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+
+        if (child_fd < 0)
+        {
+            gint saved_errno = errno;
+
+            if (saved_errno != ENOENT)
+                doctor_note (self, FALSE, _("Could not inspect %s: %s"), child_shown, g_strerror (saved_errno));
+            continue;
+        }
+
+        doctor_restrict_at (self, child_fd, child);
+        close (child_fd);
+    }
+
+    closedir (dir);
+}
+
+/* The history folder, @path: GPaste's however it is reached, a link to it --
+ * the folder moved to another disk -- included, and walked from there by
+ * doctor_restrict_at (). */
+static void
+doctor_restrict (DoctorData  *self,
+                 const gchar *path)
+{
+    gint fd = g_open (path, O_RDONLY | O_DIRECTORY | O_CLOEXEC, 0);
+
+    if (fd < 0)
+    {
+        gint saved_errno = errno;
+        g_autofree gchar *shown = g_filename_display_name (path);
+
+        if (saved_errno != ENOENT)
+            doctor_note (self, FALSE, _("Could not inspect %s: %s"), shown, g_strerror (saved_errno));
+        return;
+    }
+
+    doctor_restrict_at (self, fd, path);
+    close (fd);
+}
+
+/* Runs on a worker thread: reading a history of an encrypted flavour derives an
+ * Argon2id key, as in import_work_run (). Every history is read, the ones the
+ * passphrase in use does not open set aside for the passphrase they take. */
+static void
+doctor_inspect_run (GTask        *task,
+                    gpointer      source      G_GNUC_UNUSED,
+                    gpointer      task_data,
+                    GCancellable *cancellable G_GNUC_UNUSED)
+{
+    DoctorData *self = task_data;
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+
+    doctor_restrict (self, history_dir);
+
+    if (self->storage_kind == G_PASTE_STORAGE_NOOP)
+    {
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+    if (!g_paste_prompt_storage_is_offered (self->storage_kind))
+    {
+        doctor_note (self, FALSE, _("This build of GPaste cannot open the storage backend the history is in"));
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+    gboolean encrypted = g_paste_storage_is_encrypted (self->storage_kind);
+
+    /* Locked, and left so: what it holds cannot be read, which the report
+     * already says. */
+    if (encrypted && !self->passphrase)
+    {
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    const gchar *passphrase = g_paste_passphrase_peek (self->passphrase);
+#else
+    const gchar *passphrase = NULL;
+#endif
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
+                                                                                            self->settings,
+                                                                                            passphrase);
+    g_autoptr (GError) error = NULL;
+
+    /* Every item a history stores, past max-history-size and whatever
+     * images-support says, as an import reads them: damage in what a load
+     * leaves unread is damage all the same (/storage/doctor/reads-whole). */
+    g_paste_storage_backend_read_whole (backend);
+
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &error);
+
+    if (!names)
+    {
+        doctor_note (self, FALSE, _("Could not list the histories: %s"), error->message);
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+    for (GStrv name = names; *name; ++name)
+    {
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        /* Asked before the read, though a history the passphrase opens then
+         * has its key derived twice, where rekey_histories () reads first: a
+         * read of one on another passphrase warns it could not be decrypted,
+         * and a store left on two passphrases is what this check is there to
+         * find, not something gone wrong under it. doctor_rekey_run () asks
+         * first for the same reason. */
+        if (encrypted && g_paste_storage_backend_refutes_passphrase (backend, *name))
+        {
+            g_ptr_array_add (self->refuting, g_strdup (*name));
+            continue;
+        }
+#endif
+
+        g_autolist (GPasteItem) items = NULL;
+        gsize size = 0;
+
+        if (!g_paste_storage_backend_read_history (backend, *name, NULL /* cancellable */, &items, &size))
+            doctor_note (self, FALSE, _("The history “%s” could not be read"), *name);
+    }
+
+    g_task_return_boolean (task, TRUE);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+static void doctor_ask (DoctorData  *self,
+                        const gchar *error_message);
+#endif
+
+static void
+on_doctor_inspected (GObject      *source G_GNUC_UNUSED,
+                     GAsyncResult *result G_GNUC_UNUSED,
+                     gpointer      user_data)
+{
+    DoctorData *self = user_data;
+
+    --g_paste_storage_workers;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    if (self->refuting->len)
+    {
+        doctor_ask (self, NULL);
+        return;
+    }
+#endif
+
+    doctor_finish (self, NULL);
+}
+
+static void
+doctor_inspect (DoctorData *self)
+{
+    /* No source object, and the data borrowed rather than owned: @self is
+     * done with by doctor_finish (), which a later step runs. */
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_doctor_inspected, self);
+
+    g_task_set_source_tag (task, doctor_inspect);
+    g_task_set_task_data (task, self, NULL);
+    ++g_paste_storage_workers;
+    g_task_run_in_thread (task, doctor_inspect_run);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Runs on a worker thread, re-keying as rekey_work_run () does: each history
+ * @self->other opens is encrypted with the passphrase in use, the others kept
+ * for the next one the user types. */
+static void
+doctor_rekey_run (GTask        *task,
+                  gpointer      source      G_GNUC_UNUSED,
+                  gpointer      task_data,
+                  GCancellable *cancellable G_GNUC_UNUSED)
+{
+    DoctorData *self = task_data;
+    const gchar *other = g_paste_passphrase_peek (self->other);
+    const gchar *passphrase = g_paste_passphrase_peek (self->passphrase);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (self->storage_kind,
+                                                                                            self->settings,
+                                                                                            other);
+    g_autoptr (GPtrArray) refuting = g_steal_pointer (&self->refuting);
+
+    self->refuting = g_ptr_array_new_with_free_func (g_free);
+    self->other_opened = FALSE;
+
+    for (guint i = 0; i < refuting->len; ++i)
+    {
+        const gchar *name = g_ptr_array_index (refuting, i);
+        gboolean split = FALSE;
+
+        if (g_paste_storage_backend_refutes_passphrase (backend, name))
+        {
+            g_ptr_array_add (self->refuting, g_strdup (name));
+            continue;
+        }
+
+        self->other_opened = TRUE;
+
+        if (rekey_history (self->storage_kind, self->settings, name, other, passphrase, &split))
+            doctor_note (self, TRUE, _("Encrypted the history “%s” with the passphrase in use"), name);
+        else if (split)
+            doctor_note (self, FALSE, _("The history “%s” is left partly on each passphrase"), name);
+        else
+            doctor_note (self, FALSE, _("Could not encrypt the history “%s” with the passphrase in use"), name);
+    }
+
+    g_task_return_boolean (task, TRUE);
+}
+
+static void
+on_doctor_rekeyed (GObject      *source G_GNUC_UNUSED,
+                   GAsyncResult *result G_GNUC_UNUSED,
+                   gpointer      user_data)
+{
+    DoctorData *self = user_data;
+
+    --g_paste_storage_workers;
+
+    if (!self->refuting->len)
+    {
+        doctor_finish (self, NULL);
+        return;
+    }
+
+    /* Some were opened: the rest are on yet another passphrase, asked for
+     * afresh. None were: the one typed was wrong. */
+    doctor_ask (self, (self->other_opened) ? NULL : g_paste_prompt_text (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG));
+}
+
+static void
+on_doctor_other_passphrase (GObject      *source,
+                            GAsyncResult *result,
+                            gpointer      user_data)
+{
+    DoctorData *self = user_data;
+    g_autoptr (GError) prompt_error = NULL;
+    GPastePassphrase *other = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result, NULL, &prompt_error);
+
+    /* As in the migration: a prompt that failed cannot be asked again. */
+    if (prompt_error)
+    {
+        doctor_finish (self, g_steal_pointer (&prompt_error));
+        return;
+    }
+
+    if (!other)
+    {
+        for (guint i = 0; i < self->refuting->len; ++i)
+        {
+            doctor_note (self, FALSE, _("The history “%s” is still encrypted with another passphrase"),
+                         (const gchar *) g_ptr_array_index (self->refuting, i));
+        }
+
+        doctor_finish (self, NULL);
+        return;
+    }
+
+    g_paste_passphrase_free (self->other);
+    self->other = other;
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_doctor_rekeyed, self);
+
+    g_task_set_source_tag (task, doctor_rekey_run);
+    g_task_set_task_data (task, self, NULL);
+    ++g_paste_storage_workers;
+    g_task_run_in_thread (task, doctor_rekey_run);
+}
+
+/* Ask for the passphrase the histories in @self->refuting take, naming them:
+ * one passphrase may open several, or only some. */
+static void
+doctor_ask (DoctorData  *self,
+            const gchar *error_message)
+{
+    g_autoptr (GStrvBuilder) names = g_strv_builder_new ();
+
+    for (guint i = 0; i < self->refuting->len; ++i)
+        g_strv_builder_add (names, g_ptr_array_index (self->refuting, i));
+
+    g_auto (GStrv) listed = g_strv_builder_end (names);
+    g_autofree gchar *joined = g_strjoinv (", ", listed);
+    g_autofree gchar *description = g_strdup_printf (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION),
+                                                     joined);
+
+    g_paste_prompt_other_passphrase_async (self->prompt, description, error_message, on_doctor_other_passphrase, self);
+}
+
+static void
+on_doctor_unlocked (gboolean unlocked,
+                    GError  *error,
+                    gpointer user_data)
+{
+    DoctorData *self = user_data;
+
+    if (error)
+    {
+        doctor_finish (self, g_error_copy (error));
+        return;
+    }
+
+    if (unlocked)
+        self->passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
+    else
+        doctor_note (self, FALSE, _("The history is locked, so what it holds was not checked"));
+
+    doctor_inspect (self);
+}
+#endif
+
+/**
+ * g_paste_storage_doctor_async:
+ * @prompt: the #GPastePrompt to ask through
+ * @settings: a #GPasteSettings instance
+ * @callback: (scope async): called once the store was checked
+ * @user_data: data passed to @callback
+ *
+ * Check the store and put right what can be: restrict the history folder and
+ * every folder in it to their owner, read every history, and encrypt the ones
+ * left under another passphrase -- what a change of passphrase that could not
+ * be undone leaves -- with the one the history in use takes, asking for theirs.
+ *
+ * Unlocks the history first when it is encrypted and locked (from the keyring,
+ * or a prompt). The passphrase asked for other histories is never remembered.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_doctor_async (GPastePrompt       *prompt,
+                              GPasteSettings     *settings,
+                              GAsyncReadyCallback callback,
+                              gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+
+    DoctorData *self = g_new0 (DoctorData, 1);
+
+    self->prompt = g_object_ref (prompt);
+    self->settings = g_object_ref (settings);
+    self->task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+    self->storage_kind = g_paste_settings_get_storage_backend (settings);
+    self->refuting = g_ptr_array_new_with_free_func (g_free);
+    self->report = g_strv_builder_new ();
+    self->healthy = TRUE;
+
+    g_task_set_source_tag (self->task, g_paste_storage_doctor_async);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* As every start does (g_paste_storage_decryption_needed ()): a change of
+     * passphrase left unfinished -- the split a failed one sends the user here
+     * for -- is put back or done with before anything is read or unlocked, or
+     * its history would be reported as one that cannot be read. */
+    g_paste_file_backend_settle_rekeys ();
+
+    if (g_paste_storage_is_encrypted (self->storage_kind) && g_paste_prompt_storage_is_offered (self->storage_kind))
+    {
+        const gchar *known = known_passphrase_for (self->storage_kind, settings);
+
+        if (!known)
+        {
+            unlock_prompt (prompt, settings, self->storage_kind, on_doctor_unlocked, self);
+            return;
+        }
+
+        self->passphrase = g_paste_passphrase_new (known);
+    }
+#endif
+
+    doctor_inspect (self);
+}
+
+/**
+ * g_paste_storage_doctor_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @report: (out) (optional) (transfer full) (array zero-terminated=1): what the
+ *          check found and did, one line each, in the user's words
+ * @healthy: (out) (optional): whether nothing is left wrong
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect the outcome of g_paste_storage_doctor_async().
+ *
+ * What the check finds wrong is not an error but a line of @report, @healthy
+ * saying whether any is left. As for g_paste_storage_migration_finish(), the
+ * failure is the #GPastePrompt implementation's, in whichever domain it
+ * reports (%G_PASTE_ERROR, %G_IO_ERROR, %G_DBUS_ERROR, ...), and handing in the
+ * result of another operation is %G_PASTE_ERROR.
+ *
+ * Returns: %TRUE unless the prompt implementation failed outright
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_doctor_finish (GAsyncResult *result,
+                               GStrv        *report,
+                               gboolean     *healthy,
+                               GError      **error)
+{
+    if (report)
+        *report = NULL;
+    if (healthy)
+        *healthy = FALSE;
+
+    if (!G_IS_TASK (result) || g_task_get_source_tag (G_TASK (result)) != g_paste_storage_doctor_async)
+    {
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT,
+                             "This is not the result of the storage concern being finished");
+
+        return FALSE;
+    }
+
+    g_autoptr (DoctorOutcome) outcome = g_task_propagate_pointer (G_TASK (result), error);
+
+    if (!outcome)
+        return FALSE;
+
+    if (report)
+        *report = g_steal_pointer (&outcome->report);
+    if (healthy)
+        *healthy = outcome->healthy;
+
+    return TRUE;
 }

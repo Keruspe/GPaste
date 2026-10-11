@@ -42,11 +42,11 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
         const content = new Dialog.MessageDialogContent({
             title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_TITLE),
-            description: confirm
+            description: request.get_description() ?? (confirm
                 // Translators: shown when choosing a new passphrase for the encrypted history
                 ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_DESCRIPTION)
                 // Translators: shown when unlocking the encrypted history at startup
-                : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_DESCRIPTION),
+                : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_DESCRIPTION)),
         });
 
         this._entry = this._addEntry(content, GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE));
@@ -55,11 +55,11 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         if (confirm)
             this._addStrengthMeter(content);
 
-        // Only offer to remember it when the build can: without libsecret there
-        // is no keyring to remember it in, and the C side reports that by never
-        // being built with it — mirrored here by the switch simply not existing.
+        // Only offer to remember it when the request says to: a build without
+        // libsecret has no keyring to remember it in, and a passphrase asked
+        // for other histories than the one in use is never remembered.
         this._remember = null;
-        if (GPasteDaemon.Prompt.keyring_available()) {
+        if (request.offers_remember()) {
             // Where the switch starts, and whether leaving it off means
             // anything, are two different questions with one subtle rule
             // between them — answered C-side so the two backends cannot drift,

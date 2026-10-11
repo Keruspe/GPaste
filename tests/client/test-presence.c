@@ -879,9 +879,19 @@ refuse_item (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
     return TRUE;
 }
 
+static gboolean
+refuse_doctor (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
+               GDBusMethodInvocation *invocation,
+               gpointer               user_data G_GNUC_UNUSED)
+{
+    g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "nothing hosts the check");
+
+    return TRUE;
+}
+
 /* A refusal comes with its domain and code and the daemon's own words, not
  * GDBus' "GDBus.Error:<name>: " in front of them -- a method answering
- * nothing, one answering something, and a hand-written one alike. */
+ * nothing, one answering something, and hand-written ones alike. */
 static void
 test_errors_stripped (void)
 {
@@ -893,6 +903,7 @@ test_errors_stripped (void)
     g_signal_connect (stand_in.skeleton, "handle-backup-history", G_CALLBACK (refuse_backup), NULL);
     g_signal_connect (stand_in.skeleton, "handle-get-item", G_CALLBACK (refuse_item), NULL);
     g_signal_connect (stand_in.skeleton, "handle-get-items", G_CALLBACK (refuse_item), NULL);
+    g_signal_connect (stand_in.skeleton, "handle-doctor", G_CALLBACK (refuse_doctor), NULL);
 
     g_paste_client_backup_history (client, "history", "backup", NULL, on_replied, &reply);
     g_autoptr (GAsyncResult) backup = wait_reply (&reply);
@@ -915,6 +926,52 @@ test_errors_stripped (void)
     g_assert_null (g_paste_client_get_items_finish (client, items, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
     g_assert_cmpstr (error->message, ==, "no item goes by that uuid");
+    g_clear_error (&error);
+
+    gboolean healthy = TRUE;
+
+    g_paste_client_doctor (client, NULL, on_replied, &reply);
+    g_autoptr (GAsyncResult) doctor = wait_reply (&reply);
+    g_assert_null (g_paste_client_doctor_finish (client, doctor, &healthy, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_cmpstr (error->message, ==, "nothing hosts the check");
+    g_assert_false (healthy);
+
+    stand_in_stop (&stand_in);
+}
+
+static gboolean
+serve_doctor (GPasteDaemon3         *skeleton,
+              GDBusMethodInvocation *invocation,
+              gpointer               user_data G_GNUC_UNUSED)
+{
+    static const gchar * const report[] = { "Restricted the folder", "“other” could not be read", NULL };
+
+    g_paste_daemon3_complete_doctor (skeleton, invocation, report, FALSE);
+
+    return TRUE;
+}
+
+/* What the check found reaches the caller line for line, a store it leaves
+ * unhealthy said to be. */
+static void
+test_doctor_answers (void)
+{
+    StandIn stand_in = { 0 };
+    g_autoptr (GPasteClient) client = ready_client (&stand_in);
+    g_autoptr (GError) error = NULL;
+    Reply reply = { 0 };
+    gboolean healthy = TRUE;
+
+    g_signal_connect (stand_in.skeleton, "handle-doctor", G_CALLBACK (serve_doctor), NULL);
+    g_paste_client_doctor (client, NULL, on_replied, &reply);
+
+    g_autoptr (GAsyncResult) result = wait_reply (&reply);
+    g_auto (GStrv) report = g_paste_client_doctor_finish (client, result, &healthy, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstrv (report, ((const gchar * const []) { "Restricted the folder", "“other” could not be read", NULL }));
+    g_assert_false (healthy);
 
     stand_in_stop (&stand_in);
 }
@@ -1277,5 +1334,6 @@ main (int argc, char **argv)
     g_test_add_func ("/client/calls/add-file-not-utf8", test_add_file_not_utf8);
     g_test_add_func ("/client/calls/add-file-null", test_add_file_null);
     g_test_add_func ("/client/calls/reexecute-answers", test_reexecute_answers);
+    g_test_add_func ("/client/calls/doctor-answers", test_doctor_answers);
     return g_paste_test_env_run ();
 }

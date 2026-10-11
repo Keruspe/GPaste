@@ -195,6 +195,10 @@ Migrate the history to a different storage backend
 Change the passphrase of the encrypted history, re-encrypting it with the new one
 .br
 .TP
+.B gpaste-client doctor
+Check the history folder and every history, and put right what can be: restrict the folder and every folder in it to their owner, and encrypt the histories left under another passphrase with the one the history in use takes, which the daemon asks for theirs to do. Prints what it found and did, and exits with a failure status when anything is left wrong
+.br
+.TP
 .B gpaste-client preferences
 Launch the configuration tool
 .br

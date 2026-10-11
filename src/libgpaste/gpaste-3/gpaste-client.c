@@ -301,21 +301,25 @@ g_paste_client_strip_remote_error (GError **error)
         g_paste_client_strip_remote_error (error);                                              \
     }
 
-/* Every method but three is answered out of what the daemon already holds, so
+/* Every method but four is answered out of what the daemon already holds, so
  * the GDBusProxy default is as much time as any of them can need. Upload and
  * UploadAndCopy are one exception: they answer only once the pastebin has
  * taken the paste, a network round trip a large item or a loaded service pushes
  * well past those 25 seconds -- and a call that times out reports a failure the
  * upload did not have, having already succeeded on the daemon's side.
  *
- * Reexecute is the other: expiry waits for the selections to be identified.
+ * Reexecute is another: expiry waits for the selections to be identified.
  * Each wait has a sixty-second deadline and completion revalidation retries
  * for at most thirty seconds, so this allowance also covers the final wait.
  * The CLI preserves deadline errors; only an unsupported method uses SIGUSR1.
+ *
+ * Doctor is the last, and waits for as long as it takes: the check answers once
+ * the user has typed whatever passphrase it asks for, or turned it down.
  */
 #define G_PASTE_CLIENT_TIMEOUT_DEFAULT   -1
 #define G_PASTE_CLIENT_TIMEOUT_UPLOAD    (10 * 60 * 1000)
 #define G_PASTE_CLIENT_TIMEOUT_REEXECUTE (2 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_DOCTOR    G_MAXINT
 
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
@@ -760,6 +764,111 @@ G_PASTE_CLIENT_METHOD (delete_history,
  */
 G_PASTE_CLIENT_METHOD (delete_password,
                        (const gchar *name), (name), (name))
+
+/**
+ * g_paste_client_doctor_sync:
+ * @self: a #GPasteClient instance
+ * @healthy: (out) (optional): whether nothing is left wrong
+ * @error: return location for a #GError, or %NULL
+ *
+ * Have the daemon check its store and put right what it can: the history folder
+ * restricted to its owner, every history read, and the histories left under
+ * another passphrase encrypted with the one the history in use takes. The
+ * daemon prompts for that passphrase itself: it never travels over the bus.
+ * This waits for the user to answer, for as long as that takes.
+ *
+ * Returns: (transfer full) (array zero-terminated=1): what the check found and
+ *          did, one line each, or %NULL on error
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_client_doctor_sync (GPasteClient *self,
+                            gboolean     *healthy,
+                            GError      **error)
+{
+    if (healthy)
+        *healthy = FALSE;
+
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    GStrv report = NULL;
+
+    if (!g_paste_daemon3_call_doctor_sync (G_PASTE_DAEMON3 (self),
+                                           G_DBUS_CALL_FLAGS_NONE,
+                                           G_PASTE_CLIENT_TIMEOUT_DOCTOR,
+                                           &report,
+                                           healthy,
+                                           NULL, /* cancellable */
+                                           error))
+    {
+        g_paste_client_strip_remote_error (error);
+        return NULL;
+    }
+
+    return report;
+}
+
+/**
+ * g_paste_client_doctor:
+ * @self: a #GPasteClient instance
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
+ *            satisfied, or %NULL to ignore the result
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Have the daemon check its store, as g_paste_client_doctor_sync() does.
+ */
+G_PASTE_VISIBLE void
+g_paste_client_doctor (GPasteClient       *self,
+                       GCancellable       *cancellable,
+                       GAsyncReadyCallback callback,
+                       gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+
+    g_paste_daemon3_call_doctor (G_PASTE_DAEMON3 (self),
+                                 G_DBUS_CALL_FLAGS_NONE,
+                                 G_PASTE_CLIENT_TIMEOUT_DOCTOR,
+                                 cancellable,
+                                 callback,
+                                 user_data);
+}
+
+/**
+ * g_paste_client_doctor_finish:
+ * @self: a #GPasteClient instance
+ * @result: the #GAsyncResult handed to the callback
+ * @healthy: (out) (optional): whether nothing is left wrong
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect what the check of the store found.
+ *
+ * Returns: (transfer full) (array zero-terminated=1): what the check found and
+ *          did, one line each, or %NULL on error
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_client_doctor_finish (GPasteClient *self,
+                              GAsyncResult *result,
+                              gboolean     *healthy,
+                              GError      **error)
+{
+    if (healthy)
+        *healthy = FALSE;
+
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    GStrv report = NULL;
+
+    if (!g_paste_daemon3_call_doctor_finish (G_PASTE_DAEMON3 (self), &report, healthy, result, error))
+    {
+        g_paste_client_strip_remote_error (error);
+        return NULL;
+    }
+
+    return report;
+}
 
 /**
  * g_paste_client_empty_history_sync:

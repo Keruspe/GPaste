@@ -997,6 +997,153 @@ test_every_method_handled (Fixture      *fixture,
     }
 }
 
+typedef struct
+{
+    guint     answered;
+    GVariant *value;
+    GError   *error;
+} DoctorCall;
+
+static void
+on_doctor_answered (GObject      *source,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    DoctorCall *call = user_data;
+
+    call->value = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source), result, &call->error);
+    ++call->answered;
+}
+
+static void
+call_doctor (Fixture         *fixture,
+             GDBusConnection *caller,
+             DoctorCall      *call)
+{
+    g_dbus_connection_call (caller, g_dbus_connection_get_unique_name (fixture->connection),
+                            G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME, "Doctor",
+                            NULL, G_VARIANT_TYPE ("(asb)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+                            on_doctor_answered, call);
+}
+
+static gboolean
+doctor_calls_waiting (gconstpointer data,
+                      gconstpointer arg)
+{
+    GPasteDaemon *daemon = (GPasteDaemon *) data;
+
+    return g_slist_length (daemon->doctor_calls) == GPOINTER_TO_UINT (arg);
+}
+
+/* A daemon nobody runs the check for refuses it rather than leave the caller
+ * waiting on nothing. */
+static void
+test_doctor_unhosted (Fixture      *fixture,
+                      gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) caller = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    DoctorCall call = { 0 };
+
+    call_doctor (fixture, caller, &call);
+    g_paste_test_bus_wait_for_count (&call.answered, 1);
+    g_assert_null (call.value);
+    g_assert_error (call.error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&call.error);
+}
+
+/* A check of the store reads and rewrites it, which a daemon this one took
+ * over from may still be writing: refused BUSY, as a change of passphrase is,
+ * the host never asked, until this one holds the storage lock. */
+static void
+test_doctor_holds_store (Fixture      *fixture,
+                         gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) caller = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
+    DoctorCall call = { 0 };
+    guint asked = 0;
+
+    g_signal_connect_swapped (fixture->daemon, "doctor", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
+    g_paste_storage_backend_unlock ();
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    gint held = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (held, >=, 0);
+    g_assert_cmpint (flock (held, LOCK_EX | LOCK_NB), ==, 0);
+    call_doctor (fixture, caller, &call);
+    g_paste_test_bus_wait_for_count (&call.answered, 1);
+    g_assert_null (call.value);
+    g_assert_error (call.error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_assert_cmpuint (asked, ==, 0);
+    g_clear_error (&call.error);
+
+    g_close (held, NULL);
+    call_doctor (fixture, caller, &call);
+    g_paste_test_bus_wait_until (doctor_calls_waiting, fixture->daemon, GUINT_TO_POINTER (1));
+    g_assert_cmpuint (asked, ==, 1);
+    g_paste_daemon_doctor_done (fixture->daemon, (const gchar * const []) { NULL }, TRUE);
+    g_paste_test_bus_wait_for_count (&call.answered, 2);
+    g_clear_pointer (&call.value, g_variant_unref);
+}
+
+/* Calls made while the host checks the store ask it once, and are answered
+ * together with what it hands back. */
+static void
+test_doctor_answered (Fixture      *fixture,
+                      gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) caller = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    static const gchar * const report[] = { "Restricted the folder", NULL };
+    DoctorCall first = { 0 };
+    DoctorCall second = { 0 };
+    guint asked = 0;
+
+    g_signal_connect_swapped (fixture->daemon, "doctor", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
+    call_doctor (fixture, caller, &first);
+    call_doctor (fixture, caller, &second);
+    g_paste_test_bus_wait_until (doctor_calls_waiting, fixture->daemon, GUINT_TO_POINTER (2));
+    g_assert_cmpuint (g_slist_length (fixture->daemon->doctor_calls), ==, 2);
+    g_assert_cmpuint (asked, ==, 1);
+    g_assert_cmpuint (first.answered + second.answered, ==, 0);
+
+    g_paste_daemon_doctor_done (fixture->daemon, report, TRUE);
+    g_paste_test_bus_wait_for_count (&first.answered, 1);
+    g_paste_test_bus_wait_for_count (&second.answered, 1);
+
+    for (DoctorCall *call = &first; call; call = (call == &first) ? &second : NULL)
+    {
+        g_autoptr (GVariant) value = g_steal_pointer (&call->value);
+        g_autofree const gchar **lines = NULL;
+        gboolean healthy = FALSE;
+
+        g_assert_no_error (call->error);
+        g_variant_get (value, "(^a&sb)", &lines, &healthy);
+        g_assert_cmpstrv (lines, report);
+        g_assert_true (healthy);
+    }
+}
+
+/* A daemon going while the host checks answers the calls waiting on it. */
+static void
+test_doctor_disposed (Fixture      *fixture,
+                      gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) caller = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    DoctorCall call = { 0 };
+    guint asked = 0;
+
+    g_signal_connect_swapped (fixture->daemon, "doctor", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
+    call_doctor (fixture, caller, &call);
+    g_paste_test_bus_wait_for_count (&asked, 1);
+    g_object_run_dispose (G_OBJECT (fixture->daemon));
+    g_paste_test_bus_wait_for_count (&call.answered, 1);
+    g_assert_null (call.value);
+    g_assert_error (call.error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_clear_error (&call.error);
+}
+
 /* An object for the bus to export, which refuses to be when told to and counts
  * the times it is asked. */
 #define TEST_TYPE_BUS_OBJECT (test_bus_object_get_type ())
@@ -1107,6 +1254,10 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
     g_test_add ("/daemon/reexport-follows-screensaver", Fixture, NULL, fixture_set_up, test_reexport_follows_screensaver, fixture_tear_down);
     g_test_add ("/daemon/methods/every-method-handled", Fixture, NULL, fixture_set_up, test_every_method_handled, fixture_tear_down);
+    g_test_add ("/daemon/doctor/unhosted", Fixture, NULL, fixture_set_up, test_doctor_unhosted, fixture_tear_down);
+    g_test_add ("/daemon/doctor/answered", Fixture, NULL, fixture_set_up, test_doctor_answered, fixture_tear_down);
+    g_test_add ("/daemon/doctor/holds-store", Fixture, NULL, fixture_set_up, test_doctor_holds_store, fixture_tear_down);
+    g_test_add ("/daemon/doctor/disposed", Fixture, NULL, fixture_set_up, test_doctor_disposed, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-state", Fixture, NULL, fixture_set_up, test_extension_state, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);

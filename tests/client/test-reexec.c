@@ -269,13 +269,20 @@ fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
     return items;
 }
 
+/* A third history the listing names, when set. */
+static const gchar *fake_history_name;
+
 static GList *
 fake_list_histories_sync (GPasteClient *client G_GNUC_UNUSED,
                           GError      **error  G_GNUC_UNUSED)
 {
     GList *histories = g_list_append (NULL, g_paste_client_history_new ("work", 1));
 
-    return g_list_append (histories, g_paste_client_history_new ("two\nlines", 2));
+    histories = g_list_append (histories, g_paste_client_history_new ("two\nlines", 2));
+    if (fake_history_name)
+        histories = g_list_append (histories, g_paste_client_history_new (fake_history_name, 3));
+
+    return histories;
 }
 
 /* The presence the faked client reports, READY unless a case says otherwise,
@@ -322,6 +329,28 @@ fake_wait_for_daemon_finish (GAsyncResult *result,
     return g_task_propagate_boolean (G_TASK (result), error);
 }
 
+/* What the check answers: its report and whether it left anything wrong, or
+ * @doctor_error. */
+static const gchar * const *doctor_report;
+static gboolean             doctor_healthy;
+static GError              *doctor_error;
+
+static GStrv
+fake_doctor_sync (GPasteClient *client G_GNUC_UNUSED,
+                  gboolean     *healthy,
+                  GError      **error)
+{
+    if (doctor_error)
+    {
+        g_propagate_error (error, g_error_copy (doctor_error));
+        return NULL;
+    }
+
+    *healthy = doctor_healthy;
+
+    return g_strdupv ((gchar **) doctor_report);
+}
+
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
 #define main gpaste_client_main
 #define g_paste_util_reexecute_legacy_daemon fake_reexecute_legacy_daemon
@@ -339,11 +368,13 @@ fake_wait_for_daemon_finish (GAsyncResult *result,
 #define g_paste_client_add_password_sync fake_add_password_sync
 #define g_paste_client_list_histories_sync fake_list_histories_sync
 #define g_paste_client_get_daemon_presence fake_get_daemon_presence
+#define g_paste_client_doctor_sync fake_doctor_sync
 #define g_paste_util_wait_for_daemon fake_wait_for_daemon
 #define g_paste_util_wait_for_daemon_finish fake_wait_for_daemon_finish
 #include "../../src/client/gpaste-client.c"
 #undef g_paste_util_wait_for_daemon_finish
 #undef g_paste_util_wait_for_daemon
+#undef g_paste_client_doctor_sync
 #undef g_paste_client_get_daemon_presence
 #undef g_paste_client_list_histories_sync
 #undef g_paste_client_add_password_sync
@@ -983,6 +1014,63 @@ test_list_histories_zero (void)
     fflush (stdout);
 }
 
+/* The check's report is printed line for line, and the status says whether
+ * anything is left wrong. */
+static void
+test_doctor_report (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stdout ("Restricted the folder\n“other” could not be read\n");
+        return;
+    }
+
+    doctor_report = (const gchar * const []) { "Restricted the folder", "“other” could not be read", NULL };
+    doctor_healthy = FALSE;
+    g_assert_cmpint (run_client ((const gchar *[]) { "doctor", NULL }), ==, EXIT_FAILURE);
+    fflush (stdout);
+}
+
+/* A check finding nothing says so, rather than print nothing at all. */
+static void
+test_doctor_nothing (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stdout ("Nothing to put right\n");
+        return;
+    }
+
+    doctor_report = (const gchar * const []) { NULL };
+    doctor_healthy = TRUE;
+    g_assert_cmpint (run_client ((const gchar *[]) { "doctor", NULL }), ==, EXIT_SUCCESS);
+    fflush (stdout);
+}
+
+/* A daemon older than the check is to be restarted, which is what the user is
+ * told rather than GDBus' unknown method -- a new session for the one GNOME
+ * Shell runs, which no re-exec reloads. */
+static void
+test_doctor_old_daemon (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*gpaste-client daemon-reexec*log out and back in*");
+        g_test_trap_assert_stdout ("");
+        return;
+    }
+
+    doctor_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "No such method “Doctor”");
+    g_assert_cmpint (run_client ((const gchar *[]) { "doctor", NULL }), ==, EXIT_FAILURE);
+    g_clear_error (&doctor_error);
+}
+
 /* Output that could not be written fails the command: a script trusting the
  * exit status of `gpaste-client get` into a full disk would lose the item. */
 static void
@@ -1185,6 +1273,32 @@ test_terminal_controls (void)
     g_assert_nonnull (strstr (listed, "c\xef\xbf\xbd]0;title\xef\xbf\xbd" "d"));
     g_assert_null (strchr (listed, '\x1b'));
     g_assert_null (strchr (listed, '\x07'));
+
+    /* Nor what names a file: a history's name, or the doctor's report of one
+     * another user put in the history directory. */
+    fake_history_name = "e\x1b]0;history\x07" "f";
+    doctor_report = (const gchar *[]) { "g\x1b]0;doctor\x07" "h belongs to another user", NULL };
+    doctor_healthy = TRUE;
+    g_assert_cmpint (run_client ((const gchar *[]) { "list-histories", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "doctor", NULL }), ==, EXIT_SUCCESS);
+    fflush (stdout);
+    fake_history_name = NULL;
+    doctor_report = NULL;
+
+    /* Read until the last of it is in: a terminal hands what was written over
+     * in as many reads as it likes. */
+    gchar named[512] = { 0 };
+    gsize got = 0;
+
+    while (!strstr (named, " belongs to another user") && got < sizeof (named) - 1)
+    {
+        length = read (terminal, named + got, sizeof (named) - 1 - got);
+        g_assert_cmpint (length, >, 0);
+        got += (gsize) length;
+    }
+    g_assert_nonnull (strstr (named, "e\xef\xbf\xbd]0;history\xef\xbf\xbd" "f"));
+    g_assert_nonnull (strstr (named, "g\xef\xbf\xbd]0;doctor\xef\xbf\xbd" "h"));
+    g_assert_null (strchr (named, '\x1b'));
     g_assert_true (g_close (client_side, NULL));
     g_assert_true (g_close (terminal, NULL));
 }
@@ -1291,6 +1405,9 @@ main (int argc, char **argv)
     g_test_add_func ("/client/output-failure", test_output_failure);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/merge-takes-two", test_merge_takes_two);
+    g_test_add_func ("/client/doctor/report", test_doctor_report);
+    g_test_add_func ("/client/doctor/nothing", test_doctor_nothing);
+    g_test_add_func ("/client/doctor/old-daemon", test_doctor_old_daemon);
     g_test_add_func ("/client/waits-for-daemon", test_waits_for_daemon);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);

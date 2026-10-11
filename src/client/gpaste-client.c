@@ -459,6 +459,43 @@ g_paste_change_passphrase (Context *ctx,
     return EXIT_SUCCESS;
 }
 
+/* As with the passphrase change, the daemon asks for whatever passphrase the
+ * check needs through its own prompt; what comes back is what it found, and the
+ * status says whether anything is left wrong. */
+static gint
+g_paste_doctor (Context *ctx,
+                GError **error)
+{
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = g_paste_client_doctor_sync (ctx->client, &healthy, error);
+
+    /* A daemon older than the check knows no such method: the one running is
+     * what has to change -- by a re-exec, bar the one GNOME Shell runs, whose
+     * code the Shell keeps until a new session whatever it is asked. */
+    if (g_error_matches (*error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD))
+    {
+        g_clear_error (error);
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                             _("The running daemon cannot check the store: restart it with “gpaste-client daemon-reexec” first, or, if GNOME Shell runs it, log out and back in"));
+    }
+
+    if (!report)
+        return EXIT_FAILURE;
+
+    /* A line names files of the history directory, another user's among them:
+     * through print_text (), as an item is. */
+    for (GStrv line = report; *line; ++line)
+    {
+        print_text (*line);
+        putchar ('\n');
+    }
+
+    if (!*report)
+        printf ("%s\n", _("Nothing to put right"));
+
+    return (healthy) ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 static gint
 g_paste_daemon_version (Context *ctx,
                         GError **error)
@@ -518,7 +555,9 @@ g_paste_get_history (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s\n", name);
+    /* A name is a file's, which any process of the session may choose. */
+    print_text (name);
+    putchar ('\n');
 
     return EXIT_SUCCESS;
 }
@@ -551,7 +590,10 @@ g_paste_list_histories (Context *ctx,
      * graphical panel for a home. Ended as the items are, --zero included: a
      * history's name may hold a line break of its own. */
     for (const GList *h = histories; h; h = h->next)
-        printf ("%s%c", g_paste_client_history_get_name (h->data), (ctx->zero) ? '\0' : '\n');
+    {
+        print_text (g_paste_client_history_get_name (h->data));
+        putchar ((ctx->zero) ? '\0' : '\n');
+    }
 
     return EXIT_SUCCESS;
 }
@@ -937,6 +979,7 @@ static const Command commands[] = {
         { 1, "daemon-reexec",     "dr",              0,        CLIENT_ANY,    FALSE, 0,        NULL,                         N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
         { 1, "migrate",           NULL,              0,        CLIENT_ANY,    FALSE, 0,        NULL,                         N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
         { 1, "change-passphrase", NULL,              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
+        { 1, "doctor",            NULL,              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("check the history folder and every history, putting right what can be"),                   g_paste_doctor },
         { 1, "preferences",       "p settings",      0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("launch the configuration tool"),                                                           g_paste_preferences },
         { 1, "ui",                NULL,              0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("launch the graphical tool"),                                                               g_paste_ui },
         { 1, "show-history",      NULL,              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("make the GNOME Shell extension display the history"),                                      g_paste_show_history },

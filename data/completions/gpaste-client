@@ -206,7 +206,7 @@ _gpaste-client()
         # offer the short forms too.
         local verbs="a about add add-password ap backup-history bh change-passphrase d
                      daemon daemon-reexec daemon-version del delete delete-history
-                     delete-password dh dp dr dv e empty f fav favourite file g get
+                     delete-password dh doctor dp dr dv e empty f fav favourite file g get
                      get-history gh h help history history-size hs lh list-histories m
                      make-password merge migrate mp p preferences q quit remove replace
                      rm s search select set settings sh show-history srt start stop

@@ -22,7 +22,7 @@ gboolean g_paste_storage_decryption_needed (GPasteSettings *settings);
 
 gboolean g_paste_storage_is_busy (void);
 
-/* The three storage concerns are ordinary GAsyncResult operations: each _async
+/* The storage concerns are ordinary GAsyncResult operations: each _async
  * starts it and returns, and the matching _finish reads the outcome off the
  * #GAsyncResult. The caller drives the main loop (e.g. through
  * g_application_run()); none of these ever spins one of its own, and none builds
@@ -37,7 +37,8 @@ gboolean g_paste_storage_is_busy (void);
  * the re-key alone, when the histories on disk could not be re-encrypted. Every
  * ordinary outcome, dismissal included, is %TRUE: what the user chose has
  * already been applied to the settings and to the process-wide passphrase by
- * the time the callback runs, so there is nothing else to hand back.
+ * the time the callback runs, so there is nothing else to hand back -- bar the
+ * report the store check hands back of what it found.
  *
  * A prompt that fails ends its concern rather than being asked again: a
  * dismissal is a question the user answered, an implementation error is not one
@@ -78,5 +79,19 @@ void     g_paste_storage_rekey_async  (GPastePrompt        *prompt,
                                        gpointer             user_data);
 gboolean g_paste_storage_rekey_finish (GAsyncResult        *result,
                                        GError             **error);
+
+/* Check the store and put right what can be: the history folder restricted to
+ * its owner, every history read, and the ones left under another passphrase
+ * encrypted with the one the history in use takes, theirs asked for. What it
+ * found and did comes back as a report, one line each; only a prompt that
+ * failed is an error. */
+void     g_paste_storage_doctor_async  (GPastePrompt        *prompt,
+                                        GPasteSettings      *settings,
+                                        GAsyncReadyCallback  callback,
+                                        gpointer             user_data);
+gboolean g_paste_storage_doctor_finish (GAsyncResult        *result,
+                                        GStrv               *report,
+                                        gboolean            *healthy,
+                                        GError             **error);
 
 G_END_DECLS

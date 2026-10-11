@@ -556,18 +556,23 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     }
 
     /* Whatever the prompt has to say, said once. The standing explanation
-     * depends on which question is being asked; an error joins it rather than
-     * replacing it, and the shell backend shows both the same way. */
-    const gchar *standing = confirm
-        ? g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION)
-        : g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
+     * depends on which question is being asked, unless the request brings its
+     * own; an error joins it rather than replacing it, and the shell backend
+     * shows both the same way. */
+    const gchar *standing = g_paste_prompt_request_get_description (request);
+
+    if (!standing)
+    {
+        standing = confirm
+            ? g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION)
+            : g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
+    }
     g_autofree gchar *description = error_message ? g_strconcat (error_message, "\n\n", standing, NULL)
                                                   : NULL;
 
     set_group_text (group, NULL, description ? description : standing);
 
-    /* No keyring in this build means nothing to offer to remember it in. */
-    if (g_paste_prompt_keyring_available ())
+    if (g_paste_prompt_request_offers_remember (request))
     {
         GtkWidget *remember = adw_switch_row_new ();
         gboolean starts_on;
