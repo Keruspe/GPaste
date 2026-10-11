@@ -1199,18 +1199,22 @@ on_text (GMarkupParseContext *context,
     switch (data->state)
     {
     case IN_HISTORY:
+    /* Text out of place is still the history's, a 1.0 document's values among
+     * it -- passwords included, when an old file kept any -- and the journal
+     * outlives the history it would be copied from, with readers of its own:
+     * its length is all that is said of it. */
     case IN_VALUE_WITH_TEXT:
         if (*g_strstrip (txt))
         {
-            WARN_AT ("Unexpected text: %s", txt);
+            WARN_AT ("Unexpected text (%" G_GSIZE_FORMAT " bytes)", text_len);
             return;
         }
         break;
     case IN_ITEM:
         /* An item's value lives in a <value> child; text directly inside <item>
-         * was the 1.0 layout, which is no longer read. */
+         * is the 1.0 layout, which is refused (see HistoryVersion). */
         if (*g_strstrip (txt))
-            WARN_AT ("Unexpected text in item: %s", txt);
+            WARN_AT ("Unexpected text in item (%" G_GSIZE_FORMAT " bytes)", text_len);
         break;
     case IN_VALUE:
         if (data->version == HISTORY_2_0)
@@ -1259,6 +1263,24 @@ on_text (GMarkupParseContext *context,
     }
 }
 
+/* What GMarkup found wrong, without its message: that quotes the document -- a
+ * value not in UTF-8 whole, an entity in a password's name -- and the journal
+ * outlives the history (see on_text ()). Every error the parse reports is
+ * GMarkup's own, the callbacks setting none. */
+static const gchar *
+markup_error_description (const GError *error)
+{
+    switch (error->code)
+    {
+    case G_MARKUP_ERROR_BAD_UTF8:
+        return "text not in UTF-8";
+    case G_MARKUP_ERROR_EMPTY:
+        return "an empty document";
+    default:
+        return "markup that does not parse";
+    }
+}
+
 static void
 on_error (GMarkupParseContext *context,
           GError              *error,
@@ -1269,7 +1291,7 @@ on_error (GMarkupParseContext *context,
     /* GMarkup reads on past a CDATA section not in UTF-8, the parse still
      * succeeding without the item that held it. */
     data->malformed = TRUE;
-    WARN_AT ("error: %s", error->message);
+    WARN_AT ("History document holding %s", markup_error_description (error));
 }
 
 /******************/
@@ -1497,8 +1519,11 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
         if (!text_length)
             return TRUE;
 
-        gboolean parsed = g_markup_parse_context_parse (ctx, text, text_length, &error) &&
-                          g_markup_parse_context_end_parse (ctx, &error);
+        /* No GError: on_error () reports each, and a second one set over the
+         * first, after a CDATA section the parse read on past, would have GLib
+         * log its message. */
+        gboolean parsed = g_markup_parse_context_parse (ctx, text, text_length, NULL) &&
+                          g_markup_parse_context_end_parse (ctx, NULL);
 
         /* The context is still alive here (it is freed at scope exit), so a
          * truncated file can say where it stopped rather than just how. */
@@ -1507,7 +1532,7 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
             g_autofree gchar *location = parse_location (ctx, &data, -1);
 
             if (!parsed)
-                g_warning ("Failed to parse history file %s: %s", location, error->message);
+                g_warning ("Failed to parse history file %s", location);
 
             if (data.state != END)
                 g_warning ("Unexpected state after parsing history %s: %" G_GINT32_FORMAT, location, data.state);

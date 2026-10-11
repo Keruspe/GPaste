@@ -18,6 +18,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix images, files and colours marked as secret by their application being kept in the history
 - Fix copied blank lines vanishing from the history after a restart
 - Fix damaged or foreign history files losing items or crashing GPaste
+- Fix the text of an old-format history being copied into the system log
 - Fix a deleted item staying on the clipboard when the item below it is a password
 - Fix synchronizing secrets without their password protection
 - Fix rich-text removal leaving formatting on the clipboard

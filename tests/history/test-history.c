@@ -1061,7 +1061,7 @@ test_file_skipped_image_kept_by_reads (void)
         return;
     }
 
-    G_PASTE_TEST_TRAP_SUBPROCESS ("*Document ended unexpectedly*");
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to parse history file*truncated-image.xml*");
 }
 
 /* With images turned off, a load skips the stored image, and the next save of
@@ -2899,6 +2899,8 @@ test_file_v1_refused_and_preserved (void)
     }
 
     G_PASTE_TEST_TRAP_SUBPROCESS ("*History version 1.0 is no longer supported*");
+    /* Nor is anything the history holds copied into the journal. */
+    g_test_trap_assert_stderr_unmatched ("*ancient*");
 }
 
 /* What a plain history document reads as: written as is under @name, then read
@@ -2957,6 +2959,9 @@ test_file_parser_malformed (void)
                                                  "  <item kind=\"Text\"><value><![CDATA[\n\n\n\n]]></value></item>\n"
                                                  "  <item kind=\"Text\"><value>\n    <![CDATA[indented]]>\n  </value></item>\n",
                                                  TRUE);
+        g_autofree gchar *trailing = read_document ("parser-trailing",
+                                                    "  <item kind=\"Text\"><value><![CDATA[kept]]>never logged</value></item>\n",
+                                                    TRUE);
         g_autofree gchar *nested_item = read_document ("parser-nested-item",
                                                        "  <item kind=\"Text\"><value>a</value><item kind=\"Text\"><value>b</value></item></item>\n",
                                                        FALSE);
@@ -2983,12 +2988,16 @@ test_file_parser_malformed (void)
                                "  <item kind=\"Text\"><value><![CDATA[another value damaged \xff]]></value></item>\n"
                                "  <item kind=\"Text\"><value><![CDATA[intact]]></value></item>\n",
                                FALSE));
+        g_free (read_document ("parser-entity",
+                               "  <item kind=\"Password\" name=\"&an-entity-unlogged;\"><value>x</value></item>\n",
+                               FALSE));
         g_autofree gchar *date = read_document ("parser-date",
                                                 "  <item kind=\"Image\" date=\"99999999999999\"><value>/nowhere.png</value></item>\n",
                                                 TRUE);
 
         g_assert_cmpstr (mime, ==, "the plain text");
         g_assert_cmpstr (blank, ==, "\n\n\n\n|indented");
+        g_assert_cmpstr (trailing, ==, "kept");
         g_assert_cmpstr (nested_item, ==, "b");
         g_assert_cmpstr (nested_history, ==, "a");
         g_assert_cmpstr (date, ==, "");
@@ -3041,6 +3050,9 @@ test_file_parser_malformed (void)
 
     G_PASTE_TEST_TRAP_SUBPROCESS ("*Unknown mime*");
     g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
+    g_test_trap_assert_stderr_unmatched ("*never logged*");
+    g_test_trap_assert_stderr_unmatched ("*value damaged*");
+    g_test_trap_assert_stderr_unmatched ("*an-entity-unlogged*");
 }
 
 /* A history written by a newer GPaste (an unknown <history version=>) is a read
