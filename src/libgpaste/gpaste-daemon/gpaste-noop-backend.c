@@ -19,11 +19,11 @@ G_PASTE_DEFINE_TYPE (NoopBackend, noop_backend, G_PASTE_TYPE_STORAGE_BACKEND)
  * g_paste_storage_backend_delete_history ()). */
 
 static gboolean
-g_paste_noop_backend_read_history_file (GPasteStorageBackend  *self        G_GNUC_UNUSED,
-                                        const gchar           *name        G_GNUC_UNUSED,
-                                        GCancellable          *cancellable G_GNUC_UNUSED,
-                                        GList                **history,
-                                        gsize                 *size)
+g_paste_noop_backend_read_history_file (GPasteStorageBackend *self        G_GNUC_UNUSED,
+                                        const gchar          *name        G_GNUC_UNUSED,
+                                        GCancellable         *cancellable G_GNUC_UNUSED,
+                                        GList               **history,
+                                        gsize                *size)
 {
     *history = NULL;
     *size = 0;

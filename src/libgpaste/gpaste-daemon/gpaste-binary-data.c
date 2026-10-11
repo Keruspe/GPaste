@@ -7,8 +7,8 @@ struct _GPasteBinaryData
 {
     GObject parent_instance;
 
-    GPasteSpecialMime  mime;
-    GBytes            *bytes;
+    GPasteSpecialMime mime;
+    GBytes           *bytes;
 };
 
 G_PASTE_DEFINE_TYPE (BinaryData, binary_data, G_TYPE_OBJECT)

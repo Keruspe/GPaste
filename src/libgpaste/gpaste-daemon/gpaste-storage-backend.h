@@ -32,11 +32,11 @@ struct _GPasteStorageBackendClass
      *
      * A write returns whether the store of @name holds @history now: one that
      * fails leaves it as it was, and leaves none where there was none. */
-    gboolean (*read_history_file)  (GPasteStorageBackend  *self,
-                                    const gchar           *name,
-                                    GCancellable          *cancellable,
-                                    GList                **history,
-                                    gsize                 *size);
+    gboolean (*read_history_file)  (GPasteStorageBackend *self,
+                                    const gchar          *name,
+                                    GCancellable         *cancellable,
+                                    GList               **history,
+                                    gsize                *size);
     gboolean (*write_history_file) (GPasteStorageBackend *self,
                                     const gchar          *name,
                                     const GList          *history);
@@ -48,9 +48,9 @@ struct _GPasteStorageBackendClass
     GPasteStorage         (*get_kind)       (GPasteStorageBackend *self);
     void                  (*delete_history) (GPasteStorageBackend *self,
                                              const gchar          *name,
-                                             GError               **error);
+                                             GError              **error);
     GStrv                 (*list_histories) (GPasteStorageBackend *self,
-                                             GError               **error);
+                                             GError              **error);
 
     /*< protected, optional: how many items a history holds >*/
     /* Answer without materializing the history, where the store can count on its

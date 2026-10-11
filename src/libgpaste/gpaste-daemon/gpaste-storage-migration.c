@@ -187,18 +187,18 @@ journal_settle (GPasteSettings *settings)
 
 typedef struct
 {
-    GPasteSettings                *settings;
-    GPastePrompt                  *prompt;
-    GTask                         *task;
+    GPasteSettings       *settings;
+    GPastePrompt         *prompt;
+    GTask                *task;
 
     /* The backend the history currently lives in (detected from the files on
      * disk): what we import from and clean up. */
-    GPasteStorage                  current;
+    GPasteStorage         current;
 
     /* What the migration prompt last came back with. */
-    GPasteStorage                  chosen;
-    gboolean                       import;
-    gboolean                       cleanup;
+    GPasteStorage         chosen;
+    gboolean              import;
+    gboolean              cleanup;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* The passphrase unlocking @current, once the keyring or the unlock prompt
@@ -207,7 +207,7 @@ typedef struct
      * the source key while the destination is being (re)keyed with another one.
      * Doubles as the "source already unlocked" flag, so a second Apply does not
      * ask again. In gcr secure memory; freed in migration_finish (). */
-    GPastePassphrase              *source_passphrase;
+    GPastePassphrase     *source_passphrase;
     /* The process-wide passphrase as the migration found it, which is what
      * opens @current when this migration never unlocked it itself. */
     GPastePassphrase              *held_passphrase;
@@ -216,8 +216,8 @@ typedef struct
      * honour), and whether the user asked to remember it. Acted on once the
      * migration has actually applied, so a failed one never leaves the keyring
      * pointing at a history that was never written. */
-    gboolean                       passphrase_prompted;
-    GPasteStorageRemember          remember_passphrase;
+    gboolean              passphrase_prompted;
+    GPasteStorageRemember remember_passphrase;
 #endif
 } MigrationData;
 
@@ -658,8 +658,10 @@ import_histories (GPasteSettings *settings,
             ok = FALSE;
 
         if (!ok)
+        {
             g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                          "The history “%s” did not read back as it was written", *name);
+        }
     }
 
     if (ok)
@@ -752,6 +754,8 @@ import_work_free (gpointer data)
     g_object_unref (work->settings);
     g_free (work);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (ImportWork, import_work_free)
 
 /* Runs on a worker thread. Importing an encrypted history derives an Argon2id
  * key per stream — read the source, write the destination, read it back to
@@ -899,9 +903,7 @@ apply_migration_settle (MigrationData *self,
          * was asked for: anything else never offered the choice, and must not
          * silently discard an entry that still unlocks a history. */
         if (self->passphrase_prompted && g_paste_storage_is_encrypted (chosen))
-        {
             remember_passphrase (self->remember_passphrase, chosen_passphrase);
-        }
         /* Leaving encryption behind for good: once the encrypted history it
          * opened is gone, a remembered passphrase is a secret kept for nothing.
          * Only once it is actually gone, though — data we kept is still locked
@@ -943,7 +945,7 @@ apply_migration (MigrationData *self)
         return;
     }
 
-    ImportWork *work = g_new0 (ImportWork, 1);
+    g_autoptr (ImportWork) work = g_new0 (ImportWork, 1);
 
     work->settings = g_object_ref (self->settings);
     work->current = self->current;
@@ -956,7 +958,7 @@ apply_migration (MigrationData *self)
     g_autoptr (GTask) task = g_task_new (NULL, NULL, on_import_done, self);
 
     g_task_set_source_tag (task, apply_migration);
-    g_task_set_task_data (task, work, import_work_free);
+    g_task_set_task_data (task, g_steal_pointer (&work), import_work_free);
     ++g_paste_storage_workers;
     g_task_run_in_thread (task, import_work_run);
 }
@@ -1548,27 +1550,27 @@ g_paste_storage_decryption_finish (GAsyncResult *result,
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 typedef struct
 {
-    GPastePrompt                  *prompt;
-    GPasteSettings                *settings;
-    GTask                         *task;
+    GPastePrompt         *prompt;
+    GPasteSettings       *settings;
+    GTask                *task;
 
     /* The encrypted flavor being re-keyed, and the passphrase it is currently
      * encrypted with once we have one that actually decrypts it (in gcr secure
      * memory). */
-    GPasteStorage                  storage_kind;
-    GPastePassphrase              *current_passphrase;
+    GPasteStorage         storage_kind;
+    GPastePassphrase     *current_passphrase;
 
     /* What the worker is re-keying to, and what to do about remembering it
      * once it has — both settled before the hop, acted on after. */
-    GPastePassphrase              *new_passphrase;
-    GPasteStorageRemember          remember;
+    GPastePassphrase     *new_passphrase;
+    GPasteStorageRemember remember;
 
     /* Set by the worker when a failed re-key could not be undone either, so the
      * histories are left split across two passphrases. Written on the worker
      * thread and read once it has completed, which the task's completion orders
      * for us. It picks which failure the user is told about: "nothing changed"
      * would be a lie here, and the reassuring one. */
-    gboolean                       split;
+    gboolean              split;
 } RekeyData;
 
 /* As migration_finish(): the one way out, carrying whatever ended it. */
@@ -1901,7 +1903,7 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
     g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
-    GTask *task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+    g_autoptr (GTask) task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
 
     g_task_set_source_tag (task, g_paste_storage_rekey_async);
 
@@ -1914,7 +1916,6 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "This build cannot open the history to change its passphrase");
-        g_object_unref (task);
         return;
     }
 
@@ -1924,7 +1925,7 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
 
         self->prompt = g_object_ref (prompt);
         self->settings = g_object_ref (settings);
-        self->task = task;
+        self->task = g_steal_pointer (&task);
         self->storage_kind = storage_kind;
 
         /* The passphrase this process already holds is the common case (the
@@ -1951,7 +1952,6 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
 #endif
 
     g_task_return_boolean (task, TRUE);
-    g_object_unref (task);
 }
 
 /**

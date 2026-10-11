@@ -436,9 +436,7 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
             !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, error) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, error) ||
             !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, error))
-        {
             return FALSE;
-        }
     }
 
     return TRUE;
@@ -910,11 +908,11 @@ typedef enum
  * is reset per item, so such an item never makes the next one, which may have
  * no kind of its own, inherit its type. */
 
-/* 2.0 is the only format read. 1.0 -- which held an item's value as text
- * directly inside <item> rather than in a <value> child -- was dropped: it is
- * refused like any other unreadable history, which leaves the file untouched
- * rather than overwriting it, so an ancient history can still be recovered with
- * an older GPaste. */
+/* 2.0 is the only format read. A 1.0 history -- which held an item's value as
+ * text directly inside <item> rather than in a <value> child -- is refused like
+ * any other unreadable one, which leaves the file untouched rather than
+ * overwriting it, so an ancient history can still be recovered with an older
+ * GPaste. */
 typedef enum
 {
     HISTORY_2_0,
@@ -1925,13 +1923,13 @@ _g_paste_file_backend_remove_rekey_sibling (const gchar *path,
  * Only a read creates the placeholder file for a history that is not there:
  * counting must not bring a history into existence. */
 static gboolean
-_g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
-                                     const gchar           *name,
-                                     GCancellable          *cancellable,
-                                     gboolean               count_only,
-                                     GList                **history,
-                                     gsize                 *size,
-                                     gsize                 *count)
+_g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
+                                     const gchar          *name,
+                                     GCancellable         *cancellable,
+                                     gboolean              count_only,
+                                     GList               **history,
+                                     gsize                *size,
+                                     gsize                *count)
 {
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
@@ -2100,11 +2098,11 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
 }
 
 static gboolean
-g_paste_file_backend_read_history_file (GPasteStorageBackend  *self,
-                                        const gchar           *name,
-                                        GCancellable          *cancellable,
-                                        GList                **history,
-                                        gsize                 *size)
+g_paste_file_backend_read_history_file (GPasteStorageBackend *self,
+                                        const gchar          *name,
+                                        GCancellable         *cancellable,
+                                        GList               **history,
+                                        gsize                *size)
 {
     return _g_paste_file_backend_read_or_count (self, name, cancellable, FALSE, history, size, NULL);
 }

@@ -1659,11 +1659,11 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
 }
 
 static gboolean
-g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
-                                          const gchar           *name,
-                                          GCancellable          *cancellable,
-                                          GList                **history,
-                                          gsize                 *size)
+g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
+                                          const gchar          *name,
+                                          GCancellable         *cancellable,
+                                          GList               **history,
+                                          gsize                *size)
 {
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);

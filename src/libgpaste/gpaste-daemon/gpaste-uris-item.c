@@ -61,13 +61,14 @@ g_paste_uris_item_get_kind (GPasteItem *self G_GNUC_UNUSED)
 }
 
 static void
-g_paste_uris_item_finalize (GObject *object)
+g_paste_uris_item_dispose (GObject *object)
 {
     GPasteUrisItem *self = G_PASTE_URIS_ITEM (object);
 
-    g_boxed_free (GDK_TYPE_FILE_LIST, self->file_list);
+    if (self->file_list)
+        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&self->file_list));
 
-    G_OBJECT_CLASS (g_paste_uris_item_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_uris_item_parent_class)->dispose (object);
 }
 
 static void
@@ -77,7 +78,7 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
 
     item_class->get_kind = g_paste_uris_item_get_kind;
 
-    G_OBJECT_CLASS (klass)->finalize = g_paste_uris_item_finalize;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_uris_item_dispose;
 }
 
 static void

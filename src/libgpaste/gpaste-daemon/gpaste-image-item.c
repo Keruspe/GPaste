@@ -259,7 +259,7 @@ _g_paste_image_item_new (const gchar *cache_path,
      * wherever its bytes happen to live. An item being loaded off a file has
      * none yet -- activating it below is what computes one -- so the value
      * starts empty and is set as soon as there is one. */
-    GPasteItem *item = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, (checksum) ? checksum : "");
+    g_autoptr (GPasteItem) item = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, (checksum) ? checksum : "");
     GPasteImageItem *self = G_PASTE_IMAGE_ITEM (item);
 
     self->cache_path = g_strdup (cache_path);
@@ -276,10 +276,7 @@ _g_paste_image_item_new (const gchar *cache_path,
         g_paste_image_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
 
     if (!self->image || !GDK_IS_TEXTURE (self->image))
-    {
-        g_object_unref (item);
         return NULL;
-    }
 
     g_paste_item_set_value (item, self->checksum);
 
@@ -299,7 +296,7 @@ _g_paste_image_item_new (const gchar *cache_path,
     else
         g_paste_image_item_set_state (item, G_PASTE_ITEM_STATE_IDLE);
 
-    return item;
+    return g_steal_pointer (&item);
 }
 
 /**
