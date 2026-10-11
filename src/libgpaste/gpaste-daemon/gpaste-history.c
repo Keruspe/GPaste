@@ -960,7 +960,7 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
 
     G_PASTE_LOCK_HISTORY;
 
-    g_debug ("history: remove '%s", uuid);
+    g_debug ("history: remove '%s'", uuid);
 
     guint index;
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
