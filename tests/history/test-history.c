@@ -1135,6 +1135,78 @@ test_file_delete_takes_temporary (void)
     g_assert_false (g_file_test (temporary, G_FILE_TEST_EXISTS));
 }
 
+/* Emptying a history this daemon does not hold writes an empty one with its
+ * own backend, and leaves alone the images a file flavour still storing that
+ * name reads: the old data a migration kept, say. With no storage in use,
+ * nothing is written, which is no emptying to answer for. */
+static void
+test_empty_other_keeps_stored_images (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (19, 20, 21);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autofree gchar *path = g_paste_file_backend_image_path ("kept-flavour", g_paste_image_item_get_checksum (items->data));
+
+    {
+        g_autoptr (GPasteStorageBackend) plain = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+        g_paste_storage_backend_write_history (plain, "kept-flavour", items);
+    }
+
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+
+    /* Each flavour the build has emptying it in turn, the encrypted file one
+     * writing its own store beside the plain one rather than over it. */
+    static const GPasteStorage emptying[] = {
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        G_PASTE_STORAGE_ENCRYPTED_FILE,
+#endif
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_SQLITE,
+#endif
+        G_PASTE_N_STORAGE,
+    };
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_paste_storage_backend_set_passphrase ("kept-flavour passphrase");
+#endif
+    for (const GPasteStorage *kind = emptying; *kind != G_PASTE_N_STORAGE; ++kind)
+    {
+        g_paste_settings_set_storage_backend (settings, *kind);
+
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+        const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+        g_autoptr (GError) error = NULL;
+
+        g_paste_history_load (history, "empty-other-current");
+        g_paste_daemon_methods_empty_history (&methods, "kept-flavour", &error);
+        g_assert_no_error (error);
+        g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+        g_paste_history_flush (history);
+    }
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_paste_storage_backend_set_passphrase (NULL);
+#endif
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load (history, "empty-other-current");
+    g_paste_daemon_methods_empty_history (&methods, "kept-flavour", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+}
+
 /* With no storage in use, a backup is no copy made: refused rather than
  * answered for. So are the deletion and the emptying of a history another
  * flavour still stores -- an encrypted store left locked, or what a migration
@@ -6293,6 +6365,7 @@ main (int argc, char *argv[])
     add_test ("/history/history_image_names_no_file", test_history_image_names_no_file);
     add_test ("/history/file_image_per_history", test_file_image_per_history);
     add_test ("/history/file_delete_takes_temporary", test_file_delete_takes_temporary);
+    add_test ("/history/empty_other_keeps_stored_images", test_empty_other_keeps_stored_images);
     add_test ("/history/noop_refuses_unmade", test_noop_refuses_unmade);
     add_test ("/history/file_backup_owns_images", test_file_backup_owns_images);
     add_test ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);

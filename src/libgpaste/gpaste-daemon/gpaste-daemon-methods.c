@@ -525,11 +525,11 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
 
         /* Emptying the current history leaves its images to the sweep of its
          * empty snapshot, which takes the files of its own flavour alone;
-         * writing an empty one over another history sweeps the whole directory
-         * by hand, whatever stored it, or the clipboard's screenshots,
-         * unencrypted under the plain flavour, could stay on disk for good.
-         * Best effort, as in the delete path: the history itself is already
-         * empty. */
+         * writing an empty one over another history sweeps the directory by
+         * hand, whatever stored it, or the clipboard's screenshots, unencrypted
+         * under the plain flavour, could stay on disk for good -- unless a file
+         * flavour still stores the name, which reads them. Best effort, as in
+         * the delete path: the history itself is already empty. */
         g_autoptr (GError) images_error = NULL;
 
         if (!g_paste_storage_backend_delete_history_images (name, &images_error))

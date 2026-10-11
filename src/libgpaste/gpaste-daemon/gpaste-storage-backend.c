@@ -457,7 +457,9 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
  *
  * A history's images live in their own directory (so histories never share,
  * nor cross-delete, image files): deleting or emptying the history takes them
- * with it, whichever backend stored the history itself.
+ * with it, whichever backend stored the history itself -- once no file flavour
+ * stores a history of that name any more, since such a store reads them and
+ * sweeps its own when it is written.
  *
  * Keyed by name alone, no backend instance being needed to find them, so a
  * caller holding only the name of a history that is not the current one can
@@ -472,6 +474,12 @@ G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_delete_history_images (const gchar *name,
                                                GError     **error)
 {
+    /* A file flavour still storing the name reads them: a migration's
+     * destination, whose cleanup deletes the source history under the same
+     * name, or the old data a migration was told to keep. */
+    if (_g_paste_storage_backend_history_still_stored (name))
+        return TRUE;
+
     g_autofree gchar *images_dir_path = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
     g_autoptr (GError) failure = NULL;
@@ -551,12 +559,6 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
 
     if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
         G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
-
-    /* Only sweep the images once the name is gone from both file flavours:
-     * the other may still reference them (a migration's destination, whose
-     * cleanup deletes the source history under the same name). */
-    if (_g_paste_storage_backend_history_still_stored (name))
-        return;
 
     g_autoptr (GError) images_error = NULL;
 
