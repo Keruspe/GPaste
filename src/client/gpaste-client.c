@@ -741,21 +741,43 @@ g_paste_search (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    /* The rank of the line among the ones printed, not a place in the history:
-     * Search answers the matching items, and where each of them sits is what
-     * only a listing of the history knows. Which is why this one does renumber
-     * under --favourites where the history listing deliberately does not — it
-     * is numbering its own output, not naming items. */
-    guint index = 0;
+    /* Under --use-index, the number beside each match is where it sits in the
+     * history, as the listing prints it: the number --use-index reads back.
+     * Search answers the matching items alone, so their places come off a
+     * listing of the history, and a match gone from it by then is gone. That
+     * listing brings every item whole for its uuid alone, as every item
+     * crosses the bus (the item's doc in org.gnome.GPaste3.xml): a method
+     * answering where a uuid sits would be a change of the interface for this
+     * one option. */
+    g_autoptr (GHashTable) positions = NULL;
 
-    for (const GList *i = items; i; i = i->next)
+    if (items && ctx->use_index && !ctx->raw)
+    {
+        g_autolist (GPasteClientItem) history = g_paste_client_get_history_sync (ctx->client, error);
+
+        if (*error)
+            return EXIT_FAILURE;
+
+        positions = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+        guint position = 0;
+
+        for (const GList *h = history; h; h = h->next)
+            g_hash_table_insert (positions, g_strdup (g_paste_client_item_get_uuid (h->data)), GUINT_TO_POINTER (position++));
+    }
+
+    for (const GList *i = (ctx->reverse ? g_list_last (items) : items); i; i = ctx->reverse ? i->prev : i->next)
     {
         GPasteClientItem *item = i->data;
+        const gchar *uuid = g_paste_client_item_get_uuid (item);
+        gpointer position = NULL;
 
         if (ctx->favourites && !g_paste_client_item_is_favourite (item))
             continue;
+        if (positions && !g_hash_table_lookup_extended (positions, uuid, NULL, &position))
+            continue;
 
-        print_history_line (g_paste_client_item_get_value (item), index++, g_paste_client_item_get_uuid (item), ctx);
+        print_history_line (g_paste_client_item_get_value (item), GPOINTER_TO_UINT (position), uuid, ctx);
     }
 
     return EXIT_SUCCESS;

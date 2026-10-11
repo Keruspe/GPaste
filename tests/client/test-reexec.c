@@ -251,13 +251,22 @@ fake_add_password_sync (GPasteClient *client G_GNUC_UNUSED,
     return g_strdup (FAKE_UUID (f));
 }
 
+/* The positions in the faked history of the items a search answers, in the
+ * order it answers them, -1 ending the list; none when %NULL. */
+static const gint *search_matches;
+
 static GList *
 fake_search_sync (GPasteClient *client G_GNUC_UNUSED,
                   const gchar  *pattern,
                   GError      **error G_GNUC_UNUSED)
 {
+    GList *items = NULL;
+
     g_set_str (&search_pattern, pattern);
-    return NULL;
+    for (const gint *match = search_matches; match && *match >= 0; ++match)
+        items = g_list_append (items, fake_item ((guint) *match));
+
+    return items;
 }
 
 /* Exercise the CLI's actual fallback while keeping signals inside this test. */
@@ -839,6 +848,29 @@ test_locale_set (void)
     g_assert_cmpstr (setlocale (LC_ALL, NULL), ==, "C.UTF-8");
 }
 
+/* A search prints its matches in the order --reverse asks for, and under
+ * --use-index beside the place each sits in the history: the number
+ * --use-index reads back, rather than the rank of the line. */
+static void
+test_search_output (gconstpointer user_data)
+{
+    gboolean reverse = GPOINTER_TO_INT (user_data);
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stdout ((reverse) ? "0: value\n2: value\n" : "2: value\n0: value\n");
+        return;
+    }
+
+    set_fake_history ((const gchar *[]) { FAKE_UUID (a), FAKE_UUID (b), FAKE_UUID (c), NULL });
+    search_matches = (const gint[]) { 2, 0, -1 };
+    g_assert_cmpint (run_client ((reverse) ? (const gchar *[]) { "--use-index", "--reverse", "search", "x", NULL }
+                                           : (const gchar *[]) { "--use-index", "search", "x", NULL }), ==, EXIT_SUCCESS);
+    fflush (stdout);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -1032,6 +1064,8 @@ main (int argc, char **argv)
     g_test_add_data_func ("/client/help/asked", GINT_TO_POINTER (TRUE), test_help_stream);
     g_test_add_data_func ("/client/help/misuse", GINT_TO_POINTER (FALSE), test_help_stream);
     g_test_add_func ("/client/locale", test_locale_set);
+    g_test_add_data_func ("/client/search/positions", GINT_TO_POINTER (FALSE), test_search_output);
+    g_test_add_data_func ("/client/search/reverse", GINT_TO_POINTER (TRUE), test_search_output);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
