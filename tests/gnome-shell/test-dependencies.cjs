@@ -31,17 +31,34 @@ const context = vm.createContext({
     console: {error: e => said.error.push(e), debug: message => said.debug.push(message)},
     Gio: {_promisify() {}, Cancellable, IOErrorEnum},
     GLib: {Error: GLibError},
-    GPaste: {Client: {prototype: {}}},
+    // As the binding: anything but a GLib.Error is refused with a TypeError.
+    GPaste: {
+        Client: {
+            prototype: {},
+            is_daemon_gone_error: e => {
+                if (!(e instanceof GLibError))
+                    throw new TypeError('Object is not a subclass of GLib_Error');
+                return e.code === 'gone';
+            },
+        },
+    },
     Config: {LIBMUTTER_API_VERSION: '18'},
     gi: {require() {}},
 });
 const source = fs.readFileSync(process.argv[2], 'utf8')
     .replace(/^import [^;]*;\n/gm, '').replace(/^export /gm, '');
-vm.runInContext(`${source}\nthis.helpers = {logFailure, debugFailure, replaceCancellable, awaitReply};`, context);
+vm.runInContext(`${source}\nthis.helpers = {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone};`, context);
 
-const {logFailure, debugFailure, replaceCancellable, awaitReply} = context.helpers;
+const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone} = context.helpers;
 
 (async () => {
+    // A call failing as its daemon left is told from one failing otherwise, and
+    // one failing with no GLib.Error at all is that second kind, not a
+    // TypeError of its own.
+    assert.equal(daemonGone(new GLibError('dbus', 'gone', 'NoReply')), true);
+    assert.equal(daemonGone(new GLibError('dbus', 'other', 'Refused')), false);
+    assert.equal(daemonGone(new Error('a bug down the call')), false);
+
     // A row's read failing is said at debug level, and nowhere else.
     debugFailure(new Error('gone'));
     assert.deepEqual(said.debug, ['GPaste: gone']);

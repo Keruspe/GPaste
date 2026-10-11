@@ -41,6 +41,7 @@ const context = vm.createContext({
     Clutter: {}, St: {}, Ornament: {}, GPasteDeleteButton: Actor,
     GPaste: {
         DEFAULT_HISTORY: 'default',
+        Client: {is_daemon_gone_error: e => !!e.gone},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
@@ -54,6 +55,7 @@ const context = vm.createContext({
             errors.push(e.message);
         }
     },
+    daemonGone: e => !!e.gone,
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }};
@@ -236,6 +238,20 @@ function switcher() {
     resolveFirst(9);
     await first;
     assert.equal(sized._rows.find(r => r.history === 'default').size, 5);
+
+    // A listing or a size failing because the daemon left is not logged, the
+    // presence saying so next; any other failure is.
+    const leaving = switcher();
+
+    for (const gone of [true, false]) {
+        const failure = Object.assign(new Error('NoReply'), {gone});
+
+        leaving._client.list_histories = () => Promise.reject(failure);
+        leaving._client.get_history_size = () => Promise.reject(failure);
+        await leaving.refresh();
+        await leaving._sizeCurrent();
+        assert.deepEqual(errors.splice(0).map(e => e.message), gone ? [] : ['NoReply', 'NoReply']);
+    }
 
     // A backup nothing waits on reports a refusal to the log.
     const backup = switcher();

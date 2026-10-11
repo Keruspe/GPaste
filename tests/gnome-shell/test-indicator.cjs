@@ -15,6 +15,8 @@ const errors = [];
 const weakRefs = [];
 const timers = [];
 const removedSources = [];
+const shownActors = [];
+const themeContext = {scaleFactor: 1, disconnectObject() {}};
 
 class WeakRefDouble {
     constructor(target) { this.target = target; weakRefs.push(this); }
@@ -59,7 +61,11 @@ const context = vm.createContext({
     _: value => value,
     Button,
     Main: {
-        layoutManager: {disconnectObject() {}},
+        layoutManager: {
+            disconnectObject() {},
+            findIndexForActor: () => 0,
+            getWorkAreaForMonitor: () => ({height: 1000}),
+        },
         notify: (title, body) => notified.push({title, body}),
         notifyError: (title, body) => notified.push({title, body}),
     },
@@ -76,12 +82,14 @@ const context = vm.createContext({
         BoxLayout: Actor,
         Icon: Actor,
         ClipboardType: {CLIPBOARD: 1},
+        ThemeContext: {get_for_stage: () => themeContext},
         Clipboard: {get_default: () => ({set_text: (type, text) => copied.push({type, text})})},
     },
     GPasteDummyHistoryItem: Actor,
     GPasteSearchItem: Actor,
     GPaste: {
         Error: {INVALID_ARGUMENT: 9},
+        Client: {is_daemon_gone_error: e => !!e.gone},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
@@ -92,13 +100,14 @@ const context = vm.createContext({
         },
     },
     global: {stage: {get_key_focus: () => focus}},
-    ensureActorVisibleInScrollView() {},
+    ensureActorVisibleInScrollView: (view, actor) => shownActors.push(actor),
     logFailure: finish => Object.assign(() => {}, {finish}),
     awaitReply: async (cancellable, call) => {
         const reply = await call;
         return [!cancellable.is_cancelled(), reply];
     },
     debugFailure() {},
+    daemonGone: e => !!e.gone,
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }, is_cancelled() { return !!this.cancelled; }};
@@ -116,13 +125,17 @@ function indicator() {
     const item = Object.create(context.Indicator.prototype);
     item._settings = {disconnectObject() {}};
     item._history = [];
+    item._filteredUuids = [];
     item._listing = null;
     item._connectRetryId = 0;
     item._selectSearchId = 0;
     item._client = null;
     item._owedRowFocus = -1;
+    item._owedSearchFocus = false;
+    item._passFrom = null;
+    item._passKeepsPlace = true;
     // What PanelMenu.Button's constructor builds, the menu's actor among it.
-    item.menu = {actor: {grab_key_focus() { focus = this; }}};
+    item.menu = {actor: {grab_key_focus() { focus = this; }, contains: () => false}};
     return item;
 }
 
@@ -321,6 +334,18 @@ function withActions(uuids) {
     assert.equal(actions._itemActions.visible, false);
     assert.equal(last.destroyed, true);
 
+    // A refresh finding items where the list has no row makes them, the
+    // viewport of an empty list laid out at no height; one with rows leaves
+    // the growing to _maybeLoadMore ().
+    for (const [uuids, loads] of [[[], 1], [['a'], 0]]) {
+        const growing = withActions(uuids);
+        let loaded = 0;
+        growing._loadMore = () => { ++loaded; };
+        growing._available = 3;
+        await growing._refresh(0);
+        assert.equal(loaded, loads);
+    }
+
     // A keyboard-opened action row hands focus to a surviving row after the
     // last row is destroyed.
     const shrinking = withActions(['a', 'b']);
@@ -354,15 +379,175 @@ function withActions(uuids) {
     emptied._rebuild(true);
     assert.equal(focus, emptied._historySwitcher);
 
-    // So is it when a fetch gives up on a daemon still there, the rows going
-    // without a change of presence -- the keyboard in the actions under one of
-    // them included.
+    // A fetch giving up on a daemon still there -- one that failed, or whose
+    // call failed as it was leaving -- leaves the rows it could not refresh as
+    // they were, and the keyboard where it was...
     const unanswered = withActions(['a', 'b']);
     unanswered._connected = true;
     unanswered._toggleItemActions(unanswered._history[1], 'b', true);
     unanswered._reconcileConnection({is_cancelled: () => false});
-    assert.equal(unanswered._history.length, 0);
-    assert.equal(focus, unanswered._historySwitcher);
+    assert.equal(unanswered._history.length, 2);
+    assert.equal(focus, unanswered._itemActions.button);
+
+    // ...and with no rows to leave, the placeholder offers to ask again, which
+    // a daemon still there answers with a reload -- the controls a daemon there
+    // offers shown with it, though the pass failing is the first since it
+    // turned up, which nothing else would have shown them for.
+    const unlisted = withActions([]);
+    let reasked = 0;
+
+    unlisted._connected = true;
+    unlisted._dummyHistoryItem = {
+        hide() { this.state = 'hidden'; },
+        showFailed() { this.state = 'failed'; },
+        showLoading() { this.state = 'loading'; },
+    };
+    unlisted._switch = {visible: false};
+    unlisted._historySwitcher.visible = false;
+    unlisted._searchItem = {favourites: false, show() { this.shown = true; }, hide() { this.shown = false; }};
+    unlisted._hasSearch = () => false;
+    delete unlisted._updateVisibility;
+    unlisted._reloadCurrent = () => ++reasked;
+    unlisted._reconcileConnection({is_cancelled: () => false});
+    assert.equal(unlisted._dummyHistoryItem.state, 'failed');
+    assert.equal(unlisted._switch.visible, true);
+    assert.equal(unlisted._historySwitcher.visible, true);
+    assert.equal(unlisted._searchItem.shown, true);
+    unlisted._retry();
+    assert.equal(unlisted._dummyHistoryItem.state, 'loading');
+    assert.equal(reasked, 1);
+
+    // A reload whose fetch fails leaves no row bound to the filtered answer it
+    // was to replace -- the search just cleared, a list counted unfiltered --
+    // and the next pass its first row but not its place.
+    const cleared = withActions(['x', 'y']);
+    let clearedReconciled = 0;
+
+    cleared._filteredUuids = ['x', 'y'];
+    cleared._fetchAvailable = async () => false;
+    cleared._reconcileConnection = () => ++clearedReconciled;
+    await cleared._reload();
+    assert.equal(cleared._history.length, 0);
+    assert.equal(clearedReconciled, 1);
+    assert.equal(cleared._passFrom, 0);
+    assert.deepEqual([...cleared._beginPass(2, true)].slice(1), [0, true]);
+
+    // A call failing because its daemon left logs nothing, the presence saying
+    // so next; any other failure is logged.
+    const leaving = withActions([]);
+    let failure = Object.assign(new Error('gone'), {gone: true});
+
+    leaving._client.get_history_size = () => Promise.reject(failure);
+    leaving._client.search = () => Promise.reject(failure);
+    leaving._searchItem = {text: 'x', favourites: false};
+    leaving._hasSearch = () => true;
+    leaving._reconcileConnection = () => {};
+    leaving._daemonReady = () => true;
+    delete leaving._fetchAvailable;
+    assert.equal(await leaving._fetchAvailable({is_cancelled: () => false}), false);
+    await leaving._runFilter();
+    assert.deepEqual(errors, []);
+    failure = new Error('broken');
+    assert.equal(await leaving._fetchAvailable({is_cancelled: () => false}), false);
+    assert.equal(errors.pop().message, 'broken');
+    await leaving._runFilter();
+    assert.equal(errors.pop().message, 'broken');
+
+    // A pass giving up the one before rebinds the rows that one was to: a
+    // refresh from the fourth row superseding one from the second rebinds from
+    // the second, one superseding a reload every row, and one alone its own.
+    const passes = withActions(['a', 'b', 'c', 'd']);
+    const answers = [];
+    let bound = [];
+
+    for (const passRow of passes._history)
+        passRow.setIndex = async index => { bound.push(index); };
+    passes._available = 4;
+    passes._fetchAvailable = () => new Promise(resolve => answers.push(resolve));
+    passes._rebuild = () => bound.push('rebuilt');
+    for (const [first, rebinds] of [[() => passes._refresh(1), [1, 2, 3]], [() => passes._reload(), [0, 1, 2, 3]]]) {
+        bound = [];
+        const superseded = first();
+        const superseding = passes._refresh(3);
+
+        answers.shift()(false);
+        answers.shift()(true);
+        await Promise.all([superseded, superseding]);
+        assert.deepEqual(bound, rebinds);
+        assert.equal(passes._passFrom, null);
+    }
+    bound = [];
+    const alone = passes._refresh(2);
+
+    answers.shift()(true);
+    await alone;
+    assert.deepEqual(bound, [2, 3]);
+
+    // And it goes back to the top if the one it gives up was to: an update's
+    // re-run superseding a new search, or a refresh an emptied one. Two
+    // re-runs, or a refresh alone, leave the list where it was.
+    {
+        const placed = withActions(['a', 'b']);
+        const searches = [];
+        const kept = [];
+        let scrolledTop = 0;
+
+        placed._searchItem = {text: 'x', favourites: false};
+        placed._hasSearch = () => true;
+        placed._client.search = () => new Promise(resolve => searches.push(resolve));
+        placed._rebuild = (empty, keepPlace) => kept.push(keepPlace);
+        for (const [first, second, keepsPlace] of [[false, true, false], [true, true, true]]) {
+            const superseded = placed._runFilter(first);
+            const superseding = placed._runFilter(second);
+
+            searches.shift()([]);
+            searches.shift()([]);
+            await Promise.all([superseded, superseding]);
+            assert.deepEqual(kept.splice(0), [keepsPlace]);
+        }
+        placed._available = 2;
+        placed._fetchAvailable = () => new Promise(resolve => answers.push(resolve));
+        placed._scrollToTop = () => ++scrolledTop;
+        for (const [first, scrolls] of [[() => placed._reload(), 1], [null, 0]]) {
+            scrolledTop = 0;
+            const superseded = first?.();
+            const superseding = placed._refresh(1);
+
+            if (superseded)
+                answers.shift()(false);
+            answers.shift()(true);
+            await Promise.all([superseded, superseding]);
+            assert.equal(scrolledTop, scrolls);
+        }
+    }
+
+    // An update re-running the filter leaves the list where it was scrolled
+    // to, the keyboard's row kept in view; a new search starts at the top.
+    const relisted = withActions(['a', 'b', 'c']);
+    let scrolledUp = 0;
+    let keepPlace = null;
+
+    for (const listedRow of relisted._history)
+        listedRow.setUuid = async () => {};
+    relisted._settings = {get_element_size: () => 50};
+    relisted._isFiltered = () => true;
+    relisted._filteredUuids = ['a', 'b', 'c'];
+    relisted._totalSize = () => 3;
+    relisted._fillBatch = () => 3;
+    relisted._scrollToTop = () => ++scrolledUp;
+    relisted._restoreSearchFocus = () => {};
+    focus = relisted._history[2];
+    shownActors.length = 0;
+    relisted._rebuild(false, true);
+    assert.equal(scrolledUp, 0);
+    assert.deepEqual(shownActors, [relisted._history[2]]);
+    relisted._rebuild(false);
+    assert.equal(scrolledUp, 1);
+    relisted._connected = true;
+    relisted._searchItem = {favourites: false};
+    relisted._runFilter = async place => { keepPlace = place; };
+    relisted._update(null, context.GPaste.UpdateAction.REMOVE, context.GPaste.UpdateTarget.ITEM, 'b', 1);
+    assert.equal(keepPlace, true);
 
     // The daemon going, a handoff to another included, takes the rows and
     // everything else in the menu that could hold the focus: the menu holds
@@ -396,9 +581,48 @@ function withActions(uuids) {
     away._fillBatch = () => 3;
     away._scrollToTop = () => {};
     away._createRow = (size, slot) => away._history.push(row(String(slot)));
-    away._rebuild(false);
+    // An empty answer first -- the next daemon still loading its history --
+    // has no row to give the focus to, and leaves it owed rather than spend it
+    // on the history switcher.
+    away._totalSize = () => 0;
+    away._rebuild(true);
+    assert.equal(focus, away._dummyHistoryItem);
+    assert.equal(away._owedRowFocus, 1);
+    // A refresh is what lists the rows then, and pays it once they are there.
+    away._totalSize = () => 3;
+    away._available = 3;
+    away._loadMore = context.Indicator.prototype._loadMore;
+    await away._refresh(0);
     assert.equal(focus, away._history[1]);
     assert.equal(away._owedRowFocus, -1);
+
+    // A focus on the search, or anything else the daemon takes out of the
+    // menu, is held the same way, and goes to the search once it is back --
+    // or the history switcher, an empty history hiding the search.
+    for (const searchVisible of [true, false]) {
+        const searching = withActions(['a']);
+        const entry = {};
+
+        searching._connected = true;
+        searching.menu.actor.contains = actor => actor === entry;
+        searching._updateVisibility = () => { if (focus === entry) focus = null; };
+        focus = entry;
+        searching._onDaemonGone();
+        assert.equal(focus, searching.menu.actor);
+        assert.equal(searching._owedSearchFocus, true);
+        assert.equal(searching._owedRowFocus, -1);
+        searching._connected = true;
+        searching._searchItem = {visible: searchVisible, grabFocus() { focus = entry; }};
+        searching._settings = {get_element_size: () => 50};
+        searching._isFiltered = () => false;
+        searching._totalSize = () => 1;
+        searching._fillBatch = () => 1;
+        searching._scrollToTop = () => {};
+        searching._createRow = () => searching._history.push(row('a'));
+        searching._rebuild(false);
+        assert.equal(focus, searchVisible ? entry : searching._historySwitcher);
+        assert.equal(searching._owedSearchFocus, false);
+    }
 
     // The menu closing while the focus is parked takes the debt with it: the
     // next opening is not given a row the user has long left. And a search
@@ -406,6 +630,7 @@ function withActions(uuids) {
     // menu.
     const closing = withActions(['a', 'b']);
     closing._owedRowFocus = 1;
+    closing._owedSearchFocus = true;
     focus = closing.menu.actor;
     closing._updateIndexVisibility = () => {};
     closing._historySwitcher.collapse = () => {};
@@ -414,6 +639,7 @@ function withActions(uuids) {
     removedSources.length = 0;
     closing._onOpenStateChanged(closing.menu, false);
     assert.equal(closing._owedRowFocus, -1);
+    assert.equal(closing._owedSearchFocus, false);
     assert.deepEqual(removedSources, [timers.length]);
     assert.equal(closing._searchDelayId, 0);
 
@@ -519,6 +745,15 @@ function withActions(uuids) {
         sized._resetElementSize();
     }
     assert.deepEqual(widths, [43, 43, 13]);
+
+    // The history's height is a share of the work area, in logical pixels as
+    // the stylesheet is: the work area's physical ones divided by the scale.
+    sized._scrollView = {};
+    for (const [scaleFactor, height] of [[1, 600], [2, 300]]) {
+        themeContext.scaleFactor = scaleFactor;
+        sized._updateScrollHeight();
+        assert.equal(sized._scrollView.style, `max-height: ${height}px`);
+    }
 
     assert.deepEqual(errors, []);
     console.log('Indicator: teardown, daemon presence and item actions passed');

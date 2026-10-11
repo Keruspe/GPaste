@@ -13,7 +13,7 @@ import St from 'gi://St';
 
 import {addActionButton} from './actionButton.js';
 import {GPasteDeleteButton} from './deleteButton.js';
-import {awaitReply, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, daemonGone, logFailure, replaceCancellable} from './dependencies.js';
 
 /**
  * Makes an entry of the chooser act on the name typed into it on Enter, or on a
@@ -557,7 +557,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         try {
             [wanted, size] = await awaitReply(cancellable, this._client.get_history_size(cancellable));
         } catch (e) {
-            console.error(e);
+            // As the indicator's _fetchAvailable () leaves it: its daemon gone,
+            // the presence says so next, hiding the chooser.
+            if (!daemonGone(e))
+                console.error(e);
             return;
         }
 
@@ -582,7 +585,9 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         try {
             [wanted, histories] = await awaitReply(cancellable, this._client.list_histories(cancellable));
         } catch (e) {
-            console.error(e);
+            // As in _sizeCurrent ().
+            if (!daemonGone(e))
+                console.error(e);
             return;
         }
 

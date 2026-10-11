@@ -45,8 +45,8 @@ export const GPasteDummyHistoryItem = GObject.registerClass({
 
     // Sensitivity is what makes a menu item reactive and reachable by the
     // keyboard, so it is also what tells the states apart: every one of these
-    // is a label the user reads, except the disconnected one, which is the way
-    // to ask for a daemon and says so.
+    // is a label the user reads, except the disconnected and failed ones,
+    // which are the way to ask again and say so.
     _showState(text, activatable) {
         this.label.text = text;
         // Being an offer and being reactive are the same state, so the one
@@ -66,6 +66,12 @@ export const GPasteDummyHistoryItem = GObject.registerClass({
 
     showDisconnected() {
         this._showState(_('GPaste daemon not running'), true);
+    }
+
+    // A daemon there that failed to list the history: an offer to ask again,
+    // as the graphical tool's Retry is.
+    showFailed() {
+        this._showState(_('Could Not Load History'), true);
     }
 
     showEmpty() {

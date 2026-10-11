@@ -17,7 +17,7 @@ import St from 'gi://St';
 import GPaste from 'gi://GPaste?version=3';
 
 import {addGPasteFooter} from './actions.js';
-import {awaitReply, debugFailure, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, daemonGone, debugFailure, logFailure, replaceCancellable} from './dependencies.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
 import {GPasteHistorySwitcher} from './historySwitcher.js';
 import {GPasteItem} from './item.js';
@@ -93,9 +93,18 @@ class GPasteIndicator extends Button {
         // keystroke: cancelling the others is what keeps a term the user has
         // typed past from painting the list (see replaceCancellable ()).
         this._listing = null;
+        // The first row the pass out on _listing is to rebind, and whether it
+        // is to leave the list where it was scrolled to, which the pass that
+        // gives it up takes over: see _beginPass (). null once one answered,
+        // one that failed leaving its first row to the next (_passFailed ()).
+        this._passFrom = null;
+        this._passKeepsPlace = true;
         // The row the keyboard was on when the daemon went, handed back once
         // the next one's rows are there: see _parkRowFocus (). -1 for none.
         this._owedRowFocus = -1;
+        // Whether the keyboard was on anything else the daemon took out of the
+        // menu, owed to the search once it is back: see _parkMenuFocus ().
+        this._owedSearchFocus = false;
 
         // Whether there is a daemon to talk to. The client follows it while
         // there is none (g_paste_client_follow_daemon ()).
@@ -113,8 +122,9 @@ class GPasteIndicator extends Button {
         this._dummyHistoryItem = new GPasteDummyHistoryItem();
         // Its own signal rather than 'activate', which would close the menu on
         // the row about to report what this did. Emitted only while it is saying
-        // there is no daemon, that being the one state where the row is an offer
-        // rather than a label.
+        // there is no daemon, or that the history could not be listed
+        // (showFailed ()): the two states where the row is an offer rather than
+        // a label, which _retry () tells apart.
         this._dummyHistoryItem.connect('retry', this._retry.bind(this));
         this.menu.addMenuItem(this._dummyHistoryItem);
 
@@ -260,6 +270,7 @@ class GPasteIndicator extends Button {
         // indicator lives on; recompute it when the monitor layout changes
         // (resolution, monitor hot-plug, panel moved to another monitor).
         Main.layoutManager.connectObject('monitors-changed', this._updateScrollHeight.bind(this), this);
+        St.ThemeContext.get_for_stage(global.stage).connectObject('notify::scale-factor', this._updateScrollHeight.bind(this), this);
 
         // "changed" fires when the content/viewport is resized (fill until the
         // viewport overflows); "notify::value" fires on scroll (load the next
@@ -405,6 +416,11 @@ class GPasteIndicator extends Button {
 
     _onDaemonGone() {
         const focusIndex = this._focusedRowIndex();
+        const focus = global.stage.get_key_focus();
+        // The search, its star, the tracking switch and the history switcher go
+        // with the daemon too (_updateVisibility ()), and their focus with them.
+        const menuFocus = focusIndex < 0 && focus !== null && focus !== this.menu.actor &&
+            this.menu.actor.contains(focus);
 
         this._connected = false;
         // A reply about the history that just went away must not land on the
@@ -414,6 +430,8 @@ class GPasteIndicator extends Button {
         this._listing?.cancel();
         this._forgetHistory();
         this._parkRowFocus(focusIndex);
+        if (menuFocus)
+            this._parkMenuFocus();
     }
 
     // The placeholder row was activated: try again now -- asking for a daemon
@@ -434,6 +452,13 @@ class GPasteIndicator extends Button {
         // stops being an offer while that is in flight, a second click having
         // nothing to add to the first.
         this._dummyHistoryItem.showLoading();
+
+        // A daemon there whose listing failed (_reconcileConnection ()): asked
+        // again.
+        if (this._connected) {
+            this._reloadCurrent();
+            return;
+        }
 
         // Running out of connect retries leaves no proxy at all, so there is
         // nothing to probe with, and the row would be an offer that does
@@ -595,7 +620,8 @@ class GPasteIndicator extends Button {
     // active item to once it turns sensitive (popupMenu.js, notify::sensitive)
     // -- after the grace second, when the presence reads absent.
     _holdsOwedFocus(focus) {
-        return this._owedRowFocus >= 0 && (focus === this.menu.actor || focus === this._dummyHistoryItem);
+        return (this._owedRowFocus >= 0 || this._owedSearchFocus) &&
+            (focus === this.menu.actor || focus === this._dummyHistoryItem);
     }
 
     // Which row the keyboard is on, the actions under one counting as that
@@ -625,6 +651,12 @@ class GPasteIndicator extends Button {
         if (index < 0 || (focus !== null && focus !== global.stage && !parked))
             return;
 
+        // A focus owed across a daemon's absence waits for rows to give it to:
+        // the first answer of the next daemon can be an empty one, its history
+        // still loading, and the history switcher is not where it was.
+        if (parked && this._history.length === 0)
+            return;
+
         this._owedRowFocus = -1;
         (this._history[Math.min(index, this._history.length - 1)] ?? this._historySwitcher).grab_key_focus();
     }
@@ -645,6 +677,41 @@ class GPasteIndicator extends Button {
 
         this._owedRowFocus = index;
         this.menu.actor.grab_key_focus();
+    }
+
+    // As _parkRowFocus () for a focus that was on anything else in the menu
+    // the daemon took away: held by the menu, and owed to the search once the
+    // daemon is back (_restoreSearchFocus ()).
+    _parkMenuFocus() {
+        const focus = global.stage.get_key_focus();
+
+        if (focus !== null && focus !== global.stage)
+            return;
+
+        this._owedSearchFocus = true;
+        this.menu.actor.grab_key_focus();
+    }
+
+    // As _restoreRowFocus () for that focus: the search's, or the history
+    // switcher's when the history is empty, the search hidden with it.
+    _restoreSearchFocus() {
+        if (!this._owedSearchFocus)
+            return;
+
+        const parked = this._holdsOwedFocus(global.stage.get_key_focus());
+
+        // As in _restoreRowFocus ().
+        if (parked && this._history.length === 0)
+            return;
+
+        this._owedSearchFocus = false;
+        if (!parked)
+            return;
+
+        if (this._searchItem.visible)
+            this._searchItem.grabFocus();
+        else
+            this._historySwitcher.grab_key_focus();
     }
 
     _stripRichText(uuid) {
@@ -757,7 +824,9 @@ class GPasteIndicator extends Button {
         try {
             [wanted, available] = await awaitReply(cancellable, this._client.get_history_size(cancellable));
         } catch (e) {
-            console.error(e);
+            // Its daemon gone, the presence says so next: no failure to log.
+            if (!daemonGone(e))
+                console.error(e);
             return false;
         }
 
@@ -772,16 +841,33 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
 
-        const cancellable = this._listing = replaceCancellable(this._listing);
+        const [cancellable] = this._beginPass(0, false);
+        const filtered = this._filteredUuids;
 
         this._filteredUuids = [];
 
         if (!await this._fetchAvailable(cancellable)) {
-            this._reconcileConnection(cancellable);
+            // Rows bound to a filtered answer, in a list the cleared search or
+            // filter now counts unfiltered: kept, lazy loading would append
+            // history rows after them, and an update at a position would re-read
+            // whichever stood there. Gone, the placeholder says why.
+            if (filtered.length > 0 && !cancellable.is_cancelled())
+                this._clearRows();
+            this._passFailed(cancellable);
             return;
         }
 
+        this._passFrom = null;
         this._rebuild(this._available === 0);
+    }
+
+    // A pass that failed leaves the next one its first row -- the rows it never
+    // rebound still need rebinding -- but not its place: a failed reload's,
+    // inherited, would send an update's refresh back to the top of the list.
+    _passFailed(cancellable) {
+        if (!cancellable.is_cancelled())
+            this._passKeepsPlace = true;
+        this._reconcileConnection(cancellable);
     }
 
     // A fetch gives up when there is no daemon left to ask, and nothing on that
@@ -801,30 +887,32 @@ class GPasteIndicator extends Button {
 
         // A daemon that has gone is a change of state, and _onDaemonStateChanged()
         // repaints the whole menu for it. One that is still there and simply did
-        // not answer is not a change of anything: giving up covers a call that
-        // *failed* as much as one with nothing to ask, and the rows would go on
-        // showing a history this pass could not size. So they go instead, and the
-        // menu says only what it knows -- the next menu opening, update or
-        // keystroke asks again.
-        if (this._onDaemonStateChanged())
+        // not answer is not a change of anything -- nor is one whose call failed
+        // because it was leaving, before the presence says so: the rows a failed
+        // call could not refresh stay as they are, as the graphical tool's do,
+        // and where there are none the placeholder says the history could not
+        // be listed and offers to try again (_retry ()), the search staying for
+        // a keystroke to ask again too.
+        if (this._onDaemonStateChanged() || this._history.length > 0)
             return;
 
-        // The search and the switcher staying, unlike the rows: the keyboard
-        // on a row goes to what is left, as after a _rebuild ().
-        const focusIndex = this._focusedRowIndex();
-
-        this._forgetHistory();
-        this._restoreRowFocus(focusIndex);
+        // The controls a daemon there offers -- the search, the tracking
+        // switch, the history switcher -- only a pass that answered shows
+        // otherwise, and this one may be the first since the daemon turned up.
+        this._updateVisibility(false);
+        this._dummyHistoryItem.showFailed();
     }
 
     // A search asks the daemon to match; the favourites filter asks it for the
     // pinned items; with both on, only the matches are left to sift, and those
     // are the narrow set already.
-    async _runFilter() {
+    // @keepPlace for one an update re-runs, the list staying where it was
+    // scrolled to rather than going back to its top (_rebuild ()).
+    async _runFilter(keepPlace = false) {
         if (!this._client)
             return;
 
-        const cancellable = this._listing = replaceCancellable(this._listing);
+        const [cancellable, , keptPlace] = this._beginPass(0, keepPlace);
         // As typed and as text, as Search in org.gnome.GPaste3.xml asks of a
         // front end: the daemon matches whatever the case already, and
         // lowercasing would turn \S into \s.
@@ -844,8 +932,10 @@ class GPasteIndicator extends Button {
             if (e.matches?.(GPaste.Error, GPaste.Error.INVALID_ARGUMENT)) {
                 [wanted, items] = [!cancellable.is_cancelled(), []];
             } else {
-                console.error(e);
-                this._reconcileConnection(cancellable);
+                // As in _fetchAvailable ().
+                if (!daemonGone(e))
+                    console.error(e);
+                this._passFailed(cancellable);
                 return;
             }
         }
@@ -853,19 +943,21 @@ class GPasteIndicator extends Button {
         if (!wanted || !this._client)
             return;
 
+        this._passFrom = null;
         this._filteredUuids = items
             .filter(item => !this._hasSearch() || !this._searchItem.favourites || item.is_favourite())
             .map(item => item.get_uuid());
-        this._rebuild(this._filteredUuids.length === 0);
+        this._rebuild(this._filteredUuids.length === 0, keptPlace);
     }
 
     // Reconcile the materialised rows with the current content (history or
     // search results) in place rather than tearing them all down: update the
     // rows we keep, drop any surplus, create any shortfall, then scroll back to
-    // the top. Reusing the actors avoids the flicker (and focus loss) of
-    // rebuilding the whole list on every search keystroke and when entering or
-    // leaving search. Shared by the full reload and the search paths.
-    _rebuild(empty) {
+    // the top unless @keepPlace. Reusing the actors avoids the flicker (and
+    // focus loss) of rebuilding the whole list on every search keystroke and
+    // when entering or leaving search. Shared by the full reload and the
+    // search paths.
+    _rebuild(empty, keepPlace = false) {
         // The rows are about to be rebound, dropped and added: which of them
         // shows the item the actions are open for is not known again until
         // those rebindings land, and the list has moved under whoever opened
@@ -905,8 +997,19 @@ class GPasteIndicator extends Button {
         }
 
         this._updateVisibility(empty);
-        this._scrollToTop();
+        // A new list starts at its top; one an update re-listed stays where it
+        // was, the keyboard on the same slot: scrolled back up, a row it went on
+        // to would be out of view, and a second Delete would delete an item the
+        // user cannot see.
+        if (!keepPlace)
+            this._scrollToTop();
         this._restoreRowFocus(focusIndex);
+        this._restoreSearchFocus();
+
+        const focused = this._history[this._focusedRowIndex()];
+
+        if (keepPlace && focused)
+            ensureActorVisibleInScrollView(this._scrollView, focused);
     }
 
     _cancelSearchDelay() {
@@ -954,16 +1057,18 @@ class GPasteIndicator extends Button {
     // than tearing them all down and rebuilding: drop the rows past the new
     // size, re-fetch the content of those at and after @from (their items
     // shifted), then top up if the viewport gained room.
-    async _refresh(from) {
+    async _refresh(refreshFrom) {
         if (!this._client)
             return;
 
-        const cancellable = this._listing = replaceCancellable(this._listing);
+        const [cancellable, from, keepPlace] = this._beginPass(refreshFrom, true);
 
         if (!await this._fetchAvailable(cancellable)) {
-            this._reconcileConnection(cancellable);
+            this._passFailed(cancellable);
             return;
         }
+
+        this._passFrom = null;
 
         const available = this._available;
 
@@ -982,8 +1087,43 @@ class GPasteIndicator extends Button {
             this._history[i].setIndex(i).catch(debugFailure);
 
         this._updateVisibility(available === 0);
+        if (!keepPlace)
+            this._scrollToTop();
+
+        // A list with no row lays out at no height, which _maybeLoadMore ()
+        // takes for one not allocated yet: its rows are made outright, as
+        // _rebuild () makes them.
+        if (this._history.length === 0 && available > 0)
+            this._loadMore();
+        else
+            this._maybeLoadMore();
+
+        // Once the rows are there: a focus owed across a daemon's absence goes
+        // to one of them, or the search, as _rebuild () pays it.
         this._restoreRowFocus(focusIndex);
-        this._maybeLoadMore();
+        this._restoreSearchFocus();
+    }
+
+    // Every pass repopulating the list goes out on _listing, giving up the one
+    // before -- whose reply, dropped, then never rebinds the rows it was to,
+    // from its own @from on, nor scrolls back to the top a new list starts at.
+    // So the pass that gives it up rebinds from the earlier of the two -- a
+    // refresh superseding a reload or a filter, which rebind every row, from
+    // the first -- and leaves the list where it was only if both were to: an
+    // update's re-run superseding a new search, or a refresh an emptied one,
+    // would otherwise show the new list at the old one's offset. Returns the
+    // cancellable, that row and whether the list keeps its place.
+    _beginPass(from, keepPlace) {
+        if (this._passFrom !== null) {
+            from = Math.min(from, this._passFrom);
+            keepPlace &&= this._passKeepsPlace;
+        }
+
+        this._passFrom = from;
+        this._passKeepsPlace = keepPlace;
+        this._listing = replaceCancellable(this._listing);
+
+        return [this._listing, from, keepPlace];
     }
 
     _update(client, action, target, uuid, position) {
@@ -1012,7 +1152,7 @@ class GPasteIndicator extends Button {
                 }
             }
 
-            this._runFilter().catch(console.error);
+            this._runFilter(true).catch(console.error);
             return;
         }
 
@@ -1133,8 +1273,9 @@ class GPasteIndicator extends Button {
             // to hand back here, so they are folded without taking it.
             this._hideItemActions(false);
             // The focus goes with the menu, and a row owed it is not owed it
-            // on the next opening.
+            // on the next opening, nor is the search.
             this._owedRowFocus = -1;
+            this._owedSearchFocus = false;
         }
         super._onOpenStateChanged(menu, state);
     }
@@ -1202,8 +1343,11 @@ class GPasteIndicator extends Button {
         // not always the primary one.
         const monitor = Main.layoutManager.findIndexForActor(this);
         const workArea = Main.layoutManager.getWorkAreaForMonitor(monitor);
+        // The work area is in physical pixels, and St scales a stylesheet's by
+        // the UI scale factor: divided out, as PanelMenu's own max-height is.
+        const {scaleFactor} = St.ThemeContext.get_for_stage(global.stage);
 
-        this._scrollView.style = `max-height: ${Math.floor(workArea.height * 0.6)}px`;
+        this._scrollView.style = `max-height: ${Math.floor(workArea.height * 0.6 / scaleFactor)}px`;
     }
 
     // An override of PanelMenu's own, which its constructor connects to
@@ -1225,6 +1369,7 @@ class GPasteIndicator extends Button {
         this._cancelSelectSearch();
         this._cancelSearchDelay();
         Main.layoutManager.disconnectObject(this);
+        St.ThemeContext.get_for_stage(global.stage).disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();
         // The history switcher holds the client too, and a GC may hold it for

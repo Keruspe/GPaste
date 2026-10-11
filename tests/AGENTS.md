@@ -78,10 +78,16 @@ out.
 The indicator double also clears focus when a row is destroyed: keyboard-opened
 actions on a removed last row must focus a surviving row, as must the row
 itself or one of its buttons, or the history switcher when a rebuild empties
-the list, and so must a fetch giving up on a daemon still there, the rows going
-without a change of presence. The daemon going parks the focus of a row on the
-menu and gives it back to that row once the next daemon's rows are built, and
-while it is away an update applies nothing and no size is read.
+the list. A fetch giving up on a daemon still there leaves the rows and the
+focus as they were, or with no rows offers a retry that reloads; a call failing
+because its daemon left logs nothing. The daemon going parks the focus of a row
+on the menu and gives it back to that row once the next daemon's rows are
+built, and a focus on the search to the search, or to the history switcher when
+the search is hidden; closing the menu drops either. While the daemon is away
+an update applies nothing and no size is read. A pass superseding another
+rebinds from the earlier of their first rows, an update re-running a filter
+keeps the scroll and shows the keyboard's row, and the history's height is
+divided by the UI scale factor.
 `history-switcher` checks that hiding the switcher -- which the daemon going
 does, a handoff to another included -- gives up both its listing and its size
 read, and that nothing is sized while the presence is not `READY`, the name

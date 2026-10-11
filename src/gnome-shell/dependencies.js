@@ -55,6 +55,22 @@ export function debugFailure(error) {
 }
 
 /**
+ * Whether a call failed because its daemon left -- the presence's to say next,
+ * and nothing to log.
+ *
+ * Asked of the error's type first, as awaitReply () asks it:
+ * GPaste.Client.is_daemon_gone_error () takes a GLib.Error, and GJS throws a
+ * TypeError for anything else -- a programming error thrown down the call --
+ * from inside the catch that asks, which then fails instead of sorting it.
+ *
+ * @param {Error} error - what the call failed with
+ * @returns {boolean} whether the daemon was gone
+ */
+export function daemonGone(error) {
+    return error instanceof GLib.Error && GPaste.Client.is_daemon_gone_error(error);
+}
+
+/**
  * Cancel the request still in flight and hand back the cancellable its successor
  * goes out on, so a caller keeps one field for "the request that is current".
  *
