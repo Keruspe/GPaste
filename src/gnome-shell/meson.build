@@ -27,6 +27,7 @@ if npm.found() and run_eslint.found()
     'eslint',
     run_eslint,
     workdir: meson.project_source_root(),
+    env: { 'G_PASTE_LINT_NO_INSTALL': '1' },
   )
 endif
 

@@ -10,9 +10,15 @@ srcdir=$(dirname -- "$0")
 # under a CDPATH entry.
 CDPATH= cd -- "$srcdir"
 # A lock newer than the install made from it -- a dependency bump pulled since
-# -- is installed again, as a missing tree is.
+# -- is installed again, as a missing tree is. Not under meson's test, which has
+# to work offline and in a read-only tree: there, nothing to lint with is a
+# skip.
 if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
-    npm clean-install
+    if [ -n "$G_PASTE_LINT_NO_INSTALL" ]; then
+        [ -d node_modules ] || exit 77
+    else
+        npm clean-install
+    fi
 fi
 # Link in project root to make imports work properly. The target is relative
 # to the root, so the link survives the checkout moving, and a link that does

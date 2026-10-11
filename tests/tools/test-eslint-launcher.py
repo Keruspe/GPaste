@@ -34,7 +34,7 @@ def checkout(scratch, name):
     return project
 
 
-def run(scratch, project, command, cwd):
+def run(scratch, project, command, cwd, status=0, extra={}):
     log = scratch / 'npm.log'
     log.unlink(missing_ok=True)
     environment = os.environ | {
@@ -42,9 +42,9 @@ def run(scratch, project, command, cwd):
         'G_PASTE_LINT_TEST_LOG': str(log),
         # A decoy tools/ for a bare `cd tools` to wander into.
         'CDPATH': str(scratch / 'decoy'),
-    }
-    subprocess.run([command], cwd=cwd, env=environment, check=True)
-    return log.read_text().splitlines()
+    } | extra
+    check(subprocess.run([command], cwd=cwd, env=environment).returncode == status)
+    return log.read_text().splitlines() if log.exists() else []
 
 
 def assert_linked(project):
@@ -104,5 +104,11 @@ with tempfile.TemporaryDirectory(prefix='gpaste-lint-paths-') as temporary:
         installed = (tools / 'node_modules/.package-lock.json').stat().st_mtime
         os.utime(tools / 'package-lock.json', (installed, installed + (10 if stale else -10)))
         check(run(scratch, project, str(tools / 'run-eslint.sh'), project) == [str(tools)] * (2 if stale else 1))
+
+    # Meson's test installs nothing: with nothing installed, it skips.
+    project = checkout(scratch, 'offline')
+    tools = project / 'tools'
+    check(run(scratch, project, str(tools / 'run-eslint.sh'), project, 77, {'G_PASTE_LINT_NO_INSTALL': '1'}) == [])
+    check(not (tools / 'node_modules').exists())
 
     check(not any((scratch / 'decoy/tools').iterdir()))
