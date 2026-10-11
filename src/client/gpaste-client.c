@@ -865,7 +865,7 @@ g_paste_merge (Context *ctx,
  * completions and the man page against it. */
 typedef struct
 {
-    gint         argc;         /* argv count, verb included */
+    gint         argc;         /* the least argv count, verb included */
     const gchar *verb;         /* canonical name, NULL for the verb-less forms */
     const gchar *aliases;      /* space separated, or NULL */
     gint         extra_args;
@@ -899,7 +899,7 @@ static const Command commands[] = {
         { 2, "select",            "s set",           0,        TRUE,  FALSE, 1,        N_ ("<uuid>"),                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
         { 2, "replace",           NULL,              1,        TRUE,  TRUE,  1,        N_ ("<uuid> <contents>"),     N_ ("replace the contents of the item <uuid> from the history with the provided one"),          g_paste_replace },
         { 2, "strip-rich-text",   "srt",             0,        TRUE,  FALSE, 1,        N_ ("<uuid>"),                N_ ("drop the rich text flavours of the item <uuid>, keeping the plain text it shows"),          g_paste_strip_rich_text },
-        { 4, "merge",             "m",               G_MAXINT, TRUE,  FALSE, G_MAXINT, N_ ("<uuid> … <uuid>"),       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
+        { 3, "merge",             "m",               G_MAXINT, TRUE,  FALSE, G_MAXINT, N_ ("<uuid> … <uuid>"),       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
         { 3, "make-password",     "mp",              0,        TRUE,  FALSE, 1,        N_ ("<uuid> <name>"),         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
         { 2, "delete",            "d del rm remove", 0,        TRUE,  FALSE, 1,        N_ ("<uuid>"),                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
         { 2, "favourite",         "fav",             0,        TRUE,  FALSE, 1,        N_ ("<uuid>"),                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
@@ -979,8 +979,9 @@ command_matches_line (const Command *command,
                       gint           argc,
                       const gchar   *verb)
 {
-    if (argc != command->argc && command->extra_args != G_MAXINT &&
-        !(argc > command->argc && argc <= (command->argc + command->extra_args)))
+    /* @argc is the least a row takes, @extra_args how many more: G_MAXINT for
+     * as many as are given, which still leaves @argc the least. */
+    if (argc < command->argc || (command->extra_args != G_MAXINT && argc > command->argc + command->extra_args))
         return FALSE;
 
     return !(argc > 0 && command->verb) || command_matches (command, verb);

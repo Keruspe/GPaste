@@ -16,6 +16,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix gpaste-client search ignoring --reverse, and numbering matches other than --use-index reads them
 - Fix gpaste-client list-histories ignoring --zero
 - Fix gpaste-client succeeding when its output could not be written
+- Fix gpaste-client merge accepting fewer than two items
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 
 NEW in 51.1 (20/10/2026)

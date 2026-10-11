@@ -1127,6 +1127,27 @@ test_terminal_controls (void)
     g_assert_true (g_close (terminal, NULL));
 }
 
+/* A merge takes two items at least: fewer is no merge, answered with the help
+ * before any client is built. */
+static void
+test_merge_takes_two (void)
+{
+    clients_created = 0;
+    for (gint argc = 1; argc < 3; ++argc)
+    {
+        Context ctx = {
+            .argc = argc - 1,
+            .args = (const gchar *[]) { FAKE_UUID (a), NULL },
+        };
+        g_autoptr (GError) error = NULL;
+
+        g_assert_cmpint (g_paste_dispatch (argc, "merge", &ctx, &error), ==, -1);
+        g_assert_no_error (error);
+    }
+    g_assert_cmpuint (clients_created, ==, 0);
+    g_assert_null (merged_uuids);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1149,6 +1170,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/list-histories/zero", test_list_histories_zero);
     g_test_add_func ("/client/output-failure", test_output_failure);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
+    g_test_add_func ("/client/merge-takes-two", test_merge_takes_two);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
     g_test_add_func ("/client/utf8/accepted", test_utf8_accepted);
