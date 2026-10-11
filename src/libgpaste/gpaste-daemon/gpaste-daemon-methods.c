@@ -1218,6 +1218,11 @@ g_paste_daemon_methods_select (const GPasteDaemonMethods *self,
         return;
 
     G_PASTE_DBUS_ASSERT (g_paste_history_select (self->history, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
+
+    /* The selection is made on the way out of the select, and an item no
+     * selection takes is dropped from the history there (on_item_selected ()),
+     * as a copy of it would be: gone, it is what says the call did nothing. */
+    G_PASTE_DBUS_ASSERT (g_paste_history_get_by_uuid (self->history, uuid), G_PASTE_ERROR_FAILED, "the item could not be put on the clipboard");
 }
 
 G_PASTE_VISIBLE gchar *

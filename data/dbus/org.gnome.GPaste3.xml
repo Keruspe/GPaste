@@ -484,7 +484,13 @@
       <arg type="a(ssubas)" direction="out" name="results"/>
     </method>
 
-    <!-- Make one item the current selection -->
+    <!--
+      Make one item the current selection.
+
+      An item no selection takes, such as an image that cannot be loaded any
+      more, is dropped from the history as a copy of it would be, and the call
+      fails with org.gnome.GPaste.Error.Failed.
+    -->
     <method name="Select">
       <arg type="s" direction="in" name="uuid"/>
     </method>
