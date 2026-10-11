@@ -878,6 +878,18 @@ on_passphrase_set (GObject      *source,
         return;
     }
 
+    /* The destination may already hold histories, kept by an earlier migration
+     * away from it: a passphrase they refuse would have the import write the
+     * history under one and leave them under another, which nothing then opens
+     * together. The one they take is what to type, or another flavour. */
+    if (!g_paste_storage_passphrase_can_decrypt (self->chosen, self->settings, g_paste_passphrase_peek (passphrase)))
+    {
+        g_paste_prompt_passphrase_async (G_PASTE_PROMPT (source), TRUE,
+                                         _("This storage already holds histories under another passphrase, please type that one"),
+                                         remember, on_passphrase_set, self);
+        return;
+    }
+
     /* Remembering it waits until the migration has applied — see
      * apply_migration(). */
     self->passphrase_prompted = TRUE;

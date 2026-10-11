@@ -364,6 +364,11 @@ struct _TestMigrationPrompt
     guint         reports;
     gchar        *title;
     gchar        *message;
+    /* Each passphrase asked for, in turn, where @passphrase answers them all,
+     * and what the last request said was wrong with the one before. */
+    const gchar * const *passphrases;
+    guint                passphrase_asks;
+    gchar               *passphrase_error;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -387,7 +392,12 @@ static void
 test_migration_prompt_passphrase (GPastePrompt        *prompt,
                                   GPastePromptRequest *request)
 {
-    g_paste_prompt_request_reply_passphrase (request, TEST_MIGRATION_PROMPT (prompt)->passphrase, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
+    TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
+    const gchar *passphrase = (self->passphrases) ? self->passphrases[self->passphrase_asks] : self->passphrase;
+
+    ++self->passphrase_asks;
+    g_set_str (&self->passphrase_error, g_paste_prompt_request_get_error_message (request));
+    g_paste_prompt_request_reply_passphrase (request, passphrase, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 }
 
 static void
@@ -430,6 +440,7 @@ test_migration_prompt_finalize (GObject *object)
 {
     g_free (TEST_MIGRATION_PROMPT (object)->title);
     g_free (TEST_MIGRATION_PROMPT (object)->message);
+    g_free (TEST_MIGRATION_PROMPT (object)->passphrase_error);
 
     G_OBJECT_CLASS (test_migration_prompt_parent_class)->finalize (object);
 }
@@ -586,6 +597,45 @@ test_import_failure_leaves_no_cleartext (void)
     assert_import_failure_reported (prompt);
     g_assert_false (g_file_test (png, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (pngs, G_FILE_TEST_EXISTS));
+}
+
+/* The passphrase for a destination already holding histories -- kept by an
+ * earlier migration away from it -- is the one they take: another would have
+ * the import write the history under one and leave them under another. */
+static void
+test_migration_destination_passphrase (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    const gchar * const passphrases[] = { "new", "old", NULL };
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autoptr (GPasteStorageBackend) kept = g_paste_file_backend_new_encrypted (settings, "old");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("history"));
+        g_autolist (GPasteItem) work = g_list_append (NULL, g_paste_text_item_new ("work"));
+
+        g_paste_storage_backend_write_history (file, name, items);
+        g_paste_storage_backend_write_history (kept, "work", work);
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_ENCRYPTED_FILE;
+    prompt->import = TRUE;
+    prompt->passphrases = passphrases;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 2);
+    g_assert_nonnull (prompt->passphrase_error);
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "old"));
+    g_paste_storage_backend_set_passphrase (NULL);
 }
 #endif
 
@@ -2366,6 +2416,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/unlistable-images", test_rekey_unlistable_images);
     g_test_add_func ("/storage/rekey/foreign-side-file", test_rekey_foreign_side_file);
     g_test_add_func ("/storage/migration/import-failure-cleartext", test_import_failure_leaves_no_cleartext);
+    g_test_add_func ("/storage/migration/destination-passphrase", test_migration_destination_passphrase);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);
