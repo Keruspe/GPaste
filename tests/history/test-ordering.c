@@ -568,14 +568,16 @@ test_stopped (void)
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     }
 
-    /* A change to the model is refused as much: recorded nowhere, the reload
-     * that ends the handover would undo it. */
+    /* A change to an entry is refused as much: recorded nowhere, the reload
+     * that ends the handover would undo it -- and a switch, which would drop
+     * what was copied meanwhile. An add, which the reload keeps, is not
+     * (/clipboard/add_handed_over). */
     {
         g_autoptr (GError) error = NULL;
-        g_autofree gchar *uuid = g_paste_daemon_methods_add_text (&methods, "added while handed over", &error);
 
-        g_assert_null (uuid);
+        g_paste_daemon_methods_switch_history (&methods, "switched-while-handed-over", &error);
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+        g_assert_cmpstr (g_paste_history_get_current (history), ==, "stopped-current");
         g_clear_error (&error);
 
         g_paste_daemon_methods_delete_item (&methods, "00000000-0000-4000-8000-000000000000", &error);

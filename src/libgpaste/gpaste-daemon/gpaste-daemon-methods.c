@@ -54,13 +54,18 @@ g_paste_daemon_methods_items_variant (const GPtrArray *items)
 /* A change made while the store is handed over -- a change of passphrase's or
  * an in-place migration's prompts up, the bus still answered -- is recorded
  * nowhere, and the reload ending the handover undoes it: an item deleted comes
- * back, one added is gone. Refused with %G_IO_ERROR_BUSY, as the methods
- * reaching the stores themselves are (g_paste_history_sync ()). */
+ * back, one moved goes back where it was. Refused with %G_IO_ERROR_BUSY, as the
+ * methods reaching the stores themselves are (g_paste_history_sync ()). An add
+ * is not: the reload keeps what was added meanwhile, as it keeps a copy
+ * (@stopped_adds in gpaste-history.c), so do_add_item () asks nothing of this. */
 static gboolean
 g_paste_daemon_methods_check_owned (const GPasteDaemonMethods *self,
                                     GError                   **error)
 {
-    return g_paste_history_sync (self->history, g_paste_history_get_current (self->history), error);
+    const gchar *current = g_paste_history_get_current (self->history);
+
+    /* A history nobody has named yet has no store to have handed over. */
+    return !current || g_paste_history_sync (self->history, current, error);
 }
 
 /* Whether a password called @name exists is asked of every password the
@@ -99,9 +104,6 @@ g_paste_daemon_methods_do_add_item (const GPasteDaemonMethods *self,
 
     /* g_paste_history_add takes ownership; keep our own ref for the checks below */
     g_autoptr (GPasteItem) owned = item;
-
-    if (!g_paste_daemon_methods_check_owned (self, error))
-        return NULL;
 
     /* Content the current selection already says keeps the history as it is,
      * which is what was asked for rather than a refusal: it is in the history
@@ -955,6 +957,13 @@ g_paste_daemon_methods_switch_history (const GPasteDaemonMethods *self,
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to switch to");
     G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
+
+    /* What was copied while the store is handed over is the history left's,
+     * kept for the reload ending the handover to record: a switch would drop
+     * it unrecorded. A history-name written straight into GSettings meanwhile
+     * still does, the D-Bus switch being the one this can refuse. */
+    if (!g_paste_daemon_methods_check_owned (self, error))
+        return;
 
     /* Switching to a name no history goes by creates it: that is how a new
      * history comes into being, there being no CreateHistory of its own, and it

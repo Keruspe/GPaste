@@ -36,7 +36,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix an encrypted history file with data appended to it opening as if intact
 - Fix the daemon rarely hanging when it restarts, or losing what was copied just before
 - Fix emptying a history while it loads, or one that could not be read, leaving its items on disk
-- Fix changes made while a passphrase change or a migration is asking something being silently undone
+- Fix copies and changes made while a passphrase change or a migration asks something being lost
 - Fix switching or deleting a history appearing to work when its setting cannot be saved
 - Fix backing up a history that does not exist creating two empty ones
 - Fix items copied while a history loads being lost

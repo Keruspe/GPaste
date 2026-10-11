@@ -4330,6 +4330,34 @@ test_timeout_edit_from_another_history (void)
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 600);
 }
 
+/* An add made while the store is handed over is answered, put on the clipboard
+ * and kept by the reload ending the handover, as a copy made meanwhile is:
+ * unlike a change to an entry, nothing undoes it. */
+static void
+test_add_handed_over (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_history_flush (history);
+
+    g_autofree gchar *uuid = g_paste_daemon_methods_add_text (&methods, "added while handed over", &error);
+
+    g_assert_no_error (error);
+    g_assert_nonnull (uuid);
+    g_assert_cmpstr (clipboard->content.str, ==, "added while handed over");
+    g_paste_history_reload_backend (history);
+    g_assert_true (history_loaded (history));
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, uuid));
+}
+
 /* A named record left unconfirmed is identified by a read the manager's dispose
  * asks for, which lands with nothing left of the manager but that read: the
  * hint unanswered again, its text is the record it was, nothing asked of the
@@ -4980,6 +5008,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/newest_object", test_timeout_edit_newest_object);
     g_test_add_func ("/clipboard/record_while_loading", test_record_while_loading);
     g_test_add_func ("/clipboard/record_identified_after_dispose", test_record_identified_after_dispose);
+    g_test_add_func ("/clipboard/add_handed_over", test_add_handed_over);
     g_test_add_func ("/clipboard/expiry/history_before_restart", test_restart_waits_for_history);
     g_test_add_func ("/clipboard/expiry/independent_deadlines", test_expiry_independent_deadlines);
     g_test_add_func ("/clipboard/expiry/pending_preserves_waiter", test_expiry_pending_preserves_other_waiter);

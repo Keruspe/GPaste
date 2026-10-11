@@ -4289,6 +4289,119 @@ test_load_keeps_add_uuid (void)
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 
+/* What is copied while the store is handed over -- a passphrase change's
+ * prompts up -- is in the model alone: the reload ending the handover keeps
+ * it, recorded on top of what it reads back. A password among it has not
+ * left the history either. */
+static void
+test_reload_keeps_stopped_adds (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+    g_paste_history_add (history, g_paste_text_item_new ("stored"));
+    pump_for_ms (50);
+    g_paste_history_flush (history);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret copied while stopped", 0));
+    g_paste_history_add (history, g_paste_text_item_new ("copied while stopped"));
+    g_paste_history_reload_backend (history);
+
+    g_assert_true (pump_until_length (history, 3, 5000));
+    g_assert_cmpstr (value_at (history, 0), ==, "copied while stopped");
+    g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 1)), ==, "secret copied while stopped");
+    g_assert_cmpstr (value_at (history, 2), ==, "stored");
+    g_assert_cmpuint (dropped->len, ==, 0);
+
+    g_paste_history_flush (history);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) stored = read_history_ok (backend, g_paste_history_get_current (history));
+
+    g_assert_cmpuint (g_list_length (stored), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (stored->data), ==, "copied while stopped");
+}
+
+/* A load landing inside a handover adds what was copied while it was out on
+ * top of what it read, and the reload ending the handover carries that over
+ * once: a delete of it then holds, the reload's own load leaving it out. */
+static void
+test_reload_carries_load_adds_once (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = loading_history (&settings, "stored", FALSE);
+
+    g_paste_history_flush (history);
+    g_paste_history_add (history, g_paste_text_item_new ("copied"));
+    g_assert_true (pump_until_loaded (history));
+    g_paste_history_reload_backend (history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_remove_by_uuid (history, uuid));
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (value_at (history, 0), ==, "stored");
+}
+
+/* A password copied during a handover whose countdown runs out has the entry
+ * before it put back on top (the clipboards manager's retire_password ()), and
+ * the reload ending the handover keeps that order. */
+static void
+test_reload_keeps_retired_order (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    g_paste_history_add (history, g_paste_text_item_new ("stored"));
+    pump_for_ms (50);
+    g_paste_history_flush (history);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "expired secret", 0));
+    g_paste_history_add (history, g_object_ref (g_paste_history_get (history, 1)));
+    g_paste_history_reload_backend (history);
+
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (value_at (history, 0), ==, "stored");
+    g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 1)), ==, "expired secret");
+}
+
+/* What a cap evicts during a handover is freed then, not kept for the reload. */
+static void
+test_stopped_add_evicted_freed (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 5);
+    GPasteItem *evicted = g_paste_text_item_new ("evicted while stopped");
+
+    g_object_add_weak_pointer (G_OBJECT (evicted), (gpointer *) &evicted);
+    g_paste_history_flush (history);
+    g_paste_history_add (history, evicted);
+    for (guint i = 0; i < 5; ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("copy %u", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (text));
+    }
+    g_assert_null (evicted);
+}
+
+/* A reload landing before the load it replaces carries what was added while
+ * that load was out: nothing has recorded it yet. */
+static void
+test_reload_during_load_keeps_adds (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = loading_history (&settings, "stored", FALSE);
+
+    g_paste_history_add (history, g_paste_text_item_new ("copied during the load"));
+    g_paste_history_flush (history);
+    g_paste_history_reload_backend (history);
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (value_at (history, 0), ==, "copied during the load");
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* The encrypted file backend must round-trip a history (keeping password
  * entries and their real value), and the on-disk ".xmls" file must actually be
@@ -6464,8 +6577,13 @@ main (int argc, char *argv[])
     add_test ("/history/load_selects_last_add", test_load_selects_last_add);
     add_test ("/history/load_keeps_add_uuid", test_load_keeps_add_uuid);
     add_test ("/history/load_keeps_password_selected", test_load_keeps_password_selected);
-#ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/load_add_replaces_stored_head", test_load_add_replaces_stored_head);
+    add_test ("/history/reload_keeps_stopped_adds", test_reload_keeps_stopped_adds);
+    add_test ("/history/reload_carries_load_adds_once", test_reload_carries_load_adds_once);
+    add_test ("/history/reload_keeps_retired_order", test_reload_keeps_retired_order);
+    add_test ("/history/stopped_add_evicted_freed", test_stopped_add_evicted_freed);
+    add_test ("/history/reload_during_load_keeps_adds", test_reload_during_load_keeps_adds);
+#ifdef G_PASTE_ENABLE_SQLITE
 #endif
     add_test ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
     add_test ("/history/dir_is_private", test_history_dir_is_private);

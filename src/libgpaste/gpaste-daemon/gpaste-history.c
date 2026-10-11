@@ -89,6 +89,12 @@ struct _GPasteHistory
     gboolean              pending_clear;
     GSList               *pending_dropped;
 
+    /* The uuids of what was added while @stopped: in the model and nowhere
+     * else, recording having stopped, until the reload ending the handover
+     * carries it over (g_paste_history_reload_backend ()). Uuids rather than
+     * the items, so that what a cap evicts meanwhile is freed. */
+    GHashTable           *stopped_adds;
+
     /* The passwords the model held when reload_backend () swapped it out, until
      * the reloaded model arrives: one it no longer holds -- a migration to a
      * plain flavour imports none -- has left the history, and is announced as
@@ -762,6 +768,9 @@ _g_paste_history_add (GPasteHistory *self,
     g_ptr_array_insert (self->history, 0, item);
     g_hash_table_insert (self->by_uuid, (gpointer) g_paste_item_get_uuid (item), item);
     g_steal_pointer (&owned); /* ownership transferred to the history */
+
+    if (new_selection && self->stopped)
+        g_hash_table_add (self->stopped_adds, g_strdup (g_paste_item_get_uuid (item)));
 
     /* Counted in at what it weighs now, and only then made active: activating
      * takes the head out at that weight and puts it back at its active one, so
@@ -1686,6 +1695,7 @@ g_paste_history_resume (GPasteHistory *self)
     G_PASTE_LOCK_HISTORY;
 
     self->stopped = FALSE;
+    g_hash_table_remove_all (self->stopped_adds);
     /* A switch made meanwhile left its load held: this starts it. */
     g_paste_history_saver_hold_loads (self->saver, FALSE);
 }
@@ -1934,6 +1944,27 @@ g_paste_history_reload_backend (GPasteHistory *self)
      * it back before rebuilding, or we would resurrect the flavour we just left. */
     g_paste_settings_reload (self->settings);
 
+    /* What the store does not hold is in the model alone: kept in the model the
+     * reload starts from, the load adds it on top of what it reads
+     * (g_paste_history_on_loaded ()), recorded then. With a load still out,
+     * that is the whole model, nothing having been recorded since it started.
+     * Otherwise it is what was copied while the store was handed over, down to
+     * the oldest copy still listed, and whatever sits above that copy: a
+     * password's expiry puts the entry before it back on top. */
+    guint carried = 0;
+
+    if (self->saver && g_paste_history_saver_is_loading (self->saver))
+        carried = self->history->len;
+    else
+    {
+        for (guint i = 0; i < self->history->len; ++i)
+        {
+            if (g_hash_table_contains (self->stopped_adds, g_paste_item_get_uuid (g_ptr_array_index (self->history, i))))
+                carried = i + 1;
+        }
+    }
+    g_hash_table_remove_all (self->stopped_adds);
+
     /* A load still in flight keeps the old saver alive through the task's own
      * reference; detach it so its (pre-migration) result is dropped instead of
      * being installed over the one we are about to load. */
@@ -1945,17 +1976,24 @@ g_paste_history_reload_backend (GPasteHistory *self)
     self->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (self->settings), self->settings);
     self->saver = g_paste_history_saver_new (self->backend, self, g_paste_history_on_loaded, g_paste_history_on_diverged);
 
+    GList *kept = NULL;
+
+    for (guint i = carried; i > 0; --i)
+        kept = g_list_prepend (kept, g_object_ref (g_ptr_array_index (self->history, i - 1)));
+
     /* Added to what a reload before this one set aside, its load given up
      * above before it could say which of them it found again. */
-    for (guint i = 0; i < self->history->len; ++i)
+    for (guint i = carried; i < self->history->len; ++i)
     {
         GPasteItem *item = g_ptr_array_index (self->history, i);
 
         if (G_PASTE_IS_PASSWORD_ITEM (item))
             self->reload_passwords = g_slist_prepend (self->reload_passwords, g_object_ref (item));
     }
-    g_paste_history_private_clear (self);
+    g_paste_history_private_set_from_list (self, kept);
     self->size = 0;
+    for (guint i = 0; i < self->history->len; ++i)
+        self->size += g_paste_item_get_size (g_ptr_array_index (self->history, i));
     g_paste_history_private_elect_new_biggest (self);
     /* The deliberate end of the handover g_paste_history_flush() opened: the
      * store has been rewritten and we are the one that owns it again. Whatever
@@ -2181,6 +2219,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
      * on top, a file history being written whole, and that load is given up. */
     g_paste_history_private_clear (self);
     g_clear_slist (&self->reload_passwords, g_object_unref);
+    g_hash_table_remove_all (self->stopped_adds);
     self->size = 0;
     /* Switching away from an unreadable history resumes recording: the new one
      * stands on its own (see g_paste_history_load_async). A flushed history
@@ -2244,6 +2283,7 @@ g_paste_history_dispose (GObject *object)
     g_clear_object (&self->pending_selection);
     g_clear_slist (&self->pending_dropped, g_object_unref);
     g_clear_slist (&self->reload_passwords, g_object_unref);
+    g_clear_pointer (&self->stopped_adds, g_hash_table_unref);
     g_clear_pointer (&self->history, g_ptr_array_unref);
     g_clear_pointer (&self->by_uuid, g_hash_table_unref);
     g_clear_object (&self->settings_signals);
@@ -2372,6 +2412,7 @@ g_paste_history_init (GPasteHistory *self)
      * values from it, so it gets no free funcs of its own. */
     self->history = g_ptr_array_new_with_free_func (g_object_unref);
     self->by_uuid = g_hash_table_new (g_str_hash, g_str_equal);
+    self->stopped_adds = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
     G_PASTE_LOCK_HISTORY;
 

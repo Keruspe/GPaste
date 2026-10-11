@@ -38,9 +38,12 @@
     with GIO's G_IO_ERROR_BUSY, which travels as
     org.gtk.GDBus.UnmappedGError.Quark._g_2dio_2derror_2dquark.Code26 and comes
     back to a GDBus client as that error. So does every method changing the
-    history's items (adding, deleting, selecting, pinning, replacing, stripping,
-    making a password): recorded nowhere, the change would be undone by the
-    reload ending the handover. They work again once it is done.
+    history's items (deleting, selecting, pinning, replacing, stripping, making
+    a password): recorded nowhere, the change would be undone by the reload
+    ending the handover. So does SwitchHistory, which would drop what was
+    copied meanwhile. They work again once it is done. An add is answered
+    all the same, the reload keeping what was added meanwhile as it keeps a
+    copy.
 
     The same refusal answers BackupHistory, EmptyHistory and DeleteHistory of
     another history than the current one, and EmptyHistory and DeleteHistory
