@@ -648,6 +648,32 @@ read (int    fd,
     return got;
 }
 
+/* The placeholder is no name to add a password under: told apart from the
+ * nameless ones by value alone, such a password would come back under an
+ * existing uuid exactly when the value guessed is one the history holds. */
+static void
+test_add_password_placeholder_refused (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "1234", 0));
+
+    /* No clipboard manager: the refusal comes before anything is published. */
+    const GPasteDaemonMethods methods = { .history = history };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *result = g_paste_daemon_methods_add_password (&methods, G_PASTE_PASSWORD_ITEM_NO_NAME, "1234", 0, &error);
+
+    g_assert_null (result);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    /* Nor one to delete a password by: it names none of the nameless ones. */
+    g_clear_error (&error);
+    g_paste_daemon_methods_delete_password (&methods, G_PASTE_PASSWORD_ITEM_NO_NAME, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+}
+
 /* AddFile reads only a regular file the history could keep: a FIFO would hold
  * the daemon until something wrote to it, and a file over the memory cap is
  * refused unread, as watched_path holds it to, root or not. Past the
@@ -7896,6 +7922,7 @@ main (int argc, char *argv[])
     add_test ("/history/favourite_survives_replace", test_favourite_survives_replace);
     add_test ("/history/add_password_name_conflict", test_add_password_name_conflict);
     add_test ("/history/password_names_wait_for_load", test_password_names_wait_for_load);
+    add_test ("/history/add_password_placeholder_refused", test_add_password_placeholder_refused);
     add_test ("/history/add_file_refusals", test_add_file_refusals);
     add_test ("/history/add_file_tiff", test_add_file_tiff);
     add_test ("/history/add_file_swapped", test_add_file_swapped);

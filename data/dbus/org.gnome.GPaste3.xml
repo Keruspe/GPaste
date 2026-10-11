@@ -117,11 +117,12 @@
       Add a password item to the history.
 
       An existing name fails with org.gnome.GPaste.Error.AlreadyExists without
-      changing the history or clipboard. The nameless placeholder "******"
-      may be shared by multiple passwords. A name is checked against every
-      password the current history holds, which it knows once it has loaded:
-      until then, a name other than the placeholder is refused with the same
-      G_IO_ERROR_BUSY as a storage handover (see above).
+      changing the history or clipboard. The nameless placeholder "******" is
+      no name to give one, and fails with org.gnome.GPaste.Error.InvalidArgument:
+      nameless passwords are told apart by their values alone, which adding one
+      would answer for. A name is checked against every password the current
+      history holds, which it knows once it has loaded: until then, it is
+      refused with the same G_IO_ERROR_BUSY as a storage handover (see above).
 
       @timeout is as in MakePassword: seconds, 0 for none, 0xffffffff for the
       "password-timeout" default.
@@ -196,9 +197,12 @@
     </method>
 
     <!--
-      Delete a password item, by name. Refused with the same G_IO_ERROR_BUSY as
-      a storage handover (see above) while the current history is loading: the
-      passwords it holds are not known until then.
+      Delete a password item, by name. The nameless placeholder "******" is no
+      name to delete one by, and fails with org.gnome.GPaste.Error.InvalidArgument:
+      it stands for every nameless password, and deleting the first it matched
+      would delete a secret nobody named. Refused with the same G_IO_ERROR_BUSY
+      as a storage handover (see above) while the current history is loading:
+      the passwords it holds are not known until then.
     -->
     <method name="DeletePassword">
       <arg type="s" direction="in" name="name"/>

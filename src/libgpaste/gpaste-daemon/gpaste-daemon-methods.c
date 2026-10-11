@@ -482,12 +482,20 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no name for the password to add", NULL);
     G_PASTE_DBUS_ASSERT_FULL (password && *password, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to add", NULL);
 
+    /* The placeholder stands for no name at all, which a password read off a
+     * selection has, and two nameless passwords are told apart by their values
+     * alone: added under it, one would answer whether the value guessed is a
+     * password the history already holds, through the uuid it comes back
+     * under. */
+    G_PASTE_DBUS_ASSERT_FULL (!g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME),
+                              G_PASTE_ERROR_INVALID_ARGUMENT,
+                              "the nameless placeholder is not a name",
+                              NULL);
+
     if (!g_paste_daemon_methods_check_names_loaded (self, name, error))
         return NULL;
 
-    /* As in g_paste_daemon_methods_make_password(): the nameless placeholder
-     * is shared by passwords that have no user-chosen name. */
-    GPastePasswordItem *namesake = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
+    GPastePasswordItem *namesake = g_paste_history_get_password (self->history, name);
 
     G_PASTE_DBUS_ASSERT_FULL (!namesake,
                               G_PASTE_ERROR_ALREADY_EXISTS,
@@ -731,6 +739,10 @@ g_paste_daemon_methods_delete_password (const GPasteDaemonMethods *self,
                                         GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to delete");
+    /* As AddPassword refuses it: names no password, standing for every
+     * nameless one, and deleting the first it matched would be deleting a
+     * secret nobody named. */
+    G_PASTE_DBUS_ASSERT (!g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME), G_PASTE_ERROR_INVALID_ARGUMENT, "the nameless placeholder is not a name");
 
     if (!g_paste_daemon_methods_check_owned (self, error) || !g_paste_daemon_methods_check_names_loaded (self, NULL, error))
         return;

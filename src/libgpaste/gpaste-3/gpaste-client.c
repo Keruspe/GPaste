@@ -590,8 +590,8 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * Add the password to the #GPasteDaemon
  *
  * A name already in use fails with %G_PASTE_ERROR_ALREADY_EXISTS in the
- * %G_PASTE_ERROR domain, leaving the history and clipboard untouched.
- * The nameless placeholder "******" may be shared by multiple passwords.
+ * %G_PASTE_ERROR domain, leaving the history and clipboard untouched, and the
+ * nameless placeholder "******" with %G_PASTE_ERROR_INVALID_ARGUMENT.
  *
  * @timeout is as in g_paste_client_make_password().
  *
@@ -759,6 +759,10 @@ G_PASTE_CLIENT_METHOD (delete_history,
  * @error: return location for a #GError, or %NULL
  *
  * Delete the password from the #GPasteDaemon
+ *
+ * The nameless placeholder "******", which names none of the nameless
+ * passwords, fails with %G_PASTE_ERROR_INVALID_ARGUMENT in the %G_PASTE_ERROR
+ * domain.
  */
 /**
  * g_paste_client_delete_password:
@@ -770,6 +774,9 @@ G_PASTE_CLIENT_METHOD (delete_history,
  * @user_data: the data to pass to @callback
  *
  * Delete the password from the #GPasteDaemon
+ *
+ * The nameless placeholder is refused as in
+ * g_paste_client_delete_password_sync().
  */
 /**
  * g_paste_client_delete_password_finish:
