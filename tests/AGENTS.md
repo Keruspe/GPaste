@@ -291,7 +291,8 @@ activating a row switches, and activating the one in use in a collapsed window
 shows it. With `gpaste-ui.c` included, its `main ()` renamed, the application's
 actions do nothing with no window and bring a hidden one back. Restarting the
 daemon or stopping the tracking, confirmed once the daemon left, sends nothing,
-a filter on the client's connection counting what leaves it.
+a filter on the client's connection counting what leaves it. A window closed
+while it is still connecting is neither set up nor presented once connected.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

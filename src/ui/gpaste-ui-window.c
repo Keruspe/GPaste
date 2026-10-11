@@ -1174,6 +1174,25 @@ on_daemon_presence_changed (GPasteClient *client G_GNUC_UNUSED,
     g_paste_ui_window_update_version_toast (self);
 }
 
+/* Whether GTK still lists the window, which gtk_window_destroy () stops it
+ * doing: see on_client_ready (). */
+static gboolean
+g_paste_ui_window_is_toplevel (GPasteUiWindow *self)
+{
+    GListModel *toplevels = gtk_window_get_toplevels ();
+    guint n_items = g_list_model_get_n_items (toplevels);
+
+    for (guint i = 0; i < n_items; ++i)
+    {
+        g_autoptr (GObject) toplevel = g_list_model_get_item (toplevels, i);
+
+        if (toplevel == G_OBJECT (self))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static void on_client_ready (GObject      *source_object,
                              GAsyncResult *res,
                              gpointer      user_data);
@@ -1832,9 +1851,11 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
 
-    /* The window was destroyed (the application quit) while we were connecting:
-     * our ref keeps it allocated, but its widgets are gone. Nothing to set up. */
-    if (!self->banner)
+    /* The window was destroyed while we were connecting: nothing to set up, and
+     * nothing to present. gtk_window_destroy () disposes nothing while our ref
+     * stands, its widgets all still there, but it takes the window off GTK's
+     * list of toplevels at once (/ui/daemon-presence/closed-while-connecting). */
+    if (!g_paste_ui_window_is_toplevel (self))
         return;
 
     self->connecting = FALSE;
@@ -1872,8 +1893,8 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
  *
  * Create a new instance of #GPasteUiWindow
  *
- * Returns: a newly allocated #GPasteUiWindow
- *          free it with g_object_unref
+ * Returns: (transfer none): a new #GPasteUiWindow, owned by GTK's list of
+ *          toplevels as every #GtkWindow is: gtk_window_destroy () lets it go
  */
 GtkWidget *
 g_paste_ui_window_new (GtkApplication *app)

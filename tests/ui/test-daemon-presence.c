@@ -1772,6 +1772,38 @@ test_confirmed_without_daemon (void)
 }
 
 static gboolean
+connection_done (gconstpointer window,
+                 gconstpointer arg G_GNUC_UNUSED)
+{
+    GPasteUiWindow *self = (GPasteUiWindow *) window;
+
+    /* Either our reference is the last, the connection's let go, or the window
+     * was set up all the same. */
+    return G_OBJECT (self)->ref_count == 1 || self->client;
+}
+
+/* A window closed while it is still connecting is not set up, nor presented,
+ * once the connection is: gtk_window_destroy () disposed nothing while the
+ * connection held it. */
+static void
+test_closed_while_connecting (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteUiWindow) window = g_object_ref (G_PASTE_UI_WINDOW (g_paste_ui_window_new (app)));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    g_paste_test_bus_wait_until (connection_done, window, NULL);
+    g_assert_cmpuint (G_OBJECT (window)->ref_count, ==, 1);
+    g_assert_null (window->client);
+    g_assert_false (gtk_widget_get_visible (GTK_WIDGET (window)));
+}
+
+static gboolean
 on_sigusr1 (gpointer user_data)
 {
     ++*(guint *) user_data;
@@ -3167,6 +3199,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
     g_test_add_func ("/ui/daemon-presence/app-actions", test_app_actions);
     g_test_add_func ("/ui/daemon-presence/confirmed-without-daemon", test_confirmed_without_daemon);
+    g_test_add_func ("/ui/daemon-presence/closed-while-connecting", test_closed_while_connecting);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);
