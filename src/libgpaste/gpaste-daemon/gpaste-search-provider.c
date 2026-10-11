@@ -213,22 +213,25 @@ typedef struct
     GDBusMethodInvocation *invocation;
 } GetResultMetasData;
 
-/* What the shell shows of a result, and what it puts on the clipboard if the
- * user copies one: the first is the decorated string every client draws, so a
- * search result names its kind the way the menu's row does; the second is the
- * item's own value, which is what pasting it has to give. */
+/* What the shell shows of a result: the decorated string every client draws,
+ * so a search result names its kind the way the menu's row does.
+ *
+ * No "clipboardText": the shell puts it on the clipboard itself as it
+ * activates the result, ahead of the ActivateResult that selects the item --
+ * and what an item has to give over the wire is a description for every kind
+ * but text: a password's name, an image's size. The daemon would record that
+ * as a copy of its own before Select published the real item. Select alone
+ * puts the item there, as it is. */
 static void
 append_meta (GVariantBuilder  *builder,
              GPasteClientItem *item)
 {
     g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
-    const gchar *value = g_paste_client_item_get_value (item);
     g_autofree gchar *result = g_paste_util_one_line (g_paste_client_item_get_display_string (item));
 
     append_dict_entry (&dict, "id", g_paste_client_item_get_uuid (item));
     append_dict_entry (&dict, "name", result);
     append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
-    append_dict_entry (&dict, "clipboardText", value);
 
     g_variant_builder_add_value (builder, g_variant_builder_end (&dict));
 }
@@ -411,9 +414,7 @@ g_paste_search_provider_register_on_connection (GPasteBusObject *object,
                                            connection,
                                            G_PASTE_SEARCH_PROVIDER_OBJECT_PATH,
                                            error))
-    {
         return FALSE;
-    }
 
     return (self->registered = TRUE);
 }
@@ -435,9 +436,9 @@ g_paste_search_provider_class_init (GPasteSearchProviderClass *klass)
  * with is all that is left to describe it by.
  *
  * Only for a removal: any other update may have replaced an item under a new
- * uuid -- a text item made a password, say -- and the shell itself puts a
- * result's clipboardText on the clipboard when it is activated, so describing
- * the uuid gone from before the change could hand the cleartext back. An add
+ * uuid -- a text item made a password, say -- and describing the uuid gone
+ * from before the change would name that result by the cleartext just made a
+ * password, in the overview's list. An add
  * evicting a result is such an update too, and the batch it breaks is answered
  * empty (on_items_ready ()). */
 static void

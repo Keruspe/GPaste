@@ -226,8 +226,8 @@ assert_meta (GVariant    *metas,
     g_assert_cmpstr (value, ==, uuid);
     g_assert_true (g_variant_lookup (meta, "name", "&s", &value));
     g_assert_cmpstr (value, ==, text);
-    g_assert_true (g_variant_lookup (meta, "clipboardText", "&s", &value));
-    g_assert_cmpstr (value, ==, text);
+    /* Nothing for the shell to put on the clipboard ahead of Select. */
+    g_assert_false (g_variant_lookup (meta, "clipboardText", "&s", &value));
 }
 
 /* A removal leaves the results as the search found them, the one removed
