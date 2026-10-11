@@ -3076,6 +3076,37 @@ test_file_v1_refused_and_preserved (void)
     g_test_trap_assert_stderr_unmatched ("*ancient*");
 }
 
+/* A value holding what CDATA and the escaping itself are made of comes back as
+ * it went in, through a file and an encrypted one alike. */
+static void
+test_file_value_round_trip (void)
+{
+    const gchar *value = "a ]]> b & c > d &amp; e &gt; f &&gt;";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (value));
+    g_autoptr (GPasteStorageBackend) plain = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+    g_paste_storage_backend_write_history (plain, "value-round-trip", items);
+    {
+        g_autolist (GPasteItem) loaded = read_history_ok (plain, "value-round-trip");
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_real_value (loaded->data), ==, value);
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+    g_paste_storage_backend_write_history (encrypted, "value-round-trip", items);
+    {
+        g_autolist (GPasteItem) loaded = read_history_ok (encrypted, "value-round-trip");
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_real_value (loaded->data), ==, value);
+    }
+#endif
+}
+
 /* What a plain history document reads as: written as is under @name, then read
  * back, its read having to be @readable, and its items' values joined by '|'. */
 static gchar *
@@ -3103,6 +3134,37 @@ read_document (const gchar *name,
     g_auto (GStrv) joined = g_strv_builder_end (values);
 
     return g_strjoinv ("|", joined);
+}
+
+/* A count answers what a read finds, though it builds no value: whitespace alone
+ * kept as a value, the indentation around one not, an alternative with no plain
+ * value beside it no item, nor an empty value. */
+static void
+test_file_count_matches_read (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*no usable kind or value*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    const gchar *name = "count-matches-read";
+    g_autofree gchar *values = read_document (name,
+                                              "  <item kind=\"Text\"><value><![CDATA[a]]></value></item>\n"
+                                              "  <item kind=\"Text\"><value><![CDATA[\n\n]]></value></item>\n"
+                                              "  <item kind=\"Text\"><value>\n    <![CDATA[indented]]>\n  </value></item>\n"
+                                              "  <item kind=\"Text\"><value mime=\"text-html\"><![CDATA[PGI+YjwvYj4=]]></value></item>\n"
+                                              "  <item kind=\"Text\"><value><![CDATA[rich]]></value><value mime=\"text-html\"><![CDATA[PGI+cmljaDwvYj4=]]></value></item>\n"
+                                              "  <item kind=\"Text\"><value></value></item>\n",
+                                              TRUE);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_auto (GStrv) read = g_strsplit (values, "|", -1);
+
+    g_assert_cmpuint (g_strv_length (read), ==, 4);
+    g_assert_cmpuint (g_paste_storage_backend_count_history (backend, name), ==, g_strv_length (read));
 }
 
 /* What the parser makes of a document no GPaste wrote. A value under a mime this
@@ -5374,6 +5436,8 @@ main (int argc, char *argv[])
     add_test ("/history/file_sweep_bounds", test_file_sweep_bounds);
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);
+    add_test ("/history/file_count_matches_read", test_file_count_matches_read);
+    add_test ("/history/file_value_round_trip", test_file_value_round_trip);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     add_test ("/history/file_encrypting_migration_images", test_file_encrypting_migration_images);
     add_test ("/history/file_encrypted_fallback_verified", test_file_encrypted_fallback_verified);

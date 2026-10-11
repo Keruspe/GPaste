@@ -208,6 +208,16 @@ _g_paste_file_backend_sync (GFile   *file,
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* The largest encrypted file this flavour stores: twice the largest
+ * max-memory-usage (16383 MiB), which nothing the model keeps weighs past, room
+ * for what base64 and markup add to it and for the stream's few bytes a chunk. */
+#define G_PASTE_FILE_BACKEND_MAX_STREAM_SIZE (G_GUINT64_CONSTANT (32768) * 1024 * 1024)
+/* How much ciphertext an encrypted file is read
+ * by, many of the stream's frames. */
+#define G_PASTE_FILE_BACKEND_READ_SIZE (64 * 1024)
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Sync @path, a directory: what was renamed into it is on the disk then. Best
  * effort, a filesystem that cannot sync a directory having nothing more to
  * offer, and a change it holds being made either way. */
@@ -784,7 +794,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
          * own content is the text: get_value only differs from get_real_value
          * for passwords (it masks them), and those are skipped above unless
          * encrypted, so the real value is always what we want to persist. */
-        g_autofree gchar *text = g_paste_util_xml_encode ((image_value) ? image_value : g_paste_item_get_real_value (item));
+        g_autoptr (GPasteCleartext) text = g_paste_util_xml_encode ((image_value) ? image_value : g_paste_item_get_real_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, kind_str, strlen (kind_str), NULL, NULL /* cancellable */, &error) ||
@@ -1502,6 +1512,19 @@ end_tag (GMarkupParseContext *context,
         SWITCH_STATE_OR_EMPTY (IN_VALUE_WITH_TEXT, IN_VALUE, IN_ITEM);
 }
 
+/* Whether @text is whitespace alone, by g_strstrip ()'s measure. */
+static gboolean
+_g_paste_file_backend_is_blank (const gchar *text)
+{
+    for (; *text; ++text)
+    {
+        if (!g_ascii_isspace (*text))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 static void
 on_text (GMarkupParseContext *context,
          const gchar         *text,
@@ -1514,7 +1537,37 @@ on_text (GMarkupParseContext *context,
     if (data->unknown_depth)
         return;
 
-    g_autofree gchar *txt = g_strndup (text, text_len);
+    /* A count asks whether an item has a value, not what it is (add_item ()):
+     * a value is neither copied, decoded nor wiped then, and a special one,
+     * which the count drops, not decoded at all -- the states moving as they
+     * do below, so that a document a read refuses is one a count refuses too.
+     * A placeholder stands for the value, a count being held to what a read
+     * finds (/history/file_count_matches_read). */
+    if (data->count_only && data->state == IN_VALUE && data->version == HISTORY_2_0)
+    {
+        gboolean plain = data->mime == G_PASTE_SPECIAL_MIME_INVALID && !data->unknown_mime;
+        gboolean blank = TRUE;
+
+        for (gsize i = 0; blank && i < text_len; ++i)
+            blank = g_ascii_isspace (text[i]);
+
+        if (blank)
+        {
+            if (plain && text_len && !data->text)
+                data->text = g_strdup (" ");
+            return;
+        }
+
+        SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
+        if (plain && !data->text)
+            data->text = g_strdup (" ");
+        return;
+    }
+
+    /* A decrypted password, as likely as not, as is everything decoded from it
+     * below: wiped on its way out (see #GPasteCleartext), and never stripped in
+     * place, which would move its bytes past where a wipe by its length ends. */
+    g_autoptr (GPasteCleartext) txt = g_strndup (text, text_len);
     switch (data->state)
     {
     case IN_HISTORY:
@@ -1523,7 +1576,7 @@ on_text (GMarkupParseContext *context,
      * outlives the history it would be copied from, with readers of its own:
      * its length is all that is said of it. */
     case IN_VALUE_WITH_TEXT:
-        if (*g_strstrip (txt))
+        if (!_g_paste_file_backend_is_blank (txt))
         {
             WARN_AT ("Unexpected text (%" G_GSIZE_FORMAT " bytes)", text_len);
             return;
@@ -1532,13 +1585,13 @@ on_text (GMarkupParseContext *context,
     case IN_ITEM:
         /* An item's value lives in a <value> child; text directly inside <item>
          * is the 1.0 layout, which is refused (see HistoryVersion). */
-        if (*g_strstrip (txt))
+        if (!_g_paste_file_backend_is_blank (txt))
             WARN_AT ("Unexpected text in item (%" G_GSIZE_FORMAT " bytes)", text_len);
         break;
     case IN_VALUE:
         if (data->version == HISTORY_2_0)
         {
-            g_autofree gchar *value = g_paste_util_xml_decode (txt);
+            g_autoptr (GPasteCleartext) value = g_paste_util_xml_decode (txt);
             gboolean plain = data->mime == G_PASTE_SPECIAL_MIME_INVALID && !data->unknown_mime;
 
             /* GMarkup hands the runs either side of a CDATA section over apart
@@ -1547,7 +1600,7 @@ on_text (GMarkupParseContext *context,
              * not whitespace comes. A plain value of whitespace alone -- blank
              * lines copied -- is written verbatim and kept, where a special
              * value is base64, which whitespace alone is none of. */
-            if (!*g_strstrip (txt))
+            if (_g_paste_file_backend_is_blank (txt))
             {
                 if (plain && *value && !data->text)
                     data->text = g_steal_pointer (&value);
@@ -1556,7 +1609,10 @@ on_text (GMarkupParseContext *context,
 
             SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
             if (plain)
-                g_set_str_take (&data->text, g_steal_pointer (&value));
+            {
+                g_clear_pointer (&data->text, g_paste_util_free_cleartext);
+                data->text = g_steal_pointer (&value);
+            }
             else if (!data->unknown_mime)
             {
                 gsize raw_length;
@@ -1668,29 +1724,104 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
             return TRUE;
         }
 
+        goffset size = g_file_info_get_size (info);
+
+        /* A file past what this flavour ever stores -- a sparse one, a sync
+         * tool's placeholder -- is no stream of ours, and allocating for it
+         * would abort the process hosting the daemon, gnome-shell for the
+         * in-shell one. */
+        if ((guint64) size > G_PASTE_FILE_BACKEND_MAX_STREAM_SIZE)
+        {
+            g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "%s is larger than anything GPaste stores", history_file_path);
+            return FALSE;
+        }
+
+        /* Sized once from the file, which the plaintext is shorter than, and the
+         * terminator below: a buffer grown as the stream decrypts would leave a
+         * copy of what it held so far in every block it was moved out of, for
+         * whatever allocates it next (see #GPasteCleartext). Zeroed by the
+         * allocator, pages of it untouched until written: the way out of a
+         * failure wipes what was written, not the whole of it, which would
+         * commit every page of a large file the stream refused at its first
+         * bytes.
+         *
+         * The plain flavour hands back what g_file_get_contents() wrote, which is
+         * NUL-terminated; a #GPasteCleartext is wiped by strlen(), and this one
+         * is too, zeroed and a byte longer than anything it may hold. */
+        gsize capacity = (gsize) size + 1;
+        g_autofree gchar *data = g_try_malloc0 (capacity);
+
+        if (!data)
+        {
+            g_set_error (error, G_IO_ERROR, G_IO_ERROR_NO_SPACE, "Not enough memory to read %s", history_file_path);
+            return FALSE;
+        }
+
+        /* Decrypted from the ciphertext read off the file straight into @data,
+         * through the converter alone: a GConverterInputStream converts into a
+         * buffer of its own -- ordinary heap, freed unwiped -- whenever the room
+         * it is handed takes no output, and grows its input buffer to whatever
+         * a read asks for, the whole file. Only @data and the converter's own
+         * wiped buffers hold the plaintext, and only the ciphertext goes
+         * through @cipher. */
         g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_DECRYPT, passphrase);
-        g_autoptr (GInputStream) decrypted = g_converter_input_stream_new (G_INPUT_STREAM (file_in), converter);
-        g_autoptr (GOutputStream) buffer = g_memory_output_stream_new_resizable ();
+        g_autofree gchar *cipher = g_malloc (G_PASTE_FILE_BACKEND_READ_SIZE);
+        gsize cipher_length = 0;
+        gsize length = 0;
+        gboolean at_end = FALSE;
+        gboolean finished = FALSE;
 
-        /* The source is closed by the splice, which is what makes the converter
-         * flush and check the stream's FINAL tag. The target is not, so the
-         * terminator below still has somewhere to go; it is closed after it. */
-        if (g_output_stream_splice (buffer, decrypted,
-                                    G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
-                                    NULL, error) < 0)
+        while (!finished)
+        {
+            if (!at_end && cipher_length < G_PASTE_FILE_BACKEND_READ_SIZE)
+            {
+                gssize got = g_input_stream_read (G_INPUT_STREAM (file_in), cipher + cipher_length,
+                                                  G_PASTE_FILE_BACKEND_READ_SIZE - cipher_length, NULL /* cancellable */, error);
+
+                if (got < 0)
+                    break;
+                at_end = !got;
+                cipher_length += (gsize) got;
+            }
+
+            gsize consumed = 0;
+            gsize produced = 0;
+            g_autoptr (GError) convert_error = NULL;
+            /* The end of the input is what has the converter check its FINAL
+             * tag, a stream cut short failing here. */
+            GConverterResult result = g_converter_convert (converter, cipher, cipher_length, data + length, capacity - 1 - length,
+                                                           (at_end) ? G_CONVERTER_INPUT_AT_END : G_CONVERTER_NO_FLAGS,
+                                                           &consumed, &produced, &convert_error);
+
+            /* More of the file, while there is room for it: a frame never
+             * outgrows @cipher. */
+            if (result == G_CONVERTER_ERROR && !at_end && cipher_length < G_PASTE_FILE_BACKEND_READ_SIZE &&
+                g_error_matches (convert_error, G_IO_ERROR, G_IO_ERROR_PARTIAL_INPUT))
+                continue;
+
+            if (result == G_CONVERTER_ERROR || (at_end && result != G_CONVERTER_FINISHED && !consumed && !produced))
+            {
+                if (convert_error)
+                    g_propagate_error (error, g_steal_pointer (&convert_error));
+                else
+                    g_set_error (error, G_IO_ERROR, G_IO_ERROR_PARTIAL_INPUT, "%s ends before its stream does", history_file_path);
+                break;
+            }
+
+            memmove (cipher, cipher + consumed, cipher_length - consumed);
+            cipher_length -= consumed;
+            length += produced;
+            finished = (result == G_CONVERTER_FINISHED);
+        }
+
+        if (!finished)
+        {
+            g_paste_util_wipe (data, length);
             return FALSE;
+        }
 
-        /* The plain flavour hands back what g_file_get_contents() wrote, which is
-         * NUL-terminated; a #GPasteCleartext is wiped by strlen(), so terminate
-         * this one too. The stream rounds its buffer up to a power of two, so a
-         * document whose length already is one fills the allocation exactly and
-         * leaves no zero byte past the end for strlen() to stop at. */
-        if (!g_output_stream_write_all (buffer, "", 1, NULL, NULL /* cancellable */, error) ||
-            !g_output_stream_close (buffer, NULL /* cancellable */, error))
-            return FALSE;
-
-        *text_length = g_memory_output_stream_get_data_size (G_MEMORY_OUTPUT_STREAM (buffer)) - 1;
-        *text = g_memory_output_stream_steal_data (G_MEMORY_OUTPUT_STREAM (buffer));
+        *text_length = length;
+        *text = g_steal_pointer (&data);
 
         return TRUE;
     }
@@ -1851,7 +1982,11 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
 
         /* No GError: on_error () reports each, and a second one set over the
          * first, after a CDATA section the parse read on past, would have GLib
-         * log its message. */
+         * log its message.
+         *
+         * GMarkup copies each text it hands over into buffers of its own, which
+         * it frees as they are with the context: a password it read stays in
+         * freed memory, beyond anything here to wipe. */
         gboolean parsed = g_markup_parse_context_parse (ctx, text, text_length, NULL) &&
                           g_markup_parse_context_end_parse (ctx, NULL);
 

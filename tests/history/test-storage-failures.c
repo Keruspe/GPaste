@@ -1839,6 +1839,44 @@ test_rekey_marker_kept_by_failed_delete (void)
     g_assert_cmpint (g_unlink (marker), ==, 0);
 }
 
+/* An encrypted file far larger than anything GPaste stores -- a sparse one, a
+ * sync tool's placeholder -- is refused unread rather than allocated for, which
+ * would abort the process hosting the daemon. */
+static void
+test_encrypted_read_oversized (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*larger than anything GPaste stores*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *history = g_paste_util_get_history_file_path ("oversized", g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    {
+        g_autoptr (GFile) file = g_file_new_for_path (history);
+        g_autoptr (GFileOutputStream) stream = g_file_replace (file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, NULL);
+
+        g_assert_nonnull (stream);
+        g_assert_true (g_seekable_truncate (G_SEEKABLE (stream), (goffset) G_GUINT64_CONSTANT (1) << 40, NULL, NULL));
+        g_assert_true (g_output_stream_close (G_OUTPUT_STREAM (stream), NULL, NULL));
+    }
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_false (g_paste_storage_backend_read_history (backend, "oversized", NULL, &items, &size));
+    g_assert_cmpint (g_unlink (history), ==, 0);
+}
+
 /* A history a re-key left unsettled is not written over either: the settle
  * would put its original back over the write, which would then have been
  * answered as held -- an emptying undone at the next start. */
@@ -2103,6 +2141,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/leftovers-deleted", test_rekey_leftovers_deleted);
     g_test_add_func ("/storage/rekey/marker-kept-by-failed-delete", test_rekey_marker_kept_by_failed_delete);
     g_test_add_func ("/storage/rekey/unsettled-unwritten", test_rekey_unsettled_unwritten);
+    g_test_add_func ("/storage/encrypted-read-oversized", test_encrypted_read_oversized);
     g_test_add_func ("/storage/rekey/settled-without-history", test_rekey_settled_without_history);
     g_test_add_func ("/storage/rekey/settles-valid-names", test_rekey_settles_valid_names);
     g_test_add_func ("/storage/rekey/after-leftovers", test_rekey_after_leftovers);

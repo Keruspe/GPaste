@@ -62,10 +62,34 @@ G_PASTE_VISIBLE gchar *
 g_paste_util_xml_decode (const gchar *text)
 {
     g_return_val_if_fail (text, NULL);
+    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
 
-    g_autofree gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
+    /* In one pass, into one allocation never grown, the text being as likely as
+     * not a decrypted password: every intermediate copy, and every block a
+     * growing buffer is moved out of, would be one more left in the heap for
+     * whatever allocates it next (see #GPasteCleartext). Decoding only ever
+     * shortens. */
+    gchar *decoded = g_malloc (strlen (text) + 1);
+    gchar *out = decoded;
 
-    return g_paste_util_replace (_decoded_text, "&amp;", "&");
+    for (const gchar *in = text; *in;)
+    {
+        if (g_str_has_prefix (in, "&gt;"))
+        {
+            *out++ = '>';
+            in += strlen ("&gt;");
+        }
+        else if (g_str_has_prefix (in, "&amp;"))
+        {
+            *out++ = '&';
+            in += strlen ("&amp;");
+        }
+        else
+            *out++ = *in++;
+    }
+    *out = '\0';
+
+    return decoded;
 }
 
 /**
@@ -80,10 +104,30 @@ G_PASTE_VISIBLE gchar *
 g_paste_util_xml_encode (const gchar *text)
 {
     g_return_val_if_fail (text, NULL);
+    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
 
-    g_autofree gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
+    /* As in g_paste_util_xml_decode (): one pass, one allocation, sized up
+     * front. */
+    gsize length = 0;
 
-    return g_paste_util_replace (_encoded_text, ">", "&gt;");
+    for (const gchar *in = text; *in; ++in)
+        length += (*in == '&') ? strlen ("&amp;") : (*in == '>') ? strlen ("&gt;") : 1;
+
+    gchar *encoded = g_malloc (length + 1);
+    gchar *out = encoded;
+
+    for (const gchar *in = text; *in; ++in)
+    {
+        const gchar *entity = (*in == '&') ? "&amp;" : (*in == '>') ? "&gt;" : NULL;
+
+        if (entity)
+            out = g_stpcpy (out, entity);
+        else
+            *out++ = *in;
+    }
+    *out = '\0';
+
+    return encoded;
 }
 
 /**
