@@ -681,8 +681,10 @@ on_backup_response (AdwAlertDialog *dialog G_GNUC_UNUSED,
 {
     BackupHistoryData *data = user_data;
 
-    /* Only ever enabled for a name to send (on_backup_name_changed ()). */
-    if (!g_paste_str_equal (response, "backup"))
+    /* Only ever enabled for a name to send (on_backup_name_changed ()). As in
+     * g_paste_ui_window_set_tracking (), nothing goes out once the daemon left
+     * with the dialog up. */
+    if (!g_paste_str_equal (response, "backup") || g_paste_client_get_daemon_presence (data->client) != G_PASTE_DAEMON_PRESENCE_READY)
         return;
 
     g_paste_client_backup_history (data->client, data->history, gtk_editable_get_text (data->entry),
@@ -750,7 +752,8 @@ on_delete_confirmed (gboolean confirmed,
     g_autoptr (GPasteClient) client = data->client;
     g_autofree gchar *history = data->history;
 
-    if (confirmed)
+    /* As in g_paste_ui_window_set_tracking (). */
+    if (confirmed && g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_READY)
     {
         g_paste_client_delete_history (client, history,
                                        NULL /* cancellable */,

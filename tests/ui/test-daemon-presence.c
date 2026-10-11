@@ -394,6 +394,7 @@ typedef struct
 {
     gint searches;
     gint favourites;
+    gint others;
 } Outgoing;
 
 static GDBusMessage *
@@ -415,6 +416,8 @@ count_outgoing (GDBusConnection *connection G_GNUC_UNUSED,
         g_atomic_int_inc (&outgoing->searches);
     else if (g_paste_str_equal (member, "GetFavourites"))
         g_atomic_int_inc (&outgoing->favourites);
+    else
+        g_atomic_int_inc (&outgoing->others);
 
     return message;
 }
@@ -1729,6 +1732,43 @@ test_app_actions (void)
     prefs_activated (NULL, NULL, app);
     g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
     close_activation_window (window, &daemon);
+}
+
+/* Restarting the daemon, or stopping the tracking, confirmed once the daemon
+ * left with the question up sends nothing: the call would be what the bus
+ * starts one on. */
+static void
+test_confirmed_without_daemon (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    fake_daemon_stop (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    Outgoing outgoing = { 0 };
+    guint filter = g_dbus_connection_add_filter (connection, count_outgoing, &outgoing, NULL);
+
+    on_reexec_confirmed (TRUE, g_object_ref (window));
+    on_track_confirmed (TRUE, g_object_ref (window));
+    g_paste_test_bus_pump (300);
+    g_dbus_connection_remove_filter (connection, filter);
+    g_assert_cmpint (g_atomic_int_get (&outgoing.others), ==, 0);
+    g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
 }
 
 static gboolean
@@ -3126,6 +3166,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
     g_test_add_func ("/ui/daemon-presence/app-actions", test_app_actions);
+    g_test_add_func ("/ui/daemon-presence/confirmed-without-daemon", test_confirmed_without_daemon);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

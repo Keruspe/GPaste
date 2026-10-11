@@ -215,8 +215,9 @@ offers no action until that item is read, and that a row lays out a bounded part
 of a long item's text. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
 that Switch or Create keeps its text until the switch is answered, that Back Up
-waits for a name neither refused nor listed and backs up on Enter, and that its
-dialog goes with its window. It is built without `G_LOG_USE_STRUCTURED`, so
+waits for a name neither refused nor listed and backs up on Enter, that its
+dialog goes with its window, and that a Back Up or a deletion confirmed once the
+daemon left sends nothing, the daemon's presence faked as the switch is. It is built without `G_LOG_USE_STRUCTURED`, so
 that `g_test_expect_message()` catches the warning a refused switch leaves.
 
 `test-ui-daemon-presence` sets the window up on the private Xvfb against the
@@ -288,7 +289,9 @@ one item at a time shows every item while they fit the window. Moving the
 sidebar's selection switches nothing and goes back to the history in use,
 activating a row switches, and activating the one in use in a collapsed window
 shows it. With `gpaste-ui.c` included, its `main ()` renamed, the application's
-actions do nothing with no window and bring a hidden one back.
+actions do nothing with no window and bring a hidden one back. Restarting the
+daemon or stopping the tracking, confirmed once the daemon left, sends nothing,
+a filter on the client's connection counting what leaves it.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon
@@ -364,7 +367,8 @@ deleting the break between two lines is refused when the line it would make is
 past the limit. An empty text cannot be confirmed, whether the dialog opened on
 one or it was emptied. It also checks that `g_paste_gtk_util_confirm_dialog()` answers
 exactly once, a window destroyed under it answering a refusal and freeing the
-dialog. It uses real GTK on the private Xvfb and skips without one.
+dialog, and that emptying a history confirmed with no daemon there sends
+nothing. It uses real GTK on the private Xvfb and skips without one.
 
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and

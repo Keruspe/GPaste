@@ -556,10 +556,8 @@ on_reexec_confirmed (gboolean confirmed,
 {
     g_autoptr (GPasteUiWindow) self = user_data;
 
-    /* The dialog holds its own ref, so the answer can come back after the window
-     * was closed and dispose() dropped the client: there is nothing left to ask,
-     * and the report the call would carry would never be handed over. */
-    if (confirmed && self->client)
+    /* As in g_paste_ui_window_set_tracking (). */
+    if (confirmed && g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY)
     {
         g_paste_client_reexecute (self->client,
                                   NULL /* cancellable */,
@@ -593,8 +591,12 @@ static void
 g_paste_ui_window_set_tracking (GPasteUiWindow *self,
                                 gboolean        state)
 {
-    /* Reached from a confirmation the window may not have outlived. */
-    if (!self->client)
+    /* Reached from a confirmation, which the daemon may have left while it was
+     * up: the window takes away what would ask one while there is none
+     * (g_paste_ui_window_update_sensitivity ()), and a call made then would be
+     * what the bus starts one on, or reach one standing down. The banner says
+     * why nothing happens. */
+    if (g_paste_client_get_daemon_presence (self->client) != G_PASTE_DAEMON_PRESENCE_READY)
         return;
 
     g_paste_client_set_active (self->client, state,

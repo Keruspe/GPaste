@@ -49,7 +49,18 @@ finish_call (GPasteClient *client G_GNUC_UNUSED,
         g_propagate_error (error, g_steal_pointer (&answer_error));
 }
 
+/* What the sidebar is told of the daemon: none while it is built, so that it
+ * lists nothing, and one serving once a test says so. */
+static GPasteDaemonPresence presence = G_PASTE_DAEMON_PRESENCE_ABSENT;
+
+static GPasteDaemonPresence
+get_presence (GPasteClient *client G_GNUC_UNUSED)
+{
+    return presence;
+}
+
 /* And the sidebar, for what it sends. */
+#define g_paste_client_get_daemon_presence get_presence
 #define g_paste_client_switch_history send_switch
 #define g_paste_client_switch_history_finish finish_call
 #define g_paste_client_backup_history send_backup
@@ -59,6 +70,7 @@ finish_call (GPasteClient *client G_GNUC_UNUSED,
 #undef g_paste_client_backup_history
 #undef g_paste_client_switch_history_finish
 #undef g_paste_client_switch_history
+#undef g_paste_client_get_daemon_presence
 
 static void
 answer (GPasteClient *client)
@@ -365,6 +377,7 @@ panel_window (GPasteClient *client,
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
     *window = GTK_WINDOW (adw_window_new ());
+    presence = G_PASTE_DAEMON_PRESENCE_ABSENT;
 
     GtkWidget *panel = g_paste_ui_panel_new (client, settings, *window, GTK_SEARCH_ENTRY (search));
     GPasteUiPanel *self = G_PASTE_UI_PANEL (panel);
@@ -375,6 +388,10 @@ panel_window (GPasteClient *client,
     gtk_window_present (*window);
     g_paste_ui_panel_add_history (self, "work", NULL, FALSE);
     g_paste_ui_panel_add_history (self, "work_backup", NULL, FALSE);
+    /* The client's own signals told nothing either: its real presence moving
+     * would have the panel list, from a daemon there is none of. */
+    g_signal_group_set_target (self->client_signals, NULL);
+    presence = G_PASTE_DAEMON_PRESENCE_READY;
 
     return self;
 }
@@ -502,6 +519,46 @@ test_panel_backup_window_gone (void)
     g_assert_null (dialog);
 }
 
+/* A Back Up or a deletion confirmed after the daemon left with its dialog up
+ * sends nothing: the call would be what the bus starts one on. */
+static void
+test_panel_confirmed_without_daemon (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    GtkWindow *window;
+    GPasteUiPanel *self = panel_window (client, &window);
+
+    g_assert_no_error (error);
+    g_signal_emit_by_name (self->sidebar, "setup-menu", history_find (self->histories, "work")->data);
+    g_assert_true (gtk_widget_activate_action (GTK_WIDGET (self), "panel.backup-history", NULL));
+
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_window_get_visible_dialog (ADW_WINDOW (window)));
+
+    gtk_editable_set_text (GTK_EDITABLE (adw_alert_dialog_get_extra_child (dialog)), "work_2026");
+    presence = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    g_clear_pointer (&sent_name, g_free);
+    g_signal_emit_by_name (dialog, "response", "backup");
+    g_assert_null (sent_name);
+    adw_dialog_force_close (ADW_DIALOG (dialog));
+
+    /* The real call, which no daemon would answer here: a warning, fatal. */
+    DeleteHistoryData *data = g_new (DeleteHistoryData, 1);
+
+    data->client = g_object_ref (client);
+    data->history = g_strdup ("work");
+    data->rootwin = window;
+    on_delete_confirmed (TRUE, data);
+    g_paste_test_bus_pump (200);
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -520,5 +577,6 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/panel/switch-name", test_panel_switch_name);
     g_test_add_func ("/ui/panel/backup-name", test_panel_backup_name);
     g_test_add_func ("/ui/panel/backup-window-gone", test_panel_backup_window_gone);
+    g_test_add_func ("/ui/panel/confirmed-without-daemon", test_panel_confirmed_without_daemon);
     return g_paste_test_env_run ();
 }

@@ -3,6 +3,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
+#include <gpaste-3/gpaste-gsettings-keys.h>
 
 static gboolean have_display;
 
@@ -369,6 +370,61 @@ confirm_answered_once (gconstpointer user_data)
     g_assert_null (dialog);
 }
 
+/* Counted as they leave the client's connection, on GDBus' worker thread. */
+static GDBusMessage *
+count_calls (GDBusConnection *connection G_GNUC_UNUSED,
+             GDBusMessage    *message,
+             gboolean         incoming,
+             gpointer         user_data)
+{
+    if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+        !g_strcmp0 (g_dbus_message_get_member (message), "EmptyHistory"))
+        g_atomic_int_inc ((gint *) user_data);
+
+    return message;
+}
+
+/* Emptying a history confirmed once the daemon is gone sends nothing: the call
+ * would be what the bus starts one on. */
+static void
+empty_confirmed_without_daemon (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+
+    g_assert_no_error (error);
+    g_assert_cmpint (g_paste_client_get_daemon_presence (client), !=, G_PASTE_DAEMON_PRESENCE_READY);
+    gtk_window_present (window);
+    g_paste_settings_set_empty_history_confirmation (settings, TRUE);
+    g_paste_gtk_util_empty_history (window, client, settings, "work");
+
+    AdwDialog *dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    gint calls = 0;
+    guint filter = g_dbus_connection_add_filter (connection, count_calls, &calls, NULL);
+
+    g_assert_nonnull (dialog);
+    g_signal_emit_by_name (dialog, "response", "confirm");
+
+    /* A call made from the response has passed the filter, on its way out,
+     * once everything queued on the connection is written. */
+    g_assert_true (g_dbus_connection_flush_sync (connection, NULL, &error));
+    g_assert_no_error (error);
+    g_dbus_connection_remove_filter (connection, filter);
+    g_assert_cmpint (g_atomic_int_get (&calls), ==, 0);
+    g_paste_settings_reset (settings, G_PASTE_EMPTY_HISTORY_CONFIRMATION_SETTING);
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -386,6 +442,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog/paragraph_separator_lines_opened", "\u2029", open_other_delimiters);
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
     g_test_add_func ("/ui/text_dialog/empty_not_confirmed", empty_not_confirmed);
+    g_test_add_func ("/ui/confirm_dialog/empty_without_daemon", empty_confirmed_without_daemon);
     g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (FALSE), confirm_answered_once);
     g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (TRUE), confirm_answered_once);
     return g_paste_test_env_run ();

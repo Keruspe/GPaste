@@ -216,7 +216,10 @@ empty_history_callback (gboolean confirmed,
     g_autoptr (GPasteClient) client = data->client;
     g_autofree gchar *history = data->history;
 
-    if (confirmed)
+    /* Not once the daemon has left with the question up: the call would be what
+     * the bus starts one on, only to empty its history, or reach one standing
+     * down. */
+    if (confirmed && g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_READY)
         empty_history (client, history, data->parent);
 }
 
