@@ -89,6 +89,7 @@ typedef struct
      * their uuids follow. */
     guint64                shift;
     GStrv                  merged;
+    guint                  switches;
 } FakeDaemon;
 
 #define LISTING_TWO "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2)]"
@@ -188,6 +189,20 @@ on_merge (GPasteDaemon3         *skeleton,
 
     g_set_strv (&daemon->merged, uuids);
     g_paste_daemon3_complete_merge (skeleton, invocation, "00000000-0000-4000-8000-0000000000ee");
+
+    return TRUE;
+}
+
+static gboolean
+on_switch_history (GPasteDaemon3         *skeleton,
+                   GDBusMethodInvocation *invocation,
+                   const gchar           *name G_GNUC_UNUSED,
+                   gpointer               user_data)
+{
+    FakeDaemon *daemon = user_data;
+
+    ++daemon->switches;
+    g_paste_daemon3_complete_switch_history (skeleton, invocation);
 
     return TRUE;
 }
@@ -337,6 +352,7 @@ fake_daemon_start (FakeDaemon *daemon)
     g_signal_connect (daemon->skeleton, "handle-get-favourites", G_CALLBACK (on_get_favourites), daemon);
     g_signal_connect (daemon->skeleton, "handle-select", G_CALLBACK (on_select), daemon);
     g_signal_connect (daemon->skeleton, "handle-merge", G_CALLBACK (on_merge), daemon);
+    g_signal_connect (daemon->skeleton, "handle-switch-history", G_CALLBACK (on_switch_history), daemon);
     daemon->held_items = g_ptr_array_new ();
     g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (daemon->skeleton), daemon->connection,
                                       G_PASTE_DAEMON_OBJECT_PATH, &error);
@@ -1618,6 +1634,59 @@ test_short_history_grows (void)
         g_paste_test_bus_pump (100);
         g_assert_cmpuint (g_list_model_get_n_items (rows), ==, daemon.size);
     }
+    close_activation_window (window, &daemon);
+}
+
+static gboolean
+switched (gconstpointer daemon,
+          gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((FakeDaemon *) daemon)->switches > 0;
+}
+
+/* Moving through the sidebar switches nothing: the selection stays on the
+ * history in use, and only activating a row switches to its history. In a
+ * collapsed window, activating the history in use shows it, switching nothing. */
+static void
+test_sidebar_choice (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 3 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    AdwSidebar *sidebar = ADW_SIDEBAR (find_widget (window->panel, ADW_TYPE_SIDEBAR));
+
+    g_paste_test_bus_wait_until (sidebar_has_history, window, "work");
+    g_assert_true (sidebar_has_history (window, "work"));
+
+    guint current = adw_sidebar_get_selected (sidebar);
+    guint work = adw_sidebar_item_get_index (sidebar_item (window, "work"));
+
+    /* What the arrow keys do. */
+    adw_sidebar_set_selected (sidebar, work);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_cmpuint (daemon.switches, ==, 0);
+    g_assert_cmpuint (adw_sidebar_get_selected (sidebar), ==, current);
+
+    adw_navigation_split_view_set_collapsed (window->split_view, TRUE);
+    adw_navigation_split_view_set_show_content (window->split_view, FALSE);
+    g_signal_emit_by_name (sidebar, "activated", current);
+    g_assert_true (adw_navigation_split_view_get_show_content (window->split_view));
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_cmpuint (daemon.switches, ==, 0);
+
+    g_signal_emit_by_name (sidebar, "activated", work);
+    g_paste_test_bus_wait_until (switched, &daemon, NULL);
+    g_assert_cmpuint (daemon.switches, ==, 1);
     close_activation_window (window, &daemon);
 }
 
@@ -3014,6 +3083,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
     g_test_add_func ("/ui/daemon-presence/image-preview-off", test_image_preview_off);
     g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
+    g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/listing-after-switch", test_listing_after_switch);
     g_test_add_func ("/ui/daemon-presence/listing-overtaken", test_listing_overtaken);

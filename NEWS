@@ -15,6 +15,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix merging joining the wrong items when the history changes just then, or freezing on a large history
 - Fix the graphical tool stuttering over very long items, and fetching images while previews are off
 - Fix the graphical tool showing only two items of a history refilled after being emptied
+- Fix moving through the histories with the arrow keys switching to each one, and a narrow window staying on the histories when the one in use is picked
 - Fix password names holding a tab or a line break changing after a restart
 - Fix items still showing, but no longer usable, while a migration or passphrase change reloads the history
 - Fix a history just switched away from being listed with the wrong number of items

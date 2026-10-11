@@ -195,6 +195,23 @@ test_delete_key (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+/* A drag resting on a history's row does not switch to it: AdwSidebar would
+ * activate the row half a second on, which on_item_activated () takes for a
+ * click -- any drag across the window, a file towards another application,
+ * switching histories and replacing the clipboard on the way. */
+static void
+test_drag_activates_nothing (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiPanelHistory) history = g_paste_ui_panel_history_new (client, "dragged-over", 0);
+
+    g_assert_false (adw_sidebar_item_get_drag_motion_activate (ADW_SIDEBAR_ITEM (history)));
+}
+
 static void
 count_notify (GObject    *object G_GNUC_UNUSED,
               GParamSpec *pspec  G_GNUC_UNUSED,
@@ -495,6 +512,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/ui/panel-history/revealed", test_revealed);
     g_test_add_func ("/ui/panel-history/delete-key", test_delete_key);
+    g_test_add_func ("/ui/panel-history/drag-activates-nothing", test_drag_activates_nothing);
     g_test_add_func ("/ui/item/selection-mode-notify", test_item_selection_mode_notify);
     g_test_add_func ("/ui/item/star-named", test_item_star_named);
     g_test_add_func ("/ui/item/rebound-blank", test_item_rebound_blank);

@@ -213,6 +213,10 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
 {
     GtkWidget *button = gtk_button_new_from_icon_name ("edit-delete-symbolic");
 
+    /* A drag resting on the row would activate it, which on_item_activated ()
+     * takes for a click: any drag across the window would switch histories,
+     * and the clipboard with them, on its way somewhere else. */
+    adw_sidebar_item_set_drag_motion_activate (ADW_SIDEBAR_ITEM (self), FALSE);
     g_paste_ui_set_icon_button_label (button, _("Delete"));
     gtk_widget_add_css_class (button, "flat");
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);

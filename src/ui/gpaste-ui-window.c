@@ -1283,6 +1283,18 @@ on_history_changed (GPasteClient *client,
         adw_navigation_split_view_set_show_content (self->split_view, TRUE);
 }
 
+/* Collapsed, the history the user chose is shown -- the one in use too, which
+ * changes nothing on_history_changed () would hear of. */
+static void
+on_history_chosen (GPasteUiPanel *panel G_GNUC_UNUSED,
+                   gpointer       user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    if (self->split_view && adw_navigation_split_view_get_collapsed (self->split_view))
+        adw_navigation_split_view_set_show_content (self->split_view, TRUE);
+}
+
 /* The focus taken off @widget while that still reaches whatever holds it, ahead
  * of @widget going insensitive: GTK drops the focus of an insensitive widget
  * without telling it, and an entry in there -- the sidebar's "Switch or
@@ -1699,6 +1711,8 @@ g_paste_ui_window_setup (GPasteUiWindow *self,
                              G_CALLBACK (on_cancel_selection_mode), self, 0);
     g_signal_connect_object (self->history, "selection-changed",
                              G_CALLBACK (on_selection_changed), self, 0);
+    g_signal_connect_object (self->panel, "history-chosen",
+                             G_CALLBACK (on_history_chosen), self, 0);
 
     /* A header bar apiece, which is what the pages need to stand on their own
      * once the split view collapses them into a navigation stack: the sidebar's

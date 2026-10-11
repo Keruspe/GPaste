@@ -284,7 +284,10 @@ shift the test sets: a merge joins the rows picked as they showed when picked,
 though the history moved before the refresh came back, and rows picked before
 they were read are read by their position alone. Image rows read no thumbnail
 while previews are off, and read it as they are turned on. A history filled
-one item at a time shows every item while they fit the window.
+one item at a time shows every item while they fit the window. Moving the
+sidebar's selection switches nothing and goes back to the history in use,
+activating a row switches, and activating the one in use in a collapsed window
+shows it.
 A direct bus-name handoff goes through a successor that owns the name and sits
 on the proxy's `GetAll`, which holds the client in the handoff window: there
 the old daemon's listing, answered late, prunes nothing, what the old daemon

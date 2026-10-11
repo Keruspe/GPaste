@@ -17,9 +17,21 @@ enum
     C_SWITCH_ACTIVATED,
     C_SWITCH_CLICKED,
     C_SWITCH_CHANGED,
+    C_ACTIVATED,
 
     C_LAST_SIGNAL
 };
+
+/* Named apart from the rows' own: a test builds this file and theirs into one
+ * unit. */
+enum
+{
+    HISTORY_CHOSEN,
+
+    N_PANEL_SIGNALS
+};
+
+static guint panel_signals[N_PANEL_SIGNALS] = { 0 };
 
 struct _GPasteUiPanel
 {
@@ -235,6 +247,11 @@ g_paste_ui_panel_get_menu_history (GPasteUiPanel *self)
     return G_PASTE_UI_PANEL_HISTORY (self->menu_item);
 }
 
+/* The selected row is the history in use, which only activating a row changes
+ * (on_item_activated ()): the arrow keys move the selection along with the
+ * cursor, and following it would switch the daemon's history -- a load, and the
+ * clipboard replaced -- at every key press. So a selection the user moved goes
+ * back to that history's row, the cursor staying where it went. */
 static void
 on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
                       guint              position G_GNUC_UNUSED,
@@ -246,12 +263,37 @@ on_selection_changed (GtkSelectionModel *model G_GNUC_UNUSED,
     if (self->inhibit_switch)
         return;
 
-    AdwSidebarItem *item = adw_sidebar_get_selected_item (self->sidebar);
+    g_autofree gchar *current = g_paste_client_get_history_name (self->client);
+    GList *h = (current) ? history_find (self->histories, current) : NULL;
+
+    if (!h)
+        return;
+
+    self->inhibit_switch = TRUE;
+    adw_sidebar_set_selected (self->sidebar, adw_sidebar_item_get_index (h->data));
+    self->inhibit_switch = FALSE;
+}
+
+/* A click, or Enter, on a row: switch to its history, unless it is the one in
+ * use already, and say a history was chosen either way -- a collapsed window
+ * shows it then, the one in use included. */
+static void
+on_item_activated (AdwSidebar *sidebar,
+                   guint       index,
+                   gpointer    user_data)
+{
+    GPasteUiPanel *self = user_data;
+    AdwSidebarItem *item = adw_sidebar_get_item (sidebar, index);
 
     if (!G_PASTE_IS_UI_PANEL_HISTORY (item))
         return;
 
-    g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item), GTK_WIDGET (self));
+    g_autofree gchar *current = g_paste_client_get_history_name (self->client);
+
+    if (!g_paste_str_equal (current, g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (item))))
+        g_paste_ui_panel_history_activate (G_PASTE_UI_PANEL_HISTORY (item), GTK_WIDGET (self));
+
+    g_signal_emit (self, panel_signals[HISTORY_CHOSEN], 0);
 }
 
 static void on_history_delete (GPasteUiPanelHistory *item,
@@ -788,6 +830,7 @@ g_paste_ui_panel_dispose (GObject *object)
     g_clear_signal_handler (&self->c_signals[C_SWITCH_CLICKED], self->jump_button);
     g_clear_signal_handler (&self->c_signals[C_SWITCH_CHANGED], self->switch_entry);
     g_clear_signal_handler (&self->c_signals[C_SETUP_MENU], self->sidebar);
+    g_clear_signal_handler (&self->c_signals[C_ACTIVATED], self->sidebar);
 
     g_clear_object (&self->items);
 
@@ -808,6 +851,22 @@ static void
 g_paste_ui_panel_class_init (GPasteUiPanelClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_panel_dispose;
+
+    /**
+     * GPasteUiPanel::history-chosen:
+     * @panel: the panel
+     *
+     * The user activated a history's row, the one in use included.
+     */
+    panel_signals[HISTORY_CHOSEN] = g_signal_new ("history-chosen",
+                                                  G_PASTE_TYPE_UI_PANEL,
+                                                  G_SIGNAL_RUN_LAST,
+                                                  0, /* class offset */
+                                                  NULL, /* accumulator */
+                                                  NULL, /* accumulator data */
+                                                  NULL, /* generic marshaller */
+                                                  G_TYPE_NONE,
+                                                  0);
 }
 
 static void
@@ -829,6 +888,10 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                              "selection-changed",
                                                              G_CALLBACK (on_selection_changed),
                                                              self);
+    self->c_signals[C_ACTIVATED] = g_signal_connect (self->sidebar,
+                                                     "activated",
+                                                     G_CALLBACK (on_item_activated),
+                                                     self);
 
     GtkWidget *switch_entry = adw_entry_row_new ();
     self->switch_entry = ADW_ENTRY_ROW (switch_entry);
