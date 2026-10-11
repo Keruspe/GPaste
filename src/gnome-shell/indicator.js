@@ -54,6 +54,12 @@ class GPasteIndicator extends Button {
     // Rows to load before any have been laid out (and a real row height is
     // known); _maybeLoadMore() then tops the list up to fill the viewport.
     static _DEFAULT_BATCH = 20;
+    // How long a search waits for the typing to pause, in milliseconds:
+    // GtkSearchEntry's own, which the graphical tool's search uses.
+    static _SEARCH_DELAY = 150;
+    // What the search box is sized for when element-size sets no limit: the
+    // schema's default size.
+    static _UNLIMITED_ELEMENT_SIZE = 80;
 
     constructor(extension) {
         super(0.0, 'GPaste');
@@ -101,6 +107,8 @@ class GPasteIndicator extends Button {
         this._resumeConnect = null;
         // The focus grab an opening menu defers to an idle.
         this._selectSearchId = 0;
+        // The search a keystroke waits to make (_onSearchChanged ()).
+        this._searchDelayId = 0;
 
         this._dummyHistoryItem = new GPasteDummyHistoryItem();
         // Its own signal rather than 'activate', which would close the menu on
@@ -111,7 +119,7 @@ class GPasteIndicator extends Button {
         this.menu.addMenuItem(this._dummyHistoryItem);
 
         this._searchItem = new GPasteSearchItem();
-        this._searchItem.connect('text-changed', this._reloadCurrent.bind(this));
+        this._searchItem.connect('text-changed', this._onSearchChanged.bind(this));
         this._searchItem.connect('favourites-changed', this._reloadCurrent.bind(this));
 
         this._settings.connectObject(
@@ -492,7 +500,8 @@ class GPasteIndicator extends Button {
 
     _resetElementSize() {
         const size = this._settings.get_element_size();
-        this._searchItem.resetSize(size / 2 + 3);
+        // 0 is no limit on the rows, not a three-character search box.
+        this._searchItem.resetSize((size || GPasteIndicator._UNLIMITED_ELEMENT_SIZE) / 2 + 3);
         this._history.forEach(i => {
             i.setTextSize(size);
         });
@@ -900,6 +909,33 @@ class GPasteIndicator extends Button {
         this._restoreRowFocus(focusIndex);
     }
 
+    _cancelSearchDelay() {
+        if (this._searchDelayId) {
+            GLib.Source.remove(this._searchDelayId);
+            this._searchDelayId = 0;
+        }
+    }
+
+    // A search waits for the typing to pause, as GtkSearchEntry's own delay has
+    // the graphical tool's: cancelling the one before only drops its reply,
+    // D-Bus having no way to call off a method already sent, so without it the
+    // daemon would match the whole history once per character. An emptied
+    // entry lists the history at once.
+    _onSearchChanged() {
+        this._cancelSearchDelay();
+
+        if (!this._hasSearch()) {
+            this._reloadCurrent();
+            return;
+        }
+
+        this._searchDelayId = GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, GPasteIndicator._SEARCH_DELAY, () => {
+            this._searchDelayId = 0;
+            this._reloadCurrent();
+        });
+        GLib.Source.set_name_by_id(this._searchDelayId, '[GPaste] search delay');
+    }
+
     _reloadCurrent() {
         // Nothing to ask and nothing to list; re-assert what the menu says
         // instead, since this is also what every menu opening goes through.
@@ -1068,8 +1104,10 @@ class GPasteIndicator extends Button {
 
     _onOpenStateChanged(menu, state) {
         // Whatever the last change scheduled was for a menu in the state it has
-        // just left.
+        // just left: a search typed just before closing is not run on the
+        // closed menu, and the next opening lists afresh anyway.
         this._cancelSelectSearch();
+        this._cancelSearchDelay();
 
         if (state) {
             // The menu opens on the history, so both filters go; reset() drops
@@ -1185,6 +1223,7 @@ class GPasteIndicator extends Button {
         this._listing?.cancel();
         this._cancelConnectRetry();
         this._cancelSelectSearch();
+        this._cancelSearchDelay();
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();

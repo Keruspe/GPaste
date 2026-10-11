@@ -13,6 +13,8 @@ const notified = [];
 const copied = [];
 const errors = [];
 const weakRefs = [];
+const timers = [];
+const removedSources = [];
 
 class WeakRefDouble {
     constructor(target) { this.target = target; weakRefs.push(this); }
@@ -46,9 +48,9 @@ class Button {
 
 // What the constructor builds before _setup (), which the test stops short of.
 class Actor {
-    constructor() { this.children = []; }
+    constructor() { this.children = []; this.handlers = {}; }
     add_child(child) { this.children.push(child); }
-    connect() {}
+    connect(signal, handler) { this.handlers[signal] = handler; }
     resetSize() {}
 }
 
@@ -62,7 +64,12 @@ const context = vm.createContext({
         notifyError: (title, body) => notified.push({title, body}),
     },
     GObject: {registerClass: (...args) => args.at(-1)},
-    GLib: {Source: {remove() {}}, Regex: {escape_string: text => `escaped(${text})`}},
+    GLib: {
+        Source: {remove: id => removedSources.push(id), set_name_by_id() {}},
+        Regex: {escape_string: text => `escaped(${text})`},
+        PRIORITY_DEFAULT: 0,
+        timeout_add_once: (priority, delay, callback) => timers.push({delay, callback}),
+    },
     WeakRef: WeakRefDouble,
     Clutter: {},
     St: {
@@ -181,7 +188,17 @@ function withActions(uuids) {
     // It reads the extension's settings rather than building its own, the one
     // instance the process has.
     assert.equal(built._settings, shared);
+
+    // A keystroke in its search waits for the typing to pause.
+    const waiting = timers.length;
+
+    built._reloadCurrent = () => assert.fail('searched at once');
+    built._hasSearch = () => true;
+    built._searchItem.handlers['text-changed']();
+    assert.equal(timers.length, waiting + 1);
+    removedSources.length = 0;
     built.destroy();
+    assert.ok(removedSources.includes(waiting + 1));
     assert.equal(built._destroyed, true);
     assert.equal(built.buttonDestroyed, 1);
 
@@ -384,14 +401,21 @@ function withActions(uuids) {
     assert.equal(away._owedRowFocus, -1);
 
     // The menu closing while the focus is parked takes the debt with it: the
-    // next opening is not given a row the user has long left.
+    // next opening is not given a row the user has long left. And a search
+    // still waiting for the typing to pause goes too, never run on the closed
+    // menu.
     const closing = withActions(['a', 'b']);
     closing._owedRowFocus = 1;
     focus = closing.menu.actor;
     closing._updateIndexVisibility = () => {};
     closing._historySwitcher.collapse = () => {};
+    closing._hasSearch = () => true;
+    closing._onSearchChanged();
+    removedSources.length = 0;
     closing._onOpenStateChanged(closing.menu, false);
     assert.equal(closing._owedRowFocus, -1);
+    assert.deepEqual(removedSources, [timers.length]);
+    assert.equal(closing._searchDelayId, 0);
 
     // A failed upload reaches the user, not only the log.
     const upload = withActions(['a']);
@@ -461,6 +485,40 @@ function withActions(uuids) {
     assert.deepEqual(queries, ['escaped(MyBank (x)']);
     assert.equal(rebuilt, true);
     assert.equal(reconciled, 0);
+
+    // A keystroke's search waits for the typing to pause, GtkSearchEntry's
+    // 150 ms; an emptied entry lists the history at once. A teardown and a
+    // close stopping one still waiting are the built and closing cases'.
+    const typed = indicator();
+    let searches = 0;
+    let searchText = 'a';
+
+    typed._reloadCurrent = () => ++searches;
+    typed._hasSearch = () => searchText.length > 0;
+    removedSources.length = 0;
+    typed._onSearchChanged();
+    typed._onSearchChanged();
+    assert.equal(searches, 0);
+    assert.deepEqual(removedSources, [timers.length - 1]);
+    assert.equal(timers.at(-1).delay, 150);
+    timers.at(-1).callback();
+    assert.equal(searches, 1);
+    searchText = '';
+    typed._onSearchChanged();
+    assert.equal(searches, 2);
+
+    // With element-size 0, no limit on the rows, the search box keeps the
+    // width the default size gives it.
+    const sized = indicator();
+    const widths = [];
+
+    sized._history = [];
+    sized._searchItem = {resetSize: width => widths.push(width)};
+    for (const size of [0, 80, 20]) {
+        sized._settings = {get_element_size: () => size};
+        sized._resetElementSize();
+    }
+    assert.deepEqual(widths, [43, 43, 13]);
 
     assert.deepEqual(errors, []);
     console.log('Indicator: teardown, daemon presence and item actions passed');

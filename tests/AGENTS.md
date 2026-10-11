@@ -90,7 +90,10 @@ models collection during an upload, so its reply is finished without a
 notification from an indicator that is gone.
 
 The `indicator` test also checks that the menu's search goes out escaped and
-not lowercased, and that one the daemon refuses lists nothing without a failure.
+not lowercased, and that one the daemon refuses lists nothing without a failure;
+that a keystroke's search waits for the typing to pause, an emptied entry listing
+at once and a teardown or a close stopping a search still waiting; and that the search box
+keeps its width with `element-size` at 0.
 
 `item` runs the shipped history row over St, Clutter and client doubles: text
 past `element-size` is cut with an ellipsis, by characters, and a larger size
