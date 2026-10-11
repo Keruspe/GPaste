@@ -228,7 +228,7 @@ print_text (const gchar *text)
 }
 
 static void
-print_history_line (gchar       *line,
+print_history_line (const gchar *line,
                     guint        index,
                     const gchar *uuid,
                     Context     *ctx)
@@ -236,7 +236,7 @@ print_history_line (gchar       *line,
     if (!ctx->raw)
     {
         if (ctx->use_index)
-            printf ("%d: ", index);
+            printf ("%u: ", index);
         else
             printf ("%s: ", uuid);
     }
@@ -345,8 +345,7 @@ g_paste_history (Context *ctx,
         if (ctx->favourites && !g_paste_client_item_is_favourite (item))
             continue;
 
-        g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-        print_history_line (line, position, g_paste_client_item_get_uuid (item), ctx);
+        print_history_line (g_paste_client_item_get_value (item), position, g_paste_client_item_get_uuid (item), ctx);
     }
 
     return EXIT_SUCCESS;
@@ -756,8 +755,7 @@ g_paste_search (Context *ctx,
         if (ctx->favourites && !g_paste_client_item_is_favourite (item))
             continue;
 
-        g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-        print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
+        print_history_line (g_paste_client_item_get_value (item), index++, g_paste_client_item_get_uuid (item), ctx);
     }
 
     return EXIT_SUCCESS;
