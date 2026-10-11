@@ -2588,13 +2588,17 @@ g_paste_history_search (GPasteHistory *self,
     {
         GPasteItem *item = g_ptr_array_index (self->history, i);
         const gchar *uuid = g_paste_item_get_uuid (item);
+        /* An image's value is the checksum naming its file, which nobody ever
+         * typed: what its row shows, its size and when it was taken, is what a
+         * search finds it by. */
+        const gchar *text = (g_paste_item_get_kind (item) == G_PASTE_ITEM_KIND_IMAGE) ? g_paste_item_get_display_string (item) : g_paste_item_get_value (item);
         gboolean match = FALSE;
 
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
         else if (G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal (pattern, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item))))
             match = TRUE;
-        else if (g_regex_match (regex, g_paste_item_get_value (item), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
+        else if (g_regex_match (regex, text, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             match = TRUE;
 
         if (match)

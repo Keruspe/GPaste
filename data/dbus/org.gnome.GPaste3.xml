@@ -423,7 +423,12 @@
       <arg type="s" direction="out" name="new_uuid"/>
     </method>
 
-    <!-- The items matching a query -->
+    <!--
+      The items matching a query.
+
+      An image is matched by what its row shows, its size and when it was
+      taken, rather than by its value, which is the checksum naming its file.
+    -->
     <method name="Search">
       <arg type="s"         direction="in"  name="query"/>
       <arg type="a(ssubas)" direction="out" name="results"/>

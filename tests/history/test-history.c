@@ -2458,6 +2458,24 @@ uniform_image (guint side)
     return g_paste_image_item_new (texture);
 }
 
+/* A search finds an image by what its row shows, never by the checksum its
+ * value is. */
+static void
+test_search_image_by_what_it_shows (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+    GPasteItem *image = uniform_image (10);
+    g_autofree gchar *checksum_part = g_strndup (g_paste_item_get_value (image), 8);
+
+    g_paste_history_add (history, image);
+
+    g_auto (GStrv) by_checksum = g_paste_history_search (history, checksum_part);
+    g_auto (GStrv) by_size = g_paste_history_search (history, "10 × 10");
+
+    g_assert_cmpuint (g_strv_length (by_checksum), ==, 0);
+    g_assert_cmpuint (g_strv_length (by_size), ==, 1);
+}
+
 /* Selecting an idle image decodes it again, and the history's total has to
  * count that texture once: counted twice, the memory cap evicts entries to pay
  * for memory nothing uses -- here every one but the head, the image weighing
@@ -6719,6 +6737,7 @@ main (int argc, char *argv[])
     add_test ("/history/uuid_lookup_survives_reshuffling", test_uuid_lookup_survives_reshuffling);
     add_test ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     add_test ("/history/select_counts_image_once", test_select_counts_image_once);
+    add_test ("/history/search_image_by_what_it_shows", test_search_image_by_what_it_shows);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
