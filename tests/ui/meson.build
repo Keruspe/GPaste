@@ -55,7 +55,7 @@ test('test-ui-text-dialog', ui_text_dialog_test, depends: [gpaste_schemas, test_
 
 ui_panel_history_test_sources = ['test-panel-history.c']
 foreach source : gpaste_ui_sources
-  if source != 'gpaste-ui.c' and source != 'gpaste-ui-panel-history.c' and source != 'gpaste-ui-item.c'
+  if source != 'gpaste-ui.c' and source != 'gpaste-ui-panel-history.c' and source != 'gpaste-ui-item.c' and source != 'gpaste-ui-panel.c'
     ui_panel_history_test_sources += '../../src/ui' / source
   endif
 endforeach
@@ -63,6 +63,8 @@ endforeach
 ui_panel_history_test = executable(
   'gpaste-ui-panel-history-test',
   sources: ui_panel_history_test_sources,
+  # Route logs through g_test_expect_message in this test build.
+  c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
   dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )

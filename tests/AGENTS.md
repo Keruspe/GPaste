@@ -210,7 +210,12 @@ drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace. It also checks that an item row notifies
 `selection-mode` only when it changes, and that its star is named for what
-clicking it does.
+clicking it does. It includes `gpaste-ui-panel.c` too, its switch and backup
+calls faked, to check that a history name the daemon would refuse is never sent,
+that Switch or Create keeps its text until the switch is answered, that Back Up
+waits for a name neither refused nor listed and backs up on Enter, and that its
+dialog goes with its window. It is built without `G_LOG_USE_STRUCTURED`, so
+that `g_test_expect_message()` catches the warning a refused switch leaves.
 
 `test-ui-daemon-presence` sets the window up on the private Xvfb against the
 same kind of stand-in daemon, answering `ListHistories`, `GetHistorySize` and
@@ -328,7 +333,9 @@ into a view that did open -- whether it is the first line of the paste or one
 below it, while a paste of many short lines still goes in. Lines broken by
 `\r`, `\r\n` or U+2029 count as lines, the way the view breaks them, and
 deleting the break between two lines is refused when the line it would make is
-past the limit. It uses real GTK on the private Xvfb and skips without one.
+past the limit. It also checks that `g_paste_gtk_util_confirm_dialog()` answers
+exactly once, a window destroyed under it answering a refusal and freeing the
+dialog. It uses real GTK on the private Xvfb and skips without one.
 
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and

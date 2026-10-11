@@ -274,6 +274,52 @@ join_into_a_long_line (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+static void
+count_answer (gboolean confirmed,
+              gpointer user_data)
+{
+    gint *answers = user_data;
+
+    ++answers[0];
+    answers[1] = confirmed;
+}
+
+/* A question is answered exactly once: as a refusal when its window goes with
+ * it up, and not again when its window goes after an answer. */
+static void
+confirm_answered_once (gconstpointer user_data)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    gboolean respond = GPOINTER_TO_INT (user_data);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    gint answers[2] = { 0, -1 };
+
+    gtk_window_present (window);
+    g_paste_gtk_util_confirm_dialog (window, "Go?", NULL, "Go", ADW_RESPONSE_DEFAULT, count_answer, answers);
+
+    gpointer dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+
+    g_assert_nonnull (dialog);
+    g_object_add_weak_pointer (dialog, &dialog);
+    if (respond)
+    {
+        g_signal_emit_by_name (dialog, "response", "confirm");
+        g_assert_cmpint (answers[0], ==, 1);
+        g_assert_cmpint (answers[1], ==, TRUE);
+    }
+
+    gtk_window_destroy (window);
+    while (g_main_context_iteration (NULL, FALSE));
+    g_assert_cmpint (answers[0], ==, 1);
+    g_assert_cmpint (answers[1], ==, respond);
+    g_assert_null (dialog);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -290,5 +336,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog/crlf_lines_opened", "\r\n", open_other_delimiters);
     g_test_add_data_func ("/ui/text_dialog/paragraph_separator_lines_opened", "\u2029", open_other_delimiters);
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
+    g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (FALSE), confirm_answered_once);
+    g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (TRUE), confirm_answered_once);
     return g_paste_test_env_run ();
 }

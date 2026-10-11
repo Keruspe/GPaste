@@ -4,21 +4,43 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
+/* Answered exactly once, as the text dialog is (GPasteGtkTextDialogData says
+ * why each route is needed): from the response, or as a refusal when the
+ * dialog or its window goes first. adw_alert_dialog_choose () answers nothing
+ * then, which would leave the caller's @user_data for good. */
 typedef struct
 {
     GPasteGtkConfirmDialogCallback callback;
     gpointer                       user_data;
+    gboolean                       answered;
 } GPasteGtkConfirmDialogCallbackData;
 
 static void
-on_confirm_response (GObject      *dialog,
-                     GAsyncResult *result,
-                     gpointer      user_data)
+g_paste_gtk_confirm_dialog_answer (AdwDialog *dialog,
+                                   gboolean   confirmed)
 {
-    g_autofree GPasteGtkConfirmDialogCallbackData *data = user_data;
-    const gchar *response = adw_alert_dialog_choose_finish (ADW_ALERT_DIALOG (dialog), result);
+    GPasteGtkConfirmDialogCallbackData *data = g_object_get_data (G_OBJECT (dialog), "confirm-dialog-data");
 
-    data->callback (g_strcmp0 (response, "confirm") == 0, data->user_data);
+    if (!data || data->answered)
+        return;
+
+    data->answered = TRUE;
+    data->callback (confirmed, data->user_data);
+}
+
+static void
+on_confirm_response (AdwAlertDialog *dialog,
+                     const gchar    *response,
+                     gpointer        user_data G_GNUC_UNUSED)
+{
+    g_paste_gtk_confirm_dialog_answer (ADW_DIALOG (dialog), g_paste_str_equal (response, "confirm"));
+}
+
+/* Connected as g_paste_gtk_text_dialog_cancel () is. */
+static void
+g_paste_gtk_confirm_dialog_refuse (AdwDialog *dialog)
+{
+    g_paste_gtk_confirm_dialog_answer (dialog, FALSE);
 }
 
 /**
@@ -29,7 +51,9 @@ on_confirm_response (GObject      *dialog,
  * @action: the label for the confirm button
  * @appearance: how the confirm button should look -- destructive only when
  *              something is actually lost
- * @on_confirmation: (closure user_data) (scope async): handler to invoke when we get a confirmation
+ * @on_confirmation: (closure user_data) (scope async): handed whether the user
+ *                   confirmed -- called exactly once, a dialog whose window is
+ *                   destroyed under it answering %FALSE
  *
  * Ask the user for confirmation.
  *
@@ -52,7 +76,7 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
     g_return_if_fail (!body || g_utf8_validate (body, -1, NULL));
     g_return_if_fail (on_confirmation);
 
-    GPasteGtkConfirmDialogCallbackData *data = g_new (GPasteGtkConfirmDialogCallbackData, 1);
+    GPasteGtkConfirmDialogCallbackData *data = g_new0 (GPasteGtkConfirmDialogCallbackData, 1);
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (heading, body));
 
     data->callback = on_confirmation;
@@ -67,7 +91,14 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
      * the default response happens to be. */
     adw_alert_dialog_set_default_response (dialog, "cancel");
     adw_alert_dialog_set_close_response (dialog, "cancel");
-    adw_alert_dialog_choose (dialog, GTK_WIDGET (parent), NULL, on_confirm_response, data);
+
+    g_object_set_data_full (G_OBJECT (dialog), "confirm-dialog-data", data, g_free);
+    g_signal_connect (dialog, "response", G_CALLBACK (on_confirm_response), NULL);
+    g_signal_connect (dialog, "destroy", G_CALLBACK (g_paste_gtk_confirm_dialog_refuse), NULL);
+    if (parent)
+        g_signal_connect_object (parent, "destroy", G_CALLBACK (g_paste_gtk_confirm_dialog_refuse), dialog, G_CONNECT_SWAPPED);
+
+    adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (parent));
 }
 
 /**

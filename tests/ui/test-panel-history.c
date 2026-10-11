@@ -10,6 +10,66 @@
 #include <gpaste-ui-item.c>
 #include <gpaste-3/gpaste-settings.h>
 
+/* The calls the sidebar makes, answered when the test says so: @sent_name is
+ * the history named, and the answer carries @answer_error if one is set. */
+static gchar *sent_name;
+static GAsyncReadyCallback sent_callback;
+static gpointer sent_data;
+static GError *answer_error;
+
+static void
+send_switch (GPasteClient       *client G_GNUC_UNUSED,
+             const gchar        *name,
+             GCancellable       *cancellable G_GNUC_UNUSED,
+             GAsyncReadyCallback callback,
+             gpointer            data)
+{
+    g_set_str (&sent_name, name);
+    sent_callback = callback;
+    sent_data = data;
+}
+
+static void
+send_backup (GPasteClient       *client,
+             const gchar        *history G_GNUC_UNUSED,
+             const gchar        *backup,
+             GCancellable       *cancellable,
+             GAsyncReadyCallback callback,
+             gpointer            data)
+{
+    send_switch (client, backup, cancellable, callback, data);
+}
+
+static void
+finish_call (GPasteClient *client G_GNUC_UNUSED,
+             GAsyncResult *result G_GNUC_UNUSED,
+             GError      **error)
+{
+    if (answer_error)
+        g_propagate_error (error, g_steal_pointer (&answer_error));
+}
+
+/* And the sidebar, for what it sends. */
+#define g_paste_client_switch_history send_switch
+#define g_paste_client_switch_history_finish finish_call
+#define g_paste_client_backup_history send_backup
+#define g_paste_client_backup_history_finish finish_call
+#include <gpaste-ui-panel.c>
+#undef g_paste_client_backup_history_finish
+#undef g_paste_client_backup_history
+#undef g_paste_client_switch_history_finish
+#undef g_paste_client_switch_history
+
+static void
+answer (GPasteClient *client)
+{
+    GAsyncReadyCallback callback = sent_callback;
+
+    g_assert_nonnull (callback);
+    sent_callback = NULL;
+    callback (G_OBJECT (client), NULL, sent_data);
+}
+
 static gboolean have_display;
 
 static gboolean
@@ -202,6 +262,167 @@ test_item_star_named (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+static gboolean
+sent (gconstpointer arg1 G_GNUC_UNUSED,
+      gconstpointer arg2 G_GNUC_UNUSED)
+{
+    return sent_name != NULL;
+}
+
+static gboolean
+widget_mapped (gconstpointer widget,
+               gconstpointer arg G_GNUC_UNUSED)
+{
+    return gtk_widget_get_mapped ((GtkWidget *) widget);
+}
+
+/* A sidebar listing "work" and "work_backup", in a window that hosts dialogs. */
+static GPasteUiPanel *
+panel_window (GPasteClient *client,
+              GtkWindow   **window)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWidget *search = gtk_search_entry_new ();
+    GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+
+    *window = GTK_WINDOW (adw_window_new ());
+
+    GtkWidget *panel = g_paste_ui_panel_new (client, settings, *window, GTK_SEARCH_ENTRY (search));
+    GPasteUiPanel *self = G_PASTE_UI_PANEL (panel);
+
+    gtk_box_append (GTK_BOX (box), search);
+    gtk_box_append (GTK_BOX (box), panel);
+    adw_window_set_content (ADW_WINDOW (*window), box);
+    gtk_window_present (*window);
+    g_paste_ui_panel_add_history (self, "work", NULL, FALSE);
+    g_paste_ui_panel_add_history (self, "work_backup", NULL, FALSE);
+
+    return self;
+}
+
+/* Switch or Create says a name the daemon would refuse as it is typed and
+ * never sends it, and keeps what was typed until the switch went through. */
+static void
+test_panel_switch_name (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    GtkWindow *window;
+    GPasteUiPanel *self = panel_window (client, &window);
+    GtkEditable *entry = GTK_EDITABLE (self->switch_entry);
+
+    g_assert_no_error (error);
+    gtk_editable_set_text (entry, "notes/2026");
+    g_assert_false (gtk_widget_get_sensitive (GTK_WIDGET (self->jump_button)));
+    g_assert_true (gtk_widget_has_css_class (GTK_WIDGET (entry), "error"));
+    g_paste_ui_panel_do_switch (self);
+    g_assert_null (sent_callback);
+
+    gtk_editable_set_text (entry, "notes");
+    g_assert_true (gtk_widget_get_sensitive (GTK_WIDGET (self->jump_button)));
+    g_assert_false (gtk_widget_has_css_class (GTK_WIDGET (entry), "error"));
+    g_paste_ui_panel_do_switch (self);
+    g_assert_cmpstr (sent_name, ==, "notes");
+    g_assert_cmpstr (gtk_editable_get_text (entry), ==, "notes");
+
+    answer_error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "refused");
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not switch history: refused");
+    answer (client);
+    g_test_assert_expected_messages ();
+    g_assert_cmpstr (gtk_editable_get_text (entry), ==, "notes");
+
+    g_paste_ui_panel_do_switch (self);
+    answer (client);
+    g_assert_cmpstr (gtk_editable_get_text (entry), ==, "");
+
+    g_paste_ui_panel_do_switch (self);
+    g_assert_cmpstr (sent_name, ==, G_PASTE_DEFAULT_HISTORY);
+    answer (client);
+    gtk_window_destroy (window);
+}
+
+/* The Back Up dialog's name is one the daemon would take before Back Up can be
+ * chosen, and Enter chooses it. */
+static void
+test_panel_backup_name (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    GtkWindow *window;
+    GPasteUiPanel *self = panel_window (client, &window);
+
+    g_assert_no_error (error);
+    g_signal_emit_by_name (self->sidebar, "setup-menu", history_find (self->histories, "work")->data);
+    g_assert_true (gtk_widget_activate_action (GTK_WIDGET (self), "panel.backup-history", NULL));
+
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_window_get_visible_dialog (ADW_WINDOW (window)));
+    GtkWidget *entry = adw_alert_dialog_get_extra_child (dialog);
+
+    /* "work_backup" is offered, and listed already. */
+    g_assert_cmpstr (gtk_editable_get_text (GTK_EDITABLE (entry)), ==, "work_backup");
+    g_assert_false (adw_alert_dialog_get_response_enabled (dialog, "backup"));
+    g_assert_true (gtk_widget_has_css_class (entry, "error"));
+    gtk_editable_set_text (GTK_EDITABLE (entry), "old/backup");
+    g_assert_false (adw_alert_dialog_get_response_enabled (dialog, "backup"));
+    gtk_editable_set_text (GTK_EDITABLE (entry), "");
+    g_assert_false (adw_alert_dialog_get_response_enabled (dialog, "backup"));
+    g_assert_false (gtk_widget_has_css_class (entry, "error"));
+    gtk_editable_set_text (GTK_EDITABLE (entry), "work_2026");
+    g_assert_true (adw_alert_dialog_get_response_enabled (dialog, "backup"));
+    g_assert_false (gtk_widget_has_css_class (entry, "error"));
+
+    /* The name has the focus, and Enter there backs up, as the text the entry
+     * delegates to has it: Back Up answers once the dialog has closed. */
+    g_paste_test_bus_wait_until (widget_mapped, entry, NULL);
+    g_assert_true (gtk_widget_has_focus (GTK_WIDGET (gtk_editable_get_delegate (GTK_EDITABLE (entry)))));
+    g_clear_pointer (&sent_name, g_free);
+    g_signal_emit_by_name (gtk_editable_get_delegate (GTK_EDITABLE (entry)), "activate");
+    g_paste_test_bus_wait_until (sent, NULL, NULL);
+    g_assert_cmpstr (sent_name, ==, "work_2026");
+    answer (client);
+    gtk_window_destroy (window);
+}
+
+/* A window going with the Back Up dialog up takes the dialog and what it holds
+ * with it. */
+static void
+test_panel_backup_window_gone (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    GtkWindow *window;
+    GPasteUiPanel *self = panel_window (client, &window);
+
+    g_assert_no_error (error);
+    g_signal_emit_by_name (self->sidebar, "setup-menu", history_find (self->histories, "work")->data);
+    g_assert_true (gtk_widget_activate_action (GTK_WIDGET (self), "panel.backup-history", NULL));
+
+    gpointer dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+
+    g_assert_nonnull (dialog);
+    g_object_add_weak_pointer (dialog, &dialog);
+    gtk_window_destroy (window);
+    g_assert_null (dialog);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -214,5 +435,8 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/panel-history/delete-key", test_delete_key);
     g_test_add_func ("/ui/item/selection-mode-notify", test_item_selection_mode_notify);
     g_test_add_func ("/ui/item/star-named", test_item_star_named);
+    g_test_add_func ("/ui/panel/switch-name", test_panel_switch_name);
+    g_test_add_func ("/ui/panel/backup-name", test_panel_backup_name);
+    g_test_add_func ("/ui/panel/backup-window-gone", test_panel_backup_window_gone);
     return g_paste_test_env_run ();
 }

@@ -3,6 +3,7 @@
 
 #include <adwaita.h>
 
+#include <gpaste-3/gpaste-util.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-panel-history.h>
@@ -15,6 +16,7 @@ enum
     C_SETUP_MENU,
     C_SWITCH_ACTIVATED,
     C_SWITCH_CLICKED,
+    C_SWITCH_CHANGED,
 
     C_LAST_SIGNAL
 };
@@ -464,17 +466,96 @@ g_paste_ui_panel_refresh (GPasteUiPanel *self)
     g_paste_client_list_histories (self->client, self->listing, on_histories_ready, data);
 }
 
+/* Said in the entry, to the eye and to assistive technology alike. */
+static void
+set_name_refused (GtkWidget *entry,
+                  gboolean   refused)
+{
+    if (refused)
+        gtk_widget_add_css_class (entry, "error");
+    else
+        gtk_widget_remove_css_class (entry, "error");
+
+    gtk_accessible_update_state (GTK_ACCESSIBLE (entry), GTK_ACCESSIBLE_STATE_INVALID,
+                                 (refused) ? GTK_ACCESSIBLE_INVALID_TRUE : GTK_ACCESSIBLE_INVALID_FALSE, -1);
+}
+
+/* A name the daemon would refuse is said so as it is typed, and never sent:
+ * the refusal would only come back as "Could not switch history". An empty
+ * entry is the default history. */
+static void
+on_switch_name_changed (GtkEditable *entry,
+                        gpointer     user_data)
+{
+    GPasteUiPanel *self = user_data;
+    const gchar *text = gtk_editable_get_text (entry);
+    gboolean valid = !*text || g_paste_util_history_name_is_valid (text);
+
+    gtk_widget_set_sensitive (GTK_WIDGET (self->jump_button), valid);
+    set_name_refused (GTK_WIDGET (entry), !valid);
+}
+
+typedef struct
+{
+    GWeakRef self;
+    gchar   *text;
+} SwitchData;
+
+static void
+switch_data_free (SwitchData *data)
+{
+    g_weak_ref_clear (&data->self);
+    g_free (data->text);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (SwitchData, switch_data_free)
+
+/* The entry keeps what was typed until the switch is answered, so a refused
+ * one can be tried again or corrected; it is emptied once the switch went
+ * through, unless something else has been typed in it meanwhile. */
+static void
+on_switched (GObject      *source_object,
+             GAsyncResult *result,
+             gpointer      user_data)
+{
+    g_autoptr (SwitchData) data = user_data;
+    g_autoptr (GPasteUiPanel) self = g_weak_ref_get (&data->self);
+    g_autoptr (GError) error = NULL;
+
+    g_paste_client_switch_history_finish (G_PASTE_CLIENT (source_object), result, &error);
+
+    if (error)
+    {
+        g_warning ("Could not switch history: %s", error->message);
+        if (self)
+            g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not switch history"));
+    }
+    else if (self && g_paste_str_equal (gtk_editable_get_text (GTK_EDITABLE (self->switch_entry)), data->text))
+        gtk_editable_set_text (GTK_EDITABLE (self->switch_entry), "");
+}
+
 static void
 g_paste_ui_panel_do_switch (GPasteUiPanel *self)
 {
     const gchar *text = gtk_editable_get_text (GTK_EDITABLE (self->switch_entry));
 
-    g_paste_client_switch_history (self->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY,
+    /* Already said in the entry (on_switch_name_changed ()). */
+    if (*text && !g_paste_util_history_name_is_valid (text))
+    {
+        gtk_widget_error_bell (GTK_WIDGET (self->switch_entry));
+        return;
+    }
+
+    SwitchData *data = g_new0 (SwitchData, 1);
+
+    g_weak_ref_init (&data->self, self);
+    data->text = g_strdup (text);
+
+    g_paste_client_switch_history (self->client, (*text) ? text : G_PASTE_DEFAULT_HISTORY,
                                    NULL /* cancellable */,
-                                   g_paste_ui_report_void_cb,
-                                   g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_switch_history_finish,
-                                                           _("Could not switch history")));
-    gtk_editable_set_text (GTK_EDITABLE (self->switch_entry), "");
+                                   on_switched,
+                                   data);
 
     gtk_widget_grab_focus (self->search_entry);
 }
@@ -505,41 +586,69 @@ on_setup_menu (AdwSidebar     *sidebar G_GNUC_UNUSED,
 
 /* Context menu action callbacks */
 
+/* Freed with the dialog's "response" handler, which goes with the dialog, a
+ * window destroyed under it included: adw_alert_dialog_choose ()'s task would
+ * complete only on a response (g_paste_gtk_util_confirm_dialog ()). @dialog
+ * and @entry are borrowed for that reason; the panel is held weakly. */
 typedef struct
 {
-    GPasteClient *client;
-    gchar        *history;
-    GtkEditable  *entry;
+    GPasteClient   *client;
+    gchar          *history;
+    GWeakRef        panel;
+    AdwAlertDialog *dialog;
+    GtkEditable    *entry;
     /* The window the toast goes to. The entry is inside the dialog, which is
-     * already closed and unparented by the time the response arrives, so asking
-     * it for its root finds no window and the failure goes unsaid -- and a
-     * refused backup, the name being taken, is a common answer. */
-    GtkWindow    *rootwin;
+     * already closed and unparented by the time the call is answered, so asking
+     * it for its root finds no window and the failure goes unsaid. */
+    GtkWindow      *rootwin;
 } BackupHistoryData;
 
+/* A GClosureNotify, the "response" handler's data. */
 static void
-on_backup_response (GObject      *dialog,
-                    GAsyncResult *result,
-                    gpointer      user_data)
+backup_history_data_free (gpointer  user_data,
+                          GClosure *closure G_GNUC_UNUSED)
 {
-    g_autofree BackupHistoryData *data = user_data;
-    g_autoptr (GPasteClient) client = data->client;
-    g_autofree gchar *history = data->history;
-    const gchar *response = adw_alert_dialog_choose_finish (ADW_ALERT_DIALOG (dialog), result);
+    BackupHistoryData *data = user_data;
 
-    if (g_strcmp0 (response, "backup") == 0)
-    {
-        const gchar *text = gtk_editable_get_text (data->entry);
-        if (text && *text)
-        {
-            g_paste_client_backup_history (client, history, text,
-                                           NULL /* cancellable */,
-                                           g_paste_ui_report_void_cb,
-                                           g_paste_ui_report_void (GTK_WIDGET (data->rootwin),
-                                                                   g_paste_client_backup_history_finish,
-                                                                   _("Could not back up the history")));
-        }
-    }
+    g_clear_object (&data->client);
+    g_free (data->history);
+    g_weak_ref_clear (&data->panel);
+    g_free (data);
+}
+
+/* Back Up is offered only for a name the daemon would take: one it accepts as
+ * a name, and none of the histories the sidebar lists, since BackupHistory
+ * overwrites nothing. An empty name is refused without being called wrong. */
+static void
+on_backup_name_changed (GtkEditable *entry,
+                        gpointer     user_data)
+{
+    BackupHistoryData *data = user_data;
+    g_autoptr (GPasteUiPanel) self = g_weak_ref_get (&data->panel);
+    const gchar *text = gtk_editable_get_text (entry);
+    gboolean available = g_paste_util_history_name_is_valid (text) && !(self && history_find (self->histories, text));
+
+    adw_alert_dialog_set_response_enabled (data->dialog, "backup", available);
+    set_name_refused (GTK_WIDGET (entry), *text && !available);
+}
+
+static void
+on_backup_response (AdwAlertDialog *dialog G_GNUC_UNUSED,
+                    const gchar    *response,
+                    gpointer        user_data)
+{
+    BackupHistoryData *data = user_data;
+
+    /* Only ever enabled for a name to send (on_backup_name_changed ()). */
+    if (!g_paste_str_equal (response, "backup"))
+        return;
+
+    g_paste_client_backup_history (data->client, data->history, gtk_editable_get_text (data->entry),
+                                   NULL /* cancellable */,
+                                   g_paste_ui_report_void_cb,
+                                   g_paste_ui_report_void (GTK_WIDGET (data->rootwin),
+                                                           g_paste_client_backup_history_finish,
+                                                           _("Could not back up the history")));
 }
 
 static void
@@ -562,17 +671,26 @@ on_backup_history_action (GSimpleAction *action    G_GNUC_UNUSED,
     gtk_editable_set_text (GTK_EDITABLE (entry), default_name);
     adw_alert_dialog_add_responses (dialog, "cancel", _("Cancel"), "backup", _("Back Up"), NULL);
     adw_alert_dialog_set_response_appearance (dialog, "backup", ADW_RESPONSE_SUGGESTED);
-    adw_alert_dialog_set_default_response (dialog, "cancel");
+    /* Enter in the name backs up, as it does in the GNOME Shell menu: nothing
+     * is lost by it, and a name it would not take leaves Back Up disabled. */
+    adw_alert_dialog_set_default_response (dialog, "backup");
     adw_alert_dialog_set_close_response (dialog, "cancel");
+    gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
     adw_alert_dialog_set_extra_child (dialog, entry);
 
-    BackupHistoryData *data = g_new (BackupHistoryData, 1);
+    BackupHistoryData *data = g_new0 (BackupHistoryData, 1);
     data->client = g_object_ref (self->client);
     data->history = g_strdup (history);
+    g_weak_ref_init (&data->panel, self);
+    data->dialog = dialog;
     data->entry = GTK_EDITABLE (entry);
     data->rootwin = self->rootwin;
 
-    adw_alert_dialog_choose (dialog, GTK_WIDGET (self->rootwin), NULL, on_backup_response, data);
+    g_signal_connect (entry, "changed", G_CALLBACK (on_backup_name_changed), data);
+    on_backup_name_changed (GTK_EDITABLE (entry), data);
+    g_signal_connect_data (dialog, "response", G_CALLBACK (on_backup_response), data, backup_history_data_free, 0);
+    adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (self->rootwin));
+    adw_dialog_set_focus (ADW_DIALOG (dialog), entry);
 }
 
 typedef struct
@@ -665,14 +783,11 @@ g_paste_ui_panel_dispose (GObject *object)
 {
     GPasteUiPanel *self = G_PASTE_UI_PANEL (object);
 
-    if (self->c_signals[C_SELECTION_CHANGED])
-    {
-        g_signal_handler_disconnect (self->items, self->c_signals[C_SELECTION_CHANGED]);
-        g_signal_handler_disconnect (self->switch_entry, self->c_signals[C_SWITCH_ACTIVATED]);
-        g_signal_handler_disconnect (self->jump_button, self->c_signals[C_SWITCH_CLICKED]);
-        g_signal_handler_disconnect (self->sidebar, self->c_signals[C_SETUP_MENU]);
-        self->c_signals[C_SELECTION_CHANGED] = 0;
-    }
+    g_clear_signal_handler (&self->c_signals[C_SELECTION_CHANGED], self->items);
+    g_clear_signal_handler (&self->c_signals[C_SWITCH_ACTIVATED], self->switch_entry);
+    g_clear_signal_handler (&self->c_signals[C_SWITCH_CLICKED], self->jump_button);
+    g_clear_signal_handler (&self->c_signals[C_SWITCH_CHANGED], self->switch_entry);
+    g_clear_signal_handler (&self->c_signals[C_SETUP_MENU], self->sidebar);
 
     g_clear_object (&self->items);
 
@@ -739,6 +854,10 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
     self->c_signals[C_SWITCH_CLICKED] = g_signal_connect (G_OBJECT (jump_button),
                                                           "clicked",
                                                           G_CALLBACK (g_paste_ui_panel_switch_clicked),
+                                                          self);
+    self->c_signals[C_SWITCH_CHANGED] = g_signal_connect (G_OBJECT (switch_entry),
+                                                          "changed",
+                                                          G_CALLBACK (on_switch_name_changed),
                                                           self);
 
     /* An AdwEntryRow is a list row and says so: put alone in the sidebar's
