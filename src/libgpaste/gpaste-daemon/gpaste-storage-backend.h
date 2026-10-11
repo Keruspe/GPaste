@@ -123,6 +123,8 @@ GPasteSettings *g_paste_storage_backend_get_settings (GPasteStorageBackend *self
 GPasteStorage  g_paste_storage_backend_get_kind      (GPasteStorageBackend *self);
 const gchar   *g_paste_storage_backend_get_extension (GPasteStorageBackend *self);
 gboolean       g_paste_storage_backend_is_encrypted  (GPasteStorageBackend *self);
+gboolean       g_paste_storage_backend_stores_item   (GPasteStorageBackend *self,
+                                                      GPasteItem           *item);
 
 gchar *g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
                                                       const gchar          *name);

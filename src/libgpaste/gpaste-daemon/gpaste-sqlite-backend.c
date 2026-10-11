@@ -1111,29 +1111,19 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
     return g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 }
 
-/* Whether @item is persisted at all: password entries only survive in the
- * encrypted flavor (where the content is unreadable without the passphrase),
- * exactly like the plain vs encrypted XML backends. */
-static gboolean
-g_paste_sqlite_backend_stores_item (const guchar *key,
-                                    GPasteItem   *item)
-{
-    return key || g_paste_item_get_kind (item) != G_PASTE_ITEM_KIND_PASSWORD;
-}
-
 /* How many of @history's items this backend actually persists. Used to rank a
  * full rewrite (front item gets the highest rank) and to tell whether the store
  * has drifted from the snapshot during reconcile — one definition so the two can
  * never disagree on which items count. */
 static gint64
-g_paste_sqlite_backend_count_stored (const guchar *key,
-                                     const GList  *history)
+g_paste_sqlite_backend_count_stored (GPasteStorageBackend *self,
+                                     const GList          *history)
 {
     gint64 count = 0;
 
     for (const GList *h = history; h; h = g_list_next (h))
     {
-        if (g_paste_sqlite_backend_stores_item (key, h->data))
+        if (g_paste_storage_backend_stores_item (self, h->data))
             ++count;
     }
 
@@ -1267,7 +1257,7 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
     const guchar *key = g_paste_sqlite_backend_get_key (self);
 
     /* Count what we'll actually store so the front item gets the highest rank. */
-    gint64 rank = g_paste_sqlite_backend_count_stored (key, history);
+    gint64 rank = g_paste_sqlite_backend_count_stored (self, history);
 
     /* One transaction, so replacing the whole content is atomic: a failure
      * (or crash) rolls back to the previous state instead of losing data. */
@@ -1278,7 +1268,7 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
     {
         GPasteItem *item = h->data;
 
-        if (!g_paste_sqlite_backend_stores_item (key, item))
+        if (!g_paste_storage_backend_stores_item (self, item))
             continue;
 
         success = g_paste_sqlite_backend_upsert_item (db, key, item, rank--);
@@ -1813,11 +1803,11 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
  * memory limits, or a deduplicated older copy — those never get their own
  * remove operation) is dropped. Returns whether it was, every one of them. */
 static gboolean
-g_paste_sqlite_backend_reconcile (sqlite3      *db,
-                                  const guchar *key,
-                                  const GList  *history)
+g_paste_sqlite_backend_reconcile (GPasteStorageBackend *self,
+                                  sqlite3              *db,
+                                  const GList          *history)
 {
-    gint64 expected = g_paste_sqlite_backend_count_stored (key, history);
+    gint64 expected = g_paste_sqlite_backend_count_stored (self, history);
 
     /* The common case: nothing rode along, the store already matches. Only
      * build the uuid set (and scan the table) when it actually does not, or
@@ -1831,7 +1821,7 @@ g_paste_sqlite_backend_reconcile (sqlite3      *db,
     {
         GPasteItem *item = h->data;
 
-        if (g_paste_sqlite_backend_stores_item (key, item))
+        if (g_paste_storage_backend_stores_item (self, item))
             g_hash_table_add (uuids, (gpointer) g_paste_item_get_uuid (item));
     }
 
@@ -1925,7 +1915,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     const guchar *key = g_paste_sqlite_backend_get_key (self);
     gboolean success = TRUE;
 
-    if (g_paste_sqlite_backend_stores_item (key, item))
+    if (g_paste_storage_backend_stores_item (self, item))
     {
         /* -1, which no rank is: a read that failed would otherwise rank the
          * newest item 1, the bottom of the store, and commit it there. */
@@ -1940,7 +1930,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     gboolean reconciled = TRUE;
 
     if (success && history)
-        reconciled = g_paste_sqlite_backend_reconcile (db, key, history);
+        reconciled = g_paste_sqlite_backend_reconcile (self, db, history);
 
     /* No forget_deleted (): what an add displaces is the oldest item evicted,
      * on every copy once the history is full, or an older copy of what it
@@ -2009,7 +1999,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     /* In the plain flavor, an item turning into a password (make_password) must
      * vanish from storage, exactly as the plain XML backend drops passwords on
      * rewrite. The encrypted flavor persists it like any other item. */
-    if (!g_paste_sqlite_backend_stores_item (key, item))
+    if (!g_paste_storage_backend_stores_item (self, item))
     {
         g_clear_pointer (&locker, g_mutex_locker_free);
         g_paste_sqlite_backend_remove_item (self, name, old_uuid);

@@ -727,8 +727,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     gboolean existed = g_file_test (history_file_path, G_FILE_TEST_IS_REGULAR);
 
     GPasteFileBackend *real_self = G_PASTE_FILE_BACKEND (self);
-    /* An encrypted history keeps password entries (the file is unreadable
-     * without the passphrase) and persists their real value, not the mask. */
+    /* Where the images go, and which of them the sweep compares against. */
     gboolean encrypted = g_paste_storage_backend_is_encrypted (self);
 
     g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
@@ -763,7 +762,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         GPasteItemKind kind = g_paste_item_get_kind (item);
         const gchar *uuid = g_paste_item_get_uuid (item);
 
-        if (!encrypted && kind == G_PASTE_ITEM_KIND_PASSWORD)
+        if (!g_paste_storage_backend_stores_item (self, item))
             continue;
 
         const gchar *kind_str = g_paste_item_kind_to_string (kind);

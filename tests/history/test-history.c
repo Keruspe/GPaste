@@ -4688,9 +4688,9 @@ count_selected (GPasteHistory *history G_GNUC_UNUSED,
  * the removal path pins the same one without any store at all (the
  * /clipboard/automatic_head cases). It is what the *case* takes: only the
  * encrypted flavours persist a password entry at all
- * (g_paste_sqlite_backend_stores_item (), and the same skip in the XML
- * backend), the readable ones dropping it on write by design, so no other
- * backend can hand back a history with a password at its head. */
+ * (g_paste_storage_backend_stores_item ()), the readable ones dropping it on
+ * write by design, so no other backend can hand back a history with a
+ * password at its head. */
 static void
 test_load_skips_password_head (void)
 {

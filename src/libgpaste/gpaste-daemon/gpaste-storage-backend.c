@@ -354,6 +354,23 @@ g_paste_storage_backend_is_encrypted (GPasteStorageBackend *self)
 }
 
 /**
+ * g_paste_storage_backend_stores_item:
+ * @self: a #GPasteStorageBackend instance
+ * @item: a #GPasteItem
+ *
+ * Whether @self keeps @item at all: a password only in an encrypted flavour,
+ * whose store cannot be read without the passphrase.
+ *
+ * Returns: whether @item reaches the store
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_stores_item (GPasteStorageBackend *self,
+                                     GPasteItem           *item)
+{
+    return g_paste_storage_backend_is_encrypted (self) || g_paste_item_get_kind (item) != G_PASTE_ITEM_KIND_PASSWORD;
+}
+
+/**
  * g_paste_storage_backend_get_history_file_path:
  * @self: a #GPasteStorageBackend instance
  * @name: the name of a history
