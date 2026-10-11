@@ -1978,7 +1978,11 @@ g_paste_clipboards_manager_expire_password_finish (GPasteClipboardsManager *self
         return FALSE;
 
     g_paste_clipboards_manager_expire_password (self);
-    if (g_paste_clipboards_manager_expiry_pending (self))
+    /* A record left unconfirmed since the wait answered is one more selection to
+     * classify, as a forced one still out is: the read expire_password () just
+     * asked for is what the caller waits for again, and the wait reports the
+     * failure if that read still cannot say. */
+    if (g_paste_clipboards_manager_expiry_pending (self) || g_paste_clipboards_manager_expiry_unresolved (self))
     {
         /* Revalidation belongs to this caller; another waiter may already be
          * awaiting the same read and still needs its forced cleanup. */

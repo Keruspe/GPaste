@@ -2861,6 +2861,55 @@ test_overdue_password_is_reread (gconstpointer user_data)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
+static void
+on_expiry_kept (GObject      *source G_GNUC_UNUSED,
+                GAsyncResult *result,
+                gpointer      user_data)
+{
+    GAsyncResult **kept = user_data;
+
+    *kept = g_object_ref (result);
+}
+
+/* The wait answers on an idle, and a password left unconfirmed in between is
+ * one more selection to classify: finishing then asks the caller to wait again
+ * rather than tell it every password is off. */
+static void
+test_unconfirmed_after_expiry_answered (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "same secret", 37);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_track_changes (settings, FALSE);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+
+    g_paste_clipboards_manager_expire_password_async (manager, on_expiry_kept, &result);
+    pump_for (10);
+    g_assert_nonnull (result);
+
+    g_paste_clipboards_manager_select (manager, password);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+    GPasteClipboardMimeCtx *hint = g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+
+    g_paste_clipboard_update_on_mime_read (hint, NULL);
+    g_paste_clipboard_update_maybe_done (pending);
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_assert_false (g_paste_clipboards_manager_expire_password_finish (manager, result, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_PENDING);
+}
+
 /* A password nobody could identify taken off the selection anyway -- forced off
  * by a daemon standing down, or its entry dropped from the history -- is only
  * marked overdue, and the read that settles it is asked for: nothing else would
@@ -4309,6 +4358,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/unconfirmed_password/overdue_reread", GINT_TO_POINTER (TRUE), test_overdue_password_is_reread);
     g_test_add_data_func ("/clipboard/unconfirmed_password/overdue_unanswered", GINT_TO_POINTER (FALSE), test_overdue_password_is_reread);
     g_test_add_func ("/clipboard/unconfirmed_password/reread_is_not_a_copy", test_unconfirmed_reread_is_not_a_copy);
+    g_test_add_func ("/clipboard/unconfirmed_password/after_expiry_answered", test_unconfirmed_after_expiry_answered);
     g_test_add_data_func ("/clipboard/unconfirmed_password/forced_off", GINT_TO_POINTER (FALSE), test_unconfirmed_password_taken_off);
     g_test_add_data_func ("/clipboard/unconfirmed_password/dropped", GINT_TO_POINTER (TRUE), test_unconfirmed_password_taken_off);
     g_test_add_func ("/clipboard/unconfirmed_password/reread_keeps_record", test_unconfirmed_reread_keeps_the_record);
