@@ -568,8 +568,8 @@ msgstr "显示“关于”"
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "使用:\n"
+msgid "Usage:"
+msgstr "使用:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.

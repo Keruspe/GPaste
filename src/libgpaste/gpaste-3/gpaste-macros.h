@@ -16,6 +16,7 @@
  * concern. */
 #ifdef G_PASTE_COMPILATION
 #include <glib/gi18n-lib.h>
+#include <locale.h>
 #endif
 
 #include <stdlib.h>
@@ -52,7 +53,11 @@ G_BEGIN_DECLS
     G_DEFINE_TYPE_WITH_CODE (GPaste##TypeName, g_paste_##type_name, ParentTypeName,                     \
         G_IMPLEMENT_INTERFACE (IFACE_TYPE, iface_init))
 
+/* The locale first: gettext looks nothing up in the C locale every process
+ * starts in, and gpaste-client, which is no GTK application, has nothing else
+ * to set it. */
 #define G_PASTE_INIT_GETTEXT()                          \
+    setlocale (LC_ALL, "");                             \
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);        \
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \
     textdomain (GETTEXT_PACKAGE)

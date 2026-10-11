@@ -584,8 +584,8 @@ msgstr "відобразити діалогове вікно \"Про GPaste\""
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "Використання:\n"
+msgid "Usage:"
+msgstr "Використання:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.

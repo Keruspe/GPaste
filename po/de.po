@@ -594,8 +594,8 @@ msgstr "Den Info-Dialog anzeigen"
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "Verwendung:\n"
+msgid "Usage:"
+msgstr "Verwendung:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.

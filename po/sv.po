@@ -589,8 +589,8 @@ msgstr "Visa \"Om\""
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "Användning:\n"
+msgid "Usage:"
+msgstr "Användning:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.

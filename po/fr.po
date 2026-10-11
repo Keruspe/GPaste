@@ -600,8 +600,8 @@ msgstr "affiche le dialogue d’à propos"
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "Mode d’emploi :\n"
+msgid "Usage:"
+msgstr "Mode d’emploi :"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.

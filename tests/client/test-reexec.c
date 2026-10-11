@@ -821,6 +821,24 @@ test_help_stream (gconstpointer user_data)
     fflush (stdout);
 }
 
+/* The client sets the locale the environment names, which is what has gettext
+ * look anything up: no GTK application, it has nothing else to set it. */
+static void
+test_locale_set (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_assert_true (g_setenv ("LC_ALL", "C.UTF-8", TRUE));
+    setlocale (LC_ALL, "C");
+    g_assert_cmpint (run_client ((const gchar *[]) { "version", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpstr (setlocale (LC_ALL, NULL), ==, "C.UTF-8");
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -1013,6 +1031,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/options/timeout", test_timeout_parsing);
     g_test_add_data_func ("/client/help/asked", GINT_TO_POINTER (TRUE), test_help_stream);
     g_test_add_data_func ("/client/help/misuse", GINT_TO_POINTER (FALSE), test_help_stream);
+    g_test_add_func ("/client/locale", test_locale_set);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);

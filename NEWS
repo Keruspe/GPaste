@@ -12,6 +12,7 @@ NEW in 51.2 (UNRELEASED)
 - Report gpaste-client failures as plain messages rather than critical warnings
 - Fix gpaste-client --timeout taking -0 or a padded number, and say which value was wrong
 - Print gpaste-client's help to stderr when the command line is wrong
+- Translate gpaste-client, its help included
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 
 NEW in 51.1 (20/10/2026)

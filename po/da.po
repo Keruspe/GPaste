@@ -565,7 +565,7 @@ msgstr ""
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
+msgid "Usage:"
 msgstr ""
 
 #. Not a verb: the item comes in on stdin.

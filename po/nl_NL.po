@@ -599,8 +599,8 @@ msgstr "het over-venster weergeven"
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "Gebruik:\n"
+msgid "Usage:"
+msgstr "Gebruik:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.

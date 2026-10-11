@@ -572,8 +572,8 @@ msgstr "birta glugga með upplýsingum um forritið"
 
 #: src/client/gpaste-client.c:931
 #, c-format
-msgid "Usage:\n"
-msgstr "Notkun:\n"
+msgid "Usage:"
+msgstr "Notkun:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
