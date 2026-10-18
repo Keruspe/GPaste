@@ -58,6 +58,38 @@ set_row_title (GtkWidget   *row,
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
 }
 
+/* Every prompt is a modal window of its own, @header over @content, rather than
+ * an AdwDialog: the daemon has no window to put a dialog inside. Escape is
+ * GtkWindow's own window.close, as its close button is, which the prompts that
+ * ask something turn into a dismissal from their "destroy" handler. */
+static GtkWindow *
+prompt_window_new (GPastePrompt *prompt,
+                   const gchar  *title,
+                   gint          width,
+                   GtkWidget    *header,
+                   GtkWidget    *content)
+{
+    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
+    GtkWidget *toolbar = adw_toolbar_view_new ();
+    GtkEventController *shortcuts = gtk_shortcut_controller_new ();
+
+    gtk_window_set_title (GTK_WINDOW (window), title);
+    gtk_window_set_icon_name (GTK_WINDOW (window), G_PASTE_ICON_NAME);
+    gtk_window_set_default_size (GTK_WINDOW (window), width, -1);
+    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
+
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), content);
+    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
+
+    gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (shortcuts),
+                                          gtk_shortcut_new (gtk_keyval_trigger_new (GDK_KEY_Escape, 0),
+                                                            gtk_named_action_new ("window.close")));
+    gtk_widget_add_controller (window, shortcuts);
+
+    return GTK_WINDOW (window);
+}
+
 /*
  * The migration dialog
  */
@@ -213,24 +245,6 @@ on_keep (GtkButton *button G_GNUC_UNUSED,
     gtk_window_destroy (self->window);
 }
 
-/* Escape closes the dialog like its close button; the teardown above is what
- * turns that into a dismissal. */
-static gboolean
-on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                guint                  keyval,
-                guint                  keycode    G_GNUC_UNUSED,
-                GdkModifierType        state      G_GNUC_UNUSED,
-                gpointer               user_data)
-{
-    MigrationDialog *self = user_data;
-
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
-    gtk_window_close (self->window);
-    return GDK_EVENT_STOP;
-}
-
 static void
 g_paste_prompt_adw_migration (GPastePrompt        *prompt,
                               GPastePromptRequest *request)
@@ -240,14 +254,6 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     self->request = g_object_ref (request);
     self->current = g_paste_prompt_request_get_current (request);
     self->backends = g_paste_prompt_request_get_offered (request, &self->n_backends);
-
-    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
-
-    self->window = GTK_WINDOW (window);
-    gtk_window_set_title (self->window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_TITLE));
-    gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
-    gtk_window_set_default_size (self->window, 480, -1);
-    gtk_window_set_modal (self->window, TRUE);
 
     GtkWidget *apply = self->apply = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT));
 
@@ -339,22 +345,12 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     gtk_box_append (GTK_BOX (content), warning);
     gtk_box_append (GTK_BOX (content), page);
 
-    GtkWidget *toolbar = adw_toolbar_view_new ();
-
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), content);
-
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
+    self->window = prompt_window_new (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_TITLE), 480, header, content);
 
     g_signal_connect (import_row, "notify::active", G_CALLBACK (on_state_changed), self);
     g_signal_connect (cleanup_row, "notify::active", G_CALLBACK (on_state_changed), self);
-    g_signal_connect (window, "destroy", G_CALLBACK (migration_dialog_dismiss), self);
-    g_object_set_data_full (G_OBJECT (window), "gpaste-migration-dialog", self, migration_dialog_free);
-
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
-
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self);
-    gtk_widget_add_controller (window, key_controller);
+    g_signal_connect (self->window, "destroy", G_CALLBACK (migration_dialog_dismiss), self);
+    g_object_set_data_full (G_OBJECT (self->window), "gpaste-migration-dialog", self, migration_dialog_free);
 
     update_state (self);
 
@@ -472,24 +468,6 @@ on_passphrase_ok (GtkButton *button G_GNUC_UNUSED,
     gtk_window_destroy (self->window);
 }
 
-/* Escape closes the prompt like its close button; the teardown is what turns
- * that into a dismissal. */
-static gboolean
-on_passphrase_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                           guint                  keyval,
-                           guint                  keycode    G_GNUC_UNUSED,
-                           GdkModifierType        state      G_GNUC_UNUSED,
-                           gpointer               user_data)
-{
-    PassphraseDialog *self = user_data;
-
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
-    gtk_window_close (self->window);
-    return GDK_EVENT_STOP;
-}
-
 static void
 g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
                                GPastePromptRequest *request)
@@ -499,14 +477,6 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     const gchar *error_message = g_paste_prompt_request_get_error_message (request);
 
     self->request = g_object_ref (request);
-
-    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
-
-    self->window = GTK_WINDOW (window);
-    gtk_window_set_title (self->window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE));
-    gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
-    gtk_window_set_default_size (self->window, 420, -1);
-    gtk_window_set_modal (self->window, TRUE);
 
     GtkWidget *ok = gtk_button_new_with_label (g_paste_prompt_text (confirm ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT));
 
@@ -596,19 +566,10 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
 
     adw_preferences_page_add (ADW_PREFERENCES_PAGE (page), ADW_PREFERENCES_GROUP (group));
 
-    GtkWidget *toolbar = adw_toolbar_view_new ();
+    self->window = prompt_window_new (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE), 420, header, page);
 
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), page);
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
-
-    g_signal_connect (window, "destroy", G_CALLBACK (passphrase_dialog_dismiss), self);
-    g_object_set_data_full (G_OBJECT (window), "gpaste-passphrase-dialog", self, passphrase_dialog_free);
-
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
-
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_passphrase_key_pressed), self);
-    gtk_widget_add_controller (window, key_controller);
+    g_signal_connect (self->window, "destroy", G_CALLBACK (passphrase_dialog_dismiss), self);
+    g_object_set_data_full (G_OBJECT (self->window), "gpaste-passphrase-dialog", self, passphrase_dialog_free);
 
     gtk_window_present (self->window);
 }
@@ -617,40 +578,16 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
  * The report
  */
 
-/* Escape closes it like its close button. Nothing is answered either way — a
- * report has no answer — so losing the window needs no teardown of its own. */
-static gboolean
-on_report_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                       guint                  keyval,
-                       guint                  keycode    G_GNUC_UNUSED,
-                       GdkModifierType        state      G_GNUC_UNUSED,
-                       gpointer               user_data)
-{
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
-    gtk_window_close (user_data);
-    return GDK_EVENT_STOP;
-}
-
-/* A window rather than an AdwAlertDialog, for the same reason the two prompts
- * above are windows: the daemon has no window to put a dialog inside. */
+/* Nothing is answered however it goes -- a report has no answer -- so losing
+ * the window needs no teardown of its own. */
 static void
 g_paste_prompt_adw_report (GPastePrompt *prompt,
                            const gchar  *title,
                            const gchar  *message)
 {
-    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
-
-    gtk_window_set_title (GTK_WINDOW (window), title);
-    gtk_window_set_icon_name (GTK_WINDOW (window), G_PASTE_ICON_NAME);
-    gtk_window_set_default_size (GTK_WINDOW (window), 420, -1);
-    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
-
     GtkWidget *close = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLOSE));
 
     gtk_widget_add_css_class (close, "suggested-action");
-    g_signal_connect_swapped (close, "clicked", G_CALLBACK (gtk_window_destroy), window);
 
     GtkWidget *header = adw_header_bar_new ();
 
@@ -667,18 +604,10 @@ g_paste_prompt_adw_report (GPastePrompt *prompt,
     adw_status_page_set_title (ADW_STATUS_PAGE (status), title);
     adw_status_page_set_description (ADW_STATUS_PAGE (status), escaped);
 
-    GtkWidget *toolbar = adw_toolbar_view_new ();
+    GtkWindow *window = prompt_window_new (prompt, title, 420, header, status);
 
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), status);
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
-
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
-
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_report_key_pressed), window);
-    gtk_widget_add_controller (window, key_controller);
-
-    gtk_window_present (GTK_WINDOW (window));
+    g_signal_connect_swapped (close, "clicked", G_CALLBACK (gtk_window_destroy), window);
+    gtk_window_present (window);
 }
 
 static void

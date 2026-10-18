@@ -92,6 +92,38 @@ shown_window (void)
     return windows->data;
 }
 
+/* Escape, as the window answers it: the shortcut bound to it, run on the
+ * window. */
+static void
+press_escape (GtkWindow *window)
+{
+    g_autoptr (GListModel) controllers = gtk_widget_observe_controllers (GTK_WIDGET (window));
+
+    for (guint i = 0; i < g_list_model_get_n_items (controllers); ++i)
+    {
+        g_autoptr (GObject) controller = g_list_model_get_item (controllers, i);
+
+        if (!GTK_IS_SHORTCUT_CONTROLLER (controller))
+            continue;
+
+        for (guint j = 0; j < g_list_model_get_n_items (G_LIST_MODEL (controller)); ++j)
+        {
+            g_autoptr (GtkShortcut) shortcut = g_list_model_get_item (G_LIST_MODEL (controller), j);
+            GtkShortcutTrigger *trigger = gtk_shortcut_get_trigger (shortcut);
+
+            if (GTK_IS_KEYVAL_TRIGGER (trigger) &&
+                gtk_keyval_trigger_get_keyval (GTK_KEYVAL_TRIGGER (trigger)) == GDK_KEY_Escape &&
+                !gtk_keyval_trigger_get_modifiers (GTK_KEYVAL_TRIGGER (trigger)))
+            {
+                g_assert_true (gtk_shortcut_action_activate (gtk_shortcut_get_action (shortcut), 0, GTK_WIDGET (window), NULL));
+                return;
+            }
+        }
+    }
+
+    g_assert_not_reached ();
+}
+
 static void
 collect (GtkWidget *widget,
          GType      type,
@@ -309,6 +341,48 @@ test_migration_dismissed (void)
     g_assert_false (answer.confirmed);
 }
 
+static gboolean
+is_unset (gconstpointer pointer,
+          gconstpointer arg G_GNUC_UNUSED)
+{
+    return !*(gconstpointer const *) pointer;
+}
+
+/* Escape closes every prompt as its close button does: a dismissal for the two
+ * that ask something, the window gone for the report. */
+static void
+test_escape_closes (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
+    Answer migration = { 0 };
+    Answer passphrase = { 0 };
+
+    g_paste_prompt_migration_async (prompt, offered, G_N_ELEMENTS (offered), G_PASTE_STORAGE_FILE, on_migration_answered, &migration);
+    press_escape (shown_window ());
+    wait_for (&migration);
+    g_assert_false (migration.confirmed);
+
+    g_paste_prompt_passphrase_async (prompt, FALSE, NULL, G_PASTE_STORAGE_REMEMBER_UNCHANGED, on_passphrase_answered, &passphrase);
+    press_escape (shown_window ());
+    wait_for (&passphrase);
+    g_assert_null (passphrase.passphrase);
+
+    g_paste_prompt_report (prompt, "Title", "Message");
+
+    GtkWindow *report = shown_window ();
+
+    g_object_add_weak_pointer (G_OBJECT (report), (gpointer *) &report);
+    press_escape (report);
+    g_paste_test_bus_wait_until (is_unset, &report, NULL);
+    g_assert_null (report);
+}
+
 /* What went wrong is shown as written, beside the standing explanation, a "&"
  * or a "<" in it included. */
 static void
@@ -457,6 +531,7 @@ main (int argc, char *argv[])
 #endif
     g_test_add_func ("/prompt-adw/migration/nothing-picked", test_migration_nothing_picked);
     g_test_add_func ("/prompt-adw/migration/dismissed", test_migration_dismissed);
+    g_test_add_func ("/prompt-adw/escape", test_escape_closes);
     g_test_add_func ("/prompt-adw/passphrase/error-shown", test_passphrase_error_shown);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed", GINT_TO_POINTER (TRUE), test_passphrase_confirmed);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed_first_entry", GINT_TO_POINTER (FALSE), test_passphrase_confirmed);
