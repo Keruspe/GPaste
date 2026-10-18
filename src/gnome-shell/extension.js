@@ -78,7 +78,7 @@ export default class GPasteExtension extends Extension {
     // daemon owns, on a policy it already implements.
     //
     // The call goes straight to the bus rather than through a GPasteClient,
-    // whose proxy is built with G_DBUS_PROXY_FLAGS_NONE: DO_NOT_AUTO_START is
+    // whose proxy is built with G_DBUS_PROXY_FLAGS_NONE: NO_AUTO_START is
     // the whole point here, since being disabled must never be what *starts* a
     // daemon. With none running there is nothing tracking the clipboard and so
     // nothing to report to, which is exactly what the failed call means.
@@ -90,7 +90,7 @@ export default class GPasteExtension extends Extension {
             'ReportExtensionState',
             new GLib.Variant('(b)', [false]),
             null,
-            Gio.DBusCallFlags.DO_NOT_AUTO_START,
+            Gio.DBusCallFlags.NO_AUTO_START,
             -1,
             null,
             (bus, res) => {

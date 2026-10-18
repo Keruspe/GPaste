@@ -16,6 +16,23 @@ test(
   suite: 'gpaste',
 )
 
+# The extension's GPaste names are checked against the build's typelibs.
+if get_option('introspection')
+  test(
+    'gi-constants',
+    find_program('test-gi-constants.py'),
+    args: [meson.project_build_root() / 'src/libgpaste'],
+    depends: [libgpaste_gir, libgpaste_daemon_gir, libgpaste_gtk4_gir],
+    suite: 'gpaste',
+  )
+else
+  test(
+    'gi-constants',
+    find_program('test-gi-constants.py'),
+    suite: 'gpaste',
+  )
+endif
+
 if get_option('gnome-shell')
   test(
     'extension-locale',
