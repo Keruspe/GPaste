@@ -361,6 +361,15 @@ g_paste_daemon_methods_history_is_new (const GPasteDaemonMethods *self,
     return !g_strv_contains ((const gchar * const *) histories, name);
 }
 
+/* Whether the storage in use could keep a history created under @name: see
+ * g_paste_storage_name_fits (). */
+static gboolean
+g_paste_daemon_methods_name_fits (const GPasteDaemonMethods *self,
+                                  const gchar               *name)
+{
+    return g_paste_storage_name_fits (g_paste_settings_get_storage_backend (self->settings), name);
+}
+
 G_PASTE_VISIBLE void
 g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
                                        const gchar               *history,
@@ -395,6 +404,8 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
     gboolean exists = g_strv_contains ((const gchar * const *) histories, backup);
 
     G_PASTE_DBUS_ASSERT (!exists, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
+    G_PASTE_DBUS_ASSERT (g_paste_daemon_methods_name_fits (self, backup),
+                         G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage");
 
     /* Nor is a history no store holds one to back up: reading it would create
      * an empty one under that name, and the backup of it would answer OK. */
@@ -507,6 +518,9 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
      * history is no exception, since emptying it saves, which brings its file
      * into existence just the same. */
     gboolean is_new = g_paste_daemon_methods_history_is_new (self, name);
+
+    G_PASTE_DBUS_ASSERT (!is_new || g_paste_daemon_methods_name_fits (self, name),
+                         G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage");
 
     if (current)
     {
@@ -994,6 +1008,9 @@ g_paste_daemon_methods_switch_history (const GPasteDaemonMethods *self,
      * history comes into being, there being no CreateHistory of its own, and it
      * is the set of histories growing just as much as a backup is. */
     gboolean is_new = g_paste_daemon_methods_history_is_new (self, name);
+
+    G_PASTE_DBUS_ASSERT (!is_new || g_paste_daemon_methods_name_fits (self, name),
+                         G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage");
 
     G_PASTE_DBUS_ASSERT (g_paste_history_switch (self->history, name), G_PASTE_ERROR_FAILED, "the history-name setting cannot be changed");
 

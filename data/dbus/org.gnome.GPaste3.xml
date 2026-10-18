@@ -142,7 +142,8 @@
       Refuses with .Error.AlreadyExists rather than overwrite a history already
       called @backup: a backup silently destroying an older one of the same name
       is a loss noticed far too late. A @history no store holds is
-      .Error.NotFound, there being nothing to back up.
+      .Error.NotFound, there being nothing to back up. A @backup too long a name
+      for the storage in use is .Error.InvalidArgument, as in SwitchHistory.
 
       The backup holds every change the daemon has accepted for @history, those
       still on their way to the disk included. The current history cannot be
@@ -203,7 +204,8 @@
       answer: a write that fails (a full disk, or no storage in use) is
       .Error.Failed, the history left as it was. So is emptying the current
       one with no storage in use while another storage keeps it, as for
-      DeleteHistory.
+      DeleteHistory. Emptying a name no history goes by creates it, under a
+      name the storage in use can keep, as in SwitchHistory.
     -->
     <method name="EmptyHistory">
       <arg type="s" direction="in" name="name"/>
@@ -489,11 +491,15 @@
       Switching to a name no history goes by creates it, empty: that is how a new
       history comes into being, there being no CreateHistory of its own. The
       History property carries the outcome, and HistoriesChanged is raised when
-      the switch did create one. A history-name setting GSettings refuses to
-      store (a locked key, or a settings file the daemon cannot rewrite) is
-      .Error.Failed, the history staying where it was; DeleteHistory of the
-      current history, which switches to the default one first, then deletes
-      nothing either.
+      the switch did create one. A new history is created only under a name
+      the storage in use can keep every file of, .Error.InvalidArgument
+      otherwise: the encrypted file flavour, whose change of passphrase keeps
+      each file aside under a longer name, and the SQLite ones need shorter
+      names than the plain file one does. A history-name setting GSettings
+      refuses to store (a locked key, or a settings file the daemon cannot
+      rewrite) is .Error.Failed, the history staying where it was;
+      DeleteHistory of the current history, which switches to the default one
+      first, then deletes nothing either.
     -->
     <method name="SwitchHistory">
       <arg type="s" direction="in" name="name"/>

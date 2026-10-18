@@ -6329,10 +6329,10 @@ test_history_name_refuses_a_path (void)
     g_assert_false (g_paste_util_history_name_is_valid (""));
     g_assert_false (g_paste_util_history_name_is_valid (NULL));
 
-    /* As long as every file a history needs can be named after it: a save
-     * writes "<name>.xmls.tmp", a re-key keeps "<name>.xmls.rekey-old". */
-    g_autofree gchar *longest = g_strnfill (240, 'n');
-    g_autofree gchar *too_long = g_strnfill (241, 'n');
+    /* As long as a history can be saved under it, "<name>.xml.tmp" being
+     * written: one a save landed for is never turned away. */
+    g_autofree gchar *longest = g_strnfill (247, 'n');
+    g_autofree gchar *too_long = g_strnfill (248, 'n');
 
     g_assert_true (g_paste_util_history_name_is_valid (longest));
     g_assert_false (g_paste_util_history_name_is_valid (too_long));
@@ -6347,16 +6347,60 @@ test_history_name_refuses_a_path (void)
         g_assert_nonnull (g_strstr_len (error->message, -1, "too long"));
     }
 
-
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
     g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("saved under the longest name"));
 
-    g_paste_storage_backend_write_history (backend, longest, items);
+    g_assert_true (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, longest));
+    g_assert_true (g_paste_storage_name_fits (G_PASTE_STORAGE_NOOP, longest));
+    g_assert_true (g_paste_storage_backend_write_history (backend, longest, items));
 
     g_autolist (GPasteItem) loaded = read_history_ok (backend, longest);
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
+
+    /* The other flavours create a history only under a name they can keep their
+     * longest file under: the "<name>.xmls.rekey-old" an encrypted file
+     * history's re-key keeps the original aside as, the "<name>.db-journal" or
+     * "<name>.dbs-journal" SQLite opens beside a new database. Asked of the
+     * flavour, whether or not this build can open it -- a plain SQLite one it
+     * cannot being kept as a plain file. */
+    static const struct
+    {
+        GPasteStorage storage;
+        gsize         longest;
+    } bounds[] = {
+        { G_PASTE_STORAGE_ENCRYPTED_FILE,   240 },
+#ifdef G_PASTE_ENABLE_SQLITE
+        { G_PASTE_STORAGE_SQLITE,           244 },
+#else
+        { G_PASTE_STORAGE_SQLITE,           247 },
+#endif
+        { G_PASTE_STORAGE_ENCRYPTED_SQLITE, 243 },
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (bounds); ++i)
+    {
+        g_autofree gchar *fits = g_strnfill (bounds[i].longest, 'n');
+        g_autofree gchar *past = g_strnfill (bounds[i].longest + 1, 'n');
+
+        g_assert_true (g_paste_storage_name_fits (bounds[i].storage, fits));
+        /* One past the longest name a history may have is no name at all. */
+        if (bounds[i].longest < strlen (longest))
+            g_assert_false (g_paste_storage_name_fits (bounds[i].storage, past));
+    }
+
+#ifdef G_PASTE_ENABLE_SQLITE
+    /* The longest name that fits is one a new database does open under. */
+    g_autoptr (GPasteStorageBackend) sqlite = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autofree gchar *longest_database = g_strnfill (244, 's');
+
+    g_assert_true (g_paste_storage_backend_write_history (sqlite, longest_database, items));
+
+    g_autolist (GPasteItem) read_back = read_history_ok (sqlite, longest_database);
+
+    g_assert_cmpuint (g_list_length (read_back), ==, 1);
+#endif
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

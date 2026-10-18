@@ -2508,6 +2508,56 @@ test_passphrase_survives_unreadable (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A history is created only under a name the storage in use can keep every file
+ * of, a switch's, a backup's, an emptying's and an import's alike: an encrypted
+ * file history past 240 bytes could never have its passphrase changed. So
+ * while that store is locked, the daemon running on no storage over it. */
+static void
+test_new_history_name_fits (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_storage_backend_set_passphrase ("passphrase");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autofree gchar *name = g_strnfill (241, 'n');
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xmls");
+
+    {
+        g_autoptr (GPasteStorageBackend) plain = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("plain"));
+        g_autoptr (GError) error = NULL;
+
+        g_assert_true (g_paste_storage_backend_write_history (plain, name, items));
+        g_assert_false (import_histories (settings, G_PASTE_STORAGE_FILE, NULL, G_PASTE_STORAGE_ENCRYPTED_FILE, "passphrase", &error));
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+        g_paste_storage_backend_delete_history (plain, name, NULL);
+    }
+
+    for (guint locked = 0; locked < 2; ++locked)
+    {
+        g_autoptr (GError) error = NULL;
+
+        /* No passphrase in the process, as when the unlock was dismissed. */
+        if (locked)
+            g_paste_storage_backend_set_passphrase (NULL);
+
+        g_paste_daemon_methods_switch_history (&methods, name, &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        g_clear_error (&error);
+        g_paste_daemon_methods_backup_history (&methods, "history", name, &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        g_clear_error (&error);
+        g_paste_daemon_methods_empty_history (&methods, name, &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+        g_assert_cmpstr (g_paste_history_get_current (history), !=, name);
+        g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    }
+}
+
 static void
 secure_tracking_start (void)
 {
@@ -4353,6 +4403,7 @@ main (int    argc,
     g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
     g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
+    g_test_add_func ("/storage/new-history-name-fits", test_new_history_name_fits);
     g_test_add_data_func ("/storage/secure-memory-wiped/file", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_secure_memory_wiped);
     g_test_add_func ("/storage/secure-memory-wiped/halfway", test_secure_memory_wiped_halfway);
 #ifdef G_PASTE_ENABLE_SQLITE

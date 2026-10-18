@@ -484,7 +484,7 @@ _g_paste_file_backend_is_image_temp_name (const gchar *file_name)
 static gboolean
 _g_paste_file_backend_is_image_rekey_name (const gchar *file_name)
 {
-    static const gchar *suffixes[] = { ".rekey", ".rekey-old" };
+    static const gchar *suffixes[] = { G_PASTE_FILE_BACKEND_REKEY_NEW, G_PASTE_FILE_BACKEND_REKEY_OLD };
 
     for (gsize i = 0; i < G_N_ELEMENTS (suffixes); ++i)
     {
@@ -701,7 +701,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
      * was written since lost, with this write answered as held. */
     if (g_paste_file_backend_get_passphrase (self))
     {
-        g_autofree gchar *marker = g_strconcat (history_file_path, ".rekey", NULL);
+        g_autofree gchar *marker = g_strconcat (history_file_path, G_PASTE_FILE_BACKEND_REKEY_NEW, NULL);
 
         if (g_file_test (marker, G_FILE_TEST_EXISTS))
         {
@@ -1876,12 +1876,6 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-/* What a re-key puts beside each file it changes: the file's replacement under
- * the new key, and the original under a second name while the replacements go
- * in. Both are named from the file alone. */
-#define G_PASTE_FILE_BACKEND_REKEY_NEW ".rekey"
-#define G_PASTE_FILE_BACKEND_REKEY_OLD ".rekey-old"
-
 static gchar *
 _g_paste_file_backend_rekey_sibling (const gchar *path,
                                      const gchar *suffix)

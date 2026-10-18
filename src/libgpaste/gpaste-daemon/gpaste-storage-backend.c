@@ -921,7 +921,8 @@ g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
 {
 }
 
-/* Every storage flavour, indexed by its kind: what it is called on disk, and
+/* Every storage flavour, indexed by its kind: what it is called on disk, what
+ * the longest file it keeps for a history adds after the history's name, and
  * which class implements it. Adding a flavour is one row plus its enum value,
  * and every reader iterates up to %G_PASTE_N_STORAGE rather than carrying a
  * list of its own.
@@ -933,18 +934,24 @@ g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
 static const struct
 {
     const gchar *extension;
+    const gchar *longest_suffix;
     GType      (*get_type) (void);
 } storage_flavours[G_PASTE_N_STORAGE] = {
-    [G_PASTE_STORAGE_NOOP]             = { "noop", g_paste_noop_backend_get_type },
-    [G_PASTE_STORAGE_FILE]             = { "xml",  g_paste_file_backend_get_type },
-    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", g_paste_noop_backend_get_type },
+    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                  g_paste_noop_backend_get_type },
+    /* The temporary a save is written to before its move into place. */
+    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml.tmp",                          g_paste_file_backend_get_type },
+    /* The original a change of passphrase keeps aside. */
+    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD, g_paste_noop_backend_get_type },
+    /* The rollback journal SQLite opens beside a new database to turn it to
+     * write-ahead logging, longer than the log and its index. */
 #ifdef G_PASTE_ENABLE_SQLITE
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   g_paste_sqlite_backend_get_type },
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                       g_paste_sqlite_backend_get_type },
 #else
-    /* Not built in: a plain kind may degrade to another plain kind. */
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   g_paste_file_backend_get_type },
+    /* Not built in: a plain kind may degrade to another plain kind, which then
+     * keeps the history as its own. */
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml.tmp",                          g_paste_file_backend_get_type },
 #endif
-    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  g_paste_noop_backend_get_type },
+    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                      g_paste_noop_backend_get_type },
 };
 
 static GType
@@ -974,6 +981,34 @@ g_paste_storage_get_extension (GPasteStorage storage_kind)
         return storage_flavours[G_PASTE_STORAGE_NOOP].extension;
 
     return storage_flavours[storage_kind].extension;
+}
+
+/**
+ * g_paste_storage_name_fits:
+ * @storage_kind: a #GPasteStorage kind
+ * @name: a name g_paste_util_history_name_is_valid() accepts
+ *
+ * Whether a history created under @name could have every file the
+ * @storage_kind flavour keeps for it named after it. Asked before creating
+ * one: a history already there is one a save landed for, and stays readable
+ * whatever this says.
+ *
+ * A question about the flavour, not about a backend: answered the same while
+ * an encrypted store is locked, and the daemon runs on the "no storage"
+ * backend over it, as once it is unlocked.
+ *
+ * Returns: whether the @storage_kind flavour can keep a new history called @name
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_name_fits (GPasteStorage storage_kind,
+                           const gchar  *name)
+{
+    g_return_val_if_fail (g_paste_util_history_name_is_valid (name), FALSE);
+
+    if (storage_kind >= G_PASTE_N_STORAGE)
+        storage_kind = G_PASTE_STORAGE_NOOP;
+
+    return strlen (name) + strlen (storage_flavours[storage_kind].longest_suffix) <= 255;
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

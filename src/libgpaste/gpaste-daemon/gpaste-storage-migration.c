@@ -368,6 +368,20 @@ import_histories (GPasteSettings *settings,
         return FALSE;
     }
 
+    /* Refused before anything is written, as a new history is under a name the
+     * storage in use cannot keep every file of (g_paste_storage_name_fits ()):
+     * its write would fail half way through the import, or -- the encrypted
+     * file flavour's re-key -- every change of passphrase afterwards would. */
+    for (GStrv name = names; *name; ++name)
+    {
+        if (!g_paste_storage_name_fits (chosen, *name))
+        {
+            g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         "The history “%s” has too long a name for the new storage backend", *name);
+            return FALSE;
+        }
+    }
+
     /* Past the last history written to @chosen, which a failure takes back. A
      * copy the import replaced goes with it: what it held went with the write,
      * and the source still holds what replaced it. One whose write failed is
