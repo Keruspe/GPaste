@@ -109,8 +109,9 @@ g_paste_storage_backend_open_lock_file (void)
  *
  * Acquire the process-wide history lock, blocking until any other daemon holding
  * it releases it (or its process dies). Idempotent: once held, further calls are
- * a no-op. Meant to be called from the history-loading worker thread, before the
- * first read, so a takeover waits out the previous owner's final write.
+ * a no-op. Meant to be called off the main thread before the store is touched --
+ * by the history's load worker, and by the startup gates' wait -- so a takeover
+ * waits out the previous owner's final write.
  *
  * Two things end the wait short of the lock, and they answer different
  * questions: @cancellable says the load this is waiting for has been given up on

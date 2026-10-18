@@ -2388,11 +2388,12 @@ g_paste_file_backend_settle_rekeys (void)
      * else can be writing: a daemon handing over -- another process, or this
      * one's previous daemon in gnome-shell -- may still be re-keying on a
      * thread of its own, and settling under it would put back, or drop, what it
-     * is in the middle of renaming. Left for the next start then, a read
-     * refusing such a history until it is settled. */
+     * is in the middle of renaming. Left for once it is done then -- the
+     * startup gates settle again once the lock is theirs -- a read refusing
+     * such a history until it is settled. */
     if (g_paste_storage_is_busy () || !g_paste_storage_backend_try_lock ())
     {
-        g_message ("Another GPaste is still writing the histories; what a change of passphrase left is settled at the next start");
+        g_message ("The histories are still being written; what a change of passphrase left is settled once that is done");
         return;
     }
 

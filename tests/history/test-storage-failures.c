@@ -754,9 +754,10 @@ struct _TestMigrationPrompt
     /* What the last request explained, and whether it offered to remember. */
     gchar               *passphrase_description;
     gboolean             offered_remember;
-    /* The backends the last migration request offered. */
+    /* The backends the last migration request offered, and how many were made. */
     GPasteStorage        offered[G_PASTE_N_STORAGE];
     guint                n_offered;
+    guint                migrations;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -775,6 +776,7 @@ test_migration_prompt_migration (GPastePrompt        *prompt,
     g_assert_cmpuint (n_offered, <=, G_N_ELEMENTS (self->offered));
     memcpy (self->offered, offered, n_offered * sizeof (GPasteStorage));
     self->n_offered = n_offered;
+    ++self->migrations;
 
     if (self->dismiss)
         g_paste_prompt_request_dismiss (request);
@@ -1325,6 +1327,7 @@ test_import_copies_whole (void)
     g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
 
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
     g_paste_settings_set_images_support (settings, TRUE);
 
     {
@@ -3192,6 +3195,80 @@ wait_for_lock (gpointer data)
     g_atomic_int_set (&wait->done, TRUE);
 
     return NULL;
+}
+
+/* A startup gate touches the store only once this process holds the storage
+ * lock: a daemon taken over from goes on rewriting it -- a re-key, an import --
+ * until its workers are done, and a passphrase verified or a backend migrated
+ * meanwhile would be checked against a store about to change. Letting go of
+ * the lock while a gate waits ends it with nothing done. */
+static void
+test_gates_wait_for_lock (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+    gint fd = hold_storage_lock ();
+
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+    prompt->dismiss = TRUE;
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_test_bus_pump (500);
+    g_assert_null (result);
+
+    g_paste_storage_backend_unlock ();
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_nonnull (result);
+    g_assert_true (g_paste_storage_migration_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (prompt->migrations, ==, 0);
+    g_clear_object (&result);
+
+    /* Asked once the holder lets go. */
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_test_bus_pump (500);
+    g_assert_null (result);
+    g_assert_cmpuint (prompt->migrations, ==, 0);
+    close (fd);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_nonnull (result);
+    g_assert_true (g_paste_storage_migration_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (prompt->migrations, ==, 1);
+    g_clear_object (&result);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* No passphrase is verified against it meanwhile: the keyring's is asked
+     * once the lock is had, its lookup warning on this bus, which
+     * /storage/lock/decryption-gate-asks-keyring counts. */
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    g_paste_storage_backend_unlock ();
+    fd = hold_storage_lock ();
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_assert_true (g_paste_storage_decryption_needed (settings));
+    prompt->passphrase = "passphrase";
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_test_bus_pump (500);
+    g_assert_null (result);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+    close (fd);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_nonnull (result);
+    g_assert_true (g_paste_storage_decryption_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (prompt->passphrase_asks, >, 0);
+    g_paste_storage_backend_set_passphrase (NULL);
+#else
+    close (fd);
+#endif
 }
 
 /* Two waits of one process -- a load and the one superseding it -- both get the
@@ -5396,6 +5473,122 @@ test_doctor_split_dismissed (void)
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* What a change of passphrase the daemon taken over from did not live to
+ * finish leaves is settled once that daemon lets go of the store, by the
+ * decryption gate as by the migration one, though nothing is left to unlock:
+ * the history it left half re-keyed would refuse every read for the session. */
+static void
+test_decryption_gate_settles (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *history = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
+    g_autofree gchar *aside = g_strconcat (history, ".rekey-old", NULL);
+    g_autofree gchar *replacement = g_strconcat (history, ".rekey", NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    /* A re-key cut short before its last rename: the original under its
+     * second name too, and the replacement beside it. */
+    write_under (settings, "passphrase", name);
+    g_assert_cmpint (link (history, aside), ==, 0);
+    write_file (replacement, "half re-keyed");
+
+    gint fd = hold_storage_lock ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("passphrase");
+    g_assert_true (g_paste_storage_decryption_needed (settings));
+    g_assert_true (has_rekey_leftovers (name));
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_test_bus_pump (300);
+    g_assert_null (result);
+    close (fd);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_decryption_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_false (has_rekey_leftovers (name));
+    g_assert_true (opens_under (settings, "passphrase", name));
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+static guint keyring_lookups;
+
+/* Counts the warning a keyring lookup gives on the test bus, which has none. */
+static GLogWriterOutput
+count_keyring_lookups (GLogLevelFlags   log_level,
+                       const GLogField *fields,
+                       gsize            n_fields,
+                       gpointer         user_data)
+{
+    for (gsize i = 0; i < n_fields; ++i)
+    {
+        if (g_paste_str_equal (fields[i].key, "MESSAGE") && fields[i].length < 0 &&
+            strstr (fields[i].value, "look up the history passphrase in the keyring"))
+            ++keyring_lookups;
+    }
+
+    return g_log_writer_default (log_level, fields, n_fields, user_data);
+}
+
+/* The keyring is asked once the store is this process's, which the
+ * synchronous check leaves to the gate while another daemon holds it, and
+ * before any prompt. */
+static void
+test_decryption_gate_asks_keyring (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_writer_func (count_keyring_lookups, NULL, NULL);
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    write_under (settings, "passphrase", name);
+
+    gint fd = hold_storage_lock ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_assert_true (g_paste_storage_decryption_needed (settings));
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+    prompt->passphrase = "passphrase";
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_test_bus_pump (300);
+    g_assert_cmpuint (keyring_lookups, ==, 0);
+    close (fd);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_decryption_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (keyring_lookups, ==, 1);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+#endif
+#endif
+
 /* A locked history is unlocked first; left locked, what it holds is not
  * checked and the store is not called healthy. */
 static void
@@ -5512,6 +5705,13 @@ main (int    argc,
     g_test_add_func ("/storage/doctor/unreadable", test_doctor_unreadable);
     g_test_add_func ("/storage/lock/two-waits", test_storage_lock_two_waits);
     g_test_add_func ("/storage/lock/taken-is-ours", test_taken_lock_is_ours);
+    g_test_add_func ("/storage/lock/gates", test_gates_wait_for_lock);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/lock/decryption-gate-settles", test_decryption_gate_settles);
+#ifdef G_PASTE_ENABLE_LIBSECRET
+    g_test_add_func ("/storage/lock/decryption-gate-asks-keyring", test_decryption_gate_asks_keyring);
+#endif
+#endif
     g_test_add_func ("/storage/when-idle", test_storage_when_idle);
     g_test_add_func ("/storage/lock/load-after-release", test_load_after_release_reads_nothing);
     g_test_add_func ("/storage/lock/flushed-history", test_flushed_history_loads_nothing);

@@ -57,6 +57,13 @@ static const gchar * const journal_operations[JOURNAL_N_OPERATIONS] = { "import"
  * passphrase: reported by g_paste_storage_decryption_async (), once. */
 static GStrv rekey_cut_short;
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* g_paste_storage_decryption_needed () found the store another daemon's, and
+ * left settling it and asking the keyring to g_paste_storage_decryption_async
+ * (), once that daemon lets go. */
+static gboolean decryption_left_to_gate;
+#endif
+
 static gchar *
 journal_path (void)
 {
@@ -1316,23 +1323,87 @@ ask_migration (MigrationData *self)
                                     on_migration_reply, self);
 }
 
-/**
- * g_paste_storage_migration_async:
- * @prompt: the #GPastePrompt to ask through
- * @settings: a #GPasteSettings instance
- * @callback: (scope async): called once the migration settled or was dismissed
- * @user_data: data passed to @callback
- *
- * Ask the user where GPaste should store the history, and act on the answer.
- */
-G_PASTE_VISIBLE void
-g_paste_storage_migration_async (GPastePrompt       *prompt,
-                                 GPasteSettings     *settings,
-                                 GAsyncReadyCallback callback,
-                                 gpointer            user_data)
+static void
+storage_lock_thread (GTask        *task,
+                     gpointer      source_object G_GNUC_UNUSED,
+                     gpointer      task_data     G_GNUC_UNUSED,
+                     GCancellable *cancellable   G_GNUC_UNUSED)
 {
-    g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
-    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+    g_task_return_boolean (task, g_paste_storage_backend_lock (NULL));
+}
+
+/* What a startup gate does with the store waits for this process to hold the
+ * storage lock: a daemon taken over from goes on rewriting the store until its
+ * workers are done -- a re-key, an import -- keeping the lock meanwhile, and a
+ * passphrase verified, a backend detected or a history imported before then
+ * would be checked against, or taken from, a store about to change under it.
+ * The wait is as long as that rewrite, so it runs on a thread of its own; no
+ * storage worker counts it, since it writes nothing.
+ *
+ * @gate is the gate's task, whose task data is the settings, handed to
+ * @callback once the wait is over: whether the lock was had is the result's
+ * boolean (when_storage_locked_finish ()). */
+static void
+when_storage_locked (GTask              *gate,
+                     GAsyncReadyCallback callback)
+{
+    g_autoptr (GTask) wait = g_task_new (NULL, NULL /* cancellable */, callback, gate);
+
+    g_task_set_source_tag (wait, when_storage_locked);
+    g_task_run_in_thread (wait, storage_lock_thread);
+}
+
+/* Whether the gate goes on, the settings it carries read again if it does.
+ * Without the lock -- this process letting go of it, standing down, or no
+ * lock file to take, which the load answers as unreadable all the same -- the
+ * store is not the gate's to touch, and it ends with nothing done. With it,
+ * what the daemon taken over from settled on is stored by now, and the
+ * notification saying so may still be on its way. */
+static gboolean
+when_storage_locked_finish (GTask        *gate,
+                            GAsyncResult *result)
+{
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == when_storage_locked, FALSE);
+
+    if (!g_task_propagate_boolean (G_TASK (result), NULL))
+    {
+        g_task_return_boolean (gate, TRUE);
+        return FALSE;
+    }
+
+    g_paste_settings_reload (g_task_get_task_data (gate));
+
+    return TRUE;
+}
+
+static void
+on_migration_locked (GObject      *source_object G_GNUC_UNUSED,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+
+    if (!when_storage_locked_finish (task, result))
+        return;
+
+    GPastePrompt *prompt = g_task_get_source_object (task);
+    GPasteSettings *settings = g_task_get_task_data (task);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* Ahead of the import that may read one, as in
+     * g_paste_storage_decryption_needed(). */
+    g_paste_file_backend_settle_rekeys ();
+#endif
+    /* Ahead of the import too, which a copy cut short that does not read back
+     * would stop (/storage/migration/import-cut-short-then-migrate). */
+    journal_settle (settings);
+
+    /* Done by the daemon taken over from, once it let go of the store. */
+    if (!g_paste_storage_migration_needed (settings))
+    {
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
 
     /* Detect the backend the history currently lives in from the files on disk,
      * and apply it right away so this session keeps the right backend even if the
@@ -1344,15 +1415,6 @@ g_paste_storage_migration_async (GPastePrompt       *prompt,
      * encrypted history gets recorded as "no storage" and stops being offered for
      * import. */
     GPasteStorage current = g_paste_settings_get_storage_backend (settings);
-
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* Ahead of the import that may read one, as in
-     * g_paste_storage_decryption_needed(). */
-    g_paste_file_backend_settle_rekeys ();
-#endif
-    /* Ahead of the import too, which a copy cut short that does not read back
-     * would stop (/storage/migration/import-cut-short-then-migrate). */
-    journal_settle (settings);
 
     /* Read back, rather than taken as detected: a storage-backend GSettings
      * refuses to store -- a locked key -- leaves the daemon on the backend it
@@ -1368,17 +1430,43 @@ g_paste_storage_migration_async (GPastePrompt       *prompt,
 
     self->settings = g_object_ref (settings);
     self->prompt = g_object_ref (prompt);
-    self->task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+    self->task = g_steal_pointer (&task);
     self->current = current;
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     self->held_passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
 #endif
 
+    ask_migration (self);
+}
+
+/**
+ * g_paste_storage_migration_async:
+ * @prompt: the #GPastePrompt to ask through
+ * @settings: a #GPasteSettings instance
+ * @callback: (scope async): called once the migration settled or was dismissed
+ * @user_data: data passed to @callback
+ *
+ * Ask the user where GPaste should store the history, and act on the answer:
+ * once this process holds the storage lock, so after a daemon taken over from
+ * is done rewriting the store, and only should the migration still be needed
+ * then.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_migration_async (GPastePrompt       *prompt,
+                                 GPasteSettings     *settings,
+                                 GAsyncReadyCallback callback,
+                                 gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT (prompt));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+
+    GTask *task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
+
     /* The concerns hand their results back through the same task type, so the
      * tag is what keeps one from being read as another. */
-    g_task_set_source_tag (self->task, g_paste_storage_migration_async);
-
-    ask_migration (self);
+    g_task_set_source_tag (task, g_paste_storage_migration_async);
+    g_task_set_task_data (task, g_object_ref (settings), g_object_unref);
+    when_storage_locked (task, on_migration_locked);
 }
 
 /**
@@ -1551,6 +1639,15 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     gboolean pending = decryption_pending (storage_kind);
 
+    /* A store another daemon still holds may change under any passphrase
+     * verified against it now, and what it leaves is not ours to settle yet:
+     * g_paste_storage_decryption_async () does both once it lets go. */
+    if (!g_paste_storage_backend_try_lock ())
+    {
+        decryption_left_to_gate = TRUE;
+        return TRUE;
+    }
+
 #ifdef G_PASTE_ENABLE_LIBSECRET
     /* A keyring passphrase that unlocks the history is applied here, so no prompt
      * is needed at all: the caller can load straight away with the passphrase now
@@ -1581,6 +1678,81 @@ on_decryption_settled (gboolean unlocked G_GNUC_UNUSED,
 
     storage_concern_return (task, (error) ? g_error_copy (error) : NULL);
 }
+
+/* A change cut short between two histories, said through @prompt whether or
+ * not the gate then asks for anything. */
+static void
+report_rekey_cut_short (GPastePrompt *prompt)
+{
+    if (!rekey_cut_short)
+        return;
+
+    g_autofree gchar *listed = g_strjoinv ("”, “", rekey_cut_short);
+    g_autofree gchar *message = g_strdup_printf ("%s\n\nThe change of passphrase was cut short: “%s” are on the new passphrase.",
+                                                 g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION),
+                                                 listed);
+
+    g_clear_pointer (&rekey_cut_short, g_strfreev);
+    g_paste_prompt_report (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE), message);
+}
+
+/* Once the store is this process's: what g_paste_storage_decryption_needed ()
+ * left to the gate (@taken_over), then the prompt, when still needed. */
+static void
+decryption_unlock (GTask   *gate,
+                   gboolean taken_over)
+{
+    g_autoptr (GTask) task = gate;
+    GPastePrompt *prompt = g_task_get_source_object (task);
+    GPasteSettings *settings = g_task_get_task_data (task);
+    GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
+    gboolean pending = decryption_pending (storage_kind);
+
+    /* What a change of passphrase the daemon taken over from did not live to
+     * finish left, settled as on_migration_locked () settles it, and the
+     * keyring asked, before any prompt. */
+    if (taken_over)
+    {
+        g_paste_file_backend_settle_rekeys ();
+        journal_settle (settings);
+        report_rekey_cut_short (prompt);
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        if (pending && g_paste_storage_keyring_apply_verified (storage_kind, settings))
+            pending = FALSE;
+#endif
+    }
+
+    if (!pending)
+    {
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+    /* The task is the callback's user_data, and on_decryption_settled owns it. */
+    unlock_prompt (prompt, settings, storage_kind, on_decryption_settled, g_steal_pointer (&task));
+}
+
+static void
+on_decryption_locked (GObject      *source_object G_GNUC_UNUSED,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+
+    if (when_storage_locked_finish (task, result))
+        decryption_unlock (g_steal_pointer (&task), FALSE);
+}
+
+static void
+on_decryption_taken_over (GObject      *source_object G_GNUC_UNUSED,
+                          GAsyncResult *result,
+                          gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+
+    if (when_storage_locked_finish (task, result))
+        decryption_unlock (g_steal_pointer (&task), TRUE);
+}
 #endif
 
 /**
@@ -1606,27 +1778,26 @@ g_paste_storage_decryption_async (GPastePrompt       *prompt,
     g_task_set_source_tag (task, g_paste_storage_decryption_async);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    GPasteStorage storage_kind = g_paste_settings_get_storage_backend (settings);
+    report_rekey_cut_short (prompt);
 
-    if (rekey_cut_short)
+    /* What g_paste_storage_decryption_needed () left to the gate is done once
+     * the daemon holding the store lets go of it, whatever is pending. */
+    if (decryption_left_to_gate)
     {
-        g_autofree gchar *listed = g_strjoinv ("”, “", rekey_cut_short);
-        g_autofree gchar *message = g_strdup_printf ("%s\n\nThe change of passphrase was cut short: “%s” are on the new passphrase.",
-                                                     g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION),
-                                                     listed);
-
-        g_clear_pointer (&rekey_cut_short, g_strfreev);
-        g_paste_prompt_report (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE), message);
+        decryption_left_to_gate = FALSE;
+        g_task_set_task_data (task, g_object_ref (settings), g_object_unref);
+        when_storage_locked (g_steal_pointer (&task), on_decryption_taken_over);
+        return;
     }
 
     /* Nothing to unlock otherwise, the keyring aside. Prompting then would
      * accept whatever is typed -- a flavour holding nothing encrypted refutes
-     * nothing -- and remember it in the keyring for nothing. */
-    if (decryption_pending (storage_kind))
+     * nothing -- and remember it in the keyring for nothing. Asked again once
+     * the store is this process's (on_decryption_locked ()). */
+    if (decryption_pending (g_paste_settings_get_storage_backend (settings)))
     {
-        /* The task is the callback's user_data,
-         * and on_decryption_settled owns it. */
-        unlock_prompt (prompt, settings, storage_kind, on_decryption_settled, g_steal_pointer (&task));
+        g_task_set_task_data (task, g_object_ref (settings), g_object_unref);
+        when_storage_locked (g_steal_pointer (&task), on_decryption_locked);
         return;
     }
 #else

@@ -41,7 +41,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix a history just switched away from being listed with the wrong number of items
 - Fix searches listing images that have nothing to do with what was typed
 - Fix merging an image or a password putting a checksum or a mask in the merged text
-- Fix gpaste-client cutting piped input at a NUL byte, or taking a failed read for its end
+- Fix gpaste-client cutting piped input at a NUL byte, or adding part of it when it cannot be read whole
 - Document piping a password to gpaste-client add-password, and drop the newline ending it
 - Fix gpaste-client add-password and replace failing silently, or starting the daemon, with nothing piped
 - Report gpaste-client failures as plain messages rather than critical warnings
@@ -55,6 +55,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix gpaste-client failing when it starts the daemon, or right after a re-exec
 - Fix the bash completion running or splitting unusual history names, and misreading bundled options
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
+- Fix a history left unreadable when a daemon takes over during a change of passphrase
 
 NEW in 51.1 (20/10/2026)
 =============
