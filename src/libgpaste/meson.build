@@ -311,7 +311,8 @@ gpaste_daemon_deps = [ gcr_dep, gio_unix_dep, glib_dep, gtk4_dep, libgpaste_inte
 
 # The optional features below append to the union lists, so their headers are
 # internal by construction: compiled and visible in-tree, but never installed and
-# never introspected. That keeps the GIR from changing shape with the feature set.
+# never introspected. A public function compiled only with a feature -- the
+# passphrase API, with encryption -- is in the GIR only when the build has it.
 
 # Optional libsodium-based encryption converter for the history storage.
 if libsodium_dep.found()

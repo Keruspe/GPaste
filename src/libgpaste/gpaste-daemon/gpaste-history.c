@@ -581,15 +581,9 @@ g_paste_history_private_check_size (GPasteHistory *self)
         g_paste_history_private_elect_new_biggest (self);
 }
 
-/* Both caps, applied when a cap itself moves rather than the history under it.
- * The same trim g_paste_history_on_loaded () performs, saved for the same
- * reason: the store has to drop what the model dropped, the file flavours
- * sweeping the images of what it evicted with that write -- and every client
- * would go on showing rows the daemon no longer has until the next clipboard
- * change came to redraw them. Which is also why a flushed or unreadable history
- * is left alone: neither can be saved (the first belongs to a successor daemon
- * now, the second must never be written over), so a trim there would only have
- * the model answer for less than the store holds. */
+/* Both caps, applied when a cap itself moves rather than the history under it:
+ * the same trim g_paste_history_on_loaded () performs, saved and announced, and
+ * left alone on a flushed or unreadable history, for the reasons it gives. */
 static void
 g_paste_history_private_trim (GPasteHistory *self)
 {

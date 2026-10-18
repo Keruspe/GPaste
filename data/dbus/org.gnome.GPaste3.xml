@@ -57,7 +57,7 @@
 
     An item travels as (uuid, value, kind, favourite, notes): everything a client
     needs to draw a row, in one reply. @kind is the GPasteItemKind value, the
-    numeric one rather than its nick, which is now the storage backends'
+    numeric one rather than its nick, which is the storage backends'
     business alone; the org.gnome.GPaste3.ItemKind annotation below spells the
     numbers out, so a client that never sees GPaste's headers can still read them
     off Introspect().
@@ -70,13 +70,11 @@
     breaking the interface, is cheaper than spending it twice. A client should
     draw whatever it finds, and today will find nothing.
 
-    @value is the one string an item has here, the one a user is shown. There
-    used to be a second, "raw" flavour of every getter, answering what a script
-    might want instead: the uri list behind "[Files] ~/a", or the cache path
-    behind "[Image, 800 x 600 (...)]". For plain text, which is nearly all of a
-    history, the two were the same string, and neither was ever a password's
-    real value. GetImage is where an image's bytes come from and GetUris the uris
-    a files item holds; a colour item's colour is simply its value.
+    @value is the one string an item has here, the one a user is shown, and no
+    getter answers another: GetImage is where an image's bytes come from and
+    GetUris the uris a files item holds (the uri list behind "[Files] ~/a"),
+    and a colour item's colour is simply its value. A password's real value is
+    never on the wire.
   -->
   <interface name="org.gnome.GPaste3">
     <annotation name="org.gtk.GDBus.C.Name" value="PasteDaemon3"/>

@@ -419,9 +419,10 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *self,
     g_return_val_if_fail (size, FALSE);
 
     /* @history is required to come in empty (asserted above), but @size is not:
-     * settle it here so every backend's failure path — which reports the failure
-     * rather than filling these in — leaves both (out) parameters consistent
-     * with each other and with the empty history the caller is holding. */
+     * settle it here, a backend's failure path being free to leave it alone.
+     * Not to say a failure hands back nothing: the file flavours' parse answers
+     * what it read before the error, with its size, which the caller drops with
+     * the failure (/history/file_parser_malformed). */
     *size = 0;
 
     return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, name, cancellable, history, size);
@@ -1005,8 +1006,9 @@ g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
 /* Every storage flavour, indexed by its kind: what it is called on disk, what
  * the longest file it keeps for a history adds after the history's name, and
  * which class implements it. Adding a flavour is one row plus its enum value,
- * and every reader iterates up to %G_PASTE_N_STORAGE rather than carrying a
- * list of its own.
+ * every lookup of a kind going through here; a reader wanting several flavours
+ * names the ones it wants, in its own order (detect_current_backend (),
+ * _g_paste_storage_backend_history_still_stored ()).
  *
  * @get_type for an encrypted flavour is the no-storage backend on purpose: the
  * encrypted ones are built through their own constructor below, and anything
@@ -1049,9 +1051,9 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
  * @storage_kind: a #GPasteStorage kind
  *
  * The on-disk file extension a given storage kind uses. This is the single
- * source of truth every backend's get_extension vtable, the migration
- * detection and the shared images cleanup derive from, so a new flavour only
- * needs its extension declared here.
+ * source of truth every history path, the migration detection and the shared
+ * images cleanup derive from, so a new flavour only needs its extension
+ * declared here.
  *
  * Returns: the extension (without the leading dot)
  */

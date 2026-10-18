@@ -97,14 +97,15 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
     /* An attribute value, not a CDATA payload: g_paste_util_xml_encode() escapes
      * "&" and ">", which is what keeps a "]]>" out of a CDATA section, and
      * leaves the quote that delimits an attribute alone. A password name is
-     * whatever MakePassword was handed, so a quote in one closed the attribute
-     * early -- forging the ones that follow, or breaking the document outright
-     * so the whole history stopped being readable. g_markup_escape_text() is
-     * the attribute's escaping, and the entities it writes are the ones
-     * GMarkup gives back on read -- bar the tab, newline and carriage return it
-     * leaves as they are, which a read normalizes to spaces, as XML has it: a
-     * name holding one would come back another, or the same as another
-     * password's. Those go as character references, which a read keeps. */
+     * whatever MakePassword was handed, and a quote in one would close the
+     * attribute early -- forging the ones that follow, or breaking the document
+     * outright so the whole history stops being readable.
+     * g_markup_escape_text() is the attribute's escaping, and the entities it
+     * writes are the ones GMarkup gives back on read -- bar the tab, newline
+     * and carriage return it leaves as they are, which a read normalizes to
+     * spaces, as XML has it: a name holding one would come back another, or
+     * the same as another password's. Those go as character references, which
+     * a read keeps. */
     g_autofree gchar *escaped = g_markup_escape_text (g_paste_password_item_get_name (item), -1);
     g_autoptr (GString) name = g_string_new_take (g_steal_pointer (&escaped));
 
@@ -1397,9 +1398,11 @@ add_item (Data *data)
     {
         /* What the switch below would have built, decided rather than done: an
          * item needs a value and a usable kind, and an image needs images turned
-         * on and a date to restore. The one thing not foreseen here is a value a
-         * constructor rejects on inspection (a colour that does not parse), so a
-         * corrupt history can count one high -- the read warns about it. */
+         * on and a date to restore. Not foreseen here is what only building the
+         * item finds -- a value a constructor rejects (a colour that does not
+         * parse), an image whose file is missing, will not decode or decrypt --
+         * so a damaged history can count high by those, and by what the cap
+         * then let in in their place; the read warns about each. */
         gboolean countable = data->text && data->type != G_PASTE_ITEM_KIND_INVALID &&
                              (data->type != G_PASTE_ITEM_KIND_IMAGE || (data->images_support && data->date));
 

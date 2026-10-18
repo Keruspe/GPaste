@@ -408,7 +408,6 @@ g_paste_sqlite_backend_store_crypto_params (sqlite3      *db,
                                                                                                   memlimit, key));
 }
 
-/* One collected content blob, waiting to be written back under the new key. */
 /* Re-encrypt one content column, row by row: @ids_sql lists the rowids holding
  * a value, then each is fetched through @select_sql, decrypted with @old_key and
  * written back through @update_sql (binding the new blob, then the rowid)

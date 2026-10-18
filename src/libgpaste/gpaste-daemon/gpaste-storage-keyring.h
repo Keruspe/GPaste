@@ -16,10 +16,7 @@ G_BEGIN_DECLS
 gboolean g_paste_storage_keyring_apply_verified (GPasteStorage   storage_kind,
                                                  GPasteSettings *settings);
 
-/* Whether a passphrase is currently remembered, without installing it. Says
- * nothing about whether it still decrypts anything — that is what makes it the
- * right question for "is this user opted in to remembering?", a stale entry
- * being precisely one that wants replacing. */
+/* What g_paste_prompt_keyring_has_passphrase () answers. */
 gboolean g_paste_storage_keyring_has_passphrase (void);
 
 /* Remember @passphrase in the keyring for future startups. Only ever called with
