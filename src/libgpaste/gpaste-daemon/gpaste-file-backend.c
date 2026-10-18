@@ -261,7 +261,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
                                          GPasteImageItem   *item,
                                          const gchar       *reference)
 {
-    gboolean encrypted = g_paste_storage_backend_is_encrypted (G_PASTE_STORAGE_BACKEND ((gpointer) self));
+    gboolean encrypted = g_paste_storage_backend_is_encrypted (G_PASTE_STORAGE_BACKEND (self));
     g_autofree gchar *target = (encrypted) ? g_paste_file_backend_encrypted_path (reference) : g_strdup (reference);
 
     if (g_file_test (target, G_FILE_TEST_EXISTS))
@@ -2219,7 +2219,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
 
     g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
     g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
-    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (rekeyed)->get_output_stream (G_PASTE_FILE_BACKEND ((gpointer) rekeyed),
+    g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (rekeyed)->get_output_stream (G_PASTE_FILE_BACKEND (rekeyed),
                                                                                                      tmp_file);
 
     if (!stream)
@@ -2491,7 +2491,7 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     }
 
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
-    g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted ((GPasteSettings *) settings,
+    g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted (settings,
                                                                                   new_passphrase);
     g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
 

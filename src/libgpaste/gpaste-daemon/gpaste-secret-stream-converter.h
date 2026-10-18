@@ -19,8 +19,8 @@ typedef enum
 
 G_PASTE_FINAL_TYPE (SecretStreamConverter, secret_stream_converter, SECRET_STREAM_CONVERTER, GObject)
 
-GConverter *g_paste_secret_stream_converter_new (GPasteSecretStreamDirection  direction,
-                                                 const gchar                 *passphrase);
+GConverter *g_paste_secret_stream_converter_new (GPasteSecretStreamDirection direction,
+                                                 const gchar                *passphrase);
 
 void     g_paste_secret_stream_converter_end_at_final (GPasteSecretStreamConverter *self);
 gboolean g_paste_secret_stream_file_has_frame         (const gchar                 *path);

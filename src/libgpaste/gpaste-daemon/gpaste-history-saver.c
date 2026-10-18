@@ -287,7 +287,7 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
     data->backend = g_object_ref (self->backend);
     data->op = op;
     data->name = g_strdup (name);
-    data->item = item ? g_object_ref ((GPasteItem *) item) : NULL;
+    data->item = item ? g_object_ref (item) : NULL;
     data->uuid = g_strdup (uuid);
     data->history = history;
     data->count = count;
@@ -490,7 +490,7 @@ g_paste_history_saver_detach (GPasteHistorySaver *self)
 
     /* The result was going to be dropped either way; this is the read producing
      * it, which the new saver is not waiting for and the old owner cannot use. */
-    g_cancellable_cancel (self->load_cancellable);
+    g_paste_clear_cancellable (&self->load_cancellable);
 }
 
 /****************/
@@ -755,7 +755,7 @@ g_paste_history_saver_abandon_load (GPasteHistorySaver *self)
     self->load_generation++;
     self->load_in_progress = FALSE;
     g_clear_pointer (&self->pending_load, g_paste_history_saver_load_data_free);
-    g_cancellable_cancel (self->load_cancellable);
+    g_paste_clear_cancellable (&self->load_cancellable);
 }
 
 /**

@@ -287,15 +287,13 @@ on_passphrase_changed (GObject      *source G_GNUC_UNUSED,
  * first and make sure what is in memory is already down there — then re-encrypt
  * it. We can put the prompts to the user ourselves (libadwaita), so the re-key
  * runs right here. */
-static gboolean
+static void
 do_change_passphrase (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
     g_paste_daemon_flush (ctx->daemon);
     g_paste_storage_rekey_async (ctx->prompt, ctx->settings, on_passphrase_changed, ctx);
-
-    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -322,7 +320,7 @@ change_passphrase (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
      * Argon2 key or waits on the keyring. Doing it here would stall the main
      * loop — the caller's synchronous call included, until it times out on a
      * change that is merely slow. Defer, as the gnome-shell host does. */
-    g_source_set_name_by_id (g_idle_add (do_change_passphrase, ctx), "[GPaste] passphrase change");
+    g_source_set_name_by_id (g_idle_add_once (do_change_passphrase, ctx), "[GPaste] passphrase change");
 }
 
 /* Hand what the check found to the callers waiting on it, once the backend is
