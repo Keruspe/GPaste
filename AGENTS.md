@@ -137,7 +137,8 @@ now written down once; add to the list, not to its consumers.
 | List | Lives in | Drives |
 |---|---|---|
 | The keyboard shortcuts | `G_PASTE_FOR_EACH_KEYBINDING` in `gpaste-3/gpaste-keybindings.h` | the shortcuts dialog, the preferences' shortcuts page, `data/control-center/42-gpaste.xml` (generated at build time by `tools/gen-keybindings-xml.py`, which fails on an entry it cannot read rather than leave it out), and the daemon's own bindings. Each carries two names: the sentence the shortcut UIs show and the few words the desktop portal lists it under |
-| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, `show_help()` printed straight from it, which command lines are read from stdin (`reads_pipe`, bar a verb-less line carrying one of the listing's own flags: `listing_flags_given()`), which leading arguments name items (`item_args`), and what dispatch needs of the daemon (`needs_client`: no client, a client -- for the re-exec verbs, which have to reach a daemon that never serves this interface -- or a daemon serving, waited for) |
+| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, `show_help()` printed straight from it, which command lines are read from stdin (`reads_pipe`, bar a verb-less line carrying one of the options the listing's row reads: `listing_flags_given()`), which leading arguments name items (`item_args`), which options it reads (`options`, by their letters), and what dispatch needs of the daemon (`needs_client`: no client, a client -- for the re-exec verbs, which have to reach a daemon that never serves this interface -- or a daemon serving, waited for) |
+| The command line's options | `options[]` in `src/client/gpaste-client.c` | getopt's table and letters, and `show_help()`'s option lines, grouped under their headings |
 | A `GPasteItem`'s kind | `GPasteItemKind` in `gpaste-3/gpaste-item-enums.h` | the item classes and both storage backends, through `g_paste_item_kind_to_string()` / `_from_string()`. The wire carries the enum *value*, not its nick, so the nicks are the on-disk format's business alone |
 | The prompts' wording | `GPastePromptText` in `gpaste-daemon/gpaste-prompt.h` | both passphrase/migration dialogs -- the Adwaita one out of process and the St one in the shell |
 | The D-Bus methods | `data/dbus/org.gnome.GPaste3.xml` | both halves of the wire, via gdbus-codegen |
@@ -161,9 +162,10 @@ The shell completions and the man page are the exception: each verb completes
 its arguments differently and the man page says more than a table could carry,
 so they stay hand-written and `tests/completions` checks them against
 `commands[]` instead, failing on a row it cannot read rather than leaving it out
-— every verb and alias has to be offered by all three shells, `--use-index` by
-bash after every verb with a nonzero `item_args`, and every canonical verb
-documented in the man page.
+— every verb and alias has to be offered by all three shells, each by bash with
+exactly the options its row reads, `--use-index` among them after every verb
+with a nonzero `item_args` (the general options aside, which every line
+answers), and every canonical verb and every option documented in the man page.
 
 An enumeration that has to back a `GValue` needs a GType: `GPasteItemKind`,
 `GPasteStorage`, `GPasteUpdateAction`, `GPasteUpdateTarget`,

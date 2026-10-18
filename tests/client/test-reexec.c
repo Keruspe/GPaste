@@ -838,30 +838,25 @@ test_reads_stdin (void)
     ctx.version = TRUE;
     g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
 
-    /* Each flag only the listing reads -- listing_flags_given ()'s list --
-     * makes a verb-less line the listing, and leaves a verb's own pipe alone,
-     * --use-index with replace <index> above all. */
-    gboolean *listing_flags[] = { &ctx.favourites, &ctx.oneline, &ctx.raw, &ctx.reverse, &ctx.use_index, &ctx.zero };
-
+    /* Each option only the listing reads -- --favourites, --use-index,
+     * --oneline, --raw, --reverse and --zero -- makes a verb-less line the
+     * listing, and leaves a verb's own pipe alone, --use-index with replace
+     * <index> above all. */
     ctx.version = FALSE;
-    for (guint i = 0; i < G_N_ELEMENTS (listing_flags); ++i)
+    for (const gchar *letter = "fiorez"; *letter; ++letter)
     {
-        *listing_flags[i] = TRUE;
+        ctx.given = option_bit (*letter);
         g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
         g_assert_true (dispatch_reads_stdin (1, "add", &ctx));
         g_assert_true (dispatch_reads_stdin (2, "replace", &ctx));
-        *listing_flags[i] = FALSE;
     }
 
-    /* A flag the listing does not own leaves a verb-less line the pipe's. */
-    ctx.timeout_given = TRUE;
-    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
-    ctx.timeout_given = FALSE;
-    ctx.decoration = "-";
-    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
-    ctx.decoration = NULL;
-    ctx.separator = ",";
-    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    /* One the listing does not own leaves a verb-less line the pipe's. */
+    for (const gchar *letter = "tds"; *letter; ++letter)
+    {
+        ctx.given = option_bit (*letter);
+        g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    }
 }
 
 /* @length bytes of @contents as the client's stdin, from a file of their own. */
@@ -1039,7 +1034,7 @@ test_timeout_parsing (void)
         optind = 0;
         g_assert_false (parse_cmdline (&argc, &args, &ctx, &error));
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
-        g_assert_false (ctx.timeout_given);
+        g_assert_false (options_given (&ctx, "t"));
     }
 
     g_autofree gchar *program = g_strdup ("gpaste-client");
@@ -1053,7 +1048,7 @@ test_timeout_parsing (void)
     optind = 0;
     g_assert_true (parse_cmdline (&argc, &args, &ctx, &error));
     g_assert_no_error (error);
-    g_assert_true (ctx.timeout_given);
+    g_assert_true (options_given (&ctx, "t"));
     g_assert_cmpuint (ctx.timeout, ==, 30);
 }
 
@@ -1341,7 +1336,7 @@ test_password_timeout (void)
     g_assert_cmpuint (added_timeout, ==, 30);
     g_clear_object (&ctx.client);
 
-    ctx.timeout_given = TRUE;
+    ctx.given = option_bit ('t');
     ctx.timeout = 5;
     g_assert_cmpint (g_paste_dispatch (3, "add-password", &ctx, &error), ==, EXIT_SUCCESS);
     g_assert_no_error (error);
