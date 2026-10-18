@@ -248,13 +248,16 @@ gboolean g_paste_prompt_backend_changes (GPasteStorage current,
  * g_paste_prompt_remember_state ()'s, below. */
 gboolean g_paste_prompt_keyring_available      (void);
 
-/* Where the "Remember this passphrase" switch should start, and whether leaving
- * it off means anything. Both answers come from one keyring lookup, and both
- * backends ask here rather than working it out again: this is the subtlest rule
- * in the prompt, and a copy of it per language is a copy that drifts. */
-void g_paste_prompt_remember_state (GPasteStorageRemember requested,
-                                    gboolean             *starts_on,
-                                    gboolean             *can_forget);
+/* Where the "Remember this passphrase" switch should start, whether leaving it
+ * off means anything -- both from one keyring lookup -- and what it answers once
+ * the passphrase is given. Both backends ask here rather than working it out
+ * again: this is the subtlest rule in the prompt, and a copy of it per language
+ * is a copy that drifts. */
+void                  g_paste_prompt_remember_state  (GPasteStorageRemember requested,
+                                                      gboolean             *starts_on,
+                                                      gboolean             *can_forget);
+GPasteStorageRemember g_paste_prompt_remember_answer (gboolean switch_on,
+                                                      gboolean can_forget);
 
 /* The scale g_paste_prompt_passphrase_strength() rates on, so a meter is built
  * against the contract rather than against a number copied out of it. It is the

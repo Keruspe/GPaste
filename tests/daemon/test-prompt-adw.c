@@ -445,11 +445,30 @@ test_passphrase_confirmed (gconstpointer user_data)
 
     gtk_editable_set_text (dialog->confirm_entry, "correct horse");
     g_assert_true (gtk_widget_get_sensitive (dialog->ok));
+
+    /* The switch turned on, where the build offers one, is the passphrase to
+     * remember (g_paste_prompt_remember_answer ()). */
+    gboolean offered = dialog->remember != NULL;
+
+    if (offered)
+        adw_switch_row_set_active (ADW_SWITCH_ROW (dialog->remember), TRUE);
     g_signal_emit_by_name ((GPOINTER_TO_INT (user_data)) ? dialog->confirm_entry : dialog->entry, "entry-activated");
     wait_for (&answer);
     g_assert_nonnull (answer.passphrase);
     g_assert_cmpstr (g_paste_passphrase_peek (answer.passphrase), ==, "correct horse");
+    g_assert_cmpint (answer.remember, ==, (offered) ? G_PASTE_STORAGE_REMEMBER_YES : G_PASTE_STORAGE_REMEMBER_UNCHANGED);
     g_clear_pointer (&answer.passphrase, g_paste_passphrase_free);
+}
+
+/* On is to remember, and off to forget only where something is remembered:
+ * finding the switch off and leaving it there asks nothing. */
+static void
+test_remember_answer (void)
+{
+    g_assert_cmpint (g_paste_prompt_remember_answer (TRUE, FALSE), ==, G_PASTE_STORAGE_REMEMBER_YES);
+    g_assert_cmpint (g_paste_prompt_remember_answer (TRUE, TRUE), ==, G_PASTE_STORAGE_REMEMBER_YES);
+    g_assert_cmpint (g_paste_prompt_remember_answer (FALSE, TRUE), ==, G_PASTE_STORAGE_REMEMBER_NO);
+    g_assert_cmpint (g_paste_prompt_remember_answer (FALSE, FALSE), ==, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 }
 
 /* A passphrase asked for other histories says what it is wanted for in place
@@ -536,6 +555,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed", GINT_TO_POINTER (TRUE), test_passphrase_confirmed);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed_first_entry", GINT_TO_POINTER (FALSE), test_passphrase_confirmed);
     g_test_add_func ("/prompt-adw/passphrase/other-histories", test_passphrase_other_histories);
+    g_test_add_func ("/prompt-adw/passphrase/remember-answer", test_remember_answer);
     g_test_add_func ("/prompt-adw/report/shown", test_report_shown);
 
     return g_paste_test_env_run ();

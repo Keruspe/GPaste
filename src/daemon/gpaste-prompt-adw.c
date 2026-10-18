@@ -454,14 +454,8 @@ on_passphrase_ok (GtkButton *button G_GNUC_UNUSED,
                   gpointer   user_data)
 {
     PassphraseDialog *self = user_data;
-    GPasteStorageRemember remember = G_PASTE_STORAGE_REMEMBER_UNCHANGED;
-
-    /* Only report the choice: the keyring is written by whoever established that
-     * this passphrase is the right one, which cannot be known from here. */
-    if (self->remember && adw_switch_row_get_active (ADW_SWITCH_ROW (self->remember)))
-        remember = G_PASTE_STORAGE_REMEMBER_YES;
-    else if (self->remembered)
-        remember = G_PASTE_STORAGE_REMEMBER_NO;
+    gboolean switch_on = self->remember && adw_switch_row_get_active (ADW_SWITCH_ROW (self->remember));
+    GPasteStorageRemember remember = g_paste_prompt_remember_answer (switch_on, self->remembered);
 
     /* Reply while the entry text is still alive; the reply copies it. */
     g_paste_prompt_request_reply_passphrase (self->request, gtk_editable_get_text (self->entry), remember);

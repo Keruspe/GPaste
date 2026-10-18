@@ -89,7 +89,10 @@ const context = vm.createContext({
             storage_label: storage => `storage ${storage}`,
             can_import: () => false,
             backend_changes: () => false,
-            remember_state: () => [false, false],
+            remember_state: () => [false, true],
+            // What it was asked, to be told apart from anything prompt.js
+            // would decide for itself.
+            remember_answer: (switchOn, canForget) => `answer(${switchOn}, ${canForget})`,
         },
         PromptText: new Proxy({}, {get: (target, name) => name}),
         StorageRemember: {UNCHANGED: 0, YES: 1, NO: 2},
@@ -108,7 +111,10 @@ function request() {
         get_error_message: () => null,
         get_remember: () => 0,
         offers_remember: () => false,
-        reply_passphrase(passphrase) { this.answers.push(passphrase); },
+        reply_passphrase(passphrase, remember) {
+            this.answers.push(passphrase);
+            this.remember = remember;
+        },
         dismiss() { this.answers.push('dismissed'); },
     };
 }
@@ -223,6 +229,14 @@ assert.equal(otherContent.description, 'Other histories');
 assert.equal(switches(otherContent).length, 0);
 assert.equal(ownContent.description, 'PASSPHRASE_DESCRIPTION');
 assert.deepEqual(switches(ownContent).map(box => box.label), ['REMEMBER']);
+
+// What the switch answers is the C side's, asked with where it was left and
+// whether off means forgetting; without one, it is asked with neither.
+switches(ownContent)[0].checked = true;
+dialogs.at(-1)._onOk();
+assert.equal(own.remember, 'answer(true, true)');
+dialogs.at(-2)._onOk();
+assert.equal(other.remember, 'answer(false, false)');
 dialogs.slice(-2).forEach(dialog => dialog.close());
 
 console.log('Prompt: lock screen, strength meter, migration description and other histories passed');

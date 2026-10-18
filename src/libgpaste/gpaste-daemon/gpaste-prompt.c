@@ -858,6 +858,31 @@ g_paste_prompt_remember_state (GPasteStorageRemember requested,
 }
 
 /**
+ * g_paste_prompt_remember_answer:
+ * @switch_on: whether the "Remember this passphrase" switch is on as the
+ *             passphrase is given, %FALSE where none is offered
+ * @can_forget: what g_paste_prompt_remember_state() answered for it, %FALSE
+ *              where none is offered
+ *
+ * What the switch answers. The choice is reported and nothing more: the keyring
+ * is written by whoever established that the passphrase is the right one,
+ * which a prompt cannot know. On is to remember it; off is to forget the one
+ * remembered only where there is one, finding the switch off and leaving it
+ * there asking nothing.
+ *
+ * Returns: what the passphrase is to be answered with
+ */
+G_PASTE_VISIBLE GPasteStorageRemember
+g_paste_prompt_remember_answer (gboolean switch_on,
+                                gboolean can_forget)
+{
+    if (switch_on)
+        return G_PASTE_STORAGE_REMEMBER_YES;
+
+    return (can_forget) ? G_PASTE_STORAGE_REMEMBER_NO : G_PASTE_STORAGE_REMEMBER_UNCHANGED;
+}
+
+/**
  * g_paste_prompt_passphrase_is_complete:
  * @passphrase: (nullable): what was typed in the passphrase field
  * @confirmation: (nullable): what was typed in the confirmation field, or %NULL

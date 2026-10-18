@@ -159,9 +159,11 @@ the daemon.
 `prompt` runs the shipped GNOME Shell prompt over St, dialog and session-mode
 doubles: the strength meter and its hint wear classes the shell's theme styles;
 locking hides a dialog up and unlocking shows it again; a question or a report
-asked while locked waits for the unlock; a shutdown dismisses a question
-still waiting, logs a report, and stops watching the session; and the
-migration dialog names "Keep as is" only where it offers it.
+asked while locked waits for the unlock; a shutdown dismisses a question still
+waiting, logs a report, and stops watching the session; the migration dialog
+names "Keep as is" only where it offers it; a passphrase asked for other
+histories says what it is wanted for and offers no switch to remember it; and
+what the switch answers is asked of `g_paste_prompt_remember_answer()`.
 
 `state-switch` runs the shipped tracking switch over a `PopupSwitchMenuItem`
 double that clicks through `toggle()`, as GNOME Shell's does: a `SetActive` the

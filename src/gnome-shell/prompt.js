@@ -222,16 +222,8 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
     }
 
     _onOk() {
-        let remember = GPasteDaemon.StorageRemember.UNCHANGED;
-
-        // Only report the choice: the keyring is written by whoever established
-        // that this passphrase is the right one, which cannot be known here.
-        // Turning the switch off is a request to forget; finding it off and
-        // leaving it there is not.
-        if (this._remember?.checked)
-            remember = GPasteDaemon.StorageRemember.YES;
-        else if (this._remembered)
-            remember = GPasteDaemon.StorageRemember.NO;
+        // What the switch answers is asked C-side too, as where it starts is.
+        const remember = GPasteDaemon.Prompt.remember_answer(!!this._remember?.checked, !!this._remembered);
 
         this._answer(this._entry.get_text(), remember);
         this.close();
