@@ -906,11 +906,11 @@ g_paste_ui_history_activate_position (GPasteUiHistory *self,
         return FALSE;
 
     GtkWidget *widget = (item) ? g_paste_ui_history_item_get_widget (item) : NULL;
+    /* The item the row shows first, then the one the model holds there. */
+    const gchar *uuid = (widget) ? g_paste_ui_item_get_uuid (G_PASTE_UI_ITEM (widget)) : NULL;
 
-    if (widget && g_paste_ui_item_activate (G_PASTE_UI_ITEM (widget)))
-        return TRUE;
-
-    const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
+    if (!uuid && item)
+        uuid = g_paste_ui_history_item_get_uuid (item);
 
     if (uuid)
         g_paste_ui_history_select_uuid (self, uuid);

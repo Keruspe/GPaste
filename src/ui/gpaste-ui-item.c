@@ -600,34 +600,6 @@ g_paste_ui_item_is_read (GPasteUiItem *self)
     return self->kind != G_PASTE_ITEM_KIND_INVALID;
 }
 
-/**
- * g_paste_ui_item_activate:
- * @self: a #GPasteUiItem instance
- *
- * Activate/Select the item
- *
- * returns: whether there was anything to select or not
- */
-gboolean
-g_paste_ui_item_activate (GPasteUiItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), FALSE);
-
-    if (!self->uuid)
-        return FALSE;
-
-    g_paste_client_select (self->client, self->uuid,
-                           NULL /* cancellable */,
-                           g_paste_ui_report_void_cb,
-                           g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
-                                                   _("Could not select the item")));
-
-    if (g_paste_settings_get_close_on_select (self->settings))
-        gtk_window_close (self->rootwin); /* Exit the application */
-
-    return TRUE;
-}
-
 static void
 g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
                                 GAsyncResult *res,
