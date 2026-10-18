@@ -1365,6 +1365,11 @@ g_paste_clipboard_meta_on_owner_changed (GPasteClipboardMeta *self,
     if (source && source == self->owned_source)
         return;
 
+    /* Another owner's now, which mutter has let go of: what it was published
+     * with -- an image's whole texture -- has no business staying in
+     * gnome-shell's memory until the next publication. */
+    g_clear_object (&self->owned_source);
+
     g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (self->is_clipboard));
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
 }

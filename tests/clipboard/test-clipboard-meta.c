@@ -18,6 +18,7 @@
 #include <meta/meta-selection-source-memory.h>
 
 #include <dlfcn.h>
+#include <glib/gstdio.h>
 #include <string.h>
 
 /* The PNG encodes GTK makes, as the serializer an image's own bytes spare
@@ -593,6 +594,43 @@ publish_outlives_clipboard (Fixture      *f,
     assert_serves_image (f);
 }
 
+/* Another owner taking the selection over leaves nothing of what GPaste
+ * published alive in gnome-shell: the texture an image went out with -- one
+ * read off its file, with no PNG of its own to serve -- goes with mutter's
+ * reference on the source. */
+static void
+publish_let_go (Fixture      *f,
+                gconstpointer user_data G_GNUC_UNUSED)
+{
+    gpointer texture;
+    g_autofree gchar *path = g_build_filename (g_get_user_cache_dir (), "let-go.png", NULL);
+
+    {
+        g_autoptr (GBytes) png = png_bytes ();
+        g_autoptr (GDateTime) date = g_date_time_new_now_local ();
+
+        g_assert_cmpint (g_mkdir_with_parents (g_get_user_cache_dir (), 0700), ==, 0);
+        g_assert_true (g_file_set_contents (path, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+
+        g_autoptr (GPasteItem) item = g_paste_image_item_new_from_file (path, date, NULL);
+
+        g_assert_null (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item)));
+
+        g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, item, TRUE), !=, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
+        texture = g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item));
+        g_object_add_weak_pointer (texture, &texture);
+    }
+
+    g_assert_nonnull (texture);
+
+    g_autoptr (GBytes) text = g_bytes_new_static ("other", 5);
+
+    offer (f, "text/plain;charset=utf-8", text);
+    g_assert_null (texture);
+    g_unlink (path);
+}
+
 /* An image that carries its PNG goes out as that PNG alone, all gnome-shell
  * serialises a texture to: its texture held by nothing GPaste published, it
  * goes once the history lets it go -- outside max-memory-usage otherwise, for
@@ -629,6 +667,7 @@ main (int argc, char *argv[])
     g_test_add ("/meta/capture/uris", Fixture, GINT_TO_POINTER (G_PASTE_ITEM_KIND_URIS), fixture_setup, capture, fixture_teardown);
     g_test_add ("/meta/publish/image", Fixture, NULL, fixture_setup, publish_image, fixture_teardown);
     g_test_add ("/meta/publish/outlives-clipboard", Fixture, NULL, fixture_setup, publish_outlives_clipboard, fixture_teardown);
+    g_test_add ("/meta/publish/let-go", Fixture, NULL, fixture_setup, publish_let_go, fixture_teardown);
     g_test_add ("/meta/publish/image-holds-no-texture", Fixture, NULL, fixture_setup, publish_image_holds_no_texture, fixture_teardown);
     g_test_add ("/meta/read/nul-terminated", Fixture, NULL, fixture_setup, nul_terminated_text, fixture_teardown);
     g_test_add ("/meta/read/bounded", Fixture, NULL, fixture_setup, bounded_read, fixture_teardown);
