@@ -276,6 +276,11 @@ void g_paste_client_search                     (GPasteClient       *self,
                                                 GCancellable       *cancellable,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_search_text                (GPasteClient       *self,
+                                                const gchar        *text,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_select                     (GPasteClient       *self,
                                                 const gchar        *uuid,
                                                 GCancellable       *cancellable,
@@ -399,6 +404,9 @@ gchar   *g_paste_client_replace_finish                    (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 GList   *g_paste_client_search_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+GList   *g_paste_client_search_text_finish                (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_select_finish                     (GPasteClient *self,

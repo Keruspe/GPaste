@@ -28,6 +28,9 @@ typedef struct
     guint            history_calls;
     /* The text the surviving result holds, when not its own. */
     const gchar     *surviving_text;
+    /* Whether Search refuses every query, and with which code. */
+    gboolean         refused;
+    GPasteError      refusal;
 } Fixture;
 
 static gboolean
@@ -40,6 +43,11 @@ on_search (GPasteDaemon3         *daemon,
 
     ++f->searches;
     g_set_str (&f->query, query);
+    if (f->refused)
+    {
+        g_dbus_method_invocation_return_error_literal (invocation, G_PASTE_ERROR, f->refusal, "refused");
+        return TRUE;
+    }
     g_paste_daemon3_complete_search (daemon, invocation,
                                      g_variant_new_parsed ("[('" REMOVED_UUID "', 'removed text', uint32 1, false, @as []),"
                                                            " ('" SURVIVING_UUID "', %s, uint32 1, false, @as [])]",
@@ -151,6 +159,7 @@ search_terms (Fixture             *f,
               const gchar * const *terms)
 {
     static const gchar * const found[] = { REMOVED_UUID, SURVIVING_UUID, NULL };
+    static const gchar * const none[] = { NULL };
     gint64 deadline = g_get_monotonic_time () + G_PASTE_TEST_BUS_WAIT_SECONDS * G_USEC_PER_SEC;
 
     while (!f->searches && g_get_monotonic_time () < deadline)
@@ -160,7 +169,7 @@ search_terms (Fixture             *f,
 
         g_variant_get (reply, "(^a&s)", &ids);
         if (f->searches)
-            g_assert_cmpstrv (ids, found);
+            g_assert_cmpstrv (ids, (f->refused) ? none : found);
         else
         {
             g_assert_null (ids[0]);
@@ -189,6 +198,62 @@ test_escaped (Fixture      *f,
 
     search_terms (f, terms);
     g_assert_cmpstr (f->query, ==, "c\\+\\+ \\(gcc");
+}
+
+/* A phrase the daemon refuses as too long finds nothing, and is no failure to
+ * journal: warnings are fatal here. */
+static void
+test_too_long (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    static const gchar * const terms[] = { "text", NULL };
+
+    f->refused = TRUE;
+    f->refusal = G_PASTE_ERROR_INVALID_ARGUMENT;
+    search_terms (f, terms);
+}
+
+/* What g_paste_client_search_text () finds, or the error it answers. */
+static GList *
+search_text (GPasteClient *client,
+             const gchar  *text,
+             GError      **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_client_search_text (client, text, NULL, g_paste_test_env_keep_result, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_nonnull (result);
+
+    return g_paste_client_search_text_finish (client, result, error);
+}
+
+/* The client's search for what was typed: escaped, the refusal of a text too
+ * long to search for being no match, and any other refusal the caller's to
+ * hear of. */
+static void
+test_client_search_text (Fixture      *f,
+                         gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+
+    g_assert_no_error (error);
+
+    g_autolist (GPasteClientItem) found = search_text (client, "c++ (gcc", &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstr (f->query, ==, "c\\+\\+ \\(gcc");
+    g_assert_cmpuint (g_list_length (found), ==, 2);
+
+    f->refused = TRUE;
+    f->refusal = G_PASTE_ERROR_INVALID_ARGUMENT;
+    g_assert_null (search_text (client, "text", &error));
+    g_assert_no_error (error);
+
+    f->refusal = G_PASTE_ERROR_FAILED;
+    g_assert_null (search_text (client, "text", &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
 }
 
 /* Every signal the daemon sent is ahead of the reply to the round trip, so once
@@ -292,6 +357,8 @@ main (int argc, char **argv)
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
     g_test_add ("/search-provider/search/escaped", Fixture, NULL, fixture_setup, test_escaped, fixture_teardown);
+    g_test_add ("/search-provider/search/too-long", Fixture, NULL, fixture_setup, test_too_long, fixture_teardown);
+    g_test_add ("/search-provider/client/search-text", Fixture, NULL, fixture_setup, test_client_search_text, fixture_teardown);
     g_test_add ("/search-provider/metas/removed", Fixture, NULL, fixture_setup, test_removed, fixture_teardown);
     g_test_add ("/search-provider/metas/replaced", Fixture, NULL, fixture_setup, test_replaced, fixture_teardown);
     g_test_add ("/search-provider/metas/long-name", Fixture, NULL, fixture_setup, test_long_name, fixture_teardown);

@@ -57,8 +57,9 @@ struct _GPasteClient
  *
  * A proxy for the GPaste daemon's D-Bus interface.
  *
- * Every method comes in a synchronous flavor and an async pair, and both report
- * failures the same way:
+ * Every method comes in a synchronous flavor and an async pair -- the search for
+ * what is being typed (g_paste_client_search_text()) in the pair alone -- and
+ * both report failures the same way:
  *
  * - %G_PASTE_ERROR for a request the daemon understood and refused, e.g.
  *   %G_PASTE_ERROR_NOT_FOUND for an unknown uuid. The daemon registers the
@@ -1707,6 +1708,91 @@ G_PASTE_CLIENT_METHOD_RET (search,
                            GList *, NULL,
                            g_autoptr (GVariant) results = NULL, &results, g_paste_util_get_dbus_items_result (results),
                            (const gchar *pattern), (pattern), (pattern))
+
+static void
+free_items (gpointer items)
+{
+    g_list_free_full (items, g_object_unref);
+}
+
+static void
+on_search_text_ready (GObject      *source_object,
+                      GAsyncResult *res,
+                      gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    GList *items = g_paste_client_search_finish (G_PASTE_CLIENT (source_object), res, &error);
+
+    /* What was typed always escapes to a regular expression, so the one way
+     * Search can refuse it is its length. */
+    if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT))
+        g_task_return_pointer (task, NULL, NULL);
+    else if (error)
+        g_task_return_error (task, g_steal_pointer (&error));
+    else
+        g_task_return_pointer (task, items, free_items);
+}
+
+/**
+ * g_paste_client_search_text:
+ * @self: a #GPasteClient instance
+ * @text: what was typed
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
+ *            satisfied, or %NULL to ignore the result
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Search for the items holding @text as it is, whatever its case: what a front
+ * end asks for what its user typed. Search takes a regular expression, which
+ * @text is escaped into (g_regex_escape_string()), so a '(' still searches and
+ * a '.' matches nothing but itself; a text too long for the daemon to search
+ * for finds nothing, rather than failing. A search for what is being typed
+ * goes out at every pause in the typing, which nothing should block on, so
+ * there is no synchronous flavour.
+ */
+G_PASTE_VISIBLE void
+g_paste_client_search_text (GPasteClient       *self,
+                            const gchar        *text,
+                            GCancellable       *cancellable,
+                            GAsyncReadyCallback callback,
+                            gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (text);
+    g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+    GTask *task = g_task_new (self, cancellable, callback, user_data);
+    g_autofree gchar *pattern = g_regex_escape_string (text, -1);
+
+    g_task_set_source_tag (task, g_paste_client_search_text);
+    g_paste_client_search (self, pattern, cancellable, on_search_text_ready, task);
+}
+
+/**
+ * g_paste_client_search_text_finish:
+ * @self: a #GPasteClient instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * The items g_paste_client_search_text() found. A failure is in one of the
+ * domains the D-Bus methods fail in (see #GPasteClient), and never
+ * %G_PASTE_ERROR_INVALID_ARGUMENT.
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+G_PASTE_VISIBLE GList *
+g_paste_client_search_text_finish (GPasteClient *self,
+                                   GAsyncResult *result,
+                                   GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (g_task_is_valid (result, self), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_client_search_text, NULL);
+    g_return_val_if_fail (!error || !*error, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
+}
 
 /**
  * g_paste_client_select_sync:

@@ -921,31 +921,23 @@ class GPasteIndicator extends Button {
             return;
 
         const [cancellable, , keptPlace] = this._beginPass(0, keepPlace);
-        // As typed and as text, as Search in org.gnome.GPaste3.xml asks of a
-        // front end: the daemon matches whatever the case already, and
-        // lowercasing would turn \S into \s.
-        const search = GLib.Regex.escape_string(this._searchItem.text, -1);
         let wanted, items;
 
-        // A daemon that has gone fails the match rather than answering an empty
-        // one, and nothing further down repaints the menu: reconciled here as a
-        // fetch that gave up is, so a filtered list does not go on showing rows
-        // for a history nobody can reach. A search past what the daemon takes
-        // is no such thing: it finds nothing.
+        // As typed, the daemon matching whatever the case. A daemon that has
+        // gone fails the match rather than answering an empty one, and nothing
+        // further down repaints the menu: reconciled here as a fetch that gave
+        // up is, so a filtered list does not go on showing rows for a history
+        // nobody can reach.
         try {
             [wanted, items] = await awaitReply(cancellable, this._hasSearch()
-                ? this._client.search(search, cancellable)
+                ? this._client.search_text(this._searchItem.text, cancellable)
                 : this._client.get_favourites(cancellable));
         } catch (e) {
-            if (e.matches?.(GPaste.Error, GPaste.Error.INVALID_ARGUMENT)) {
-                [wanted, items] = [!cancellable.is_cancelled(), []];
-            } else {
-                // As in _fetchAvailable ().
-                if (!daemonGone(e))
-                    console.error(e);
-                this._passFailed(cancellable);
-                return;
-            }
+            // As in _fetchAvailable ().
+            if (!daemonGone(e))
+                console.error(e);
+            this._passFailed(cancellable);
+            return;
         }
 
         if (!wanted || !this._client)

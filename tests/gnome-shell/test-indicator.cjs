@@ -73,7 +73,6 @@ const context = vm.createContext({
     GObject: {registerClass: (...args) => args.at(-1)},
     GLib: {
         Source: {remove: id => removedSources.push(id), set_name_by_id() {}},
-        Regex: {escape_string: text => `escaped(${text})`},
         PRIORITY_DEFAULT: 0,
         timeout_add_once: (priority, delay, callback) => timers.push({delay, callback}),
     },
@@ -89,7 +88,6 @@ const context = vm.createContext({
     GPasteDummyHistoryItem: Actor,
     GPasteSearchItem: Actor,
     GPaste: {
-        Error: {INVALID_ARGUMENT: 9},
         Client: {is_daemon_gone_error: e => !!e.gone},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
@@ -459,7 +457,7 @@ runSuite('Indicator', async () => {
     let failure = Object.assign(new Error('gone'), {gone: true});
 
     leaving._client.get_history_size = () => Promise.reject(failure);
-    leaving._client.search = () => Promise.reject(failure);
+    leaving._client.search_text = () => Promise.reject(failure);
     leaving._searchItem = {text: 'x', favourites: false};
     leaving._hasSearch = () => true;
     leaving._reconcileConnection = () => {};
@@ -515,7 +513,7 @@ runSuite('Indicator', async () => {
 
         placed._searchItem = {text: 'x', favourites: false};
         placed._hasSearch = () => true;
-        placed._client.search = () => new Promise(resolve => searches.push(resolve));
+        placed._client.search_text = () => new Promise(resolve => searches.push(resolve));
         placed._rebuild = (empty, keepPlace) => kept.push(keepPlace);
         for (const [first, second, keepsPlace] of [[false, true, false], [true, true, true]]) {
             const superseded = placed._runFilter(first);
@@ -709,19 +707,17 @@ runSuite('Indicator', async () => {
     assert.equal(notified.length, 0);
     assert.equal(errors.pop().message, 'no network');
 
-    // The search goes out as typed and as text: escaped, never lowercased. One
-    // the daemon refuses as too long lists nothing, and is no failure.
+    // The search goes out as typed, never lowercased, for search_text () to
+    // search for as text: an answer of nothing lists nothing.
     const filtered = indicator();
     const queries = [];
     let rebuilt = null;
     let reconciled = 0;
 
     filtered._client = {
-        search: query => {
-            queries.push(query);
-            return Promise.reject(Object.assign(new Error('too long'), {
-                matches: (domain, code) => domain === context.GPaste.Error && code === context.GPaste.Error.INVALID_ARGUMENT,
-            }));
+        search_text: text => {
+            queries.push(text);
+            return Promise.resolve([]);
         },
     };
     filtered._searchItem = {text: 'MyBank (x', favourites: false};
@@ -729,7 +725,7 @@ runSuite('Indicator', async () => {
     filtered._rebuild = empty => { rebuilt = empty; };
     filtered._reconcileConnection = () => ++reconciled;
     await filtered._runFilter();
-    assert.deepEqual(queries, ['escaped(MyBank (x)']);
+    assert.deepEqual(queries, ['MyBank (x']);
     assert.equal(rebuilt, true);
     assert.equal(reconciled, 0);
 

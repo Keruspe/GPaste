@@ -110,8 +110,9 @@ listing again. A revocable weak-reference double
 models collection during an upload, so its reply is finished without a
 notification from an indicator that is gone.
 
-The `indicator` test also checks that the menu's search goes out escaped and
-not lowercased, and that one the daemon refuses lists nothing without a failure;
+The `indicator` test also checks that the menu's search goes out as typed,
+never lowercased, for `search_text()` to search for as text, an answer of
+nothing listing nothing;
 that a keystroke's search waits for the typing to pause, an emptied entry listing
 at once and a teardown or a close stopping a search still waiting; and that the search box
 keeps its width with `element-size` at 0.

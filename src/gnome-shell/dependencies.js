@@ -17,7 +17,7 @@ gi.require('St', Config.LIBMUTTER_API_VERSION);
 Gio._promisify(GPaste.Client.prototype, 'get_favourites', 'get_favourites_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_history_size', 'get_history_size_finish');
 Gio._promisify(GPaste.Client.prototype, 'list_histories', 'list_histories_finish');
-Gio._promisify(GPaste.Client.prototype, 'search', 'search_finish');
+Gio._promisify(GPaste.Client.prototype, 'search_text', 'search_text_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_item_at_index', 'get_item_at_index_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_item', 'get_item_finish');
 // What an item's kind promises but its value does not carry: the image bytes,
