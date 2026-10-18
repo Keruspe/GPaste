@@ -17,7 +17,26 @@
 
 #include <meta/meta-selection-source-memory.h>
 
+#include <dlfcn.h>
 #include <string.h>
+
+/* The PNG encodes GTK makes, as the serializer an image's own bytes spare
+ * makes them: GTK's, reached from the library through the PLT. */
+static guint png_encodes;
+
+GBytes *
+gdk_texture_save_to_png_bytes (GdkTexture *texture)
+{
+    typedef GBytes *(*Save) (GdkTexture *texture);
+    static Save real;
+
+    if (!real)
+        real = (Save) dlsym (RTLD_NEXT, "gdk_texture_save_to_png_bytes");
+    g_assert_nonnull (real);
+    ++png_encodes;
+
+    return real (texture);
+}
 
 typedef struct
 {
@@ -488,11 +507,13 @@ on_transferred (GObject      *source,
 }
 
 /* The image the selection serves as PNG, read as another application would:
- * the one select_image () put there, pixel for pixel. */
-static void
+ * the one select_image () put there, pixel for pixel. Returns how many PNG
+ * encodes serving it took. */
+static guint
 assert_serves_image (Fixture *f)
 {
     Transfer transfer = { 0 };
+    guint encodes_before = png_encodes;
     g_autoptr (GOutputStream) stream = g_memory_output_stream_new_resizable ();
     gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
 
@@ -505,6 +526,8 @@ assert_serves_image (Fixture *f)
     g_assert_true (transfer.done);
     g_assert_no_error (transfer.error);
     g_output_stream_close (stream, NULL, NULL);
+
+    guint encodes = png_encodes - encodes_before;
 
     g_autoptr (GBytes) served = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (stream));
     g_autoptr (GdkTexture) texture = gdk_texture_new_from_bytes (served, NULL);
@@ -519,6 +542,8 @@ assert_serves_image (Fixture *f)
     gdk_texture_download (texture, pixels, 2 * 4);
     gdk_texture_download (expected, expected_pixels, 2 * 4);
     g_assert_cmpmem (pixels, sizeof (pixels), expected_pixels, sizeof (expected_pixels));
+
+    return encodes;
 }
 
 static void
@@ -535,7 +560,7 @@ select_image (Fixture *f)
 }
 
 /* An image put back on the clipboard is offered as a PNG, which reads back as
- * the same image. */
+ * the same image -- its own bytes, encoded again for no read. */
 static void
 publish_image (Fixture      *f,
                gconstpointer user_data G_GNUC_UNUSED)
@@ -550,7 +575,7 @@ publish_image (Fixture      *f,
     g_list_free_full (mimetypes, g_free);
     g_assert_true (offered);
 
-    assert_serves_image (f);
+    g_assert_cmpuint (assert_serves_image (f), ==, 0);
 }
 
 /* gnome-shell disposes a daemon it lets go of, and its clipboards with it, but
@@ -568,6 +593,31 @@ publish_outlives_clipboard (Fixture      *f,
     assert_serves_image (f);
 }
 
+/* An image that carries its PNG goes out as that PNG alone, all gnome-shell
+ * serialises a texture to: its texture held by nothing GPaste published, it
+ * goes once the history lets it go -- outside max-memory-usage otherwise, for
+ * as long as GPaste owns the selection. */
+static void
+publish_image_holds_no_texture (Fixture      *f,
+                                gconstpointer user_data G_GNUC_UNUSED)
+{
+    gpointer texture;
+
+    {
+        g_autoptr (GBytes) png = png_bytes ();
+        g_autoptr (GDateTime) date = g_date_time_new_now_local ();
+        g_autoptr (GPasteItem) item = g_paste_image_item_new_from_bytes (png, date, NULL);
+
+        g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, item, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+        texture = g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item));
+        g_object_add_weak_pointer (texture, &texture);
+        g_paste_item_set_state (item, G_PASTE_ITEM_STATE_IDLE);
+    }
+
+    g_assert_null (texture);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -579,6 +629,7 @@ main (int argc, char *argv[])
     g_test_add ("/meta/capture/uris", Fixture, GINT_TO_POINTER (G_PASTE_ITEM_KIND_URIS), fixture_setup, capture, fixture_teardown);
     g_test_add ("/meta/publish/image", Fixture, NULL, fixture_setup, publish_image, fixture_teardown);
     g_test_add ("/meta/publish/outlives-clipboard", Fixture, NULL, fixture_setup, publish_outlives_clipboard, fixture_teardown);
+    g_test_add ("/meta/publish/image-holds-no-texture", Fixture, NULL, fixture_setup, publish_image_holds_no_texture, fixture_teardown);
     g_test_add ("/meta/read/nul-terminated", Fixture, NULL, fixture_setup, nul_terminated_text, fixture_teardown);
     g_test_add ("/meta/read/bounded", Fixture, NULL, fixture_setup, bounded_read, fixture_teardown);
     g_test_add ("/meta/read/secret-bounded", Fixture, NULL, fixture_setup, secret_bounded, fixture_teardown);

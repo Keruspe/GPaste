@@ -684,8 +684,7 @@ g_paste_clipboard_meta_source_add_value (GPasteClipboardMetaSource *self,
     gsize n_mimetypes = 0;
     const gchar * const *mimetypes = gdk_content_formats_get_mime_types (formats, &n_mimetypes);
 
-    g_value_init (&self->value, G_VALUE_TYPE (value));
-    g_value_copy (value, &self->value);
+    gboolean serves = FALSE;
 
     for (gsize i = 0; i < n_mimetypes; ++i)
     {
@@ -694,7 +693,18 @@ g_paste_clipboard_meta_source_add_value (GPasteClipboardMetaSource *self,
             continue;
 
         self->mimetypes = g_list_append (self->mimetypes, g_strdup (mimetypes[i]));
+        serves = TRUE;
     }
+
+    /* Held only to serve a format the bytes already added do not: an image
+     * offered as its own PNG, all gnome-shell serialises a texture to, would
+     * otherwise keep its decoded pixels alive past the history letting them go,
+     * outside max-memory-usage, for as long as the source owns the selection. */
+    if (!serves)
+        return;
+
+    g_value_init (&self->value, G_VALUE_TYPE (value));
+    g_value_copy (value, &self->value);
 }
 
 /* Append every rich-text/HTML/XML/gnome-copied-files representation an item
@@ -862,6 +872,14 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
 
+        GBytes *png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
+
+        /* The PNG the item carries, where it carries one: served as it is,
+         * rather than encoded again from the texture on every read -- on the
+         * compositor's thread, this being gnome-shell. The texture stands in
+         * for the rest, and for an item read off its file. */
+        if (png)
+            g_paste_clipboard_meta_source_add (source, META_MIME_IMAGE, png);
         g_value_init (&value, GDK_TYPE_TEXTURE);
         g_value_set_object (&value, texture);
         g_paste_clipboard_meta_source_add_value (source, &value);
