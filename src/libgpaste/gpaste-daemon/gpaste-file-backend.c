@@ -636,6 +636,76 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
     }
 }
 
+/* The file names @text references under the shared images directory, into
+ * @referenced: what follows each "/images/" up to the first character no
+ * image's name holds. The path's tail alone: GPaste 50 spelt the data
+ * directory as it was reached then, which a symlinked home or another
+ * XDG_DATA_HOME may no longer match. A match a per-history path or a text item
+ * happens to contain only keeps a file. */
+static void
+_g_paste_file_backend_collect_legacy_references (const gchar *text,
+                                                 GHashTable  *referenced)
+{
+    static const gchar marker[] = G_DIR_SEPARATOR_S "images" G_DIR_SEPARATOR_S;
+
+    for (const gchar *at = strstr (text, marker); at; at = strstr (at, marker))
+    {
+        const gchar *name = at + strlen (marker);
+        const gchar *end = name;
+
+        while (g_ascii_isalnum (*end) || *end == '.' || *end == '-' || *end == '_')
+            ++end;
+
+        if (end > name)
+            g_hash_table_add (referenced, g_strndup (name, (gsize) (end - name)));
+        at = end;
+    }
+}
+
+/* The shared images every plain history document under @history_dir
+ * references, into @referenced: %FALSE, having said why, when one of them
+ * cannot be read. */
+static gboolean
+_g_paste_file_backend_collect_legacy_documents (const gchar *history_dir,
+                                                GHashTable  *referenced)
+{
+    g_autoptr (GFile) dir = g_file_new_for_path (history_dir);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) histories = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!histories)
+    {
+        g_warning ("Could not list the histories to know which images GPaste 50 left they reference: %s", error->message);
+        return FALSE;
+    }
+
+    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (G_PASTE_STORAGE_FILE), NULL);
+
+    for (GStrv history = histories; *history; ++history)
+    {
+        if (!g_str_has_suffix (*history, suffix))
+            continue;
+
+        g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
+        g_autofree gchar *text = NULL;
+
+        if (g_paste_storage_is_special_file (path))
+        {
+            g_warning ("%s is no history document, so the images GPaste 50 left are kept", path);
+            return FALSE;
+        }
+
+        if (!g_file_get_contents (path, &text, NULL, &error))
+        {
+            g_warning ("Could not read %s to know which images GPaste 50 left it references: %s", path, error->message);
+            return FALSE;
+        }
+        _g_paste_file_backend_collect_legacy_references (text, referenced);
+    }
+
+    return TRUE;
+}
+
 /**
  * g_paste_file_backend_sweep_legacy_images:
  *
@@ -650,7 +720,8 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
  * its pixels from it for as long as it is in memory.
  *
  * Nothing goes when a history file cannot be read: what it references is then
- * unknown.
+ * unknown. Each document is read once, its references collected, rather than
+ * searched again for every image.
  */
 G_PASTE_VISIBLE void
 g_paste_file_backend_sweep_legacy_images (void)
@@ -667,9 +738,8 @@ g_paste_file_backend_sweep_legacy_images (void)
         return;
     }
 
-    g_auto (GStrv) histories = NULL;
-    g_autoptr (GPtrArray) contents = g_ptr_array_new_with_free_func (g_free);
-    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (G_PASTE_STORAGE_FILE), NULL);
+    g_autoptr (GHashTable) referenced = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    gboolean collected = FALSE;
 
     for (GStrv image = images; *image; ++image)
     {
@@ -679,52 +749,16 @@ g_paste_file_backend_sweep_legacy_images (void)
         /* Read the first time there is an image to look for, and only then:
          * once nothing is left in the shared
          * directory, a start costs a listing. */
-        if (!histories)
+        if (!collected)
         {
-            g_autoptr (GFile) history_dir_file = g_file_new_for_path (history_dir);
-
-            if (!(histories = g_paste_util_list_directory (history_dir_file, G_FILE_ATTRIBUTE_STANDARD_NAME, &error)))
-            {
-                g_warning ("Could not list the histories to know which images GPaste 50 left they reference: %s", error->message);
+            if (!_g_paste_file_backend_collect_legacy_documents (history_dir, referenced))
                 return;
-            }
-
-            for (GStrv history = histories; *history; ++history)
-            {
-                if (!g_str_has_suffix (*history, suffix))
-                    continue;
-
-                g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
-                gchar *text = NULL;
-
-                if (g_paste_storage_is_special_file (path))
-                {
-                    g_warning ("%s is no history document, so the images GPaste 50 left are kept", path);
-                    return;
-                }
-
-                if (!g_file_get_contents (path, &text, NULL, &error))
-                {
-                    g_warning ("Could not read %s to know which images GPaste 50 left it references: %s", path, error->message);
-                    return;
-                }
-                g_ptr_array_add (contents, text);
-            }
+            collected = TRUE;
         }
 
         g_autofree gchar *path = g_build_filename (images_dir, *image, NULL);
-        /* The path's tail alone: GPaste 50 spelt the data directory as it was
-         * reached then, which a symlinked home or another XDG_DATA_HOME may no
-         * longer match. A checksum name needs no encoding, and a match a
-         * per-history path or a text item happens
-         * to contain only keeps a file. */
-        g_autofree gchar *reference = g_strconcat (G_DIR_SEPARATOR_S "images" G_DIR_SEPARATOR_S, *image, NULL);
-        gboolean referenced = FALSE;
 
-        for (guint i = 0; !referenced && i < contents->len; ++i)
-            referenced = strstr (g_ptr_array_index (contents, i), reference) != NULL;
-
-        if (!referenced && g_unlink (path) && errno != ENOENT)
+        if (!g_hash_table_contains (referenced, *image) && g_unlink (path) && errno != ENOENT)
             g_warning ("Could not remove the image %s, which no history references any more: %s", path, g_strerror (errno));
     }
 }

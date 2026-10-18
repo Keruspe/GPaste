@@ -2388,6 +2388,8 @@ test_file_legacy_images_sweep (void)
     g_autofree gchar *aliased_reference = g_build_filename (alias, "images", aliased_file_name, NULL);
     g_autofree gchar *orphan = g_build_filename (shared, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.png", NULL);
     g_autofree gchar *foreign = g_build_filename (shared, "Screenshot.png", NULL);
+    /* Named in the middle of a text item, which keeps it all the same. */
+    g_autofree gchar *texted = g_build_filename (shared, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.png", NULL);
     g_autofree gchar *history = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                                                  "<history version=\"2.0\">\n"
                                                  "  <item kind=\"Image\" uuid=\"5c7a3c3e-legacy\" date=\"1234567890\" checksum=\"%s\">\n"
@@ -2396,8 +2398,11 @@ test_file_legacy_images_sweep (void)
                                                  "  <item kind=\"Image\" uuid=\"5c7a3c3e-aliased\" date=\"1234567890\" checksum=\"%s\">\n"
                                                  "    <value><![CDATA[%s]]></value>\n"
                                                  "  </item>\n"
+                                                 "  <item kind=\"Text\" uuid=\"5c7a3c3e-texted\">\n"
+                                                 "    <value><![CDATA[see %s, still here]]></value>\n"
+                                                 "  </item>\n"
                                                  "</history>\n",
-                                                 checksum, legacy, aliased_checksum, aliased_reference);
+                                                 checksum, legacy, aliased_checksum, aliased_reference, texted);
     g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
 
     g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
@@ -2406,6 +2411,7 @@ test_file_legacy_images_sweep (void)
     g_assert_cmpint (symlink (history_dir, alias), ==, 0);
     g_assert_true (g_file_set_contents (orphan, "nobody's", -1, NULL));
     g_assert_true (g_file_set_contents (foreign, "not ours", -1, NULL));
+    g_assert_true (g_file_set_contents (texted, "named in a text", -1, NULL));
     g_assert_true (g_file_set_contents (history_path, history, -1, NULL));
 
     g_paste_file_backend_sweep_legacy_images ();
@@ -2413,24 +2419,26 @@ test_file_legacy_images_sweep (void)
     g_assert_true (g_file_test (aliased_legacy, G_FILE_TEST_EXISTS));
     g_assert_false (g_file_test (orphan, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (foreign, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (texted, G_FILE_TEST_EXISTS));
 
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
         g_autolist (GPasteItem) items = read_history_ok (backend, name);
 
-        g_assert_cmpuint (g_list_length (items), ==, 2);
+        g_assert_cmpuint (g_list_length (items), ==, 3);
         g_paste_storage_backend_write_history (backend, name, items);
     }
 
     g_paste_file_backend_sweep_legacy_images ();
     g_assert_false (g_file_test (legacy, G_FILE_TEST_EXISTS));
     g_assert_false (g_file_test (aliased_legacy, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (texted, G_FILE_TEST_EXISTS));
     g_assert_cmpint (g_unlink (alias), ==, 0);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
     g_autolist (GPasteItem) items = read_history_ok (backend, name);
 
-    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpuint (g_list_length (items), ==, 3);
     g_assert_cmpstr (g_paste_image_item_get_checksum (items->data), ==, checksum);
     g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, aliased_checksum);
 }
