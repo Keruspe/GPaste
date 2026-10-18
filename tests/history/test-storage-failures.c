@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "gpaste-test-history.h"
+
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
@@ -209,6 +211,34 @@ g_output_stream_write_all (GOutputStream *stream,
     }
 
     return original (stream, buffer, count, bytes_written, cancellable, error);
+}
+
+/* A directory whose listings are counted in @listings_of, the one numbered
+ * @failed_listing failing as a directory that cannot be read: %NULL for none,
+ * and 0 for no failure. */
+static gchar *listed_dir;
+static guint  listings_of;
+static guint  failed_listing;
+
+GFileEnumerator *
+g_file_enumerate_children (GFile              *file,
+                           const char         *attributes,
+                           GFileQueryInfoFlags flags,
+                           GCancellable       *cancellable,
+                           GError            **error)
+{
+    typedef GFileEnumerator *(*Enumerate) (GFile *, const char *, GFileQueryInfoFlags, GCancellable *, GError **);
+    Enumerate original = (Enumerate) dlsym (RTLD_NEXT, "g_file_enumerate_children");
+    g_autofree gchar *path = (listed_dir) ? g_file_get_path (file) : NULL;
+
+    g_assert_nonnull (original);
+    if (path && g_paste_str_equal (path, listed_dir) && ++listings_of == failed_listing)
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED, "refused this time");
+        return NULL;
+    }
+
+    return original (file, attributes, flags, cancellable, error);
 }
 
 /* The history loads handed to a thread, counted as they go: a load that has to
@@ -1193,13 +1223,11 @@ test_unlock_skips_unopenable_flavour (void)
         if (!library_calls_interposed ())
             return;
 
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*This build cannot open the encrypted storage backend*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*This build cannot open the encrypted storage backend*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
@@ -1221,13 +1249,11 @@ test_import_failure_leaves_no_cleartext (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*did not read back as it was written*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*did not read back as it was written*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -1343,13 +1369,11 @@ test_encrypted_failed_read_leaves_no_copy (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Data past the end of the encrypted stream*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Data past the end of the encrypted stream*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     const gchar *name = "no-copy-left-on-failure";
     const gchar *secret = "a-password-nobody-should-find-in-freed-memory";
@@ -1428,13 +1452,11 @@ test_migration_refuses_unoffered_choice (void)
 
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*was not offered; dismissing it*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*was not offered; dismissing it*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -1579,13 +1601,11 @@ test_import_failure_leaves_no_copy (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*did not read back as it was written*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*did not read back as it was written*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -1746,7 +1766,7 @@ test_import_cut_short_then_migrate (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -1786,13 +1806,11 @@ test_import_needs_readable_copy (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*could not be read back once written*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*could not be read back once written*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -1971,13 +1989,11 @@ test_sqlite_diverged_write (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected disk-full failure*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -2016,13 +2032,11 @@ test_sqlite_failed_write_leaves_no_database (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected disk-full failure*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -2126,13 +2140,11 @@ test_sqlite_reconcile_failed (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*failed to reconcile an item*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*failed to reconcile an item*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -2191,7 +2203,7 @@ test_sqlite_incremental_failed (gconstpointer data)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) writer = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -2280,15 +2292,13 @@ test_sqlite_item_too_large (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*too large to store*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*too large to store*");
         g_test_trap_assert_stderr ("*failed to write an item*");
         g_test_trap_assert_stderr ("*failed to write a special value: out of memory*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -2364,13 +2374,11 @@ test_sqlite_diverged_history (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected disk-full failure*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "diverged-history";
@@ -2423,13 +2431,11 @@ test_sqlite_failed_write_answered (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected disk-full failure*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autofree gchar *path = g_paste_util_get_history_file_path ("answered", g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
@@ -2527,13 +2533,11 @@ test_import_spares_unreadable_destination (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*already holds a history*it cannot read*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*already holds a history*it cannot read*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -2575,13 +2579,11 @@ test_import_spares_unwritten_destination (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected failure moving*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected failure moving*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
@@ -2620,13 +2622,11 @@ test_schema_failure (gconstpointer data)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected disk-full failure*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected disk-full failure*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "schema-failure";
@@ -2650,13 +2650,11 @@ test_schema_version_unreadable (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*could not read the schema version*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*could not read the schema version*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "schema-version-unreadable";
@@ -2724,13 +2722,11 @@ test_uncounted_crypto (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*does not unlock*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*does not unlock*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "uncounted-crypto";
@@ -2775,13 +2771,11 @@ test_incomplete_crypto (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*incomplete encryption parameters*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*incomplete encryption parameters*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "incomplete-crypto";
@@ -2979,14 +2973,12 @@ test_lock_file_unusable (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to open the history lock file: *");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to open the history lock file: *");
         g_test_trap_assert_stderr ("*Failed to lock the history: *");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
     g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
@@ -3018,9 +3010,7 @@ test_lock_dir_unmade (void)
 
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not create history dir*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not create history dir*");
         g_test_trap_assert_stderr_unmatched ("*history lock file*");
         return;
     }
@@ -3046,13 +3036,11 @@ test_journal_empty (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Dropping*records nothing*Dropping*records nothing*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Dropping*records nothing*Dropping*records nothing*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autofree gchar *path = journal_path ();
     static const gchar nul_first[] = "\0import 1\nhistory\n";
@@ -3082,9 +3070,7 @@ test_journal_unwritable (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not create history dir*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not create history dir*");
         return;
     }
 
@@ -3119,7 +3105,7 @@ test_fifo_history (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     static const GPasteStorage kinds[] = {
         G_PASTE_STORAGE_FILE,
@@ -3180,13 +3166,11 @@ test_failed_write_keeps_images (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to install history file*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to install history file*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
@@ -3253,13 +3237,11 @@ test_image_write_failed (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to create images directory*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to create images directory*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
@@ -3290,13 +3272,11 @@ test_new_history_write_failed (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to install history file*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to install history file*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
@@ -3565,13 +3545,11 @@ test_encrypted_stream_bounds (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Data past the end of the encrypted stream*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Data past the end of the encrypted stream*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
@@ -3701,7 +3679,7 @@ test_gates_wait_for_lock (void)
     /* No passphrase is verified against it meanwhile: the keyring's is asked
      * once the lock is had, its lookup warning on this bus, which
      * /storage/lock/decryption-gate-asks-keyring counts. */
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
     g_paste_storage_backend_unlock ();
     fd = hold_storage_lock ();
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
@@ -3848,13 +3826,11 @@ test_load_after_release_reads_nothing (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not read the history back*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not read the history back*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "released-wait";
@@ -4107,13 +4083,11 @@ test_empty_reaches_the_store (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not read the history back*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not read the history back*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
@@ -4209,13 +4183,11 @@ test_failed_delete_keeps_unreadable (void)
             return;
         }
 
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not read the history back*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not read the history back*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
@@ -4260,13 +4232,11 @@ test_synced_before_install (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to materialize image*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to materialize image*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
@@ -4434,13 +4404,11 @@ test_rekey_rollback (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected failure moving*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected failure moving*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "rekey-rollback";
@@ -4479,13 +4447,11 @@ test_rekey_split (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not put back*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not put back*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "rekey-split";
@@ -4576,13 +4542,11 @@ test_rekey_copy_cut_short (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not keep the original of*injected death copying*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not keep the original of*injected death copying*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "rekey-copy-cut-short";
@@ -4650,7 +4614,7 @@ test_side_file_carried_on (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "side-file-carried-on";
@@ -4692,7 +4656,8 @@ test_side_file_carried_on (void)
 
 /* What a process dying while a re-key installs its files leaves: the image
  * renamed over, its original under its second name, the history still in
- * place with a second name of its own and its replacement beside it. */
+ * place with a second name of its own and its replacement beside it -- and
+ * another image not reached yet, its replacement still beside it. */
 static void
 write_interrupted_rekey (const gchar *name,
                          gchar      **history,
@@ -4712,6 +4677,70 @@ write_interrupted_rekey (const gchar *name,
     write_file (history_replacement, "new history");
     write_file (*image, "new image");
     write_file (image_aside, "old image");
+
+    g_autofree gchar *untouched = g_build_filename (images, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.pngs", NULL);
+    g_autofree gchar *untouched_replacement = g_strconcat (untouched, ".rekey", NULL);
+
+    write_file (untouched, "untouched image");
+    write_file (untouched_replacement, "its replacement");
+}
+
+/* A settle whose listing of the images fails settles nothing: the originals
+ * already renamed over stay aside, the history's replacement saying so to the
+ * next settle, which puts them back. */
+static void
+test_rekey_settle_unlisted (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not list the images*to settle*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    const gchar *name = "rekey-settle-unlisted";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+
+    g_autofree gchar *image_aside = g_strconcat (image, ".rekey-old", NULL);
+    g_autofree gchar *replacement = g_strconcat (history, ".rekey", NULL);
+
+    listed_dir = g_paste_file_backend_images_dir (name);
+    listings_of = 0;
+    failed_listing = 1;
+    g_paste_file_backend_settle_rekeys ();
+    failed_listing = 0;
+    g_clear_pointer (&listed_dir, g_free);
+    g_assert_true (g_file_test (image_aside, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (replacement, G_FILE_TEST_EXISTS));
+
+    g_paste_file_backend_settle_rekeys ();
+    g_assert_false (has_rekey_leftovers (name));
+    assert_contents (image, "old image");
+}
+
+/* A settle lists a history's images once, finding there both what it puts
+ * back and what is beside it: both startup gates settle every encrypted file
+ * history, on the main loop of a host that may be the compositor. */
+static void
+test_rekey_settle_lists_once (void)
+{
+    const gchar *name = "rekey-settle-lists-once";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_interrupted_rekey (name, &history, &image);
+
+    listed_dir = g_paste_file_backend_images_dir (name);
+    listings_of = 0;
+    g_paste_file_backend_settle_rekeys ();
+    g_clear_pointer (&listed_dir, g_free);
+    g_assert_cmpuint (listings_of, ==, 1);
+    g_assert_false (has_rekey_leftovers (name));
+    assert_contents (image, "old image");
 }
 
 /* A write that fails over a temporary an earlier one left behind leaves none:
@@ -4727,7 +4756,7 @@ test_failed_write_leaves_no_temporary (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     const gchar *name = "failed-write-temporary";
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
@@ -4773,6 +4802,44 @@ test_rekey_settled_back (void)
     g_assert_false (has_rekey_leftovers (name));
 }
 
+/* What a re-key left beside an image a write's sweep has since taken is
+ * settled too: dropped once the re-key went through, put back while it is
+ * still to be rolled back. */
+static void
+test_rekey_settled_without_image (void)
+{
+    const gchar *names[] = { "rekey-image-gone-forward", "rekey-image-gone-back" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (names); ++i)
+    {
+        g_autofree gchar *images = g_paste_file_backend_images_dir (names[i]);
+        g_autofree gchar *history = g_paste_util_get_history_file_path (names[i], g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
+        g_autofree gchar *image = g_build_filename (images, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.pngs", NULL);
+        g_autofree gchar *image_aside = g_strconcat (image, ".rekey-old", NULL);
+        g_autofree gchar *other = g_build_filename (images, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.pngs", NULL);
+        g_autofree gchar *other_replacement = g_strconcat (other, ".rekey", NULL);
+        g_autofree gchar *history_replacement = g_strconcat (history, ".rekey", NULL);
+        gboolean pending = i == 1;
+
+        write_file (history, "history");
+        /* The history's replacement still beside it: the re-key never reached
+         * its last rename. */
+        if (pending)
+            write_file (history_replacement, "new history");
+        write_file (image_aside, "old image");
+        write_file (other_replacement, "its replacement");
+
+        g_paste_file_backend_settle_rekeys ();
+
+        g_assert_false (has_rekey_leftovers (names[i]));
+        if (pending)
+            assert_contents (image, "old image");
+        else
+            g_assert_false (g_file_test (image, G_FILE_TEST_EXISTS));
+        g_assert_false (g_file_test (other, G_FILE_TEST_EXISTS));
+    }
+}
+
 /* A re-key that made its last rename and died before dropping the originals
  * has them dropped at the next start, the migration's included. */
 static void
@@ -4810,13 +4877,11 @@ test_rekey_unsettled_refused (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*did not finish*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*did not finish*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "rekey-unsettled";
@@ -4898,13 +4963,11 @@ test_encrypted_read_oversized (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*larger than anything GPaste stores*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*larger than anything GPaste stores*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autofree gchar *history = g_paste_util_get_history_file_path ("oversized", g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
@@ -4936,13 +4999,11 @@ test_rekey_unsettled_unwritten (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*did not finish; not writing over it*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*did not finish; not writing over it*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "rekey-unwritten";
@@ -5052,13 +5113,11 @@ test_rekey_unlistable_images (void)
             return;
         }
 
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not list the images*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not list the images*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "rekey-unlistable";
@@ -5331,7 +5390,7 @@ test_rekey_settled_under_lock (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     const gchar *name = "rekey-settled-under-lock";
     g_autofree gchar *history = NULL;
@@ -5406,7 +5465,7 @@ test_rekey_cut_short (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -5470,7 +5529,7 @@ test_rekey_failed_leaves_no_journal (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -5516,13 +5575,11 @@ test_rekey_split_passphrases (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*is on another passphrase, which it keeps*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*is on another passphrase, which it keeps*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -5573,13 +5630,11 @@ test_rekey_split_reported (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*left partly on the new passphrase*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*left partly on the new passphrase*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -5722,13 +5777,11 @@ test_doctor_settles_rekey (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to install the re-encrypted*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to install the re-encrypted*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "doctor-split";
@@ -5772,13 +5825,11 @@ test_doctor_reads_whole (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*failed to decrypt an item*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*failed to decrypt an item*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = "doctor-whole";
@@ -5922,13 +5973,11 @@ test_doctor_unreadable (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to parse history file*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to parse history file*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
@@ -6166,7 +6215,7 @@ test_decryption_gate_asks_keyring (void)
     }
 
     g_log_set_writer_func (count_keyring_lookups, NULL, NULL);
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -6205,13 +6254,11 @@ test_doctor_locked (void)
     /* The keyring is looked up first, which the test bus has none of. */
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Could not look up the history passphrase in the keyring*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not look up the history passphrase in the keyring*");
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     const gchar *name = g_paste_settings_get_history_name (settings);
@@ -6371,8 +6418,11 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/copy-cut-short", test_rekey_copy_cut_short);
     g_test_add_func ("/storage/rekey/split-reported", test_rekey_split_reported);
     g_test_add_func ("/storage/rekey/settled-back", test_rekey_settled_back);
+    g_test_add_func ("/storage/rekey/settle-unlisted", test_rekey_settle_unlisted);
+    g_test_add_func ("/storage/rekey/settle-lists-once", test_rekey_settle_lists_once);
     g_test_add_func ("/storage/failed-write-no-temporary", test_failed_write_leaves_no_temporary);
     g_test_add_func ("/storage/rekey/settled-forward", test_rekey_settled_forward);
+    g_test_add_func ("/storage/rekey/settled-without-image", test_rekey_settled_without_image);
     g_test_add_func ("/storage/rekey/unsettled-refused", test_rekey_unsettled_refused);
     g_test_add_func ("/storage/rekey/leftovers-deleted", test_rekey_leftovers_deleted);
     g_test_add_func ("/storage/rekey/marker-kept-by-failed-delete", test_rekey_marker_kept_by_failed_delete);

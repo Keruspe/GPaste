@@ -543,10 +543,11 @@ _g_paste_file_backend_is_image_temp_name (const gchar *file_name)
     return _g_paste_file_backend_is_image_file_name (image, TRUE) || _g_paste_file_backend_is_image_file_name (image, FALSE);
 }
 
-/* Whether @file_name is what a re-key leaves beside an encrypted image: its
- * replacement or its original kept aside, named from the image's own name. */
-static gboolean
-_g_paste_file_backend_is_image_rekey_name (const gchar *file_name)
+/* The name of the encrypted image @file_name is what a re-key leaves beside:
+ * its replacement or its original kept aside, named from the image's own
+ * name. %NULL when @file_name is no such thing. */
+static gchar *
+_g_paste_file_backend_rekeyed_image (const gchar *file_name)
 {
     static const gchar *suffixes[] = { G_PASTE_FILE_BACKEND_REKEY_NEW, G_PASTE_FILE_BACKEND_REKEY_OLD };
 
@@ -558,10 +559,10 @@ _g_paste_file_backend_is_image_rekey_name (const gchar *file_name)
         g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (suffixes[i]));
 
         if (_g_paste_file_backend_is_image_file_name (image, TRUE))
-            return TRUE;
+            return g_steal_pointer (&image);
     }
 
-    return FALSE;
+    return NULL;
 }
 
 /* Delete the image files under images/@history_name/ that no history of that
@@ -622,12 +623,14 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
             continue;
         }
 
+        g_autofree gchar *rekeyed_image = _g_paste_file_backend_rekeyed_image (*file);
+
         /* What a re-key left beside an encrypted image goes with the encrypted
          * history being deleted: the settle that would otherwise take it finds
          * a history by its document alone, gone now, and the directory itself
          * stays while a plain history of that name stores it. A write leaves
          * it to that settle. */
-        if (_g_paste_file_backend_is_image_rekey_name (*file))
+        if (rekeyed_image)
         {
             if (encrypted && !referenced && g_unlink (path) && errno != ENOENT)
                 g_warning ("Could not remove %s, which a change of passphrase left: %s", path, g_strerror (errno));
@@ -2376,9 +2379,34 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
     return TRUE;
 }
 
-/* Every file of @name that is encrypted: the history itself, first, and the
- * image side files it references, which live in the history's own images
- * directory.
+/* Every file of @name that is encrypted, off @images, the listing of its
+ * images directory @images_dir: the history itself, first, and every image
+ * side file in that directory, whether the history still references it or
+ * not -- one a sweep has yet to take is re-keyed and settled with the rest,
+ * rather than left on the passphrase being retired. */
+static GStrv
+_g_paste_file_backend_encrypted_files_in (const gchar  *name,
+                                          const gchar  *images_dir,
+                                          const gchar **images)
+{
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    g_strv_builder_take (builder, g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE)));
+
+    for (const gchar **image = images; *image; ++image)
+    {
+        /* The encrypted side files only, named as this backend names them: a
+         * leftover plain ".png" holds nothing secret, and a ".pngs" under any
+         * other name is no entry's, the sweep leaving it alone too. */
+        if (_g_paste_file_backend_is_image_file_name (*image, TRUE))
+            g_strv_builder_take (builder, g_build_filename (images_dir, *image, NULL));
+    }
+
+    return g_strv_builder_end (builder);
+}
+
+/* Every file of @name that is encrypted, as
+ * _g_paste_file_backend_encrypted_files_in () says, off a listing of its own.
  *
  * %NULL (never an incomplete list) if the directory is there but cannot be
  * listed: the caller re-keys exactly what this returns, so a short list would
@@ -2387,10 +2415,6 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
 static GStrv
 _g_paste_file_backend_encrypted_files (const gchar *name)
 {
-    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-
-    g_strv_builder_take (builder, g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE)));
-
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
     g_autoptr (GError) error = NULL;
@@ -2404,16 +2428,7 @@ _g_paste_file_backend_encrypted_files (const gchar *name)
         return NULL;
     }
 
-    for (GStrv image = images; *image; ++image)
-    {
-        /* The encrypted side files only, named as this backend names them: a
-         * leftover plain ".png" holds nothing secret, and a ".pngs" under any
-         * other name is no entry's, the sweep leaving it alone too. */
-        if (_g_paste_file_backend_is_image_file_name (*image, TRUE))
-            g_strv_builder_take (builder, g_build_filename (images_dir, *image, NULL));
-    }
-
-    return g_strv_builder_end (builder);
+    return _g_paste_file_backend_encrypted_files_in (name, images_dir, (const gchar **) images);
 }
 
 /* Whether @a and @b are two names of one file. */
@@ -2450,33 +2465,89 @@ _g_paste_file_backend_same_file (const gchar *a,
 static gboolean
 _g_paste_file_backend_settle_rekey (const gchar *name)
 {
-    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
+    /* The images, and what is beside them, read off one listing of their
+     * directory rather than asked of the filesystem image by image: most
+     * starts find nothing there, and a history can hold hundreds of them. */
+    g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
+    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
+    g_autoptr (GError) list_error = NULL;
+    g_auto (GStrv) listed = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &list_error);
 
-    if (!paths)
+    /* Read as an empty one, a listing that failed would skip every image, and
+     * have the history settled with the originals of those already renamed
+     * over left aside -- for the next settle, finding nothing pending, to
+     * delete. */
+    if (!listed)
+    {
+        g_warning ("Could not list the images of \"%s\" to settle a change of passphrase: %s", name, list_error->message);
+
         return FALSE;
+    }
 
-    g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (paths[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
-    gboolean pending = g_file_test (marker, G_FILE_TEST_EXISTS) && g_file_test (paths[0], G_FILE_TEST_EXISTS);
+    g_auto (GStrv) files = _g_paste_file_backend_encrypted_files_in (name, images_dir, (const gchar **) listed);
+    g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (files[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
+    gboolean pending = g_file_test (marker, G_FILE_TEST_EXISTS) && g_file_test (files[0], G_FILE_TEST_EXISTS);
     gboolean settled = TRUE;
+    g_autoptr (GHashTable) present = g_hash_table_new (g_str_hash, g_str_equal);
+
+    for (GStrv entry = listed; *entry; ++entry)
+        g_hash_table_add (present, *entry);
+
+    /* An image is visited by its name whether or not it is still there: a
+     * write's sweep takes an image the history no longer holds and leaves what
+     * a re-key put beside it to this settle, which would otherwise find nothing
+     * to go by -- and keep an original under the passphrase being retired
+     * until the history is deleted. */
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    g_autoptr (GHashTable) gone = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+    g_strv_builder_addv (builder, (const gchar **) files);
+    for (GStrv entry = listed; *entry; ++entry)
+    {
+        g_autofree gchar *image = _g_paste_file_backend_rekeyed_image (*entry);
+
+        if (!image || g_hash_table_contains (present, image) || g_hash_table_contains (gone, image))
+            continue;
+
+        g_strv_builder_take (builder, g_build_filename (images_dir, image, NULL));
+        g_hash_table_add (gone, g_steal_pointer (&image));
+    }
+
+    g_auto (GStrv) paths = g_strv_builder_end (builder);
 
     for (GStrv path = paths; *path; ++path)
     {
         g_autofree gchar *aside_path = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
-        g_autofree gchar *replacement = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
-        gboolean moved = pending && path != paths && !g_file_test (replacement, G_FILE_TEST_EXISTS);
+        gboolean has_replacement = pending;
+        gboolean has_original;
+
+        if (path != paths)
+        {
+            g_autofree gchar *base = g_path_get_basename (*path);
+            g_autofree gchar *replacement = _g_paste_file_backend_rekey_sibling (base, G_PASTE_FILE_BACKEND_REKEY_NEW);
+            g_autofree gchar *original = _g_paste_file_backend_rekey_sibling (base, G_PASTE_FILE_BACKEND_REKEY_OLD);
+
+            has_replacement = g_hash_table_contains (present, replacement);
+            has_original = g_hash_table_contains (present, original);
+        }
+        else
+            has_original = g_file_test (aside_path, G_FILE_TEST_EXISTS);
+
+        gboolean moved = pending && path != paths && !has_replacement;
 
         /* An original that never moved is still at its path: its second name
          * goes before its replacement does, a settle cut short in between
          * leaving the replacement to say so to the next one. */
         if (!moved || _g_paste_file_backend_same_file (*path, aside_path))
         {
-            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
-            if (path != paths)
+            if (has_original)
+                _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+            if (path != paths && has_replacement)
                 _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
             continue;
         }
 
-        if (!g_file_test (aside_path, G_FILE_TEST_EXISTS))
+        if (!has_original)
             continue;
 
         g_autoptr (GFile) aside = g_file_new_for_path (aside_path);
