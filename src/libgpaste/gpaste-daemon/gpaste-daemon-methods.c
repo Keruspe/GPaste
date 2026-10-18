@@ -428,30 +428,40 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
     if (!g_paste_history_sync (self->history, history, error))
         return;
 
-    GPasteSettings *settings = self->settings;
-
     /* The current history from its model, which holds every change accepted
      * for it whether or not it has reached the store yet; another from its
-     * store, which the sync above brought up to date, through a history of its
-     * own. Either way the current history is not switched away from, and no UI
-     * has to be told it was. What did change is the set of histories, which has
-     * a signal of its own precisely because a new one appearing is not a
-     * switch. */
-    g_autoptr (GPasteHistory) _history = (current) ? g_object_ref (self->history) : g_paste_history_new (settings);
+     * store, which the sync above brought up to date, read and written back
+     * through a backend of its own -- all a history of its own would do, no cap
+     * being applied on a load it does not record. Either way the current
+     * history is not switched away from, and no UI has to be told it was. What
+     * did change is the set of histories, which has a signal of its own
+     * precisely because a new one appearing is not a switch.
+     *
+     * A history that did not read back is an empty one, which saved as-is is a
+     * valid, empty backup answering OK -- the one answer that makes the user
+     * stop worrying about data that is in fact still locked away. Refused
+     * instead: the original is untouched either way. A write that fails leaves
+     * no history called @backup, so nothing to announce either. */
+    gboolean written;
 
-    if (!current)
-        g_paste_history_load (_history, history);
+    if (current)
+    {
+        G_PASTE_DBUS_ASSERT (!g_paste_history_is_unreadable (self->history),
+                             G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
+        written = g_paste_history_save (self->history, backup);
+    }
+    else
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (self->settings), self->settings);
+        g_autolist (GPasteItem) items = NULL;
+        gsize size = 0;
 
-    /* A history that did not read back leaves an empty model behind, which
-     * saved as-is is a valid, empty backup answering OK -- the one answer that
-     * makes the user stop worrying about data that is in fact still locked
-     * away. Refused instead: the original is untouched either way. */
-    G_PASTE_DBUS_ASSERT (!g_paste_history_is_unreadable (_history),
-                         G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
+        G_PASTE_DBUS_ASSERT (g_paste_storage_backend_read_history (backend, history, NULL /* cancellable */, &items, &size),
+                             G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
+        written = g_paste_storage_backend_write_history (backend, backup, items);
+    }
 
-    /* A write that fails leaves no history called @backup, so nothing to
-     * announce either. */
-    if (!g_paste_history_save (_history, backup))
+    if (!written)
     {
         g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the backup could not be written");
         return;

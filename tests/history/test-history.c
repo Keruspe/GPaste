@@ -676,6 +676,35 @@ pump_until_length (GPasteHistory *history,
         g_test_trap_assert_stderr (stderr_glob);                     \
     } while (FALSE)
 
+/* Nor is a history that does not read back backed up, as the empty one that
+ * reading it leaves would be: refused, and nothing written. */
+static void
+test_backup_unreadable_source (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+        const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+        g_autoptr (GError) error = NULL;
+        g_autofree gchar *source = g_paste_util_get_history_file_path ("backup-unreadable-source", "xml");
+        g_autofree gchar *copy = g_paste_util_get_history_file_path ("backup-unreadable-copy", "xml");
+        g_autofree gchar *dir = g_path_get_dirname (source);
+
+        g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+        g_assert_true (g_file_set_contents (source, "<?xml version=\"1.0\"?>\n<history version=\"9.0\"></history>\n", -1, NULL));
+        g_paste_history_load (history, "backup-unreadable-current");
+        g_paste_daemon_methods_backup_history (&methods, "backup-unreadable-source", "backup-unreadable-copy", &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+        g_assert_false (g_file_test (copy, G_FILE_TEST_EXISTS));
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Unknown history version*");
+}
+
 /* A migration prompt answered at once, with what the test put in it. */
 #define TEST_TYPE_MIGRATION_PROMPT (test_migration_prompt_get_type ())
 G_DECLARE_FINAL_TYPE (TestMigrationPrompt, test_migration_prompt, TEST, MIGRATION_PROMPT, GObject)
@@ -6891,6 +6920,7 @@ main (int argc, char *argv[])
     add_test ("/history/delete_current_drops_passwords", test_delete_current_drops_passwords);
     add_test ("/history/delete_current_failed_stays", test_delete_current_failed_stays);
     add_test ("/history/backup_missing_source", test_backup_missing_source);
+    add_test ("/history/backup_unreadable_source", test_backup_unreadable_source);
     add_test ("/history/delete_missing_history", test_delete_missing_history);
 #ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/migration_detects_backend_in_use", test_migration_detects_backend_in_use);
