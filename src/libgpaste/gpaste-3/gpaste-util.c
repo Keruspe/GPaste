@@ -46,28 +46,125 @@ app_get_platform_data (void)
     return g_variant_builder_end (&builder);
 }
 
-static void
-g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
-                                   GAsyncResult *res,
-                                   gpointer      user_data G_GNUC_UNUSED)
+/* What one call to a GPaste app takes: a connection to the bus and the call,
+ * which the bus starts the app for. No proxy, which would first ask the bus
+ * who owns the name and the app for its properties, and watch both, for a
+ * call made once. */
+typedef struct
 {
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
+    gchar       *name;
+    gchar       *path;
+    const gchar *method;
+    GVariant    *parameters;
+} GPasteUtilAppCall;
 
-    if (!proxy)
+static void
+g_paste_util_app_call_free (GPasteUtilAppCall *call)
+{
+    g_free (call->name);
+    g_free (call->path);
+    g_variant_unref (call->parameters);
+    g_free (call);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteUtilAppCall, g_paste_util_app_call_free)
+
+/* The reply, waited for to say why an app did not open: the bus answers one it
+ * cannot start with an error, which is all a broken install or a failing unit
+ * is told by. Waiting is also what keeps the connection: the call's task holds
+ * it until the reply, where a caller holding no other reference to the bus
+ * would drop it, and the call queued on it, on return. */
+static void
+g_paste_util_app_called (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+    g_autofree gchar *name = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GVariant) reply = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
+
+    if (!reply)
+        g_warning ("Failed to call %s: %s", name, error->message);
+}
+
+static void
+g_paste_util_app_call_on_bus (GObject      *source_object G_GNUC_UNUSED,
+                              GAsyncResult *res,
+                              gpointer      user_data)
+{
+    g_autoptr (GPasteUtilAppCall) call = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GDBusConnection) bus = g_bus_get_finish (res, &error);
+
+    if (!bus)
     {
-        g_warning ("Failed to get D-Bus proxy: %s", error->message);
+        g_warning ("Failed to reach the session bus: %s", error->message);
         return;
     }
 
-    g_dbus_proxy_call (proxy,
-                       "Activate",
-                       g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                       G_DBUS_CALL_FLAGS_NONE,
-                       -1,
-                       NULL, /* cancellable */
-                       NULL, /* callback */
-                       NULL); /* user_data */
+    /* Handed on to the reply, which names the app should the call fail. */
+    gchar *name = g_steal_pointer (&call->name);
+
+    g_dbus_connection_call (bus,
+                            name,
+                            call->path,
+                            G_PASTE_APPLICATION_IFACE,
+                            call->method,
+                            call->parameters,
+                            NULL, /* reply type */
+                            G_DBUS_CALL_FLAGS_NONE,
+                            -1,
+                            NULL, /* cancellable */
+                            g_paste_util_app_called,
+                            name);
+}
+
+/* @parameters is consumed if floating, and held until the call is made;
+ * @method is a static string. */
+static void
+g_paste_util_call_app (const gchar *name,
+                       const gchar *path,
+                       const gchar *method,
+                       GVariant    *parameters)
+{
+    GPasteUtilAppCall *call = g_new (GPasteUtilAppCall, 1);
+
+    call->name = g_strdup (name);
+    call->path = g_strdup (path);
+    call->method = method;
+    call->parameters = g_variant_ref_sink (parameters);
+
+    g_bus_get (G_BUS_TYPE_SESSION, NULL /* cancellable */, g_paste_util_app_call_on_bus, call);
+}
+
+/* The call's own result is what says whether it worked: @error may be %NULL, in
+ * which case there is nothing to look at. */
+static gboolean
+g_paste_util_call_app_sync (const gchar *name,
+                            const gchar *path,
+                            const gchar *method,
+                            GVariant    *parameters,
+                            GError     **error)
+{
+    g_autoptr (GVariant) owned = g_variant_ref_sink (parameters);
+    g_autoptr (GDBusConnection) bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL /* cancellable */, error);
+
+    if (!bus)
+        return FALSE;
+
+    g_autoptr (GVariant) ret = g_dbus_connection_call_sync (bus,
+                                                            name,
+                                                            path,
+                                                            G_PASTE_APPLICATION_IFACE,
+                                                            method,
+                                                            owned,
+                                                            NULL, /* reply type */
+                                                            G_DBUS_CALL_FLAGS_NONE,
+                                                            -1,
+                                                            NULL, /* cancellable */
+                                                            error);
+
+    return !!ret;
 }
 
 /**
@@ -84,49 +181,7 @@ g_paste_util_spawn (const gchar *app)
     g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
     g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
 
-    g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                              G_DBUS_PROXY_FLAGS_NONE,
-                              NULL,
-                              name,
-                              object,
-                              G_PASTE_APPLICATION_IFACE,
-                              NULL,
-                              g_paste_util_spawn_on_proxy_ready,
-                              NULL);
-}
-
-static GDBusProxy *
-_bus_proxy_new_sync (const gchar *app,
-                     GError     **error)
-{
-    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-
-    return g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                          G_DBUS_PROXY_FLAGS_NONE,
-                                          NULL,
-                                          name,
-                                          object,
-                                          G_PASTE_APPLICATION_IFACE,
-                                          NULL,
-                                          error);
-}
-
-static gboolean
-_spawn_sync (GDBusProxy *proxy,
-             GError    **error)
-{
-    /* The call's own result is what says whether it worked: @error may be %NULL,
-     * in which case there is nothing to look at. */
-    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                       "Activate",
-                                                       g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                                                       G_DBUS_CALL_FLAGS_NONE,
-                                                       -1,
-                                                       NULL,
-                                                       error);
-
-    return !!res;
+    g_paste_util_call_app (name, object, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()));
 }
 
 /**
@@ -148,12 +203,10 @@ g_paste_util_spawn_sync (const gchar *app,
     g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
-    g_autoptr (GDBusProxy) proxy = _bus_proxy_new_sync (app, error);
+    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
 
-    if (!proxy)
-        return FALSE;
-
-    return _spawn_sync (proxy, error);
+    return g_paste_util_call_app_sync (name, object, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()), error);
 }
 
 /* The ActivateAction payload, which is the whole of what the two flavours below
@@ -169,33 +222,6 @@ activate_ui_params (const gchar *action,
         g_variant_builder_add (&params, "v", arg);
 
     return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ());
-}
-
-static void
-g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
-                                         GAsyncResult *res,
-                                         gpointer      user_data)
-{
-    g_autofree gpointer *data = (gpointer *) user_data;
-    g_autofree gchar *action = data[0];
-    g_autoptr (GVariant) arg = data[1];
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-
-    if (!proxy)
-    {
-        g_warning ("Failed to get D-Bus proxy: %s", error->message);
-        return;
-    }
-
-    g_dbus_proxy_call (proxy,
-                       "ActivateAction",
-                       activate_ui_params (action, arg),
-                       G_DBUS_CALL_FLAGS_NONE,
-                       -1,
-                       NULL, /* cancellable */
-                       NULL, /* callback */
-                       NULL); /* user_data */
 }
 
 /**
@@ -214,19 +240,9 @@ g_paste_util_activate_ui (const gchar *action,
 {
     g_return_if_fail (g_utf8_validate (action, -1, NULL));
 
-    gpointer *data = g_new (gpointer, 2);
-    data[0] = g_strdup (action);
-    data[1] = (arg) ? g_variant_ref_sink (arg) : NULL;
+    g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
 
-    g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                              G_DBUS_PROXY_FLAGS_NONE,
-                              NULL,
-                              G_PASTE_UI_BUS_NAME,
-                              G_PASTE_UI_OBJECT_PATH,
-                              G_PASTE_APPLICATION_IFACE,
-                              NULL,
-                              g_paste_util_activate_ui_on_proxy_ready,
-                              data);
+    g_paste_util_call_app (G_PASTE_UI_BUS_NAME, G_PASTE_UI_OBJECT_PATH, "ActivateAction", activate_ui_params (action, owned));
 }
 
 /**
@@ -257,27 +273,9 @@ g_paste_util_activate_ui_sync (const gchar *action,
     g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
 
     g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                  G_DBUS_PROXY_FLAGS_NONE,
-                                                                  NULL,
-                                                                  G_PASTE_UI_BUS_NAME,
-                                                                  G_PASTE_UI_OBJECT_PATH,
-                                                                  G_PASTE_APPLICATION_IFACE,
-                                                                  NULL, /* cancellable */
-                                                                  error);
 
-    if (!proxy)
-        return FALSE;
-
-    g_autoptr (GVariant) ret = g_dbus_proxy_call_sync (proxy,
-                                                       "ActivateAction",
-                                                       activate_ui_params (action, owned),
-                                                       G_DBUS_CALL_FLAGS_NONE,
-                                                       -1,
-                                                       NULL, /* cancellable */
-                                                       error);
-
-    return !!ret;
+    return g_paste_util_call_app_sync (G_PASTE_UI_BUS_NAME, G_PASTE_UI_OBJECT_PATH, "ActivateAction",
+                                       activate_ui_params (action, owned), error);
 }
 
 /**

@@ -501,11 +501,11 @@ out of the other, a reload reading it again and saying so once when it moved.
 This settings-only suite uses
 `G_PASTE_TEST_ENV_OWN_BUS` to leave both bus addresses unreachable.
 
-`test-util` compiles `gpaste-util.c` with the session bus proxy's constructors
-and calls faked, and checks how both `g_paste_util_activate_ui()` flavours take
-their argument, whether the proxy comes up or is refused: a floating one is
-consumed, a caller's own reference left to the caller -- who may drop it before
-the asynchronous flavour's proxy is up, the call still made with it. A
+`test-util` compiles `gpaste-util.c` with the session bus and its calls faked,
+and checks how both `g_paste_util_activate_ui()` flavours take their argument,
+whether the bus is reached or refused: a floating one is consumed, a caller's
+own reference left to the caller -- who may drop it before the asynchronous
+flavour reaches the bus, the call still made with it. A
 migration gate whose reset GSettings refuses, faked there, fails to open, and
 a launcher's Wayland activation token reaches the graphical tool in the
 platform data. It also
@@ -520,6 +520,11 @@ The cut walks a text that is not UTF-8 no further than its end
 `test-util` also reads back pid files: the positive decimal pid written in one,
 and -1 for anything else, a 0 above all, which `kill ()` takes for the caller's
 own process group (`/util/pid-file`).
+
+`test-app-call` runs `g_paste_util_spawn()` against the test bus for real, each
+case in a subprocess holding no other reference to the session bus: the call
+reaches an app owning its name, the connection kept until the reply, and one
+the bus cannot start is warned about.
 
 `test-portal-provider` runs the GlobalShortcuts client against a fake portal on
 private buses, without GTK initialization or a desktop session. It controls
