@@ -214,6 +214,23 @@ test_shortcuts_handed_over (Fixture      *fixture,
     g_paste_history_resume (history);
 }
 
+/* Exported again, as GPasteBus does when it owns the name anew, the daemon
+ * follows the screensaver as it did: unexporting stops it, and nothing else
+ * would start it again. */
+static void
+test_reexport_follows_screensaver (Fixture      *fixture,
+                                   gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteDaemon *daemon = fixture->daemon;
+
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (daemon));
+    g_assert_true (g_paste_bus_object_register_on_connection (G_PASTE_BUS_OBJECT (daemon), fixture->connection, NULL));
+
+    g_autoptr (GObject) target = g_signal_group_dup_target (daemon->screensaver_signals);
+
+    g_assert_true (target == G_OBJECT (daemon->screensaver));
+}
+
 /* Disposing unregisters, so neither a second dispose nor the unregistration
  * GPasteBus makes when it lets go of the name finds an export to drop. */
 static void
@@ -921,6 +938,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
+    g_test_add ("/daemon/reexport-follows-screensaver", Fixture, NULL, fixture_set_up, test_reexport_follows_screensaver, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-state", Fixture, NULL, fixture_set_up, test_extension_state, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);

@@ -1551,6 +1551,9 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
 
     g_signal_group_set_target (daemon->settings_signals, daemon->settings);
     g_signal_group_set_target (daemon->history_signals, daemon->history);
+    /* Taken off with the others on unregistering, so put back for an export
+     * that is not the first; %NULL until the client is ready, which sets it. */
+    g_signal_group_set_target (daemon->screensaver_signals, daemon->screensaver);
 
     /* Seed "Active" from the setting: set_target does not emit notify, so the
      * handler above only ever runs on a later change, and the property would
