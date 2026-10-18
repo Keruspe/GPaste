@@ -220,6 +220,30 @@ g_paste_history_private_elect_new_biggest (GPasteHistory *self)
     g_paste_history_private_elect_new_biggest_sparing (self, NULL);
 }
 
+/* @item, joining the candidates past the head -- leaving it, unpinned, or in
+ * another's place -- placed with one comparison rather than an election:
+ * tracked when at least as heavy as the one tracked, unless a favourite. A tie
+ * goes to @item, either one being the biggest the cap may evict and freeing as
+ * much: an election would give it to the one nearer the head, which an item
+ * leaving the head is, but for one further down only a walk of the history
+ * tells which, the walk this spares
+ * (/history/memory_cap_replacement_takes_tie). */
+static void
+g_paste_history_private_offer_biggest (GPasteHistory *self,
+                                       GPasteItem    *item)
+{
+    if (g_paste_item_is_favourite (item))
+        return;
+
+    guint64 size = g_paste_item_get_size (item);
+
+    if (size >= self->biggest_size)
+    {
+        self->biggest_uuid = g_paste_item_get_uuid (item);
+        self->biggest_size = size;
+    }
+}
+
 /* Drop the item at @index from the model. The array's ref is *stolen* rather
  * than released, so this never frees on its own: with @departs the item leaves
  * the history for good and is disposed of here, without it the caller has
@@ -512,13 +536,20 @@ g_paste_history_private_get_indexed_by_uuid (GPasteHistory *self,
     return item;
 }
 
+/* max-memory-usage in bytes, the setting counting MiB. */
+static guint64
+g_paste_history_max_memory (GPasteHistory *self)
+{
+    return g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
+}
+
 /* @spared is left out of every election, as in
  * g_paste_history_private_elect_new_biggest_sparing (). */
 static void
 g_paste_history_private_check_memory_usage_sparing (GPasteHistory *self,
                                                     GPasteItem    *spared)
 {
-    guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
+    guint64 max_memory = g_paste_history_max_memory (self);
 
     /* A head that alone weighs more than the cap -- an image selected after the
      * cap was lowered under its decoded size -- no eviction brings under it:
@@ -755,18 +786,10 @@ _g_paste_history_add (GPasteHistory *self,
              * its old size and put back at its new one. */
             self->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
+            self->size += g_paste_item_get_size (old_first);
 
-            guint64 size = g_paste_item_get_size (old_first);
-
-            self->size += size;
-
-            /* It just stopped being the untracked active item, so it becomes a
-             * candidate -- unless it is a favourite, which is never one. */
-            if (size >= self->biggest_size && !g_paste_item_is_favourite (old_first))
-            {
-                self->biggest_uuid = g_paste_item_get_uuid (old_first);
-                self->biggest_size = size;
-            }
+            /* It just stopped being the untracked active item. */
+            g_paste_history_private_offer_biggest (self, old_first);
         }
 
         /* Dedup is by value, not by uuid, so the index cannot help here --
@@ -1081,6 +1104,8 @@ _g_paste_history_replace (GPasteHistory *self,
     GPasteItem *old = g_ptr_array_index (self->history, index);
     g_autofree gchar *old_uuid = g_strdup (g_paste_item_get_uuid (old));
     guint length_before = self->history->len;
+    /* By the pointer: the tracker borrows the tracked item's own string. */
+    gboolean was_biggest = (self->biggest_uuid == g_paste_item_get_uuid (old));
 
     /* The pin belongs to the entry, not to the object holding its contents:
      * editing a pinned item, or turning one into a password, changes what it
@@ -1108,12 +1133,22 @@ _g_paste_history_replace (GPasteHistory *self,
      * left without it would have the next cap evict something smaller first.
      * Replace refuses contents weighing more than the cap on their own before
      * getting here (g_paste_history_replace ()), and MakePassword a password
-     * its name makes that heavy (g_paste_history_make_password ()). The first
-     * election runs either way: the replaced item may have been the elected
-     * one. */
-    g_paste_history_private_elect_new_biggest_sparing (self, new);
-    g_paste_history_private_check_memory_usage_sparing (self, new);
-    g_paste_history_private_elect_new_biggest (self);
+     * its name makes that heavy (g_paste_history_make_password ()).
+     *
+     * Under the cap there is nothing to evict, and the tracker only has to
+     * follow: elected anew when it was tracking the replaced item, else told of
+     * the replacement as an add tells it of an item leaving the head -- not two
+     * walks of the history for every edit. */
+    if (self->size > g_paste_history_max_memory (self))
+    {
+        g_paste_history_private_elect_new_biggest_sparing (self, new);
+        g_paste_history_private_check_memory_usage_sparing (self, new);
+        g_paste_history_private_elect_new_biggest (self);
+    }
+    else if (was_biggest)
+        g_paste_history_private_elect_new_biggest (self);
+    else if (index > 0)
+        g_paste_history_private_offer_biggest (self, new);
 
     if (self->history->len != length_before)
     {
@@ -1304,16 +1339,10 @@ g_paste_history_set_favourite (GPasteHistory *self,
     }
     else
     {
-        /* The pool gained it, so nothing has to be re-elected: one comparison
-         * places it, the same way _g_paste_history_add places an item leaving
-         * the active slot. Index 0 stays untracked, as ever. */
-        guint64 size = g_paste_item_get_size (item);
-
-        if (index && size >= self->biggest_size)
-        {
-            self->biggest_uuid = g_paste_item_get_uuid (item);
-            self->biggest_size = size;
-        }
+        /* The pool gained it, so nothing has to be re-elected. Index 0 stays
+         * untracked, as ever. */
+        if (index)
+            g_paste_history_private_offer_biggest (self, item);
 
         /* Both caps may have been giving way to this item for a while. */
         g_paste_history_private_check_size (self);

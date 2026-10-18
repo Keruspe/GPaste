@@ -3600,6 +3600,39 @@ test_memory_cap_after_replacement_spares_once (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
 }
 
+/* A replacement as heavy as the item the memory cap is to evict next takes its
+ * place there, as an item leaving the head does: the tie is either's to take
+ * (g_paste_history_private_offer_biggest ()). */
+static void
+test_memory_cap_replacement_takes_tie (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *first = g_strnfill (3 * 1024 * 1024, 'A');
+    g_autofree gchar *second = g_strnfill (3 * 1024 * 1024, 'B');
+    g_autofree gchar *edited = g_strnfill (3 * 1024 * 1024, 'E');
+
+    g_paste_history_add (history, g_paste_text_item_new (first));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new (second));
+
+    g_autofree gchar *second_uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *replacement = g_paste_history_replace (history, uuid, edited);
+
+    g_assert_nonnull (replacement);
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_cmpuint (g_paste_settings_get_max_memory_usage (settings), ==, 5);
+
+    g_assert_null (g_paste_history_get_by_uuid (history, replacement));
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, second_uuid));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+}
+
 /* Replace builds a text item out of @contents, so it has to have some. */
 static void
 test_replace_refuses_no_contents (void)
@@ -7980,6 +8013,7 @@ main (int argc, char *argv[])
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
     add_test ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
+    add_test ("/history/memory_cap_replacement_takes_tie", test_memory_cap_replacement_takes_tie);
     add_test ("/history/replace_refuses_no_contents", test_replace_refuses_no_contents);
     add_test ("/history/select_favourite_over_cap", test_select_favourite_over_cap);
     add_test ("/history/select_image_over_cap", test_select_image_over_cap);
