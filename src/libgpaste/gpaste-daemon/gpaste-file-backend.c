@@ -246,6 +246,42 @@ _g_paste_file_backend_sync_directory (const gchar *path)
 }
 #endif
 
+/* A file a reader takes for complete is written beside @target, at this
+ * temporary, and put in place by _g_paste_file_backend_install () once whole:
+ * one cut short at its final name -- a full disk, a key derivation that
+ * failed, a crash -- would be read as all there is. */
+static GFile *
+_g_paste_file_backend_beside (const gchar *target)
+{
+    g_autofree gchar *tmp = g_strconcat (target, ".tmp", NULL);
+
+    return g_file_new_for_path (tmp);
+}
+
+/* Put what @stream wrote to @tmp_file in @target_file's place: closed, synced
+ * and renamed over it. On any failure -- a write of the caller's included --
+ * the caller drops the temporary (_g_paste_file_backend_drop_beside ()),
+ * @target_file left as it was. */
+static gboolean
+_g_paste_file_backend_install (GOutputStream *stream,
+                               GFile         *tmp_file,
+                               GFile         *target_file,
+                               GError       **error)
+{
+    return g_output_stream_close (stream, NULL /* cancellable */, error) &&
+           _g_paste_file_backend_sync (tmp_file, error) &&
+           g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, error);
+}
+
+static void
+_g_paste_file_backend_drop_beside (GFile *tmp_file)
+{
+    g_autoptr (GError) error = NULL;
+
+    if (!g_file_delete (tmp_file, NULL /* cancellable */, &error) && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Failed to delete a temporary file: %s", error->message);
+}
+
 /* The XML history references images by their canonical <checksum>.png path
  * (@reference, derived from the item's checksum under the history being
  * written, which is the backup's own when writing under another name); writing
@@ -299,14 +335,12 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     /* get_output_stream wraps the file with the encryption converter exactly
      * when this backend has a passphrase, matching the target chosen above.
      *
-     * Written beside the target and renamed over it, as the history is: the
-     * check above takes any file there for a complete one, so a write cut
-     * short at its final name -- a full disk, a key derivation that failed, a
-     * crash -- would have every later save skip the image and the next read
-     * drop it. */
+     * Written beside the target and installed, as the history is: the check
+     * above takes any file there for a complete one, so a write cut short at
+     * its final name would have every later save skip the image and the next
+     * read drop it. */
     g_autoptr (GFile) target_file = g_file_new_for_path (target);
-    g_autofree gchar *tmp = g_strconcat (target, ".tmp", NULL);
-    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+    g_autoptr (GFile) tmp_file = _g_paste_file_backend_beside (target);
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, tmp_file);
 
     if (!stream)
@@ -316,9 +350,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     gconstpointer data = g_bytes_get_data (png, &length);
 
     if (g_output_stream_write_all (stream, data, length, NULL, NULL /* cancellable */, &error) &&
-        g_output_stream_close (stream, NULL /* cancellable */, &error) &&
-        _g_paste_file_backend_sync (tmp_file, &error) &&
-        g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+        _g_paste_file_backend_install (stream, tmp_file, target_file, &error))
     {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
         if (encrypted)
@@ -332,7 +364,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     }
 
     g_warning ("Failed to materialize image to %s: %s", target, error->message);
-    g_file_delete (tmp_file, NULL, NULL);
+    _g_paste_file_backend_drop_beside (tmp_file);
 
     return FALSE;
 }
@@ -735,8 +767,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     /* Where the images go, and which of them the sweep compares against. */
     gboolean encrypted = g_paste_storage_backend_is_encrypted (self);
 
-    g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
-    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp_path);
+    g_autoptr (GFile) tmp_file = _g_paste_file_backend_beside (history_file_path);
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, tmp_file);
 
     if (!stream)
@@ -864,15 +895,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         success = FALSE;
     }
 
-    if (success && (!g_output_stream_close (stream, NULL /* cancellable */, &error) ||
-                    !_g_paste_file_backend_sync (tmp_file, &error)))
-    {
-        g_warning ("Failed to close history temp file: %s", error->message);
-        g_clear_error (&error);
-        success = FALSE;
-    }
-
-    if (success && !g_file_move (tmp_file, history_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+    if (success && !_g_paste_file_backend_install (stream, tmp_file, history_file, &error))
     {
         g_warning ("Failed to install history file: %s", error->message);
         g_clear_error (&error);
@@ -881,9 +904,8 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
 
     if (success)
         _g_paste_file_backend_sweep_images (history_name, encrypted, referenced);
-    else if (!g_file_delete (tmp_file, NULL, &error) &&
-             !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        g_warning ("Failed to delete history temp file: %s", error->message);
+    else
+        _g_paste_file_backend_drop_beside (tmp_file);
 
     if (success && images_written)
         return TRUE;
