@@ -1291,7 +1291,8 @@ count_picks (GPasteUiHistory *history G_GNUC_UNUSED,
 }
 
 /* While items are being picked, Ctrl+1 picks the second row as a click would,
- * an arrow key moving the cursor leaves the picks as they were, and Ctrl+F
+ * an arrow key moving the cursor leaves the picks as they were, picking every
+ * row adds those not picked yet, and Ctrl+F
  * opens no search over the picks. A search asked for from outside leaves
  * selection mode first. */
 static void
@@ -1333,6 +1334,13 @@ test_selection_mode_keys (void)
     g_assert_true (gtk_selection_model_is_selected (model, 0));
     g_assert_true (gtk_selection_model_is_selected (model, 1));
     g_assert_false (gtk_selection_model_is_selected (model, 2));
+
+    /* Picking every row adds those left, each pick once: the first given up so
+     * that what changes spans the second, still picked. */
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
+    g_assert_cmpuint (picks, ==, 1);
+    g_assert_true (gtk_widget_activate_action (list_view, "list.select-all", NULL));
+    g_assert_cmpuint (picks, ==, 3);
 
     g_paste_ui_window_search (window, "value");
     g_assert_false (g_paste_ui_history_get_selection_mode (window->history));

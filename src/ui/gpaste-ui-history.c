@@ -1106,20 +1106,6 @@ pick_clear (gpointer data)
     g_free (((Pick *) data)->uuid);
 }
 
-/* Where @position sits in the pick order, or -1 when it is not picked. */
-static gint
-g_paste_ui_history_picked_at (GPasteUiHistory *self,
-                              guint            position)
-{
-    for (guint i = 0; i < self->selection->len; ++i)
-    {
-        if (g_array_index (self->selection, Pick, i).position == position)
-            return (gint) i;
-    }
-
-    return -1;
-}
-
 /* Keep the picks in step with the selection model's own bitset, which
  * #GtkMultiSelection splices on every items-changed: what the splice removed
  * loses its bit, and what sat after it moves by the difference. The picks name
@@ -1230,23 +1216,45 @@ on_selection_changed (GtkSelectionModel *model,
                       gpointer           user_data)
 {
     GPasteUiHistory *self = user_data;
+    guint end = position + n_items;
 
-    for (guint i = position; i < position + n_items; ++i)
+    /* In one pass over the picks and one over the range, rather than a look
+     * among the picks for every position of it: a select-all reaches every
+     * row, and a history can hold tens of thousands. The picks unselected go,
+     * those left keeping their order, which the merge depends on; the rows
+     * picked anew go after them, in the order they sit in. */
+    g_autoptr (GtkBitset) picked = gtk_bitset_new_empty ();
+    g_autoptr (GArray) kept = g_array_sized_new (FALSE, FALSE, sizeof (Pick), self->selection->len);
+
+    g_array_set_clear_func (kept, pick_clear);
+    for (guint i = 0; i < self->selection->len; ++i)
     {
-        gint at = g_paste_ui_history_picked_at (self, i);
+        Pick *pick = &g_array_index (self->selection, Pick, i);
+        gboolean in_range = (pick->position >= position && pick->position < end);
 
-        if (gtk_selection_model_is_selected (model, i))
-        {
-            if (at < 0)
-            {
-                Pick pick = { i, g_strdup (g_paste_ui_history_shown_uuid (self, i)) };
+        if (in_range && !gtk_selection_model_is_selected (model, pick->position))
+            continue;
+        if (in_range)
+            gtk_bitset_add (picked, pick->position);
 
-                g_array_append_val (self->selection, pick);
-            }
-        }
-        else if (at >= 0)
-            g_array_remove_index (self->selection, at);
+        Pick moved = { pick->position, g_steal_pointer (&pick->uuid) };
+
+        g_array_append_val (kept, moved);
     }
+
+    for (guint i = position; i < end; ++i)
+    {
+        if (!gtk_bitset_contains (picked, i) && gtk_selection_model_is_selected (model, i))
+        {
+            Pick pick = { i, g_strdup (g_paste_ui_history_shown_uuid (self, i)) };
+
+            g_array_append_val (kept, pick);
+        }
+    }
+
+    /* What went is freed with the array it was in, the rest having moved. */
+    g_array_unref (g_steal_pointer (&self->selection));
+    self->selection = g_steal_pointer (&kept);
 
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, self->selection->len);
 }
