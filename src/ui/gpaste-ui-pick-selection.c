@@ -70,12 +70,16 @@ g_paste_ui_pick_selection_get_selection_in_range (GtkSelectionModel *model,
     return (PICKS (model)) ? gtk_selection_model_get_selection_in_range (PICKS (model), position, n_items) : gtk_bitset_new_empty ();
 }
 
+/* A request to have one row, or one range, be all that is picked is refused:
+ * it is what GtkListView's own keys make as they move the cursor -- an arrow
+ * key with no modifier -- and would wipe every pick on the way. Rows are picked
+ * one by one, as a click or Enter toggles them. */
 static gboolean
 g_paste_ui_pick_selection_select_item (GtkSelectionModel *model,
                                        guint              position,
                                        gboolean           unselect_rest)
 {
-    return PICKS (model) && gtk_selection_model_select_item (PICKS (model), position, unselect_rest);
+    return PICKS (model) && !unselect_rest && gtk_selection_model_select_item (PICKS (model), position, FALSE);
 }
 
 static gboolean
@@ -91,7 +95,7 @@ g_paste_ui_pick_selection_select_range (GtkSelectionModel *model,
                                         guint              n_items,
                                         gboolean           unselect_rest)
 {
-    return PICKS (model) && gtk_selection_model_select_range (PICKS (model), position, n_items, unselect_rest);
+    return PICKS (model) && !unselect_rest && gtk_selection_model_select_range (PICKS (model), position, n_items, FALSE);
 }
 
 static gboolean

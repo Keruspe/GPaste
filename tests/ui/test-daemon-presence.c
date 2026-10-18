@@ -1291,8 +1291,9 @@ count_picks (GPasteUiHistory *history G_GNUC_UNUSED,
 }
 
 /* While items are being picked, Ctrl+1 picks the second row as a click would,
- * and Ctrl+F opens no search over the picks. A search asked for from outside
- * leaves selection mode first. */
+ * an arrow key moving the cursor leaves the picks as they were, and Ctrl+F
+ * opens no search over the picks. A search asked for from outside leaves
+ * selection mode first. */
 static void
 test_selection_mode_keys (void)
 {
@@ -1320,6 +1321,18 @@ test_selection_mode_keys (void)
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
     g_assert_cmpuint (picks, ==, 1);
     g_assert_cmpuint (daemon.selects, ==, 0);
+
+    /* What the list view's own arrow keys do as they move to a row. */
+    GtkWidget *list_view = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+    GtkSelectionModel *model = gtk_list_view_get_model (GTK_LIST_VIEW (list_view));
+
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
+    g_assert_cmpuint (picks, ==, 2);
+    g_assert_true (gtk_widget_activate_action (list_view, "list.select-item", "(ubb)", 2, FALSE, FALSE));
+    g_assert_cmpuint (picks, ==, 2);
+    g_assert_true (gtk_selection_model_is_selected (model, 0));
+    g_assert_true (gtk_selection_model_is_selected (model, 1));
+    g_assert_false (gtk_selection_model_is_selected (model, 2));
 
     g_paste_ui_window_search (window, "value");
     g_assert_false (g_paste_ui_history_get_selection_mode (window->history));
