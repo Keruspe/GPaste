@@ -6762,6 +6762,56 @@ test_sqlite_image_date_out_of_range (void)
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
 }
 
+/* A row whose value is not UTF-8 -- another tool's, a damaged page -- is one
+ * this build makes no item of, and refuses the history as for any such row:
+ * with a warning, and no constructor's critical. So is one whose value holds a
+ * NUL, which an item would cut short at it, and a password whose name is not
+ * UTF-8, which only another tool keeps in a plain database. */
+static void
+test_sqlite_value_not_utf8 (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        static const gchar * const damages[] = {
+            /* "latin" with its i a Latin-1 é. */
+            "UPDATE items SET value = X'6C6174E96E';",
+            "UPDATE items SET value = X'6C61740069';",
+            "UPDATE items SET kind = 'Password', name = X'E9';",
+        };
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        for (gsize i = 0; i < G_N_ELEMENTS (damages); ++i)
+        {
+            g_autofree gchar *name = g_strdup_printf ("sqlite-not-utf8-%" G_GSIZE_FORMAT, i);
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("latin"));
+
+            {
+                g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+                g_paste_storage_backend_write_history (backend, name, items);
+            }
+
+            g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+            sqlite3 *db = NULL;
+
+            g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+            g_assert_cmpint (sqlite3_exec (db, damages[i], NULL, NULL, NULL), ==, SQLITE_OK);
+            g_assert_cmpint (sqlite3_changes (db), ==, 1);
+            sqlite3_close (db);
+
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+            assert_history_refused (backend, name);
+        }
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not UTF-8*");
+    g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
+}
+
 /* The stored blob is the source of truth for images: an item must survive the
  * complete absence of its on-disk cache file — including rebuilding its
  * texture — while a plain database visibly contains the PNG. */
@@ -8026,6 +8076,7 @@ main (int argc, char *argv[])
 #endif
     add_test ("/history/sqlite_image_blob", test_sqlite_image_blob);
     add_test ("/history/sqlite_image_date_out_of_range", test_sqlite_image_date_out_of_range);
+    add_test ("/history/sqlite_value_not_utf8", test_sqlite_value_not_utf8);
     add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
     add_test ("/history/sqlite_null_uuid_reconciled", test_sqlite_null_uuid_reconciled);
     add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);

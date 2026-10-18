@@ -1465,13 +1465,27 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     GPasteItemKind kind = g_paste_item_kind_from_string (kind_str);
     /* A password's value comes back through here too, so the buffer is wiped
      * rather than merely freed once the item has taken a copy of it. */
-    g_autoptr (GPasteCleartext) value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, NULL);
+    gsize value_length = 0;
+    g_autoptr (GPasteCleartext) value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, &value_length);
 
     *unreadable = FALSE;
 
     if (!value)
     {
         g_warning ("sqlite: failed to decrypt an item; dropping it");
+        *unreadable = TRUE;
+
+        return NULL;
+    }
+
+    /* The plain flavours hand back a column's bytes as they are, which only
+     * GPaste's own writes keep to UTF-8: another tool's row, or a damaged page,
+     * is one this build makes nothing of, where the constructors would refuse
+     * it with a critical. Over its whole length: a NUL in it would have the
+     * item cut it short, and the next save keep only that much. */
+    if (!g_utf8_validate_len (value, value_length, NULL))
+    {
+        g_warning ("sqlite: an item's value is not UTF-8; dropping it");
         *unreadable = TRUE;
 
         return NULL;
@@ -1485,7 +1499,8 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         return g_paste_sqlite_backend_built_item (g_paste_uris_item_new_from_str (value), unreadable);
     case G_PASTE_ITEM_KIND_PASSWORD:
     {
-        g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
+        gsize name_length = 0;
+        g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, &name_length);
 
         /* A password is always written with a name -- get_name () answers the
          * G_PASTE_PASSWORD_ITEM_NO_NAME placeholder for the ones that carry
@@ -1497,6 +1512,16 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         if (!name)
         {
             g_warning ("sqlite: failed to decrypt a password's name; dropping it");
+            *unreadable = TRUE;
+
+            return NULL;
+        }
+
+        /* As the value above: a plain database's password row is another
+         * tool's, GPaste keeping none there. */
+        if (!g_utf8_validate_len (name, name_length, NULL))
+        {
+            g_warning ("sqlite: a password's name is not UTF-8; dropping it");
             *unreadable = TRUE;
 
             return NULL;
