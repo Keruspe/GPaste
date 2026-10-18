@@ -637,37 +637,22 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
     return written;
 }
 
-/* The offered backends less this kind, standing for a build without the
+/* The flavour this build is to lack, standing for a build without the
  * feature it needs: -1 for none. The library asks through its own exported
  * symbol, which this one takes the place of. */
 static gint hidden_kind = -1;
-static guint listed;
+static guint asked;
 
-const GPasteStorage *
-g_paste_prompt_list_storage_backends (guint *n_offered)
+gboolean
+g_paste_storage_is_supported (GPasteStorage storage_kind)
 {
-    typedef const GPasteStorage *(*List) (guint *);
-    List original = (List) dlsym (RTLD_NEXT, "g_paste_prompt_list_storage_backends");
-    static GPasteStorage kept[G_PASTE_N_STORAGE];
+    typedef gboolean (*Supported) (GPasteStorage);
+    Supported original = (Supported) dlsym (RTLD_NEXT, "g_paste_storage_is_supported");
 
     g_assert_nonnull (original);
-    ++listed;
+    ++asked;
 
-    const GPasteStorage *offered = original (n_offered);
-    guint n_kept = 0;
-
-    if (hidden_kind < 0)
-        return offered;
-
-    for (guint i = 0; i < *n_offered; ++i)
-    {
-        if ((gint) offered[i] != hidden_kind)
-            kept[n_kept++] = offered[i];
-    }
-
-    *n_offered = n_kept;
-
-    return kept;
+    return (gint) storage_kind != hidden_kind && original (storage_kind);
 }
 
 #if defined(G_PASTE_ENABLE_ENCRYPTION) || defined(G_PASTE_ENABLE_SQLITE)
@@ -681,10 +666,10 @@ g_paste_prompt_list_storage_backends (guint *n_offered)
 static gboolean
 kind_hidable (void)
 {
-    guint before = listed;
+    guint before = asked;
 
-    g_paste_prompt_storage_is_offered (G_PASTE_STORAGE_FILE);
-    if (listed != before)
+    g_paste_prompt_can_import (G_PASTE_STORAGE_FILE, G_PASTE_STORAGE_SQLITE);
+    if (asked != before)
         return TRUE;
 
     g_test_skip ("libgpaste-daemon binds its own calls (-Bsymbolic)");
@@ -769,6 +754,9 @@ struct _TestMigrationPrompt
     /* What the last request explained, and whether it offered to remember. */
     gchar               *passphrase_description;
     gboolean             offered_remember;
+    /* The backends the last migration request offered. */
+    GPasteStorage        offered[G_PASTE_N_STORAGE];
+    guint                n_offered;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -781,6 +769,12 @@ test_migration_prompt_migration (GPastePrompt        *prompt,
                                  GPastePromptRequest *request)
 {
     TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
+    guint n_offered;
+    const GPasteStorage *offered = g_paste_prompt_request_get_offered (request, &n_offered);
+
+    g_assert_cmpuint (n_offered, <=, G_N_ELEMENTS (self->offered));
+    memcpy (self->offered, offered, n_offered * sizeof (GPasteStorage));
+    self->n_offered = n_offered;
 
     if (self->dismiss)
         g_paste_prompt_request_dismiss (request);
@@ -1123,6 +1117,37 @@ test_encrypted_read_leaves_no_copy (void)
     g_assert_cmpuint (freed_holding_secret, ==, 0);
 }
 #endif
+
+/* The migration offers what this build can open, in the enum's order and no
+ * storage last: neither a flavour whose feature is not built, nor one this case
+ * hides as if it were not. */
+static void
+test_migration_offers_supported (void)
+{
+    static const GPasteStorage expected[] = {
+        G_PASTE_STORAGE_FILE,
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_SQLITE,
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+#endif
+#endif
+        G_PASTE_STORAGE_NOOP,
+    };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    hidden_kind = G_PASTE_STORAGE_ENCRYPTED_FILE;
+    prompt->dismiss = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+    hidden_kind = -1;
+
+    g_assert_cmpmem (prompt->offered, prompt->n_offered * sizeof (GPasteStorage), expected, sizeof (expected));
+}
 
 #ifdef G_PASTE_ENABLE_SQLITE
 /* A reply choosing a storage it was not offered -- one this build cannot open,
@@ -5577,6 +5602,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/busy-verification", test_verification_waits_for_busy_database);
     g_test_add_func ("/storage/sqlite/verification-empty-active-database", test_verification_empty_active_database);
 #endif
+    g_test_add_func ("/storage/migration/offered", test_migration_offers_supported);
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);

@@ -7,7 +7,6 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
-#include <gpaste-daemon/gpaste-prompt.h>
 #include <gpaste-daemon/gpaste-storage-backend-private.h>
 
 #include <glib/gstdio.h>
@@ -1003,40 +1002,57 @@ g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
 {
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#define WITH_ENCRYPTION(constructor) constructor
+#else
+#define WITH_ENCRYPTION(constructor) NULL
+#endif
+
+#ifdef G_PASTE_ENABLE_SQLITE
+#define WITH_SQLITE(constructor) constructor
+#else
+#define WITH_SQLITE(constructor) NULL
+#endif
+
 /* Every storage flavour, indexed by its kind: what it is called on disk, what
  * the longest file it keeps for a history adds after the history's name, and
- * which class implements it. Adding a flavour is one row plus its enum value,
- * every lookup of a kind going through here; a reader wanting several flavours
- * names the ones it wants, in its own order (detect_current_backend (),
- * _g_paste_storage_backend_history_still_stored ()).
+ * how this build constructs it -- a plain one through its class, an encrypted
+ * one through a constructor keying it -- a flavour whose feature is not built
+ * naming neither. Adding a flavour is one row plus its enum value, every lookup
+ * of a kind going through here, g_paste_storage_is_supported () included; a
+ * reader wanting several flavours names the ones it wants, in its own order
+ * (detect_current_backend (), _g_paste_storage_backend_history_still_stored ()).
  *
- * @get_type for an encrypted flavour is the no-storage backend on purpose: the
- * encrypted ones are built through their own constructor below, and anything
- * reaching here with one has already failed to key it. Keeping the history in
+ * @get_type for an encrypted flavour is the no-storage backend on purpose:
+ * anything reaching it has already failed to key one. Keeping the history in
  * memory is the only safe answer -- never plaintext on disk. */
 static const struct
 {
-    const gchar *extension;
-    const gchar *longest_suffix;
-    GType      (*get_type) (void);
+    const gchar          *extension;
+    const gchar          *longest_suffix;
+    GType                 (*get_type)      (void);
+    GPasteStorageBackend *(*new_encrypted) (GPasteSettings *settings,
+                                            const gchar    *passphrase);
 } storage_flavours[G_PASTE_N_STORAGE] = {
-    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                  g_paste_noop_backend_get_type },
+    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                  g_paste_noop_backend_get_type,   NULL },
     /* The temporary a save is written to before its move into place. */
-    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml.tmp",                          g_paste_file_backend_get_type },
+    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml.tmp",                          g_paste_file_backend_get_type,   NULL },
     /* The original a change of passphrase keeps aside. */
-    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD, g_paste_noop_backend_get_type },
+    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD, g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted) },
     /* The rollback journal SQLite opens beside a new database to turn it to
      * write-ahead logging, longer than the log and its index. */
 #ifdef G_PASTE_ENABLE_SQLITE
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                       g_paste_sqlite_backend_get_type },
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                       g_paste_sqlite_backend_get_type, NULL },
 #else
-    /* Not built in: a plain kind may degrade to another plain kind, which then
-     * keeps the history as its own. */
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml.tmp",                          g_paste_file_backend_get_type },
+    /* Not built in: the kind degrades to the file flavour
+     * (_g_paste_storage_backend_get_type ()), which then keeps the history as
+     * its own. */
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml.tmp",                          NULL,                            NULL },
 #endif
-    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                      g_paste_noop_backend_get_type },
+    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                      g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)) },
 };
 
+/* A plain kind this build lacks degrades to another plain kind. */
 static GType
 _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
 {
@@ -1044,6 +1060,18 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
         return G_PASTE_TYPE_FILE_BACKEND;
 
     return storage_flavours[storage_kind].get_type ();
+}
+
+/* NULL when this build cannot construct the requested encrypted flavor. */
+static GPasteStorageBackend *
+_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
+                                        GPasteSettings *settings,
+                                        const gchar    *passphrase)
+{
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].new_encrypted)
+        return NULL;
+
+    return storage_flavours[storage_kind].new_encrypted (settings, passphrase);
 }
 
 /**
@@ -1094,11 +1122,29 @@ g_paste_storage_name_fits (GPasteStorage storage_kind,
     return strlen (name) + strlen (storage_flavours[storage_kind].longest_suffix) <= 255;
 }
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-static GPasteStorageBackend *_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
-                                                                     GPasteSettings *settings,
-                                                                     const gchar    *passphrase);
+/**
+ * g_paste_storage_is_supported:
+ * @storage_kind: a #GPasteStorage kind
+ *
+ * Whether this build can open @storage_kind at all. A history on disk in a
+ * format this build lacks is still recognised as what it is, its extension
+ * being known whatever is built (g_paste_storage_get_extension()), but nothing
+ * can be read from it or deleted through it here.
+ *
+ * Returns: whether this build can construct a backend of @storage_kind
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_is_supported (GPasteStorage storage_kind)
+{
+    if (storage_kind >= G_PASTE_N_STORAGE)
+        return FALSE;
+    if (g_paste_storage_is_encrypted (storage_kind))
+        return storage_flavours[storage_kind].new_encrypted != NULL;
 
+    return storage_flavours[storage_kind].get_type != NULL;
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
 /**
  * g_paste_storage_passphrase_can_decrypt:
  * @storage_kind: the encrypted #GPasteStorage kind to verify against
@@ -1254,25 +1300,6 @@ g_paste_storage_backend_refutes_passphrase (GPasteStorageBackend *self,
 
     return klass->history_refutes_passphrase && klass->history_refutes_passphrase (self, name);
 }
-
-/* NULL when this build cannot construct the requested encrypted flavor. */
-static GPasteStorageBackend *
-_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
-                                        GPasteSettings *settings,
-                                        const gchar    *passphrase)
-{
-    switch (storage_kind)
-    {
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-        return g_paste_file_backend_new_encrypted (settings, passphrase);
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-        return g_paste_sqlite_backend_new_encrypted (settings, passphrase);
-#endif
-    default:
-        return NULL;
-    }
-}
 #endif
 
 /* The shared constructor: @passphrase is the key an encrypted @storage_kind is
@@ -1282,11 +1309,10 @@ _g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
 static GPasteStorageBackend *
 _g_paste_storage_backend_new (GPasteStorage   storage_kind,
                               GPasteSettings *settings,
-                              const gchar    *passphrase G_GNUC_UNUSED)
+                              const gchar    *passphrase)
 {
     if (g_paste_storage_is_encrypted (storage_kind))
     {
-#ifdef G_PASTE_ENABLE_ENCRYPTION
         if (passphrase)
         {
             GPasteStorageBackend *backend = _g_paste_storage_backend_new_encrypted (storage_kind, settings, passphrase);
@@ -1297,13 +1323,10 @@ _g_paste_storage_backend_new (GPasteStorage   storage_kind,
 
         /* Without a passphrase (or the flavor's support built in) we must not
          * fall back to plaintext on disk; keep the history in memory only. */
-        if (g_paste_prompt_storage_is_offered (storage_kind))
+        if (g_paste_storage_is_supported (storage_kind))
             g_warning ("No passphrase for the encrypted storage backend; not storing the history");
         else
             g_warning ("This build cannot open the encrypted storage backend; not storing the history");
-#else
-        g_warning ("Encrypted storage is not built in; not storing the history");
-#endif
         storage_kind = G_PASTE_STORAGE_NOOP;
     }
 
@@ -1345,7 +1368,7 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
      * actually decrypts the history, so a stale entry can never be used (which
      * would overwrite the real data with an empty, wrongly-encrypted one). */
     if (!passphrase && g_paste_storage_is_encrypted (storage_kind) &&
-        g_paste_prompt_storage_is_offered (storage_kind) &&
+        g_paste_storage_is_supported (storage_kind) &&
         g_paste_storage_keyring_apply_verified (storage_kind, settings))
         passphrase = g_paste_storage_backend_get_passphrase ();
 #endif

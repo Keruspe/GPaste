@@ -467,7 +467,7 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
     G_PASTE_DBUS_ASSERT (g_paste_storage_is_encrypted (storage),
                          G_PASTE_ERROR_NOT_ENCRYPTED,
                          "The history is not encrypted; there is no passphrase to change.");
-    G_PASTE_DBUS_ASSERT (g_paste_prompt_storage_is_offered (storage),
+    G_PASTE_DBUS_ASSERT (g_paste_storage_is_supported (storage),
                          G_PASTE_ERROR_FAILED,
                          "This build cannot open the history to change its passphrase.");
 

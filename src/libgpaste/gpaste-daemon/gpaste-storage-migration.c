@@ -1301,8 +1301,16 @@ on_migration_reply (GObject      *source,
 static void
 ask_migration (MigrationData *self)
 {
-    guint n_offered;
-    const GPasteStorage *offered = g_paste_prompt_list_storage_backends (&n_offered);
+    GPasteStorage offered[G_PASTE_N_STORAGE];
+    guint n_offered = 0;
+
+    /* What this build can open, in the enum's order, and no storage last. */
+    for (GPasteStorage kind = G_PASTE_STORAGE_NOOP + 1; kind < G_PASTE_N_STORAGE; ++kind)
+    {
+        if (g_paste_storage_is_supported (kind))
+            offered[n_offered++] = kind;
+    }
+    offered[n_offered++] = G_PASTE_STORAGE_NOOP;
 
     g_paste_prompt_migration_async (self->prompt, offered, n_offered, self->current,
                                     on_migration_reply, self);
@@ -1485,7 +1493,7 @@ static gboolean
 decryption_pending (GPasteStorage storage_kind)
 {
     return g_paste_storage_is_encrypted (storage_kind) &&
-           g_paste_prompt_storage_is_offered (storage_kind) &&
+           g_paste_storage_is_supported (storage_kind) &&
            !g_paste_storage_backend_get_passphrase ();
 }
 #endif
@@ -2006,7 +2014,7 @@ g_paste_storage_rekey_async (GPastePrompt       *prompt,
 
     /* As in decryption_pending (): a store this build cannot open verifies no
      * passphrase, the one that would unlock it included. */
-    if (g_paste_storage_is_encrypted (storage_kind) && !g_paste_prompt_storage_is_offered (storage_kind))
+    if (g_paste_storage_is_encrypted (storage_kind) && !g_paste_storage_is_supported (storage_kind))
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "This build cannot open the history to change its passphrase");
@@ -2341,7 +2349,7 @@ doctor_inspect_run (GTask        *task,
         return;
     }
 
-    if (!g_paste_prompt_storage_is_offered (self->storage_kind))
+    if (!g_paste_storage_is_supported (self->storage_kind))
     {
         doctor_note (self, FALSE, _("This build of GPaste cannot open the storage backend the history is in"));
         g_task_return_boolean (task, TRUE);
@@ -2620,7 +2628,7 @@ g_paste_storage_doctor_async (GPastePrompt       *prompt,
      * its history would be reported as one that cannot be read. */
     g_paste_file_backend_settle_rekeys ();
 
-    if (g_paste_storage_is_encrypted (self->storage_kind) && g_paste_prompt_storage_is_offered (self->storage_kind))
+    if (g_paste_storage_is_encrypted (self->storage_kind) && g_paste_storage_is_supported (self->storage_kind))
     {
         const gchar *known = known_passphrase_for (self->storage_kind, settings);
 

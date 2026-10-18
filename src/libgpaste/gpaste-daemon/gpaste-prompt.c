@@ -4,6 +4,7 @@
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-prompt.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
 #include <gpaste-daemon/gpaste-storage-keyring.h>
@@ -705,59 +706,6 @@ g_paste_prompt_migration_finish (GPastePrompt  *self,
 }
 
 /**
- * g_paste_prompt_list_storage_backends:
- * @n_offered: (out): the number of backends returned
- *
- * List the storage backends a migration prompt should offer, in display order:
- * whichever flavors this build can actually construct.
- *
- * Returns: (array length=n_offered) (transfer none): the backends
- */
-G_PASTE_VISIBLE const GPasteStorage *
-g_paste_prompt_list_storage_backends (guint *n_offered)
-{
-    static const GPasteStorage offered[] = {
-        G_PASTE_STORAGE_FILE,
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-        G_PASTE_STORAGE_ENCRYPTED_FILE,
-#endif
-#ifdef G_PASTE_ENABLE_SQLITE
-        G_PASTE_STORAGE_SQLITE,
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
-#endif
-#endif
-        G_PASTE_STORAGE_NOOP,
-    };
-
-    g_return_val_if_fail (n_offered, NULL);
-
-    *n_offered = G_N_ELEMENTS (offered);
-
-    return offered;
-}
-
-/**
- * g_paste_prompt_storage_is_offered:
- * @storage_kind: a #GPasteStorage
- *
- * Whether g_paste_prompt_list_storage_backends() offers @storage_kind, which is
- * whether this build can open it at all. A history on disk in a format this
- * build lacks is still recognised as what it is, but nothing can be read from
- * it or deleted through it here.
- *
- * Returns: whether this build can construct a backend of @storage_kind
- */
-G_PASTE_VISIBLE gboolean
-g_paste_prompt_storage_is_offered (GPasteStorage storage_kind)
-{
-    guint n_offered;
-    const GPasteStorage *offered = g_paste_prompt_list_storage_backends (&n_offered);
-
-    return g_paste_prompt_storage_is_in (offered, n_offered, storage_kind);
-}
-
-/**
  * g_paste_prompt_storage_label:
  * @storage_kind: a #GPasteStorage
  *
@@ -794,7 +742,7 @@ g_paste_prompt_storage_label (GPasteStorage storage_kind)
  * stored data into a different one that also stores something. Copying
  * file -> file, importing into "no storage", or importing from an empty "no
  * storage" source are all pointless, and a source this build cannot open (see
- * g_paste_prompt_storage_is_offered()) cannot be read.
+ * g_paste_storage_is_supported()) cannot be read.
  *
  * Returns: whether the "import existing data" toggle should be offered
  */
@@ -805,7 +753,7 @@ g_paste_prompt_can_import (GPasteStorage current,
     return current != G_PASTE_STORAGE_NOOP &&
            chosen != G_PASTE_STORAGE_NOOP &&
            chosen != current &&
-           g_paste_prompt_storage_is_offered (current);
+           g_paste_storage_is_supported (current);
 }
 
 /**
@@ -816,7 +764,7 @@ g_paste_prompt_can_import (GPasteStorage current,
  * Whether there is "old data" to delete afterwards: only once we actually leave
  * a backend that stored something, otherwise deleting it would throw away what
  * we kept. Not for a backend this build cannot open either (see
- * g_paste_prompt_storage_is_offered()): what stands in for it here lists
+ * g_paste_storage_is_supported()): what stands in for it here lists
  * nothing of its histories, or the histories of the flavour it degrades to,
  * which are not the old data at all.
  *
@@ -828,7 +776,7 @@ g_paste_prompt_backend_changes (GPasteStorage current,
 {
     return current != G_PASTE_STORAGE_NOOP &&
            chosen != current &&
-           g_paste_prompt_storage_is_offered (current);
+           g_paste_storage_is_supported (current);
 }
 
 /**

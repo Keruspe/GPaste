@@ -497,7 +497,7 @@ encrypted_flavour (gboolean offered)
 
     for (guint i = 0; i < G_N_ELEMENTS (flavours); ++i)
     {
-        if (g_paste_prompt_storage_is_offered (flavours[i]) == offered)
+        if (g_paste_storage_is_supported (flavours[i]) == offered)
             return flavours[i];
     }
 
