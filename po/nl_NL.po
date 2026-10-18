@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 23:14+0200\n"
+"POT-Creation-Date: 2026-10-20 07:38+0200\n"
 "PO-Revision-Date: 2017-03-17 17:38+0100\n"
 "Last-Translator: Heimen Stoffels <vistausss@outlook.com>\n"
 "Language-Team: Vistaus <vistausss@outlook.com>\n"
@@ -153,7 +153,7 @@ msgstr "Sneltoets om het grafische venster te openen"
 #: data/gsettings/org.gnome.GPaste.gschema.xml:176
 #: data/gsettings/org.gnome.GPaste.gschema.xml:200
 #: data/gsettings/org.gnome.GPaste.gschema.xml:208
-#: data/gsettings/org.gnome.GPaste.gschema.xml:250
+#: data/gsettings/org.gnome.GPaste.gschema.xml:258
 msgid "An empty string disables this shortcut."
 msgstr ""
 
@@ -306,12 +306,23 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:240
 #, fuzzy
+msgid "Tracking paused while the GNOME Shell extension is away"
+msgstr "GNOME Shell-extensie inschakelen"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:241
+msgid ""
+"Kept by the daemon under track-extension-state: set when the extension going "
+"away paused the tracking, so that its coming back resumes it, and only then."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml:248
+#, fuzzy
 msgid "Trim text items before adding them to the history"
 msgstr ""
 "Moeten de tekstitems worden getrimd voordat ze worden toegevoegd aan de "
 "geschiedenis?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:241
+#: data/gsettings/org.gnome.GPaste.gschema.xml:249
 #, fuzzy
 msgid ""
 "Trimming removes the leading and trailing whitespace. Disabled by default: "
@@ -320,7 +331,7 @@ msgstr ""
 "Trimmen houdt in dat alle spaties vóór en ná de tekst worden verwijderd. "
 "Standaard wordt er niet getrimd."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:249
+#: data/gsettings/org.gnome.GPaste.gschema.xml:257
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
@@ -328,12 +339,12 @@ msgstr ""
 "Sneltoets om het eerste element in de geschiedenis te uploaden naar een "
 "pastebin-dienst"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:257
+#: data/gsettings/org.gnome.GPaste.gschema.xml:265
 #, fuzzy
 msgid "The command uploading an item to a pastebin service"
 msgstr "Actief item uploaden naar een pastebin-dienst"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:258
+#: data/gsettings/org.gnome.GPaste.gschema.xml:266
 msgid ""
 "The item is written to the command’s standard input, and the command must "
 "answer the url it uploaded it to -- and nothing else -- on its standard "
@@ -345,19 +356,19 @@ msgid ""
 "error ends up in the daemon’s log."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:272
+#: data/gsettings/org.gnome.GPaste.gschema.xml:280
 msgid "Ask for confirmation before emptying a history"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:273
+#: data/gsettings/org.gnome.GPaste.gschema.xml:281
 msgid "Enabled by default, because emptying a history cannot be undone."
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:280
+#: data/gsettings/org.gnome.GPaste.gschema.xml:288
 msgid "Run the experimental in-shell (mutter) daemon"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml:281
+#: data/gsettings/org.gnome.GPaste.gschema.xml:289
 msgid ""
 "Disabled by default: the GNOME Shell extension is a pure client and the "
 "standalone daemon does the work."
@@ -395,83 +406,79 @@ msgid "The settings UI"
 msgstr "Instellingenvenster"
 
 #. Translators: %s is the program GPaste tried to start, then the reason it could not.
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:215
 #, fuzzy, c-format
 msgid "Couldn’t spawn %s: %s"
 msgstr "Het oproepen is mislukt"
 
-#: src/client/gpaste-client.c:317
+#: src/client/gpaste-client.c:357
 msgid "Successfully re-executed the daemon"
 msgstr "De daemon is sucessvol herstart"
 
-#: src/client/gpaste-client.c:343
+#: src/client/gpaste-client.c:383
 #, fuzzy
 msgid "Successfully triggered the storage migration"
 msgstr "De daemon is sucessvol herstart"
 
-#: src/client/gpaste-client.c:360
+#: src/client/gpaste-client.c:400
 #, fuzzy
 msgid "Successfully triggered the passphrase change"
 msgstr "De daemon is sucessvol herstart"
 
-#: src/client/gpaste-client.c:527
-msgid "Cannot add non-UTF-8 data as text."
-msgstr "Het toevoegen van UTF-8-gegevens als tekst is mislukt."
-
-#: src/client/gpaste-client.c:790
+#: src/client/gpaste-client.c:825
 #, fuzzy
 msgid "print the history with UUIDs"
 msgstr "geschiedenis met indexen weergeven"
 
-#: src/client/gpaste-client.c:791
+#: src/client/gpaste-client.c:826
 #, fuzzy
 msgid "print the size of the current history"
 msgstr "geschiedenisgrootte weergeven"
 
-#: src/client/gpaste-client.c:792
+#: src/client/gpaste-client.c:827
 #, fuzzy
 msgid "print the items of the history matching <pattern>"
 msgstr "geschiedenisgrootte weergeven"
 
-#: src/client/gpaste-client.c:793
+#: src/client/gpaste-client.c:828
 msgid "get the name of the current history"
 msgstr "naam verkrijgen van de huidige geschiedenis"
 
-#: src/client/gpaste-client.c:794
+#: src/client/gpaste-client.c:829
 msgid "back up the current history"
 msgstr "huidige geschiedenis back-uppen"
 
-#: src/client/gpaste-client.c:795
+#: src/client/gpaste-client.c:830
 msgid "switch to another history"
 msgstr "overschakelen naar andere geschiedenis"
 
-#: src/client/gpaste-client.c:796
+#: src/client/gpaste-client.c:831
 msgid "delete a history"
 msgstr "een geschiedenis verwijderen"
 
-#: src/client/gpaste-client.c:797
+#: src/client/gpaste-client.c:832
 msgid "list available histories"
 msgstr "beschikbare geschiedenissen opsommen"
 
-#: src/client/gpaste-client.c:798
+#: src/client/gpaste-client.c:833
 msgid "set text to clipboard"
 msgstr "verstuur tekst naar klembord"
 
-#: src/client/gpaste-client.c:799
+#: src/client/gpaste-client.c:834
 msgid "add the <name> / <password> pair to the clipboard"
 msgstr "voeg de naam - wachtwoord-set toe aan het klembord"
 
-#: src/client/gpaste-client.c:800
+#: src/client/gpaste-client.c:835
 #, fuzzy
 msgid "get the item <uuid> from the history"
 msgstr "verkrijg item <number> uit de geschiedenis"
 
-#: src/client/gpaste-client.c:801
+#: src/client/gpaste-client.c:836
 #, fuzzy
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "stelt item <number> uit de geschiedenis in op het klembord"
 
-#: src/client/gpaste-client.c:802
+#: src/client/gpaste-client.c:837
 #, fuzzy
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
@@ -480,13 +487,13 @@ msgstr ""
 "vervang de inhoud van item <number> uit de geschiedenis door het opgegeven "
 "item"
 
-#: src/client/gpaste-client.c:803
+#: src/client/gpaste-client.c:838
 msgid ""
 "drop the rich text flavours of the item <uuid>, keeping the plain text it "
 "shows"
 msgstr ""
 
-#: src/client/gpaste-client.c:804
+#: src/client/gpaste-client.c:839
 #, fuzzy
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
@@ -495,7 +502,7 @@ msgstr ""
 "voeg de items <number> uit de geschiedenis samen en plaats het resultaat op "
 "het klembord"
 
-#: src/client/gpaste-client.c:805
+#: src/client/gpaste-client.c:840
 #, fuzzy
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
@@ -503,169 +510,169 @@ msgid ""
 msgstr ""
 "stelt item <number> uit de geschiedenis in als een wachtwoord genaamd <name>"
 
-#: src/client/gpaste-client.c:806
+#: src/client/gpaste-client.c:841
 #, fuzzy
 msgid "delete item <uuid> from the history"
 msgstr "verwijdert wachtwoord <name> uit de geschiedenis"
 
-#: src/client/gpaste-client.c:807
+#: src/client/gpaste-client.c:842
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:808
+#: src/client/gpaste-client.c:843
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:809
+#: src/client/gpaste-client.c:844
 msgid "delete the password <name> from the history"
 msgstr "verwijdert wachtwoord <name> uit de geschiedenis"
 
-#: src/client/gpaste-client.c:810
+#: src/client/gpaste-client.c:845
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "plaats de inhoud van het bestand uit <path> op het klembord"
 
-#: src/client/gpaste-client.c:811
+#: src/client/gpaste-client.c:846
 msgid "empty the history"
 msgstr "geschiedenis legen"
 
-#: src/client/gpaste-client.c:812
+#: src/client/gpaste-client.c:847
 msgid "start tracking clipboard changes"
 msgstr "begin met het bijhouden van klembordwijzigingen"
 
-#: src/client/gpaste-client.c:813
+#: src/client/gpaste-client.c:848
 msgid "stop tracking clipboard changes"
 msgstr "begin met het bijhouden van klembordwijzigingen"
 
-#: src/client/gpaste-client.c:814
+#: src/client/gpaste-client.c:849
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "de daemon herstarten (na upgraden...)"
 
-#: src/client/gpaste-client.c:815
+#: src/client/gpaste-client.c:850
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:816
+#: src/client/gpaste-client.c:851
 #, fuzzy
 msgid "change the passphrase of the encrypted history"
 msgstr "naam verkrijgen van de huidige geschiedenis"
 
-#: src/client/gpaste-client.c:817
+#: src/client/gpaste-client.c:852
 msgid "launch the configuration tool"
 msgstr "start het configuratievenster"
 
-#: src/client/gpaste-client.c:818
+#: src/client/gpaste-client.c:853
 msgid "launch the graphical tool"
 msgstr "start het grafische venster"
 
-#: src/client/gpaste-client.c:819
+#: src/client/gpaste-client.c:854
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr ""
 "zorgt ervoor dat het applet of de uitbreiding de geschiedenis weergeeft"
 
-#: src/client/gpaste-client.c:820
+#: src/client/gpaste-client.c:855
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "Actief item uploaden naar een pastebin-dienst"
 
-#: src/client/gpaste-client.c:821
+#: src/client/gpaste-client.c:856
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service, and copy its address"
 msgstr "Actief item uploaden naar een pastebin-dienst"
 
-#: src/client/gpaste-client.c:822
+#: src/client/gpaste-client.c:857
 msgid "display the version"
 msgstr "applicatieversie weergeven"
 
-#: src/client/gpaste-client.c:823
+#: src/client/gpaste-client.c:858
 msgid "display the daemon version"
 msgstr "daemon-versie weergeven"
 
-#: src/client/gpaste-client.c:824
+#: src/client/gpaste-client.c:859
 msgid "display this help"
 msgstr "deze hulptekst weergeven"
 
-#: src/client/gpaste-client.c:825
+#: src/client/gpaste-client.c:860
 msgid "display the about dialog"
 msgstr "het over-venster weergeven"
 
-#: src/client/gpaste-client.c:896
+#: src/client/gpaste-client.c:931
 #, c-format
 msgid "Usage:\n"
 msgstr "Gebruik:\n"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:917
+#: src/client/gpaste-client.c:952
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:917
+#: src/client/gpaste-client.c:952
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "stelt de uitvoer van wat dan ook in op het klembord"
 
-#: src/client/gpaste-client.c:920
+#: src/client/gpaste-client.c:955
 #, fuzzy, c-format
 msgid "Convenience options:"
 msgstr "Samenvoegingsopties"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:923
+#: src/client/gpaste-client.c:958
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:925
+#: src/client/gpaste-client.c:960
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:927
+#: src/client/gpaste-client.c:962
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
-#: src/client/gpaste-client.c:930
+#: src/client/gpaste-client.c:965
 #, c-format
 msgid "Display options:"
 msgstr "Weergave-opties:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:933
+#: src/client/gpaste-client.c:968
 msgid "display each item on only one line"
 msgstr "elk item slechts op één regel weergeven"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:935
+#: src/client/gpaste-client.c:970
 msgid "display each item raw (without line numbers)"
 msgstr "elk item 'kaal' weergeven (zonder regelnummers)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:937
+#: src/client/gpaste-client.c:972
 #, fuzzy
 msgid "display the items in reverse order"
 msgstr "daemon-versie weergeven"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:939
+#: src/client/gpaste-client.c:974
 msgid "use a NUL character instead of a new line between each item"
 msgstr "tussen elk item een NUL-teken gebruiken i.p.v. een nieuwe regel"
 
-#: src/client/gpaste-client.c:942
+#: src/client/gpaste-client.c:977
 #, c-format
 msgid "Merge options:"
 msgstr "Samenvoegingsopties:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:945 src/client/gpaste-client.c:947
+#: src/client/gpaste-client.c:980 src/client/gpaste-client.c:982
 msgid "string"
 msgstr "string"
 
-#: src/client/gpaste-client.c:945
+#: src/client/gpaste-client.c:980
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -673,23 +680,27 @@ msgstr ""
 "voeg de opgegeven decoratie aan het begin en eind van elk item alvorens het "
 "samen te voegen"
 
-#: src/client/gpaste-client.c:947
+#: src/client/gpaste-client.c:982
 msgid "add the given separator between each item when merging"
 msgstr ""
 "voeg de opgegeven scheidingslijn toe tussen elk item tijdens het samenvoegen"
 
+#: src/client/gpaste-client.c:1049
+msgid "Cannot use arguments or input that are not valid UTF-8."
+msgstr ""
+
 #. Reached only if both execs failed: keep this daemon running and resume
 #. * recording (g_paste_daemon_flush() stopped it above).
-#: src/daemon/gpaste-daemon.c:111
+#: src/daemon/gpaste-daemon.c:177
 #, fuzzy
 msgid "Failed to reexecute the daemon"
 msgstr "De daemon is sucessvol herstart\n"
 
-#: src/daemon/gpaste-daemon.c:125
+#: src/daemon/gpaste-daemon.c:226
 msgid "Stop signal received, exiting"
 msgstr "Het stopsignaal is ontvangen; bezig met afsluiten"
 
-#: src/daemon/gpaste-daemon.c:316
+#: src/daemon/gpaste-daemon.c:423
 msgid "Could not export our objects on the session bus, exiting"
 msgstr ""
 
@@ -697,14 +708,14 @@ msgstr ""
 #. * --replace`): flush the history and release the lock so the successor
 #. * loads our final state, then exit successfully so the systemd unit
 #. * does not land in the failed state.
-#: src/daemon/gpaste-daemon.c:336
+#: src/daemon/gpaste-daemon.c:443
 #, fuzzy
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr "GPaste-Daemon-Einstellungen"
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
-#: src/daemon/gpaste-daemon.c:344
+#: src/daemon/gpaste-daemon.c:468
 msgid ""
 "Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr ""
@@ -719,13 +730,13 @@ msgstr "GPaste"
 #: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:243
 #: src/gnome-shell/historySwitcher.js:764 src/ui/gpaste-ui-item.c:1011
 #: src/ui/gpaste-ui-item.c:1081 src/ui/gpaste-ui-panel-history.c:216
-#: src/ui/gpaste-ui-panel-history.c:218 src/ui/gpaste-ui-panel.c:620
-#: src/ui/gpaste-ui-panel.c:811
+#: src/ui/gpaste-ui-panel-history.c:218 src/ui/gpaste-ui-panel.c:621
+#: src/ui/gpaste-ui-panel.c:812
 msgid "Delete"
 msgstr "Verwijderen"
 
 #: src/gnome-shell/dummyHistoryItem.js:31 src/ui/gpaste-ui-history.c:1357
-#: src/ui/gpaste-ui-window.c:836
+#: src/ui/gpaste-ui-window.c:853
 msgid "Retry"
 msgstr ""
 
@@ -763,23 +774,23 @@ msgid "Pin"
 msgstr ""
 
 #: src/gnome-shell/historySwitcher.js:72
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:62
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:284
-#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:562
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:294
+#: src/ui/gpaste-ui-header.c:317 src/ui/gpaste-ui-panel.c:563
 msgid "Cancel"
 msgstr "Annuleren"
 
 #: src/gnome-shell/historySwitcher.js:241
 #: src/gnome-shell/historySwitcher.js:744
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:215 src/ui/gpaste-ui-panel.c:810
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:225 src/ui/gpaste-ui-panel.c:811
 #, fuzzy
 msgctxt "verb"
 msgid "Empty"
 msgstr "Legen"
 
-#: src/gnome-shell/historySwitcher.js:242 src/ui/gpaste-ui-panel.c:562
-#: src/ui/gpaste-ui-panel.c:809
+#: src/gnome-shell/historySwitcher.js:242 src/ui/gpaste-ui-panel.c:563
+#: src/ui/gpaste-ui-panel.c:810
 #, fuzzy
 msgid "Back Up"
 msgstr "Back-uppen"
@@ -791,23 +802,23 @@ msgstr "overschakelen naar andere geschiedenis"
 
 #. Translators: %s is the name of the history being emptied.
 #: src/gnome-shell/historySwitcher.js:742
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:211
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:221
 #, c-format, javascript-format
 msgid "Empty “%s”?"
 msgstr ""
 
 #: src/gnome-shell/historySwitcher.js:743
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:214
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:224
 msgid "Every item it holds is deleted for good."
 msgstr ""
 
 #. Translators: %s is the name of the history being deleted.
-#: src/gnome-shell/historySwitcher.js:762 src/ui/gpaste-ui-panel.c:616
+#: src/gnome-shell/historySwitcher.js:762 src/ui/gpaste-ui-panel.c:617
 #, c-format, javascript-format
 msgid "Delete “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:763 src/ui/gpaste-ui-panel.c:619
+#: src/gnome-shell/historySwitcher.js:763 src/ui/gpaste-ui-panel.c:620
 msgid "The history and everything in it are deleted for good."
 msgstr ""
 
@@ -936,132 +947,132 @@ msgstr "Primaire selectie synchroniseren met klembord"
 msgid "Sync Primary to Clipboard"
 msgstr "Primaire selectie synchroniseren met klembord"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:415
+#: src/libgpaste/gpaste-3/gpaste-util.c:450
 msgid "Image"
 msgstr "Afbeelding"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:417
+#: src/libgpaste/gpaste-3/gpaste-util.c:452
 msgid "Color"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:422
+#: src/libgpaste/gpaste-3/gpaste-util.c:457
 msgid "Files"
 msgstr "Bestanden"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:427
-#: src/ui/gpaste-ui-password-dialog.c:222
+#: src/libgpaste/gpaste-3/gpaste-util.c:462
+#: src/ui/gpaste-ui-password-dialog.c:232
 msgid "Password"
 msgstr "Wachtwoord"
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:867
+#: src/libgpaste/gpaste-3/gpaste-util.c:1089
 msgid "Weak"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:869
+#: src/libgpaste/gpaste-3/gpaste-util.c:1091
 msgid "Fair"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:871
+#: src/libgpaste/gpaste-3/gpaste-util.c:1093
 msgid "Good"
 msgstr ""
 
-#: src/libgpaste/gpaste-3/gpaste-util.c:873
+#: src/libgpaste/gpaste-3/gpaste-util.c:1095
 msgid "Strong"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:187
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:202
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:262
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:277
 msgid "Could not create history dir"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
-#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:281
+#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:287
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
 #. Translators: an image item's dimensions and capture date, shown in history
 #. * behind a "[Image, ...]" the drawing client puts around it. %1$d is the
 #. * width, %2$d the height, %3$s the formatted date; reorder them freely.
-#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:285
+#: src/libgpaste/gpaste-daemon/gpaste-image-item.c:291
 #, c-format
 msgid "%1$d × %2$d (%3$s)"
 msgstr "%1$d × %2$d (%3$s)"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:631
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:683
 msgid "Store the history in a file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:633
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:685
 msgid "Store the history in an encrypted file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:635
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:687
 #, fuzzy
 msgid "Store the history in a database"
 msgstr "geschiedenis printen met NUL als scheidingslijn"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:637
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:689
 msgid "Store the history in an encrypted database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:639
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:691
 msgid "Don’t store anything"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:883
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:932
 #, fuzzy
 msgid "Encrypted history"
 msgstr "Geschiedenis wissen"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:885
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:934
 #, fuzzy
 msgid "Enter the passphrase to unlock your clipboard history."
 msgstr "naam verkrijgen van de huidige geschiedenis"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:887
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:936
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:889
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:938
 msgid "Unlock"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:891
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:940
 msgid "Set passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:893
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:942
 msgid "Passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:895
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:944
 msgid "Confirm passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:897
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:946
 msgid "Passphrase strength"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:899
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:948
 #, fuzzy
 msgid "Passphrase strength rating is not available in this build"
 msgstr "beschikbare geschiedenissen opsommen"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:901
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:950
 msgid "Remember this passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:903
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:952
 msgid "Store it in the keyring so you are not asked again"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:905
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:954
 msgid "Storage migration"
 msgstr ""
 
 #. Translators: the quoted words are the label of the button below, so
 #. * the two have to say the same thing.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:909
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:958
 msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
 "disk unless you pick a storing backend here. “Keep as is” changes nothing "
@@ -1069,71 +1080,95 @@ msgid ""
 "time."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:911
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:960
 msgid "Apply"
 msgstr ""
 
 #. Translators: this label is quoted in the description above.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:914
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:963
 msgid "Keep as is"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:916
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:965
 msgid "Storage backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:918
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:967
 msgid "Import existing data"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:920
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:969
 msgid "Copy the current history into the new backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:922
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:971
 msgid "Delete old data afterwards"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:924
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
 msgid "Remove the previous on-disk history once done"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:926
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
 msgid "The old data will be deleted without being imported first"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:928
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
 msgid "The passphrase was not changed"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:930
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
 msgid "Your history is still encrypted with the passphrase it had before."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:932
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
 msgid ""
 "Some of your histories are now encrypted with the new passphrase while the "
 "others keep the previous one, and GPaste could not put them back. Both "
 "passphrases are needed to open them all; the system log says which is which."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:934
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
 msgid "The old data was not deleted"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:936
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
 msgid ""
 "The clipboard history GPaste was told to delete after the migration is still "
 "on disk."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:938
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
+#, fuzzy
+msgid "The history was not migrated"
+msgstr "geschiedenis printen met NUL als scheidingslijn"
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:989
+msgid ""
+"GPaste could not copy your clipboard history into the new storage backend, "
+"so it keeps the one it had and will ask again next time."
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:47
 msgid "Close"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:644
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:995
+msgid ""
+"Choose where GPaste should store your clipboard history. Nothing is kept on "
+"disk unless you pick a storing backend here. Closing this window asks it "
+"again next time."
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:1014
 msgid "Wrong passphrase, please try again"
+msgstr ""
+
+#: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:1121
+msgid ""
+"This storage already holds histories under another passphrase, please type "
+"that one"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:38
@@ -1236,7 +1271,7 @@ msgstr ""
 #. A plain button that resets the key directly, like the suffix button does;
 #. * no GAction, so there is no action-muxer lookup to get wrong. Disabled
 #. * while the key is already at its default.
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c:63
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c:68
 msgid "Reset to Default"
 msgstr ""
 
@@ -1343,45 +1378,45 @@ msgid "When disabled, GPaste grabs no global shortcut"
 msgstr ""
 
 #. translators: shown while the row waits for the user to press a shortcut
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:203
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:212
 msgid "Press the new shortcut, Backspace to clear, Escape to cancel"
 msgstr ""
 
 #. translators: shown in a shortcut row when no shortcut is bound
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:257
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c:279
 msgid "Disabled"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:158
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:168
 #, fuzzy
 msgid "Could not empty the history"
 msgstr "geschiedenis legen"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:613
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:623
 msgid "This item has a line too long to edit"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:760
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:773
 #, fuzzy
 msgid "Password strength rating is not available in this build"
 msgstr "beschikbare geschiedenissen opsommen"
 
-#: src/ui/gpaste-ui-edit-item.c:55
+#: src/ui/gpaste-ui-edit-item.c:56
 #, fuzzy
 msgid "Could not save the edited item"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-edit-item.c:81
+#: src/ui/gpaste-ui-edit-item.c:82
 #, fuzzy
 msgid "Could not read the item to edit"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-edit-item.c:86
+#: src/ui/gpaste-ui-edit-item.c:87
 #, fuzzy
 msgid "Edit Item"
 msgstr "Bewerken"
 
-#: src/ui/gpaste-ui-edit-item.c:86 src/ui/gpaste-ui-password-dialog.c:311
+#: src/ui/gpaste-ui-edit-item.c:87 src/ui/gpaste-ui-password-dialog.c:321
 msgid "Save"
 msgstr ""
 
@@ -1509,42 +1544,42 @@ msgstr "Het creëren van de geschiedenismap is mislukt"
 msgid "Add New Item"
 msgstr ""
 
-#: src/ui/gpaste-ui-new-item.c:66 src/ui/gpaste-ui-password-dialog.c:412
+#: src/ui/gpaste-ui-new-item.c:66 src/ui/gpaste-ui-password-dialog.c:422
 msgid "Add"
 msgstr ""
 
-#: src/ui/gpaste-ui-panel-history.c:65 src/ui/gpaste-ui-panel.c:475
+#: src/ui/gpaste-ui-panel-history.c:65 src/ui/gpaste-ui-panel.c:476
 #, fuzzy
 msgid "Could not switch history"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-panel.c:539
+#: src/ui/gpaste-ui-panel.c:540
 #, fuzzy
 msgid "Could not back up the history"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-panel.c:557
+#: src/ui/gpaste-ui-panel.c:558
 #, fuzzy
 msgid "Back Up History"
 msgstr "Geschiedenis back-uppen als:"
 
-#: src/ui/gpaste-ui-panel.c:558
+#: src/ui/gpaste-ui-panel.c:559
 msgid ""
 "Choose a name for the copy. The history being backed up is left as it is."
 msgstr ""
 
-#: src/ui/gpaste-ui-panel.c:599
+#: src/ui/gpaste-ui-panel.c:600
 #, fuzzy
 msgid "Could not delete the history"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-panel.c:719 src/ui/gpaste-ui-panel.c:731
-#: src/ui/gpaste-ui-panel.c:732
+#: src/ui/gpaste-ui-panel.c:720 src/ui/gpaste-ui-panel.c:732
+#: src/ui/gpaste-ui-panel.c:733
 #, fuzzy
 msgid "Switch or Create"
 msgstr "Overschakelen naar"
 
-#: src/ui/gpaste-ui-panel.c:724
+#: src/ui/gpaste-ui-panel.c:725
 msgid "Type the name of a history to switch to it, or a new name to create one"
 msgstr ""
 
@@ -1562,15 +1597,15 @@ msgstr "Het creëren van de geschiedenismap is mislukt"
 msgid "Could not add the password"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-password-dialog.c:199
+#: src/ui/gpaste-ui-password-dialog.c:207
 msgid "Name"
 msgstr ""
 
-#: src/ui/gpaste-ui-password-dialog.c:200
+#: src/ui/gpaste-ui-password-dialog.c:209
 msgid "Clear After (seconds)"
 msgstr ""
 
-#: src/ui/gpaste-ui-password-dialog.c:202
+#: src/ui/gpaste-ui-password-dialog.c:211
 msgid ""
 "0 lets the password stay on the clipboard for as long as anything else would"
 msgstr ""
@@ -1578,31 +1613,31 @@ msgstr ""
 #. No @unavailable of its own: what a build without libpwquality has to
 #. * say is the row's, and the passphrase prompt is the only caller with a
 #. * reason to word it differently.
-#: src/ui/gpaste-ui-password-dialog.c:229
+#: src/ui/gpaste-ui-password-dialog.c:239
 msgid "Strength"
 msgstr ""
 
-#: src/ui/gpaste-ui-password-dialog.c:311
+#: src/ui/gpaste-ui-password-dialog.c:321
 #, fuzzy
 msgid "Edit Password"
 msgstr "Wachtwoord"
 
-#: src/ui/gpaste-ui-password-dialog.c:347
+#: src/ui/gpaste-ui-password-dialog.c:357
 #, fuzzy
 msgid "Could not read the password’s timeout"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-password-dialog.c:378
+#: src/ui/gpaste-ui-password-dialog.c:388
 #, fuzzy
 msgid "Could not read the password to edit"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
-#: src/ui/gpaste-ui-password-dialog.c:412
+#: src/ui/gpaste-ui-password-dialog.c:422
 #, fuzzy
 msgid "New Password"
 msgstr "Wachtwoord"
 
-#: src/ui/gpaste-ui-password-dialog.c:439
+#: src/ui/gpaste-ui-password-dialog.c:449
 #, fuzzy
 msgid "Make Password"
 msgstr "Wachtwoord"
@@ -1662,121 +1697,132 @@ msgstr ""
 msgid "⚠ %s — GPaste is not listening for these"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:536
+#: src/ui/gpaste-ui-window.c:543
 #, fuzzy
 msgid "Could not restart the daemon"
 msgstr "Daemon herstarten"
 
-#: src/ui/gpaste-ui-window.c:548
+#: src/ui/gpaste-ui-window.c:555
 #, fuzzy
 msgid "Restart the GPaste Daemon?"
 msgstr "Daemon herstarten"
 
-#: src/ui/gpaste-ui-window.c:549
+#: src/ui/gpaste-ui-window.c:556
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:550 src/ui/gpaste-ui-window.c:1018
+#: src/ui/gpaste-ui-window.c:557 src/ui/gpaste-ui-window.c:847
+#: src/ui/gpaste-ui-window.c:1038
 msgid "Restart"
 msgstr "Herstarten"
 
-#: src/ui/gpaste-ui-window.c:572
+#: src/ui/gpaste-ui-window.c:579
 #, fuzzy
 msgid "Could not start tracking the clipboard"
 msgstr "begin met het bijhouden van klembordwijzigingen"
 
-#: src/ui/gpaste-ui-window.c:573
+#: src/ui/gpaste-ui-window.c:580
 #, fuzzy
 msgid "Could not stop tracking the clipboard"
 msgstr "begin met het bijhouden van klembordwijzigingen"
 
-#: src/ui/gpaste-ui-window.c:597
+#: src/ui/gpaste-ui-window.c:604
 #, fuzzy
 msgid "Stop Tracking the Clipboard?"
 msgstr "begin met het bijhouden van klembordwijzigingen"
 
-#: src/ui/gpaste-ui-window.c:598
+#: src/ui/gpaste-ui-window.c:605
 msgid ""
 "What you copy will not be added to the history until tracking is turned back "
 "on."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:599
+#: src/ui/gpaste-ui-window.c:606
 msgid "Stop"
 msgstr "Stoppen"
 
-#: src/ui/gpaste-ui-window.c:639
+#: src/ui/gpaste-ui-window.c:646
 msgid "Clipboard management system"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:643
+#: src/ui/gpaste-ui-window.c:650
 msgid "Sponsor on GitHub"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:644
+#: src/ui/gpaste-ui-window.c:651
 msgid "Donate with PayPal"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:647
+#: src/ui/gpaste-ui-window.c:654
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:835
+#: src/ui/gpaste-ui-window.c:846
+#, fuzzy
+msgid "An older GPaste daemon is still running"
+msgstr "GPaste-daemon-instellingen"
+
+#: src/ui/gpaste-ui-window.c:852
 #, fuzzy
 msgid "Connecting to GPaste…"
 msgstr "Het verbinden met de GPaste-daemon is mislukt"
 
-#: src/ui/gpaste-ui-window.c:835
+#: src/ui/gpaste-ui-window.c:852
 #, fuzzy
 msgid "Couldn’t connect to GPaste"
 msgstr "Het verbinden met de GPaste-daemon is mislukt"
 
-#: src/ui/gpaste-ui-window.c:1016
+#: src/ui/gpaste-ui-window.c:1034
 msgid "The GPaste daemon is out of date"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1259
+#: src/ui/gpaste-ui-window.c:1200
+#, fuzzy
+msgid "Could not restart the older daemon"
+msgstr "Daemon herstarten"
+
+#: src/ui/gpaste-ui-window.c:1388
 #, fuzzy
 msgid "Could not merge the selected items"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:1305
+#: src/ui/gpaste-ui-window.c:1434
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1306
+#: src/ui/gpaste-ui-window.c:1435
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1307
+#: src/ui/gpaste-ui-window.c:1436
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1308
+#: src/ui/gpaste-ui-window.c:1437
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1316
+#: src/ui/gpaste-ui-window.c:1445
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1321
+#: src/ui/gpaste-ui-window.c:1450
 msgid "Merge with this separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1332
+#: src/ui/gpaste-ui-window.c:1461
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1533
+#: src/ui/gpaste-ui-window.c:1668
 #, fuzzy
 msgid "Histories"
 msgstr "Geschiedenissen"
 
-#: src/ui/gpaste-ui-window.c:1534
+#: src/ui/gpaste-ui-window.c:1669
 #, fuzzy
 msgid "History"
 msgstr "Geschiedenissen"
