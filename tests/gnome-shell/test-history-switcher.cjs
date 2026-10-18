@@ -75,7 +75,7 @@ function switcher() {
     const item = Object.create(context.Switcher.prototype);
     item._client = {daemon_presence: 2};
     item._current = null;
-    item.menu = {isOpen: true, moveMenuItem() { focus = null; }, close() {}};
+    item.menu = {isOpen: true, moveMenuItem() { focus = null; }, addMenuItem() {}, close() {}};
     item._getTopMenu = () => ({close() {}});
     item._rows = [];
     item._actions = {
@@ -87,22 +87,17 @@ function switcher() {
     };
     item.entry = {grab_key_focus() { focus = this; }};
     item.grab_key_focus = () => { focus = item; };
-    item._clearRows = () => { item._rows = []; };
-    // As the real one does, a listed default history sizes the row already drawn.
-    item._addRow = (history, size) => {
-        const known = item._rows.find(row => row.history === history);
-
-        if (known) {
-            known.setSize(size);
-            return;
-        }
-
-        item._rows.push({
-            history, size, contains: () => false,
-            grab_key_focus() { focus = this; },
-            setSize(newSize) { this.size = newSize; },
-        });
-    };
+    item._newRow = (history, size) => ({
+        history, size,
+        contains(actor) { return actor === this; },
+        grab_key_focus() { focus = this; },
+        setSize(newSize) { this.size = newSize; },
+        destroy() {
+            this.destroyed = true;
+            if (focus === this)
+                focus = null;
+        },
+    });
     item._markCurrent = () => {};
     return item;
 }
@@ -132,6 +127,46 @@ process.on('exit', () => {
     assert.equal(item._actions.visible, false);
     assert.equal(item._actions.draft, '');
     assert.equal(focus, item);
+
+    // A listing keeps the row of every history it still names, in its order,
+    // the keyboard staying on it; the row of one gone is destroyed, its focus
+    // going to the switcher row.
+    const kept = switcher();
+    const listing = (sizes, names) => async () => names.map(name => ({get_name: () => name, get_size: () => sizes}));
+    // The menu's items, placed as PopupMenuBase places them: a position counts
+    // the items other than the one placed.
+    const placed = [];
+    const shownRows = () => placed.filter(item => item !== kept._actions);
+
+    kept.menu.addMenuItem = (item, position) => placed.splice(position, 0, item);
+    kept.menu.moveMenuItem = (item, position) => {
+        if (placed.includes(item))
+            placed.splice(placed.indexOf(item), 1);
+        placed.splice(position, 0, item);
+        focus = null;
+    };
+    kept._actions.visible = false;
+    kept._client.list_histories = listing(1, ['work', 'play']);
+    await kept.refresh();
+
+    const [defaultRow, workRow, playRow] = kept._rows;
+
+    assert.deepEqual([...kept._rows].map(r => r.history), ['default', 'work', 'play']);
+    workRow.grab_key_focus();
+    kept._client.list_histories = listing(2, ['play', 'work']);
+    await kept.refresh();
+    assert.deepEqual([...kept._rows], [defaultRow, playRow, workRow]);
+    assert.deepEqual(shownRows(), [defaultRow, playRow, workRow]);
+    assert.equal(workRow.size, 2);
+    assert.equal(focus, workRow);
+    kept._client.list_histories = listing(2, ['play']);
+    await kept.refresh();
+    assert.deepEqual([...kept._rows], [defaultRow, playRow]);
+    assert.equal(workRow.destroyed, true);
+    placed.splice(placed.indexOf(workRow), 1);
+    assert.deepEqual(shownRows(), [defaultRow, playRow]);
+    assert.equal(playRow.destroyed, undefined);
+    assert.equal(focus, kept);
 
     let calls = 0;
     item._confirm('Delete?', 'Contents', 'Delete', () => ++calls);
@@ -212,7 +247,7 @@ process.on('exit', () => {
     unlisted._client.list_histories = async () => [];
     await unlisted.refresh();
     await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual(unlisted._rows.map(r => r.history), ['default', 'work']);
+    assert.deepEqual([...unlisted._rows].map(r => r.history), ['default', 'work']);
     assert.equal(unlisted._rows[1].size, 4);
     assert.equal(unlistedSizes, 1);
     assert.equal(unlisted._actions.visible, true);

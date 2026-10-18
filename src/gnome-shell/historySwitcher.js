@@ -600,33 +600,12 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         if (!wanted)
             return;
 
-        // The actions actor owns the backup draft and focus independently of
-        // its row. Keep it while its source history still exists.
-        const actionsHistory = this._actions.visible ? this._actions.history : null;
-        const focus = global.stage.get_key_focus();
-        const actionsFocused = focus !== null && this._actions.contains(focus);
-
-        if (actionsHistory !== null && actionsHistory !== GPaste.DEFAULT_HISTORY && actionsHistory !== this._current &&
-            !histories.some(history => history.get_name() === actionsHistory))
-            this._hideActions();
-
-        this.menu.moveMenuItem(this._actions, this._rows.length);
-
-        // Every row is rebuilt, and a destroyed actor takes the key focus with
-        // it, stranding the keyboard on nothing: it goes back to the row for the
-        // same history, or to this one if that history is gone.
-        const focused = this._rows.find(row => focus !== null && row.contains(focus))?.history;
-
-        this._clearRows();
-
         // The default history is always drawn, listed or not: it is where a
         // switch away from a deleted history lands, and it exists whether or not
         // anything has been stored in it yet. Zero until the listing names it,
         // which is also what it holds when there is no store for it.
-        this._addRow(GPaste.DEFAULT_HISTORY, 0);
-
-        for (const history of histories)
-            this._addRow(history.get_name(), history.get_size());
+        const listed = new Map(histories.map(history => [history.get_name(), history.get_size()]));
+        const drawn = new Map([[GPaste.DEFAULT_HISTORY, 0], ...listed]);
 
         // A listing names the history in use, stored or not, but one from a
         // GPaste 51.0 to 51.2 daemon names only the histories there is a store
@@ -635,56 +614,76 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         // sidebar does, to be marked, deleted and given its actions, and its
         // count asked for: its row, or the default one's, would otherwise say 0
         // however much it holds.
-        const currentListed = histories.some(history => history.get_name() === this._current);
+        if (this._current !== null && !drawn.has(this._current))
+            drawn.set(this._current, 0);
 
-        if (this._current !== null && !this._rows.some(row => row.history === this._current))
-            this._addRow(this._current, 0);
+        // The actions actor owns the backup draft and focus independently of
+        // its row. Keep it while its source history is still drawn.
+        const actionsHistory = this._actions.visible ? this._actions.history : null;
+
+        if (actionsHistory !== null && !drawn.has(actionsHistory))
+            this._hideActions();
+
+        // The rows of the histories still drawn are kept, put in the listing's
+        // order, and those of the histories gone destroyed: a destroyed actor
+        // takes the key focus with it, stranding the keyboard on nothing, so it
+        // goes to this row instead.
+        const focus = global.stage.get_key_focus();
+        const focusedRow = this._rows.find(row => focus !== null && row.contains(focus));
+        const actionsFocused = focus !== null && this._actions.contains(focus);
+        const kept = new Map();
+
+        this.menu.moveMenuItem(this._actions, this._rows.length);
+
+        for (const row of this._rows) {
+            if (drawn.has(row.history))
+                kept.set(row.history, row);
+            else
+                row.destroy();
+        }
+
+        this._rows = [...drawn].map(([history, size], index) => {
+            let row = kept.get(history);
+
+            if (row) {
+                row.setSize(size);
+                this.menu.moveMenuItem(row, index);
+            } else {
+                row = this._newRow(history, size);
+                // Ahead of the entry, which stays last
+                // however many rows there are.
+                this.menu.addMenuItem(row, index);
+            }
+
+            return row;
+        });
 
         this._markCurrent();
 
-        if (this._current !== null && !currentListed)
+        if (this._current !== null && !listed.has(this._current))
             this._sizeCurrent().catch(console.error);
 
         if (this._actions.visible) {
-            const index = this._rows.findIndex(row => row.history === actionsHistory);
-
-            this.menu.moveMenuItem(this._actions, index + 1);
-            // A name the rebuilt list takes, or gives back, changes what the
-            // mark offers while the name stays as it was typed.
+            this.menu.moveMenuItem(this._actions, this._rows.findIndex(row => row.history === actionsHistory) + 1);
+            // A name the new list takes, or gives back, changes what the mark
+            // offers while the name stays as it was typed.
             this._actions.revalidate();
         }
 
-        if (actionsFocused && this._actions.visible)
+        if (actionsFocused)
             focus.grab_key_focus();
-        else if (actionsFocused)
-            this.grab_key_focus();
-        else if (focused !== undefined)
-            (this._rows.find(row => row.history === focused) ?? this).grab_key_focus();
+        else if (focusedRow)
+            (kept.has(focusedRow.history) ? focusedRow : this).grab_key_focus();
     }
 
-    _addRow(history, size) {
-        const known = this._rows.find(row => row.history === history);
-
-        // The default history was drawn before the listing was walked, so the
-        // listing naming it is what says how much it holds.
-        if (known) {
-            known.setSize(size);
-            return;
-        }
-
+    _newRow(history, size) {
         const row = new GPasteHistoryRow(history, size);
 
         row.connect('switch', (item, name) => this._switch(name));
         row.connect('delete', (item, name) => this._confirmDelete(name));
         row.connect('actions', (item, name, fromKeyboard) => this._toggleActions(item, fromKeyboard));
-        // Ahead of the entry, which stays last however many rows there are.
-        this.menu.addMenuItem(row, this._rows.length);
-        this._rows.push(row);
-    }
 
-    _clearRows() {
-        this._rows.forEach(row => row.destroy());
-        this._rows = [];
+        return row;
     }
 
     // Switching to a name no history goes by creates it: that is how a new
