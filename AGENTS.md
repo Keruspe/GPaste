@@ -151,7 +151,8 @@ each build their own dialog -- but every *decision* (`can_keep`, `can_import`,
 `backend_changes`, `passphrase_is_complete`, `remember_state`,
 `remember_answer`, `passphrase_strength`) and every *word*
 (`g_paste_prompt_text()`, `g_paste_prompt_storage_label()`) comes from the C
-side. Add a string there, not in a dialog.
+side. Add a string there, not in a dialog -- and to both dialogs, which
+`tests/gnome-shell/test-prompt.cjs` holds to the same words.
 
 **A history is identified by its name.** Every `GPasteStorageBackendClass` vfunc
 takes one; a backend derives its own path with

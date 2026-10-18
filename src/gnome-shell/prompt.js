@@ -26,6 +26,17 @@ import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 // dialogs only collect a passphrase, or a backend and two toggles, and hand
 // them to the request.
 
+// What the Adwaita prompt says under a row, said under the St widget it
+// explains, in a class the shell's theme styles.
+function explanation(text) {
+    const label = new St.Label({style_class: 'message-dialog-description', text});
+
+    label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+    label.clutter_text.line_wrap = true;
+
+    return label;
+}
+
 // A wrong passphrase is reported by re-asking with an error message, so the
 // dialog never has to know whether the one it collected was any good.
 const PassphraseDialog = GObject.registerClass(
@@ -72,6 +83,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
             this._remember = new CheckBox.CheckBox(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.REMEMBER));
             this._remember.checked = startsOn;
             content.add_child(this._remember);
+            content.add_child(explanation(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.REMEMBER_SUBTITLE)));
         }
 
         this._errorLabel = new St.Label({style_class: 'prompt-dialog-error-label'});
@@ -154,6 +166,11 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         // 'barlevel' class gets no height and no colours, the theme styling a
         // bar only as a 'slider' or an OSD's 'level'.
         const box = new St.BoxLayout({style: 'spacing: 12px;'});
+
+        box.add_child(new St.Label({
+            text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_STRENGTH),
+            y_align: Clutter.ActorAlign.CENTER,
+        }));
 
         // BarLevel is normalized to 0..1, so the 0-4 rating is scaled into it.
         this._strengthLevel = new BarLevel.BarLevel({
@@ -272,6 +289,13 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         // St has no radio button, so a set of toggles kept mutually exclusive by
         // hand is the closest thing; the labels and the offered set both come
         // from the C side, which knows what this build can construct.
+        // Headed as the Adwaita dialog's group of radios is, in bold for want
+        // of a heading class the theme styles.
+        backends.add_child(new St.Label({
+            text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.STORAGE_BACKEND),
+            style: 'font-weight: bold;',
+        }));
+
         for (const backend of this._offered) {
             const button = new CheckBox.CheckBox(GPasteDaemon.Prompt.storage_label(backend));
 
@@ -288,7 +312,9 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         this._import.connect('clicked', () => this._updateState());
         this._cleanup.connect('clicked', () => this._updateState());
         content.add_child(this._import);
+        content.add_child(explanation(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.IMPORT_SUBTITLE)));
         content.add_child(this._cleanup);
+        content.add_child(explanation(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CLEANUP_SUBTITLE)));
 
         this._warning = new St.Label({
             style_class: 'prompt-dialog-error-label',

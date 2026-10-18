@@ -162,8 +162,9 @@ locking hides a dialog up and unlocking shows it again; a question or a report
 asked while locked waits for the unlock; a shutdown dismisses a question still
 waiting, logs a report, and stops watching the session; the migration dialog
 names "Keep as is" only where it offers it; a passphrase asked for other
-histories says what it is wanted for and offers no switch to remember it; and
-what the switch answers is asked of `g_paste_prompt_remember_answer()`.
+histories says what it is wanted for and offers no switch to remember it; what
+the switch answers is asked of `g_paste_prompt_remember_answer()`; and every
+word the Adwaita prompt shows is shown here too, Cancel being this one's alone.
 
 `state-switch` runs the shipped tracking switch over a `PopupSwitchMenuItem`
 double that clicks through `toggle()`, as GNOME Shell's does: a `SetActive` the

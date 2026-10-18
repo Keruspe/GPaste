@@ -7,6 +7,7 @@
 // passphrase asked for other histories says and offers. Not Shell rendering.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const vm = require('node:vm');
 
 const errors = [];
@@ -229,6 +230,7 @@ assert.equal(otherContent.description, 'Other histories');
 assert.equal(switches(otherContent).length, 0);
 assert.equal(ownContent.description, 'PASSPHRASE_DESCRIPTION');
 assert.deepEqual(switches(ownContent).map(box => box.label), ['REMEMBER']);
+assert.ok([...actors(ownContent)].some(actor => actor.text === 'REMEMBER_SUBTITLE'));
 
 // What the switch answers is the C side's, asked with where it was left and
 // whether off means forgetting; without one, it is asked with neither.
@@ -239,4 +241,14 @@ dialogs.at(-2)._onOk();
 assert.equal(other.remember, 'answer(false, false)');
 dialogs.slice(-2).forEach(dialog => dialog.close());
 
-console.log('Prompt: lock screen, strength meter, migration description and other histories passed');
+// Both prompts say one thing: every word the Adwaita one shows, this one shows
+// too, Cancel being this one's alone -- the Adwaita windows close with a
+// button of their own.
+const words = (file, pattern) => new Set([...fs.readFileSync(file, 'utf8').matchAll(pattern)].map(m => m[1]));
+const shellWords = words(process.argv[2], /PromptText\.([A-Z_]+)/g);
+const adwWords = words(path.join(path.dirname(process.argv[2]), '../daemon/gpaste-prompt-adw.c'), /G_PASTE_PROMPT_TEXT_([A-Z_]+)/g);
+
+assert.deepEqual([...adwWords].filter(word => !shellWords.has(word)), []);
+assert.deepEqual([...shellWords].filter(word => !adwWords.has(word)), ['CANCEL']);
+
+console.log('Prompt: lock screen, strength meter, migration description, other histories and wording passed');
