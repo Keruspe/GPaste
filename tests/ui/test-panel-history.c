@@ -364,7 +364,7 @@ test_item_long_text_bounded (void)
 
     g_assert_no_error (error);
     _g_paste_ui_item_ready (row, long_item);
-    g_assert_cmpuint (g_utf8_strlen (gtk_inscription_get_text (row->label), -1), ==, G_PASTE_UI_ITEM_MAX_SHOWN_CHARS + 1);
+    g_assert_cmpuint (g_utf8_strlen (gtk_inscription_get_text (row->label), -1), ==, G_PASTE_UTIL_SHOWN_CHARS + 1);
     g_assert_true (g_str_has_suffix (gtk_inscription_get_text (row->label), "…"));
 
     _g_paste_ui_item_ready (row, short_item);

@@ -56,8 +56,14 @@ const context = vm.createContext({
     Gio: {BytesIcon: {new: () => null}},
     GPaste: {
         ItemKind: {TEXT: 0, IMAGE: 1, COLOR: 2},
-        util_one_line: text => text,
+        UTIL_SHOWN_CHARS: 1000,
         util_display_string: value => value,
+        // libgpaste's cut, by characters (/util/shown-line): what the row
+        // hands it is what is checked here.
+        util_shown_line: (text, size) => {
+            const chars = [...text];
+            return size > 0 && chars.length > size ? `${chars.slice(0, size).join('')}…` : text;
+        },
     },
     global: {stage: {connect: () => 1, disconnect() {}, get_key_focus: () => null}},
     GPasteDeleteButton: Button,
@@ -106,7 +112,7 @@ async function filled(row, bus, uuid, value) {
 
 (async () => {
     // Text past element-size is cut with an ellipsis, and a larger size shows
-    // more of it again; 0 shows all of it, up to what a row could show.
+    // more of it again, without the item being read again; 0 shows all of it, up to what a row could show.
     {
         const bus = client();
         const row = new context.Item(bus, 5, 1, 1);
@@ -119,11 +125,6 @@ async function filled(row, bus, uuid, value) {
         assert.equal(row.label.clutter_text.text, 'abcdefghij');
         row.setTextSize(20);
         assert.equal(row.label.clutter_text.text, 'abcdefghij');
-        // Characters, not UTF-16 units: no surrogate pair is cut in two.
-        row.setTextSize(2);
-        row.refresh();
-        await filled(row, bus, 'a', '😀😀😀');
-        assert.equal(row.label.clutter_text.text, '😀😀…');
         // All of it, but no more than a row could ever show: the label lays
         // the whole of what it is handed out, on GNOME Shell's main thread.
         row.setTextSize(0);

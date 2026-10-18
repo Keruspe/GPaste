@@ -254,6 +254,38 @@ test_one_line (void)
     g_assert_cmpstr (line, ==, "a b c d e f g");
 }
 
+/* A line is shown up to as many characters as asked, an ellipsis after what is
+ * cut, a shorter one whole and every one for 0 -- GNOME Shell's element-size
+ * reading 0 as no limit; folded either way. Characters, not bytes: a
+ * multi-byte one is kept whole or not at all. */
+static void
+test_shown_line (void)
+{
+    g_autofree gchar *head = g_strnfill (G_PASTE_UTIL_SHOWN_CHARS - 1, 'a');
+    g_autofree gchar *text = g_strconcat (head, "\u2028", "tail", NULL);
+    g_autofree gchar *line = g_paste_util_shown_line (text, G_PASTE_UTIL_SHOWN_CHARS);
+    g_autofree gchar *expected = g_strconcat (head, " …", NULL);
+    g_autofree gchar *whole = g_paste_util_shown_line ("a\nb", G_PASTE_UTIL_SHOWN_CHARS);
+    g_autofree gchar *exact = g_paste_util_shown_line ("a\nb", 3);
+    g_autofree gchar *unbounded = g_paste_util_shown_line (text, 0);
+    g_autofree gchar *wide = g_paste_util_shown_line ("😀😀😀", 2);
+
+    g_assert_cmpstr (line, ==, expected);
+    g_assert_cmpuint (g_utf8_strlen (line, -1), ==, G_PASTE_UTIL_SHOWN_CHARS + 1);
+    g_assert_cmpstr (whole, ==, "a b");
+    g_assert_cmpstr (exact, ==, "a b");
+    g_assert_cmpuint (g_utf8_strlen (unbounded, -1), ==, G_PASTE_UTIL_SHOWN_CHARS + 4);
+    g_assert_true (g_str_has_suffix (unbounded, " tail"));
+    g_assert_cmpstr (wide, ==, "😀😀…");
+
+    /* A sequence cut short, more bytes past the NUL after it: a text that is
+     * not UTF-8 is walked no further than its end. */
+    static const gchar cut_short[] = "ab\xE2\0XYZ";
+    g_autofree gchar *walked = g_paste_util_shown_line (cut_short, 3);
+
+    g_assert_cmpstr (walked, ==, "ab\xE2");
+}
+
 static void
 assert_files_shown (const gchar *uris,
                     const gchar *expected)
@@ -376,6 +408,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/util/pid-file", test_pid_file);
     g_test_add_func ("/util/one-line", test_one_line);
+    g_test_add_func ("/util/shown-line", test_shown_line);
     g_test_add_func ("/util/activation-token", test_activation_token);
     g_test_add_func ("/util/migration-gate/refused", test_migration_gate_refused);
     g_test_add_func ("/util/display-string/files", test_files_shown);

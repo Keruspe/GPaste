@@ -327,6 +327,17 @@ g_paste_util_history_name_is_valid (const gchar *name)
     return TRUE;
 }
 
+/* What g_paste_util_one_line () does, to @line in place. */
+static void
+g_paste_util_fold_line (GString *line)
+{
+    /* NEL as its UTF-8 bytes: C has no universal character name below U+00A0. */
+    g_string_replace (line, "\xc2\x85", " ", 0);
+    g_string_replace (line, "\u2028", " ", 0);
+    g_string_replace (line, "\u2029", " ", 0);
+    g_strdelimit (line->str, "\n\r\t", ' ');
+}
+
 /**
  * g_paste_util_one_line:
  * @text: the initial text
@@ -347,12 +358,52 @@ g_paste_util_one_line (const gchar *text)
 
     g_autoptr (GString) line = g_string_new (text);
 
-    /* NEL as its UTF-8 bytes: C has no universal character name below U+00A0. */
-    g_string_replace (line, "\xc2\x85", " ", 0);
-    g_string_replace (line, "\u2028", " ", 0);
-    g_string_replace (line, "\u2029", " ", 0);
+    g_paste_util_fold_line (line);
 
-    return g_strdelimit (g_string_free_and_steal (g_steal_pointer (&line)), "\n\r\t", ' ');
+    return g_string_free_and_steal (g_steal_pointer (&line));
+}
+
+/**
+ * g_paste_util_shown_line:
+ * @text: the initial text
+ * @max_chars: the most characters to keep, or 0 for all of them
+ *
+ * @text as a one-line view shows it: folded onto a line, as
+ * g_paste_util_one_line () does, and cut to its first @max_chars characters,
+ * an ellipsis after them. A label lays the whole of its text out to ellipsize
+ * it, which on one long line costs tens of milliseconds a binding past a
+ * hundred kilobytes: the graphical tool's rows and the overview's results cut
+ * at %G_PASTE_UTIL_SHOWN_CHARS, more than any window is wide enough to show,
+ * and GNOME Shell's menu at element-size. Cut before it is folded, which
+ * changes no character's count, so the rest of a long text is never walked.
+ *
+ * Returns: the newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_util_shown_line (const gchar *text,
+                         guint        max_chars)
+{
+    g_return_val_if_fail (text, NULL);
+
+    if (!max_chars)
+        return g_paste_util_one_line (text);
+
+    const gchar *end = text;
+
+    /* Not g_utf8_next_char (), which steps over the NUL after a sequence cut
+     * short: a text that is not UTF-8 is walked no further than its end. */
+    for (guint i = 0; *end && i < max_chars; ++i)
+        end = g_utf8_find_next_char (end, NULL);
+
+    if (!*end)
+        return g_paste_util_one_line (text);
+
+    g_autoptr (GString) line = g_string_new_len (text, (gssize) (end - text));
+
+    g_paste_util_fold_line (line);
+    g_string_append (line, "…");
+
+    return g_string_free_and_steal (g_steal_pointer (&line));
 }
 
 /* The uris a files item holds, as a line to read rather than a list to act on:

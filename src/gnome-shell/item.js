@@ -23,38 +23,6 @@ import {GPasteFavouriteButton} from './favouriteButton.js';
 // drawn before the actor has a theme node to ask.
 const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
 
-// The most of an item's text a row lays out, element-size 0 included: the
-// label shapes the whole of what it is handed to ellipsize it, on GNOME Shell's
-// main thread, and no menu is wide enough to show more -- the graphical tool's
-// rows stop at the same (G_PASTE_UI_ITEM_MAX_SHOWN_CHARS).
-const MAX_SHOWN_CHARS = 1000;
-
-/**
- * The first @size characters of @text and an ellipsis when there are more, as
- * element-size promises -- or, for a @size of 0, its "no limit", as many as a
- * row ever shows (MAX_SHOWN_CHARS). Characters rather than UTF-16 units, so
- * nothing is cut through a surrogate pair, and counted only as far as @size, an
- * item running to a megabyte.
- *
- * @param {string} text - the one-lined text of an item
- * @param {number} size - the most characters to show
- * @returns {string} what the row shows
- */
-function shownText(text, size) {
-    if (size <= 0)
-        size = MAX_SHOWN_CHARS;
-
-    let count = 0;
-
-    for (let i = 0; i < text.length; ++count) {
-        if (count === size)
-            return `${text.slice(0, i)}…`;
-        i += text.codePointAt(i) > 0xffff ? 2 : 1;
-    }
-
-    return text;
-}
-
 // One stage listener for every row, and not one per row. Where the keyboard is
 // has to be asked of the stage (see the constructor), but a focus move anywhere
 // in the shell would otherwise run a handler on each of the several dozen rows
@@ -395,13 +363,19 @@ export class GPasteItem extends PopupMenuItem {
     // a second time here: it translates the bare words through the GPaste
     // domain -- the very domain this extension declares -- and it runs in this
     // process, so they come out in the shell's own locale rather than the
-    // daemon's. A row still waiting for its item has neither a value nor a kind
-    // to hand it, and ItemKind has no introspected member for "none" to pass in
-    // place of the one it lacks.
+    // daemon's. Cut to element-size there too, as the graphical tool's rows
+    // are cut, by characters and without walking the rest of an item running
+    // to a megabyte -- and with element-size 0, "no limit", to as much as those
+    // rows show (G_PASTE_UTIL_SHOWN_CHARS): the label lays out the whole of
+    // what it is handed on GNOME Shell's main thread, and no menu is wide
+    // enough to show more. A row still waiting for its item has neither a value
+    // nor a kind to hand it, and ItemKind has no introspected member for "none"
+    // to pass in place of the one it lacks.
     _renderText() {
+        const size = this._size > 0 ? this._size : GPaste.UTIL_SHOWN_CHARS;
         const text = this._value == null
             ? ''
-            : shownText(GPaste.util_one_line(GPaste.util_display_string(this._value, this._kind)), this._size);
+            : GPaste.util_shown_line(GPaste.util_display_string(this._value, this._kind), size);
 
         if (text !== this._displayedText) {
             this._displayedText = text;

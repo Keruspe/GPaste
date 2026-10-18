@@ -26,6 +26,8 @@ typedef struct
     gchar           *query;
     guint            item_calls;
     guint            history_calls;
+    /* The text the surviving result holds, when not its own. */
+    const gchar     *surviving_text;
 } Fixture;
 
 static gboolean
@@ -40,7 +42,8 @@ on_search (GPasteDaemon3         *daemon,
     g_set_str (&f->query, query);
     g_paste_daemon3_complete_search (daemon, invocation,
                                      g_variant_new_parsed ("[('" REMOVED_UUID "', 'removed text', uint32 1, false, @as []),"
-                                                           " ('" SURVIVING_UUID "', 'surviving text', uint32 1, false, @as [])]"));
+                                                           " ('" SURVIVING_UUID "', %s, uint32 1, false, @as [])]",
+                                                           (f->surviving_text) ? f->surviving_text : "surviving text"));
     return TRUE;
 }
 
@@ -248,6 +251,25 @@ test_removed (Fixture      *f,
     assert_meta (metas, 1, SURVIVING_UUID, "surviving text");
 }
 
+/* A result is named by as much of its item as the graphical tool's row shows:
+ * the shell lays the whole name out to ellipsize it. */
+static void
+test_long_name (Fixture      *f,
+                gconstpointer data G_GNUC_UNUSED)
+{
+    g_autofree gchar *text = g_strnfill (2 * G_PASTE_UTIL_SHOWN_CHARS, 'x');
+    g_autofree gchar *head = g_strnfill (G_PASTE_UTIL_SHOWN_CHARS, 'x');
+    g_autofree gchar *shown = g_strconcat (head, "…", NULL);
+
+    f->surviving_text = text;
+    search (f);
+    update (f, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, REMOVED_UUID);
+
+    g_autoptr (GVariant) metas = result_metas (f);
+
+    assert_meta (metas, 1, SURVIVING_UUID, shown);
+}
+
 /* Any other update drops them, so the identifiers go to GetItems, which the one
  * gone fails: answered empty, without a warning and without the history. */
 static void
@@ -272,5 +294,6 @@ main (int argc, char **argv)
     g_test_add ("/search-provider/search/escaped", Fixture, NULL, fixture_setup, test_escaped, fixture_teardown);
     g_test_add ("/search-provider/metas/removed", Fixture, NULL, fixture_setup, test_removed, fixture_teardown);
     g_test_add ("/search-provider/metas/replaced", Fixture, NULL, fixture_setup, test_replaced, fixture_teardown);
+    g_test_add ("/search-provider/metas/long-name", Fixture, NULL, fixture_setup, test_long_name, fixture_teardown);
     return g_paste_test_env_run ();
 }

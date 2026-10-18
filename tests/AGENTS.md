@@ -119,11 +119,17 @@ at once and a teardown or a close stopping a search still waiting; and that the 
 keeps its width with `element-size` at 0.
 
 `item` runs the shipped history row over St, Clutter and client doubles: text
-past `element-size` is cut with an ellipsis, by characters, and a larger size
-shows more of it again; a row rebound to another uuid selects and deletes
+past `element-size` is cut with an ellipsis -- libgpaste's cut, by characters,
+being `/util/shown-line`'s -- and a larger size shows more of it again; a row rebound to another uuid selects and deletes
 nothing until that item is what it shows, then acts on it with a callback that
 logs a refusal, as the star does; the menu key on the star or the bin opens the
-row's actions; and a failed read is said at debug level only.
+row's actions; and a failed read goes to `debugFailure()` alone.
+
+`dependencies` runs the helpers every other suite stands in for, from
+`dependencies.js` itself: a row's failed read said at debug level and nowhere
+else, a refusal nothing waits on logged, a replaced request cancelled, and a
+reply read as unwanted once its cancellable is, as is a call failing as
+cancelled, any other failure rethrown.
 
 `extension` runs the shipped `enable ()` and `disable ()` over shell, bus and
 libgpaste doubles: with the in-shell daemon told in process the indicator
@@ -467,6 +473,8 @@ folded too; each kind's decoration, a kind it does not know shown as it
 arrived; and a files item's paths percent-decoded, a home file from "~" --
 a whole leading component only, a `$HOME` ending in a slash included, set in a
 subprocess since GLib reads it once -- and a name not in UTF-8 shown as text.
+The cut walks a text that is not UTF-8 no further than its end
+(`/util/shown-line`).
 
 `test-util` also reads back pid files: the positive decimal pid written in one,
 and -1 for anything else, a 0 above all, which `kill ()` takes for the caller's
