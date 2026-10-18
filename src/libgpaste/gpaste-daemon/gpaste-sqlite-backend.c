@@ -166,6 +166,12 @@ g_paste_sqlite_backend_query_int64 (sqlite3     *db,
 
 #define G_PASTE_SQLITE_KEY_CHECK_MAGIC "GPasteSqliteKeyCheck1"
 
+static void
+g_paste_sqlite_backend_free_key (gpointer key)
+{
+    g_paste_util_secure_free (key, crypto_secretbox_KEYBYTES);
+}
+
 /* The passphrase, or NULL for a plain database. Safe to call whether or not
  * encryption was built in (see the stub below). */
 static const gchar *
@@ -703,7 +709,7 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
     g_clear_pointer (&backend->db_path, g_free);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* The key is salt-dependent, so it dies with its database's connection. */
-    g_clear_pointer (&backend->key, gcr_secure_memory_free);
+    g_clear_pointer (&backend->key, g_paste_sqlite_backend_free_key);
 #endif
 
     if (!g_paste_util_ensure_history_dir_exists ())
@@ -783,7 +789,7 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
         {
             if (wrong_passphrase)
                 g_warning ("sqlite: the passphrase does not unlock “%s”; not touching it", db_path);
-            gcr_secure_memory_free (key);
+            g_paste_sqlite_backend_free_key (key);
             return NULL;
         }
 
@@ -1100,7 +1106,7 @@ g_paste_sqlite_backend_unlink (GPasteSqliteBackend *backend,
         g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
         g_clear_pointer (&backend->db_path, g_free);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-        g_clear_pointer (&backend->key, gcr_secure_memory_free);
+        g_clear_pointer (&backend->key, g_paste_sqlite_backend_free_key);
 #endif
     }
 
@@ -2068,14 +2074,14 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
     if (!g_paste_sqlite_backend_derive_key (new_passphrase, salt, opslimit, memlimit, new_key))
     {
         g_warning ("sqlite: could not derive the new encryption key (out of memory?)");
-        gcr_secure_memory_free (new_key);
+        g_paste_sqlite_backend_free_key (new_key);
 
         return FALSE;
     }
 
     if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
     {
-        gcr_secure_memory_free (new_key);
+        g_paste_sqlite_backend_free_key (new_key);
 
         return FALSE;
     }
@@ -2097,7 +2103,7 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
 
     if (!success)
     {
-        gcr_secure_memory_free (new_key);
+        g_paste_sqlite_backend_free_key (new_key);
         g_warning ("Failed to re-encrypt the history \"%s\"; it keeps its current passphrase", name);
 
         return FALSE;
@@ -2112,8 +2118,8 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
      * it with a stale key. */
     g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
     g_clear_pointer (&backend->db_path, g_free);
-    g_clear_pointer (&backend->key, gcr_secure_memory_free);
-    gcr_secure_memory_free (new_key);
+    g_clear_pointer (&backend->key, g_paste_sqlite_backend_free_key);
+    g_paste_sqlite_backend_free_key (new_key);
 
     return TRUE;
 }
@@ -2152,7 +2158,7 @@ g_paste_sqlite_backend_finalize (GObject *object)
     g_mutex_clear (&self->lock);
     g_mutex_clear (&self->diverged_lock);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    g_clear_pointer (&self->key, gcr_secure_memory_free);
+    g_clear_pointer (&self->key, g_paste_sqlite_backend_free_key);
     g_paste_passphrase_free (self->passphrase);
 #endif
 
@@ -2199,7 +2205,7 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
     gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
 
     *checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
-    gcr_secure_memory_free (key);
+    g_paste_sqlite_backend_free_key (key);
     /* A count that still cannot be read is inconclusive, which refuting asks to
      * answer as no refutation rather than condemn a passphrase over an I/O
      * error. Accepting a wrong one there costs no data: the open that follows

@@ -10,6 +10,9 @@
 #include <string.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+#define GCR_API_SUBJECT_TO_CHANGE
+#include <gcr/gcr.h>
+
 #include <sodium.h>
 #endif
 
@@ -311,6 +314,19 @@ g_paste_util_wipe (gpointer data,
     (void) length;
 #endif
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+void
+g_paste_util_secure_free (gpointer data,
+                          gsize    size)
+{
+    if (!data)
+        return;
+
+    sodium_memzero (data, size);
+    gcr_secure_memory_free (data);
+}
+#endif
 
 /**
  * g_paste_util_free_cleartext:

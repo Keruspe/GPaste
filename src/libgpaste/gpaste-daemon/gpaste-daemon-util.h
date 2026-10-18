@@ -68,6 +68,15 @@ void g_paste_util_wipe           (gpointer         data,
                                   gsize            length);
 void g_paste_util_free_cleartext (GPasteCleartext *cleartext);
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Release a block gcr_secure_memory_alloc() handed out, wiping its @size bytes
+ * first: once the locked pool cannot grow, gcr hands out ordinary memory, and
+ * frees that as it is. Every key and buffer a passphrase protects goes back
+ * through here. */
+void g_paste_util_secure_free (gpointer data,
+                               gsize    size);
+#endif
+
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteCleartext, g_paste_util_free_cleartext)
 
 /* Every directory listing in this library goes through here. Whether a directory

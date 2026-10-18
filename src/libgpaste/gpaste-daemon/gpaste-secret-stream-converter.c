@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-secret-stream-converter.h>
 
 #include <glib/gstdio.h>
@@ -597,12 +598,12 @@ g_paste_secret_stream_converter_finalize (GObject *object)
     GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (object);
 
-    /* gcr secure memory is wiped on free. */
+    /* gcr wipes a string it frees, whatever memory it was in. */
     gcr_secure_memory_strfree ((gchar *) self->passphrase);
-    gcr_secure_memory_free (self->key);
-    gcr_secure_memory_free (self->state);
-    gcr_secure_memory_free (self->in.data);
-    gcr_secure_memory_free (self->out.data);
+    g_paste_util_secure_free (self->key, KEYBYTES);
+    g_paste_util_secure_free (self->state, sizeof (*self->state));
+    g_paste_util_secure_free (self->in.data, self->in.capacity);
+    g_paste_util_secure_free (self->out.data, self->out.capacity);
 
     G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->finalize (object);
 }

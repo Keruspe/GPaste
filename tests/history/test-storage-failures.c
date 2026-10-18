@@ -22,6 +22,8 @@
 #include <string.h>
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <gpaste-daemon/gpaste-secret-stream-converter.h>
+
 #include <sodium.h>
 
 /* Every key this binary derives costs libsodium's minimum: the cases are about
@@ -50,6 +52,57 @@ crypto_pwhash (unsigned char * const       out,
     g_atomic_int_inc (&derivations);
 
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
+}
+
+/* The size of every block gcr_secure_memory_alloc () handed out while
+ * @secure_tracked is set, and how many of them went back holding anything:
+ * gcr frees ordinary memory, which it falls back to, as it is. */
+static gboolean secure_tracked;
+static GHashTable *secure_sizes;
+static guint secure_frees;
+static guint unwiped_frees;
+G_LOCK_DEFINE_STATIC (secure);
+
+gpointer
+gcr_secure_memory_alloc (gsize size)
+{
+    typedef gpointer (*Alloc) (gsize);
+    Alloc original = (Alloc) dlsym (RTLD_NEXT, "gcr_secure_memory_alloc");
+    gpointer memory = original (size);
+
+    G_LOCK (secure);
+    if (secure_tracked)
+        g_hash_table_insert (secure_sizes, memory, GSIZE_TO_POINTER (size));
+    G_UNLOCK (secure);
+
+    return memory;
+}
+
+void
+gcr_secure_memory_free (gpointer memory)
+{
+    typedef void (*Free) (gpointer);
+    Free original = (Free) dlsym (RTLD_NEXT, "gcr_secure_memory_free");
+    gpointer size;
+
+    G_LOCK (secure);
+    if (secure_sizes && g_hash_table_steal_extended (secure_sizes, memory, NULL, &size))
+    {
+        const guint8 *bytes = memory;
+
+        ++secure_frees;
+        for (gsize i = 0; i < GPOINTER_TO_SIZE (size); ++i)
+        {
+            if (bytes[i])
+            {
+                ++unwiped_frees;
+                break;
+            }
+        }
+    }
+    G_UNLOCK (secure);
+
+    original (memory);
 }
 
 #endif
@@ -2455,6 +2508,89 @@ test_passphrase_survives_unreadable (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+static void
+secure_tracking_start (void)
+{
+    G_LOCK (secure);
+    secure_sizes = g_hash_table_new (NULL, NULL);
+    secure_tracked = TRUE;
+    secure_frees = unwiped_frees = 0;
+    G_UNLOCK (secure);
+}
+
+static void
+secure_tracking_stop (void)
+{
+    G_LOCK (secure);
+    secure_tracked = FALSE;
+    g_clear_pointer (&secure_sizes, g_hash_table_unref);
+    G_UNLOCK (secure);
+
+    g_assert_cmpuint (secure_frees, >, 0);
+    g_assert_cmpuint (unwiped_frees, ==, 0);
+}
+
+/* @storage's key, and for the file flavour its stream's state and buffers,
+ * are wiped before gcr gets them back, whichever memory it handed out. */
+static void
+test_secure_memory_wiped (gconstpointer data)
+{
+    GPasteStorage storage = GPOINTER_TO_UINT (data);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("secret"));
+
+    secure_tracking_start ();
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (storage, settings, "passphrase");
+        g_autolist (GPasteItem) loaded = NULL;
+        gsize size;
+
+        g_assert_true (g_paste_storage_backend_write_history (backend, "wiped", items));
+        g_assert_true (g_paste_storage_backend_read_history (backend, "wiped", NULL, &loaded, &size));
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+    }
+    secure_tracking_stop ();
+}
+
+/* The same of a stream given up on halfway, its plaintext still buffered: on
+ * the way in when encrypting, on the way out when decrypting. */
+static void
+test_secure_memory_wiped_halfway (void)
+{
+    guint8 stream[1024];
+    gsize read, written;
+    g_autoptr (GError) error = NULL;
+
+    {
+        g_autoptr (GConverter) encrypt = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_ENCRYPT, "passphrase");
+
+        g_assert_cmpint (g_converter_convert (encrypt, "secret", 6, stream, sizeof (stream), G_CONVERTER_INPUT_AT_END, &read, &written, &error), ==, G_CONVERTER_FINISHED);
+        g_assert_no_error (error);
+    }
+
+    gsize length = written;
+    guint8 first;
+
+    secure_tracking_start ();
+    {
+        g_autoptr (GConverter) encrypt = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_ENCRYPT, "passphrase");
+        guint8 header[1024];
+
+        g_assert_cmpint (g_converter_convert (encrypt, "secret", 6, header, sizeof (header), G_CONVERTER_NO_FLAGS, &read, &written, &error), ==, G_CONVERTER_CONVERTED);
+        g_assert_cmpuint (read, ==, 6);
+    }
+    {
+        g_autoptr (GConverter) decrypt = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_DECRYPT, "passphrase");
+
+        g_assert_cmpint (g_converter_convert (decrypt, stream, length, &first, 1, G_CONVERTER_INPUT_AT_END, &read, &written, &error), ==, G_CONVERTER_CONVERTED);
+        g_assert_cmpuint (written, ==, 1);
+        g_assert_cmpint (first, ==, 's');
+    }
+    secure_tracking_stop ();
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
 /* An encrypted history goes through the converter's fixed buffers a frame at a
  * time, many chunks of it reading back whole; carried on past its FINAL frame
  * -- bytes appended, or a second stream after the first -- it is refused rather
@@ -4217,6 +4353,11 @@ main (int    argc,
     g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
     g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
+    g_test_add_data_func ("/storage/secure-memory-wiped/file", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_secure_memory_wiped);
+    g_test_add_func ("/storage/secure-memory-wiped/halfway", test_secure_memory_wiped_halfway);
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_data_func ("/storage/secure-memory-wiped/sqlite", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_SQLITE), test_secure_memory_wiped);
+#endif
 #endif
     g_test_add_data_func ("/storage/empty-alternative/file", GUINT_TO_POINTER (G_PASTE_STORAGE_FILE), test_empty_alternative);
 #ifdef G_PASTE_ENABLE_SQLITE
