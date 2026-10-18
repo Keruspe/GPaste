@@ -856,7 +856,9 @@ g_paste_sqlite_backend_bind_content (sqlite3_stmt *stmt,
         gsize blob_length;
         g_autofree guchar *blob = g_paste_sqlite_backend_encrypt (key, data, length, &blob_length);
 
-        return sqlite3_bind_blob64 (stmt, position, blob, blob_length, SQLITE_TRANSIENT);
+        /* Handed over rather than copied once more: an image's sealed blob is
+         * its whole PNG. */
+        return sqlite3_bind_blob64 (stmt, position, g_steal_pointer (&blob), blob_length, g_free);
     }
 #else
     (void) key;
@@ -1979,22 +1981,14 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
         g_paste_sqlite_backend_diverge (backend, name);
 }
 
+/* The removal of @uuid from @db, under the backend's lock already: see
+ * write_locked (). */
 static void
-g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
-                                    const gchar          *name,
-                                    const gchar          *uuid)
+g_paste_sqlite_backend_remove_locked (GPasteSqliteBackend *backend,
+                                      sqlite3             *db,
+                                      const gchar         *name,
+                                      const gchar         *uuid)
 {
-    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
-    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
-    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
-
-    if (!db)
-    {
-        g_paste_sqlite_backend_diverge (backend, name);
-        return;
-    }
-
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
@@ -2014,6 +2008,25 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
 
     sqlite3_finalize (stmt);
     g_paste_sqlite_backend_forget_deleted (db);
+}
+
+static void
+g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
+                                    const gchar          *name,
+                                    const gchar          *uuid)
+{
+    g_autofree gchar *db_path = g_paste_storage_backend_get_history_file_path (self, name);
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+    sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
+
+    if (!db)
+    {
+        g_paste_sqlite_backend_diverge (backend, name);
+        return;
+    }
+
+    g_paste_sqlite_backend_remove_locked (backend, db, name, uuid);
 }
 
 static void
@@ -2040,8 +2053,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
      * rewrite. The encrypted flavor persists it like any other item. */
     if (!g_paste_storage_backend_stores_item (self, item))
     {
-        g_clear_pointer (&locker, g_mutex_locker_free);
-        g_paste_sqlite_backend_remove_item (self, name, old_uuid);
+        g_paste_sqlite_backend_remove_locked (backend, db, name, old_uuid);
         return;
     }
 
@@ -2086,12 +2098,12 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     sqlite3_finalize (stmt);
 
-    /* As upsert_item () leaves one out: what it replaces is gone all the same. */
+    /* As upsert_item () leaves one out: what it replaces is gone all the same,
+     * removed under the lock already held, as for a replacement not stored. */
     if (left_out)
     {
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
-        g_clear_pointer (&locker, g_mutex_locker_free);
-        g_paste_sqlite_backend_remove_item (self, name, old_uuid);
+        g_paste_sqlite_backend_remove_locked (backend, db, name, old_uuid);
         return;
     }
 
