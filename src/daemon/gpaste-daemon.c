@@ -89,23 +89,18 @@ typedef struct
     StorageIdleFunc then;
 } IdleStorageWait;
 
-static gboolean
-on_storage_idle_poll (gpointer user_data)
+static void
+on_storage_idle (gpointer user_data)
 {
     IdleStorageWait *wait = user_data;
 
-    if (g_paste_storage_is_busy ())
-        return G_SOURCE_CONTINUE;
-
     wait->then (wait->ctx);
-
-    return G_SOURCE_REMOVE;
 }
 
 /* Run @then once no storage worker is rewriting the store
  * (g_paste_storage_is_busy ()): ending, exec'ing or releasing the lock under
- * one cuts its write short. Polled, the worker reporting to the library rather
- * than to us. No test shows it, the daemon's own main () being what it guards. */
+ * one cuts its write short. At once when none does, so that a stop with
+ * nothing to wait for is not put off to another turn of the loop. */
 static void
 when_storage_idle (DaemonContext  *ctx,
                    StorageIdleFunc then)
@@ -120,8 +115,7 @@ when_storage_idle (DaemonContext  *ctx,
 
     wait->ctx = ctx;
     wait->then = then;
-    g_source_set_name_by_id (g_timeout_add_full (G_PRIORITY_DEFAULT, 100, on_storage_idle_poll, wait, g_free),
-                             "[GPaste] wait for the storage to be idle");
+    g_paste_storage_when_idle (on_storage_idle, wait, g_free);
 }
 
 static void reexec_once_idle (DaemonContext *ctx);

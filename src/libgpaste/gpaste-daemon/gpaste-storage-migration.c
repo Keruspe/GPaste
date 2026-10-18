@@ -24,8 +24,8 @@
 #include <unistd.h>
 
 /* The import, re-key and store check workers running: see
- * g_paste_storage_is_busy (). Each starts and reports on the main thread, which
- * is the one place this is counted. */
+ * g_paste_storage_is_busy (). Counted by g_paste_storage_run_worker () alone,
+ * on the main thread each starts and reports on. */
 static guint g_paste_storage_workers;
 
 /* What a storage worker leaves while it runs, so that the next start can tell
@@ -187,6 +187,47 @@ journal_settle (GPasteSettings *settings)
     }
 
     journal_remove ();
+}
+
+typedef struct
+{
+    GAsyncReadyCallback done;
+    gpointer            user_data;
+} StorageWorker;
+
+static void
+on_storage_worker_done (GObject      *source,
+                        GAsyncResult *result,
+                        gpointer      user_data)
+{
+    g_autofree StorageWorker *worker = user_data;
+
+    --g_paste_storage_workers;
+    worker->done (source, result, worker->user_data);
+}
+
+/* Run @func on a thread of its own, for a task tagged @source_tag holding
+ * @task_data, and answer @done on the main thread once it has ended -- the store
+ * counted busy from the one to the other. */
+static void
+g_paste_storage_run_worker (gpointer            source_tag,
+                            gpointer            task_data,
+                            GDestroyNotify      task_data_free,
+                            GTaskThreadFunc     func,
+                            GAsyncReadyCallback done,
+                            gpointer            user_data)
+{
+    StorageWorker *worker = g_new (StorageWorker, 1);
+
+    worker->done = done;
+    worker->user_data = user_data;
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_storage_worker_done, worker);
+
+    g_task_set_source_tag (task, source_tag);
+    g_task_set_task_data (task, task_data, task_data_free);
+    ++g_paste_storage_workers;
+    g_task_run_in_thread (task, func);
 }
 
 typedef struct
@@ -933,7 +974,6 @@ on_import_done (GObject      *source G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     gboolean imported = g_task_propagate_boolean (G_TASK (result), &error);
 
-    --g_paste_storage_workers;
     apply_migration_settle (user_data, imported, error);
 }
 
@@ -960,12 +1000,7 @@ apply_migration (MigrationData *self)
     work->chosen_passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
 #endif
 
-    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_import_done, self);
-
-    g_task_set_source_tag (task, apply_migration);
-    g_task_set_task_data (task, g_steal_pointer (&work), import_work_free);
-    ++g_paste_storage_workers;
-    g_task_run_in_thread (task, import_work_run);
+    g_paste_storage_run_worker (apply_migration, g_steal_pointer (&work), import_work_free, import_work_run, on_import_done, self);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -1377,6 +1412,68 @@ g_paste_storage_is_busy (void)
     return g_paste_storage_workers > 0;
 }
 
+/* Ready whenever no worker runs: checked as the main context iterates, which it
+ * does when the last worker's report is dispatched, so a wait costs no wake-up
+ * of its own. */
+static gboolean
+g_paste_storage_idle_prepare (GSource *source G_GNUC_UNUSED,
+                              gint    *timeout)
+{
+    *timeout = -1;
+
+    return !g_paste_storage_workers;
+}
+
+static gboolean
+g_paste_storage_idle_check (GSource *source G_GNUC_UNUSED)
+{
+    return !g_paste_storage_workers;
+}
+
+static gboolean
+g_paste_storage_idle_dispatch (GSource    *source G_GNUC_UNUSED,
+                               GSourceFunc callback,
+                               gpointer    user_data)
+{
+    ((GSourceOnceFunc) (void (*) (void)) callback) (user_data);
+
+    return G_SOURCE_REMOVE;
+}
+
+static GSourceFuncs g_paste_storage_idle_funcs = {
+    .prepare  = g_paste_storage_idle_prepare,
+    .check    = g_paste_storage_idle_check,
+    .dispatch = g_paste_storage_idle_dispatch,
+};
+
+/**
+ * g_paste_storage_when_idle:
+ * @callback: (scope notified) (closure user_data) (destroy destroy): what to run
+ * @user_data: the data to pass to @callback
+ * @destroy: (nullable): what frees @user_data
+ *
+ * Run @callback once, on the main context, as soon as no worker rewrites the
+ * store (g_paste_storage_is_busy ()): from its next iteration when none does
+ * already, else once the last one has reported. What a host ending, exec'ing
+ * or letting go of the storage lock waits on.
+ *
+ * Returns: the id of the wait, which g_source_remove () gives up on
+ */
+G_PASTE_VISIBLE guint
+g_paste_storage_when_idle (GSourceOnceFunc callback,
+                           gpointer        user_data,
+                           GDestroyNotify  destroy)
+{
+    g_return_val_if_fail (callback, 0);
+
+    g_autoptr (GSource) source = g_source_new (&g_paste_storage_idle_funcs, sizeof (GSource));
+
+    g_source_set_callback (source, (GSourceFunc) (void (*) (void)) callback, user_data, destroy);
+    g_source_set_static_name (source, "[GPaste] storage idle");
+
+    return g_source_attach (source, NULL);
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Whether an encrypted history this process holds no passphrase for needs
  * unlocking, as both g_paste_storage_decryption_needed () and
@@ -1767,8 +1864,6 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
     RekeyData *self = user_data;
     g_autoptr (GError) error = NULL;
 
-    --g_paste_storage_workers;
-
     if (g_task_propagate_boolean (G_TASK (result), &error))
     {
         const gchar *cleartext = g_paste_passphrase_peek (self->new_passphrase);
@@ -1836,13 +1931,8 @@ on_rekey_passphrase_set (GObject      *source,
     self->new_passphrase = g_paste_passphrase_copy (passphrase);
     self->remember = remember;
 
-    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_rekey_done, self);
-
-    g_task_set_source_tag (task, on_rekey_passphrase_set);
     /* Borrowed: rekey_finish() owns it, and it outlives the task either way. */
-    g_task_set_task_data (task, self, NULL);
-    ++g_paste_storage_workers;
-    g_task_run_in_thread (task, rekey_work_run);
+    g_paste_storage_run_worker (on_rekey_passphrase_set, self, NULL, rekey_work_run, on_rekey_done, self);
 }
 
 /* The current history is unlocked: ask for the passphrase to replace it with.
@@ -2330,8 +2420,6 @@ on_doctor_inspected (GObject      *source G_GNUC_UNUSED,
 {
     DoctorData *self = user_data;
 
-    --g_paste_storage_workers;
-
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     if (self->refuting->len)
     {
@@ -2346,14 +2434,9 @@ on_doctor_inspected (GObject      *source G_GNUC_UNUSED,
 static void
 doctor_inspect (DoctorData *self)
 {
-    /* No source object, and the data borrowed rather than owned: @self is
-     * done with by doctor_finish (), which a later step runs. */
-    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_doctor_inspected, self);
-
-    g_task_set_source_tag (task, doctor_inspect);
-    g_task_set_task_data (task, self, NULL);
-    ++g_paste_storage_workers;
-    g_task_run_in_thread (task, doctor_inspect_run);
+    /* The data borrowed rather than owned: @self is done with by
+     * doctor_finish (), which a later step runs. */
+    g_paste_storage_run_worker (doctor_inspect, self, NULL, doctor_inspect_run, on_doctor_inspected, self);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -2408,8 +2491,6 @@ on_doctor_rekeyed (GObject      *source G_GNUC_UNUSED,
 {
     DoctorData *self = user_data;
 
-    --g_paste_storage_workers;
-
     if (!self->refuting->len)
     {
         doctor_finish (self, NULL);
@@ -2452,12 +2533,7 @@ on_doctor_other_passphrase (GObject      *source,
     g_paste_passphrase_free (self->other);
     self->other = other;
 
-    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_doctor_rekeyed, self);
-
-    g_task_set_source_tag (task, doctor_rekey_run);
-    g_task_set_task_data (task, self, NULL);
-    ++g_paste_storage_workers;
-    g_task_run_in_thread (task, doctor_rekey_run);
+    g_paste_storage_run_worker (doctor_rekey_run, self, NULL, doctor_rekey_run, on_doctor_rekeyed, self);
 }
 
 /* Ask for the passphrase the histories in @self->refuting take, naming them:

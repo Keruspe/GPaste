@@ -5405,6 +5405,63 @@ test_doctor_locked (void)
 }
 #endif
 
+typedef struct
+{
+    guint runs;
+    guint freed;
+} IdleWait;
+
+static void
+count_idle_run (gpointer data)
+{
+    ++((IdleWait *) data)->runs;
+}
+
+static void
+count_idle_free (gpointer data)
+{
+    ++((IdleWait *) data)->freed;
+}
+
+static void
+iterate (void)
+{
+    for (guint i = 0; i < 5; ++i)
+        g_main_context_iteration (NULL, FALSE);
+}
+
+/* A wait for the store to be idle runs once, from the main context, the moment
+ * the last worker has reported and not before -- nor at once when none runs,
+ * but from the next iteration; given up on, it never does. Its data goes
+ * either way. A worker is stood in for by the count it keeps. */
+static void
+test_storage_when_idle (void)
+{
+    IdleWait busy = { 0 };
+    IdleWait dropped = { 0 };
+    IdleWait idle = { 0 };
+
+    ++g_paste_storage_workers;
+    g_paste_storage_when_idle (count_idle_run, &busy, count_idle_free);
+    iterate ();
+    g_assert_cmpuint (busy.runs, ==, 0);
+    --g_paste_storage_workers;
+    iterate ();
+    g_assert_cmpuint (busy.runs, ==, 1);
+    g_assert_cmpuint (busy.freed, ==, 1);
+
+    g_source_remove (g_paste_storage_when_idle (count_idle_run, &dropped, count_idle_free));
+    iterate ();
+    g_assert_cmpuint (dropped.runs, ==, 0);
+    g_assert_cmpuint (dropped.freed, ==, 1);
+
+    g_paste_storage_when_idle (count_idle_run, &idle, count_idle_free);
+    g_assert_cmpuint (idle.runs, ==, 0);
+    iterate ();
+    g_assert_cmpuint (idle.runs, ==, 1);
+    g_assert_cmpuint (idle.freed, ==, 1);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -5430,6 +5487,7 @@ main (int    argc,
     g_test_add_func ("/storage/doctor/unreadable", test_doctor_unreadable);
     g_test_add_func ("/storage/lock/two-waits", test_storage_lock_two_waits);
     g_test_add_func ("/storage/lock/taken-is-ours", test_taken_lock_is_ours);
+    g_test_add_func ("/storage/when-idle", test_storage_when_idle);
     g_test_add_func ("/storage/lock/load-after-release", test_load_after_release_reads_nothing);
     g_test_add_func ("/storage/lock/flushed-history", test_flushed_history_loads_nothing);
     g_test_add_func ("/storage/lock/flushed-switch-supersedes-load", test_flushed_switch_supersedes_load);

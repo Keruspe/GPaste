@@ -20,7 +20,10 @@ gboolean g_paste_storage_migration_needed (GPasteSettings *settings);
 
 gboolean g_paste_storage_decryption_needed (GPasteSettings *settings);
 
-gboolean g_paste_storage_is_busy (void);
+gboolean g_paste_storage_is_busy   (void);
+guint    g_paste_storage_when_idle (GSourceOnceFunc callback,
+                                    gpointer        user_data,
+                                    GDestroyNotify  destroy);
 
 /* The storage concerns are ordinary GAsyncResult operations: each _async
  * starts it and returns, and the matching _finish reads the outcome off the

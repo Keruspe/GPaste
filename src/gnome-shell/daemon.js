@@ -65,17 +65,12 @@ function releaseStorageWhenIdle() {
         return;
     }
 
-    pendingStorageRelease = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-        if (GPasteDaemon.storage_is_busy())
-            return GLib.SOURCE_CONTINUE;
-
+    pendingStorageRelease = GPasteDaemon.storage_when_idle(() => {
         pendingStorageRelease = 0;
         GPasteDaemon.StorageBackend.unlock();
         if (passphraseToForget)
             forgetPassphrase();
-        return GLib.SOURCE_REMOVE;
     });
-    GLib.Source.set_name_by_id(pendingStorageRelease, '[GPaste] release the storage once idle');
 }
 
 function keepStorage() {
@@ -292,15 +287,10 @@ export class GPasteDaemonRunner {
         wait.promise = new Promise(resolve => {
             wait.resolve = resolve;
         });
-        wait.id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-            if (GPasteDaemon.storage_is_busy())
-                return GLib.SOURCE_CONTINUE;
-
+        wait.id = GPasteDaemon.storage_when_idle(() => {
             this._storageWait = null;
             wait.resolve();
-            return GLib.SOURCE_REMOVE;
         });
-        GLib.Source.set_name_by_id(wait.id, '[GPaste] wait for the storage to be idle');
         this._storageWait = wait;
 
         return wait.promise;

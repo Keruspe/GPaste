@@ -136,6 +136,19 @@ const context = vm.createContext({
             set_passphrase: passphrase => storage.passphrases.push(passphrase),
         },
         storage_is_busy: () => storage.busy,
+        // As the library's: ready whenever no worker runs, run once, under the
+        // name it gives its source.
+        storage_when_idle: callback => {
+            const id = addSource('timeout', () => {
+                if (storage.busy)
+                    return true;
+                callback();
+                return false;
+            });
+
+            sources.get(id).name = '[GPaste] storage idle';
+            return id;
+        },
         storage_migration_needed: () => {
             ++storage.migrationChecks;
             return false;
@@ -336,11 +349,11 @@ process.on('exit', () => {
     runner = new context.Runner(settings);
     buses.at(-1).emit('name-acquired');
     await settle();
-    const waits = () => [...sources.values()].filter(s => s.name === '[GPaste] wait for the storage to be idle').length;
+    const wait = runner._storageWait?.id;
 
-    assert.equal(waits(), 1);
+    assert.equal(sources.get(wait)?.name, '[GPaste] storage idle');
     runner.shutdown();
-    assert.equal(waits(), 0);
+    assert.equal(sources.has(wait), false);
     await settle();
     assert.equal(storage.migrationChecks, settled);
     storage.busy = false;
