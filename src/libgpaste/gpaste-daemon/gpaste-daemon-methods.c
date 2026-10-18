@@ -1168,8 +1168,8 @@ g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
  * only have to ask for every one of them straight back.
  *
  * A query too long, or no regular expression at all, is the caller's to hear
- * of rather than the daemon's journal, once per keystroke: refused before the
- * history compiles it. */
+ * of rather than the daemon's journal, once per keystroke: refused, the
+ * history's one compile of it saying which. */
 G_PASTE_VISIBLE GVariant *
 g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
                                const gchar               *query,
@@ -1177,29 +1177,12 @@ g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
 {
     G_PASTE_DBUS_ASSERT_FULL (strlen (query) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is too long", NULL);
 
-    g_autoptr (GRegex) valid = g_regex_new (query, G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
+    g_autoptr (GPtrArray) items = g_paste_history_search_items (self->history, query, error);
 
-    G_PASTE_DBUS_ASSERT_FULL (valid, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression", NULL);
+    if (!items)
+        return NULL;
 
-    GPasteHistory *history = self->history;
-    g_auto (GStrv) results = g_paste_history_search (history, query);
-
-    G_PASTE_DBUS_ASSERT_FULL (results, G_PASTE_ERROR_FAILED, "Error while performing search", NULL);
-
-    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
-
-    for (GStrv uuid = results; *uuid; ++uuid)
-    {
-        GPasteItem *item = g_paste_history_get_by_uuid (history, *uuid);
-
-        /* The search read the very history we are reading, under the same lock,
-         * so a uuid it returned is still there. Skipped rather than asserted
-         * on: a missing match is nothing for the caller to act on. */
-        if (item)
-            g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (item));
-    }
-
-    return g_variant_builder_end (&builder);
+    return g_paste_daemon_methods_items_variant (items);
 }
 
 G_PASTE_VISIBLE void

@@ -2805,28 +2805,50 @@ G_PASTE_VISIBLE GStrv
 g_paste_history_search (GPasteHistory *self,
                         const gchar   *pattern)
 {
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPtrArray) items = g_paste_history_search_items (self, pattern, &error);
+
+    if (!items)
+    {
+        if (error)
+            g_warning ("error while creating regex: %s", error->message);
+        return NULL;
+    }
+
+    g_autoptr (GStrvBuilder) results = g_strv_builder_new ();
+
+    for (guint i = 0; i < items->len; ++i)
+        g_strv_builder_add (results, g_paste_item_get_uuid (g_ptr_array_index (items, i)));
+
+    return g_strv_builder_end (results);
+}
+
+GPtrArray *
+g_paste_history_search_items (GPasteHistory *self,
+                              const gchar   *pattern,
+                              GError       **error)
+{
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
     g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
+    g_return_val_if_fail (!error || !*error, NULL);
 
     g_debug ("history: search '%s'", pattern);
 
     G_PASTE_LOCK_HISTORY;
-    g_autoptr (GError) error = NULL;
     g_autoptr (GRegex) regex = g_regex_new (pattern,
                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
                                             G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
-                                            &error);
+                                            NULL);
 
-    if (error)
+    if (!regex)
     {
-        g_warning ("error while creating regex: %s", error->message);
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression");
         return NULL;
     }
-    if (!regex)
-        return NULL;
 
-    g_autoptr (GStrvBuilder) results = g_strv_builder_new ();
+    g_autoptr (GPtrArray) results = g_ptr_array_new_with_free_func (g_object_unref);
+
     for (guint i = 0; i < self->history->len; ++i)
     {
         GPasteItem *item = g_ptr_array_index (self->history, i);
@@ -2853,10 +2875,10 @@ g_paste_history_search (GPasteHistory *self,
             match = TRUE;
 
         if (match)
-            g_strv_builder_add (results, uuid);
+            g_ptr_array_add (results, g_object_ref (item));
     }
 
-    return g_strv_builder_end (results);
+    return g_steal_pointer (&results);
 }
 
 /**

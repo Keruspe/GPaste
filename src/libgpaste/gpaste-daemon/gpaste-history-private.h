@@ -21,4 +21,13 @@ void g_paste_history_load (GPasteHistory *self,
 gboolean g_paste_history_reaches_store (GPasteHistory *self,
                                         const gchar   *name);
 
+/* The items matching @pattern, as g_paste_history_search () finds them, read
+ * under the one lock that search takes: a reference on each, in the history's
+ * order, so that a caller answering with them asks the history nothing more.
+ * A pattern that is not a regular expression fails with
+ * %G_PASTE_ERROR_INVALID_ARGUMENT. */
+GPtrArray *g_paste_history_search_items (GPasteHistory *self,
+                                         const gchar   *pattern,
+                                         GError       **error);
+
 G_END_DECLS
