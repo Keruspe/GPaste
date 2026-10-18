@@ -42,11 +42,9 @@ umbrella headers as a C consumer does, without `G_PASTE_COMPILATION`, and
 calls the inline helpers they carry; where a C++ compiler is found,
 `cxx-headers` does the same as a C++ consumer.
 
-`tests/tools/test-gen-keybindings.py` runs the control center's keybindings
-generator on headers of its own, under a locale with no UTF-8 in it: a
-description holding a typographic apostrophe comes out as UTF-8, and an entry
-it cannot read -- `K(` with no space, an escaped quote -- fails it rather
-than leave the shortcut out of the file.
+`tests/tools/test-keybindings-xml.c` reads the control center's keybindings
+file the build generated: every shortcut `g_paste_keybindings()` lists, in its
+order, under its key and with its untranslated description, and nothing else.
 
 `tests/tools/test-gir-finish-funcs.py` reads the generated GIRs: every async
 callable's finish function is one its class has, under its GI name, and every

@@ -8,7 +8,8 @@
 #pragma once
 
 #include <gpaste-3/gpaste-gsettings-keys.h>
-#include <gpaste-3/gpaste-macros.h>
+
+#include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -16,9 +17,10 @@ G_BEGIN_DECLS
  *
  * This list is the one place they are written down. It feeds the shortcuts
  * dialog, the shortcuts page of the preferences, and -- through
- * tools/gen-keybindings-xml.py, which reads this very macro -- the control
+ * tools/gen-keybindings-xml.c, which expands this very macro -- the control
  * center's 42-gpaste.xml, so none of the three can drift apart from the others
- * in wording, order or grouping.
+ * in wording, order or grouping. It needs nothing but GLib, the helper being
+ * built for the machine running the build.
  *
  * Each carries two names: the description the shortcut UIs show, and the short
  * label the desktop portal lists it under, where there is only room for a few

@@ -10,11 +10,13 @@ test(
   suite: 'gpaste',
 )
 
-test(
-  'gen-keybindings',
-  find_program('test-gen-keybindings.py'),
-  suite: 'gpaste',
+# The control center's file against the list it is generated from.
+test_keybindings_xml = executable(
+  'test-keybindings-xml',
+  sources: 'test-keybindings-xml.c',
+  dependencies: [ glib_dep, libgpaste_internal_dep ],
 )
+test('keybindings-xml', test_keybindings_xml, args: [ keybindings_xml ])
 
 test(
   'search-provider',
