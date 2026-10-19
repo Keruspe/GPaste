@@ -694,6 +694,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
      * written, which may not be the one the items belong to (a backup). */
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, history_name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* Nor written over while a change of passphrase waits to be settled, as
      * the read refuses it: the settle would put the original back over this
@@ -1223,8 +1224,17 @@ start_tag (GMarkupParseContext *context,
                 }
                 /* Read wide and clamped, never cast: a stored value past
                  * G_MAXUINT truncates, and 2^32 truncates to 0 -- the one value
-                 * that means the password never comes off the clipboard. */
-                guint64 timeout = g_ascii_strtoull (*v, NULL, 10);
+                 * that means the password never comes off the clipboard. Nor
+                 * read leniently: what is no number would read as that 0, and
+                 * no GPaste wrote it. */
+                guint64 timeout = 0;
+
+                if (!g_ascii_string_to_unsigned (*v, 10, 0, G_MAXUINT64, &timeout, NULL))
+                {
+                    WARN_AT_ATTR (a, "Invalid password timeout: %s", *v);
+                    data->malformed = TRUE;
+                    continue;
+                }
 
                 if (timeout > G_PASTE_PASSWORD_TIMEOUT_MAX)
                 {

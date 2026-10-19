@@ -3761,7 +3761,8 @@ test_file_count_matches_read (void)
  * taken for the item's own. An image date
  * GDateTime cannot hold, or a checksum that is not a SHA-256, is refused as
  * data -- the checksum then recomputed -- and no history name the format
- * refuses is listed. */
+ * refuses is listed. A password timeout that is no number makes the document
+ * unreadable, read as 0 being a password that never comes off the clipboard. */
 static void
 test_file_parser_malformed (void)
 {
@@ -3808,6 +3809,9 @@ test_file_parser_malformed (void)
                                FALSE));
         g_free (read_document ("parser-entity",
                                "  <item kind=\"Password\" name=\"&an-entity-unlogged;\"><value>x</value></item>\n",
+                               FALSE));
+        g_free (read_document ("parser-timeout",
+                               "  <item kind=\"Password\" name=\"bank\" timeout=\"30s\"><value>x</value></item>\n",
                                FALSE));
         g_autofree gchar *date = read_document ("parser-date",
                                                 "  <item kind=\"Image\" date=\"99999999999999\"><value>/nowhere.png</value></item>\n",
