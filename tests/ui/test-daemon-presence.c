@@ -498,6 +498,7 @@ test_follow (void)
     /* Opening the window asks for a daemon, which the bus has none of. */
     g_paste_ui_window_setup (window, client);
     g_assert_true (adw_banner_get_revealed (window->banner));
+    g_assert_false (adw_banner_get_use_markup (window->banner));
     g_assert_cmpstr (adw_banner_get_title (window->banner), ==, _("Connecting to GPaste…"));
     g_assert_null (adw_banner_get_button_label (window->banner));
     g_assert_nonnull (adw_status_page_get_paintable (find_status_page (GTK_WIDGET (window->history))));
@@ -2080,6 +2081,7 @@ test_version_toast (void)
     g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
     g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
     g_assert_nonnull (window->version_toast);
+    g_assert_false (adw_toast_get_use_markup (window->version_toast));
     g_assert_cmpstr (adw_toast_get_action_name (window->version_toast), ==, "win.restart-daemon");
     g_assert_cmpuint (adw_toast_get_timeout (window->version_toast), >, 0);
     g_signal_connect_swapped (window->version_toast, "dismissed", G_CALLBACK (g_paste_test_bus_count_emission), &dismissals);

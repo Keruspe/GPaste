@@ -125,8 +125,18 @@ g_paste_gtk_util_toast (GtkWidget   *origin,
 
     GtkWidget *content = adw_application_window_get_content (ADW_APPLICATION_WINDOW (root));
 
-    if (ADW_IS_TOAST_OVERLAY (content))
-        adw_toast_overlay_add_toast (ADW_TOAST_OVERLAY (content), adw_toast_new (message));
+    if (!ADW_IS_TOAST_OVERLAY (content))
+        return;
+
+    AdwToast *toast = adw_toast_new (message);
+
+    /* Plain: @message is a translation, and an & or a < a translator wrote
+     * would have Pango refuse it as markup, the toast saying nothing at the
+     * very moment it is the only report of a failure. No test reads a toast
+     * back, AdwToastOverlay handing none out; the window's own is held to it
+     * (/ui/daemon-presence/version-toast). */
+    adw_toast_set_use_markup (toast, FALSE);
+    adw_toast_overlay_add_toast (ADW_TOAST_OVERLAY (content), toast);
 }
 
 typedef struct

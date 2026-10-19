@@ -1032,6 +1032,8 @@ g_paste_ui_window_update_version_toast (GPasteUiWindow *self)
 
     AdwToast *toast = adw_toast_new (_("The GPaste daemon is out of date"));
 
+    /* As in g_paste_gtk_util_toast (). */
+    adw_toast_set_use_markup (toast, FALSE);
     adw_toast_set_button_label (toast, _("Restart"));
     adw_toast_set_action_name (toast, "win.restart-daemon");
     g_set_weak_pointer (&self->version_toast, toast);
@@ -1555,6 +1557,11 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     GtkWidget *banner = adw_banner_new ("");
     self->banner = ADW_BANNER (banner);
+    /* As in g_paste_gtk_util_toast (): what it says is a translation. Said,
+     * though libadwaita 1.10 starts a banner with markup off, against its
+     * property's default of on, which a later release may honour: no case here
+     * can tell the two apart. */
+    adw_banner_set_use_markup (self->banner, FALSE);
     g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_retry), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
 

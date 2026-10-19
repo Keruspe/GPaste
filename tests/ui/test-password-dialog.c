@@ -192,6 +192,22 @@ find_spin_row (GtkWidget *widget)
     return NULL;
 }
 
+/* Whether every row under @widget shows its title as written. */
+static gboolean
+rows_plain (GtkWidget *widget)
+{
+    if (ADW_IS_PREFERENCES_ROW (widget) && adw_preferences_row_get_use_markup (ADW_PREFERENCES_ROW (widget)))
+        return FALSE;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
+    {
+        if (!rows_plain (child))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 /* A timeout field cleared to type another number into, or holding none, keeps
  * the timeout the password had rather than sending 0, which would never take it
  * off the clipboard. */
@@ -217,6 +233,8 @@ timeout_keeps_blank (void)
     AdwSpinRow *timeout = find_spin_row (GTK_WIDGET (dialog));
 
     g_assert_nonnull (timeout);
+    /* Its titles being translations, taken as markup they would empty. */
+    g_assert_true (rows_plain (GTK_WIDGET (dialog)));
     for (guint i = 0; i < 2; ++i)
     {
         gtk_editable_set_text (GTK_EDITABLE (timeout), (i) ? "abc" : "");
