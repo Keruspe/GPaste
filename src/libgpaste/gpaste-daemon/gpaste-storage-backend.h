@@ -14,6 +14,8 @@ G_BEGIN_DECLS
 
 G_PASTE_DERIVABLE_TYPE (StorageBackend, storage_backend, STORAGE_BACKEND, GObject)
 
+/* Laid out by what reads best, not for an older layout's sake: see
+ * libgpaste_daemon_soversion in src/libgpaste/meson.build. */
 struct _GPasteStorageBackendClass
 {
     GObjectClass parent_class;

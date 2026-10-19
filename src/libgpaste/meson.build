@@ -199,6 +199,12 @@ if get_option('vapi')
   )
 endif
 
+# libgpaste-daemon's C ABI promises no more than this soversion: a class or
+# interface slot goes where it belongs rather than at the end, an enumeration
+# value beside its group, a signature changes with what it does, and the
+# release shipping such a change bumps the soversion. Its one consumer outside
+# this tree, the extension, resolves names through the typelib and sees none of
+# it.
 libgpaste_daemon_soversion = '1.0.0'
 
 # What this library promises to the outside world. The gnome-shell extension is
