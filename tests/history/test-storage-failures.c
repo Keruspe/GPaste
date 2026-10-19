@@ -553,11 +553,49 @@ sqlite_query_int (const gchar *path,
 }
 #endif
 
+/* What the journal held each time a history's re-key began, while this is
+ * set: what a process dying between two would leave. From the re-key counted
+ * @failed_rekey on, the history's install fails. */
+static GPtrArray *rekey_journals;
+static guint failed_rekey;
+
+gboolean
+g_paste_storage_backend_rekey (GPasteStorageBackend *self,
+                               const gchar          *name,
+                               const gchar          *new_passphrase,
+                               gboolean             *split)
+{
+    typedef gboolean (*Rekey) (GPasteStorageBackend *, const gchar *, const gchar *, gboolean *);
+    Rekey original = (Rekey) dlsym (RTLD_NEXT, "g_paste_storage_backend_rekey");
+
+    g_assert_nonnull (original);
+    if (rekey_journals)
+    {
+        g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+        g_autofree gchar *journal = g_build_filename (dir, "storage-journal", NULL);
+        gchar *contents = NULL;
+
+        g_file_get_contents (journal, &contents, NULL, NULL);
+        g_ptr_array_add (rekey_journals, contents ? contents : g_strdup (""));
+
+        static const gchar * const history_install[] = { ".xmls.rekey", NULL };
+
+        if (failed_rekey && rekey_journals->len >= failed_rekey)
+            failed_moves = history_install;
+    }
+
+    return original (self, name, new_passphrase, split);
+}
+
 /* Writes through a backend of the first kind leave the history's first item
  * out, as a destination that took a write and does not give it back would;
  * file writes through one of the second kind lose the document's footer, as an
  * interrupted one would. -1 for none. */
 static gint shortened_kind = -1;
+/* Whether the journal was on the disk when a history was written through a
+ * backend of this kind, a write of which is what it has to be there for. */
+static gint journaled_kind = -1;
+static gboolean journal_at_write;
 static gint truncated_kind = -1;
 
 gboolean
@@ -572,6 +610,14 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
     g_assert_nonnull (original);
     if (items && kind == shortened_kind)
         items = items->next;
+    if (kind == journaled_kind)
+    {
+        /* journal_path ()'s, the migration being included further down. */
+        g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+        g_autofree gchar *journal = g_build_filename (dir, "storage-journal", NULL);
+
+        journal_at_write = g_file_test (journal, G_FILE_TEST_EXISTS);
+    }
 
     gboolean written = original (backend, name, items);
 
@@ -1219,16 +1265,113 @@ test_import_copies_whole (void)
     prompt->chosen = G_PASTE_STORAGE_SQLITE;
     prompt->import = TRUE;
     prompt->cleanup = TRUE;
+    journaled_kind = G_PASTE_STORAGE_SQLITE;
     g_assert_true (run_migration (settings, prompt, &error));
     g_assert_no_error (error);
+    journaled_kind = -1;
+    g_assert_true (journal_at_write);
     g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_SQLITE);
 
     g_autofree gchar *copy = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
 
     g_assert_cmpint (sqlite_query_int (copy, "SELECT COUNT (*) FROM items;"), ==, 8);
     g_assert_cmpint (sqlite_query_int (copy, "SELECT COUNT (*) FROM items WHERE image IS NOT NULL;"), ==, 1);
+
+    g_autofree gchar *journal = journal_path ();
+
+    g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
     g_paste_settings_reset (settings, G_PASTE_MAX_HISTORY_SIZE_SETTING);
     g_paste_settings_reset (settings, G_PASTE_IMAGES_SUPPORT_SETTING);
+}
+
+/* What an import a process did not live to finish wrote is taken back at the
+ * next start -- in clear, for one out of an encrypted history -- unless the
+ * move had already happened, which makes it the store. The history it was
+ * copied from stays as it is either way. */
+static void
+test_import_cut_short (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "cut-short";
+    g_autofree gchar *source = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_FILE));
+    g_autofree gchar *copy = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    g_autofree gchar *journal = journal_path ();
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+    g_autoptr (GPtrArray) journaled = g_ptr_array_new ();
+
+    g_ptr_array_add (journaled, (gpointer) name);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+        g_paste_storage_backend_write_history (file, name, items);
+    }
+
+    for (guint moved = 0; moved < 2; ++moved)
+    {
+        {
+            g_autoptr (GPasteStorageBackend) database = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+            g_paste_storage_backend_write_history (database, name, items);
+        }
+
+        g_assert_true (journal_write (JOURNAL_IMPORT, G_PASTE_STORAGE_SQLITE, journaled, NULL));
+        if (moved)
+            g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+        g_assert_false (g_paste_storage_decryption_needed (settings));
+        g_assert_cmpint (g_file_test (copy, G_FILE_TEST_EXISTS), ==, moved);
+        g_assert_true (g_file_test (source, G_FILE_TEST_EXISTS));
+        g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
+    }
+
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+}
+
+/* And before a migration asks anything, the standalone daemon asking for one
+ * first: a copy cut short that does not read back would stop the next import
+ * into the same flavour. */
+static void
+test_import_cut_short_then_migrate (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *copy = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+    g_autoptr (GPtrArray) journaled = g_ptr_array_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+        g_paste_storage_backend_write_history (file, name, items);
+    }
+
+    g_assert_true (g_file_set_contents (copy, "half a database", -1, NULL));
+    g_ptr_array_add (journaled, (gpointer) name);
+    g_assert_true (journal_write (JOURNAL_IMPORT, G_PASTE_STORAGE_SQLITE, journaled, NULL));
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_SQLITE;
+    prompt->import = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_SQLITE);
+    g_assert_cmpint (sqlite_query_int (copy, "SELECT COUNT (*) FROM items;"), ==, 1);
 }
 
 /* A destination that does not read back is no copy, however many of its items
@@ -4439,6 +4582,15 @@ test_rekey_settled_under_lock (void)
     g_paste_file_backend_settle_rekeys ();
     g_assert_true (has_rekey_leftovers (name));
 
+    /* Nor is what the journal records. */
+    g_autoptr (GPtrArray) journaled = g_ptr_array_new ();
+    g_autofree gchar *journal = journal_path ();
+
+    g_ptr_array_add (journaled, (gpointer) name);
+    g_assert_true (journal_write (JOURNAL_REKEY, G_PASTE_STORAGE_ENCRYPTED_FILE, journaled, NULL));
+    journal_settle (NULL);
+    g_assert_true (g_file_test (journal, G_FILE_TEST_EXISTS));
+
     g_close (fd, NULL);
     g_paste_file_backend_settle_rekeys ();
     g_assert_false (has_rekey_leftovers (name));
@@ -4474,6 +4626,122 @@ test_rekey_busy (void)
     g_assert_false (g_paste_storage_is_busy ());
     g_assert_true (g_paste_storage_rekey_finish (result, &error));
     g_assert_no_error (error);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* A change of passphrase a process did not live to finish between two
+ * histories is told at the next start, with the ones on the new passphrase,
+ * through the prompt -- once, and whether or not a passphrase is then asked
+ * for. One that finished leaves nothing to tell. */
+static void
+test_rekey_cut_short (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*change of passphrase was cut short*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *journal = journal_path ();
+    g_autoptr (GPtrArray) journaled = g_ptr_array_new ();
+
+    {
+        g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+        g_paste_storage_backend_write_history (one, name, items);
+        g_paste_storage_backend_write_history (one, "other", items);
+    }
+
+    g_ptr_array_add (journaled, "other");
+    g_assert_true (journal_write (JOURNAL_REKEY, G_PASTE_STORAGE_ENCRYPTED_FILE, journaled, NULL));
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_assert_true (g_paste_storage_decryption_needed (settings));
+    g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_decryption_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (prompt->reports, ==, 1);
+    g_assert_nonnull (strstr (prompt->message, "“other” are on the new passphrase"));
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+    g_assert_false (g_paste_storage_decryption_needed (settings));
+
+    /* The second history's re-key begins with the first recorded. */
+    g_clear_object (&result);
+    prompt->passphrase = "two";
+    rekey_journals = g_ptr_array_new_with_free_func (g_free);
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
+    g_assert_cmpuint (rekey_journals->len, ==, 2);
+    g_assert_cmpstr (g_ptr_array_index (rekey_journals, 0), ==, "");
+    g_assert_true (g_str_has_prefix (g_ptr_array_index (rekey_journals, 1), "rekey "));
+    g_clear_pointer (&rekey_journals, g_ptr_array_unref);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* A change of passphrase that fails in the process puts back what it did and
+ * says so itself: it leaves no journal for the next start to report again. */
+static void
+test_rekey_failed_leaves_no_journal (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*injected failure moving*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *journal = journal_path ();
+
+    {
+        g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+
+        g_paste_storage_backend_write_history (one, name, items);
+        g_paste_storage_backend_write_history (one, "other", items);
+    }
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    prompt->passphrase = "two";
+    rekey_journals = g_ptr_array_new_with_free_func (g_free);
+    failed_rekey = 2;
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    failed_rekey = 0;
+    failed_moves = NULL;
+
+    g_assert_false (g_paste_storage_rekey_finish (result, &error));
+    g_assert_true (g_str_has_prefix (g_ptr_array_index (rekey_journals, 1), "rekey "));
+    g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
+    g_clear_pointer (&rekey_journals, g_ptr_array_unref);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
@@ -4645,6 +4913,8 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/settled-without-history", test_rekey_settled_without_history);
     g_test_add_func ("/storage/rekey/split-passphrases", test_rekey_split_passphrases);
     g_test_add_func ("/storage/rekey/cost", test_rekey_cost);
+    g_test_add_func ("/storage/rekey/cut-short", test_rekey_cut_short);
+    g_test_add_func ("/storage/rekey/failed-leaves-no-journal", test_rekey_failed_leaves_no_journal);
     g_test_add_func ("/storage/rekey/settled-under-lock", test_rekey_settled_under_lock);
     g_test_add_func ("/storage/rekey/settled-while-busy", test_rekey_settled_while_busy);
     g_test_add_func ("/storage/rekey/busy", test_rekey_busy);
@@ -4681,6 +4951,8 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
     g_test_add_func ("/storage/migration/import-copies-whole", test_import_copies_whole);
+    g_test_add_func ("/storage/migration/import-cut-short", test_import_cut_short);
+    g_test_add_func ("/storage/migration/import-cut-short-then-migrate", test_import_cut_short_then_migrate);
     g_test_add_func ("/storage/migration/import-busy", test_import_busy);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
     g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);

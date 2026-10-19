@@ -1158,6 +1158,24 @@ g_paste_sqlite_backend_unlink (GPasteSqliteBackend *backend,
 #endif
     }
 
+    g_paste_sqlite_backend_delete_database (db_path, error);
+}
+
+/**
+ * g_paste_sqlite_backend_delete_database:
+ * @db_path: the database to delete
+ * @error: return location for a #GError, or %NULL
+ *
+ * Delete the database at @db_path and what SQLite keeps beside it, with no
+ * connection to it open: what has no backend to delete with, no key being
+ * needed to unlink a file.
+ *
+ * Errors come from unlinking the database, in %G_IO_ERROR.
+ */
+void
+g_paste_sqlite_backend_delete_database (const gchar *db_path,
+                                        GError     **error)
+{
     g_autoptr (GFile) db_file = g_file_new_for_path (db_path);
 
     g_file_delete (db_file, NULL, error);

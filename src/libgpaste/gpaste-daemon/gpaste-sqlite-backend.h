@@ -11,6 +11,9 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (SqliteBackend, sqlite_backend, SQLITE_BACKEND, GPasteStorageBackend)
 
+void g_paste_sqlite_backend_delete_database (const gchar *db_path,
+                                             GError     **error);
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 GPasteStorageBackend *g_paste_sqlite_backend_new_encrypted (GPasteSettings *settings,
                                                             const gchar    *passphrase);

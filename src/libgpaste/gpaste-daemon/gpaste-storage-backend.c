@@ -525,6 +525,55 @@ g_paste_storage_backend_delete_history_images (const gchar *name,
     return FALSE;
 }
 
+/* What follows a delete of the history called @name, whatever deleted it: its
+ * images directory, once no flavour stores the name. @error keeps the store's
+ * own failure over this one. */
+static void
+_g_paste_storage_delete_history_images (const gchar *name,
+                                        GError     **error)
+{
+    g_autoptr (GError) images_error = NULL;
+
+    if (g_paste_storage_backend_delete_history_images (name, &images_error))
+        return;
+
+    /* Never over the store's own failure: the first thing that went wrong is
+     * what says why, and a caller that asked for no error still has to hear
+     * about images left on disk. */
+    if (error && !*error)
+        g_propagate_error (error, g_steal_pointer (&images_error));
+    else
+        g_warning ("Could not delete the images of \"%s\": %s", name, images_error->message);
+}
+
+G_PASTE_VISIBLE void
+g_paste_storage_delete_history (GPasteStorage storage_kind,
+                                const gchar  *name,
+                                GError      **error)
+{
+    switch (storage_kind)
+    {
+    case G_PASTE_STORAGE_FILE:
+    case G_PASTE_STORAGE_ENCRYPTED_FILE:
+        g_paste_file_backend_delete_files (name, storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE, error);
+        break;
+#ifdef G_PASTE_ENABLE_SQLITE
+    case G_PASTE_STORAGE_SQLITE:
+    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
+    {
+        g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (storage_kind));
+
+        g_paste_sqlite_backend_delete_database (path, error);
+        break;
+    }
+#endif
+    default:
+        return;
+    }
+
+    _g_paste_storage_delete_history_images (name, error);
+}
+
 /**
  * g_paste_storage_backend_delete_history:
  * @self: a #GPasteStorageBackend instance
@@ -562,18 +611,7 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
     if (G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
         G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
 
-    g_autoptr (GError) images_error = NULL;
-
-    if (g_paste_storage_backend_delete_history_images (name, &images_error))
-        return;
-
-    /* Never over the store's own failure: the first thing that went wrong is
-     * what says why, and a caller that asked for no error still has to hear
-     * about images left on disk. */
-    if (error && !*error)
-        g_propagate_error (error, g_steal_pointer (&images_error));
-    else
-        g_warning ("Could not delete the images of \"%s\": %s", name, images_error->message);
+    _g_paste_storage_delete_history_images (name, error);
 }
 
 /* The default list_histories: enumerate the history dir for files of a

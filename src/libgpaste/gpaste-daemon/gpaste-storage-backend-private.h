@@ -18,4 +18,12 @@ void g_paste_storage_backend_read_whole (GPasteStorageBackend *self);
 guint64  g_paste_storage_backend_get_read_cap (GPasteStorageBackend *self);
 gboolean g_paste_storage_backend_reads_images (GPasteStorageBackend *self);
 
+/* Delete the history called @name from the @storage_kind flavour, as its
+ * backend's delete_history and the images that follow it would, with no
+ * backend: no key is needed to unlink a file, and what takes back the copy an
+ * import cut short left has none to give. */
+void g_paste_storage_delete_history (GPasteStorage storage_kind,
+                                     const gchar  *name,
+                                     GError      **error);
+
 G_END_DECLS

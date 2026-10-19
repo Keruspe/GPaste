@@ -2118,12 +2118,25 @@ g_paste_file_backend_count_history (GPasteStorageBackend *self,
     return count;
 }
 
-static void
-g_paste_file_backend_delete_history (GPasteStorageBackend *self,
-                                     const gchar          *name,
-                                     GError              **error)
+/**
+ * g_paste_file_backend_delete_files:
+ * @name: the name of the history to delete
+ * @encrypted: whether it is the encrypted flavour's
+ * @error: return location for a #GError, or %NULL
+ *
+ * Delete what a file flavour stores of the history called @name: its document,
+ * its images of that flavour, and what a save or a re-key left beside it. A
+ * backend's delete_history, and what has no backend to delete with: no key is
+ * needed to unlink a file.
+ *
+ * Errors come from unlinking the document, in %G_IO_ERROR.
+ */
+void
+g_paste_file_backend_delete_files (const gchar *name,
+                                   gboolean     encrypted,
+                                   GError     **error)
 {
-    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, g_paste_storage_backend_get_extension (self));
+    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, g_paste_storage_get_extension (encrypted ? G_PASTE_STORAGE_ENCRYPTED_FILE : G_PASTE_STORAGE_FILE));
     g_autoptr (GError) delete_error = NULL;
 
     /* The images go once the history is gone, and the ones this flavour may
@@ -2137,7 +2150,7 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
         return;
     }
 
-    _g_paste_file_backend_sweep_images (name, g_paste_storage_backend_is_encrypted (self), NULL);
+    _g_paste_file_backend_sweep_images (name, encrypted, NULL);
 
     if (delete_error)
         g_propagate_error (error, g_steal_pointer (&delete_error));
@@ -2158,6 +2171,14 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
     _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
     _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_OLD);
 #endif
+}
+
+static void
+g_paste_file_backend_delete_history (GPasteStorageBackend *self,
+                                     const gchar          *name,
+                                     GError              **error)
+{
+    g_paste_file_backend_delete_files (name, g_paste_storage_backend_is_encrypted (self), error);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

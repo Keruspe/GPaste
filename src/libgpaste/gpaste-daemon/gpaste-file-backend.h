@@ -33,6 +33,10 @@ gchar *g_paste_file_backend_encrypted_path (const gchar *path);
 
 void g_paste_file_backend_sweep_legacy_images (void);
 
+void g_paste_file_backend_delete_files (const gchar *name,
+                                        gboolean     encrypted,
+                                        GError     **error);
+
 /* What a re-key puts beside each file it changes: the file's replacement under
  * the new key, and the original under a second name while the replacements go
  * in. Both are named from the file alone, and the second, beside the history's
