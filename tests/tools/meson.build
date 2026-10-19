@@ -16,6 +16,12 @@ test(
   suite: 'gpaste',
 )
 
+test(
+  'search-provider',
+  find_program('test-search-provider.py'),
+  suite: 'gpaste',
+)
+
 # The extension's GPaste names are checked against the build's typelibs.
 if get_option('introspection')
   test(

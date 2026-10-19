@@ -8,6 +8,7 @@ A service file names its systemd unit (`SystemdService=`) only in a build that i
 
 **Shell completions** (`data/completions/gpaste-client` for bash, `_gpaste-client` for zsh, `gpaste-client.fish` for fish — each behind its own `*-completion` meson option) mirror `gpaste-client`'s `commands[]` table, so a new verb or alias has to be added to all three and to `man/1/gpaste-client.1` — `show_help()` is printed from the table itself and needs nothing. Bash offers its options verb by verb, so a verb with a nonzero `item_args` has to offer `--use-index` there too. `meson test -C build completions` fails until they agree. Two rules every one of them follows:
 
+- **Never activate the daemon from the overview either**: the search provider's registration (`search-provider/`) carries `AutoStart=false`, so GNOME Shell asks a daemon that is running and starts none, the standalone daemon recording every copy once it is up (`tests/tools/test-search-provider.py`).
 - **Never activate the daemon from a completion.** Anything that needs the daemon first checks `org.freedesktop.DBus.NameHasOwner org.gnome.GPaste` with `gdbus` and gives up when nothing owns it — otherwise hitting tab would start a daemon behind the user's back and block the shell while it loads the history.
 - **History names come off disk**, not from `list-histories`: one file per history, `<name>.{xml,xmls,db,dbs}` under `$XDG_DATA_HOME/GPaste` (falling back to `.../gpaste`, the same `PACKAGE_NAME`/`PACKAGE` rule as `g_paste_util_get_history_dir_path`), so they complete instantly with no daemon at all.
 
