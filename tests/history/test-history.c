@@ -4106,9 +4106,6 @@ test_reload_then_delete_drops_password (gconstpointer data)
     g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
 
     g_paste_settings_set_history_name (settings, g_paste_history_get_current (history));
-    /* Writing the name the history already has loads it again, which is
-     * waited for before anything is added. */
-    g_assert_true (pump_until_loaded (history));
     g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
     g_paste_history_add (history, g_paste_text_item_new ("a text"));
     g_paste_history_add (history, g_paste_password_item_new (NULL, "reloaded secret", 0));
@@ -4216,6 +4213,36 @@ test_load_selects_last_add (void)
     g_assert_true (pump_until_loaded (history));
     g_assert_cmpstr (value_at (history, 0), ==, "copied during the load");
     g_assert_cmpstr (selected, ==, "copied during the load");
+}
+
+/* A switch to the history in use, which a settings backend may announce as a
+ * change all the same, is no switch: nothing only the model holds is dropped,
+ * a plain flavour's password included. */
+static void
+count_switches (GPasteHistory *history G_GNUC_UNUSED,
+                const gchar   *name G_GNUC_UNUSED,
+                gpointer       user_data)
+{
+    ++*(guint *) user_data;
+}
+
+static void
+test_switch_to_current_keeps_model (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    guint switches = 0;
+
+    g_signal_connect (history, "switch", G_CALLBACK (count_switches), &switches);
+    g_paste_settings_set_history_name (settings, g_paste_history_get_current (history));
+    g_paste_history_add (history, g_paste_text_item_new ("stored"));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "in the model alone", 0));
+    g_object_notify (G_OBJECT (settings), "history-name");
+    g_assert_true (pump_until_loaded (history));
+
+    g_assert_cmpuint (switches, ==, 0);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
 }
 
 /* A password copied while a load is out is the head the load leaves, and no
@@ -6621,14 +6648,15 @@ main (int argc, char *argv[])
     add_test ("/history/load_selects_last_add", test_load_selects_last_add);
     add_test ("/history/load_keeps_add_uuid", test_load_keeps_add_uuid);
     add_test ("/history/load_keeps_password_selected", test_load_keeps_password_selected);
+    add_test ("/history/switch_to_current_keeps_model", test_switch_to_current_keeps_model);
+#ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/load_add_replaces_stored_head", test_load_add_replaces_stored_head);
+#endif
     add_test ("/history/reload_keeps_stopped_adds", test_reload_keeps_stopped_adds);
     add_test ("/history/reload_carries_load_adds_once", test_reload_carries_load_adds_once);
     add_test ("/history/reload_keeps_retired_order", test_reload_keeps_retired_order);
     add_test ("/history/stopped_add_evicted_freed", test_stopped_add_evicted_freed);
     add_test ("/history/reload_during_load_keeps_adds", test_reload_during_load_keeps_adds);
-#ifdef G_PASTE_ENABLE_SQLITE
-#endif
     add_test ("/history/name_refuses_a_path", test_history_name_refuses_a_path);
     add_test ("/history/dir_is_private", test_history_dir_is_private);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

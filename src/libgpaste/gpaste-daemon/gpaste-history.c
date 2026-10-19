@@ -2210,7 +2210,18 @@ g_paste_history_delete (GPasteHistory *self,
 static void
 g_paste_history_history_name_changed (GPasteHistory *self)
 {
-    g_set_str (&self->name, g_paste_history_resolve_name (self, NULL));
+    const gchar *name = g_paste_history_resolve_name (self, NULL);
+
+    /* The setting written with the name already in use -- a switch to the
+     * history in use, which GPaste's keyfile settings announce every time, and
+     * dconf the first time a key still at its default is written -- is no
+     * switch: a reload would drop what only the model holds, a plain flavour's
+     * passwords above all, where g_paste_history_load_async () leaves the
+     * history alone. */
+    if (self->name && g_paste_str_equal (name, self->name))
+        return;
+
+    g_set_str (&self->name, name);
 
     g_debug ("history: name changed to '%s'", self->name);
 
