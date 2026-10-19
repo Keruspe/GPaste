@@ -494,6 +494,47 @@ sqlite3_prepare_v2 (sqlite3       *db,
     return original (db, sql, length, statement, tail);
 }
 
+/* The binds of a value longer than this many bytes fail with @refused_bind,
+ * leaving their parameter NULL as SQLite does: 0 for none. SQLITE_TOOBIG is
+ * what SQLite answers past SQLITE_MAX_LENGTH, which no test can afford to
+ * reach. */
+static gsize refused_bind_length;
+static gint refused_bind = SQLITE_TOOBIG;
+
+int
+sqlite3_bind_blob64 (sqlite3_stmt  *statement,
+                     int            position,
+                     const void    *data,
+                     sqlite3_uint64 length,
+                     void         (*destructor) (void *))
+{
+    typedef int (*Bind) (sqlite3_stmt *, int, const void *, sqlite3_uint64, void (*) (void *));
+    Bind original = (Bind) dlsym (RTLD_NEXT, "sqlite3_bind_blob64");
+
+    g_assert_nonnull (original);
+    if (refused_bind_length && length > refused_bind_length)
+        return refused_bind;
+
+    return original (statement, position, data, length, destructor);
+}
+
+int
+sqlite3_bind_text (sqlite3_stmt *statement,
+                   int           position,
+                   const char   *text,
+                   int           length,
+                   void        (*destructor) (void *))
+{
+    typedef int (*Bind) (sqlite3_stmt *, int, const char *, int, void (*) (void *));
+    Bind original = (Bind) dlsym (RTLD_NEXT, "sqlite3_bind_text");
+
+    g_assert_nonnull (original);
+    if (refused_bind_length && ((length < 0) ? strlen (text) : (gsize) length) > refused_bind_length)
+        return refused_bind;
+
+    return original (statement, position, text, length, destructor);
+}
+
 /* One integer out of @path, through a connection of its own: test-history.c's
  * sqlite_raw_count() is the same, in a binary that shares no fixture with
  * this one. */
@@ -1590,6 +1631,101 @@ test_sqlite_unranked_add (void)
     g_paste_storage_backend_add_item (backend, name, c, NULL);
     g_assert_null (busy_step_sql);
     g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+}
+
+/* An image of noise, whose PNG is some kilobytes. */
+static GPasteItem *
+noisy_image_new (void)
+{
+    g_autoptr (GRand) rand = g_rand_new_with_seed (42);
+    guchar pixels[32 * 32 * 4];
+
+    for (gsize i = 0; i < sizeof (pixels); ++i)
+        pixels[i] = g_rand_int_range (rand, 0, 256);
+
+    g_autoptr (GBytes) bytes = g_bytes_new (pixels, sizeof (pixels));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (32, 32, GDK_MEMORY_R8G8B8A8, bytes, 32 * 4);
+
+    return g_paste_image_item_new (texture);
+}
+
+/* An item too large for a row is left out of the store, the rest of its
+ * history written around it: refused, it would fail every write of that
+ * history for as long as the history held it -- or, bound as the NULL a
+ * refused bind leaves, store an image without its image. The same for a
+ * replacement too large, which drops what it replaced, and for one of an
+ * item's representations, the item stored without it. Any other refusal is a
+ * failed write. */
+static void
+test_sqlite_item_too_large (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*too large to store*");
+        g_test_trap_assert_stderr ("*failed to write an item*");
+        g_test_trap_assert_stderr ("*failed to write a special value: out of memory*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "too-large";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autofree gchar *large = g_strnfill (2048, 'x');
+    g_autoptr (GPasteItem) text = g_paste_text_item_new (large);
+    g_autoptr (GPasteItem) image = noisy_image_new ();
+    g_autoptr (GPasteItem) small = g_paste_text_item_new ("small");
+    g_autoptr (GPasteItem) rich = g_paste_text_item_new ("rich");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (g_list_prepend (NULL, small), image), text);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_take (g_strnfill (2048, 'y'), 2048)));
+    refused_bind_length = 1024;
+
+    g_paste_storage_backend_write_history (backend, name, history);
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+
+    history = g_list_prepend (history, rich);
+    g_paste_storage_backend_add_item (backend, name, rich, history);
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM special_values;"), ==, 0);
+
+    g_autoptr (GPasteItem) replacement = g_paste_text_item_new (large);
+
+    g_list_find (history, small)->data = replacement;
+    g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (small), replacement, history);
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* A password's name, which only the encrypted flavour stores. */
+    g_autoptr (GPasteStorageBackend) encrypted = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+    g_autofree gchar *encrypted_path = g_paste_storage_backend_get_history_file_path (encrypted, name);
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (large, "secret", 0);
+    g_autoptr (GPasteItem) kept = g_paste_text_item_new ("kept");
+    g_autoptr (GList) passwords = g_list_prepend (g_list_prepend (NULL, kept), password);
+
+    g_paste_storage_backend_write_history (encrypted, name, passwords);
+    g_assert_false (g_paste_storage_backend_has_diverged (encrypted, name));
+    g_assert_cmpint (sqlite_query_int (encrypted_path, "SELECT COUNT (*) FROM items;"), ==, 1);
+#endif
+
+    g_autoptr (GPasteItem) richer = g_paste_text_item_new ("richer");
+
+    g_paste_item_add_special_value (richer, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_take (g_strnfill (2048, 'z'), 2048)));
+    refused_bind = SQLITE_NOMEM;
+    g_paste_storage_backend_add_item (backend, name, image, NULL);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+    g_paste_storage_backend_add_item (backend, name, richer, NULL);
+    refused_bind_length = 0;
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
 }
 
 static gboolean
@@ -4511,6 +4647,7 @@ main (int    argc,
         g_test_add_data_func (path, &incremental_failures[i], test_sqlite_incremental_failed);
     }
     g_test_add_func ("/storage/sqlite/unranked-add", test_sqlite_unranked_add);
+    g_test_add_func ("/storage/sqlite/item-too-large", test_sqlite_item_too_large);
 #endif
 
     return g_paste_test_env_run ();

@@ -825,8 +825,14 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
 /*****************/
 
 /* Bind @data as-is, or as an encrypted blob when @key is set (the encrypted
- * flavor). Text values go through this too: they are just bytes to bind. */
-static void
+ * flavor). Text values go through this too: they are just bytes to bind.
+ *
+ * Returns the bind's result code. A refused bind leaves the parameter NULL, and
+ * a step goes through with it all the same, so the callers have to look:
+ * %SQLITE_TOOBIG is a value past what a row holds (SQLITE_MAX_LENGTH, which
+ * max-text-item-size and max-memory-usage both let through), anything else a
+ * write that failed. */
+static gint
 g_paste_sqlite_backend_bind_content (sqlite3_stmt *stmt,
                                      gint          position,
                                      const guchar *key,
@@ -839,19 +845,18 @@ g_paste_sqlite_backend_bind_content (sqlite3_stmt *stmt,
         gsize blob_length;
         g_autofree guchar *blob = g_paste_sqlite_backend_encrypt (key, data, length, &blob_length);
 
-        sqlite3_bind_blob64 (stmt, position, blob, blob_length, SQLITE_TRANSIENT);
-        return;
+        return sqlite3_bind_blob64 (stmt, position, blob, blob_length, SQLITE_TRANSIENT);
     }
 #else
     (void) key;
 #endif
 
-    sqlite3_bind_blob64 (stmt, position, data, length, SQLITE_TRANSIENT);
+    return sqlite3_bind_blob64 (stmt, position, data, length, SQLITE_TRANSIENT);
 }
 
 /* Like bind_content but for text: a plain database keeps it a readable TEXT
  * column, an encrypted one stores the ciphertext blob. */
-static void
+static gint
 g_paste_sqlite_backend_bind_text (sqlite3_stmt *stmt,
                                   gint          position,
                                   const guchar *key,
@@ -859,15 +864,12 @@ g_paste_sqlite_backend_bind_text (sqlite3_stmt *stmt,
 {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     if (key)
-    {
-        g_paste_sqlite_backend_bind_content (stmt, position, key, text, strlen (text));
-        return;
-    }
+        return g_paste_sqlite_backend_bind_content (stmt, position, key, text, strlen (text));
 #else
     (void) key;
 #endif
 
-    sqlite3_bind_text (stmt, position, text, -1, SQLITE_TRANSIENT);
+    return sqlite3_bind_text (stmt, position, text, -1, SQLITE_TRANSIENT);
 }
 
 static gboolean
@@ -913,9 +915,19 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
         sqlite3_bind_int64 (stmt, 1, item_id);
         sqlite3_bind_int64 (stmt, 2, position);
         sqlite3_bind_text (stmt, 3, mime, -1, SQLITE_STATIC);
-        g_paste_sqlite_backend_bind_content (stmt, 4, key, data, data_length);
 
-        if (sqlite3_step (stmt) != SQLITE_DONE)
+        gint bound = g_paste_sqlite_backend_bind_content (stmt, 4, key, data, data_length);
+
+        /* One representation of a value the item still holds: it is left out,
+         * as the read drops one it cannot use, and the item stays. */
+        if (bound == SQLITE_TOOBIG)
+            g_warning ("sqlite: a %s representation is too large to store, and is left out", mime);
+        else if (bound != SQLITE_OK)
+        {
+            g_warning ("sqlite: failed to write a special value: %s", sqlite3_errstr (bound));
+            success = FALSE;
+        }
+        else if (sqlite3_step (stmt) != SQLITE_DONE)
         {
             g_warning ("sqlite: failed to write a special value: %s", sqlite3_errmsg (db));
             success = FALSE;
@@ -933,8 +945,8 @@ g_paste_sqlite_backend_write_special_values (sqlite3      *db,
 /* Bind an image item's PNG for the `image` blob column: from the bytes the
  * item carries, falling back to the file it was read from for an item that
  * carries none (e.g. imported from the file backend). No bytes anywhere leaves
- * the column NULL. */
-static void
+ * the column NULL, and is %SQLITE_OK. */
+static gint
 g_paste_sqlite_backend_bind_image (sqlite3_stmt    *stmt,
                                    gint             position,
                                    const guchar    *key,
@@ -947,8 +959,7 @@ g_paste_sqlite_backend_bind_image (sqlite3_stmt    *stmt,
         gsize length;
         gconstpointer data = g_bytes_get_data (png, &length);
 
-        g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
-        return;
+        return g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
     }
 
     const gchar *cache_path = g_paste_image_item_get_cache_path (image);
@@ -959,7 +970,9 @@ g_paste_sqlite_backend_bind_image (sqlite3_stmt    *stmt,
      * cache file has gone -- or that never had one -- is stored without its
      * image rather than not at all, and the column simply stays NULL. */
     if (cache_path && g_file_get_contents (cache_path, &data, &length, NULL))
-        g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
+        return g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
+
+    return SQLITE_OK;
 }
 
 /* Replace an item's stored special values with the ones it carries. */
@@ -993,8 +1006,12 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3      *db,
  * statements share this layout and differ only by @meta_base — the INSERT
  * carries an extra rank column between the value and the meta group, so it binds
  * at base 5 while the UPDATE binds at 4. Keeping the two in one place stops
- * their column indices drifting apart. */
-static void
+ * their column indices drifting apart.
+ *
+ * Returns the first of the content binds' result codes that is not
+ * %SQLITE_OK, as bind_content () has them: the others bind short strings
+ * SQLite does not copy, and integers. */
+static gint
 g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
                                   const guchar *key,
                                   GPasteItem   *item,
@@ -1003,7 +1020,9 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
     sqlite3_bind_text (stmt, 1, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
     /* The nick is a static string owned by the enum class, hence SQLITE_STATIC. */
     sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (g_paste_item_get_kind (item)), -1, SQLITE_STATIC);
-    g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
+
+    gint bound = g_paste_sqlite_backend_bind_text (stmt, 3, key, g_paste_item_get_real_value (item));
+
     /* Every kind has one, so it is bound outside the per-kind branches below.
      * Plaintext like rank and date: the read has to order and filter on it. */
     sqlite3_bind_int (stmt, meta_base + 4, g_paste_item_is_favourite (item));
@@ -1021,15 +1040,40 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
         sqlite3_bind_int64 (stmt, meta_base, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
         if (checksum)
             sqlite3_bind_text (stmt, meta_base + 1, checksum, -1, SQLITE_STATIC);
-        g_paste_sqlite_backend_bind_image (stmt, meta_base + 3, key, image);
+        if (bound == SQLITE_OK)
+            bound = g_paste_sqlite_backend_bind_image (stmt, meta_base + 3, key, image);
     }
-    else if (G_PASTE_IS_PASSWORD_ITEM (item))
-        g_paste_sqlite_backend_bind_text (stmt, meta_base + 2, key, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)));
+    else if (G_PASTE_IS_PASSWORD_ITEM (item) && bound == SQLITE_OK)
+        bound = g_paste_sqlite_backend_bind_text (stmt, meta_base + 2, key, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)));
+
+    return bound;
+}
+
+/* Warn about an item a bind or a step refused with @code. %SQLITE_TOOBIG is one
+ * too large for a row, which the caller leaves out, and is %TRUE; anything else
+ * is a write that failed. */
+static gboolean
+g_paste_sqlite_backend_left_out (sqlite3 *db,
+                                 gint     code)
+{
+    if (code == SQLITE_TOOBIG)
+    {
+        g_warning ("sqlite: an item is too large to store, and is left out of the store");
+        return TRUE;
+    }
+
+    g_warning ("sqlite: failed to write an item: %s", sqlite3_errmsg (db));
+
+    return FALSE;
 }
 
 /* Insert @item with @rank, or move the already-stored item with the same uuid
  * to @rank (its value never changes, only its position and whether it is
- * pinned). Special values are rewritten from the item either way. */
+ * pinned). Special values are rewritten from the item either way.
+ *
+ * An item too large for a row is left out, the way a password is in the plain
+ * flavour, rather than failing the write: every write of its history would
+ * carry it, and fail, for as long as the history held it. */
 static gboolean
 g_paste_sqlite_backend_upsert_item (sqlite3      *db,
                                     const guchar *key,
@@ -1049,18 +1093,21 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
     }
 
     /* uuid, kind, value at 1-3, then rank at 4, then the meta group at base 5. */
-    g_paste_sqlite_backend_bind_item (stmt, key, item, 5);
+    gint ret = g_paste_sqlite_backend_bind_item (stmt, key, item, 5);
+
     sqlite3_bind_int64 (stmt, 4, rank);
+    if (ret == SQLITE_OK)
+        ret = sqlite3_step (stmt);
 
-    gboolean success = (sqlite3_step (stmt) == SQLITE_ROW);
-    gint64 item_id = success ? sqlite3_column_int64 (stmt, 0) : 0;
-
-    if (!success)
-        g_warning ("sqlite: failed to write an item: %s", sqlite3_errmsg (db));
+    gint64 item_id = (ret == SQLITE_ROW) ? sqlite3_column_int64 (stmt, 0) : 0;
+    gboolean left_out = (ret != SQLITE_ROW && g_paste_sqlite_backend_left_out (db, ret));
 
     sqlite3_finalize (stmt);
 
-    return success && g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
+    if (ret != SQLITE_ROW)
+        return left_out;
+
+    return g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 }
 
 /* Whether @item is persisted at all: password entries only survive in the
@@ -1973,22 +2020,34 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     }
 
     /* uuid, kind, value at 1-3, the meta group at base 4, then old uuid at 10. */
-    g_paste_sqlite_backend_bind_item (stmt, key, item, 4);
+    gint ret = g_paste_sqlite_backend_bind_item (stmt, key, item, 4);
+
     sqlite3_bind_text (stmt, 10, old_uuid, -1, SQLITE_STATIC);
+    if (ret == SQLITE_OK)
+        ret = sqlite3_step (stmt);
 
     /* No row means the replaced item was never persisted (e.g. renaming a
      * password): nothing to update. */
-    gint ret = sqlite3_step (stmt);
     gboolean found = (ret == SQLITE_ROW);
     gint64 item_id = found ? sqlite3_column_int64 (stmt, 0) : 0;
+    gboolean left_out = FALSE;
 
     if (ret != SQLITE_ROW && ret != SQLITE_DONE)
     {
-        g_warning ("sqlite: failed to replace an item: %s", sqlite3_errmsg (db));
+        left_out = g_paste_sqlite_backend_left_out (db, ret);
         success = FALSE;
     }
 
     sqlite3_finalize (stmt);
+
+    /* As upsert_item () leaves one out: what it replaces is gone all the same. */
+    if (left_out)
+    {
+        g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        g_clear_pointer (&locker, g_mutex_locker_free);
+        g_paste_sqlite_backend_remove_item (self, name, old_uuid);
+        return;
+    }
 
     if (success && found)
         success = g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
