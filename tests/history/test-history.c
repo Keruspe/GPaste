@@ -176,8 +176,9 @@ pump_until_length (GPasteHistory *history,
 /* A test that provokes a warning runs its body in a child: the refusals under
  * test warn, and with structured logging (G_LOG_USE_STRUCTURED)
  * g_test_expect_message cannot swallow them, so the child drops warning
- * fatality and the parent matches them on the child's stderr instead. */
-#define G_PASTE_TEST_IN_SUBPROCESS  g_log_set_always_fatal (G_LOG_LEVEL_ERROR)
+ * fatality -- a critical still aborts it -- and the parent matches them on the
+ * child's stderr instead. */
+#define G_PASTE_TEST_IN_SUBPROCESS  g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR)
 
 #define G_PASTE_TEST_TRAP_SUBPROCESS(stderr_glob)                    \
     do {                                                             \
