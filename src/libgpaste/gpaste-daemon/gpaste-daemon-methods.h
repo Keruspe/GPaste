@@ -77,8 +77,11 @@ void      g_paste_daemon_methods_delete_history             (const GPasteDaemonM
 void      g_paste_daemon_methods_delete_password            (const GPasteDaemonMethods *self,
                                                              const gchar               *name,
                                                              GError                   **error);
-void      g_paste_daemon_methods_empty_history              (const GPasteDaemonMethods *self,
+void      g_paste_daemon_methods_empty_history_async        (const GPasteDaemonMethods *self,
                                                              const gchar               *name,
+                                                             GAsyncReadyCallback        callback,
+                                                             gpointer                   user_data);
+gboolean  g_paste_daemon_methods_empty_history_finish       (GAsyncResult              *result,
                                                              GError                   **error);
 GVariant *g_paste_daemon_methods_get_favourites             (const GPasteDaemonMethods *self);
 GVariant *g_paste_daemon_methods_get_history                (const GPasteDaemonMethods *self);

@@ -504,10 +504,47 @@ g_paste_daemon_methods_delete_password (const GPasteDaemonMethods *self,
                          G_PASTE_ERROR_NOT_FOUND, "no password goes by that name");
 }
 
-G_PASTE_VISIBLE void
-g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
-                                      const gchar               *name,
-                                      GError                   **error)
+/* What a history emptied tells the bus. */
+static void
+g_paste_daemon_methods_history_emptied (GPasteDaemon3 *skeleton,
+                                        const gchar   *name,
+                                        gboolean       is_new)
+{
+    if (is_new)
+        g_paste_daemon3_emit_raw_histories_changed (skeleton);
+
+    g_paste_daemon3_emit_raw_history_emptied (skeleton, name);
+}
+
+/* Another history emptied: an empty one written over it on a worker thread,
+ * and the images it held swept, the bus told once both are done. */
+typedef struct
+{
+    GPasteDaemon3        *skeleton;
+    GPasteStorageBackend *backend;
+    gchar                *name;
+    gboolean              is_new;
+} EmptyHistoryData;
+
+static void
+empty_history_data_free (EmptyHistoryData *self)
+{
+    g_clear_object (&self->skeleton);
+    g_clear_object (&self->backend);
+    g_free (self->name);
+    g_free (self);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (EmptyHistoryData, empty_history_data_free)
+
+/* EmptyHistory up to the write of another history: what it checks, and the
+ * current history emptied there and then -- through its saver, which writes it
+ * on its own worker. @data is set when there is another history to write. */
+static void
+g_paste_daemon_methods_empty_history_start (const GPasteDaemonMethods *self,
+                                            const gchar               *name,
+                                            EmptyHistoryData         **data,
+                                            GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to empty");
     G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
@@ -531,38 +568,127 @@ g_paste_daemon_methods_empty_history (const GPasteDaemonMethods *self,
 
     if (current)
     {
-        if (!g_paste_history_empty (self->history, error))
-            return;
+        if (g_paste_history_empty (self->history, error))
+            g_paste_daemon_methods_history_emptied (self->skeleton, name, is_new);
+        return;
     }
+
+    *data = g_new0 (EmptyHistoryData, 1);
+    (*data)->skeleton = g_object_ref (self->skeleton);
+    (*data)->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (self->settings), self->settings);
+    (*data)->name = g_strdup (name);
+    (*data)->is_new = is_new;
+}
+
+/* Runs on a worker thread: on the main loop -- gnome-shell's compositor, for
+ * the daemon hosted there -- the write would stall it for a key derivation on
+ * an encrypted store, and for a sync and an image sweep on a file one. Nothing
+ * writes @name meanwhile, it not being the current history: a switch to it
+ * meanwhile could read it before the write lands, as one made just before the
+ * call always could. */
+static void
+empty_history_run (GTask        *task,
+                   gpointer      source_object G_GNUC_UNUSED,
+                   gpointer      task_data,
+                   GCancellable *cancellable G_GNUC_UNUSED)
+{
+    EmptyHistoryData *data = task_data;
+
+    /* A write that fails leaves the history as it was, holding the images the
+     * sweep below would take. */
+    if (!g_paste_storage_backend_write_history (data->backend, data->name, NULL))
+    {
+        g_task_return_new_error_literal (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the history could not be emptied");
+        return;
+    }
+
+    /* Emptying the current history leaves its images to the sweep of its empty
+     * snapshot, which takes the files of its own flavour alone; writing an
+     * empty one over another history sweeps the directory by hand, whatever
+     * stored it, or the clipboard's screenshots, unencrypted under the plain
+     * flavour, could stay on disk for good -- unless a file flavour still
+     * stores the name, which reads them. Best effort, as in the delete path:
+     * the history itself is already empty. */
+    g_autoptr (GError) images_error = NULL;
+
+    if (!g_paste_storage_backend_delete_history_images (data->name, &images_error))
+        g_warning ("Could not delete the images of \"%s\": %s", data->name, images_error->message);
+
+    g_task_return_boolean (task, TRUE);
+}
+
+static void
+on_history_emptied (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    EmptyHistoryData *data = g_task_get_task_data (G_TASK (result));
+    GError *error = NULL;
+
+    if (!g_task_propagate_boolean (G_TASK (result), &error))
+    {
+        g_task_return_error (task, error);
+        return;
+    }
+
+    g_paste_daemon_methods_history_emptied (data->skeleton, data->name, data->is_new);
+    g_task_return_boolean (task, TRUE);
+}
+
+/**
+ * g_paste_daemon_methods_empty_history_async:
+ * @self: the daemon's methods
+ * @name: the history to empty
+ * @callback: (scope async): called once the emptying is done, or has failed
+ * @user_data: data passed to @callback
+ *
+ * EmptyHistory: the current history emptied in place, another one written over
+ * with an empty history on a worker thread.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_empty_history_async (const GPasteDaemonMethods *self,
+                                            const gchar               *name,
+                                            GAsyncReadyCallback        callback,
+                                            gpointer                   user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, NULL /* cancellable */, callback, user_data);
+    g_autoptr (EmptyHistoryData) data = NULL;
+    GError *error = NULL;
+
+    g_task_set_source_tag (task, g_paste_daemon_methods_empty_history_async);
+    g_paste_daemon_methods_empty_history_start (self, name, &data, &error);
+
+    if (error)
+        g_task_return_error (task, error);
+    else if (!data)
+        g_task_return_boolean (task, TRUE);
     else
     {
-        g_autoptr (GPasteHistory) history = g_paste_history_new (self->settings);
+        g_autoptr (GTask) write = g_task_new (NULL, NULL /* cancellable */, on_history_emptied, g_steal_pointer (&task));
 
-        /* A write that fails leaves the history as it was, holding the images
-         * the sweep below would take. */
-        if (!g_paste_history_save (history, name))
-        {
-            g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the history could not be emptied");
-            return;
-        }
-
-        /* Emptying the current history leaves its images to the sweep of its
-         * empty snapshot, which takes the files of its own flavour alone;
-         * writing an empty one over another history sweeps the directory by
-         * hand, whatever stored it, or the clipboard's screenshots, unencrypted
-         * under the plain flavour, could stay on disk for good -- unless a file
-         * flavour still stores the name, which reads them. Best effort, as in
-         * the delete path: the history itself is already empty. */
-        g_autoptr (GError) images_error = NULL;
-
-        if (!g_paste_storage_backend_delete_history_images (name, &images_error))
-            g_warning ("Could not delete the images of \"%s\": %s", name, images_error->message);
+        g_task_set_task_data (write, g_steal_pointer (&data), (GDestroyNotify) empty_history_data_free);
+        g_task_run_in_thread (write, empty_history_run);
     }
+}
 
-    if (is_new)
-        g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
+/**
+ * g_paste_daemon_methods_empty_history_finish:
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Errors are those of EmptyHistory over the bus.
+ *
+ * Returns: whether the history was emptied
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_daemon_methods_empty_history_finish (GAsyncResult *result,
+                                             GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_daemon_methods_empty_history_async, FALSE);
 
-    g_paste_daemon3_emit_raw_history_emptied (self->skeleton, name);
+    return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 G_PASTE_VISIBLE GVariant *

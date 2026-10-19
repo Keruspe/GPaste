@@ -1181,7 +1181,33 @@ G_PASTE_DAEMON_HANDLER_ERR (delete_history, (const gchar *name), (name))
 
 G_PASTE_DAEMON_HANDLER_ERR (delete_password, (const gchar *name), (name))
 
-G_PASTE_DAEMON_HANDLER_ERR (empty_history, (const gchar *name), (name))
+static void
+on_history_emptied (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    GError *error = NULL;
+
+    if (g_paste_daemon_methods_empty_history_finish (result, &error))
+        g_dbus_method_invocation_return_value (invocation, NULL);
+    else
+        g_dbus_method_invocation_take_error (invocation, error);
+}
+
+/* Answered once the history is empty: another history is written on a worker
+ * thread (g_paste_daemon_methods_empty_history_async ()). */
+static gboolean
+g_paste_daemon_handle_empty_history (GPasteDaemon          *self,
+                                     GDBusMethodInvocation *invocation,
+                                     const gchar           *name)
+{
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_empty_history_async (&methods, name, on_history_emptied, invocation);
+
+    return TRUE;
+}
 
 G_PASTE_DAEMON_HANDLER_RET (get_favourites, (), ())
 

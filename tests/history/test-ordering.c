@@ -480,6 +480,28 @@ test_backup_loading (void)
     g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
 }
 
+static void
+on_emptied (GObject      *source G_GNUC_UNUSED,
+            GAsyncResult *result,
+            gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* EmptyHistory, waited for as its D-Bus answer is. */
+static void
+empty_history (const GPasteDaemonMethods *methods,
+               const gchar               *name,
+               GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
+    while (!result)
+        g_main_context_iteration (NULL, TRUE);
+    g_paste_daemon_methods_empty_history_finish (result, error);
+}
+
 /* Emptying the current history goes through its model, its write queued behind
  * the one out: nothing to wait for. */
 static void
@@ -499,7 +521,7 @@ test_empty_current (void)
     g_autoptr (GError) error = NULL;
     g_autoptr (GThread) release = g_thread_new ("release-current-write", release_eventually, NULL);
 
-    g_paste_daemon_methods_empty_history (&methods, "empty-current", &error);
+    empty_history (&methods, "empty-current", &error);
     g_assert_no_error (error);
     g_assert_false (is_released ());
     release_worker ();
@@ -507,6 +529,47 @@ test_empty_current (void)
     finish_history (history);
 
     g_autolist (GPasteItem) items = read_items (backend, "empty-current");
+
+    g_assert_null (items);
+}
+
+/* Writing another history over empty happens on a worker thread, the call
+ * answered once it has landed: on the main loop -- gnome-shell's compositor,
+ * for the daemon hosted there -- a key derivation, a sync and a sweep of its
+ * images would stall it for as long. */
+static void
+test_empty_other_off_main_loop (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "empty-stays-current");
+
+    g_autolist (GPasteItem) other = g_list_prepend (NULL, g_paste_text_item_new ("other stored item"));
+
+    real_write (backend, "emptied-elsewhere", other);
+    g_mutex_lock (&barrier.mutex);
+    barrier.name = "emptied-elsewhere";
+    barrier.hold_write = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_empty_history_async (&methods, "emptied-elsewhere", on_emptied, &result);
+    wait_worker ();
+    g_assert_null (result);
+    release_worker ();
+    while (!result)
+        g_main_context_iteration (NULL, TRUE);
+    g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
+    g_assert_no_error (error);
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "emptied-elsewhere");
 
     g_assert_null (items);
 }
@@ -528,7 +591,7 @@ test_empty_other (void)
     g_autoptr (GError) error = NULL;
     g_autoptr (GThread) release = g_thread_new ("release-left-write", release_later, NULL);
 
-    g_paste_daemon_methods_empty_history (&methods, "empty-left", &error);
+    empty_history (&methods, "empty-left", &error);
     g_thread_join (g_steal_pointer (&release));
     g_assert_no_error (error);
     finish_history (history);
@@ -557,7 +620,7 @@ test_stopped (void)
     {
         g_autoptr (GError) error = NULL;
 
-        g_paste_daemon_methods_empty_history (&methods, "stopped-target", &error);
+        empty_history (&methods, "stopped-target", &error);
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     }
 
@@ -839,6 +902,7 @@ main (int    argc,
     g_test_add_func ("/history-ordering/backup-loading", test_backup_loading);
     g_test_add_func ("/history-ordering/empty-current", test_empty_current);
     g_test_add_func ("/history-ordering/empty-other", test_empty_other);
+    g_test_add_func ("/history-ordering/empty-other-off-main-loop", test_empty_other_off_main_loop);
     g_test_add_func ("/history-ordering/stopped", test_stopped);
     g_test_add_func ("/history-ordering/count-pending", test_count_pending);
     g_test_add_func ("/history-ordering/count-pending-passwords", test_count_pending_passwords);

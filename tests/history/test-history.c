@@ -1176,6 +1176,28 @@ test_file_delete_takes_temporary (void)
     g_assert_false (g_file_test (temporary, G_FILE_TEST_EXISTS));
 }
 
+static void
+on_emptied (GObject      *source G_GNUC_UNUSED,
+            GAsyncResult *result,
+            gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* EmptyHistory, waited for as its D-Bus answer is. */
+static void
+empty_history (const GPasteDaemonMethods *methods,
+               const gchar               *name,
+               GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
+    while (!result)
+        g_main_context_iteration (NULL, TRUE);
+    g_paste_daemon_methods_empty_history_finish (result, error);
+}
+
 /* Emptying a history this daemon does not hold writes an empty one with its
  * own backend, and leaves alone the images a file flavour still storing that
  * name reads: the old data a migration kept, say. With no storage in use,
@@ -1226,7 +1248,7 @@ test_empty_other_keeps_stored_images (void)
         g_autoptr (GError) error = NULL;
 
         g_paste_history_load (history, "empty-other-current");
-        g_paste_daemon_methods_empty_history (&methods, "kept-flavour", &error);
+        empty_history (&methods, "kept-flavour", &error);
         g_assert_no_error (error);
         g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
         g_paste_history_flush (history);
@@ -1242,7 +1264,7 @@ test_empty_other_keeps_stored_images (void)
     g_autoptr (GError) error = NULL;
 
     g_paste_history_load (history, "empty-other-current");
-    g_paste_daemon_methods_empty_history (&methods, "kept-flavour", &error);
+    empty_history (&methods, "kept-flavour", &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
@@ -1294,7 +1316,7 @@ test_noop_refuses_unmade (void)
 
         g_paste_daemon_methods_delete_history (&methods, "noop-kept", &delete_error);
         g_assert_error (delete_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
-        g_paste_daemon_methods_empty_history (&methods, "noop-kept", &empty_error);
+        empty_history (&methods, "noop-kept", &empty_error);
         g_assert_error (empty_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
         g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
@@ -1304,7 +1326,7 @@ test_noop_refuses_unmade (void)
 
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_empty_history (&methods, "noop-kept", &error);
+    empty_history (&methods, "noop-kept", &error);
     g_assert_no_error (error);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);

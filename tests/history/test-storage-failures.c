@@ -1429,6 +1429,28 @@ test_import_needs_readable_copy (void)
 }
 #endif
 
+static void
+on_emptied (GObject      *source G_GNUC_UNUSED,
+            GAsyncResult *result,
+            gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* EmptyHistory, waited for as its D-Bus answer is. */
+static void
+empty_history (const GPasteDaemonMethods *methods,
+               const gchar               *name,
+               GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
+    while (!result)
+        g_main_context_iteration (NULL, TRUE);
+    g_paste_daemon_methods_empty_history_finish (result, error);
+}
+
 #ifdef G_PASTE_ENABLE_SQLITE
 /* An add evicting the oldest item, which every copy does once the history is
  * full, leaves the write-ahead log to SQLite's own checkpoints: what a delete
@@ -1987,6 +2009,7 @@ test_sqlite_diverged_history (void)
     g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 4);
 }
 
+
 /* A backup, or the emptying of another history, whose write fails answers
  * that it failed: the backup is not there to be listed, and the history
  * emptied is as it was, the images it holds included. The file flavour says
@@ -2033,7 +2056,7 @@ test_sqlite_failed_write_answered (void)
     g_paste_daemon_methods_backup_history (&methods, "answered", "answered-backup", &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_clear_error (&error);
-    g_paste_daemon_methods_empty_history (&methods, "answered", &error);
+    empty_history (&methods, "answered", &error);
     failed_sql = NULL;
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
 
@@ -2904,7 +2927,7 @@ test_new_history_name_fits (void)
         g_paste_daemon_methods_backup_history (&methods, "history", name, &error);
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
         g_clear_error (&error);
-        g_paste_daemon_methods_empty_history (&methods, name, &error);
+        empty_history (&methods, name, &error);
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
         g_assert_cmpstr (g_paste_history_get_current (history), !=, name);
         g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
@@ -3397,13 +3420,13 @@ test_store_methods_wait_for_lock (void)
     g_paste_daemon_methods_backup_history (&methods, "other", "other-backup", &error);
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_clear_error (&error);
-    g_paste_daemon_methods_empty_history (&methods, "other", &error);
+    empty_history (&methods, "other", &error);
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_clear_error (&error);
     g_paste_daemon_methods_delete_history (&methods, "other", &error);
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_clear_error (&error);
-    g_paste_daemon_methods_empty_history (&methods, "waiting", &error);
+    empty_history (&methods, "waiting", &error);
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_clear_error (&error);
     g_assert_true (g_paste_history_is_loading (history));
