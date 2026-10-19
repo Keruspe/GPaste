@@ -130,23 +130,6 @@ chosen_backend (MigrationDialog *self,
     return FALSE;
 }
 
-/* Whether the backend in use is one this build can construct, hence one the
- * dialog lists. It is not, for a history stored by a flavour built out of this
- * copy of GPaste (an .xmls or a .db opened by a build without encryption or
- * sqlite): the dialog then has nothing to preselect and nothing to keep, and
- * says so by offering neither. */
-static gboolean
-current_is_offered (MigrationDialog *self)
-{
-    for (guint i = 0; i < self->n_backends; ++i)
-    {
-        if (self->backends[i] == self->current)
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
 static void
 update_state (MigrationDialog *self)
 {
@@ -275,7 +258,7 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
      * in use, and one this build cannot construct is not an answer the reply
      * would accept -- it would be turned into the very dismissal the button
      * exists to avoid. Offering nothing there is the honest version of that. */
-    if (current_is_offered (self))
+    if (g_paste_prompt_request_can_keep (self->request))
     {
         GtkWidget *keep = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP));
 
@@ -301,8 +284,8 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     set_group_text (backends,
                     g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND),
-                    g_paste_prompt_text ((current_is_offered (self)) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
-                                                                     : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
+                    g_paste_prompt_text (g_paste_prompt_request_can_keep (self->request) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
+                                                                                         : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
 
     /* Radios rather than a combo, as the shell prompt's exclusive checkboxes
      * are: no preselection when the backend in use is not on the list, since

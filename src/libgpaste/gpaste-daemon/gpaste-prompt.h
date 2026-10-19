@@ -96,6 +96,7 @@ GPasteStorageRemember g_paste_prompt_request_get_remember      (GPastePromptRequ
 const GPasteStorage  *g_paste_prompt_request_get_offered       (GPastePromptRequest *self,
                                                                 guint               *n_offered);
 GPasteStorage         g_paste_prompt_request_get_current       (GPastePromptRequest *self);
+gboolean              g_paste_prompt_request_can_keep          (GPastePromptRequest *self);
 
 /* Answer it. Exactly one of these ends the request; later calls are ignored, so
  * a dialog that both replies and then reports its destruction is harmless. */

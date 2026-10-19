@@ -256,11 +256,10 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
 
         this._current = request.get_current();
         this._offered = request.get_offered();
-        // null until the user picks one, whenever the backend in use is not on
-        // the list: a history stored by a flavour this build cannot construct
-        // (an .xmls or a .db without encryption or sqlite). Preselecting one for
-        // them would have the dialog claim a backend they never chose.
-        this._chosen = this._offered.includes(this._current) ? this._current : null;
+        // null until the user picks one, whenever the backend in use cannot be
+        // kept (see g_paste_prompt_request_can_keep ()): preselecting another
+        // would have the dialog claim a backend they never chose.
+        this._chosen = request.can_keep() ? this._current : null;
 
         const content = new Dialog.MessageDialogContent({
             title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.MIGRATION_TITLE),

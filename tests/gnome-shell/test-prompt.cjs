@@ -168,10 +168,11 @@ const migrationPrompt = new context.Prompt();
 
 sessionMode.update(false);
 
-for (const [current, description] of [[0, 'MIGRATION_DESCRIPTION'], [9, 'MIGRATION_DESCRIPTION_UNKEPT']]) {
+for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], [9, false, 'MIGRATION_DESCRIPTION_UNKEPT']]) {
     const migration = {
         get_current: () => current,
         get_offered: () => [0, 1],
+        can_keep: () => keep,
         reply_migration() {},
         dismiss() {},
     };

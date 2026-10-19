@@ -244,6 +244,43 @@ g_paste_prompt_request_get_current (GPastePromptRequest *self)
     return self->current;
 }
 
+static gboolean
+g_paste_prompt_storage_is_in (const GPasteStorage *list,
+                              guint                n,
+                              GPasteStorage        storage_kind)
+{
+    for (guint i = 0; i < n; ++i)
+    {
+        if (list[i] == storage_kind)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/**
+ * g_paste_prompt_request_can_keep:
+ * @self: a #GPastePromptRequest
+ *
+ * Whether the backend the history lives in is on offer, which is what both
+ * migration dialogs start on and offer to keep. It is not for a history stored
+ * by a flavour this build cannot construct (an .xmls or a .db opened by a build
+ * without encryption or sqlite): a dialog then picks nothing for the user,
+ * offers no "Keep as is" and says so with
+ * %G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT, since the reply would
+ * refuse the backend in use as an answer.
+ *
+ * Returns: whether the dialog can start on, and keep, the backend in use
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_request_can_keep (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), FALSE);
+    g_return_val_if_fail (self->kind == REQUEST_MIGRATION, FALSE);
+
+    return g_paste_prompt_storage_is_in (self->offered, self->n_offered, self->current);
+}
+
 /**
  * g_paste_prompt_request_reply_passphrase:
  * @self: a #GPastePromptRequest
@@ -317,12 +354,7 @@ g_paste_prompt_request_reply_migration (GPastePromptRequest *self,
      * this build cannot construct would be persisted and then silently degrade
      * to "no storage", leaving the daemon not persisting at all across
      * restarts. The toggles are clamped where they are acted on. */
-    gboolean offered = FALSE;
-
-    for (guint i = 0; i < self->n_offered && !offered; ++i)
-        offered = (self->offered[i] == chosen);
-
-    if (!offered)
+    if (!g_paste_prompt_storage_is_in (self->offered, self->n_offered, chosen))
     {
         g_warning ("A prompt answered the migration with a storage backend that was not offered; dismissing it");
         g_paste_prompt_request_dismiss (self);
@@ -631,13 +663,7 @@ g_paste_prompt_storage_is_offered (GPasteStorage storage_kind)
     guint n_offered;
     const GPasteStorage *offered = g_paste_prompt_list_storage_backends (&n_offered);
 
-    for (guint i = 0; i < n_offered; ++i)
-    {
-        if (offered[i] == storage_kind)
-            return TRUE;
-    }
-
-    return FALSE;
+    return g_paste_prompt_storage_is_in (offered, n_offered, storage_kind);
 }
 
 /**
