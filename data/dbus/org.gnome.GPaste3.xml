@@ -101,7 +101,9 @@
       is not valid UTF-8 is tried as an image. A path naming no regular file (a
       FIFO, a device) fails with org.gnome.GPaste.Error.InvalidArgument, and a
       file larger than "max-memory-usage" with org.gnome.GPaste.Error.Rejected,
-      neither being read. With "trim-items" off, so does a file larger than
+      neither being read. A file reporting a smaller size than it holds, as
+      procfs ones do, is read to its end, and refused the same way once past
+      "max-memory-usage". With "trim-items" off, so does a file larger than
       "max-text-item-size" whose first bytes begin a text, read no further.
     -->
     <method name="AddFile">

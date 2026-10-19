@@ -22,6 +22,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -153,6 +154,35 @@ static void
 drain (void)
 {
     while (g_main_context_iteration (NULL, FALSE));
+}
+
+/* A process racing AddFile, when set: once the type and size of @swap_to are
+ * asked, @swap_from is renamed over it. */
+static const gchar *swap_from;
+static const gchar *swap_to;
+
+GFileInfo *
+g_file_query_info (GFile              *file,
+                   const char         *attributes,
+                   GFileQueryInfoFlags flags,
+                   GCancellable       *cancellable,
+                   GError            **error)
+{
+    typedef GFileInfo *(*QueryInfo) (GFile *, const char *, GFileQueryInfoFlags, GCancellable *, GError **);
+    QueryInfo original = (QueryInfo) dlsym (RTLD_NEXT, "g_file_query_info");
+
+    g_assert_nonnull (original);
+
+    GFileInfo *info = original (file, attributes, flags, cancellable, error);
+    g_autofree gchar *path = g_file_get_path (file);
+
+    if (swap_from && g_paste_str_equal (path, swap_to))
+    {
+        g_assert_cmpint (g_rename (swap_from, swap_to), ==, 0);
+        swap_from = NULL;
+    }
+
+    return info;
 }
 
 /* The history whose lock a settings reload checks it is not held under, when
@@ -500,26 +530,38 @@ test_add_file_tiff (void)
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
-/* The file g_file_get_contents () fails the case for being asked to read. */
-static const gchar *unread_path = NULL;
+/* The file whose bytes read () counts, in @watched_bytes, while set: through
+ * any descriptor, which is what AddFile reads its file from. */
+static const gchar *watched_path = NULL;
+static gsize        watched_bytes;
 
-gboolean
-g_file_get_contents (const gchar *filename,
-                     gchar      **contents,
-                     gsize       *length,
-                     GError     **error)
+ssize_t
+read (int    fd,
+      void  *buf,
+      size_t count)
 {
-    typedef gboolean (*GetContents) (const gchar *, gchar **, gsize *, GError **);
-    GetContents original = (GetContents) dlsym (RTLD_NEXT, "g_file_get_contents");
+    typedef ssize_t (*Read) (int, void *, size_t);
+    Read original = (Read) dlsym (RTLD_NEXT, "read");
 
     g_assert_nonnull (original);
-    g_assert_false (g_paste_str_equal (filename, unread_path));
-    return original (filename, contents, length, error);
+
+    ssize_t got = original (fd, buf, count);
+
+    if (watched_path && got > 0)
+    {
+        g_autofree gchar *link = g_strdup_printf ("/proc/self/fd/%d", fd);
+        g_autofree gchar *target = g_file_read_link (link, NULL);
+
+        if (g_paste_str_equal (target, watched_path))
+            watched_bytes += (gsize) got;
+    }
+
+    return got;
 }
 
 /* AddFile reads only a regular file the history could keep: a FIFO would hold
  * the daemon until something wrote to it, and a file over the memory cap is
- * refused unread, as unread_path holds it to, root or not. Past the
+ * refused unread, as watched_path holds it to, root or not. Past the
  * text cap with trim-items off, one beginning as a text is refused on its first
  * bytes, the NULs past them, which a whole read would find, never looked at;
  * with trimming on it is read, since what trimming leaves may fit. */
@@ -543,7 +585,10 @@ test_add_file_refusals (void)
     g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
     g_assert_cmpint (mkfifo (fifo, 0600), ==, 0);
     g_assert_null (g_paste_daemon_methods_add_file (&methods, fifo, &error));
+    /* The check's own answer: an empty FIFO read would be refused as no
+     * content, with the same code. */
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_nonnull (strstr (error->message, "no regular file"));
     g_clear_error (&error);
 
     gint fd = g_open (big, O_WRONLY | O_CREAT | O_CLOEXEC, 0600);
@@ -552,9 +597,11 @@ test_add_file_refusals (void)
     g_assert_cmpint (ftruncate (fd, 6 * 1024 * 1024), ==, 0);
     g_assert_true (g_close (fd, NULL));
     g_paste_settings_set_max_memory_usage (settings, 5);
-    unread_path = big;
+    watched_path = big;
+    watched_bytes = 0;
     g_assert_null (g_paste_daemon_methods_add_file (&methods, big, &error));
-    unread_path = NULL;
+    watched_path = NULL;
+    g_assert_cmpuint (watched_bytes, ==, 0);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
     g_clear_error (&error);
 
@@ -563,9 +610,11 @@ test_add_file_refusals (void)
     g_assert_true (g_file_set_contents (long_text, head, -1, NULL));
     g_assert_cmpint (truncate (long_text, 2 * 1024 * 1024), ==, 0);
     g_paste_settings_set_max_text_item_size (settings, 1024 * 1024);
-    unread_path = long_text;
+    watched_path = long_text;
+    watched_bytes = 0;
     g_assert_null (g_paste_daemon_methods_add_file (&methods, long_text, &error));
-    unread_path = NULL;
+    watched_path = NULL;
+    g_assert_cmpuint (watched_bytes, <=, 4096);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
     g_clear_error (&error);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
@@ -587,6 +636,140 @@ test_add_file_refusals (void)
     g_assert_cmpint (g_unlink (big), ==, 0);
     g_assert_cmpint (g_unlink (long_text), ==, 0);
     g_assert_cmpint (g_unlink (padded), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
+/* A file is read to its end, not to the size it reports: procfs reports a
+ * regular file of size 0 for /proc/version, whatever it holds. */
+static void
+test_add_file_unsized (void)
+{
+    const gchar *path = "/proc/version";
+
+    if (!g_file_test (path, G_FILE_TEST_IS_REGULAR))
+    {
+        g_test_skip ("no procfs");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *expected = NULL;
+
+    g_assert_true (g_file_get_contents (path, &expected, NULL, NULL));
+    g_paste_settings_set_trim_items (settings, TRUE);
+
+    g_autofree gchar *uuid = g_paste_daemon_methods_add_file (&methods, path, &error);
+
+    g_assert_no_error (error);
+    g_assert_nonnull (uuid);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, g_strstrip (expected));
+}
+
+/* A file the daemon is refused the memory for is refused with
+ * %G_FILE_ERROR_NOMEM, as one too large for the cap is with a refusal of its
+ * own, rather than aborting the process hosting the daemon -- gnome-shell for
+ * the in-shell one. In a subprocess, its address space capped below a sparse
+ * file the memory cap lets through. */
+static void
+test_add_file_unallocated (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autofree gchar *dir = g_build_filename (g_get_user_cache_dir (), "add-file-unallocated", NULL);
+    g_autofree gchar *big = g_build_filename (dir, "big", NULL);
+    g_autoptr (GError) error = NULL;
+    const struct rlimit space = { .rlim_cur = 2ul << 30, .rlim_max = 2ul << 30 };
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+
+    gint fd = g_open (big, O_WRONLY | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (fd, >=, 0);
+    g_assert_cmpint (ftruncate (fd, (off_t) 3 << 30), ==, 0);
+    g_assert_true (g_close (fd, NULL));
+    g_paste_settings_set_max_memory_usage (settings, 4096);
+    g_assert_cmpint (setrlimit (RLIMIT_AS, &space), ==, 0);
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, big, &error));
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOMEM);
+    g_assert_cmpint (g_unlink (big), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
+/* AddFile reads what it checked: a path swapped once looked at, for a FIFO it
+ * would wait on, a directory or a file past the memory cap, is refused all the
+ * same. */
+static void
+test_add_file_swapped (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autofree gchar *dir = g_build_filename (g_get_user_cache_dir (), "add-file-swapped", NULL);
+    g_autofree gchar *small = g_build_filename (dir, "small", NULL);
+    g_autofree gchar *fifo = g_build_filename (dir, "fifo", NULL);
+    g_autofree gchar *subdir = g_build_filename (dir, "subdir", NULL);
+    g_autofree gchar *big = g_build_filename (dir, "big", NULL);
+    g_autofree gchar *link = g_build_filename (dir, "link", NULL);
+    g_autofree gchar *swapped = g_build_filename (dir, "swapped", NULL);
+
+    g_assert_cmpint (g_mkdir_with_parents (subdir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (small, "small", -1, NULL));
+    g_assert_cmpint (mkfifo (fifo, 0600), ==, 0);
+    /* Bytes no text or image begins with, so that only its size refuses it. */
+    g_autofree gchar *big_content = g_malloc (6 * 1024 * 1024);
+
+    memset (big_content, 0xff, 6 * 1024 * 1024);
+    g_assert_true (g_file_set_contents (big, big_content, 6 * 1024 * 1024, NULL));
+    g_paste_settings_set_max_memory_usage (settings, 5);
+
+    const struct
+    {
+        const gchar *target;
+        gint         code;
+    } swaps[] = {
+        { fifo,   G_PASTE_ERROR_INVALID_ARGUMENT },
+        { subdir, G_PASTE_ERROR_INVALID_ARGUMENT },
+        { big,    G_PASTE_ERROR_REJECTED },
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (swaps); ++i)
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_assert_cmpint (symlink (small, link), ==, 0);
+        g_assert_cmpint (symlink (swaps[i].target, swapped), ==, 0);
+        swap_from = swapped;
+        swap_to = link;
+        g_assert_null (g_paste_daemon_methods_add_file (&methods, link, &error));
+        g_assert_null (swap_from);
+        g_assert_error (error, G_PASTE_ERROR, swaps[i].code);
+        /* As in add_file_refusals: the check's own answer, which an empty read
+         * would share the code of. */
+        if (swaps[i].code == G_PASTE_ERROR_INVALID_ARGUMENT)
+            g_assert_nonnull (strstr (error->message, "no regular file"));
+        g_assert_cmpint (g_unlink (link), ==, 0);
+    }
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    g_assert_cmpint (g_unlink (small), ==, 0);
+    g_assert_cmpint (g_unlink (fifo), ==, 0);
+    g_assert_cmpint (g_rmdir (subdir), ==, 0);
+    g_assert_cmpint (g_unlink (big), ==, 0);
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
@@ -6966,6 +7149,9 @@ main (int argc, char *argv[])
     add_test ("/history/password_names_wait_for_load", test_password_names_wait_for_load);
     add_test ("/history/add_file_refusals", test_add_file_refusals);
     add_test ("/history/add_file_tiff", test_add_file_tiff);
+    add_test ("/history/add_file_swapped", test_add_file_swapped);
+    add_test ("/history/add_file_unsized", test_add_file_unsized);
+    add_test ("/history/add_file_unallocated", test_add_file_unallocated);
     add_test ("/history/set_active_refused", test_set_active_refused);
     add_test ("/history/set_active_unstored", test_set_active_unstored);
     add_test ("/history/migration_refused_backend", test_migration_refused_backend);

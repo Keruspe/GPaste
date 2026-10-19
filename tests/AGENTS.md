@@ -5,10 +5,12 @@ Every C test binary calls `g_paste_test_env_setup()` (`tests/gpaste-test-env.c`,
 Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
 (add/dedup/size-enforcement/remove/select, and which of those announce a password
 leaving it) against an in-memory `GSettings` and a
-throwaway `XDG_DATA_HOME`. `/history/unnamed_history_persists_nothing` runs in
-a fresh subprocess with its own data directory, requiring an empty initial
-listing so that earlier cases' saves cannot affect its filesystem assertions.
-The `eslint`
+throwaway `XDG_DATA_HOME`; its `add_file_swapped` has AddFile refuse a path
+swapped, once looked at, for a FIFO it would wait on, a directory or a file past
+the memory cap (`g_file_query_info()` interposed).
+`/history/unnamed_history_persists_nothing` runs in a fresh subprocess with its
+own data directory, requiring an empty initial listing so that earlier cases'
+saves cannot affect its filesystem assertions. The `eslint`
 test lints the GNOME Shell extension JS, `eslint-launcher` runs
 `tools/run-eslint.sh` in scratch checkouts against a fake npm that installs
 nothing -- from a path with spaces, from inside `tools/`, as `tools/run-eslint.sh`

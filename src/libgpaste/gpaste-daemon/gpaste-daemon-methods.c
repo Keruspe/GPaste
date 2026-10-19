@@ -9,7 +9,13 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
+#include <glib/gstdio.h>
+
+#include <errno.h>
+#include <fcntl.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 /* A history is stored in a file its name goes straight into, and in an images
  * directory of the same name, so a name that is a path names something outside
@@ -213,36 +219,133 @@ g_paste_daemon_methods_add_text (const GPasteDaemonMethods *self,
     return g_paste_daemon_methods_do_add (self, text, (text) ? strlen (text) : 0, error);
 }
 
-/* Whether the first bytes of @file could begin a UTF-8 text, which is what
- * AddFile adds a file as text by, a sequence cut short by the end of the bytes
- * read included. An image's do not: PNG, JPEG and TIFF open with a byte or a
- * NUL that UTF-8 has no place for, and binary data meets one well within this
- * many bytes. */
+/* How many first bytes of a file AddFile judges whether it begins as a text
+ * by: an image's do not, PNG, JPEG and TIFF opening with a byte or a NUL that
+ * UTF-8 has no place for, and binary data meets one well within this many. */
+#define G_PASTE_DAEMON_METHODS_HEAD_SIZE 4096
+
+/* Whether @head could begin a UTF-8 text, a sequence cut short by the end of a
+ * head read in full included. */
 static gboolean
-g_paste_daemon_methods_starts_as_text (GFile    *file,
-                                       gboolean *text,
-                                       GError  **error)
+g_paste_daemon_methods_starts_as_text (const gchar *head,
+                                       gsize        length)
 {
-    g_autoptr (GFileInputStream) stream = g_file_read (file, NULL /* cancellable */, error);
-    gchar head[4096];
-    gsize read;
-
-    if (!stream || !g_input_stream_read_all (G_INPUT_STREAM (stream), head, sizeof (head), &read, NULL /* cancellable */, error))
-        return FALSE;
-
     const gchar *end;
 
-    if (g_utf8_validate (head, (gssize) read, &end))
-    {
-        *text = TRUE;
+    if (g_utf8_validate (head, (gssize) length, &end))
         return TRUE;
-    }
 
     /* g_utf8_get_char_validated () answers a sequence holding a NUL as it does
      * one cut short: a TIFF's "II*\0" is no text begun. */
-    gsize rest = (gsize) (head + read - end);
+    gsize rest = (gsize) (head + length - end);
 
-    *text = read == sizeof (head) && !memchr (end, '\0', rest) && g_utf8_get_char_validated (end, (gssize) rest) == (gunichar) -2;
+    return length == G_PASTE_DAEMON_METHODS_HEAD_SIZE && !memchr (end, '\0', rest) && g_utf8_get_char_validated (end, (gssize) rest) == (gunichar) -2;
+}
+
+/* How many bytes of a file AddFile holds at most: "max-memory-usage", short of
+ * what a gsize can count with the NUL after them and the one byte more that
+ * tells a file at the cap from one past it -- on a 32-bit build, 4096 MiB or
+ * more would wrap. */
+static gsize
+g_paste_daemon_methods_file_cap (const GPasteDaemonMethods *self)
+{
+    guint64 cap = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
+
+    return (gsize) MIN (cap, (guint64) G_MAXSIZE - 2);
+}
+
+/* Read whole and on the main loop, so only what is sure to end, at a size the
+ * history can keep: a FIFO or a terminal would hold the daemon until something
+ * wrote to it, /dev/zero would never stop, and a file over the memory cap would
+ * only be refused once read. */
+static gboolean
+g_paste_daemon_methods_can_read (const GPasteDaemonMethods *self,
+                                 gboolean                   regular,
+                                 guint64                    size,
+                                 GError                   **error)
+{
+    G_PASTE_DBUS_ASSERT_FULL (regular, G_PASTE_ERROR_INVALID_ARGUMENT, "the path names no regular file", FALSE);
+    G_PASTE_DBUS_ASSERT_FULL (size <= g_paste_daemon_methods_file_cap (self),
+                              G_PASTE_ERROR_REJECTED, "the file is larger than max-memory-usage", FALSE);
+
+    return TRUE;
+}
+
+/* One read () of @fd, into @buffer for at most @length bytes, again where a
+ * signal cut it short: how many came, 0 at its end, -1 with @error set -- in
+ * %G_FILE_ERROR, as the open () before it reports. Not through a
+ * #GUnixInputStream: g_input_stream_read_all () runs the same loop, but hands
+ * its failures over in %G_IO_ERROR, and AddFile would then answer for one
+ * file in two domains. */
+static gssize
+g_paste_daemon_methods_read_some (gint     fd,
+                                  gchar   *buffer,
+                                  gsize    length,
+                                  GError **error)
+{
+    gssize got;
+
+    while ((got = read (fd, buffer, length)) < 0 && errno == EINTR)
+        ;
+
+    if (got < 0)
+    {
+        gint saved_errno = errno;
+
+        g_set_error_literal (error, G_FILE_ERROR, g_file_error_from_errno (saved_errno), g_strerror (saved_errno));
+    }
+
+    return got;
+}
+
+/* Read @fd on from @length, until its end or until @limit bytes are in, into
+ * @buffer, of @capacity bytes -- one always left for the NUL after them. A
+ * buffer full is grown only once a byte read past it says the file goes on:
+ * sized for what the file reports, which is all of a regular one, it then
+ * stays that size. Grown with g_try_realloc (): an allocation refused is an
+ * error here, %G_FILE_ERROR_NOMEM as g_file_get_contents () has it, rather
+ * than the abort that would take the process hosting the daemon with it --
+ * gnome-shell for the in-shell one. */
+static gboolean
+g_paste_daemon_methods_read (gint     fd,
+                             gchar  **buffer,
+                             gsize   *capacity,
+                             gsize   *length,
+                             gsize    limit,
+                             GError **error)
+{
+    while (*length < limit)
+    {
+        gssize got;
+
+        if (*length < *capacity - 1)
+        {
+            got = g_paste_daemon_methods_read_some (fd, *buffer + *length, MIN (*capacity - 1, limit) - *length, error);
+            if (got <= 0)
+                return got == 0;
+            *length += (gsize) got;
+            continue;
+        }
+
+        gchar next;
+
+        got = g_paste_daemon_methods_read_some (fd, &next, 1, error);
+        if (got <= 0)
+            return got == 0;
+
+        gsize grown = (*capacity > (limit + 1) / 2) ? limit + 1 : MAX (*capacity * 2, G_PASTE_DAEMON_METHODS_HEAD_SIZE + 1);
+        gchar *larger = g_try_realloc (*buffer, grown);
+
+        if (!larger)
+        {
+            g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_NOMEM, "could not allocate %" G_GSIZE_FORMAT " bytes for the file", grown);
+            return FALSE;
+        }
+
+        *buffer = larger;
+        *capacity = grown;
+        (*buffer)[(*length)++] = next;
+    }
 
     return TRUE;
 }
@@ -252,9 +355,6 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
                                  const gchar               *path,
                                  GError                   **error)
 {
-    g_autofree gchar *content = NULL;
-    gsize length;
-
     G_PASTE_DBUS_ASSERT_FULL (path && *path, G_PASTE_ERROR_INVALID_ARGUMENT, "no file to add", NULL);
 
     g_autoptr (GFile) file = g_file_new_for_path (path);
@@ -264,42 +364,69 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
                                                     NULL /* cancellable */,
                                                     error);
 
-    if (!info)
+    /* Looked at by its path, so that nothing else is so much as opened, then
+     * again once opened, the path being free to name something else by then:
+     * everything read is the descriptor's, no further than the memory cap,
+     * and the open waits on no FIFO (/history/add_file_swapped). */
+    if (!info || !g_paste_daemon_methods_can_read (self, g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR, (guint64) g_file_info_get_size (info), error))
         return NULL;
 
-    /* Read whole and on the main loop, so only what is sure to end, at a size
-     * the history can keep: a FIFO or a terminal would hold the daemon until
-     * something wrote to it, /dev/zero would never stop, and a file over the
-     * memory cap would only be refused once read. */
-    G_PASTE_DBUS_ASSERT_FULL (g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR,
-                              G_PASTE_ERROR_INVALID_ARGUMENT, "the path names no regular file", NULL);
+    g_autofd gint fd = g_open (path, O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK, 0);
+    struct stat st;
 
-    guint64 size = (guint64) g_file_info_get_size (info);
+    if (fd < 0 || fstat (fd, &st) < 0)
+    {
+        gint saved_errno = errno;
 
-    G_PASTE_DBUS_ASSERT_FULL (size <= g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024,
-                              G_PASTE_ERROR_REJECTED, "the file is larger than max-memory-usage", NULL);
+        g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (saved_errno), "%s: %s", path, g_strerror (saved_errno));
+        return NULL;
+    }
+
+    if (!g_paste_daemon_methods_can_read (self, S_ISREG (st.st_mode), (guint64) st.st_size, error))
+        return NULL;
+
+    /* Read to its end rather than to the size it was checked at -- procfs
+     * reports a regular file of size 0 for /proc/cpuinfo, whatever it holds
+     * (/history/add_file_unsized) -- but no further than the memory cap, which
+     * a file growing meanwhile is refused at as one past it already was. Into
+     * a buffer of the size reported first, the one checked against that cap
+     * and so a gsize. A regular file's reads take no notice of the
+     * non-blocking flag. */
+    gsize size = (gsize) st.st_size;
+    gsize capacity = size + 1;
+    g_autofree gchar *content = g_try_malloc (capacity);
+    gsize length = 0;
+
+    if (!content)
+    {
+        g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_NOMEM, "could not allocate %" G_GSIZE_FORMAT " bytes for the file", capacity);
+        return NULL;
+    }
+
+    if (!g_paste_daemon_methods_read (fd, &content, &capacity, &length, G_PASTE_DAEMON_METHODS_HEAD_SIZE, error))
+        return NULL;
 
     /* The text cap, tighter, holds for a text alone, and judges the item stored
      * (g_paste_daemon_methods_do_add ()): with trim-items off that is the whole
-     * file, so one past it is refused unread if it begins as a text, and handed
-     * straight to the image loader if not. With trimming on, whatever
-     * whitespace is taken off is unbounded, so the file is read to know. */
-    if (!g_paste_settings_get_trim_items (self->settings) && size > g_paste_settings_get_max_text_item_size (self->settings))
-    {
-        gboolean text;
+     * file, so one past it is refused on its first bytes if it begins as a
+     * text, and handed straight to the image loader if not. With trimming on,
+     * whatever whitespace is taken off is unbounded, so the file is read to
+     * know. */
+    gboolean judged = !g_paste_settings_get_trim_items (self->settings) && size > g_paste_settings_get_max_text_item_size (self->settings);
 
-        if (!g_paste_daemon_methods_starts_as_text (file, &text, error))
-            return NULL;
-        G_PASTE_DBUS_ASSERT_FULL (!text, G_PASTE_ERROR_REJECTED, "the content is longer than max-text-item-size", NULL);
-    }
-    else
-    {
-        if (!g_file_get_contents (path, &content, &length, error))
-            return NULL;
+    G_PASTE_DBUS_ASSERT_FULL (!judged || !g_paste_daemon_methods_starts_as_text (content, length),
+                              G_PASTE_ERROR_REJECTED, "the content is longer than max-text-item-size", NULL);
 
-        if (g_utf8_validate (content, length, NULL))
-            return g_paste_daemon_methods_do_add (self, content, length, error);
-    }
+    gsize cap = g_paste_daemon_methods_file_cap (self);
+
+    if (!g_paste_daemon_methods_read (fd, &content, &capacity, &length, cap + 1, error))
+        return NULL;
+
+    G_PASTE_DBUS_ASSERT_FULL (length <= cap, G_PASTE_ERROR_REJECTED, "the file is larger than max-memory-usage", NULL);
+    content[length] = '\0';
+
+    if (!judged && g_utf8_validate (content, (gssize) length, NULL))
+        return g_paste_daemon_methods_do_add (self, content, length, error);
 
     /* A history with images-support off keeps no image: both storage flavours
      * drop one on their next read, the file backend's next write sweeping its
@@ -308,8 +435,10 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (g_paste_settings_get_images_support (self->settings),
                               G_PASTE_ERROR_REJECTED, "images-support is off, so the history keeps no image", NULL);
 
+    g_autoptr (GBytes) bytes = g_bytes_new_take (g_steal_pointer (&content), length);
+
     g_autoptr (GError) img_error = NULL;
-    g_autoptr (GdkTexture) img = gdk_texture_new_from_filename (path, &img_error);
+    g_autoptr (GdkTexture) img = gdk_texture_new_from_bytes (bytes, &img_error);
 
     /* Neither text nor a loadable image: there is nothing to add, and building
      * an item out of a NULL texture would only yield a NULL item the add path
