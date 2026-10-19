@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-item.h>
 #include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-storage-backend-private.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
@@ -1924,7 +1925,6 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
                                      gsize                 *size,
                                      gsize                 *count)
 {
-    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     /* The decrypted document, password values and all, for the encrypted
@@ -1972,8 +1972,8 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend  *self,
             BEGIN,
             G_PASTE_ITEM_KIND_INVALID, /* set per item from its "kind" attribute */
             0,
-            g_paste_settings_get_max_history_size (settings),
-            g_paste_settings_get_images_support (settings),
+            g_paste_storage_backend_get_read_cap (self),
+            g_paste_storage_backend_reads_images (self),
             count_only,
             0, /* count */
             FALSE, /* favourite: set per item from its "favourite" attribute */

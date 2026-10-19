@@ -1181,6 +1181,56 @@ test_import_failure_leaves_no_copy (void)
     g_assert_cmpint (current, ==, G_PASTE_STORAGE_FILE);
 }
 
+/* An import copies every item a history stores, as the cleanup that follows
+ * deletes them all: read as a load does, a history past max-history-size --
+ * one not loaded since the cap was lowered -- would lose what is past it, and
+ * every history its screenshots while images are turned off. */
+static void
+test_import_copies_whole (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "past-the-cap";
+    const guchar pixel[] = { 12, 34, 56, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new (texture));
+
+        for (guint i = 0; i < 7; ++i)
+        {
+            g_autofree gchar *text = g_strdup_printf ("text %u", i);
+
+            items = g_list_append (items, g_paste_text_item_new (text));
+        }
+        g_paste_storage_backend_write_history (file, name, items);
+    }
+
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_images_support (settings, FALSE);
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GError) error = NULL;
+
+    prompt->chosen = G_PASTE_STORAGE_SQLITE;
+    prompt->import = TRUE;
+    prompt->cleanup = TRUE;
+    g_assert_true (run_migration (settings, prompt, &error));
+    g_assert_no_error (error);
+    g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_SQLITE);
+
+    g_autofree gchar *copy = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    g_assert_cmpint (sqlite_query_int (copy, "SELECT COUNT (*) FROM items;"), ==, 8);
+    g_assert_cmpint (sqlite_query_int (copy, "SELECT COUNT (*) FROM items WHERE image IS NOT NULL;"), ==, 1);
+    g_paste_settings_reset (settings, G_PASTE_MAX_HISTORY_SIZE_SETTING);
+    g_paste_settings_reset (settings, G_PASTE_IMAGES_SUPPORT_SETTING);
+}
+
 /* A destination that does not read back is no copy, however many of its items
  * the read got through before stopping: the source has to outlive it, even
  * with the cleanup asked for. */
@@ -4630,6 +4680,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
+    g_test_add_func ("/storage/migration/import-copies-whole", test_import_copies_whole);
     g_test_add_func ("/storage/migration/import-busy", test_import_busy);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
     g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);

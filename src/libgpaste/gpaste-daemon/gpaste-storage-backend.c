@@ -8,6 +8,7 @@
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
 #include <gpaste-daemon/gpaste-prompt.h>
+#include <gpaste-daemon/gpaste-storage-backend-private.h>
 
 #include <glib/gstdio.h>
 
@@ -286,6 +287,7 @@ g_paste_storage_backend_unlock (void)
 typedef struct
 {
     GPasteSettings *settings;
+    gboolean        read_whole;
 } GPasteStorageBackendPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
@@ -875,6 +877,30 @@ g_paste_storage_backend_dispose (GObject *object)
     g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
+}
+
+G_PASTE_VISIBLE void
+g_paste_storage_backend_read_whole (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    priv->read_whole = TRUE;
+}
+
+guint64
+g_paste_storage_backend_get_read_cap (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    return (priv->read_whole) ? G_MAXINT64 : g_paste_settings_get_max_history_size (priv->settings);
+}
+
+gboolean
+g_paste_storage_backend_reads_images (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    return priv->read_whole || g_paste_settings_get_images_support (priv->settings);
 }
 
 /**

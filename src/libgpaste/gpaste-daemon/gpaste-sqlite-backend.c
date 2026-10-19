@@ -9,6 +9,7 @@
 #include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
+#include <gpaste-daemon/gpaste-storage-backend-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -1578,7 +1579,6 @@ static gsize
 g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
                                       const gchar          *name)
 {
-    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (sqlite3) db = NULL;
 
@@ -1598,7 +1598,7 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
     if (!version || version > G_PASTE_SQLITE_SCHEMA_VERSION)
         return 0;
 
-    gboolean images_support = g_paste_settings_get_images_support (settings);
+    gboolean images_support = g_paste_storage_backend_reads_images (self);
     const gchar *query;
 
     if (version >= 2)
@@ -1635,7 +1635,7 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
         return 0;
     }
 
-    sqlite3_bind_int64 (stmt, 1, g_paste_settings_get_max_history_size (settings));
+    sqlite3_bind_int64 (stmt, 1, g_paste_storage_backend_get_read_cap (self));
 
     /* The nick the rows were written with, not a literal: it is one enum
      * registration away from being something else. */
@@ -1657,7 +1657,6 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
                                           GList                **history,
                                           gsize                 *size)
 {
-    GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
@@ -1690,7 +1689,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
         return FALSE;
     }
 
-    sqlite3_bind_int64 (stmt, 1, g_paste_settings_get_max_history_size (settings));
+    sqlite3_bind_int64 (stmt, 1, g_paste_storage_backend_get_read_cap (self));
 
     /* Prepared once for the whole load: reset and re-bound per item.
      * add_special_value prepends, so walking positions backwards rebuilds each
@@ -1706,7 +1705,7 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend  *self,
 
     GEnumClass *mime_class = g_type_class_get (G_PASTE_TYPE_SPECIAL_MIME);
     const guchar *key = g_paste_sqlite_backend_get_key (self);
-    gboolean images_support = g_paste_settings_get_images_support (settings);
+    gboolean images_support = g_paste_storage_backend_reads_images (self);
 
     gint rc = SQLITE_DONE;
     gboolean complete = TRUE;

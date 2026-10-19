@@ -53,6 +53,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix damaged SQLite histories refusing to open or never storing anything again
 - Fix a SQLite history no longer saved, or losing an image, once it holds something too large for SQLite
 - Fix the passphrase being asked for again when the storage choice cannot be saved
+- Fix a storage change deleting the items past the history size limit, and images while they are off
 - Fix a failed save losing a change for good or reporting a failed backup as done
 - Fix an encrypted history file with data appended to it opening as if intact
 - Fix the daemon rarely hanging when it restarts, or losing what was copied just before

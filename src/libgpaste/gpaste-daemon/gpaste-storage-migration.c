@@ -8,7 +8,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
-#include <gpaste-daemon/gpaste-storage-backend.h>
+#include <gpaste-daemon/gpaste-storage-backend-private.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
@@ -357,6 +357,11 @@ import_histories (GPasteSettings *settings,
     g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new_with_passphrase (chosen, settings, chosen_passphrase);
     g_autoptr (GError) list_error = NULL;
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, &list_error);
+    /* Every item each history stores, and so every one its copy reads back:
+     * read as a load does, the size cap and images-support would leave out
+     * what the cleanup that may follow deletes along with the rest. */
+    g_paste_storage_backend_read_whole (previous);
+    g_paste_storage_backend_read_whole (next);
     /* Only the plain flavors drop password items; an encrypted destination stores
      * them, so a password missing from the read-back is a genuine write failure
      * there and must not be waved through (the caller may then delete the source). */
