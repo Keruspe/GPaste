@@ -41,8 +41,11 @@ typedef struct
      * process-wide global because migrating between two encrypted flavors needs
      * the source key while the destination is being (re)keyed with another one.
      * Doubles as the "source already unlocked" flag, so a second Apply does not
-     * ask again. In gcr secure memory; freed in migration_data_free(). */
+     * ask again. In gcr secure memory; freed in migration_finish (). */
     GPastePassphrase              *source_passphrase;
+    /* The process-wide passphrase as the migration found it, which is what
+     * opens @current when this migration never unlocked it itself. */
+    GPastePassphrase              *held_passphrase;
 
     /* Whether a new passphrase was asked for (only then is there a choice to
      * honour), and whether the user asked to remember it. Acted on once the
@@ -287,6 +290,7 @@ migration_finish (MigrationData *self,
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_paste_passphrase_free (self->source_passphrase);
+    g_paste_passphrase_free (self->held_passphrase);
 #endif
 
     g_object_unref (self->settings);
@@ -654,12 +658,13 @@ apply_migration_settle (MigrationData *self,
     {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
         /* We are staying on the source backend, so the process has to go back to
-         * the passphrase that opens it — which is the one we unlocked it with, or
-         * none when it is a plain flavor. Leaving the destination's in place
-         * would look to everything downstream like the history is already
-         * unlocked: no prompt, and a backend built with a key its data does not
-         * take. */
-        g_paste_storage_backend_set_passphrase (g_paste_passphrase_peek (self->source_passphrase));
+         * the passphrase that opens it — which is the one we unlocked it with,
+         * or the one the process held coming in, none for a plain flavor.
+         * Leaving the destination's in place would look to everything downstream
+         * like the history is already unlocked: no prompt, and a backend built
+         * with a key its data does not take; dropping the one held would have it
+         * asked for again, or, dismissed, nothing stored for the session. */
+        g_paste_storage_backend_set_passphrase (g_paste_passphrase_peek (self->source_passphrase ? self->source_passphrase : self->held_passphrase));
 #endif
     }
     else
@@ -1120,6 +1125,9 @@ g_paste_storage_migration_async (GPastePrompt       *prompt,
     self->prompt = g_object_ref (prompt);
     self->task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
     self->current = current;
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    self->held_passphrase = g_paste_passphrase_new (g_paste_storage_backend_get_passphrase ());
+#endif
 
     /* The three concerns hand their results back through the same task type, so
      * the tag is what keeps one from being read as another. */

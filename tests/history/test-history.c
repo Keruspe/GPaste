@@ -760,6 +760,40 @@ test_migration_unstored_backend (void)
     unstored = FALSE;
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A migration that does not move, having never unlocked the source itself,
+ * puts back the passphrase the process held: the encrypted store left as it
+ * was is the one that passphrase opens, and dropping it would have it asked
+ * for again -- or, dismissed, nothing stored for the session. */
+static void
+test_migration_refused_keeps_passphrase (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+
+        g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+        g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+        g_paste_storage_backend_set_passphrase ("held");
+
+        prompt->chosen = G_PASTE_STORAGE_FILE;
+        refused_key = G_PASTE_STORAGE_BACKEND_SETTING;
+        run_migration (settings, prompt);
+        refused_key = NULL;
+
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_ENCRYPTED_FILE);
+        g_assert_cmpstr (g_paste_storage_backend_get_passphrase (), ==, "held");
+        g_paste_storage_backend_set_passphrase (NULL);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not store the new storage backend*");
+}
+#endif
+
 #ifdef G_PASTE_ENABLE_SQLITE
 /* Under a storage-backend GSettings refuses to store, the history is in the
  * backend the setting holds, whatever the files say: that is the one the
@@ -6623,6 +6657,9 @@ main (int argc, char *argv[])
     add_test ("/history/set_active_unstored", test_set_active_unstored);
     add_test ("/history/migration_refused_backend", test_migration_refused_backend);
     add_test ("/history/migration_unstored_backend", test_migration_unstored_backend);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    add_test ("/history/migration_refused_keeps_passphrase", test_migration_refused_keeps_passphrase);
+#endif
 #ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/migration_locked_backend_is_current", test_migration_locked_backend_is_current);
     add_test ("/history/migration_unstored_backend_is_current", test_migration_unstored_backend_is_current);
