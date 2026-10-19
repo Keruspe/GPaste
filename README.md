@@ -89,11 +89,12 @@ On Fedora and other rpm-based distributions:
 # Build dependencies
 sudo dnf install meson ninja-build gcc gettext-devel \
                  glib2-devel gtk4-devel libadwaita-devel gcr-devel \
-                 libXfixes-devel dbus-devel gnome-control-center
+                 libXfixes-devel dbus-devel gnome-control-center \
+                 gobject-introspection-devel vala mutter-devel
 
 # Optional, but on by default when found
 sudo dnf install libsodium-devel sqlite-devel libsecret-devel \
-                 libpwquality-devel gobject-introspection-devel vala
+                 libpwquality-devel
 ```
 
 On Debian, Ubuntu and other deb-based distributions:
@@ -102,14 +103,19 @@ On Debian, Ubuntu and other deb-based distributions:
 # Build dependencies
 sudo apt install meson ninja-build build-essential pkg-config gettext \
                  libglib2.0-dev libgtk-4-dev libadwaita-1-dev libgcr-4-dev \
-                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center
+                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center \
+                 gobject-introspection libgirepository1.0-dev valac
+# and the libmutter-N-dev of the mutter GNOME Shell runs on
 
 # Optional, but on by default when found
-sudo apt install libsodium-dev libsqlite3-dev libsecret-1-dev \
-                 libpwquality-dev gobject-introspection \
-                 libgirepository1.0-dev valac
+sudo apt install libsodium-dev libsqlite3-dev libsecret-1-dev libpwquality-dev
 ```
 
+mutter is wanted for the GNOME Shell extension and the clipboard backend it
+hosts, gobject-introspection for the typelibs the extension loads and for the
+bindings, and vala for the Vala ones:
+`-Dgnome-shell=false -Dintrospection=false -Dvapi=false` builds without all
+three, and without the extension and the bindings.
 dbus, systemd and gnome-control-center are wanted for their pkg-config files
 alone, which say where the D-Bus service and interface files, the systemd user
 unit and the control-center keybinding files go. Fedora ships systemd's in the
