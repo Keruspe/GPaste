@@ -1863,9 +1863,11 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
 
     if (g_paste_sqlite_backend_stores_item (key, item))
     {
-        gint64 rank = g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", 0) + 1;
+        /* -1, which no rank is: a read that failed would otherwise rank the
+         * newest item 1, the bottom of the store, and commit it there. */
+        gint64 top = g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", -1);
 
-        success = g_paste_sqlite_backend_upsert_item (db, key, item, rank);
+        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (db, key, item, top + 1));
     }
 
     /* A %NULL history says nothing was displaced by this add, so no row can

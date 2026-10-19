@@ -1568,6 +1568,30 @@ test_sqlite_incremental_failed (gconstpointer data)
     g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
 }
 
+/* An add whose read of the top rank fails is a failed add: ranked as if the
+ * store were empty, the newest item would be committed at its bottom -- the
+ * rank the item removed here leaves free. */
+static void
+test_sqlite_unranked_add (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "unranked-add";
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) c = g_paste_text_item_new ("c");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, a), b);
+
+    g_paste_storage_backend_write_history (backend, name, history);
+    history = g_list_remove (history, a);
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (a), history);
+
+    busy_step_sql = "SELECT COALESCE (MAX (rank), 0) FROM items;";
+    g_paste_storage_backend_add_item (backend, name, c, NULL);
+    g_assert_null (busy_step_sql);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+}
+
 static gboolean
 items_counted (gconstpointer data,
                gconstpointer arg)
@@ -4486,6 +4510,7 @@ main (int    argc,
 
         g_test_add_data_func (path, &incremental_failures[i], test_sqlite_incremental_failed);
     }
+    g_test_add_func ("/storage/sqlite/unranked-add", test_sqlite_unranked_add);
 #endif
 
     return g_paste_test_env_run ();
