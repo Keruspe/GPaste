@@ -419,6 +419,35 @@ test_delete_current_failed_stays (void)
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 
+/* BackupHistory through the daemon's methods, waited for. */
+static void
+backup_history (const GPasteDaemonMethods *methods,
+                const gchar               *history,
+                const gchar               *backup,
+                GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_paste_daemon_methods_backup_history_finish (result, error);
+}
+
+/* @name copied as @target, waited for. */
+static void G_GNUC_UNUSED
+copy_history (GPasteHistory *history,
+              const gchar   *name,
+              const gchar   *target)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_copy_async (history, name, target, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_history_copy_finish (result, &error));
+    g_assert_no_error (error);
+}
+
 /* A backup of a history no store holds is refused as not found, rather than
  * reading it into an empty one and backing that up. */
 static void
@@ -426,16 +455,40 @@ test_backup_missing_source (void)
 {
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
-    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
     g_autoptr (GError) error = NULL;
     g_autofree gchar *source = g_paste_util_get_history_file_path ("backup-missing-source", "xml");
     g_autofree gchar *copy = g_paste_util_get_history_file_path ("backup-missing-copy", "xml");
 
     g_paste_history_load (history, "backup-missing-current");
-    g_paste_daemon_methods_backup_history (&methods, "backup-missing-source", "backup-missing-copy", &error);
+    backup_history (&methods, "backup-missing-source", "backup-missing-copy", &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
     g_assert_false (g_file_test (source, G_FILE_TEST_EXISTS));
     g_assert_false (g_file_test (copy, G_FILE_TEST_EXISTS));
+}
+
+/* Nor is a backup written under the name of the history in use, stored or
+ * not: ListHistories names it either way, and the next write of its model
+ * would erase what the backup put there. */
+static void
+test_backup_onto_current (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("source"));
+    g_autofree gchar *current = g_paste_util_get_history_file_path ("backup-onto-current", "xml");
+    g_autoptr (GError) error = NULL;
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, "backup-onto-source", items));
+    g_paste_history_load (history, "backup-onto-current");
+    g_assert_cmpint (g_unlink (current), ==, 0);
+    backup_history (&methods, "backup-onto-source", "backup-onto-current", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS);
+    g_assert_false (g_file_test (current, G_FILE_TEST_EXISTS));
 }
 
 /* Deleting a history no store holds is not found, as a uuid matching nothing
@@ -870,7 +923,8 @@ test_backup_unreadable_source (void)
 
         g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
         g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
-        const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+        g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+        const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
         g_autoptr (GError) error = NULL;
         g_autofree gchar *source = g_paste_util_get_history_file_path ("backup-unreadable-source", "xml");
         g_autofree gchar *copy = g_paste_util_get_history_file_path ("backup-unreadable-copy", "xml");
@@ -879,7 +933,7 @@ test_backup_unreadable_source (void)
         g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
         g_assert_true (g_file_set_contents (source, "<?xml version=\"1.0\"?>\n<history version=\"9.0\"></history>\n", -1, NULL));
         g_paste_history_load (history, "backup-unreadable-current");
-        g_paste_daemon_methods_backup_history (&methods, "backup-unreadable-source", "backup-unreadable-copy", &error);
+        backup_history (&methods, "backup-unreadable-source", "backup-unreadable-copy", &error);
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
         g_assert_false (g_file_test (copy, G_FILE_TEST_EXISTS));
         return;
@@ -1579,7 +1633,7 @@ test_noop_refuses_unmade (void)
     {
         g_autoptr (GError) error = NULL;
 
-        g_paste_daemon_methods_backup_history (&methods, "noop-kept", "noop-copy", &error);
+        backup_history (&methods, "noop-kept", "noop-copy", &error);
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     }
 
@@ -1687,7 +1741,8 @@ test_file_backup_owns_images (void)
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
 
     g_paste_storage_backend_write_history (backend, "backup-src", items);
-    /* What g_paste_history_save does for BackupHistory: same items, new name. */
+    /* What BackupHistory does through g_paste_history_copy_async (): the same
+     * items under a new name. */
     g_paste_storage_backend_write_history (backend, "backup-dst", items);
 
     /* The backup got its own copy, under its own name. */
@@ -6244,7 +6299,7 @@ test_sqlite_save_elsewhere_keeps_connection (void)
 
     counted_path = path;
     g_atomic_int_set (&counted_opens, 0);
-    g_paste_history_save (history, "sqlite-kept-connection-copy");
+    copy_history (history, name, "sqlite-kept-connection-copy");
     g_paste_history_add (history, g_paste_text_item_new ("after"));
     g_paste_history_flush (history);
     counted_path = NULL;
@@ -7103,6 +7158,7 @@ main (int argc, char *argv[])
     add_test ("/history/delete_current_drops_passwords", test_delete_current_drops_passwords);
     add_test ("/history/delete_current_failed_stays", test_delete_current_failed_stays);
     add_test ("/history/backup_missing_source", test_backup_missing_source);
+    add_test ("/history/backup_onto_current", test_backup_onto_current);
     add_test ("/history/backup_unreadable_source", test_backup_unreadable_source);
     add_test ("/history/delete_missing_history", test_delete_missing_history);
 #ifdef G_PASTE_ENABLE_SQLITE

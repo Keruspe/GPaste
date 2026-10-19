@@ -23,4 +23,9 @@ void     g_paste_test_env_setup       (GPasteTestEnvFlags flags);
 gboolean g_paste_test_env_has_display (void);
 int      g_paste_test_env_run         (void);
 
+void     g_paste_test_env_keep_result (GObject       *source_object,
+                                       GAsyncResult  *result,
+                                       gpointer       user_data);
+void     g_paste_test_env_wait_result (GAsyncResult **result);
+
 G_END_DECLS

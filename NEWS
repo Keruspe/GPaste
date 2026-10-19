@@ -55,6 +55,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix gpaste-client failing when it starts the daemon, or right after a re-exec
 - Fix the bash completion running or splitting unusual history names, and misreading bundled options
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
+- Fix GNOME Shell stalling while a history full of images is backed up
 - Fix a history left unreadable when a daemon takes over during a change of passphrase
 
 NEW in 51.1 (20/10/2026)

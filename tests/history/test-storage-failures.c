@@ -361,6 +361,20 @@ g_file_move (GFile                *source,
     return original (source, destination, flags, cancellable, progress, data, error);
 }
 
+/* As in test-history.c. */
+static void
+backup_history (const GPasteDaemonMethods *methods,
+                const gchar               *history,
+                const gchar               *backup,
+                GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_paste_daemon_methods_backup_history_finish (result, error);
+}
+
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
 
@@ -2140,7 +2154,7 @@ test_sqlite_failed_write_answered (void)
     g_assert_true (g_paste_storage_backend_try_lock ());
 
     failed_sql = "DELETE FROM items;";
-    g_paste_daemon_methods_backup_history (&methods, "answered", "answered-backup", &error);
+    backup_history (&methods, "answered", "answered-backup", &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_clear_error (&error);
     empty_history (&methods, "answered", &error);
@@ -3011,7 +3025,7 @@ test_new_history_name_fits (void)
         g_paste_daemon_methods_switch_history (&methods, name, &error);
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
         g_clear_error (&error);
-        g_paste_daemon_methods_backup_history (&methods, "history", name, &error);
+        backup_history (&methods, "history", name, &error);
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
         g_clear_error (&error);
         empty_history (&methods, name, &error);
@@ -3578,7 +3592,7 @@ test_store_methods_wait_for_lock (void)
 
     g_paste_history_load_async (history, "waiting");
 
-    g_paste_daemon_methods_backup_history (&methods, "other", "other-backup", &error);
+    backup_history (&methods, "other", "other-backup", &error);
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_clear_error (&error);
     empty_history (&methods, "other", &error);
@@ -3595,7 +3609,7 @@ test_store_methods_wait_for_lock (void)
 
     g_close (held, NULL);
     wait_load (history);
-    g_paste_daemon_methods_backup_history (&methods, "other", "other-backup", &error);
+    backup_history (&methods, "other", "other-backup", &error);
     g_assert_no_error (error);
     g_paste_daemon_methods_delete_history (&methods, "other", &error);
     g_assert_no_error (error);

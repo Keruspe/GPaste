@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 # Every async function's finish function, as the GIR names it, is one its
-# class or interface has: a gtk-doc (finish-func) annotation takes the GI name
-# of a sibling (passphrase_finish), and a C symbol written there instead
+# class or interface has, or its namespace for one of the namespace's own: a
+# gtk-doc (finish-func) annotation takes the GI name of a sibling
+# (passphrase_finish), and a C symbol written there instead
 # (g_paste_prompt_passphrase_finish) names nothing, which a typelib compiler may
 # then pair with another method altogether.
 
@@ -21,7 +22,8 @@ def main(paths):
     checked = 0
     for path in paths:
         for owner in ET.parse(path).getroot().iter():
-            if owner.tag not in (CORE + 'class', CORE + 'interface', CORE + 'record'):
+            # A namespace's own functions finish with one of its functions too.
+            if owner.tag not in (CORE + 'class', CORE + 'interface', CORE + 'record', CORE + 'namespace'):
                 continue
             names = {c.get('name') for kind in CALLABLES for c in owner.findall(CORE + kind)}
             for kind in CALLABLES:

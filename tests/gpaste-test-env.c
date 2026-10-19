@@ -216,6 +216,45 @@ g_paste_test_env_has_display (void)
 }
 
 /**
+ * g_paste_test_env_keep_result:
+ * @source_object: (nullable): the call's source
+ * @result: what the call answered
+ * @user_data: a `GAsyncResult **`, where @result is kept
+ *
+ * A #GAsyncReadyCallback for a call g_paste_test_env_wait_result () waits on.
+ */
+void
+g_paste_test_env_keep_result (GObject      *source_object G_GNUC_UNUSED,
+                              GAsyncResult *result,
+                              gpointer      user_data)
+{
+    GAsyncResult **kept = user_data;
+
+    *kept = g_object_ref (result);
+}
+
+/**
+ * g_paste_test_env_wait_result:
+ * @result: where g_paste_test_env_keep_result () keeps the answer
+ *
+ * Iterate the default main context until the call has answered, failing the
+ * case if it has not within five seconds.
+ */
+void
+g_paste_test_env_wait_result (GAsyncResult **result)
+{
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    while (!*result && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+
+    g_assert_nonnull (*result);
+}
+
+/**
  * g_paste_test_env_run:
  *
  * Run the tests, then stop the bus g_paste_test_env_setup() started and remove

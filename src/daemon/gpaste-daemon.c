@@ -142,6 +142,21 @@ reexec (GPasteDaemon *g_paste_daemon,
         return TRUE;
     }
 
+    /* The clipboards manager was already stored by g_paste_daemon_reexecute();
+     * make sure the history hits the disk too before we hand over to the new
+     * process, which blocks on the storage lock until we release it. The lock is
+     * left held: a successful exec releases it automatically (its fd is CLOEXEC),
+     * so the successor waits until we are actually gone. */
+    if (g_paste_daemon)
+        g_paste_daemon_flush (g_paste_daemon);
+
+    /* What the flush landed answers its callers from the main loop -- a backup
+     * the saver wrote, its D-Bus reply with it -- which the exec would not give
+     * another turn: let it, once, without blocking. Whatever else is due runs
+     * too, against a history that records nothing more. */
+    while (g_main_context_iteration (NULL, FALSE))
+        ;
+
     GDBusConnection *connection = g_application_get_dbus_connection (ctx->gapp);
     g_autoptr (GError) error = NULL;
 
@@ -151,16 +166,10 @@ reexec (GPasteDaemon *g_paste_daemon,
     if (connection && !g_dbus_connection_flush_sync (connection, NULL, &error))
     {
         g_warning ("Could not flush D-Bus replies before restarting: %s", error->message);
+        if (g_paste_daemon)
+            g_paste_daemon_resume (g_paste_daemon);
         return FALSE;
     }
-
-    /* The clipboards manager was already stored by g_paste_daemon_reexecute();
-     * make sure the history hits the disk too before we hand over to the new
-     * process, which blocks on the storage lock until we release it. The lock is
-     * left held: a successful exec releases it automatically (its fd is CLOEXEC),
-     * so the successor waits until we are actually gone. */
-    if (g_paste_daemon)
-        g_paste_daemon_flush (g_paste_daemon);
 
     /* execl replaces this process on success and only returns on failure, so do
      * NOT quit the application first: a failed exec (e.g. the binary is missing)

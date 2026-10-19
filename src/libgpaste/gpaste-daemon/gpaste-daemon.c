@@ -1173,7 +1173,36 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (add_password,
                                 g_autofree gchar *uuid, uuid,
                                 (const gchar *name, const gchar *password, guint timeout), (name, password, timeout))
 
-G_PASTE_DAEMON_HANDLER_ERR (backup_history, (const gchar *history, const gchar *backup), (history, backup))
+static void
+on_history_backed_up (GObject      *source_object G_GNUC_UNUSED,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    GError *error = NULL;
+
+    if (g_paste_daemon_methods_backup_history_finish (result, &error))
+        g_dbus_method_invocation_return_value (invocation, NULL);
+    else
+        g_dbus_method_invocation_take_error (invocation, error);
+}
+
+/* Written on the history saver's worker thread, behind the writes already out:
+ * a history of screenshots is a write and a sync per image, which on the main
+ * loop -- gnome-shell's compositor, for the daemon hosted there -- would stall
+ * it for as long. */
+static gboolean
+g_paste_daemon_handle_backup_history (GPasteDaemon          *self,
+                                      GDBusMethodInvocation *invocation,
+                                      const gchar           *history,
+                                      const gchar           *backup)
+{
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_backup_history_async (&methods, history, backup, on_history_backed_up, invocation);
+
+    return TRUE;
+}
 
 static gboolean
 g_paste_daemon_handle_change_passphrase (GPasteDaemon          *self,
@@ -1256,6 +1285,9 @@ G_PASTE_DAEMON_HANDLER_ERR (delete_history, (const gchar *name), (name))
 
 G_PASTE_DAEMON_HANDLER_ERR (delete_password, (const gchar *name), (name))
 
+/* on_history_backed_up () again, over EmptyHistory's finish: two such
+ * completions are shorter written out than shared through a table of
+ * finishes. */
 static void
 on_history_emptied (GObject      *source_object G_GNUC_UNUSED,
                     GAsyncResult *result,

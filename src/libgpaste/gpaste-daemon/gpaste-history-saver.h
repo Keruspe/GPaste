@@ -52,36 +52,50 @@ typedef enum
     G_PASTE_HISTORY_SAVE_REMOVE,  /* @uuid was removed */
     G_PASTE_HISTORY_SAVE_REPLACE, /* @uuid was replaced by @item */
     G_PASTE_HISTORY_SAVE_CLEAR,   /* the history was emptied */
+    G_PASTE_HISTORY_SAVE_COPY,    /* a history written whole under another name: g_paste_history_saver_copy () */
 } GPasteHistorySaveOp;
 
 /********************/
 /* Async operations */
 /********************/
 
-void     g_paste_history_saver_record        (GPasteHistorySaver *self,
-                                              GPasteHistorySaveOp op,
-                                              const gchar        *name,
-                                              GPasteItem         *item,
-                                              const gchar        *uuid,
-                                              GList              *history,
-                                              guint64             count);
-void     g_paste_history_saver_load          (GPasteHistorySaver *self,
-                                              const gchar        *name,
-                                              gboolean            save_after);
-void     g_paste_history_saver_load_when_released (GPasteHistorySaver *self,
-                                                   const gchar        *name,
-                                                   gboolean            save_after);
-void     g_paste_history_saver_drain         (GPasteHistorySaver *self);
-void     g_paste_history_saver_drain_history (GPasteHistorySaver *self,
-                                              const gchar        *name);
-gboolean g_paste_history_saver_count_pending (GPasteHistorySaver *self,
-                                              const gchar        *name,
-                                              guint64            *count);
-void     g_paste_history_saver_detach        (GPasteHistorySaver *self);
-void     g_paste_history_saver_abandon_load  (GPasteHistorySaver *self);
-void     g_paste_history_saver_hold_loads    (GPasteHistorySaver *self,
-                                              gboolean            held);
-gboolean g_paste_history_saver_is_loading    (GPasteHistorySaver *self);
+void     g_paste_history_saver_record        (GPasteHistorySaver   *self,
+                                              GPasteHistorySaveOp   op,
+                                              const gchar          *name,
+                                              GPasteItem           *item,
+                                              const gchar          *uuid,
+                                              GList                *history,
+                                              guint64               count);
+void     g_paste_history_saver_load          (GPasteHistorySaver   *self,
+                                              const gchar          *name,
+                                              gboolean              save_after);
+void     g_paste_history_saver_load_when_released (GPasteHistorySaver   *self,
+                                                   const gchar          *name,
+                                                   gboolean              save_after);
+void     g_paste_history_saver_copy          (GPasteHistorySaver   *self,
+                                              GPasteStorageBackend *backend,
+                                              const gchar          *source,
+                                              GList                *history,
+                                              const gchar          *name,
+                                              GAsyncReadyCallback   callback,
+                                              gpointer              user_data);
+gboolean g_paste_history_saver_copy_finish   (GAsyncResult         *result,
+                                              GError              **error);
+gboolean g_paste_history_saver_holds_writes  (GPasteHistorySaver   *self,
+                                              const gchar          *name);
+gboolean g_paste_history_saver_holds_copy    (GPasteHistorySaver   *self,
+                                              const gchar          *name);
+void     g_paste_history_saver_drain         (GPasteHistorySaver   *self);
+void     g_paste_history_saver_drain_history (GPasteHistorySaver   *self,
+                                              const gchar          *name);
+gboolean g_paste_history_saver_count_pending (GPasteHistorySaver   *self,
+                                              const gchar          *name,
+                                              guint64              *count);
+void     g_paste_history_saver_detach        (GPasteHistorySaver   *self);
+void     g_paste_history_saver_abandon_load  (GPasteHistorySaver   *self);
+void     g_paste_history_saver_hold_loads    (GPasteHistorySaver   *self,
+                                              gboolean              held);
+gboolean g_paste_history_saver_is_loading    (GPasteHistorySaver   *self);
 
 /****************/
 /* Constructor  */

@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-error.h>
+
 #include <gpaste-daemon/gpaste-history-saver.h>
 
 #include <gio/gio.h>
@@ -94,6 +96,12 @@ struct _GPasteHistorySaverWrite
     /* How many items the store of @name holds once this has landed, as the
      * history counted them: what a write with no @history is counted by. */
     guint64               count;
+
+    /* A copy's: the history it reads when it carries no @history, the
+     * caller's task, answered once it has landed, and what failed. */
+    gchar                *source;
+    GTask                *done;
+    GError               *error;
 };
 
 static void
@@ -105,12 +113,90 @@ g_paste_history_saver_write_free (gpointer data)
     g_clear_object (&d->item);
     g_clear_pointer (&d->uuid, g_free);
     g_clear_list (&d->history, g_object_unref);
+    g_clear_pointer (&d->source, g_free);
+    g_clear_object (&d->done);
+    g_clear_error (&d->error);
 }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteHistorySaverWrite, g_paste_history_saver_write_free)
 
 static void
-g_paste_history_saver_do_write (const GPasteHistorySaverWrite *data)
+g_paste_history_saver_do_copy (GPasteHistorySaverWrite *data)
+{
+    g_autolist (GPasteItem) read = NULL;
+    const GList *history = data->history;
+
+    if (!history && data->source)
+    {
+        gsize size = 0;
+
+        if (!g_paste_storage_backend_read_history (data->backend, data->source, NULL /* cancellable */, &read, &size))
+        {
+            g_set_error_literal (&data->error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
+            return;
+        }
+
+        history = read;
+    }
+
+    if (!g_paste_storage_backend_write_history (data->backend, data->name, history))
+        g_set_error_literal (&data->error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the backup could not be written");
+}
+
+/* A copy's caller told how it went, on the main thread, once it is over. */
+static void
+g_paste_history_saver_answer (GPasteHistorySaverWrite *data)
+{
+    g_autoptr (GTask) done = g_steal_pointer (&data->done);
+
+    if (!done)
+        return;
+
+    if (data->error)
+        g_task_return_error (done, g_steal_pointer (&data->error));
+    else
+        g_task_return_boolean (done, TRUE);
+}
+
+typedef struct
+{
+    GTask  *done;
+    GError *error;
+} GPasteHistorySaverAnswer;
+
+static void
+g_paste_history_saver_answer_now (gpointer user_data)
+{
+    g_autofree GPasteHistorySaverAnswer *answer = user_data;
+    g_autoptr (GTask) done = answer->done;
+
+    if (answer->error)
+        g_task_return_error (done, answer->error);
+    else
+        g_task_return_boolean (done, TRUE);
+}
+
+/* As g_paste_history_saver_answer (), from an idle, for a copy a drain applied
+ * on the main thread: its caller holds the history's lock
+ * (g_paste_history_flush (), g_paste_history_sync ()), and GTask runs the
+ * callback from inside its return -- which reads the history, whose lock is
+ * not recursive, and may drain again, under drain_history ()'s walk
+ * (/history-ordering/backup-drained). */
+static void
+g_paste_history_saver_answer_later (GPasteHistorySaverWrite *data)
+{
+    if (!data->done)
+        return;
+
+    GPasteHistorySaverAnswer *answer = g_new (GPasteHistorySaverAnswer, 1);
+
+    answer->done = g_steal_pointer (&data->done);
+    answer->error = g_steal_pointer (&data->error);
+    g_source_set_name_by_id (g_idle_add_once (g_paste_history_saver_answer_now, answer), "[GPaste] drained copy answer");
+}
+
+static void
+g_paste_history_saver_do_write (GPasteHistorySaverWrite *data)
 {
     switch (data->op)
     {
@@ -126,6 +212,9 @@ g_paste_history_saver_do_write (const GPasteHistorySaverWrite *data)
     case G_PASTE_HISTORY_SAVE_CLEAR:
         g_paste_storage_backend_clear_history (data->backend, data->name, data->history);
         break;
+    case G_PASTE_HISTORY_SAVE_COPY:
+        g_paste_history_saver_do_copy (data);
+        break;
     case G_PASTE_HISTORY_SAVE_FULL:
     default:
         g_paste_storage_backend_write_history (data->backend, data->name, data->history);
@@ -139,7 +228,7 @@ g_paste_history_saver_write_task (GTask        *task,
                                   gpointer      task_data,
                                   GCancellable *cancellable G_GNUC_UNUSED)
 {
-    const GPasteHistorySaverWrite *data = task_data;
+    GPasteHistorySaverWrite *data = task_data;
     GPasteHistorySaver *self = data->saver;
 
     g_paste_history_saver_do_write (data);
@@ -209,12 +298,13 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
      * again before the next add carrying the history. A full one failing is
      * asked for again by the next change, not here, where a store refusing
      * every write would have it retried in a loop. */
-    g_autofree gchar *diverged = (self->writing->op != G_PASTE_HISTORY_SAVE_FULL && !self->detached &&
-                                  !g_paste_history_saver_full_write_queued (self, self->writing->name) &&
+    g_autofree gchar *diverged = (self->writing->op != G_PASTE_HISTORY_SAVE_FULL && self->writing->op != G_PASTE_HISTORY_SAVE_COPY &&
+                                  !self->detached && !g_paste_history_saver_full_write_queued (self, self->writing->name) &&
                                   g_paste_storage_backend_has_diverged (self->backend, self->writing->name))
         ? g_strdup (self->writing->name)
         : NULL;
 
+    g_paste_history_saver_answer (self->writing);
     self->writing = NULL;
 
     if (diverged)
@@ -254,12 +344,15 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
                               guint64             count)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (op != G_PASTE_HISTORY_SAVE_COPY);
 
     /* A non-incremental backend ignores the granular hint and rewrites the whole
      * snapshot, so collapse this history's pending writes into a single full
      * one. Only this history's: one just switched away from may still have its
-     * last snapshot waiting for its turn, and
-     * nothing else would ever write it. */
+     * last snapshot waiting for its turn, and nothing else would ever write it.
+     * Nor a copy, whose caller waits on its answer: none is queued under a name
+     * anything records for, a load of it waiting for the copy, so no case can
+     * drop one. */
     if (!g_paste_storage_backend_is_incremental (self->backend))
     {
         for (GList *link = self->pending.head; link;)
@@ -267,7 +360,7 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
             GList *next = link->next;
             GPasteHistorySaverWrite *pending = link->data;
 
-            if (g_paste_str_equal (pending->name, name))
+            if (pending->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (pending->name, name))
             {
                 g_autoptr (GPasteHistorySaverWrite) dropped = pending;
 
@@ -295,6 +388,72 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
     g_queue_push_tail (&self->pending, g_steal_pointer (&data));
 
     g_paste_history_saver_start_write (self);
+}
+
+/**
+ * g_paste_history_saver_copy:
+ * @self: a #GPasteHistorySaver
+ * @backend: what the copy reads and writes through, one of its own
+ *           (g_paste_history_copy_async () says why)
+ * @source: (nullable): the history read, when @history is %NULL; %NULL with
+ *          it too for a copy of an empty history
+ * @history: (transfer full) (nullable) (element-type GPasteItem): what is
+ *           written, or %NULL to read the store of @source
+ * @name: the history written
+ * @callback: called once the copy has landed
+ * @user_data: data for @callback
+ *
+ * Write a history whole under @name in the background, in its turn: behind
+ * every write recorded before it, those of @source included, which it then
+ * reads, and ahead of a read of @name, which waits for it as for any write of
+ * @name. Nothing coalesces it with another write.
+ */
+void
+g_paste_history_saver_copy (GPasteHistorySaver   *self,
+                            GPasteStorageBackend *backend,
+                            const gchar          *source,
+                            GList                *history,
+                            const gchar          *name,
+                            GAsyncReadyCallback   callback,
+                            gpointer              user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (backend));
+    g_return_if_fail (name);
+
+    g_autoptr (GPasteHistorySaverWrite) data = g_new0 (GPasteHistorySaverWrite, 1);
+
+    data->saver = self;
+    data->backend = g_object_ref (backend);
+    data->op = G_PASTE_HISTORY_SAVE_COPY;
+    data->name = g_strdup (name);
+    data->history = history;
+    data->source = g_strdup (source);
+    data->done = g_task_new (NULL, NULL, callback, user_data);
+    g_task_set_source_tag (data->done, g_paste_history_saver_copy);
+
+    g_queue_push_tail (&self->pending, g_steal_pointer (&data));
+
+    g_paste_history_saver_start_write (self);
+}
+
+/**
+ * g_paste_history_saver_copy_finish:
+ * @result: the #GAsyncResult g_paste_history_saver_copy () handed its callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails with %G_PASTE_ERROR_FAILED when the history copied could not be read,
+ * or the copy not written.
+ *
+ * Returns: whether the copy landed
+ */
+gboolean
+g_paste_history_saver_copy_finish (GAsyncResult *result,
+                                   GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 /* Wait for the in-flight worker write (if any) to finish. We cannot spin the
@@ -338,7 +497,18 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
         g_autoptr (GPasteHistorySaverWrite) data = g_queue_pop_head (&self->pending);
 
         g_paste_history_saver_do_write (data);
+        g_paste_history_saver_answer_later (data);
     }
+}
+
+/* Whether @data writes the store of @name, or reads it: a copy reads its
+ * source's store when it lands, and an unlink or a rewrite of that store ahead
+ * of it would have it copy what is left. */
+static gboolean
+g_paste_history_saver_write_concerns (const GPasteHistorySaverWrite *data,
+                                      const gchar                   *name)
+{
+    return g_paste_str_equal (data->name, name) || (data->source && g_paste_str_equal (data->source, name));
 }
 
 /**
@@ -346,8 +516,9 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
  * @self: a #GPasteHistorySaver
  * @name: the history whose writes have to land
  *
- * Synchronously finish the writes recorded for @name: wait for the one in
- * flight if it is @name's, and apply @name's queued ones, in order. Meant for
+ * Synchronously finish the writes recorded for @name, and the copies reading
+ * it: wait for the one in flight if it is one of them, and apply the queued
+ * ones, in order. Meant for
  * the main thread, before something reads, rewrites or unlinks @name's store
  * outside the saver. The writes of every other history carry on in the
  * background: they reach other stores, so making the caller wait for them
@@ -369,7 +540,7 @@ g_paste_history_saver_drain_history (GPasteHistorySaver *self,
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
-    if (self->writing && g_paste_str_equal (self->writing->name, name))
+    if (self->writing && g_paste_history_saver_write_concerns (self->writing, name))
         g_paste_history_saver_wait_worker (self);
 
     for (GList *link = self->pending.head; link;)
@@ -377,12 +548,13 @@ g_paste_history_saver_drain_history (GPasteHistorySaver *self,
         GList *next = link->next;
         GPasteHistorySaverWrite *pending = link->data;
 
-        if (g_paste_str_equal (pending->name, name))
+        if (g_paste_history_saver_write_concerns (pending, name))
         {
             g_autoptr (GPasteHistorySaverWrite) data = pending;
 
             g_queue_delete_link (&self->pending, link);
             g_paste_history_saver_do_write (data);
+            g_paste_history_saver_answer_later (data);
         }
 
         link = next;
@@ -448,15 +620,17 @@ g_paste_history_saver_count_pending (GPasteHistorySaver *self,
 
     const GPasteHistorySaverWrite *latest = NULL;
 
+    /* Not a copy's, whose count is the store it reads, unread yet: the history
+     * it writes is listed once it has landed. */
     for (const GList *link = self->pending.tail; link && !latest; link = link->prev)
     {
         const GPasteHistorySaverWrite *pending = link->data;
 
-        if (g_paste_str_equal (pending->name, name))
+        if (pending->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (pending->name, name))
             latest = pending;
     }
 
-    if (!latest && self->writing && g_paste_str_equal (self->writing->name, name))
+    if (!latest && self->writing && self->writing->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (self->writing->name, name))
         latest = self->writing;
 
     if (!latest)
@@ -606,6 +780,68 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
                   data->save_after, load_result->readable);
 }
 
+/**
+ * g_paste_history_saver_holds_writes:
+ * @self: a #GPasteHistorySaver
+ * @name: a history name
+ *
+ * Returns: whether a write recorded for @name, or a copy to it or from it, has
+ * yet to land
+ */
+gboolean
+g_paste_history_saver_holds_writes (GPasteHistorySaver *self,
+                                    const gchar        *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY_SAVER (self), FALSE);
+
+    if (self->writing && g_paste_history_saver_write_concerns (self->writing, name))
+        return TRUE;
+
+    for (const GList *link = self->pending.head; link; link = link->next)
+    {
+        if (g_paste_history_saver_write_concerns (link->data, name))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/**
+ * g_paste_history_saver_holds_copy:
+ * @self: a #GPasteHistorySaver
+ * @name: a history name
+ *
+ * Returns: whether a copy to @name or from it has yet to land
+ */
+gboolean
+g_paste_history_saver_holds_copy (GPasteHistorySaver *self,
+                                  const gchar        *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY_SAVER (self), FALSE);
+
+    if (self->writing && self->writing->op == G_PASTE_HISTORY_SAVE_COPY && g_paste_history_saver_write_concerns (self->writing, name))
+        return TRUE;
+
+    for (const GList *link = self->pending.head; link; link = link->next)
+    {
+        const GPasteHistorySaverWrite *pending = link->data;
+
+        if (pending->op == G_PASTE_HISTORY_SAVE_COPY && g_paste_history_saver_write_concerns (pending, name))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* Whether @data holds a read of @name back, on an incremental backend: see
+ * g_paste_history_saver_holds_writes_for (). */
+static gboolean
+g_paste_history_saver_holds_incremental_read (const GPasteHistorySaverWrite *data,
+                                              const gchar                   *name)
+{
+    return data->op != G_PASTE_HISTORY_SAVE_COPY || g_paste_history_saver_write_concerns (data, name);
+}
+
 /* Whether writes still out have to land before @name is read. */
 static gboolean
 g_paste_history_saver_holds_writes_for (GPasteHistorySaver *self,
@@ -615,20 +851,20 @@ g_paste_history_saver_holds_writes_for (GPasteHistorySaver *self,
      * which on the SQLite flavours is a single cached connection: a read of
      * another history in between takes it from under the queued operations,
      * and on an encrypted store every reopening derives its key again, an
-     * Argon2id pass each. Its reads wait for the whole queue. A store
-     * rewritten whole is a file per history, so those wait only for the writes
-     * of the history they read. */
-    if (g_paste_storage_backend_is_incremental (self->backend))
-        return self->writing || !g_queue_is_empty (&self->pending);
+     * Argon2id pass each. Its reads wait for the whole queue -- but for a copy
+     * of another history than the one read, which goes through a backend of
+     * its own, never that connection (/history-ordering/backup-switch-sqlite).
+     * A store rewritten whole is a file per history, so those wait only for
+     * the writes of the history they read. */
+    if (!g_paste_storage_backend_is_incremental (self->backend))
+        return g_paste_history_saver_holds_writes (self, name);
 
-    if (self->writing && g_paste_str_equal (self->writing->name, name))
+    if (self->writing && g_paste_history_saver_holds_incremental_read (self->writing, name))
         return TRUE;
 
     for (const GList *link = self->pending.head; link; link = link->next)
     {
-        const GPasteHistorySaverWrite *pending = link->data;
-
-        if (g_paste_str_equal (pending->name, name))
+        if (g_paste_history_saver_holds_incremental_read (link->data, name))
             return TRUE;
     }
 

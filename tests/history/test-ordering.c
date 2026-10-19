@@ -95,11 +95,22 @@ mark_written (gboolean held)
     g_mutex_unlock (&barrier.mutex);
 }
 
+/* A history whose writes have to come after the held one has landed, when
+ * set: a backup queued behind it. */
+static const gchar *written_after_held;
+
 gboolean
 g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
                                        const gchar          *name,
                                        const GList          *items)
 {
+    if (written_after_held && g_paste_str_equal (name, written_after_held))
+    {
+        g_mutex_lock (&barrier.mutex);
+        g_assert_true (barrier.written);
+        g_mutex_unlock (&barrier.mutex);
+    }
+
     gboolean held = hold_write (name, items);
     gboolean written = real_write (backend, name, items);
 
@@ -432,8 +443,24 @@ leave_with_write_out (GPasteHistory *history,
     wait_load (history);
 }
 
+/* As in test-history.c. */
+static void
+backup_history (const GPasteDaemonMethods *methods,
+                const gchar               *history,
+                const gchar               *backup,
+                GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_paste_daemon_methods_backup_history_finish (result, error);
+}
+
 /* The current history is backed up from its model, which holds what is still
- * on its way to the store, without waiting for it to get there. */
+ * on its way to the store, in the background: the call holds the main thread
+ * for none of the writes out, and the copy lands behind them, its write coming
+ * once the one held has landed. */
 static void
 test_backup_current (void)
 {
@@ -448,20 +475,170 @@ test_backup_current (void)
 
     g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
     const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
     g_autoptr (GThread) release = g_thread_new ("release-current-write", release_eventually, NULL);
 
-    g_paste_daemon_methods_backup_history (&methods, "backup-current", "backup-current-copy", &error);
-    g_assert_no_error (error);
+    written_after_held = "backup-current-copy";
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-current", "backup-current-copy", g_paste_test_env_keep_result, &result);
     g_assert_false (is_released ());
+    while (g_main_context_iteration (NULL, FALSE))
+        ;
+    g_assert_null (result);
     release_worker ();
     g_thread_join (g_steal_pointer (&release));
+    g_paste_test_env_wait_result (&result);
+    written_after_held = NULL;
+    g_assert_true (g_paste_daemon_methods_backup_history_finish (result, &error));
+    g_assert_no_error (error);
     finish_history (history);
 
     g_autolist (GPasteItem) items = read_items (backend, "backup-current-copy");
 
     g_assert_cmpuint (g_list_length (items), ==, 2);
     g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
+}
+
+typedef struct
+{
+    GPasteHistory *history;
+    GAsyncResult **result;
+    gboolean       answered_inside;
+    gboolean       flushed;
+} DrainedFlush;
+
+/* A flush from a source dispatch of a later iteration than the backup's, as
+ * the daemon's come: where GTask runs a callback from inside its return. */
+static void
+flush_from_source (gpointer user_data)
+{
+    DrainedFlush *flush = user_data;
+
+    g_paste_history_flush (flush->history);
+    flush->answered_inside = (*flush->result != NULL);
+    flush->flushed = TRUE;
+}
+
+static gboolean
+is_flushed (gconstpointer data,
+            gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((const DrainedFlush *) data)->flushed;
+}
+
+/* A backup a flush lands on the main thread is answered from an idle, not
+ * from inside the flush: that holds the history's lock, and the backup's
+ * callback -- the D-Bus reply, HistoriesChanged, whatever a caller of
+ * g_paste_history_copy_async () reads of the history -- would run under it,
+ * the lock not being recursive. */
+static void
+test_backup_drained (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-drained");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+    wait_worker ();
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GThread) release = g_thread_new ("release-current-write", release_later, NULL);
+
+    DrainedFlush flush = { .history = history, .result = &result };
+
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-drained", "backup-drained-copy", g_paste_test_env_keep_result, &result);
+    g_usleep (2000);
+    g_idle_add_once (flush_from_source, &flush);
+    g_paste_test_bus_wait_until (is_flushed, &flush, NULL);
+    g_thread_join (g_steal_pointer (&release));
+    g_assert_false (flush.answered_inside);
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_daemon_methods_backup_history_finish (result, &error));
+    g_assert_no_error (error);
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "backup-drained-copy");
+
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+/* On the SQLite flavours, where a load waits for every write out, it waits for
+ * no backup: a copy reads and writes through a backend of its own, never the
+ * connection the wait keeps the queue's writes on, and a switch made while a
+ * large history is backed up would show the history switched to empty, and
+ * still loading, until the backup has landed. */
+static void
+test_backup_switch_sqlite (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture_in (&settings, &backend, &history, "backup-switch", G_PASTE_STORAGE_SQLITE);
+    finish_history (history);
+    g_paste_history_resume (history);
+    barrier.name = "backup-switch-copy";
+    barrier.hold_write = TRUE;
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-switch", "backup-switch-copy", g_paste_test_env_keep_result, &result);
+    wait_worker ();
+    g_paste_history_load_async (history, "backup-switch-other");
+
+    g_autoptr (GThread) release = g_thread_new ("release-copy", release_eventually, NULL);
+
+    wait_load (history);
+    g_assert_false (is_released ());
+    release_worker ();
+    g_thread_join (g_steal_pointer (&release));
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_daemon_methods_backup_history_finish (result, &error));
+    g_assert_no_error (error);
+    finish_history (history);
+}
+#endif
+
+/* A second backup under a name the first is still writing is refused as the
+ * store already holding it would be, rather than written over it. */
+static void
+test_backup_twice (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-twice");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+    wait_worker ();
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) first = NULL;
+    g_autoptr (GAsyncResult) second = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-twice", "backup-twice-copy", g_paste_test_env_keep_result, &first);
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-twice", "backup-twice-copy", g_paste_test_env_keep_result, &second);
+    g_paste_test_env_wait_result (&second);
+    g_assert_false (g_paste_daemon_methods_backup_history_finish (second, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS);
+    g_clear_error (&error);
+    release_worker ();
+    g_paste_test_env_wait_result (&first);
+    g_assert_true (g_paste_daemon_methods_backup_history_finish (first, &error));
+    g_assert_no_error (error);
+    finish_history (history);
 }
 
 /* Another history is backed up from its store, once its writes still out have
@@ -481,13 +658,63 @@ test_backup_other (void)
     g_autoptr (GError) error = NULL;
     g_autoptr (GThread) release = g_thread_new ("release-left-write", release_later, NULL);
 
-    g_paste_daemon_methods_backup_history (&methods, "backup-left", "backup-left-copy", &error);
+    backup_history (&methods, "backup-left", "backup-left-copy", &error);
     g_thread_join (g_steal_pointer (&release));
     g_assert_no_error (error);
     finish_history (history);
 
     g_autolist (GPasteItem) items = read_items (backend, "backup-left-copy");
 
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
+}
+
+static void empty_history (const GPasteDaemonMethods *methods,
+                           const gchar               *name,
+                           GError                   **error);
+
+/* A history a backup still queued reads is not deleted, nor the one it writes
+ * emptied, until the copy has landed: drained first, the copy would run on the
+ * main thread, and left behind the unlink it would read a store that is gone
+ * and answer for an empty copy. Refused, they can be asked again once the
+ * backup is answered. */
+static void
+test_backup_then_delete (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-deleted");
+    leave_with_write_out (history, "backup-deleted-next");
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-deleted", "backup-deleted-copy", g_paste_test_env_keep_result, &result);
+
+    g_assert_false (g_paste_history_delete (history, "backup-deleted", &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    empty_history (&methods, "backup-deleted-copy", &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_clear_error (&error);
+    g_assert_false (is_released ());
+
+    release_worker ();
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_daemon_methods_backup_history_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_true (g_paste_history_delete (history, "backup-deleted", &error));
+    g_assert_no_error (error);
+    finish_history (history);
+
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "backup-deleted");
+    g_autolist (GPasteItem) items = read_items (backend, "backup-deleted-copy");
+
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
     g_assert_cmpuint (g_list_length (items), ==, 2);
     g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
 }
@@ -510,7 +737,7 @@ test_backup_loading (void)
     const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_backup_history (&methods, "backup-loading", "backup-loading-copy", &error);
+    backup_history (&methods, "backup-loading", "backup-loading-copy", &error);
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     release_worker ();
     wait_load (history);
@@ -541,6 +768,42 @@ empty_history (const GPasteDaemonMethods *methods,
     while (!result)
         g_main_context_iteration (NULL, TRUE);
     g_paste_daemon_methods_empty_history_finish (result, error);
+}
+
+/* An emptied current history is backed up empty, from its model like any
+ * current one: the emptying write it queued can be coalesced away by the next
+ * change before it lands, and a copy reading the store would then back up what
+ * the user had just emptied. */
+static void
+test_backup_emptied (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "backup-emptied");
+    barrier.hold_write = TRUE;
+    g_paste_history_add (history, g_paste_text_item_new ("emptied"));
+    wait_worker ();
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    empty_history (&methods, "backup-emptied", &error);
+    g_assert_no_error (error);
+    g_paste_daemon_methods_backup_history_async (&methods, "backup-emptied", "backup-emptied-copy", g_paste_test_env_keep_result, &result);
+    g_paste_history_add (history, g_paste_text_item_new ("copied after"));
+    release_worker ();
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_daemon_methods_backup_history_finish (result, &error));
+    g_assert_no_error (error);
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "backup-emptied-copy");
+
+    g_assert_null (items);
 }
 
 /* Emptying the current history goes through its model, its write queued behind
@@ -668,7 +931,7 @@ test_stopped (void)
     {
         g_autoptr (GError) error = NULL;
 
-        g_paste_daemon_methods_backup_history (&methods, "stopped-target", "stopped-copy", &error);
+        backup_history (&methods, "stopped-target", "stopped-copy", &error);
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     }
 
@@ -996,9 +1259,16 @@ main (int    argc,
     g_test_add_func ("/history-ordering/switch-pending", test_switch_pending);
     g_test_add_func ("/history-ordering/switch-other", test_switch_other);
     g_test_add_func ("/history-ordering/backup-current", test_backup_current);
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_func ("/history-ordering/backup-switch-sqlite", test_backup_switch_sqlite);
+#endif
+    g_test_add_func ("/history-ordering/backup-drained", test_backup_drained);
+    g_test_add_func ("/history-ordering/backup-twice", test_backup_twice);
     g_test_add_func ("/history-ordering/backup-other", test_backup_other);
+    g_test_add_func ("/history-ordering/backup-then-delete", test_backup_then_delete);
     g_test_add_func ("/history-ordering/backup-loading", test_backup_loading);
     g_test_add_func ("/history-ordering/empty-current", test_empty_current);
+    g_test_add_func ("/history-ordering/backup-emptied", test_backup_emptied);
     g_test_add_func ("/history-ordering/empty-other", test_empty_other);
     g_test_add_func ("/history-ordering/empty-other-off-main-loop", test_empty_other_off_main_loop);
     g_test_add_func ("/history-ordering/stopped", test_stopped);

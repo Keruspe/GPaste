@@ -64,9 +64,12 @@ gchar    *g_paste_daemon_methods_add_password               (const GPasteDaemonM
                                                              const gchar               *password,
                                                              guint                      timeout,
                                                              GError                   **error);
-void      g_paste_daemon_methods_backup_history             (const GPasteDaemonMethods *self,
+void      g_paste_daemon_methods_backup_history_async       (const GPasteDaemonMethods *self,
                                                              const gchar               *history,
                                                              const gchar               *backup,
+                                                             GAsyncReadyCallback        callback,
+                                                             gpointer                   user_data);
+gboolean  g_paste_daemon_methods_backup_history_finish      (GAsyncResult              *result,
                                                              GError                   **error);
 void      g_paste_daemon_methods_delete_item                (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,

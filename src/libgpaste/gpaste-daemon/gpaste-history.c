@@ -1542,6 +1542,24 @@ g_paste_history_check_store_owned (GPasteHistory *self,
     return FALSE;
 }
 
+/* What empties or deletes a store, or reads it outside the model, refuses
+ * while a backup reads that store or writes it: drained to land first, the
+ * copy would run on the main thread -- gnome-shell's compositor, for the
+ * daemon hosted there -- a whole read and write of a history, images and key
+ * derivations included. Refused until the copy has landed, which its own
+ * caller is waiting for. */
+static gboolean
+g_paste_history_check_no_copy (GPasteHistory *self,
+                               const gchar   *name,
+                               GError       **error)
+{
+    if (!g_paste_history_saver_holds_copy (self->saver, name))
+        return TRUE;
+
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_BUSY, "A backup of “%s”, or into it, is still being written", name);
+    return FALSE;
+}
+
 /* What empties or deletes a store checks first that the backend in use can
  * reach it. The "no storage" one cannot reach what another flavour keeps under
  * @name -- an encrypted store left locked, what a migration to it kept -- and
@@ -1628,45 +1646,6 @@ g_paste_history_resolve_name (GPasteHistory *self,
 }
 
 /**
- * g_paste_history_save:
- * @self: a #GPasteHistory instance
- * @name: (nullable): the name to save the history to (defaults to the configured one)
- *
- * Save the #GPasteHistory to the history file, synchronously. A save that fails
- * leaves the store of @name as it was (see
- * g_paste_storage_backend_write_history()).
- *
- * Returns: whether the store of @name holds the history now
- */
-G_PASTE_VISIBLE gboolean
-g_paste_history_save (GPasteHistory *self,
-                      const gchar   *name)
-{
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
-
-    G_PASTE_LOCK_HISTORY;
-
-    g_autolist (GPasteItem) snapshot = g_paste_history_snapshot (self);
-
-    /* Resolved the same way a load is: an unchecked name reaches
-     * g_paste_util_get_history_file_path (), which answers %NULL for one that is
-     * a path -- and a save that builds no path writes nothing at all, where a
-     * load would have fallen back to the default. */
-    const gchar *target = g_paste_history_resolve_name (self, (name) ? name : self->name);
-
-    /* Another history is written through a backend of its own. The SQLite
-     * flavours keep one connection per backend, and opening another history
-     * through ours would close the one the saver writes this history through,
-     * for its next write to open it again -- an Argon2id pass on an encrypted
-     * store (/history/sqlite_save_elsewhere_keeps_connection). */
-    g_autoptr (GPasteStorageBackend) elsewhere = (g_paste_str_equal (target, self->name))
-        ? NULL
-        : g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
-
-    return g_paste_storage_backend_write_history ((elsewhere) ? elsewhere : self->backend, target, snapshot);
-}
-
-/**
  * g_paste_history_flush:
  * @self: a #GPasteHistory instance
  *
@@ -1737,7 +1716,8 @@ g_paste_history_resume (GPasteHistory *self)
  * Fails with %G_IO_ERROR_BUSY, having done nothing, when the store has been
  * handed over (see g_paste_history_flush()), or, for another history than the
  * one the model holds, while a daemon this one took over from may still be
- * writing it (see g_paste_storage_backend_try_lock()).
+ * writing it (see g_paste_storage_backend_try_lock()) or a backup still reads
+ * it or writes it.
  *
  * Returns: whether @name may be read or replaced: for another history, its
  *          store being up to date; for the one the model holds, its store
@@ -1756,12 +1736,105 @@ g_paste_history_sync (GPasteHistory *self,
     if (g_paste_str_equal (name, self->name))
         return g_paste_history_check_owned (self, name, error);
 
-    if (!g_paste_history_check_store_owned (self, name, error))
+    if (!g_paste_history_check_store_owned (self, name, error) || !g_paste_history_check_no_copy (self, name, error))
         return FALSE;
 
     g_paste_history_saver_drain_history (self->saver, name);
 
     return TRUE;
+}
+
+/**
+ * g_paste_history_copy_async:
+ * @self: a #GPasteHistory instance
+ * @name: the history to copy
+ * @target: the name to write it under, which no history holds yet
+ * @callback: called once the copy has landed
+ * @user_data: data for @callback
+ *
+ * Write the history called @name whole under @target, in the background: the
+ * one in use from its model, which holds every change accepted for it whether
+ * or not it has reached the store yet, another from its store, read once the
+ * writes still out for it have landed. Neither the I/O nor a wait for those
+ * writes holds the main thread, and the history in use is not switched away
+ * from.
+ *
+ * Fails with %G_IO_ERROR_BUSY, as g_paste_history_sync () does, having done
+ * nothing, with %G_PASTE_ERROR_ALREADY_EXISTS while writes to @target are still
+ * out, and with %G_PASTE_ERROR_FAILED when the history in use could not be read
+ * -- an empty model standing for data still locked away, which copied as-is
+ * would answer for a valid, empty copy -- or as
+ * g_paste_history_saver_copy_finish () does.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_copy_async (GPasteHistory      *self,
+                            const gchar        *name,
+                            const gchar        *target,
+                            GAsyncReadyCallback callback,
+                            gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (name);
+    g_return_if_fail (target);
+
+    G_PASTE_LOCK_HISTORY;
+
+    g_autoptr (GError) error = NULL;
+    const gchar *source = g_paste_history_resolve_name (self, name);
+    const gchar *written = g_paste_history_resolve_name (self, target);
+    gboolean current = g_paste_str_equal (source, self->name);
+
+    gboolean owned = (current) ? g_paste_history_check_owned (self, source, &error)
+                               : g_paste_history_check_store_owned (self, source, &error);
+
+    if (owned && g_paste_history_saver_holds_writes (self->saver, written))
+        g_set_error_literal (&error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
+    else if (owned && current && self->unreadable)
+        g_set_error_literal (&error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
+
+    if (error)
+    {
+        g_task_report_error (NULL, callback, user_data, g_paste_history_copy_async, g_steal_pointer (&error));
+        return;
+    }
+
+    /* Through a backend of its own. The SQLite flavours keep one connection
+     * per backend, and opening another history through ours would close the
+     * one the saver writes this history through, for its next write to open it
+     * again -- an Argon2id pass on an encrypted store
+     * (/history/sqlite_save_elsewhere_keeps_connection). */
+    g_autoptr (GPasteStorageBackend) elsewhere = g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
+
+    /* The history in use goes as its model, naming no store to read: an
+     * emptied one snapshots as nothing, which with a source named the copy
+     * would take for a history to read from its store -- what was emptied,
+     * the emptying write being one the next change coalesces away before it
+     * lands (/history-ordering/backup-emptied). */
+    g_paste_history_saver_copy (self->saver,
+                                elsewhere,
+                                (current) ? NULL : source,
+                                (current) ? g_paste_history_snapshot (self) : NULL,
+                                written,
+                                callback,
+                                user_data);
+}
+
+/**
+ * g_paste_history_copy_finish:
+ * @result: the #GAsyncResult g_paste_history_copy_async () handed its callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails as g_paste_history_copy_async () says.
+ *
+ * Returns: whether the copy landed
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_copy_finish (GAsyncResult *result,
+                             GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 /* Read a history in, synchronously, and install it as the model.
@@ -2109,8 +2182,9 @@ g_paste_history_switch (GPasteHistory *self,
  * once it is.
  *
  * Fails with %G_IO_ERROR_BUSY, having deleted nothing, when the store has been
- * handed over (see g_paste_history_flush()) or while a daemon this one took
- * over from may still be writing it (see g_paste_storage_backend_try_lock());
+ * handed over (see g_paste_history_flush()), while a daemon this one took over
+ * from may still be writing it (see g_paste_storage_backend_try_lock()) or
+ * while a backup still reads it or writes it;
  * with %G_PASTE_ERROR_FAILED, having deleted nothing, when the history-name
  * setting cannot be changed to leave the current history, or when the "no
  * storage" backend is in use while another flavour stores it; otherwise errors
@@ -2132,7 +2206,7 @@ g_paste_history_delete (GPasteHistory *self,
     if (!g_paste_history_check_store_owned (self, history_name, error))
         return FALSE;
 
-    if (!g_paste_history_check_store_reachable (self, history_name, error))
+    if (!g_paste_history_check_store_reachable (self, history_name, error) || !g_paste_history_check_no_copy (self, history_name, error))
         return FALSE;
 
     g_autoslist (GPasteItem) passwords = NULL;

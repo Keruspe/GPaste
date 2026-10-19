@@ -22,10 +22,13 @@
  * the history directory: a backup writes its file there, and a delete sweeps
  * every file of the directory it landed in. Checked here, at the bus, where a
  * caller still gets an error instead of the path builders' critical. */
-#define G_PASTE_DBUS_ASSERT_HISTORY_NAME(name)                                    \
-    G_PASTE_DBUS_ASSERT (g_paste_util_history_name_is_valid (name),               \
-                         G_PASTE_ERROR_INVALID_ARGUMENT,                          \
-                         "not a history name: a path, or too long a name")
+#define G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL(name, ret)                          \
+    G_PASTE_DBUS_ASSERT_FULL (g_paste_util_history_name_is_valid (name),          \
+                              G_PASTE_ERROR_INVALID_ARGUMENT,                     \
+                              "not a history name: a path, or too long a name",   \
+                              ret)
+
+#define G_PASTE_DBUS_ASSERT_HISTORY_NAME(name) G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL (name, ;)
 
 /* The one shape an item takes on the wire, and the one value it carries: the
  * string a user is shown. */
@@ -512,16 +515,17 @@ g_paste_daemon_methods_name_fits (const GPasteDaemonMethods *self,
     return g_paste_storage_name_fits (g_paste_settings_get_storage_backend (self->settings), name);
 }
 
-G_PASTE_VISIBLE void
-g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
+/* Whether BackupHistory may copy @history as @backup, @error set if not. */
+static gboolean
+g_paste_daemon_methods_backup_allowed (const GPasteDaemonMethods *self,
                                        const gchar               *history,
                                        const gchar               *backup,
                                        GError                   **error)
 {
-    G_PASTE_DBUS_ASSERT (history && *history, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to backup");
-    G_PASTE_DBUS_ASSERT (backup && *backup, G_PASTE_ERROR_INVALID_ARGUMENT, "no name to back the history up under");
-    G_PASTE_DBUS_ASSERT_HISTORY_NAME (history);
-    G_PASTE_DBUS_ASSERT_HISTORY_NAME (backup);
+    G_PASTE_DBUS_ASSERT_FULL (history && *history, G_PASTE_ERROR_INVALID_ARGUMENT, "no history to backup", FALSE);
+    G_PASTE_DBUS_ASSERT_FULL (backup && *backup, G_PASTE_ERROR_INVALID_ARGUMENT, "no name to back the history up under", FALSE);
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL (history, FALSE);
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL (backup, FALSE);
 
     gboolean current = g_paste_str_equal (history, g_paste_history_get_current (self->history));
 
@@ -531,72 +535,112 @@ g_paste_daemon_methods_backup_history (const GPasteDaemonMethods *self,
     if (current && g_paste_history_is_loading (self->history))
     {
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_BUSY, "The history is still loading");
-        return;
+        return FALSE;
     }
 
     /* Refused rather than overwritten: a backup quietly destroying an older one
      * of the same name is a loss noticed far too late to undo. A store we cannot
      * enumerate is refused too -- not knowing is not the same as knowing there
-     * is none. The one listing answers for the source below as well. */
+     * is none. The one listing answers for the source below as well. A backup
+     * to that name still on its way to the store is refused by
+     * g_paste_history_copy_async (). */
     g_auto (GStrv) histories = g_paste_history_list (self->history, error);
 
     if (!histories)
-        return;
+        return FALSE;
 
-    gboolean exists = g_strv_contains ((const gchar * const *) histories, backup);
+    /* The history in use counts as one whether or not its store holds it yet,
+     * as ListHistories names it: written under its name, the backup would be
+     * erased by the next write of its model. */
+    gboolean exists = g_strv_contains ((const gchar * const *) histories, backup) ||
+                      g_paste_str_equal (backup, g_paste_history_get_current (self->history));
 
-    G_PASTE_DBUS_ASSERT (!exists, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
-    G_PASTE_DBUS_ASSERT (g_paste_daemon_methods_name_fits (self, backup),
-                         G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage");
+    G_PASTE_DBUS_ASSERT_FULL (!exists, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name", FALSE);
+    G_PASTE_DBUS_ASSERT_FULL (g_paste_daemon_methods_name_fits (self, backup),
+                              G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage", FALSE);
 
     /* Nor is a history no store holds one to back up: reading it would create
      * an empty one under that name, and the backup of it would answer OK. */
-    G_PASTE_DBUS_ASSERT (current || g_strv_contains ((const gchar * const *) histories, history),
-                         G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
+    G_PASTE_DBUS_ASSERT_FULL (current || g_strv_contains ((const gchar * const *) histories, history),
+                              G_PASTE_ERROR_NOT_FOUND, "no history goes by that name", FALSE);
 
-    if (!g_paste_history_sync (self->history, history, error))
-        return;
+    return TRUE;
+}
 
-    /* The current history from its model, which holds every change accepted
-     * for it whether or not it has reached the store yet; another from its
-     * store, which the sync above brought up to date, read and written back
-     * through a backend of its own -- all a history of its own would do, no cap
-     * being applied on a load it does not record. Either way the current
-     * history is not switched away from, and no UI has to be told it was. What
-     * did change is the set of histories, which has a signal of its own
-     * precisely because a new one appearing is not a switch.
-     *
-     * A history that did not read back is an empty one, which saved as-is is a
-     * valid, empty backup answering OK -- the one answer that makes the user
-     * stop worrying about data that is in fact still locked away. Refused
-     * instead: the original is untouched either way. A write that fails leaves
-     * no history called @backup, so nothing to announce either. */
-    gboolean written;
+static void
+g_paste_daemon_methods_on_backup_copied (GObject      *source_object G_GNUC_UNUSED,
+                                         GAsyncResult *result,
+                                         gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    GError *error = NULL;
 
-    if (current)
+    if (!g_paste_history_copy_finish (result, &error))
     {
-        G_PASTE_DBUS_ASSERT (!g_paste_history_is_unreadable (self->history),
-                             G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
-        written = g_paste_history_save (self->history, backup);
-    }
-    else
-    {
-        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (self->settings), self->settings);
-        g_autolist (GPasteItem) items = NULL;
-        gsize size = 0;
-
-        G_PASTE_DBUS_ASSERT (g_paste_storage_backend_read_history (backend, history, NULL /* cancellable */, &items, &size),
-                             G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
-        written = g_paste_storage_backend_write_history (backend, backup, items);
-    }
-
-    if (!written)
-    {
-        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the backup could not be written");
+        g_task_return_error (task, error);
         return;
     }
 
-    g_paste_daemon3_emit_raw_histories_changed (self->skeleton);
+    /* What changed is the set of histories, which has a signal of its own
+     * precisely because a new one appearing is not a switch. A copy that failed
+     * left no history called @backup, so nothing to announce. */
+    g_paste_daemon3_emit_raw_histories_changed (g_task_get_task_data (task));
+    g_task_return_boolean (task, TRUE);
+}
+
+/**
+ * g_paste_daemon_methods_backup_history_async:
+ * @self: the daemon's methods
+ * @history: the history to back up
+ * @backup: the name to back it up under
+ * @callback: called once the backup is written, or refused
+ * @user_data: data for @callback
+ *
+ * BackupHistory: copy @history under @backup, in the background
+ * (g_paste_history_copy_async ()), the current history not switched away from
+ * and no UI told it was. The D-Bus XML says what it refuses.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_backup_history_async (const GPasteDaemonMethods *self,
+                                             const gchar               *history,
+                                             const gchar               *backup,
+                                             GAsyncReadyCallback        callback,
+                                             gpointer                   user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    GError *error = NULL;
+
+    g_task_set_source_tag (task, g_paste_daemon_methods_backup_history_async);
+    g_task_set_task_data (task, g_object_ref (self->skeleton), g_object_unref);
+
+    if (!g_paste_daemon_methods_backup_allowed (self, history, backup, &error))
+    {
+        g_task_return_error (task, error);
+        return;
+    }
+
+    g_paste_history_copy_async (self->history, history, backup, g_paste_daemon_methods_on_backup_copied, g_steal_pointer (&task));
+}
+
+/**
+ * g_paste_daemon_methods_backup_history_finish:
+ * @result: the #GAsyncResult g_paste_daemon_methods_backup_history_async ()
+ *          handed its callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails with the error BackupHistory answers: %G_PASTE_ERROR for what it
+ * refuses or fails to write, %G_IO_ERROR_BUSY while the store is handed over or
+ * the history still loading, or the store's own when it cannot be listed.
+ *
+ * Returns: whether the backup was written
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_daemon_methods_backup_history_finish (GAsyncResult *result,
+                                              GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 G_PASTE_VISIBLE void

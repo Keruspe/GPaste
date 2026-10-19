@@ -53,7 +53,9 @@
     has loaded. Nothing on the bus marks that moment, the Update naming the
     whole history that ends the load being sent a second after the daemon comes
     up too, and with every copy made meanwhile: a client refused this way tries
-    again later.
+    again later. EmptyHistory and DeleteHistory of a history a BackupHistory
+    still reads or writes are refused the same way, until that backup is
+    answered.
 
     An item travels as (uuid, value, kind, favourite, notes): everything a client
     needs to draw a row, in one reply. @kind is the GPasteItemKind value, the
@@ -141,10 +143,11 @@
       Backup a history under another name.
 
       Refuses with .Error.AlreadyExists rather than overwrite a history already
-      called @backup: a backup silently destroying an older one of the same name
-      is a loss noticed far too late. A @history no store holds is
-      .Error.NotFound, there being nothing to back up. A @backup too long a name
-      for the storage in use is .Error.InvalidArgument, as in SwitchHistory.
+      called @backup, or the one a backup still being written is to be: a backup
+      silently destroying an older one of the same name is a loss noticed far
+      too late. A @history no store holds is .Error.NotFound, there being
+      nothing to back up. A @backup too long a name for the storage in use is
+      .Error.InvalidArgument, as in SwitchHistory.
 
       The backup holds every change the daemon has accepted for @history, those
       still on their way to the disk included. The current history cannot be
