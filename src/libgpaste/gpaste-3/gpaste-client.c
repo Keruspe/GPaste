@@ -60,6 +60,10 @@ struct _GPasteClient
  * A caller that wants to tell "the daemon said no" from "the daemon is not
  * there" should therefore check the domain with g_error_matches(), not the bare
  * code: the numbering of the two overlaps.
+ *
+ * A call carrying a string that is not UTF-8, which is all D-Bus carries -- a
+ * file name in another encoding, a relative one joined to a working directory
+ * named in one -- fails with %G_IO_ERROR_INVALID_DATA without being sent.
  */
 static void g_paste_client_daemon3_iface_init        (GPasteDaemon3Iface  *iface);
 static void g_paste_client_initable_iface_init       (GInitableIface      *iface);
@@ -167,13 +171,66 @@ static guint signals[LAST_SIGNAL] = { 0 };
  */
 #define ARGLIST(...) , ##__VA_ARGS__
 
-#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS)                                               \
+/* Whether every string a call carries is UTF-8, the only text D-Bus carries:
+ * g_variant_new () would send "[Invalid UTF-8]" in its place, with a critical,
+ * for the daemon to act on -- a history created under that name, an item
+ * holding it. Checked here, on the one way every front end sends anything.
+ * The strings, then %NULL. */
+static gboolean
+g_paste_client_check_utf8 (GError **error,
+                           ...)
+{
+    va_list strings;
+    gboolean valid = TRUE;
+
+    va_start (strings, error);
+    for (const gchar *string = va_arg (strings, const gchar *); valid && string; string = va_arg (strings, const gchar *))
+        valid = g_utf8_validate (string, -1, NULL);
+    va_end (strings);
+
+    if (!valid)
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "A string to send to the daemon is not in UTF-8");
+
+    return valid;
+}
+
+/* The same of a vector of them. */
+static gboolean
+g_paste_client_check_utf8_strv (const gchar * const *strings,
+                                GError             **error)
+{
+    for (const gchar * const *string = strings; string && *string; ++string)
+    {
+        if (!g_paste_client_check_utf8 (error, *string, NULL))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* An asynchronous call whose strings are not all UTF-8 goes no further: its
+ * finish hands the error back, the result being tagged with the call. */
+#define G_PASTE_CLIENT_REPORT_INVALID(name, STRINGS)                                                     \
+    do {                                                                                                 \
+        GError *invalid = NULL;                                                                          \
+                                                                                                         \
+        if (!g_paste_client_check_utf8 (&invalid ARGLIST STRINGS, NULL))                                 \
+        {                                                                                                \
+            g_task_report_error (self, callback, user_data, g_paste_client_##name, invalid);             \
+            return;                                                                                      \
+        }                                                                                                \
+    } while (FALSE)
+
+#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS, STRINGS)                                      \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
     {                                                                                           \
         g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
         g_return_if_fail (!error || !(*error));                                                 \
+                                                                                                \
+        if (!g_paste_client_check_utf8 (error ARGLIST STRINGS, NULL))                           \
+            return;                                                                             \
                                                                                                 \
         g_paste_daemon3_call_##name##_sync (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                \
                                             G_DBUS_CALL_FLAGS_NONE,                             \
@@ -188,6 +245,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
                            gpointer            user_data)                                       \
     {                                                                                           \
         g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
+                                                                                                \
+        G_PASTE_CLIENT_REPORT_INVALID (name, STRINGS);                                          \
                                                                                                 \
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
@@ -205,7 +264,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_return_if_fail (G_IS_ASYNC_RESULT (result));                                          \
         g_return_if_fail (!error || !(*error));                                                 \
                                                                                                 \
-        g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), result, error);           \
+        if (g_async_result_is_tagged (result, g_paste_client_##name))                           \
+            g_task_propagate_boolean (G_TASK (result), error);                                  \
+        else                                                                                    \
+            g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), result, error);       \
     }
 
 /* Every method but three is answered out of what the daemon already holds, so
@@ -227,13 +289,16 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
  * bail-out returns. @timeout is how long the call waits for its reply. */
-#define G_PASTE_CLIENT_METHOD_RET_FULL(name, timeout, type, fail, decl, out, ret, PARAMS, ARGS) \
+#define G_PASTE_CLIENT_METHOD_RET_FULL(name, timeout, type, fail, decl, out, ret, PARAMS, ARGS, STRINGS) \
     G_PASTE_VISIBLE type                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
     {                                                                                           \
         g_return_val_if_fail (G_PASTE_IS_CLIENT (self), fail);                                  \
         g_return_val_if_fail (!error || !(*error), fail);                                       \
+                                                                                                \
+        if (!g_paste_client_check_utf8 (error ARGLIST STRINGS, NULL))                           \
+            return fail;                                                                        \
                                                                                                 \
         decl;                                                                                   \
                                                                                                 \
@@ -255,6 +320,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
     {                                                                                           \
         g_return_if_fail (G_PASTE_IS_CLIENT (self));                                            \
                                                                                                 \
+        G_PASTE_CLIENT_REPORT_INVALID (name, STRINGS);                                          \
+                                                                                                \
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
                                      timeout,                                                   \
@@ -271,6 +338,12 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_return_val_if_fail (G_IS_ASYNC_RESULT (result), fail);                                \
         g_return_val_if_fail (!error || !(*error), fail);                                       \
                                                                                                 \
+        if (g_async_result_is_tagged (result, g_paste_client_##name))                           \
+        {                                                                                       \
+            g_task_propagate_boolean (G_TASK (result), error);                                  \
+            return fail;                                                                        \
+        }                                                                                       \
+                                                                                                \
         decl;                                                                                   \
                                                                                                 \
         if (!g_paste_daemon3_call_##name##_finish (G_PASTE_DAEMON3 (self), out, result, error)) \
@@ -279,8 +352,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
         return ret;                                                                             \
     }
 
-#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS)               \
-    G_PASTE_CLIENT_METHOD_RET_FULL (name, G_PASTE_CLIENT_TIMEOUT_DEFAULT, type, fail, decl, out, ret, PARAMS, ARGS)
+#define G_PASTE_CLIENT_METHOD_RET(name, type, fail, decl, out, ret, PARAMS, ARGS, STRINGS)      \
+    G_PASTE_CLIENT_METHOD_RET_FULL (name, G_PASTE_CLIENT_TIMEOUT_DEFAULT, type, fail, decl, out, ret, PARAMS, ARGS, STRINGS)
 
 /**
  * g_paste_client_add_text_sync:
@@ -316,7 +389,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 G_PASTE_CLIENT_METHOD_RET (add_text,
                            gchar *, NULL,
                            g_autofree gchar *uuid = NULL, &uuid, g_steal_pointer (&uuid),
-                           (const gchar *text), (text))
+                           (const gchar *text), (text), (text))
 
 /**
  * g_paste_client_add_file_sync:
@@ -341,6 +414,11 @@ g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **er
         g_autofree gchar *current_dir = g_get_current_dir ();
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
+
+    /* The path as it goes out: a relative one is joined to a working
+     * directory whose name may well be in another encoding. */
+    if (!g_paste_client_check_utf8 (error, (absolute_path) ? absolute_path : file, NULL))
+        return NULL;
 
     g_autofree gchar *uuid = NULL;
 
@@ -374,7 +452,12 @@ g_paste_client_add_file (GPasteClient *self, const gchar *file, GCancellable *ca
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
-    g_paste_daemon3_call_add_file (G_PASTE_DAEMON3 (self), (absolute_path) ? absolute_path : file, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, cancellable, callback, user_data);
+    const gchar *path = (absolute_path) ? absolute_path : file;
+
+    /* As in g_paste_client_add_file_sync (). */
+    G_PASTE_CLIENT_REPORT_INVALID (add_file, (path));
+
+    g_paste_daemon3_call_add_file (G_PASTE_DAEMON3 (self), path, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, cancellable, callback, user_data);
 }
 
 /**
@@ -395,6 +478,12 @@ g_paste_client_add_file_finish (GPasteClient *self,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
     g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
+
+    if (g_async_result_is_tagged (result, g_paste_client_add_file))
+    {
+        g_task_propagate_boolean (G_TASK (result), error);
+        return NULL;
+    }
 
     g_autofree gchar *uuid = NULL;
 
@@ -452,7 +541,7 @@ g_paste_client_add_file_finish (GPasteClient *self,
 G_PASTE_CLIENT_METHOD_RET (add_password,
                            gchar *, NULL,
                            g_autofree gchar *uuid = NULL, &uuid, g_steal_pointer (&uuid),
-                           (const gchar *name, const gchar *password, guint timeout), (name, password, timeout))
+                           (const gchar *name, const gchar *password, guint timeout), (name, password, timeout), (name, password))
 
 /**
  * g_paste_client_backup_history_sync:
@@ -484,7 +573,7 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
  * Backup the current history
  */
 G_PASTE_CLIENT_METHOD (backup_history,
-                       (const gchar *history, const gchar *backup), (history, backup))
+                       (const gchar *history, const gchar *backup), (history, backup), (history, backup))
 
 /**
  * g_paste_client_change_passphrase_sync:
@@ -516,7 +605,7 @@ G_PASTE_CLIENT_METHOD (backup_history,
  * Change the passphrase of the encrypted history
  */
 G_PASTE_CLIENT_METHOD (change_passphrase,
-                       (), ())
+                       (), (), ())
 
 /**
  * g_paste_client_delete_item_sync:
@@ -546,7 +635,7 @@ G_PASTE_CLIENT_METHOD (change_passphrase,
  * Delete an item from the #GPasteDaemon
  */
 G_PASTE_CLIENT_METHOD (delete_item,
-                       (const gchar *uuid), (uuid))
+                       (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_delete_history_sync:
@@ -576,7 +665,7 @@ G_PASTE_CLIENT_METHOD (delete_item,
  * Delete a history
  */
 G_PASTE_CLIENT_METHOD (delete_history,
-                       (const gchar *name), (name))
+                       (const gchar *name), (name), (name))
 
 /**
  * g_paste_client_delete_password_sync:
@@ -606,7 +695,7 @@ G_PASTE_CLIENT_METHOD (delete_history,
  * Delete the password from the #GPasteDaemon
  */
 G_PASTE_CLIENT_METHOD (delete_password,
-                       (const gchar *name), (name))
+                       (const gchar *name), (name), (name))
 
 /**
  * g_paste_client_empty_history_sync:
@@ -636,7 +725,7 @@ G_PASTE_CLIENT_METHOD (delete_password,
  * Empty the history from the #GPasteDaemon
  */
 G_PASTE_CLIENT_METHOD (empty_history,
-                       (const gchar *name), (name))
+                       (const gchar *name), (name), (name))
 
 /**
  * g_paste_client_get_item_sync:
@@ -672,7 +761,7 @@ G_PASTE_CLIENT_METHOD (empty_history,
 G_PASTE_CLIENT_METHOD_RET (get_item,
                            GPasteClientItem *, NULL,
                            g_autoptr (GVariant) item = NULL, &item, g_paste_util_get_dbus_item_result (item),
-                           (const gchar *uuid), (uuid))
+                           (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_get_item_at_index_sync:
@@ -708,7 +797,7 @@ G_PASTE_CLIENT_METHOD_RET (get_item,
 G_PASTE_CLIENT_METHOD_RET (get_item_at_index,
                            GPasteClientItem *, NULL,
                            g_autoptr (GVariant) item = NULL, &item, g_paste_util_get_dbus_item_result (item),
-                           (guint64 index), (index))
+                           (guint64 index), (index), ())
 
 /**
  * g_paste_client_get_items_sync:
@@ -752,6 +841,9 @@ g_paste_client_get_items_sync (GPasteClient *self, const gchar * const *uuids, G
     g_return_val_if_fail (uuids, NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
+    if (!g_paste_client_check_utf8_strv (uuids, error))
+        return NULL;
+
     g_autoptr (GVariant) items = NULL;
 
     if (!g_paste_daemon3_call_get_items_sync (G_PASTE_DAEMON3 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, &items, NULL /* cancellable */, error))
@@ -766,6 +858,14 @@ g_paste_client_get_items (GPasteClient *self, const gchar * const *uuids, GCance
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
     g_return_if_fail (uuids);
 
+    GError *invalid = NULL;
+
+    if (!g_paste_client_check_utf8_strv (uuids, &invalid))
+    {
+        g_task_report_error (self, callback, user_data, g_paste_client_get_items, invalid);
+        return;
+    }
+
     g_paste_daemon3_call_get_items (G_PASTE_DAEMON3 (self), uuids, G_DBUS_CALL_FLAGS_NONE, -1 /* timeout */, cancellable, callback, user_data);
 }
 
@@ -777,6 +877,12 @@ g_paste_client_get_items_finish (GPasteClient *self,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
     g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
+
+    if (g_async_result_is_tagged (result, g_paste_client_get_items))
+    {
+        g_task_propagate_boolean (G_TASK (result), error);
+        return NULL;
+    }
 
     g_autoptr (GVariant) items = NULL;
 
@@ -818,7 +924,7 @@ g_paste_client_get_items_finish (GPasteClient *self,
 G_PASTE_CLIENT_METHOD_RET (get_favourites,
                            GList *, NULL,
                            g_autoptr (GVariant) favourites = NULL, &favourites, g_paste_util_get_dbus_items_result (favourites),
-                           (), ())
+                           (), (), ())
 
 /**
  * g_paste_client_get_history_sync:
@@ -852,7 +958,7 @@ G_PASTE_CLIENT_METHOD_RET (get_favourites,
 G_PASTE_CLIENT_METHOD_RET (get_history,
                            GList *, NULL,
                            g_autoptr (GVariant) history = NULL, &history, g_paste_util_get_dbus_items_result (history),
-                           (), ())
+                           (), (), ())
 
 /**
  * g_paste_client_get_history_size_sync:
@@ -888,7 +994,7 @@ G_PASTE_CLIENT_METHOD_RET (get_history,
 G_PASTE_CLIENT_METHOD_RET (get_history_size,
                            guint64, 0,
                            guint64 size = 0, &size, size,
-                           (), ())
+                           (), (), ())
 
 /**
  * g_paste_client_get_image_sync:
@@ -925,7 +1031,7 @@ G_PASTE_CLIENT_METHOD_RET (get_history_size,
 G_PASTE_CLIENT_METHOD_RET (get_image,
                            GBytes *, NULL,
                            g_autoptr (GVariant) image = NULL, &image, g_variant_get_data_as_bytes (image),
-                           (const gchar *uuid), (uuid))
+                           (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_get_password_timeout_sync:
@@ -968,7 +1074,7 @@ G_PASTE_CLIENT_METHOD_RET (get_image,
 G_PASTE_CLIENT_METHOD_RET (get_password_timeout,
                            guint, 0,
                            guint timeout = 0, &timeout, timeout,
-                           (const gchar *uuid), (uuid))
+                           (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_get_uris_sync:
@@ -1006,7 +1112,7 @@ G_PASTE_CLIENT_METHOD_RET (get_password_timeout,
 G_PASTE_CLIENT_METHOD_RET (get_uris,
                            GStrv, NULL,
                            g_auto (GStrv) uris = NULL, &uris, g_steal_pointer (&uris),
-                           (const gchar *uuid), (uuid))
+                           (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_list_histories_sync:
@@ -1041,7 +1147,7 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
 G_PASTE_CLIENT_METHOD_RET (list_histories,
                            GList *, NULL,
                            g_autoptr (GVariant) histories = NULL, &histories, g_paste_util_get_dbus_histories_result (histories),
-                           (), ())
+                           (), (), ())
 
 /**
  * g_paste_client_merge_sync:
@@ -1065,11 +1171,16 @@ g_paste_client_merge_sync (GPasteClient *self, const gchar *decoration, const gc
     g_return_val_if_fail (uuids, NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
+    decoration = (decoration) ? decoration : "";
+    separator = (separator) ? separator : "";
+    if (!g_paste_client_check_utf8 (error, decoration, separator, NULL) || !g_paste_client_check_utf8_strv (uuids, error))
+        return NULL;
+
     g_autofree gchar *uuid = NULL;
 
     if (!g_paste_daemon3_call_merge_sync (G_PASTE_DAEMON3 (self),
-                                          (decoration) ? decoration : "",
-                                          (separator) ? separator : "",
+                                          decoration,
+                                          separator,
                                           uuids,
                                           G_DBUS_CALL_FLAGS_NONE,
                                           -1, /* timeout */
@@ -1103,9 +1214,20 @@ g_paste_client_merge (GPasteClient *self, const gchar *decoration, const gchar *
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
     g_return_if_fail (uuids);
 
+    decoration = (decoration) ? decoration : "";
+    separator = (separator) ? separator : "";
+
+    GError *invalid = NULL;
+
+    if (!g_paste_client_check_utf8 (&invalid, decoration, separator, NULL) || !g_paste_client_check_utf8_strv (uuids, &invalid))
+    {
+        g_task_report_error (self, callback, user_data, g_paste_client_merge, invalid);
+        return;
+    }
+
     g_paste_daemon3_call_merge (G_PASTE_DAEMON3 (self),
-                                (decoration) ? decoration : "",
-                                (separator) ? separator : "",
+                                decoration,
+                                separator,
                                 uuids,
                                 G_DBUS_CALL_FLAGS_NONE,
                                 -1, /* timeout */
@@ -1132,6 +1254,12 @@ g_paste_client_merge_finish (GPasteClient *self,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
     g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
+
+    if (g_async_result_is_tagged (result, g_paste_client_merge))
+    {
+        g_task_propagate_boolean (G_TASK (result), error);
+        return NULL;
+    }
 
     g_autofree gchar *uuid = NULL;
 
@@ -1169,7 +1297,7 @@ g_paste_client_merge_finish (GPasteClient *self,
  * Call this when the extension changes its state
  */
 G_PASTE_CLIENT_METHOD (report_extension_state,
-                       (gboolean state), (state))
+                       (gboolean state), (state), ())
 
 /* Reexecute is the one method whose success can be the reply never coming: a
  * standalone daemon honouring it execs before it could answer, and the bus then
@@ -1307,7 +1435,7 @@ g_paste_client_reexecute_finish (GPasteClient *self,
 G_PASTE_CLIENT_METHOD_RET (replace,
                            gchar *, NULL,
                            g_autofree gchar *new_uuid = NULL, &new_uuid, g_steal_pointer (&new_uuid),
-                           (const gchar *uuid, const gchar *contents), (uuid, contents))
+                           (const gchar *uuid, const gchar *contents), (uuid, contents), (uuid, contents))
 
 /**
  * g_paste_client_search_sync:
@@ -1343,7 +1471,7 @@ G_PASTE_CLIENT_METHOD_RET (replace,
 G_PASTE_CLIENT_METHOD_RET (search,
                            GList *, NULL,
                            g_autoptr (GVariant) results = NULL, &results, g_paste_util_get_dbus_items_result (results),
-                           (const gchar *pattern), (pattern))
+                           (const gchar *pattern), (pattern), (pattern))
 
 /**
  * g_paste_client_select_sync:
@@ -1373,7 +1501,7 @@ G_PASTE_CLIENT_METHOD_RET (search,
  * Select an item from the #GPasteDaemon
  */
 G_PASTE_CLIENT_METHOD (select,
-                       (const gchar *uuid), (uuid))
+                       (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_set_favourite_sync:
@@ -1408,7 +1536,7 @@ G_PASTE_CLIENT_METHOD (select,
  * go again
  */
 G_PASTE_CLIENT_METHOD (set_favourite,
-                       (const gchar *uuid, gboolean favourite), (uuid, favourite))
+                       (const gchar *uuid, gboolean favourite), (uuid, favourite), (uuid))
 
 /**
  * g_paste_client_make_password_sync:
@@ -1460,7 +1588,7 @@ G_PASTE_CLIENT_METHOD (set_favourite,
 G_PASTE_CLIENT_METHOD_RET (make_password,
                            gchar *, NULL,
                            g_autofree gchar *new_uuid = NULL, &new_uuid, g_steal_pointer (&new_uuid),
-                           (const gchar *uuid, const gchar *name, guint timeout), (uuid, name, timeout))
+                           (const gchar *uuid, const gchar *name, guint timeout), (uuid, name, timeout), (uuid, name))
 
 /**
  * g_paste_client_show_history_sync:
@@ -1488,7 +1616,7 @@ G_PASTE_CLIENT_METHOD_RET (make_password,
  * Emit the ShowHistory signal
  */
 G_PASTE_CLIENT_METHOD (show_history,
-                       (), ())
+                       (), (), ())
 
 /**
  * g_paste_client_strip_rich_text_sync:
@@ -1518,7 +1646,7 @@ G_PASTE_CLIENT_METHOD (show_history,
  * Drop the rich text flavours of an item, keeping the plain text it shows
  */
 G_PASTE_CLIENT_METHOD (strip_rich_text,
-                       (const gchar *uuid), (uuid))
+                       (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_switch_history_sync:
@@ -1548,7 +1676,7 @@ G_PASTE_CLIENT_METHOD (strip_rich_text,
  * Switch to another history
  */
 G_PASTE_CLIENT_METHOD (switch_history,
-                       (const gchar *name), (name))
+                       (const gchar *name), (name), (name))
 
 /**
  * g_paste_client_set_active_sync:
@@ -1582,7 +1710,7 @@ G_PASTE_CLIENT_METHOD (switch_history,
  * a locked "track-changes" setting.
  */
 G_PASTE_CLIENT_METHOD (set_active,
-                       (gboolean state), (state))
+                       (gboolean state), (state), ())
 
 /**
  * g_paste_client_upload_sync:
@@ -1624,7 +1752,7 @@ G_PASTE_CLIENT_METHOD (set_active,
 G_PASTE_CLIENT_METHOD_RET_FULL (upload, G_PASTE_CLIENT_TIMEOUT_UPLOAD,
                                 gchar *, NULL,
                                 g_autofree gchar *url = NULL, &url, g_steal_pointer (&url),
-                                (const gchar *uuid), (uuid))
+                                (const gchar *uuid), (uuid), (uuid))
 
 /**
  * g_paste_client_upload_and_copy_sync:
@@ -1668,7 +1796,7 @@ G_PASTE_CLIENT_METHOD_RET_FULL (upload, G_PASTE_CLIENT_TIMEOUT_UPLOAD,
 G_PASTE_CLIENT_METHOD_RET_FULL (upload_and_copy, G_PASTE_CLIENT_TIMEOUT_UPLOAD,
                                 gchar *, NULL,
                                 g_autofree gchar *url = NULL, &url, g_steal_pointer (&url),
-                                (const gchar *uuid), (uuid))
+                                (const gchar *uuid), (uuid), (uuid))
 
 #undef ARGLIST
 

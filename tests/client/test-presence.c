@@ -326,6 +326,87 @@ test_handoff_other_name (void)
     g_bus_unown_name (other_owner);
 }
 
+static void
+on_call_done (GObject      *source G_GNUC_UNUSED,
+              GAsyncResult *result,
+              gpointer      user_data)
+{
+    g_set_object ((GAsyncResult **) user_data, result);
+}
+
+/* A call carrying a string that is not UTF-8, which is all D-Bus carries, is
+ * refused before it is sent -- whichever front end makes it, and however it
+ * waits for the answer: sent, it would reach the daemon as "[Invalid UTF-8]",
+ * a history created under that name. A relative file name is checked as it
+ * goes out, joined to a working directory named in another encoding. */
+static void
+test_invalid_utf8_refused (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    const gchar *latin1 = "caf\xe9";
+    const gchar * const uuids[] = { latin1, NULL };
+    const gchar * const valid[] = { "uuid", NULL };
+
+    g_assert_no_error (error);
+
+    g_paste_client_switch_history_sync (client, latin1, &error);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_clear_error (&error);
+    g_assert_null (g_paste_client_add_password_sync (client, "name", latin1, 0, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_clear_error (&error);
+    g_assert_null (g_paste_client_get_items_sync (client, uuids, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_clear_error (&error);
+    g_assert_null (g_paste_client_merge_sync (client, latin1, NULL, valid, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_clear_error (&error);
+
+    {
+        g_autoptr (GAsyncResult) result = NULL;
+
+        g_paste_client_backup_history (client, "history", latin1, NULL, on_call_done, &result);
+        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_paste_client_backup_history_finish (client, result, &error);
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+        g_clear_error (&error);
+    }
+
+    {
+        g_autoptr (GAsyncResult) result = NULL;
+
+        g_paste_client_get_item (client, latin1, NULL, on_call_done, &result);
+        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_assert_null (g_paste_client_get_item_finish (client, result, &error));
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+        g_clear_error (&error);
+    }
+
+    g_autofree gchar *cwd = g_get_current_dir ();
+    g_autofree gchar *base = g_dir_make_tmp (NULL, NULL);
+    g_autofree gchar *directory = g_build_filename (base, latin1, NULL);
+
+    g_assert_cmpint (g_mkdir (directory, 0700), ==, 0);
+    g_assert_cmpint (g_chdir (directory), ==, 0);
+
+    {
+        g_autoptr (GAsyncResult) result = NULL;
+
+        g_assert_null (g_paste_client_add_file_sync (client, "file", &error));
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+        g_clear_error (&error);
+        g_paste_client_add_file (client, "file", NULL, on_call_done, &result);
+        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_assert_null (g_paste_client_add_file_finish (client, result, &error));
+        g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    }
+
+    g_assert_cmpint (g_chdir (cwd), ==, 0);
+    g_assert_cmpint (g_rmdir (directory), ==, 0);
+    g_assert_cmpint (g_rmdir (base), ==, 0);
+}
+
 /* A call failing because its daemon left the bus, rather than refusing it. An
  * unknown method is not one: a handoff moves the presence before the daemon
  * standing down can answer one (test_handoff ()), and otherwise it is a daemon
@@ -746,6 +827,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/handoff-after-init", test_handoff_after_init);
     g_test_add_func ("/client/presence/handoff-other-name", test_handoff_other_name);
     g_test_add_func ("/client/presence/daemon-gone-error", test_daemon_gone_error);
+    g_test_add_func ("/client/invalid-utf8-refused", test_invalid_utf8_refused);
     g_test_add_func ("/client/presence/legacy", test_legacy);
     return g_paste_test_env_run ();
 }
