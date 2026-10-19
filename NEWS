@@ -89,6 +89,7 @@ NEW in 51.1 (UNRELEASED)
 - Fix accented text copied by applications offering only plain text being garbled
 - Fix GPaste inside GNOME Shell ignoring copied images, colours and files
 - Fix a huge copy exhausting GNOME Shell's memory when GPaste runs inside it
+- Fix an image added from a file while images are turned off vanishing at the next start
 - Build: require GLib 2.90, GTK 4.24, libadwaita 1.10, libXfixes and Meson 1.9; -Dgnome-shell needs -Dintrospection, -Dlibsecret=enabled needs encryption
 
 NEW in 51.0 (15/09/2026)

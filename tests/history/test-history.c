@@ -387,7 +387,8 @@ test_add_password_name_conflict (void)
 
 /* Past the text cap with trim-items off, a file whose first bytes hold a NUL
  * begins no text: a TIFF, its header "II*\0", is added as the image it is
- * rather than refused as too long a text. */
+ * rather than refused as too long a text -- with images-support on, the
+ * history keeping no image otherwise, which the next read would drop. */
 static void
 test_add_file_tiff (void)
 {
@@ -415,6 +416,12 @@ test_add_file_tiff (void)
     g_assert_true (g_file_set_contents (path, g_bytes_get_data (tiff, NULL), (gssize) g_bytes_get_size (tiff), NULL));
     g_paste_settings_set_trim_items (settings, FALSE);
     g_paste_settings_set_max_text_item_size (settings, 1024);
+    g_paste_settings_set_images_support (settings, FALSE);
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, path, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_clear_error (&error);
+    g_paste_settings_set_images_support (settings, TRUE);
 
     g_autofree gchar *uuid = g_paste_daemon_methods_add_file (&methods, path, &error);
 

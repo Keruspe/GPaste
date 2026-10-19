@@ -300,6 +300,13 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
             return g_paste_daemon_methods_do_add (self, content, length, error);
     }
 
+    /* A history with images-support off keeps no image: both storage flavours
+     * drop one on their next read, the file backend's next write sweeping its
+     * file, so one added would be answered and listed only to be gone at the
+     * next start. */
+    G_PASTE_DBUS_ASSERT_FULL (g_paste_settings_get_images_support (self->settings),
+                              G_PASTE_ERROR_REJECTED, "images-support is off, so the history keeps no image", NULL);
+
     g_autoptr (GError) img_error = NULL;
     g_autoptr (GdkTexture) img = gdk_texture_new_from_filename (path, &img_error);
 
