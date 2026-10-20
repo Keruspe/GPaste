@@ -63,7 +63,8 @@ migration_gate (void)
 
     /* A gate that was open because the key had no value at all closes back to
      * having none: prepare () opens it by resetting the key, so cancelling has to
-     * leave that same state and not a user value that merely equals the default. */
+     * leave that same state and not a user value
+     * that merely equals the default. */
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
     revision = g_paste_util_prepare_storage_migration ();
     g_assert_cmpuint (revision, ==, 0);

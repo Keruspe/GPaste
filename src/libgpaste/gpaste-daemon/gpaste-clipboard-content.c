@@ -850,8 +850,8 @@ g_paste_clipboard_mime_results_get_secret (const GPasteClipboardMimeResults *res
 /* Record what one finished sensitive-mime read means: a sensitive mime is a fact
  * about the content, so only whether it matched is kept.
  *
- * A read fired at all means the selection offers the hint, so one that fails is an
- * owner refusing to serve what it advertises -- which says nothing about the
+ * A read fired at all means the selection offers the hint, so one that fails is
+ * an owner refusing to serve what it advertises -- which says nothing about the
  * content either way, and is the very shape a GTK-owned selection has today. One
  * served empty did answer, and an answer that does not match is a no: only %NULL
  * is unknown, never empty bytes. */
@@ -1093,8 +1093,8 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     /* @unidentified says the cache is to keep the selection's own bytes; the
      * string itself is only taken aside when the classification below is about
      * to replace them, and is stolen rather than copied even then -- a
-     * selection's text can be megabytes, which is the same reason classify_text ()
-     * hands back %NULL for a text it leaves as it is. */
+     * selection's text can be megabytes, which is the same reason
+     * classify_text () hands back %NULL for a text it leaves as it is. */
     gboolean unidentified = update->produced && update->content_kind == CLIPBOARD_CONTENT_TEXT && update->mimes.sensitive_unknown;
     g_autofree gchar *unidentified_text = NULL;
     /* See the DROP case below. */
@@ -1130,8 +1130,8 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
              * What the cache would have been kept for is matching a standing
              * password record, and a cache holding no value is what
              * confirm_password () reads as a read that saw nothing: the record
-             * stands unconfirmed rather than being retired, which is the side that
-             * keeps a secret recorded (/clipboard/unknown_hint/dropped).
+             * stands unconfirmed rather than being retired, which is the side
+             * that keeps a secret recorded (/clipboard/unknown_hint/dropped).
              *
              * Except for the empty text, which is not a read that saw nothing:
              * it is the owner's answer, and the one a password manager clearing
@@ -1142,12 +1142,13 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
              * retired, where a cache holding no value would leave that record
              * unconfirmed for good: every re-read answers the same, and an
              * unconfirmed record fails every wait for expiry, a re-exec and a
-             * storage migration included (the /clipboard/empty_text_retires_record tests).
-             * The mutter backend hands an empty transfer over as that empty
-             * string too (g_paste_clipboard_meta_update_on_text ()). A text over
-             * the size limits -- never a secret, which they do not apply to -- is
-             * still held as unidentified: its bytes are what the cache must not
-             * hold. */
+             * storage migration included (the
+             * /clipboard/empty_text_retires_record tests). The mutter
+             * backend hands an empty transfer over as that empty
+             * string too (g_paste_clipboard_meta_update_on_text ()).
+             * A text over the size limits -- never a secret, which
+             * they do not apply to -- is still held as unidentified:
+             * its bytes are what the cache must not hold. */
             empty_text = !*update->text;
             unidentified = FALSE;
             break;

@@ -3698,7 +3698,8 @@ test_file_v1_refused_and_preserved (void)
         g_paste_history_load (history, name);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 
-        /* Recording is off for it, so a subsequent add must not reach the file. */
+        /* Recording is off for it, so a subsequent
+         * add must not reach the file. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
         pump_for_ms (100);

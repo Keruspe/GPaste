@@ -2650,7 +2650,8 @@ g_paste_client_seed_presence (GPasteClient *self)
     /* Only now: the connection is the init's to find. A handoff landing while
      * the init was out is one the proxy follows all the same, only without the
      * presence leaving ready for it. The name is the proxy's own, which a
-     * client built through the initables chooses (/client/presence/handoff-other-name). */
+     * client built through the initables chooses
+     * (/client/presence/handoff-other-name). */
     if (!self->owner_watch)
     {
         self->owner_watch = g_dbus_connection_signal_subscribe (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),

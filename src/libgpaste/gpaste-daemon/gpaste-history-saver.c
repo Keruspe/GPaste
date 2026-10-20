@@ -25,11 +25,11 @@ static void g_paste_history_saver_load_data_free (gpointer data);
  * default one. A write's GTask takes the @owner GObject as its source, so it
  * stays alive until the write has landed. A load's takes none: a load can wait on
  * the storage lock for as long as another process holds it, and what gives that
- * wait up is the owner's dispose (), through g_paste_history_saver_detach (), which
- * a reference held for the wait would keep from ever running. Each task also
- * holds its own ref on the saver (released in its done callback), so an owner that
- * swaps its saver out mid-flight (g_paste_history_reload_backend) cannot free one
- * whose completion callback has not fired yet. */
+ * wait up is the owner's dispose (), through g_paste_history_saver_detach (),
+ * which a reference held for the wait would keep from ever running. Each task
+ * also holds its own ref on the saver (released in its done callback), so an
+ * owner that swaps its saver out mid-flight (g_paste_history_reload_backend)
+ * cannot free one whose completion callback has not fired yet. */
 struct _GPasteHistorySaver
 {
     GObject parent_instance;

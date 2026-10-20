@@ -742,9 +742,9 @@ g_paste_clipboards_manager_confirm_password (_Clipboard           *clip,
  * added in one place rather than remembered in each.
  *
  * A read that has just concluded answers it itself, and the fields here are what
- * notify_finish () is about to write from that answer: finish_refresh () therefore
- * asks %CLIPBOARD_SECRET_NO of the read rather than asking this of the fields it
- * has yet to overwrite. Same question, newer evidence. */
+ * notify_finish () is about to write from that answer: finish_refresh ()
+ * therefore asks %CLIPBOARD_SECRET_NO of the read rather than asking this of
+ * the fields it has yet to overwrite. Same question, newer evidence. */
 static gboolean
 g_paste_clipboards_manager_may_carry_secret (_Clipboard *clip)
 {
@@ -2450,9 +2450,9 @@ g_paste_clipboards_manager_select_text (GPasteClipboardsManager *self,
  * rather than from the timeout stored on the entry it is a copy of -- which is
  * the one thing linking is for (/clipboard/bootstrap_before_load).
  *
- * Nothing is tried while the load is still in flight (g_paste_history_is_loading ()):
- * the model then holds only what was added in the meantime, none of the store's
- * entries the capture could be a copy of
+ * Nothing is tried while the load is still in flight
+ * (g_paste_history_is_loading ()): the model then holds only what was added in
+ * the meantime, none of the store's entries the capture could be a copy of
  * (/clipboard/bootstrap_before_load/add_during_load). Once loaded, the link is
  * tried once, against the entry the capture equals wherever it sits: what was
  * added during the load is put back on top of what it read, and a password
@@ -2462,10 +2462,10 @@ g_paste_clipboards_manager_select_text (GPasteClipboardsManager *self,
  * The link is the one identify_ready () would have made, with two things kept as
  * they were:
  *
- * - the moment the countdown started (@armed_from): the head's timeout counts from
- *   the capture, not from now, so the load taking its time does not buy the
- *   password more exposure. A deadline already behind us is the countdown running
- *   out, and is handled as that.
+ * - the moment the countdown started (@armed_from): the head's timeout counts
+ *   from the capture, not from now, so the load taking its time does not buy
+ *   the password more exposure. A deadline already behind us is the countdown
+ *   running out, and is handled as that.
  * - @password_unconfirmed: arm_password_at () clears it, every other caller
  *   having just identified the selection, but this one read nothing -- a record a
  *   later read could not confirm is no more confirmed for the history having
@@ -2524,7 +2524,8 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
         /* Handled as the countdown running out, and so as on_password_timeout ()
          * handles it: an unconfirmed record is only marked overdue there, and
          * the read that identifies the selection is asked for rather than
-         * waited on -- nothing else is owed (/clipboard/bootstrap_before_load/overdue). */
+         * waited on -- nothing else is owed
+         * (/clipboard/bootstrap_before_load/overdue). */
         if (clip->password_expired)
             g_paste_clipboards_manager_on_password_timeout (clip);
     }
@@ -2572,9 +2573,9 @@ on_item_selected (GPasteClipboardsManager *self,
  * may still be sitting on and nothing would ever take it off: a password-timeout
  * of 0 runs no countdown, and the entry that went was the last thing saying the
  * exposure happened. The selections recorded as carrying it give it up,
- * which is deselect_password ()'s answer to the same question -- it puts the first
- * item that is not a password there, or empties the selection when the history has
- * none left (the /clipboard/dropped_password tests).
+ * which is deselect_password ()'s answer to the same question -- it puts the
+ * first item that is not a password there, or empties the selection when the
+ * history has none left (the /clipboard/dropped_password tests).
  *
  * Only the selections whose record names it, unlike clear (): this is not a new
  * head being published over everything, and an unrelated copy is the user's own.

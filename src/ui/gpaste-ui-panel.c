@@ -280,7 +280,8 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
 
         if (length)
             g_paste_ui_panel_history_set_length (h, *length);
-        /* Named by the daemon there now: see g_paste_ui_panel_set_rows_enabled (). */
+        /* Named by the daemon there now: see
+         * g_paste_ui_panel_set_rows_enabled (). */
         adw_sidebar_item_set_enabled (ADW_SIDEBAR_ITEM (h), TRUE);
     }
     else

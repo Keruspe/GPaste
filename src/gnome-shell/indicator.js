@@ -565,8 +565,8 @@ class GPasteIndicator extends Button {
     // A focused actor that is hidden is one Clutter drops the key focus for,
     // which would strand a keyboard that has just used one of the buttons: it
     // goes back to the row the actions were for. _refresh() and _rebuild()
-    // pick a surviving focus target after changing the rows. Reached from teardown
-    // as well, which may come before _setup () has built any of this.
+    // pick a surviving focus target after changing the rows. Reached from
+    // teardown as well, which may come before _setup () has built any of this.
     _hideItemActions(refocus = true) {
         if (!this._itemActions)
             return;

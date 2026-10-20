@@ -871,7 +871,8 @@ g_paste_ui_window_restart_can_help (GPasteUiWindow *self)
 
     /* Unknown is not elsewhere: the proxy can learn its daemon's owner only
      * after that daemon's history made it ready, and until then the in-shell
-     * daemon would read as not in the Shell (/ui/daemon-presence/version-toast-in-shell). */
+     * daemon would read as not in the Shell
+     * (/ui/daemon-presence/version-toast-in-shell). */
     g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
 
     return owner && !g_paste_str_equal (owner, self->shell_owner);
@@ -1728,10 +1729,11 @@ g_paste_ui_window_setup (GPasteUiWindow *self,
 
     /* Opening the window is the user asking for a daemon, so one is asked for
      * outright if there is none rather than waited for, which is all the
-     * client does on its own. Read after the handlers above are watching, so a daemon moving
-     * in between is announced rather than missed -- and read whatever it says,
-     * ready included: a retry into a window presented for a failed connection
-     * has a banner up that no change of presence would come to take down. */
+     * client does on its own. Read after the handlers above are
+     * watching, so a daemon moving in between is announced rather than
+     * missed -- and read whatever it says, ready included: a retry
+     * into a window presented for a failed connection has a banner up
+     * that no change of presence would come to take down. */
     g_paste_client_follow_daemon (self->client, TRUE);
     on_daemon_presence_changed (self->client, NULL, self);
     on_history_changed (self->client, NULL, self);

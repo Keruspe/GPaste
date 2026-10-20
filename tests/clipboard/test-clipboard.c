@@ -500,7 +500,8 @@ test_strip_during_read (gconstpointer user_data)
     }
 
     /* The selection offers the hint and never serves it: what it holds may be a
-     * secret, and the plain text would go out with no hint (finish_refresh ()). */
+     * secret, and the plain text would go out
+     * with no hint (finish_refresh ()). */
     if (variant == 7)
         g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
 
@@ -2815,7 +2816,8 @@ test_sync_reply_after_trimmed_reown (void)
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
 
     /* The clipboard is the destination here: re-owning a trimmed text is the one
-     * selection's business that serves it (g_paste_clipboard_update_conclude ()). */
+     * selection's business that serves it
+     * (g_paste_clipboard_update_conclude ()). */
     clipboard->is_clipboard = TRUE;
     primary->defer_sync = TRUE;
     g_paste_settings_set_synchronize_clipboards (settings, FALSE);
@@ -2941,7 +2943,8 @@ fail_password_read (PasswordFixture *fixture)
     GPasteClipboardMimeCtx *hint = g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
 
     g_paste_clipboard_update_on_mime_read (hint, NULL);
-    /* The mock's text read, then the read update_new () counts in for its caller. */
+    /* The mock's text read, then the read
+     * update_new () counts in for its caller. */
     g_paste_clipboard_update_maybe_done (pending);
     g_paste_clipboard_update_maybe_done (pending);
 }
@@ -3782,11 +3785,11 @@ test_unknown_hint_text_policy (gconstpointer user_data)
 }
 
 /* A text the size policy turns down leaves no value behind, its hint unanswered
- * or not: the cache would be holding the selection's own bytes, which for this one
- * text can be megabytes (set_ignored ()). What it would have been kept for -- a
- * standing password record to match -- survives it anyway: a cache with no value
- * is a read that saw nothing, so the record stands unconfirmed instead of being
- * retired. */
+ * or not: the cache would be holding the selection's own bytes, which for this
+ * one text can be megabytes (set_ignored ()). What it would have been kept for
+ * -- a standing password record to match -- survives it anyway: a cache with no
+ * value is a read that saw nothing, so the record stands unconfirmed instead of
+ * being retired. */
 static void
 test_unknown_hint_dropped_text (void)
 {
@@ -3822,14 +3825,15 @@ test_unknown_hint_dropped_text (void)
 /* A password's entry leaving the history takes its cleartext off the selections
  * carrying it, from whatever position that entry held: with password-timeout at 0
  * there is no countdown to take it off, and the entry the user just deleted was
- * the last thing recording the exposure. The replacement is the countdown's own --
- * the first item that is not a password, or the empty string where the history has
- * none left.
+ * the last thing recording the exposure. The replacement is the countdown's own
+ * -- the first item that is not a password, or the empty string where the
+ * history has none left.
  *
  * And only those selections: the primary here has moved on to a copy of its own,
- * which is the user's and not ours to overwrite. A head being removed is the other
- * story (clear (), the /clipboard/automatic_head tests): that one publishes over
- * every selection, because it is the publication the new head is owed.
+ * which is the user's and not ours to overwrite. A head being
+ * removed is the other story (clear (), the
+ * /clipboard/automatic_head tests): that one publishes over every
+ * selection, because it is the publication the new head is owed.
  *
  * @user_data says how the entry goes: deleted where it sits, or emptied out with
  * the rest of the history. */
@@ -3860,8 +3864,8 @@ test_dropped_password (gconstpointer user_data)
     g_assert_cmpstr (primary->content.str, ==, "the secret");
     g_paste_history_add (history, g_paste_text_item_new ("a later copy"));
 
-    /* The primary moves on with a copy of the user's own, which retires the record
-     * kept for it. */
+    /* The primary moves on with a copy of the user's own, which retires the
+     * record kept for it. */
     g_paste_clipboard_content_set_text (&primary->content, "mouse selection");
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (primary));
 

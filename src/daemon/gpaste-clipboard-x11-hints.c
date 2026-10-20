@@ -4,14 +4,15 @@
 /* Reading the sensitive hints off an X11 selection, around GDK.
  *
  * A workaround, kept apart so it can be deleted whole. It exists because GTK
- * cannot be asked either half of the question: gdk_x11_clipboard_formats_from_atoms ()
- * (gdk/x11/gdkclipboard-x11.c) drops "x-kde-passwordManagerHint" from a
- * selection's formats, keeping only the TARGETS atoms that name a mimetype or one
- * of its text targets, and GDK's own reads cannot be trusted with TARGETS or a
- * hint (see convert ()). Once GTK keeps those atoms (GTK MR !10321's second patch)
- * and its selection input streams match replies by requestor or property, the GDK
- * backend can go back to g_paste_clipboard_update_read_mimes () against its
- * formats, and this file, its tests and the xfixes dependency can go. */
+ * cannot be asked either half of the question:
+ * gdk_x11_clipboard_formats_from_atoms () (gdk/x11/gdkclipboard-x11.c) drops
+ * "x-kde-passwordManagerHint" from a selection's formats, keeping only the
+ * TARGETS atoms that name a mimetype or one of its text targets, and GDK's
+ * own reads cannot be trusted with TARGETS or a hint (see convert ()). Once
+ * GTK keeps those atoms (GTK MR !10321's second patch) and its selection
+ * input streams match replies by requestor or property, the GDK backend can
+ * go back to g_paste_clipboard_update_read_mimes () against its formats, and
+ * this file, its tests and the xfixes dependency can go. */
 
 #include <errno.h>
 #include "gpaste-clipboard-x11-hints.h"
@@ -526,8 +527,8 @@ g_paste_clipboard_x11_hints_read_hint (gpointer                backend,
 }
 
 /* The owner's TARGETS have come back: read each hint it offers. How this read
- * counts into the update is g_paste_clipboard_update_add_sensitive_offer_read ()'s
- * to say. */
+ * counts into the update is
+ * g_paste_clipboard_update_add_sensitive_offer_read ()'s to say. */
 static void
 g_paste_clipboard_x11_hints_on_targets_converted (GPasteClipboardX11Hints *self,
                                                   Time                     timestamp,
@@ -544,7 +545,8 @@ g_paste_clipboard_x11_hints_on_targets_converted (GPasteClipboardX11Hints *self,
      * to report to. */
     if (answered && !g_paste_clipboard_update_is_expired (update))
     {
-        /* Format 32 property data is handed back as longs, which is what Atom is. */
+        /* Format 32 property data is handed back
+         * as longs, which is what Atom is. */
         const GPasteClipboardX11HintsTargets offer = {
             .self = self,
             .timestamp = timestamp,

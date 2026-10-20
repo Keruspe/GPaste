@@ -14,7 +14,8 @@
  * for as long as it is up would keep a window the user closed from ever being
  * disposed, the dialog and the text being edited with it
  * (/ui/edit_item/closed_with_dialog_up). The dialog always answers, a window gone
- * under it included (g_paste_gtk_util_text_dialog ()), which is what frees this. */
+ * under it included (g_paste_gtk_util_text_dialog ()),
+ * which is what frees this. */
 typedef struct
 {
     GPasteClient *client;

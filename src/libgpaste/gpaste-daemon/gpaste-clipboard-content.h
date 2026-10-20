@@ -280,9 +280,9 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * @pending counts the reads still out and @sensitive_pending how many of those
  * are hint or sensitive-offer reads, which is what tells a hint that answered
  * "no" from one that never answered at all; @concluded says the item was already
- * built, the guard having run out with some of them still going. @mime is the mimetype the
- * content is being read under, for a backend that reads by mimetype rather than
- * by type -- %NULL for one that does not.
+ * built, the guard having run out with some of them still going. @mime is the
+ * mimetype the content is being read under, for a backend that reads by
+ * mimetype rather than by type -- %NULL for one that does not.
  *
  * @superseded says the selection moved on while this update was reading it, so
  * what the reads still out would bring back describes content nothing holds any

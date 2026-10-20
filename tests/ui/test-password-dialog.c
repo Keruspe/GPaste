@@ -133,7 +133,8 @@ edit_window_lifetime (gconstpointer user_data)
     if (variant < 2)
     {
         /* No test-owned window ref: GTK releases its ownership on destroy.
-         * An edit retaining the parent would keep both the window and reads up. */
+         * An edit retaining the parent would keep
+         * both the window and reads up. */
         gtk_window_destroy (window);
         g_assert_null (weak_window);
         g_assert_true (g_cancellable_is_cancelled (cancellable));
@@ -150,7 +151,8 @@ edit_window_lifetime (gconstpointer user_data)
     }
     else if (variant == 3)
     {
-        /* Hiding a live window is not closing it; the edit still belongs to it. */
+        /* Hiding a live window is not closing it;
+         * the edit still belongs to it. */
         gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
         g_assert_false (g_cancellable_is_cancelled (cancellable));
         reply (client, 1);

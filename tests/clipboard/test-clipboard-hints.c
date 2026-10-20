@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-/* The update API the X11 hints workaround (src/daemon/gpaste-clipboard-x11-hints.c)
- * reads through: the sensitive offer read and the two halves of the MIME-reading
- * policy. Kept apart from test-clipboard.c so it goes with the workaround. */
+/* The update API the X11 hints workaround
+ * (src/daemon/gpaste-clipboard-x11-hints.c) reads through: the
+ * sensitive offer read and the two halves of the MIME-reading policy.
+ * Kept apart from test-clipboard.c so it goes with the workaround. */
 
 #include "gpaste-test-clipboard-provider.h"
 

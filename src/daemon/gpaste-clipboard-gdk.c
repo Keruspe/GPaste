@@ -201,16 +201,16 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
      * session.
      *
      * The deadline alone does not say which of the two it is, which is why it is
-     * not taken for a release on its own: an owner slow to serve TARGETS -- a busy
-     * application, a forwarded display -- is still there, and restoring the head
-     * over it replaces the copy the user has just made and retires the record for
-     * a password still sitting there. X is asked who owns the selection, the one
-     * thing that tells the two apart, and an owner that is there answers nothing:
-     * the deadline is then this selection going unidentified, which every reader
-     * of %CLIPBOARD_SECRET_UNKNOWN already knows how to hold
-     * (/gdk/formats/deadline-slow-owner). It is asked here rather than when the
-     * formats came back empty, so the milliseconds a local owner takes to publish
-     * its targets cost nothing.
+     * not taken for a release on its own: an owner slow to serve TARGETS -- a
+     * busy application, a forwarded display -- is still there, and restoring
+     * the head over it replaces the copy the user has just made and retires the
+     * record for a password still sitting there. X is asked who owns the
+     * selection, the one thing that tells the two apart, and an owner that is
+     * there answers nothing: the deadline is then this selection going
+     * unidentified, which every reader of %CLIPBOARD_SECRET_UNKNOWN already
+     * knows how to hold (/gdk/formats/deadline-slow-owner). It is asked here
+     * rather than when the formats came back empty, so the milliseconds a local
+     * owner takes to publish its targets cost nothing.
      *
      * Only %G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE is a release, never the
      * absence of an answer: a display that could not be asked is held like a slow
@@ -1209,9 +1209,9 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     {
         /* Nothing here can convert the selection -- no XFixes, an atom that could
          * not be interned -- so the hints are asked of the formats, like the
-         * special values beside them. GDK leaves their names out of those, so what
-         * this costs is recognising a password another application copied: a
-         * feature lost where the workaround cannot run.
+         * special values beside them. GDK leaves their names out of those, so
+         * what this costs is recognising a password another application copied:
+         * a feature lost where the workaround cannot run.
          *
          * The alternative is not "no hints" but "no answer": asking the
          * workaround anyway has every text read come back with its secrecy
@@ -1408,13 +1408,13 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
         return;
     }
 
-    /* And with no wait out at all, the targets of an owner whose identification is
-     * owed (@identify_owed) answer that identification: the read that asked has
-     * given up already, so the manager is asked for another one rather than told
-     * of a copy -- which would record what was already sitting on the selection,
-     * over the history's head and, with synchronization on, onto the other
-     * selection (/gdk/formats/bootstrap-late). A new owner announces itself with
-     * empty formats first, and takes the ordinary route below. */
+    /* And with no wait out at all, the targets of an owner whose identification
+     * is owed (@identify_owed) answer that identification: the read that asked
+     * has given up already, so the manager is asked for another one rather than
+     * told of a copy -- which would record what was already sitting on the
+     * selection, over the history's head and, with synchronization on, onto the
+     * other selection (/gdk/formats/bootstrap-late). A new owner announces
+     * itself with empty formats first, and takes the ordinary route below. */
     if (self->identify_owed && !self->copy_owed && !self->formats_wait && !self->update &&
         !gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
     {
