@@ -1,5 +1,5 @@
-libgpaste_soversion = '1.0.0'
-libgpaste_gtk4_soversion = '2.1.0'
+libgpaste_soversion = '2.0.0'
+libgpaste_gtk4_soversion = '2.2.0'
 
 pkg = import('pkgconfig')
 
@@ -205,7 +205,7 @@ endif
 # release shipping such a change bumps the soversion. Its one consumer outside
 # this tree, the extension, resolves names through the typelib and sees none of
 # it.
-libgpaste_daemon_soversion = '1.0.0'
+libgpaste_daemon_soversion = '2.0.0'
 
 # What this library promises to the outside world. The gnome-shell extension is
 # its only external consumer and reaches it through the GPasteDaemon-1 typelib:
