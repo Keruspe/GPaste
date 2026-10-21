@@ -296,6 +296,7 @@ test_delete_current_drops_passwords (void)
     g_assert_no_error (error);
     g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
     g_assert_cmpuint (dropped, ==, 1);
+    g_signal_handlers_disconnect_by_data (history, &dropped);
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 
@@ -4065,6 +4066,7 @@ test_password_dropped (void)
         g_assert_true (g_paste_history_empty (history, NULL));
         g_assert_cmpuint (dropped->len, ==, 2);
         g_assert_cmpstr (g_ptr_array_index (dropped, 1), ==, "emptied secret");
+        g_signal_handlers_disconnect_by_data (history, dropped);
     }
 
     /* A cap evicting one is a departure like any other: nobody asked for it, and
@@ -4083,6 +4085,7 @@ test_password_dropped (void)
         }
         g_assert_cmpuint (dropped->len, ==, 3);
         g_assert_cmpstr (g_ptr_array_index (dropped, 2), ==, "evicted secret");
+        g_signal_handlers_disconnect_by_data (history, dropped);
     }
 
     /* A reload whose store holds the password no more -- a migration to a plain
@@ -4101,6 +4104,7 @@ test_password_dropped (void)
         g_assert_true (pump_until_length (history, 1, 5000));
         g_assert_cmpuint (dropped->len, ==, 4);
         g_assert_cmpstr (g_ptr_array_index (dropped, 3), ==, "reloaded secret");
+        g_signal_handlers_disconnect_by_data (history, dropped);
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -4129,6 +4133,7 @@ test_password_dropped (void)
         g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "kept secret");
         g_assert_cmpuint (dropped->len, ==, 4);
         g_paste_storage_backend_set_passphrase (NULL);
+        g_signal_handlers_disconnect_by_data (history, dropped);
     }
 #endif
 }
@@ -4151,6 +4156,7 @@ test_reload_then_empty_drops_password (void)
     pump_for_ms (50);
     g_assert_cmpuint (dropped->len, ==, 1);
     g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "reloaded secret");
+    g_signal_handlers_disconnect_by_data (history, dropped);
 }
 
 /* A load waited for as the daemon's main loop would. */
@@ -4199,6 +4205,7 @@ test_reload_then_delete_drops_password (gconstpointer data)
     pump_for_ms (50);
     g_assert_cmpuint (dropped->len, ==, 1);
     g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "reloaded secret");
+    g_signal_handlers_disconnect_by_data (history, dropped);
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
     g_paste_history_flush (history);
 }
@@ -4281,6 +4288,7 @@ test_load_selects_last_add (void)
     g_assert_true (pump_until_loaded (history));
     g_assert_cmpstr (value_at (history, 0), ==, "copied during the load");
     g_assert_cmpstr (selected, ==, "copied during the load");
+    g_signal_handlers_disconnect_by_data (history, &selected);
 }
 
 /* A switch to the history in use, which a settings backend may announce as a
@@ -4311,6 +4319,8 @@ test_switch_to_current_keeps_model (void)
     g_assert_cmpuint (switches, ==, 0);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+
+    g_signal_handlers_disconnect_by_data (history, &switches);
 }
 
 /* A password copied while a load is out is the head the load leaves, and no
@@ -4328,6 +4338,7 @@ test_load_keeps_password_selected (void)
     g_assert_true (pump_until_loaded (history));
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
     g_assert_null (selected);
+    g_signal_handlers_disconnect_by_data (history, &selected);
 }
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -4416,6 +4427,7 @@ test_reload_keeps_stopped_adds (void)
 
     g_assert_cmpuint (g_list_length (stored), ==, 2);
     g_assert_cmpstr (g_paste_item_get_value (stored->data), ==, "copied while stopped");
+    g_signal_handlers_disconnect_by_data (history, dropped);
 }
 
 /* A load landing inside a handover adds what was copied while it was out on
@@ -4665,6 +4677,7 @@ test_load_skips_password_head (void)
     g_paste_history_load (history, names[1]);
     g_assert_cmpuint (selected, ==, 1);
 
+    g_signal_handlers_disconnect_by_data (history, &selected);
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
