@@ -149,11 +149,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
     switch (state)
     {
     case G_PASTE_ITEM_STATE_IDLE:
-        if (priv->image)
-        {
-            g_clear_object (&priv->image);
-            g_clear_pointer (&priv->checksum, g_free);
-        }
+        /* Keep the checksum so idle images remain distinct in the history. */
+        g_clear_object (&priv->image);
         break;
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
@@ -162,7 +159,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
             priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (self), &error);
             if (error)
                 g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (self), error->message);
-            priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
+            if (!priv->checksum)
+                priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
         }
         break;
     }
