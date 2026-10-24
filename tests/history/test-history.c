@@ -3543,12 +3543,22 @@ history_dir_listing (void)
 /* A history nobody has named has no store, so its changes are kept in memory
  * and persisted nowhere: the saver files every write under a history's name.
  * Several of them in a row, and a flush applying what is queued on the spot,
- * write nothing at all. */
+ * write nothing at all. The process and data directory are this case's alone:
+ * other cases' named histories can still have saves in flight while the main
+ * loop is pumped. */
 static void
 test_unnamed_history_persists_nothing (void)
 {
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("");
+        return;
+    }
+
     g_autoptr (GPasteHistory) history = make_plain_history ();
     g_auto (GStrv) before = history_dir_listing ();
+
+    g_assert_cmpuint (g_strv_length (before), ==, 0);
 
     for (guint i = 0; i < 3; ++i)
     {
