@@ -218,6 +218,11 @@ NEW in 50.0 (08/06/2026)
 - GNOME Shell extension: retry the daemon connection before giving up, and modernise the JavaScript to current GNOME Shell conventions
 - Numerous internal modernisations (async I/O via GTask, GSignalGroup, static GSettings schema)
 
+NEW in 45.13 (24/10/2026)
+=============
+
+- Fix crash when dealing with old images
+
 NEW in 45.12 (31/08/2026)
 =============
 
