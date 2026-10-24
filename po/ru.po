@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-31 12:25+0200\n"
+"POT-Creation-Date: 2026-10-24 14:42+0200\n"
 "PO-Revision-Date: 2025-04-15 16:05+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
@@ -1245,12 +1245,12 @@ msgid "Could not acquire DBus name."
 msgstr "Не удалось получить имя DBus."
 
 #. This is the date format "month/day/year time"
-#: src/daemon/tmp/gpaste-image-item.c:237
+#: src/daemon/tmp/gpaste-image-item.c:235
 msgid "%m/%d/%y %T"
 msgstr "%d.%m.%y %T"
 
 #. This gets displayed in history when selecting an image
-#: src/daemon/tmp/gpaste-image-item.c:239
+#: src/daemon/tmp/gpaste-image-item.c:237
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Изображение, %d x %d (%s)]"

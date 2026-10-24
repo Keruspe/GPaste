@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-31 12:25+0200\n"
+"POT-Creation-Date: 2026-10-24 14:42+0200\n"
 "PO-Revision-Date: 2026-03-16 04:09+0000\n"
 "Last-Translator: தமிழ்நேரம் <tamilneram247@gmail.com>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/"
@@ -1233,12 +1233,12 @@ msgid "Could not acquire DBus name."
 msgstr "DBUS பெயரைப் பெற முடியவில்லை."
 
 #. This is the date format "month/day/year time"
-#: src/daemon/tmp/gpaste-image-item.c:237
+#: src/daemon/tmp/gpaste-image-item.c:235
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y%t"
 
 #. This gets displayed in history when selecting an image
-#: src/daemon/tmp/gpaste-image-item.c:239
+#: src/daemon/tmp/gpaste-image-item.c:237
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[படம், %d ஃச் %d ( %s)]]"
