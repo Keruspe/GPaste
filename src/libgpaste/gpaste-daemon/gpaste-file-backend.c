@@ -357,7 +357,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
         {
             g_autofree gchar *png_checksum = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, png);
 
-            _g_paste_file_backend_remember_png (G_PASTE_STORAGE_BACKEND ((gpointer) self), target, png_checksum);
+            _g_paste_file_backend_remember_png (G_PASTE_STORAGE_BACKEND (self), target, png_checksum);
         }
 #endif
         return TRUE;
@@ -866,7 +866,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
                     g_set_str (&image_reference, read_from);
             }
 
-            gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
+            g_autofree gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
             if (encrypted)
@@ -878,7 +878,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
 #endif
 
             if (file_name)
-                g_hash_table_add (referenced, file_name);
+                g_hash_table_add (referenced, g_steal_pointer (&file_name));
 
             /* A document holds UTF-8 alone, and the data directory and a
              * history name read off the disk need not be: a home directory in
@@ -2647,11 +2647,21 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
+    g_autofree gchar *history_dir = g_path_get_dirname (paths[0]);
+    g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     guint installed = 0;
 
     for (; installed < n_paths; ++installed)
     {
         const gchar *path = paths[_g_paste_file_backend_install_index (installed, n_paths)];
+
+        /* The history's rename, the last, is what says the re-key happened:
+         * the images' renames are on the disk before it, or a power loss in
+         * between could keep it and lose one of theirs, whose replacement the
+         * next settle -- finding none beside the history -- would drop. No test
+         * cuts the power between two directory syncs. */
+        if (installed == n_paths - 1 && n_paths > 1)
+            _g_paste_file_backend_sync_directory (images_dir);
         g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
         g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
         g_autoptr (GFile) file = g_file_new_for_path (path);
@@ -2673,12 +2683,7 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
          * disk once its directory is: synced before the change is answered as
          * done -- the new passphrase then adopted, and remembered -- or a power
          * loss would bring the histories back under the one just retired. */
-        g_autofree gchar *history_dir = g_path_get_dirname (paths[0]);
-        g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
-
         _g_paste_file_backend_sync_directory (history_dir);
-        if (n_paths > 1)
-            _g_paste_file_backend_sync_directory (images_dir);
 
         for (guint i = 0; i < n_paths; ++i)
             _g_paste_file_backend_remove_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
