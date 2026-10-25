@@ -60,6 +60,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix a crash when GPaste stops just after an item became a password in a history of pinned items
 - Fix a passphrase change interrupted on a FAT or network disk destroying the history
 - Fix a crash at every start after an empty storage journal was left behind, and when the history folder cannot be made private during a migration
+- Fix a damaged encrypted history leaving part of its passwords unwiped in memory
 
 NEW in 51.1 (20/10/2026)
 =============

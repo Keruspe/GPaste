@@ -1171,6 +1171,54 @@ test_encrypted_read_leaves_no_copy (void)
     g_assert_cmpuint (g_list_length (loaded), ==, 2);
     g_assert_cmpuint (freed_holding_secret, ==, 0);
 }
+
+/* Nor does a read that fails once part of the document is decrypted: here a
+ * document carried on past its last frame, the refusal coming with the last
+ * full chunk already handed out. */
+static void
+test_encrypted_failed_read_leaves_no_copy (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Data past the end of the encrypted stream*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    const gchar *name = "no-copy-left-on-failure";
+    const gchar *secret = "a-password-nobody-should-find-in-freed-memory";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autofree gchar *filler = g_strnfill (4000, 'f');
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_password_item_new ("name", secret, 0));
+
+    items = g_list_append (items, g_paste_text_item_new (filler));
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autofree gchar *document = NULL;
+    gsize length;
+
+    g_assert_true (g_file_get_contents (path, &document, &length, NULL));
+
+    g_autoptr (GByteArray) carried_on = g_byte_array_new ();
+
+    g_byte_array_append (carried_on, (const guint8 *) document, length);
+    g_byte_array_append (carried_on, (const guint8 *) "and then some", 13);
+    g_assert_true (g_file_set_contents (path, (const gchar *) carried_on->data, carried_on->len, NULL));
+
+    g_autolist (GPasteItem) loaded = NULL;
+    gsize size;
+
+    freed_holding_secret = 0;
+    freed_secret = secret;
+    g_assert_false (g_paste_storage_backend_read_history (backend, name, NULL, &loaded, &size));
+    freed_secret = NULL;
+    g_assert_cmpuint (freed_holding_secret, ==, 0);
+}
 #endif
 
 /* The migration offers what this build can open, in the enum's order and no
@@ -5954,6 +6002,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-failure-cleartext", test_import_failure_leaves_no_cleartext);
     g_test_add_func ("/storage/migration/destination-passphrase", test_migration_destination_passphrase);
     g_test_add_func ("/storage/encrypted-read-leaves-no-copy", test_encrypted_read_leaves_no_copy);
+    g_test_add_func ("/storage/encrypted-failed-read-leaves-no-copy", test_encrypted_failed_read_leaves_no_copy);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_data_func ("/storage/sqlite/schema/alter", "ALTER TABLE items ADD COLUMN timeout", test_schema_failure);

@@ -1863,6 +1863,9 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
 
             if (result == G_CONVERTER_ERROR || (at_end && result != G_CONVERTER_FINISHED && !consumed && !produced))
             {
+                /* A call failing can have handed plaintext out first, which
+                 * the wipe below has to cover. */
+                length += produced;
                 if (convert_error)
                     g_propagate_error (error, g_steal_pointer (&convert_error));
                 else
