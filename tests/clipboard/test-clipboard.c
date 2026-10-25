@@ -3504,6 +3504,31 @@ test_edit_after_failed_read (gconstpointer user_data)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, cancel ? "same secret" : "replacement");
 }
 
+/* An edit giving an unconfirmed record a countdown -- made after the read that
+ * left it so, or before one that does -- is owed the read identifying its
+ * selection at its deadline, as a countdown running out is: nothing else would
+ * ask for one, and the password would stay where the user asked for it to be
+ * taken off. */
+static void
+test_edit_unconfirmed_deadline (gconstpointer user_data)
+{
+    gboolean edit_first = GPOINTER_TO_INT (user_data);
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (0);
+
+    if (!edit_first)
+        fail_password_read (fixture);
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (fixture->password), 1);
+    g_paste_clipboards_manager_rearm_password (fixture->manager, fixture->password);
+    if (edit_first)
+        fail_password_read (fixture);
+    pump_for (1100);
+
+    g_assert_nonnull (fixture->clipboard->pending);
+    password_read_ready (fixture, "same secret");
+    pump_for (10);
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
+}
+
 static void
 test_sync_finishes_elapsed_edit (gconstpointer user_data)
 {
@@ -5105,6 +5130,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/reassert_timeout", test_reassert_preserves_timeout);
     g_test_add_data_func ("/clipboard/edit_after_failure/shorten", GINT_TO_POINTER (FALSE), test_edit_after_failed_read);
     g_test_add_data_func ("/clipboard/edit_after_failure/cancel", GINT_TO_POINTER (TRUE), test_edit_after_failed_read);
+    g_test_add_data_func ("/clipboard/edit_after_failure/deadline_asks", GINT_TO_POINTER (FALSE), test_edit_unconfirmed_deadline);
+    g_test_add_data_func ("/clipboard/edit_before_failure/deadline_asks", GINT_TO_POINTER (TRUE), test_edit_unconfirmed_deadline);
     g_test_add_data_func ("/clipboard/sync_elapsed_edit/manual", GINT_TO_POINTER (FALSE), test_sync_finishes_elapsed_edit);
     g_test_add_data_func ("/clipboard/sync_elapsed_edit/automatic", GINT_TO_POINTER (TRUE), test_sync_finishes_elapsed_edit);
     g_test_add_func ("/clipboard/strip_idle_password", test_strip_preserves_idle_password);

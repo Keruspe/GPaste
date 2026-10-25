@@ -137,6 +137,8 @@ typedef struct
     /* Edits name items, not selections. Keep each candidate until the read
      * identifies its text; deadlines start at the edit, not at the reply. */
     GSList                  *pending_passwords;
+    /* The earliest of their deadlines: see on_pending_deadline (). */
+    guint                    pending_deadline_id;
     gboolean                 force_expiry;
 
     /* The selection said it carries a secret and the read produced no item to
@@ -639,6 +641,9 @@ g_paste_clipboards_manager_finish_expiry (_Clipboard           *clip,
     /* No value is not evidence against an edit when classification failed.
      * Keep its deadline until a read or publication identifies the selection. */
     g_autoslist (PendingPassword) pending = clip->password_unconfirmed ? NULL : g_steal_pointer (&clip->pending_passwords);
+
+    if (!clip->pending_passwords)
+        g_clear_handle_id (&clip->pending_deadline_id, g_source_remove);
 
     for (GSList *l = pending; l; l = l->next)
     {
@@ -1982,6 +1987,44 @@ g_paste_clipboards_manager_on_password_timeout (gpointer user_data)
         g_paste_clipboards_manager_reread_unconfirmed_clip (clip);
 }
 
+/* An edit's deadline, for one waiting on a selection whose record went
+ * unconfirmed: as on_password_timeout () is a countdown's, the moment it is
+ * owed the read that identifies the selection, which nothing else asks for. A
+ * read identifying it takes the password off then, finish_expiry () arming
+ * the countdown the edit asked for, already run out. */
+static void
+g_paste_clipboards_manager_on_pending_deadline (gpointer user_data)
+{
+    _Clipboard *clip = user_data;
+
+    clip->pending_deadline_id = 0;
+    g_paste_clipboards_manager_reread_unconfirmed_clip (clip);
+}
+
+static void
+g_paste_clipboards_manager_arm_pending_deadline (_Clipboard *clip)
+{
+    gint64 deadline = G_MAXINT64;
+
+    g_clear_handle_id (&clip->pending_deadline_id, g_source_remove);
+    for (GSList *l = clip->pending_passwords; l; l = l->next)
+    {
+        PendingPassword *pending = l->data;
+
+        if (pending->timeout)
+            deadline = MIN (deadline, pending->deadline);
+    }
+
+    if (deadline == G_MAXINT64)
+        return;
+
+    gint64 now = g_get_monotonic_time ();
+
+    clip->pending_deadline_id = g_timeout_add_once ((deadline > now) ? (guint) ((deadline - now) / 1000) : 0,
+                                                    g_paste_clipboards_manager_on_pending_deadline, clip);
+    g_source_set_name_by_id (clip->pending_deadline_id, "[GPaste] password edit deadline");
+}
+
 /**
  * g_paste_clipboards_manager_expire_password:
  * @self: a #GPasteClipboardsManager instance
@@ -2252,6 +2295,7 @@ g_paste_clipboards_manager_rearm_password (GPasteClipboardsManager *self,
             pending->timeout = timeout;
             pending->deadline = g_get_monotonic_time () + (gint64) timeout * G_USEC_PER_SEC;
             clip->pending_passwords = g_slist_prepend (clip->pending_passwords, pending);
+            g_paste_clipboards_manager_arm_pending_deadline (clip);
             continue;
         }
 
@@ -2658,6 +2702,7 @@ _clipboard_free (gpointer data)
     _Clipboard *clip = data;
 
     g_clear_handle_id (&clip->password_timeout_id, g_source_remove);
+    g_clear_handle_id (&clip->pending_deadline_id, g_source_remove);
     g_clear_object (&clip->password);
     g_clear_pointer (&clip->refused_refresh, g_paste_weak_ref_free);
     g_clear_slist (&clip->pending_passwords, pending_password_free);
