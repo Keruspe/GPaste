@@ -2450,17 +2450,30 @@ g_paste_history_switch (GPasteHistory *self,
  * setting cannot be changed to leave the current history, or when the "no
  * storage" backend is in use while another flavour stores it; otherwise errors
  * are whatever the storage backend reports for unlinking it, in %G_IO_ERROR or
- * %G_FILE_ERROR.
+ * %G_FILE_ERROR -- its images included, the history then gone all the same.
+ * One never saved is deleted with no error.
  *
- * Returns: whether the history was deleted
+ * Returns: whether the history was deleted, its images with it
  */
 G_PASTE_VISIBLE gboolean
 g_paste_history_delete (GPasteHistory *self,
                         const gchar   *name,
                         GError       **error)
 {
+    return g_paste_history_delete_full (self, name, NULL, error);
+}
+
+gboolean
+g_paste_history_delete_full (GPasteHistory *self,
+                             const gchar   *name,
+                             gboolean      *deleted,
+                             GError       **error)
+{
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
     g_return_val_if_fail (name || self->name, FALSE);
+
+    if (deleted)
+        *deleted = FALSE;
 
     /* A copy: leaving the current history below frees the name it was. */
     g_autofree gchar *history_name = g_strdup ((name) ? name : self->name);
@@ -2531,9 +2544,16 @@ g_paste_history_delete (GPasteHistory *self,
 
     g_paste_storage_backend_delete_history (self->backend, history_name, &local_error);
 
-    if (local_error)
+    /* No store to unlink is a history deleted all the same: one never saved,
+     * which both backends report so. */
+    if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_clear_error (&local_error);
+
+    /* Back to the history only while its store is still there: one unlinked
+     * whose images could not all be swept is gone, and its load would make it
+     * again. That sweep's failure is still the delete's to report. */
+    if (local_error && g_paste_util_history_is_stored (history_name, g_paste_storage_backend_get_kind (self->backend)))
     {
-        /* Back to the history that is still there. */
         if (left && !g_paste_history_switch (self, history_name))
             g_warning ("Could not go back to “%s”, which was not deleted", history_name);
         if (left)
@@ -2544,6 +2564,8 @@ g_paste_history_delete (GPasteHistory *self,
 
     if (left)
         g_paste_history_saver_hold_loads (self->saver, FALSE);
+    if (deleted)
+        *deleted = TRUE;
 
     /* Whatever we could not read back is unlinked, so there is nothing left to
      * protect: recording must resume, or the gate would stay shut for the rest
@@ -2556,6 +2578,12 @@ g_paste_history_delete (GPasteHistory *self,
     {
         G_PASTE_LOCK_HISTORY;
         self->pending_dropped = g_slist_concat (g_steal_pointer (&passwords), self->pending_dropped);
+    }
+
+    if (local_error)
+    {
+        g_propagate_error (error, g_steal_pointer (&local_error));
+        return FALSE;
     }
 
     return TRUE;

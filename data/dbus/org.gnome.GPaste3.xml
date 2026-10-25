@@ -185,7 +185,9 @@
       saved yet. With no storage in use, a history another storage still keeps
       (an encrypted store left locked, or what a migration kept) is out of its
       reach: .Error.Failed, the store and the history in use left as they were.
-      So is one a storage this build cannot open keeps, whatever is in use.
+      So is one a storage this build cannot open keeps, whatever is in use. A
+      history whose store goes but whose images cannot all be removed is
+      deleted, and announced so, the failure to remove them being the reply.
     -->
     <method name="DeleteHistory">
       <arg type="s" direction="in" name="name"/>

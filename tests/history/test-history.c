@@ -5386,6 +5386,76 @@ test_reload_then_delete_drops_password (gconstpointer data)
     g_paste_history_flush (history);
 }
 
+static void
+count_announcement (guint *count)
+{
+    ++*count;
+}
+
+/* A delete with no store to unlink -- the history in use never saved -- has
+ * deleted the history all the same; one whose store went but whose images
+ * could not all be swept is reported, the history gone and not gone back to,
+ * which would make its store again. */
+static void
+test_delete_store_or_sweep (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!geteuid ())
+        {
+            g_test_skip ("root removes files from a directory of mode 0500");
+            return;
+        }
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    /* The sweep cut short warns of what it left. */
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GError) error = NULL;
+
+    g_assert_true (g_paste_history_switch (history, "delete-never-saved"));
+    g_assert_true (pump_until_loaded (history));
+    g_assert_true (g_paste_history_delete (history, NULL, &error));
+    g_assert_no_error (error);
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (pump_until_loaded (history));
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("delete-unswept", "xml");
+    g_autofree gchar *images = g_paste_file_backend_images_dir ("delete-unswept");
+    g_autofree gchar *kept = g_build_filename (images, "kept.png", NULL);
+
+    g_assert_true (g_paste_history_switch (history, "delete-unswept"));
+    g_assert_true (pump_until_loaded (history));
+    g_paste_history_add (history, g_paste_text_item_new ("stored"));
+    g_paste_history_flush (history);
+    g_paste_history_resume (history);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (g_mkdir_with_parents (images, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (kept, "png", -1, NULL));
+    g_assert_cmpint (g_chmod (images, 0500), ==, 0);
+
+    /* Through the method, whose views are told the history went. */
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    guint announced = 0;
+
+    g_signal_connect_swapped (skeleton, "raw-history-deleted", G_CALLBACK (count_announcement), &announced);
+    g_paste_daemon_methods_delete_history (&methods, "delete-unswept", &error);
+    g_assert_cmpint (g_chmod (images, 0700), ==, 0);
+    g_assert_nonnull (error);
+    g_assert_cmpuint (announced, ==, 1);
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (pump_until_loaded (history));
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
+
 /* A history whose store holds @value alone, pinned or not, and a reader of it
  * whose load is out: nothing reaches it before the main loop runs. */
 static GPasteHistory *
@@ -8177,6 +8247,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_long_item_read", test_file_long_item_read);
     add_test ("/history/switch_drops_unkept_passwords", test_switch_drops_unkept_passwords);
     add_test ("/history/delete_unnamed", test_delete_unnamed);
+    add_test ("/history/delete_store_or_sweep", test_delete_store_or_sweep);
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);

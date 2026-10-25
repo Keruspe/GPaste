@@ -721,10 +721,15 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
         G_PASTE_DBUS_ASSERT (unreachable || g_strv_contains ((const gchar * const *) histories, name), G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
     }
 
-    /* Nothing was deleted if this fails, the current history left only for
-     * the time it took (g_paste_history_delete ()), so the deletion is not
-     * announced; the caller turns @error into the method's reply. */
-    if (!g_paste_history_delete (history, name, error))
+    /* Nothing was deleted unless the store went, the current history left
+     * only for the time it took (g_paste_history_delete_full ()), so the
+     * deletion is not announced; a store that went, its images not all swept,
+     * is, the failure the reply all the same. The caller turns @error into the
+     * method's reply. */
+    gboolean deleted = FALSE;
+
+    g_paste_history_delete_full (history, name, &deleted, error);
+    if (!deleted)
         return;
 
     g_paste_daemon3_emit_raw_history_deleted (self->skeleton, name);

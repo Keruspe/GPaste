@@ -16,6 +16,15 @@ G_BEGIN_DECLS
 void g_paste_history_load (GPasteHistory *self,
                            const gchar   *name);
 
+/* g_paste_history_delete (), @deleted, when not %NULL, saying whether the
+ * history is gone: set once its store is, the delete failing over images it
+ * could not all sweep included, and left FALSE by every refusal before the
+ * unlink. */
+gboolean g_paste_history_delete_full (GPasteHistory *self,
+                                      const gchar   *name,
+                                      gboolean      *deleted,
+                                      GError       **error);
+
 /* Whether deleting or emptying @name reaches every store keeping it, through
  * the backend in use (g_paste_storage_backend_reaches_history ()). */
 gboolean g_paste_history_reaches_store (GPasteHistory *self,
