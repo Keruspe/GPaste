@@ -2315,8 +2315,13 @@ _g_paste_file_backend_same_file (const gchar *a,
  * process died on the way, or the filesystem refused to put the originals back.
  * The history's replacement still beside it means the re-key never reached its
  * last rename, so every original under its second name goes back over its
- * file. Without it, the re-key went through or never started, and what is left
- * beside the files is dropped. That replacement goes last, once nothing is
+ * file -- over a file renamed over, that is: one whose own replacement is still
+ * beside it never moved, the history among them, and its second name is dropped
+ * instead. That is also what keeps a copy aside the process died writing, on a
+ * filesystem without hard links, from going over the file it was copying:
+ * every original is kept aside whole before the first rename. Without the
+ * history's replacement, the re-key went through or never started, and what is
+ * left beside the files is dropped. That replacement goes last, once nothing is
  * left to put back, so a settle cut short is taken up by the next one.
  *
  * Without the history itself, what is left is a history deleted -- a delete cut
@@ -2340,19 +2345,22 @@ _g_paste_file_backend_settle_rekey (const gchar *name)
     for (GStrv path = paths; *path; ++path)
     {
         g_autofree gchar *aside_path = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+        g_autofree gchar *replacement = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+        gboolean moved = pending && path != paths && !g_file_test (replacement, G_FILE_TEST_EXISTS);
 
-        if (path != paths)
-            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+        /* An original that never moved is still at its path: its second name
+         * goes before its replacement does, a settle cut short in between
+         * leaving the replacement to say so to the next one. */
+        if (!moved || _g_paste_file_backend_same_file (*path, aside_path))
+        {
+            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+            if (path != paths)
+                _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+            continue;
+        }
 
         if (!g_file_test (aside_path, G_FILE_TEST_EXISTS))
             continue;
-
-        /* An original that never moved is still at its path. */
-        if (!pending || _g_paste_file_backend_same_file (*path, aside_path))
-        {
-            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
-            continue;
-        }
 
         g_autoptr (GFile) aside = g_file_new_for_path (aside_path);
         g_autoptr (GFile) file = g_file_new_for_path (*path);
@@ -2449,7 +2457,7 @@ _g_paste_file_backend_install_index (guint k,
 /* Re-encrypt @name under @new_passphrase. Everything encrypted under the old key
  * — the history and its images — is rewritten beside itself, then each original
  * is given a second name, and only then is each replacement renamed over its
- * file: no byte is copied, and no file of the history is ever absent. The
+ * file: no file of the history is ever absent. The
  * images go in first and the history last, its rename being the one that makes
  * the re-key happen, so a failure on the way is undone by renaming the
  * originals back -- and one that cannot be is what @split reports, those
@@ -2519,8 +2527,8 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
      * renames below happen, and copies nothing. A filesystem without them --
      * vfat, exFAT, most network and FUSE mounts -- has the original copied
      * aside instead, synced as a replacement is: the same bytes under the
-     * second name, which is all a settle puts back, the inode only telling it
-     * whether the original is still at its path. */
+     * second name. A copy cut short is of a file not renamed over yet, which
+     * a settle tells by its replacement still beside it and leaves alone. */
     for (guint i = 0; i < n_paths; ++i)
     {
         g_autofree gchar *aside = _g_paste_file_backend_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);

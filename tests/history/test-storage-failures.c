@@ -324,6 +324,45 @@ link (const char *from,
     return original (from, to);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Whether the copy keeping a history's original aside, on a filesystem without
+ * hard links, stops part way and has the next start's settle look at what it
+ * left: a process dying in that copy, and the next one starting. */
+static gboolean settle_mid_copy;
+
+gboolean
+g_file_copy (GFile                *source,
+             GFile                *destination,
+             GFileCopyFlags        flags,
+             GCancellable         *cancellable,
+             GFileProgressCallback progress,
+             gpointer              data,
+             GError              **error)
+{
+    typedef gboolean (*Copy) (GFile *, GFile *, GFileCopyFlags, GCancellable *, GFileProgressCallback, gpointer, GError **);
+    Copy original = (Copy) dlsym (RTLD_NEXT, "g_file_copy");
+    g_autofree gchar *from = g_file_get_path (source);
+    g_autofree gchar *to = g_file_get_path (destination);
+
+    g_assert_nonnull (original);
+    if (settle_mid_copy && strstr (to, ".rekey-old") && g_str_has_suffix (from, ".xmls"))
+    {
+        g_autofree gchar *contents = NULL;
+        gsize length;
+
+        settle_mid_copy = FALSE;
+        g_assert_true (g_file_get_contents (from, &contents, &length, NULL));
+        g_assert_true (g_file_set_contents (to, contents, length / 2, NULL));
+        g_paste_file_backend_settle_rekeys ();
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED, "injected death copying %s", from);
+
+        return FALSE;
+    }
+
+    return original (source, destination, flags, cancellable, progress, data, error);
+}
+#endif
+
 gboolean
 g_file_move (GFile                *source,
              GFile                *destination,
@@ -4089,6 +4128,52 @@ test_rekey_success (gconstpointer data)
     g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data)));
 }
 
+/* A re-key cut short while it copies an original aside, on a filesystem without
+ * hard links, leaves nothing a settle could take for that original: the history
+ * comes out of the next start's settle as it was. */
+static void
+test_rekey_copy_cut_short (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not keep the original of*injected death copying*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-copy-cut-short";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+        gboolean split = TRUE;
+
+        refused_links = TRUE;
+        settle_mid_copy = TRUE;
+        g_assert_false (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+        refused_links = FALSE;
+        g_assert_false (settle_mid_copy);
+        g_assert_false (split);
+    }
+
+    g_assert_false (has_rekey_leftovers (name));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data)));
+}
+
 static void
 write_file (const gchar *path,
             const gchar *contents)
@@ -5770,6 +5855,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/split", test_rekey_split);
     g_test_add_data_func ("/storage/rekey/success", GINT_TO_POINTER (FALSE), test_rekey_success);
     g_test_add_data_func ("/storage/rekey/without-hard-links", GINT_TO_POINTER (TRUE), test_rekey_success);
+    g_test_add_func ("/storage/rekey/copy-cut-short", test_rekey_copy_cut_short);
     g_test_add_func ("/storage/rekey/split-reported", test_rekey_split_reported);
     g_test_add_func ("/storage/rekey/settled-back", test_rekey_settled_back);
     g_test_add_func ("/storage/rekey/settled-forward", test_rekey_settled_forward);
