@@ -4547,8 +4547,9 @@ test_timeout_edit_newest_object (void)
 /* A read of a named record concluding while its own history reloads -- a change
  * of passphrase, an in-place migration -- is that record, taken at its word: no
  * entry of the history is there yet to tell it from another history's. It keeps
- * its countdown and is not added, the load bringing back what the store holds
- * of it, rather than leaving a nameless twin with password-timeout's. */
+ * its countdown and is not added, the load bringing the record back -- carried
+ * over by the reload here, no storage holding it -- rather than leaving a
+ * nameless twin with password-timeout's. */
 static void
 test_record_while_loading (void)
 {
@@ -4584,7 +4585,8 @@ test_record_while_loading (void)
     while (g_paste_history_is_loading (history))
         g_main_context_iteration (loading, TRUE);
 
-    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_true (g_paste_history_get (history, 0) == bank);
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
 }

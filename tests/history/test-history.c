@@ -5025,6 +5025,78 @@ test_reload_backend_announced (void)
     g_assert_cmpuint (updates, ==, 2);
 }
 
+/* With no storage, which a locked encrypted store runs on too, the model is
+ * all there is: the reload ending a store check or a passphrase change keeps
+ * the whole of it, a password among it included, rather than reading back the
+ * nothing that backend holds. */
+static void
+test_reload_keeps_unstored (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "reload-unstored");
+    g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+    g_paste_history_add (history, g_paste_text_item_new ("first"));
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret kept in memory", 0));
+    g_paste_history_add (history, g_paste_text_item_new ("last"));
+    g_paste_history_flush (history);
+    g_paste_history_reload_backend (history);
+
+    g_assert_true (pump_until_length (history, 3, 5000));
+    g_assert_cmpstr (value_at (history, 0), ==, "last");
+    g_assert_cmpstr (value_at (history, 2), ==, "first");
+    g_assert_cmpuint (dropped->len, ==, 0);
+    g_signal_handlers_disconnect_by_data (history, dropped);
+}
+
+/* Nor does a store that could not be read hold what was copied since, nothing
+ * being recorded for it: a reload that can read it -- the passphrase that
+ * opens it given at last -- keeps those copies on top of what it reads. */
+static void
+test_reload_keeps_unrecorded (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "reload-unrecorded";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+
+        g_paste_settings_set_growing_lines (settings, FALSE);
+        g_assert_true (g_paste_util_ensure_history_dir_exists ());
+        g_assert_true (g_file_set_contents (path, "<history version=\"2.0\"><item", -1, NULL));
+
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+        g_paste_history_load (history, name);
+        g_assert_true (g_paste_history_is_unreadable (history));
+        g_paste_history_add (history, g_paste_text_item_new ("copied while unreadable"));
+        g_paste_history_flush (history);
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("stored"));
+
+            g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+        }
+
+        g_paste_history_reload_backend (history);
+        g_assert_true (pump_until_length (history, 2, 5000));
+        g_assert_cmpstr (value_at (history, 0), ==, "copied while unreadable");
+        g_assert_cmpstr (value_at (history, 1), ==, "stored");
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+}
+
 /* What is copied while the store is handed over -- a passphrase change's
  * prompts up -- is in the model alone: the reload ending the handover keeps
  * it, recorded on top of what it reads back. A password among it has not
@@ -7444,6 +7516,8 @@ main (int argc, char *argv[])
     add_test ("/history/load_add_replaces_stored_head", test_load_add_replaces_stored_head);
 #endif
     add_test ("/history/reload_keeps_stopped_adds", test_reload_keeps_stopped_adds);
+    add_test ("/history/reload_keeps_unstored", test_reload_keeps_unstored);
+    add_test ("/history/reload_keeps_unrecorded", test_reload_keeps_unrecorded);
     add_test ("/history/reload_carries_load_adds_once", test_reload_carries_load_adds_once);
     add_test ("/history/reload_keeps_retired_order", test_reload_keeps_retired_order);
     add_test ("/history/stopped_add_evicted_freed", test_stopped_add_evicted_freed);

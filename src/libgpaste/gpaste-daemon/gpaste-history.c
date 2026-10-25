@@ -2108,10 +2108,14 @@ g_paste_history_reload_backend (GPasteHistory *self)
      * that is the whole model, nothing having been recorded since it started.
      * Otherwise it is what was copied while the store was handed over, down to
      * the oldest copy still listed, and whatever sits above that copy: a
-     * password's expiry puts the entry before it back on top. */
+     * password's expiry puts the entry before it back on top. With no storage
+     * -- chosen, or standing in for an encrypted store left locked -- or a
+     * store that could not be read, which records nothing, it is the whole
+     * model too: the store holds none of it. */
     guint carried = 0;
 
-    if (self->saver && g_paste_history_saver_is_loading (self->saver))
+    if ((self->saver && g_paste_history_saver_is_loading (self->saver)) || self->unreadable ||
+        g_paste_storage_backend_get_kind (self->backend) == G_PASTE_STORAGE_NOOP)
         carried = self->history->len;
     else
     {

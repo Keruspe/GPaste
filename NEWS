@@ -66,6 +66,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix a timeout given to a password on the clipboard never taking it off when the application holding it answers nothing
 - Fix emptying a history that is not in use sometimes leaving its items, or bringing back one deleted right after
 - Fix screenshots kept by GPaste 50 being deleted after an upgrade when their history moved or could not be saved
+- Fix checking the store, or changing the passphrase, emptying a history kept in memory only
 
 NEW in 51.1 (20/10/2026)
 =============
