@@ -66,8 +66,6 @@ void     g_paste_history_empty_other_async  (GPasteHistory      *self,
 gboolean g_paste_history_empty_other_finish (GPasteHistory *self,
                                              GAsyncResult  *result,
                                              GError       **error);
-void     g_paste_history_load       (GPasteHistory *self,
-                                     const gchar   *name);
 gboolean g_paste_history_is_unreadable (GPasteHistory *self);
 gboolean g_paste_history_is_loading    (GPasteHistory *self);
 void     g_paste_history_load_async (GPasteHistory *self,

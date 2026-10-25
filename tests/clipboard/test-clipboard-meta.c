@@ -11,6 +11,7 @@
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 

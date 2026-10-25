@@ -5,6 +5,7 @@
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>

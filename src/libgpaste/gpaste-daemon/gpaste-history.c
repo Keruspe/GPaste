@@ -7,7 +7,7 @@
 #include <gpaste-3/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
-#include <gpaste-daemon/gpaste-history.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
@@ -1928,14 +1928,12 @@ g_paste_history_empty_other_finish (GPasteHistory *self,
     return g_task_propagate_boolean (G_TASK (result), error);
 }
 
-/* Read a history in, synchronously, and install it as the model.
- *
- * Its one caller is BackupHistory of a history the daemon is not keeping, which
- * saves what this read as the backup. That is what the read answers: the
- * backend's own caps applied -- no image with images-support off, the
+/* Read a history in, synchronously, and install it as the model: the
+ * synchronous load, for the tests alone (gpaste-history-private.h). The
+ * backend's own caps apply -- no image with images-support off, the
  * non-favourites past max-history-size left out -- and nothing more, unlike the
- * load g_paste_history_on_loaded () installs, which applies the memory cap too:
- * a backup is a copy of the history as GPaste reads it, not of its store. */
+ * load g_paste_history_on_loaded () installs, which applies the memory cap
+ * too. */
 static void
 g_paste_history_load_locked (GPasteHistory *self,
                              const gchar   *name)
@@ -1967,13 +1965,7 @@ g_paste_history_load_locked (GPasteHistory *self,
     g_paste_history_private_elect_new_biggest (self);
 }
 
-/**
- * g_paste_history_load:
- * @self: a #GPasteHistory instance
- * @name: (nullable): the name of the history to load, defaults to the configured one
- *
- * Load the #GPasteHistory from the history file (synchronous)
- */
+/* See gpaste-history-private.h. */
 G_PASTE_VISIBLE void
 g_paste_history_load (GPasteHistory *self,
                       const gchar   *name)
