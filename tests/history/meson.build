@@ -36,8 +36,8 @@ test('saver', test_saver, depends: [gpaste_schemas, test_bus_supervisor])
 # The cases go through the migration's own code, which the binary includes, and
 # inject the failures each of them is about. Registered under -Bsymbolic all the
 # same: the cases needing the library's own calls interposed skip themselves
-# (kind_hidable ()). Against a static library it does not link at all, defining
-# functions the library's objects define too.
+# (library_calls_interposed ()). Against a static library it does not link at
+# all, defining functions the library's objects define too.
 if not library_static
   test_storage_failures = executable(
     'test-storage-failures',

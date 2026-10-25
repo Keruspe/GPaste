@@ -730,15 +730,18 @@ g_paste_storage_is_supported (GPasteStorage storage_kind)
 }
 
 #if defined(G_PASTE_ENABLE_ENCRYPTION) || defined(G_PASTE_ENABLE_SQLITE)
-/* Whether hiding a kind reaches the library's own calls, which go through the
- * interposer above only while they go through the PLT: -Bsymbolic binds them
- * inside the library, and a case hiding a kind skips itself then. Every other
- * case interposes calls the library makes into another one, or that the
- * migration makes from its copy built into this binary, which -Bsymbolic
- * leaves alone. The cases hiding one are those of a flavour that can be
- * missing. */
+/* Whether the library's own calls reach this binary's definitions -- the
+ * interposer above, the storage-migration functions its copy built in here
+ * defines again -- which they do only while they go through the PLT:
+ * -Bsymbolic binds them inside the library, and a case needing them skips
+ * itself then. Asked of the interposer, through a call the library makes. The
+ * cases needing them hide a flavour that can be missing, or count a storage
+ * worker in this binary's copy of the counter the library asks
+ * g_paste_storage_is_busy () of. Every other case interposes calls the library
+ * makes into another one, or that the migration makes from its copy, which
+ * -Bsymbolic leaves alone. */
 static gboolean
-kind_hidable (void)
+library_calls_interposed (void)
 {
     guint before = asked;
 
@@ -1127,7 +1130,7 @@ test_unlock_skips_unopenable_flavour (void)
 {
     if (!g_test_subprocess ())
     {
-        if (!kind_hidable ())
+        if (!library_calls_interposed ())
             return;
 
         g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
@@ -1360,7 +1363,7 @@ test_migration_offers_supported (void)
 static void
 test_migration_refuses_unoffered_choice (void)
 {
-    if (!kind_hidable ())
+    if (!library_calls_interposed ())
         return;
 
     if (!g_test_subprocess ())
@@ -1414,7 +1417,7 @@ test_migration_refuses_unoffered_choice (void)
 static void
 test_migration_clamps_unopenable_source (void)
 {
-    if (!kind_hidable ())
+    if (!library_calls_interposed ())
         return;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
@@ -4966,6 +4969,9 @@ test_rekey_settled_while_busy (void)
     g_autofree gchar *history = NULL;
     g_autofree gchar *image = NULL;
 
+    if (!library_calls_interposed ())
+        return;
+
     write_interrupted_rekey (name, &history, &image);
     g_assert_true (g_paste_storage_backend_try_lock ());
 
@@ -5102,7 +5108,7 @@ test_verifiable_needs_refutable (void)
 static void
 test_rekey_unopenable (void)
 {
-    if (!kind_hidable ())
+    if (!library_calls_interposed ())
         return;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
