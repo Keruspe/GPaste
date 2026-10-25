@@ -5444,6 +5444,54 @@ count_selected (GPasteHistory *history G_GNUC_UNUSED,
     ++*(guint *) user_data;
 }
 
+/* A reload of the history loaded -- what ends a store check, a change of
+ * passphrase or an in-place migration -- leaves the selections alone: they
+ * carry what was copied last, which the history need not hold (the primary's
+ * highlight, a copy made while paused), and the head they were given when the
+ * history was loaded is not published over that again. A model empty until
+ * then, an encrypted store unlocked at last, has its head published, as a
+ * first load does. */
+static void
+test_reload_selects_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    guint selected = 0;
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_paste_history_flush (history);
+    g_signal_connect (history, "selected", G_CALLBACK (count_selected), &selected);
+    g_paste_history_reload_backend (history);
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpuint (selected, ==, 0);
+
+    g_signal_handlers_disconnect_by_data (history, &selected);
+
+    /* On no storage, as a locked store runs, its store written behind it. */
+    const gchar *name = "reload-unlocked";
+    g_autoptr (GPasteSettings) unlocked_settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) unlocked = g_paste_history_new (unlocked_settings);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, unlocked_settings);
+    g_autolist (GPasteItem) stored = g_list_append (NULL, g_paste_text_item_new ("stored head"));
+
+    g_paste_history_load (unlocked, name);
+    g_assert_cmpuint (g_paste_history_get_length (unlocked), ==, 0);
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, stored));
+    g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_FILE);
+    selected = 0;
+    g_signal_connect (unlocked, "selected", G_CALLBACK (count_selected), &selected);
+    g_paste_history_flush (unlocked);
+    g_paste_history_reload_backend (unlocked);
+    g_assert_true (pump_until_loaded (unlocked));
+    g_assert_cmpuint (g_paste_history_get_length (unlocked), ==, 1);
+    g_assert_cmpuint (selected, ==, 1);
+    g_signal_handlers_disconnect_by_data (unlocked, &selected);
+}
+
 /* Loading a history selects its head, which puts it on the selections -- but not
  * a password: nobody asked to publish it, and under a password-timeout of 0 it
  * would then stay there for the session.
@@ -7626,6 +7674,7 @@ main (int argc, char *argv[])
 #endif
     add_test ("/history/reload_keeps_stopped_adds", test_reload_keeps_stopped_adds);
     add_test ("/history/reload_keeps_unstored", test_reload_keeps_unstored);
+    add_test ("/history/reload_selects_nothing", test_reload_selects_nothing);
     add_test ("/history/reload_keeps_unrecorded", test_reload_keeps_unrecorded);
     add_test ("/history/reload_carries_load_adds_once", test_reload_carries_load_adds_once);
     add_test ("/history/reload_keeps_retired_order", test_reload_keeps_retired_order);

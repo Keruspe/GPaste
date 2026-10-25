@@ -109,6 +109,12 @@ struct _GPasteHistory
      * any other departure is. A switch starting another load drops them: that
      * is a history swapped out, which no password leaves. */
     GSList               *reload_passwords;
+
+    /* The load out is a reload of a model that held something
+     * (g_paste_history_reload_backend ()): the selections were given its head
+     * when it was first loaded, and carry what was copied since, which the
+     * history need not hold -- the reload publishes nothing over that. */
+    gboolean              reload_keeps_selections;
 };
 
 G_PASTE_DEFINE_TYPE (History, history, G_TYPE_OBJECT)
@@ -2017,7 +2023,8 @@ g_paste_history_on_loaded (gpointer user_data,
      * the last of those is (see below), and a selection told to take the read
      * one instead would have it published over a password just copied --
      * dropped, even, as an image whose texture the adds idle. */
-    g_paste_history_activate_first (self, !added);
+    g_paste_history_activate_first (self, !added && !self->reload_keeps_selections);
+    self->reload_keeps_selections = FALSE;
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
     g_paste_history_private_elect_new_biggest (self);
@@ -2148,6 +2155,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
     }
     g_hash_table_remove_all (self->stopped_adds);
     self->stopped_changes = FALSE;
+    self->reload_keeps_selections = self->history->len > 0;
 
     /* A load still in flight keeps the old saver alive through the task's own
      * reference; detach it so its (pre-migration) result is dropped instead of
@@ -2228,6 +2236,7 @@ g_paste_history_load_async (GPasteHistory *self,
      * Nothing is recorded in the meantime, since a load is now in progress.
      * @stopped is deliberately left alone — a handover is not ours to undo. */
     self->unreadable = FALSE;
+    self->reload_keeps_selections = FALSE;
 
     g_paste_history_saver_load (self->saver, self->name, FALSE);
 }
@@ -2446,6 +2455,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     g_clear_slist (&self->reload_passwords, g_object_unref);
     g_hash_table_remove_all (self->stopped_adds);
     self->stopped_changes = FALSE;
+    self->reload_keeps_selections = FALSE;
     self->size = 0;
     /* Switching away from an unreadable history resumes recording: the new one
      * stands on its own (see g_paste_history_load_async). A flushed history
