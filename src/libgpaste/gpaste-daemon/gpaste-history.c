@@ -1837,6 +1837,70 @@ g_paste_history_copy_finish (GAsyncResult *result,
     return g_task_propagate_boolean (G_TASK (result), error);
 }
 
+/**
+ * g_paste_history_empty_other_async:
+ * @self: a #GPasteHistory instance
+ * @name: the history to empty, another one than the history in use
+ * @callback: called once the emptying has landed
+ * @user_data: data for @callback
+ *
+ * Write an empty history over the one called @name and delete its images, in
+ * the background and in the saver's turn: behind every write recorded for it,
+ * and ahead of whatever reads it afterwards -- a switch to it, a backup of it
+ * -- or deletes it, all of which wait for it as for any write of @name.
+ *
+ * Fails with %G_IO_ERROR_BUSY, as g_paste_history_sync () does, and with
+ * %G_PASTE_ERROR_FAILED when the history runs on the "no storage" backend
+ * while another flavour stores @name, both having done nothing, or when the
+ * empty history could not be written.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_empty_other_async (GPasteHistory      *self,
+                                   const gchar        *name,
+                                   GAsyncReadyCallback callback,
+                                   gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (name);
+
+    G_PASTE_LOCK_HISTORY;
+
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_history_check_store_owned (self, name, &error) || !g_paste_history_check_store_reachable (self, name, &error))
+    {
+        g_task_report_error (self, callback, user_data, g_paste_history_empty_other_async, g_steal_pointer (&error));
+        return;
+    }
+
+    /* As in g_paste_history_copy_async (). */
+    g_autoptr (GPasteStorageBackend) elsewhere = g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
+
+    g_paste_history_saver_empty (self->saver, elsewhere, name, callback, user_data);
+}
+
+/**
+ * g_paste_history_empty_other_finish:
+ * @self: a #GPasteHistory instance
+ * @result: the #GAsyncResult g_paste_history_empty_other_async () handed its
+ *     callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails as g_paste_history_empty_other_async () says.
+ *
+ * Returns: whether the history was emptied
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_history_empty_other_finish (GPasteHistory *self,
+                                    GAsyncResult  *result,
+                                    GError       **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (g_task_is_valid (result, NULL) || g_task_is_valid (result, self), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (result), error);
+}
+
 /* Read a history in, synchronously, and install it as the model.
  *
  * Its one caller is BackupHistory of a history the daemon is not keeping, which

@@ -837,7 +837,7 @@ test_empty_current (void)
     g_assert_null (items);
 }
 
-/* Writing another history over empty happens on a worker thread, the call
+/* Writing another history over empty happens on the saver's worker, the call
  * answered once it has landed: on the main loop -- gnome-shell's compositor,
  * for the daemon hosted there -- a key derivation, a sync and a sweep of its
  * images would stall it for as long. */
@@ -874,6 +874,117 @@ test_empty_other_off_main_loop (void)
     finish_history (history);
 
     g_autolist (GPasteItem) items = read_items (backend, "emptied-elsewhere");
+
+    g_assert_null (items);
+}
+
+/* Another history's emptying is a write in the saver's turn: a switch to it
+ * made while the emptying is still out reads it once that has landed, not the
+ * items it held, which the next save would then write back. */
+static void
+test_empty_other_then_switch (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "empty-then-switch-from");
+
+    g_autolist (GPasteItem) other = g_list_prepend (NULL, g_paste_text_item_new ("other stored item"));
+
+    real_write (backend, "empty-then-switch-to", other);
+    g_mutex_lock (&barrier.mutex);
+    barrier.name = "empty-then-switch-to";
+    barrier.hold_write = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_empty_history_async (&methods, "empty-then-switch-to", on_emptied, &result);
+    wait_worker ();
+    g_paste_history_switch (history, "empty-then-switch-to");
+
+    g_autoptr (GThread) release = g_thread_new ("release-emptying", release_later, NULL);
+
+    wait_load (history);
+    g_thread_join (g_steal_pointer (&release));
+    while (!result)
+        g_main_context_iteration (NULL, TRUE);
+    g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    finish_history (history);
+}
+
+/* A flush lands another history's emptying with the rest, the way out of the
+ * process -- a stop, a takeover, a re-exec -- waiting for it as for any write:
+ * cut short, the history would come back with the items emptied. */
+static void
+test_empty_other_flushed (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "empty-flushed-current");
+
+    g_autolist (GPasteItem) other = g_list_prepend (NULL, g_paste_text_item_new ("other stored item"));
+
+    real_write (backend, "empty-flushed", other);
+    g_mutex_lock (&barrier.mutex);
+    barrier.name = "empty-flushed";
+    barrier.hold_write = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_empty_history_async (&methods, "empty-flushed", on_emptied, &result);
+    wait_worker ();
+
+    g_autoptr (GThread) release = g_thread_new ("release-emptying", release_later, NULL);
+
+    g_paste_history_flush (history);
+    g_thread_join (g_steal_pointer (&release));
+
+    g_autolist (GPasteItem) items = read_items (backend, "empty-flushed");
+
+    g_assert_null (items);
+    while (!result)
+        g_main_context_iteration (NULL, TRUE);
+}
+
+/* Another history is emptied in the flavour the history runs on, as it is
+ * listed, counted and backed up in: the storage-backend setting moved under a
+ * running daemon names a store it does not read. */
+static void
+test_empty_other_backend_in_use (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "empty-in-use-current");
+
+    g_autolist (GPasteItem) other = g_list_prepend (NULL, g_paste_text_item_new ("other stored item"));
+
+    real_write (backend, "empty-in-use", other);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_SQLITE);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GError) error = NULL;
+
+    empty_history (&methods, "empty-in-use", &error);
+    g_assert_no_error (error);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+    finish_history (history);
+
+    g_autolist (GPasteItem) items = read_items (backend, "empty-in-use");
 
     g_assert_null (items);
 }
@@ -1270,6 +1381,9 @@ main (int    argc,
     g_test_add_func ("/history-ordering/empty-current", test_empty_current);
     g_test_add_func ("/history-ordering/backup-emptied", test_backup_emptied);
     g_test_add_func ("/history-ordering/empty-other", test_empty_other);
+    g_test_add_func ("/history-ordering/empty-other-then-switch", test_empty_other_then_switch);
+    g_test_add_func ("/history-ordering/empty-other-flushed", test_empty_other_flushed);
+    g_test_add_func ("/history-ordering/empty-other-backend-in-use", test_empty_other_backend_in_use);
     g_test_add_func ("/history-ordering/empty-other-off-main-loop", test_empty_other_off_main_loop);
     g_test_add_func ("/history-ordering/stopped", test_stopped);
     g_test_add_func ("/history-ordering/count-pending", test_count_pending);

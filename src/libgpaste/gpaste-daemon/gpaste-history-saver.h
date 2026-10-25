@@ -52,7 +52,7 @@ typedef enum
     G_PASTE_HISTORY_SAVE_REMOVE,  /* @uuid was removed */
     G_PASTE_HISTORY_SAVE_REPLACE, /* @uuid was replaced by @item */
     G_PASTE_HISTORY_SAVE_CLEAR,   /* the history was emptied */
-    G_PASTE_HISTORY_SAVE_COPY,    /* a history written whole under another name: g_paste_history_saver_copy () */
+    G_PASTE_HISTORY_SAVE_COPY,    /* a history written whole under another name, or emptied: g_paste_history_saver_copy (), _empty () */
 } GPasteHistorySaveOp;
 
 /********************/
@@ -76,6 +76,11 @@ void     g_paste_history_saver_copy          (GPasteHistorySaver   *self,
                                               GPasteStorageBackend *backend,
                                               const gchar          *source,
                                               GList                *history,
+                                              const gchar          *name,
+                                              GAsyncReadyCallback   callback,
+                                              gpointer              user_data);
+void     g_paste_history_saver_empty         (GPasteHistorySaver   *self,
+                                              GPasteStorageBackend *backend,
                                               const gchar          *name,
                                               GAsyncReadyCallback   callback,
                                               gpointer              user_data);

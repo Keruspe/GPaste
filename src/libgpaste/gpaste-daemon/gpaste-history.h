@@ -59,6 +59,13 @@ void     g_paste_history_copy_async (GPasteHistory      *self,
                                      gpointer            user_data);
 gboolean g_paste_history_copy_finish (GAsyncResult *result,
                                       GError      **error);
+void     g_paste_history_empty_other_async  (GPasteHistory      *self,
+                                             const gchar        *name,
+                                             GAsyncReadyCallback callback,
+                                             gpointer            user_data);
+gboolean g_paste_history_empty_other_finish (GPasteHistory *self,
+                                             GAsyncResult  *result,
+                                             GError       **error);
 void     g_paste_history_load       (GPasteHistory *self,
                                      const gchar   *name);
 gboolean g_paste_history_is_unreadable (GPasteHistory *self);

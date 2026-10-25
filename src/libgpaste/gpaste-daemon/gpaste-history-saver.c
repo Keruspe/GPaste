@@ -98,10 +98,13 @@ struct _GPasteHistorySaverWrite
     guint64               count;
 
     /* A copy's: the history it reads when it carries no @history, the
-     * caller's task, answered once it has landed, and what failed. */
+     * caller's task, answered once it has landed, and what failed. One
+     * reading nothing is an emptying (g_paste_history_saver_empty ()),
+     * which @sweep_images then follows with the images of @name. */
     gchar                *source;
     GTask                *done;
     GError               *error;
+    gboolean              sweep_images;
 };
 
 static void
@@ -140,7 +143,21 @@ g_paste_history_saver_do_copy (GPasteHistorySaverWrite *data)
     }
 
     if (!g_paste_storage_backend_write_history (data->backend, data->name, history))
-        g_set_error_literal (&data->error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the backup could not be written");
+    {
+        g_set_error_literal (&data->error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                             (data->sweep_images) ? "the history could not be emptied" : "the backup could not be written");
+        return;
+    }
+
+    /* The write's own sweep takes the files of its flavour alone; what another
+     * flavour left -- the clipboard's screenshots, unencrypted under the plain
+     * one -- would stay on disk for good, unless a file flavour still stores
+     * the name, which reads them. Best effort, as in the delete path: the
+     * history itself is already empty. */
+    g_autoptr (GError) images_error = NULL;
+
+    if (data->sweep_images && !g_paste_storage_backend_delete_history_images (data->name, &images_error))
+        g_warning ("Could not delete the images of \"%s\": %s", data->name, images_error->message);
 }
 
 /* A copy's caller told how it went, on the main thread, once it is over. */
@@ -438,12 +455,51 @@ g_paste_history_saver_copy (GPasteHistorySaver   *self,
 }
 
 /**
+ * g_paste_history_saver_empty:
+ * @self: a #GPasteHistorySaver
+ * @backend: what the emptying writes through, one of its own, as a copy's
+ * @name: the history emptied
+ * @callback: called once the emptying has landed
+ * @user_data: data for @callback
+ *
+ * Write an empty history over @name and sweep its images in the background,
+ * in its turn, as a copy of nothing: behind every write recorded before it,
+ * and ahead of a read, a copy or a drain of @name, which wait for it as for
+ * any write of @name. Answered through g_paste_history_saver_copy_finish ().
+ */
+void
+g_paste_history_saver_empty (GPasteHistorySaver   *self,
+                             GPasteStorageBackend *backend,
+                             const gchar          *name,
+                             GAsyncReadyCallback   callback,
+                             gpointer              user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (backend));
+    g_return_if_fail (name);
+
+    g_autoptr (GPasteHistorySaverWrite) data = g_new0 (GPasteHistorySaverWrite, 1);
+
+    data->saver = self;
+    data->backend = g_object_ref (backend);
+    data->op = G_PASTE_HISTORY_SAVE_COPY;
+    data->name = g_strdup (name);
+    data->sweep_images = TRUE;
+    data->done = g_task_new (NULL, NULL, callback, user_data);
+    g_task_set_source_tag (data->done, g_paste_history_saver_copy);
+
+    g_queue_push_tail (&self->pending, g_steal_pointer (&data));
+
+    g_paste_history_saver_start_write (self);
+}
+
+/**
  * g_paste_history_saver_copy_finish:
  * @result: the #GAsyncResult g_paste_history_saver_copy () handed its callback
  * @error: return location for a #GError, or %NULL
  *
  * Fails with %G_PASTE_ERROR_FAILED when the history copied could not be read,
- * or the copy not written.
+ * or the copy, or the empty history, not written.
  *
  * Returns: whether the copy landed
  */
