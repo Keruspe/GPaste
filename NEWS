@@ -74,6 +74,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix an expiring password coming back on top of the history after GPaste stops or is replaced
 - Fix a copy from a program exiting right after its first paste going unrecorded
 - Fix renaming a saved password stopping the countdown of the same password copied while paused
+- Fix adding a file from a folder GPaste cannot open reporting the wrong error
 
 NEW in 51.1 (20/10/2026)
 =============

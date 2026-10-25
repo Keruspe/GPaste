@@ -367,11 +367,27 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
                                                     NULL /* cancellable */,
                                                     error);
 
+    if (!info)
+        return NULL;
+
+    /* GLib's local backend answers a path it could not stat -- one in a folder
+     * the daemon cannot enter -- with an info holding none of what was asked,
+     * rather than failing: the stat says why (/history/add_file_unsearchable). */
+    if (!g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_TYPE) ||
+        !g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_SIZE))
+    {
+        GStatBuf unread;
+        gint saved_errno = (g_stat (path, &unread) < 0) ? errno : EACCES;
+
+        g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (saved_errno), "%s: %s", path, g_strerror (saved_errno));
+        return NULL;
+    }
+
     /* Looked at by its path, so that nothing else is so much as opened, then
      * again once opened, the path being free to name something else by then:
      * everything read is the descriptor's, no further than the memory cap,
      * and the open waits on no FIFO (/history/add_file_swapped). */
-    if (!info || !g_paste_daemon_methods_can_read (self, g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR, (guint64) g_file_info_get_size (info), error))
+    if (!g_paste_daemon_methods_can_read (self, g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR, (guint64) g_file_info_get_size (info), error))
         return NULL;
 
     g_autofd gint fd = g_open (path, O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK, 0);

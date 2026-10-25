@@ -716,6 +716,38 @@ test_add_file_refusals (void)
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
+/* A file in a folder AddFile cannot enter is refused for that, as the read
+ * the stat could not make would be: GLib's local backend answers a path it
+ * could not stat with an info holding none of what was asked, whose getters
+ * would log a critical each and read as no regular file. */
+static void
+test_add_file_unsearchable (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autofree gchar *dir = g_build_filename (g_get_user_cache_dir (), "add-file-unsearchable", NULL);
+    g_autofree gchar *file = g_build_filename (dir, "file", NULL);
+    g_autoptr (GError) error = NULL;
+
+    if (getuid () == 0)
+    {
+        g_test_skip ("root searches any folder");
+        return;
+    }
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (file, "behind a closed door", -1, NULL));
+    g_assert_cmpint (g_chmod (dir, 0600), ==, 0);
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, file, &error));
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_ACCES);
+    g_assert_cmpint (g_chmod (dir, 0700), ==, 0);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_cmpint (g_unlink (file), ==, 0);
+    g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
 /* A file is read to its end, not to the size it reports: procfs reports a
  * regular file of size 0 for /proc/version, whatever it holds. */
 static void
@@ -7540,6 +7572,7 @@ main (int argc, char *argv[])
     add_test ("/history/add_file_refusals", test_add_file_refusals);
     add_test ("/history/add_file_tiff", test_add_file_tiff);
     add_test ("/history/add_file_swapped", test_add_file_swapped);
+    add_test ("/history/add_file_unsearchable", test_add_file_unsearchable);
     add_test ("/history/add_file_unsized", test_add_file_unsized);
     add_test ("/history/add_file_unallocated", test_add_file_unallocated);
     add_test ("/history/set_active_refused", test_set_active_refused);
