@@ -7,6 +7,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-clipboard-content.h>
+#include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-color-item.h>
@@ -529,7 +530,7 @@ select_image (Fixture *f)
     /* Active, as the history's head is when it is published. */
     g_assert_nonnull (item);
     g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
-    g_assert_true (g_paste_clipboard_provider_select_item (f->clipboard, item));
+    g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, item, TRUE), !=, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
 }
 
 /* An image put back on the clipboard is offered as a PNG, which reads back as

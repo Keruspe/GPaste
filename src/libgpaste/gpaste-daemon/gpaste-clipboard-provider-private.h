@@ -7,9 +7,14 @@
 
 G_BEGIN_DECLS
 
-/* Independent publications start a new copy. Maintenance completes or clears
- * the current one; a nested explicit selection still starts a copy of its own.
- * Only a publication that happened is announced (::published). */
+/* Here rather than in the installed header: the clipboards manager is what
+ * reads and publishes through a provider, which these say how, and the tests
+ * drive the providers through them too, which is what they are exported for.
+ *
+ * Put @item, or @text, on the provider and the selection under it. Independent
+ * publications start a new copy. Maintenance completes or clears the current
+ * one; a nested explicit selection still starts a copy of its own. Only a
+ * publication that happened is announced (::published). */
 GPasteClipboardPublication g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
                                                                         GPasteItem              *item,
                                                                         gboolean                 independent);
@@ -17,8 +22,10 @@ GPasteClipboardPublication g_paste_clipboard_provider_select_text_full (GPasteCl
                                                                         const gchar             *text,
                                                                         gboolean                 independent);
 
-/* g_paste_clipboard_provider_update () saying whether the caller records the
- * copy read: see @record on #GPasteClipboardUpdate. */
+/* Read what the selection holds and update the provider's cache, @callback
+ * getting the item made of it (#GPasteClipboardProviderUpdateCallback), @record
+ * saying whether the caller records the copy read: see @record on
+ * #GPasteClipboardUpdate. */
 void                       g_paste_clipboard_provider_update_full      (GPasteClipboardProvider              *self,
                                                                         gboolean                              record,
                                                                         GPasteClipboardProviderUpdateCallback callback,

@@ -3,6 +3,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
+#include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -574,11 +575,11 @@ refused_claim (Fixture      *f,
     gulong handler = g_signal_connect (f->clipboard, "published", G_CALLBACK (on_published), &published);
 
     refuse_claims = TRUE;
-    g_assert_true (g_paste_clipboard_provider_select_item (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), item));
+    g_assert_cmpint (g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), item, TRUE), !=, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
     g_assert_null (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
     g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
 
-    g_paste_clipboard_provider_select_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), "lost again");
+    g_paste_clipboard_provider_select_text_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), "lost again", TRUE);
     g_assert_null (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
     refuse_claims = FALSE;
     g_assert_cmpuint (published, ==, 0);
@@ -647,7 +648,7 @@ formats_owed_copy (Fixture      *f,
     g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
 
     /* What a countdown, an expiry wait or a strip asks. */
-    g_paste_clipboard_provider_update (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), on_identified, &identify);
+    g_paste_clipboard_provider_update_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), TRUE, on_identified, &identify);
     g_assert_true (g_paste_clipboard_gdk_is_reading (f->clipboard));
 
     set_formats (TRUE);

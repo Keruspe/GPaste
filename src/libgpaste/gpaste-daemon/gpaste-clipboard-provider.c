@@ -168,26 +168,7 @@ g_paste_clipboard_provider_is_identified (GPasteClipboardProvider *self)
     return !g_paste_clipboard_provider_is_reading (self) && G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->is_identified (self);
 }
 
-/**
- * g_paste_clipboard_provider_update:
- * @self: a #GPasteClipboardProvider instance
- * @callback: (scope async): the callback to be called when the content is ready
- * @user_data: the data to pass to @callback
- *
- * Read the current selection content and update the internal cache. The
- * callback receives a newly created #GPasteItem or %NULL if the content is
- * unchanged, unrecognised, or the selection has no owner. A superseded read
- * answers %NULL with @superseded set, and its callback only releases its state.
- */
 G_PASTE_VISIBLE void
-g_paste_clipboard_provider_update (GPasteClipboardProvider              *self,
-                                   GPasteClipboardProviderUpdateCallback callback,
-                                   gpointer                              user_data)
-{
-    g_paste_clipboard_provider_update_full (self, TRUE, callback, user_data);
-}
-
-void
 g_paste_clipboard_provider_update_full (GPasteClipboardProvider              *self,
                                         gboolean                              record,
                                         GPasteClipboardProviderUpdateCallback callback,
@@ -198,21 +179,7 @@ g_paste_clipboard_provider_update_full (GPasteClipboardProvider              *se
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->update (self, record, callback, user_data);
 }
 
-/**
- * g_paste_clipboard_provider_select_text:
- * @self: a #GPasteClipboardProvider instance
- * @text: the text to select
- *
- * Put the text into the provider and the underlying selection
- */
-G_PASTE_VISIBLE void
-g_paste_clipboard_provider_select_text (GPasteClipboardProvider *self,
-                                        const gchar             *text)
-{
-    g_paste_clipboard_provider_select_text_full (self, text, TRUE);
-}
-
-GPasteClipboardPublication
+G_PASTE_VISIBLE GPasteClipboardPublication
 g_paste_clipboard_provider_select_text_full (GPasteClipboardProvider *self,
                                              const gchar             *text,
                                              gboolean                 independent)
@@ -270,24 +237,7 @@ g_paste_clipboard_provider_sync_text (GPasteClipboardProvider    *self,
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->sync_text (self, other, callback, user_data, destroy);
 }
 
-/**
- * g_paste_clipboard_provider_select_item:
- * @self: a #GPasteClipboardProvider instance
- * @item: the item to select
- *
- * Put the value of the item into the provider and the underlying selection
- *
- * Returns: %FALSE if the item was invalid, %TRUE otherwise -- whether or not
- *          another client had taken the selection first
- */
-G_PASTE_VISIBLE gboolean
-g_paste_clipboard_provider_select_item (GPasteClipboardProvider *self,
-                                        GPasteItem              *item)
-{
-    return g_paste_clipboard_provider_select_item_full (self, item, TRUE) != G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
-}
-
-GPasteClipboardPublication
+G_PASTE_VISIBLE GPasteClipboardPublication
 g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
                                              GPasteItem              *item,
                                              gboolean                 independent)

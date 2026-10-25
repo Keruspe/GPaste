@@ -52,9 +52,9 @@ typedef enum
  * @superseded: whether another selection change overtook this read; @item is
  *              %NULL and the callback must only release its state in that case
  * @secret: what the read found out about the owner marking its content a secret
- * @user_data: the data passed to g_paste_clipboard_provider_update()
+ * @user_data: the data the update was given
  *
- * Receives the outcome of a g_paste_clipboard_provider_update(). The callback
+ * Receives the outcome of an update, the interface's @update. The callback
  * **owns** @item: it must hand it to something that takes it (e.g.
  * g_paste_history_add()) or release it.
  *
@@ -246,18 +246,11 @@ const gchar  *g_paste_clipboard_provider_get_image_checksum (GPasteClipboardProv
 gboolean      g_paste_clipboard_provider_is_reading         (GPasteClipboardProvider *self);
 gboolean      g_paste_clipboard_provider_is_empty           (GPasteClipboardProvider *self);
 gboolean      g_paste_clipboard_provider_is_identified      (GPasteClipboardProvider *self);
-void          g_paste_clipboard_provider_update             (GPasteClipboardProvider              *self,
-                                                             GPasteClipboardProviderUpdateCallback callback,
-                                                             gpointer                              user_data);
-void          g_paste_clipboard_provider_select_text        (GPasteClipboardProvider *self,
-                                                             const gchar             *text);
 void          g_paste_clipboard_provider_sync_text          (GPasteClipboardProvider    *self,
                                                              GPasteClipboardProvider    *other,
                                                              GPasteClipboardSyncCallback callback,
                                                              gpointer                    user_data,
                                                              GDestroyNotify              destroy);
-gboolean      g_paste_clipboard_provider_select_item        (GPasteClipboardProvider *self,
-                                                             GPasteItem              *item);
 GPasteItem   *g_paste_clipboard_provider_ensure_not_empty   (GPasteClipboardProvider *self,
                                                              GPasteHistory           *history);
 void          g_paste_clipboard_provider_store              (GPasteClipboardProvider *self);

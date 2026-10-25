@@ -3,6 +3,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-clipboard-content.h>
+#include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -1858,7 +1859,7 @@ test_unconfirmed_password (gconstpointer user_data)
     g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
     g_paste_clipboards_manager_activate (manager);
-    g_paste_clipboard_provider_select_item (G_PASTE_CLIPBOARD_PROVIDER (clipboard), password);
+    g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (clipboard), password, TRUE);
     g_paste_clipboards_manager_rearm_password (manager, password);
     clipboard->defer_reads = TRUE;
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
@@ -2209,7 +2210,7 @@ test_stale_strip_after_publication (void)
     g_assert_no_error (error);
 
     /* The sync shortcut publishes through this provider method. */
-    g_paste_clipboard_provider_select_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard), "unrelated sync");
+    g_paste_clipboard_provider_select_text_full (G_PASTE_CLIPBOARD_PROVIDER (clipboard), "unrelated sync", TRUE);
     text_ready (clipboard, settings, old, "rich text");
     g_paste_clipboard_update_maybe_done (old);
     g_assert_cmpstr (clipboard->content.str, ==, "unrelated sync");
@@ -2723,10 +2724,10 @@ test_independent_publication_copy_order (gconstpointer user_data)
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("explicit selection");
 
-        g_assert_true (g_paste_clipboard_provider_select_item (G_PASTE_CLIPBOARD_PROVIDER (clipboard), item));
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (clipboard), item, TRUE), !=, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
     }
     else
-        g_paste_clipboard_provider_select_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard), "explicit selection");
+        g_paste_clipboard_provider_select_text_full (G_PASTE_CLIPBOARD_PROVIDER (clipboard), "explicit selection", TRUE);
 
     g_assert_true (primary->pending == old);
     text_ready (primary, settings, old, "older copy");
