@@ -7,7 +7,9 @@
 # gtk-doc (finish-func) annotation takes the GI name of a sibling
 # (passphrase_finish), and a C symbol written there instead
 # (g_paste_prompt_passphrase_finish) names nothing, which a typelib compiler may
-# then pair with another method altogether.
+# then pair with another method altogether. And every async method has one: a
+# finish the scanner cannot pair -- one taking no instance, for a method --
+# leaves the GIR with none, and bindings with no async pairing nor promise.
 
 import sys
 import xml.etree.ElementTree as ET
@@ -30,6 +32,11 @@ def main(paths):
                 for callable_ in owner.findall(CORE + kind):
                     finish = callable_.get(GLIB + 'finish-func')
                     if finish is None:
+                        takes_callback = any(t.get('name') == 'Gio.AsyncReadyCallback'
+                                             for t in callable_.iter(CORE + 'type'))
+                        if kind == 'method' and takes_callback:
+                            failures.append(f'{path}: {owner.get("name")}.{callable_.get("name")} takes an '
+                                            f'AsyncReadyCallback, and the GIR pairs no finish function with it')
                         continue
                     checked += 1
                     if finish not in names:

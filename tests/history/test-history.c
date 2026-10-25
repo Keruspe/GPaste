@@ -479,7 +479,7 @@ copy_history (GPasteHistory *history,
 
     g_paste_history_copy_async (history, name, target, g_paste_test_env_keep_result, &result);
     g_paste_test_env_wait_result (&result);
-    g_assert_true (g_paste_history_copy_finish (result, &error));
+    g_assert_true (g_paste_history_copy_finish (history, result, &error));
     g_assert_no_error (error);
 }
 

@@ -1848,6 +1848,7 @@ g_paste_history_copy_async (GPasteHistory      *self,
 
 /**
  * g_paste_history_copy_finish:
+ * @self: a #GPasteHistory instance
  * @result: the #GAsyncResult g_paste_history_copy_async () handed its callback
  * @error: return location for a #GError, or %NULL
  *
@@ -1856,9 +1857,12 @@ g_paste_history_copy_async (GPasteHistory      *self,
  * Returns: whether the copy landed
  */
 G_PASTE_VISIBLE gboolean
-g_paste_history_copy_finish (GAsyncResult *result,
-                             GError      **error)
+g_paste_history_copy_finish (GPasteHistory *self,
+                             GAsyncResult  *result,
+                             GError       **error)
 {
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    /* Neither the saver's task nor a refusal's report names a source object. */
     g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
 
     return g_task_propagate_boolean (G_TASK (result), error);

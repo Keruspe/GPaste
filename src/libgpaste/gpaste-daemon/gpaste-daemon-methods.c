@@ -583,15 +583,32 @@ g_paste_daemon_methods_backup_allowed (const GPasteDaemonMethods *self,
     return TRUE;
 }
 
+/* A history being backed up (g_paste_history_copy_async ()), the bus told once
+ * it is done. */
+typedef struct
+{
+    GPasteDaemon3 *skeleton;
+    GPasteHistory *history;
+} BackupHistoryData;
+
+static void
+backup_history_data_free (BackupHistoryData *self)
+{
+    g_clear_object (&self->skeleton);
+    g_clear_object (&self->history);
+    g_free (self);
+}
+
 static void
 g_paste_daemon_methods_on_backup_copied (GObject      *source_object G_GNUC_UNUSED,
                                          GAsyncResult *result,
                                          gpointer      user_data)
 {
     g_autoptr (GTask) task = user_data;
+    BackupHistoryData *data = g_task_get_task_data (task);
     GError *error = NULL;
 
-    if (!g_paste_history_copy_finish (result, &error))
+    if (!g_paste_history_copy_finish (data->history, result, &error))
     {
         g_task_return_error (task, error);
         return;
@@ -600,7 +617,7 @@ g_paste_daemon_methods_on_backup_copied (GObject      *source_object G_GNUC_UNUS
     /* What changed is the set of histories, which has a signal of its own
      * precisely because a new one appearing is not a switch. A copy that failed
      * left no history called @backup, so nothing to announce. */
-    g_paste_daemon3_emit_raw_histories_changed (g_task_get_task_data (task));
+    g_paste_daemon3_emit_raw_histories_changed (data->skeleton);
     g_task_return_boolean (task, TRUE);
 }
 
@@ -626,8 +643,12 @@ g_paste_daemon_methods_backup_history_async (const GPasteDaemonMethods *self,
     g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
     GError *error = NULL;
 
+    BackupHistoryData *data = g_new0 (BackupHistoryData, 1);
+
+    data->skeleton = g_object_ref (self->skeleton);
+    data->history = g_object_ref (self->history);
     g_task_set_source_tag (task, g_paste_daemon_methods_backup_history_async);
-    g_task_set_task_data (task, g_object_ref (self->skeleton), g_object_unref);
+    g_task_set_task_data (task, data, (GDestroyNotify) backup_history_data_free);
 
     if (!g_paste_daemon_methods_backup_allowed (self, history, backup, &error))
     {
