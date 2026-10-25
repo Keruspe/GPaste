@@ -4802,6 +4802,84 @@ test_rekey_settled_back (void)
     g_assert_false (has_rekey_leftovers (name));
 }
 
+/* The other way from read_bytes (). */
+static void
+write_bytes (const gchar *path,
+             GBytes      *bytes)
+{
+    g_assert_true (g_file_set_contents (path, g_bytes_get_data (bytes, NULL), (gssize) g_bytes_get_size (bytes), NULL));
+}
+
+/* An image the passphrase in use cannot read -- damaged, or under another
+ * key -- is already lost to its history: a change of passphrase goes through
+ * without it, rather than failing for good over a file no window shows, and
+ * the file goes with the passphrase it may be under. */
+static void
+test_rekey_past_unreadable_image (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to read*with the current passphrase*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "rekey-past-unreadable";
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *image = NULL;
+    g_autofree gchar *other_history = NULL;
+    g_autofree gchar *other_image = NULL;
+
+    write_encrypted_history (settings, name, "old passphrase", &history, &image);
+    write_encrypted_history (settings, "rekey-other-key", "another passphrase", &other_history, &other_image);
+
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+    g_autofree gchar *damaged = g_build_filename (images, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.pngs", NULL);
+    g_autofree gchar *foreign = g_build_filename (images, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.pngs", NULL);
+    g_autoptr (GBytes) foreign_bytes = read_bytes (other_image);
+
+    write_file (damaged, "no stream of ours");
+    write_bytes (foreign, foreign_bytes);
+
+    /* One already on the passphrase the change goes to, as a change cut short
+     * leaves a history split between two: kept as it is. */
+    g_autofree gchar *new_history = NULL;
+    g_autofree gchar *new_image = NULL;
+
+    write_encrypted_history (settings, "rekey-new-key", "new passphrase", &new_history, &new_image);
+
+    g_autofree gchar *on_new = g_build_filename (images, "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff.pngs", NULL);
+    g_autoptr (GBytes) on_new_bytes = read_bytes (new_image);
+
+    write_bytes (on_new, on_new_bytes);
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
+        gboolean split = TRUE;
+
+        g_assert_true (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
+        g_assert_false (split);
+    }
+
+    g_assert_false (has_rekey_leftovers (name));
+    g_assert_false (g_file_test (damaged, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (foreign, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GBytes) kept = read_bytes (on_new);
+
+    g_assert_true (g_bytes_equal (kept, on_new_bytes));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "new passphrase");
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data)));
+}
+
 /* What a re-key left beside an image a write's sweep has since taken is
  * settled too: dropped once the re-key went through, put back while it is
  * still to be rolled back. */
@@ -6416,6 +6494,7 @@ main (int    argc,
     g_test_add_data_func ("/storage/rekey/success", GINT_TO_POINTER (FALSE), test_rekey_success);
     g_test_add_data_func ("/storage/rekey/without-hard-links", GINT_TO_POINTER (TRUE), test_rekey_success);
     g_test_add_func ("/storage/rekey/copy-cut-short", test_rekey_copy_cut_short);
+    g_test_add_func ("/storage/rekey/past-unreadable-image", test_rekey_past_unreadable_image);
     g_test_add_func ("/storage/rekey/split-reported", test_rekey_split_reported);
     g_test_add_func ("/storage/rekey/settled-back", test_rekey_settled_back);
     g_test_add_func ("/storage/rekey/settle-unlisted", test_rekey_settle_unlisted);

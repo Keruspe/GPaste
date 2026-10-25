@@ -2314,15 +2314,45 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Whether @error, a read's, is the file's own doing -- what it holds damaged
+ * or cut short -- rather than the read failing. */
+static gboolean
+_g_paste_file_backend_is_damage (const GError *error)
+{
+    return g_error_matches (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA) || g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PARTIAL_INPUT);
+}
+
+/* Whether @backend's key reads what @path holds. */
+static gboolean
+_g_paste_file_backend_reads (GPasteStorageBackend *backend,
+                             const gchar          *path)
+{
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autofree gchar *text = NULL;
+    gsize length = 0;
+    g_autoptr (GError) error = NULL;
+    gboolean read = g_paste_file_backend_load_contents (backend, path, file, g_str_has_suffix (path, G_PASTE_FILE_BACKEND_SIDE_SUFFIX),
+                                                        &text, &length, NULL, &error);
+
+    g_paste_util_wipe (text, length);
+
+    return read;
+}
+
 /* Re-encrypt one file's bytes from the key @self holds to the one @rekeyed does,
  * into its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling. The bytes are copied
  * verbatim — this is a key change, not a rewrite — and read back through the
  * new key before the caller is told it worked, so a bad write is caught while
- * the original is still the only thing in place. */
+ * the original is still the only thing in place.
+ *
+ * @unreadable says whether a failure was the current key refusing what the
+ * file holds -- damaged, cut short, under another key -- rather than the
+ * filesystem failing. */
 static gboolean
 _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                       GPasteStorageBackend *rekeyed,
-                                      const gchar          *path)
+                                      const gchar          *path,
+                                      gboolean             *unreadable)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
     gboolean side_file = g_str_has_suffix (path, G_PASTE_FILE_BACKEND_SIDE_SUFFIX);
@@ -2331,11 +2361,14 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
      * @check read back below: neither is text. */
     g_autofree gchar *text = NULL;
     gsize length = 0;
+    gboolean opened = FALSE;
     g_autoptr (GError) error = NULL;
 
-    if (!g_paste_file_backend_load_contents (self, path, file, side_file, &text, &length, NULL, &error))
+    *unreadable = FALSE;
+    if (!g_paste_file_backend_load_contents (self, path, file, side_file, &text, &length, &opened, &error))
     {
         g_warning ("Failed to read %s with the current passphrase: %s", path, error->message);
+        *unreadable = opened && (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED) || _g_paste_file_backend_is_damage (error));
         return FALSE;
     }
 
@@ -2690,26 +2723,53 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted (settings,
                                                                                   new_passphrase);
-    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
+    g_auto (GStrv) files = _g_paste_file_backend_encrypted_files (name);
 
     /* Re-keying part of a history is worse than not re-keying it at all. */
-    if (!paths)
+    if (!files)
         return FALSE;
 
-    guint n_paths = g_strv_length (paths);
+    g_autoptr (GStrvBuilder) rekeying = g_strv_builder_new ();
+    g_autoptr (GStrvBuilder) unreadable_images = g_strv_builder_new ();
 
-    for (guint i = 0; i < n_paths; ++i)
+    for (GStrv path = files; *path; ++path)
     {
-        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, paths[i]))
+        gboolean unreadable;
+
+        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, *path, &unreadable))
+        {
+            g_strv_builder_add (rekeying, *path);
             continue;
+        }
+
+        /* An image the current key cannot read is lost to the history already,
+         * a read dropping it: the rest is re-keyed, and the file goes with the
+         * passphrase it may be under once the change is through. Failing over
+         * it would fail every change of passphrase for good, over a file no
+         * window shows. Unless the new key reads it: it is on the passphrase
+         * the change goes to already -- what a change cut short leaves of a
+         * history split between two, which the doctor re-keys from the other
+         * one -- and stays as it is. The history itself is no such file: a
+         * document the current key cannot read is the caller's to tell apart
+         * (g_paste_storage_backend_refutes_passphrase ()). */
+        if (unreadable && path != files)
+        {
+            if (!_g_paste_file_backend_reads (rekeyed, *path))
+                g_strv_builder_add (unreadable_images, *path);
+            continue;
+        }
 
         /* Nothing has moved yet, so dropping the copies puts us back exactly
          * where we started. */
-        for (guint j = 0; j < i; ++j)
-            _g_paste_file_backend_remove_rekey_sibling (paths[j], G_PASTE_FILE_BACKEND_REKEY_NEW);
+        for (GStrv done = files; done != path; ++done)
+            _g_paste_file_backend_remove_rekey_sibling (*done, G_PASTE_FILE_BACKEND_REKEY_NEW);
 
         return FALSE;
     }
+
+    g_auto (GStrv) paths = g_strv_builder_end (rekeying);
+    g_auto (GStrv) unreadable = g_strv_builder_end (unreadable_images);
+    guint n_paths = g_strv_length (paths);
 
     /* A hard link, which is what keeps every original at its path while the
      * renames below happen, and copies nothing. A filesystem without them --
@@ -2784,6 +2844,11 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
 
         for (guint i = 0; i < n_paths; ++i)
             _g_paste_file_backend_remove_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
+        for (GStrv image = unreadable; *image; ++image)
+        {
+            if (g_unlink (*image) && errno != ENOENT)
+                g_warning ("Could not remove %s, which the passphrase in use could not read: %s", *image, g_strerror (errno));
+        }
 
         return TRUE;
     }
