@@ -15,6 +15,7 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GtkBox)
 
 const gchar *g_paste_ui_item_get_uuid (GPasteUiItem *self);
+gboolean     g_paste_ui_item_is_read  (GPasteUiItem *self);
 
 gboolean  g_paste_ui_item_activate (GPasteUiItem *self);
 

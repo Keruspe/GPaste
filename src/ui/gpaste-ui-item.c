@@ -583,6 +583,24 @@ g_paste_ui_item_get_uuid (GPasteUiItem *self)
 }
 
 /**
+ * g_paste_ui_item_is_read:
+ * @self: a #GPasteUiItem instance
+ *
+ * Whether the row shows what its last read brought: not while a read is out --
+ * the uuid a row read again where it stands still holds then being the item
+ * it showed before -- nor once one failed.
+ *
+ * Returns: whether g_paste_ui_item_get_uuid () names what the row shows
+ */
+gboolean
+g_paste_ui_item_is_read (GPasteUiItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), FALSE);
+
+    return self->kind != G_PASTE_ITEM_KIND_INVALID;
+}
+
+/**
  * g_paste_ui_item_activate:
  * @self: a #GPasteUiItem instance
  *

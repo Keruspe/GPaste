@@ -1199,7 +1199,9 @@ on_rows_invalidated (GPasteUiHistoryModel *model,
 
 /* The uuid of what the row at @position shows, or %NULL when it shows nothing
  * yet: a search row's is in the model, and a positional one's is the one its
- * read brought, which a row not bound or not read yet does not have. */
+ * read brought, which a row not bound or not read yet does not have -- nor
+ * does one being read again where it stands, which is about to show what its
+ * position then holds (on_rows_invalidated ()). */
 static const gchar *
 g_paste_ui_history_shown_uuid (GPasteUiHistory *self,
                                guint            position)
@@ -1208,7 +1210,7 @@ g_paste_ui_history_shown_uuid (GPasteUiHistory *self,
     const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
     GtkWidget *widget = (item) ? g_paste_ui_history_item_get_widget (item) : NULL;
 
-    if (uuid || !widget)
+    if (uuid || !widget || !g_paste_ui_item_is_read (G_PASTE_UI_ITEM (widget)))
         return uuid;
 
     return g_paste_ui_item_get_uuid (G_PASTE_UI_ITEM (widget));
@@ -1294,37 +1296,53 @@ g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
         g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SELECTION_MODE]);
 }
 
-/* What resolving the picks waits on: one slot per pick, in pick order, the ones
- * a pick could not fill read by their position. */
+/* A pick no row could fill: its slot among the uuids, and the position it is
+ * read by. */
 typedef struct
 {
-    GPtrArray *uuids;
-    guint      pending;
-    GError    *error;
+    guint   slot;
+    guint64 position;
+} ResolutionRead;
+
+/* What resolving the picks waits on: one slot per pick, in pick order, the ones
+ * a pick could not fill read by their position, one after the other. Each read
+ * brings an item whole for its uuid alone, and a select-all over a long history
+ * has hundreds of picks no row ever showed: in turn, what is out at any time is
+ * one item, and a failed read, which fails the merge, leaves the rest unasked. */
+typedef struct
+{
+    GPasteClient *client;
+    GPtrArray    *uuids;
+    GArray       *unread;
+    guint         next;
 } Resolution;
 
 static void
 resolution_free (Resolution *resolution)
 {
+    g_clear_object (&resolution->client);
     g_ptr_array_unref (resolution->uuids);
-    g_clear_error (&resolution->error);
+    g_array_unref (resolution->unread);
     g_free (resolution);
 }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (Resolution, resolution_free)
 
-/* The last read to land answers, a failed one failing the whole merge. */
+static void on_pick_read (GObject      *source_object,
+                          GAsyncResult *res,
+                          gpointer      user_data);
+
+/* The next pick read, or the uuids once none is left. */
 static void
-resolution_done (GTask *task)
+resolution_read_next (GTask *task)
 {
     Resolution *resolution = g_task_get_task_data (task);
 
-    if (--resolution->pending)
-        return;
-
-    if (resolution->error)
+    if (resolution->next < resolution->unread->len)
     {
-        g_task_return_error (task, g_steal_pointer (&resolution->error));
+        const ResolutionRead *read = &g_array_index (resolution->unread, ResolutionRead, resolution->next);
+
+        g_paste_client_get_item_at_index (resolution->client, read->position, NULL /* cancellable */, on_pick_read, g_object_ref (task));
         return;
     }
 
@@ -1336,29 +1354,25 @@ resolution_done (GTask *task)
     g_task_return_pointer (task, g_strv_builder_end (builder), (GDestroyNotify) g_strfreev);
 }
 
-typedef struct
-{
-    GTask *task;
-    guint  slot;
-} ResolutionRead;
-
 static void
 on_pick_read (GObject      *source_object,
               GAsyncResult *res,
               gpointer      user_data)
 {
-    g_autofree ResolutionRead *read = user_data;
-    g_autoptr (GTask) task = read->task;
+    g_autoptr (GTask) task = user_data;
     Resolution *resolution = g_task_get_task_data (task);
+    const ResolutionRead *read = &g_array_index (resolution->unread, ResolutionRead, resolution->next++);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClientItem) item = g_paste_client_get_item_at_index_finish (G_PASTE_CLIENT (source_object), res, &error);
 
-    if (item)
-        g_set_str ((gchar **) &resolution->uuids->pdata[read->slot], g_paste_client_item_get_uuid (item));
-    else if (!resolution->error)
-        resolution->error = (error) ? g_steal_pointer (&error) : g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the daemon answered with no usable item");
+    if (!item)
+    {
+        g_task_return_error (task, (error) ? g_steal_pointer (&error) : g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the daemon answered with no usable item"));
+        return;
+    }
 
-    resolution_done (task);
+    g_set_str ((gchar **) &resolution->uuids->pdata[read->slot], g_paste_client_item_get_uuid (item));
+    resolution_read_next (task);
 }
 
 /**
@@ -1369,7 +1383,8 @@ on_pick_read (GObject      *source_object,
  *
  * Collect the uuids of the rows picked in merge mode, in the order they were
  * picked (so the merge keeps that order): each the uuid of what its row showed
- * as it was picked, and a row never shown read by its position, alone.
+ * as it was picked, and a row that showed nothing yet read by its position,
+ * alone and one after the other.
  */
 void
 g_paste_ui_history_get_selected_uuids (GPasteUiHistory    *self,
@@ -1382,9 +1397,7 @@ g_paste_ui_history_get_selected_uuids (GPasteUiHistory    *self,
     Resolution *resolution = g_new0 (Resolution, 1);
 
     resolution->uuids = g_ptr_array_new_with_free_func (g_free);
-    /* One for the picks gone through below, so that no read landing at once
-     * answers before the last of them is out. */
-    resolution->pending = 1;
+    resolution->unread = g_array_new (FALSE, FALSE, sizeof (ResolutionRead));
     g_task_set_task_data (task, resolution, (GDestroyNotify) resolution_free);
 
     for (guint i = 0; i < self->selection->len; ++i)
@@ -1393,18 +1406,17 @@ g_paste_ui_history_get_selected_uuids (GPasteUiHistory    *self,
 
         g_ptr_array_add (resolution->uuids, g_strdup (pick->uuid));
 
-        if (pick->uuid || !self->client)
-            continue;
+        if (!pick->uuid && self->client)
+        {
+            ResolutionRead read = { i, pick->position };
 
-        ResolutionRead *read = g_new (ResolutionRead, 1);
-
-        read->task = g_object_ref (task);
-        read->slot = i;
-        ++resolution->pending;
-        g_paste_client_get_item_at_index (self->client, pick->position, NULL /* cancellable */, on_pick_read, read);
+            g_array_append_val (resolution->unread, read);
+        }
     }
 
-    resolution_done (task);
+    /* With no client, no pick was left to read. */
+    resolution->client = (self->client) ? g_object_ref (self->client) : NULL;
+    resolution_read_next (task);
 }
 
 /**

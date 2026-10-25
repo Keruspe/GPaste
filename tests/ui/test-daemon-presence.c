@@ -1713,9 +1713,57 @@ test_merge_picks_unread (void)
     guint held = daemon.held_items->len;
     const gchar *expected[] = { "00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000000", NULL };
 
+    /* One read out at a time: the second goes once the first has landed. */
     do_merge (window, gtk_widget_get_next_sibling (window->merge_entry), ",");
-    g_paste_test_bus_wait_for_count (&daemon.held_items->len, held + 2);
+    g_paste_test_bus_wait_for_count (&daemon.held_items->len, held + 1);
+    g_paste_test_bus_pump (100);
+    g_assert_cmpuint (daemon.held_items->len, ==, held + 1);
     release_items (&daemon);
+    g_paste_test_bus_wait_until (merged, &daemon, NULL);
+    g_assert_cmpstrv (daemon.merged, expected);
+    close_activation_window (window, &daemon);
+}
+
+/* A row picked while it is read again where it stands is about to show what
+ * its position holds then, and is merged as that, not as the item it showed
+ * before the history moved under it. */
+static void
+test_merge_pick_during_reread (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 10 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    GtkWidget *list_view = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+
+    drain ();
+    wait_for_layout (list_view);
+    on_enter_selection_mode (NULL, window);
+
+    /* A new item above them all: the rows are read again where they stand,
+     * those reads held. */
+    daemon.shift = 1;
+    daemon.hold_items = TRUE;
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", (guint64) 0);
+    g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 2));
+    release_items (&daemon);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 5));
+
+    const gchar *expected[] = { "00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000006", NULL };
+
+    do_merge (window, gtk_widget_get_next_sibling (window->merge_entry), ",");
     g_paste_test_bus_wait_until (merged, &daemon, NULL);
     g_assert_cmpstrv (daemon.merged, expected);
     close_activation_window (window, &daemon);
@@ -3444,6 +3492,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/selection-mode-keeps-place", test_selection_mode_keeps_place);
     g_test_add_func ("/ui/daemon-presence/merge-picks-shown", test_merge_picks_shown);
     g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
+    g_test_add_func ("/ui/daemon-presence/merge-pick-during-reread", test_merge_pick_during_reread);
     g_test_add_func ("/ui/daemon-presence/image-preview-off", test_image_preview_off);
     g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
