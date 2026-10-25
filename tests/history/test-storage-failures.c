@@ -290,6 +290,9 @@ flock (int fd,
         gint busy = errno;
 
         g_atomic_int_inc (&busy_flocks);
+        /* Bumped on the load's worker, which posts nothing: a wait for the
+         * count, iterating the main context, would sleep to its deadline. */
+        g_main_context_wakeup (NULL);
         errno = busy;
     }
 
@@ -3722,8 +3725,13 @@ test_load_after_release_reads_nothing (void)
 
     busy_flocks = 0;
     g_paste_history_load_async (history, name);
-    /* Its wait under way before the release, however late its worker started. */
+    /* Its wait under way before the release, however late its worker started,
+     * and seen as soon as it is: the count is bumped off the main context,
+     * which a wait not woken would sleep through to its deadline. */
+    gint64 waited = g_get_monotonic_time ();
+
     g_paste_test_bus_wait_for_count (&busy_flocks, 1);
+    g_assert_cmpint (g_get_monotonic_time () - waited, <, 5 * G_USEC_PER_SEC);
     g_paste_storage_backend_unlock ();
     wait_load (history);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);

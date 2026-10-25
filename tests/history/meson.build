@@ -44,5 +44,7 @@ if not library_static
     sources: [ 'test-storage-failures.c' ],
     dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
   )
-  test('storage-failures', test_storage_failures, depends: [gpaste_schemas, test_bus_supervisor])
+  # Its pumps and fixed waits add up to several seconds, and the encrypted
+  # cases derive keys: room as for 'history' above.
+  test('storage-failures', test_storage_failures, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
 endif

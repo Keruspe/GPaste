@@ -238,7 +238,9 @@ g_paste_test_bus_count_emission (guint *count)
     ++*count;
 }
 
-/* For a fake service counting the calls it answers. */
+/* For a fake service counting the calls it answers. A count bumped off the
+ * main context wakes it too (g_main_context_wakeup ()): the wait looks at it
+ * again only once the context dispatches something. */
 void
 g_paste_test_bus_wait_for_count (const guint *count,
                                  guint        at_least)
