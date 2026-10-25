@@ -51,7 +51,10 @@ leaving bindings with no async pairing.
 `tests/tools/test-gi-constants.py` asks gjs whether every `Gio`, `GLib` and
 `GObject` constant the extension names is defined: GJS reads a misspelt one as
 `undefined` and passes it on as 0, which the suites' doubles of Gio cannot
-tell, defining whatever the code spells. It is skipped without gjs.
+tell, defining whatever the code spells. With the build's own typelibs -- every
+build with introspection -- it asks the same of every `GPaste`,
+`GPasteDaemon` and `GPasteGtk` name the extension reaches. It is skipped
+without gjs.
 
 `tests/tools/test-search-provider.py` reads the overview search provider's
 registration, which has to carry `AutoStart=false`: the overview asks a
@@ -124,8 +127,10 @@ shutdown during a storage rewrite defers until the store is idle; a runner acqui
 keeps both and settles only then, or stops waiting when it is shut down; an
 export failing stands it down from inside the first `add_object ()`, nothing
 exported after it; a concern queued behind another flushes no daemon a
-reconnect has let go of; and a re-exec the daemon asks for runs once, from an
-idle.
+reconnect has let go of; a re-exec the daemon asks for runs once, from an
+idle; and a check of the store runs once, from an idle, between a flush and a
+reload, what it found -- or the prompt's failure in its place -- going back to
+the daemon.
 
 `extension` runs the shipped extension over panel and session-mode doubles:
 the indicator it builds reads the extension's `GPaste.Settings` through its
@@ -424,8 +429,12 @@ in place and announces nothing -- a property write announcing the setting again
 once it is over -- without reading or writing user preferences. With a
 settings file in the isolated configuration directory, two instances of one
 process share its backend, neither undoing the other's write; a reload reads
-what another process just wrote to the file; and a file where older builds
-spelled the directory `GPaste` is found.
+what another process just wrote to the file, and one after the file is removed
+keeps what the process was using; a file where older builds spelled the
+directory `GPaste` is found; and the storage migration's gate opens by
+resetting the revision and closes back to what it was -- a completed
+migration's winning over a late failure, a key with no value left with none --
+a gate the file could not be rewritten to open being none.
 
 `test-shell-settings` supplies a minimal test-local Shell schema and real memory
 and non-writable GSettings backends. It compiles the shipped settings source,
@@ -435,7 +444,8 @@ other extensions' changes do not notify `extension-enabled`, that a row
 bound to it comes back after a refused flip, and that it reads what the Shell
 decides -- `disabled-extensions` winning over `enabled-extensions`,
 `disable-user-extensions` turning it off -- and is written into one list and
-out of the other. This settings-only suite uses
+out of the other, a reload reading it again and saying so once when it moved.
+This settings-only suite uses
 `G_PASTE_TEST_ENV_OWN_BUS` to leave both bus addresses unreachable.
 
 `test-util` compiles `gpaste-util.c` with the session bus proxy's constructors
