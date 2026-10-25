@@ -5242,6 +5242,25 @@ test_file_long_item_read (void)
     g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
 }
 
+/* A history nobody has named has nothing to delete: refused as the caller's
+ * mistake, rather than answered as done with nothing deleted. */
+static void
+test_delete_unnamed (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_failed ();
+        g_test_trap_assert_stderr ("*CRITICAL*g_paste_history_delete*name || self->name*");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_delete (history, NULL, NULL);
+}
+
 /* A switch leaves behind a plain flavour's passwords for good, its store keeping
  * none, and announces them -- once: switching back finds nothing to announce
  * again. An encrypted flavour's store keeps them, and a switch announces none,
@@ -8157,6 +8176,7 @@ main (int argc, char *argv[])
     add_test ("/history/password_dropped", test_password_dropped);
     add_test ("/history/file_long_item_read", test_file_long_item_read);
     add_test ("/history/switch_drops_unkept_passwords", test_switch_drops_unkept_passwords);
+    add_test ("/history/delete_unnamed", test_delete_unnamed);
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);

@@ -1610,7 +1610,7 @@ g_paste_history_delete_password (GPasteHistory *self,
 }
 
 /* Empty the model, recording the emptying as any change is: see
- * g_paste_history_update () for when that is. */
+ * g_paste_history_record () for when that is. */
 static void
 g_paste_history_empty_locked (GPasteHistory *self)
 {
@@ -1713,7 +1713,7 @@ g_paste_history_check_store_reachable (GPasteHistory *self,
         return TRUE;
 
     g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                 "“%s” is kept by a storage not in use, which this one cannot reach", name);
+                 "“%s” is kept by a storage this one cannot reach", name);
     return FALSE;
 }
 
@@ -1917,8 +1917,8 @@ g_paste_history_sync (GPasteHistory *self,
  * %G_PASTE_ERROR_ALREADY_EXISTS while writes to @target are still out, and
  * with %G_PASTE_ERROR_FAILED when the history in use could not be read -- an
  * empty model standing for data still locked away, which copied as-is would
- * answer for a valid, empty copy -- or as g_paste_history_saver_copy_finish ()
- * does.
+ * answer for a valid, empty copy -- or when the history copied could not be
+ * read, or the copy could not be written.
  */
 G_PASTE_VISIBLE void
 g_paste_history_copy_async (GPasteHistory      *self,
@@ -2146,7 +2146,7 @@ g_paste_history_on_loaded (gpointer user_data,
 
     /* What was added while the load was out -- a copy, an AddText -- is in the
      * model and nowhere else, recording waiting for the load (see
-     * g_paste_history_update ()), and the read list is about to take its
+     * g_paste_history_record ()), and the read list is about to take its
      * place. Kept aside, oldest first, to be added on top of what was read. */
     g_autolist (GPasteItem) added = NULL;
 
@@ -2432,7 +2432,7 @@ g_paste_history_switch (GPasteHistory *self,
 /**
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
- * @name: (nullable): the history to delete (defaults to the configured one)
+ * @name: (nullable): the history to delete (defaults to the current one)
  * @error: return location for a #GError, or %NULL
  *
  * Delete the history called @name, the current one when %NULL. A current
@@ -2459,6 +2459,7 @@ g_paste_history_delete (GPasteHistory *self,
                         GError       **error)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (name || self->name, FALSE);
 
     /* A copy: leaving the current history below frees the name it was. */
     g_autofree gchar *history_name = g_strdup ((name) ? name : self->name);
@@ -2876,9 +2877,12 @@ g_paste_history_is_unreadable (GPasteHistory *self)
  * @self: a #GPasteHistory instance
  * @pattern: the pattern to match
  *
- * Get the elements matching @pattern in the history
+ * Get the elements matching @pattern in the history, warning about a @pattern
+ * that is not a regular expression. Kept for the API: the daemon's Search goes
+ * through the search that reports that as an error instead.
  *
- * Returns: (transfer full): The uuids of the matching elements
+ * Returns: (transfer full) (nullable): The uuids of the matching elements, or
+ *     %NULL when @pattern is not a regular expression
  */
 G_PASTE_VISIBLE GStrv
 g_paste_history_search (GPasteHistory *self,

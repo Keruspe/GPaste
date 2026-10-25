@@ -646,7 +646,7 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
     if (!g_paste_storage_backend_reaches_history (self, name))
     {
         g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                     "“%s” is kept by a storage not in use, which a deletion cannot reach", name);
+                     "“%s” is kept by a storage this one cannot reach", name);
         return;
     }
 
