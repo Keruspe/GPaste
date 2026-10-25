@@ -344,6 +344,8 @@ g_paste_history_private_clear (GPasteHistory *self)
 {
     g_ptr_array_set_size (self->history, 0);
     g_hash_table_remove_all (self->by_uuid);
+    /* Elected again, to nothing: @biggest_uuid borrowed a freed item's string. */
+    g_paste_history_private_elect_new_biggest (self);
 }
 
 /* Take over an item list from the storage layer (transfer full) and install it
