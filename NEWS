@@ -76,6 +76,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix renaming a saved password stopping the countdown of the same password copied while paused
 - Fix adding a file from a folder GPaste cannot open reporting the wrong error
 - Fix changing the passphrase replacing what was on the clipboard with the history's last item
+- Fix an empty history locking out a store left on two passphrases
 
 NEW in 51.1 (20/10/2026)
 =============

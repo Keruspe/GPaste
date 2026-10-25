@@ -5828,6 +5828,36 @@ test_doctor_split_repaired (void)
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
+/* Repaired as well when the history in use holds nothing to go by -- a new
+ * one, or the default one a deletion left the user on: the passphrase in hand
+ * is one a history confirms, and the check goes on with it rather than refuse
+ * it, and the other one with it, over the histories each does not open. */
+static void
+test_doctor_split_empty_active (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    write_under (settings, "one", "work");
+    write_under (settings, "two", "personal");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    const gchar * const typed[] = { "two", NULL };
+    gboolean healthy = FALSE;
+
+    prompt->passphrases = typed;
+
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_true (healthy);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+    g_assert_nonnull (strstr (prompt->passphrase_description, "personal"));
+    g_assert_true (opens_under (settings, "one", "work"));
+    g_assert_true (opens_under (settings, "one", "personal"));
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
 /* Dismissed, the passphrase asked for leaves those histories as they are and
  * the store unhealthy, each of them said to be still on another passphrase. */
 static void
@@ -6155,6 +6185,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/cut-short", test_rekey_cut_short);
     g_test_add_func ("/storage/rekey/failed-leaves-no-journal", test_rekey_failed_leaves_no_journal);
     g_test_add_func ("/storage/doctor/split-repaired", test_doctor_split_repaired);
+    g_test_add_func ("/storage/doctor/split-empty-active", test_doctor_split_empty_active);
     g_test_add_func ("/storage/doctor/split-dismissed", test_doctor_split_dismissed);
     g_test_add_func ("/storage/doctor/locked", test_doctor_locked);
     g_test_add_func ("/storage/rekey/settled-under-lock", test_rekey_settled_under_lock);

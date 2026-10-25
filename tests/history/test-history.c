@@ -6772,12 +6772,12 @@ test_sqlite_empty_unopenable (void)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Two histories of the same flavor, keyed differently -- the state a rekey that
  * fails partway through leaves behind, and which the migration warns about by
- * name. A passphrase that opens one of them but not the other must be refused:
- * accepting it would load the one it cannot open as empty, and that history's
- * next save would then destroy the real content -- which is what answering on
- * the first history that opens would do. */
+ * name -- with the active one holding nothing to go by. A passphrase that opens
+ * either is taken: the one it does not open reads as unreadable and is never
+ * written over, and refusing both would leave nothing to repair the split
+ * with. One that opens neither is refused, a typo as likely as not. */
 static void
-test_encrypted_split_keys_refuse_passphrase (void)
+test_encrypted_split_keys_take_either (void)
 {
     const struct {
         GPasteStorage kind;
@@ -6815,16 +6815,13 @@ test_encrypted_split_keys_refuse_passphrase (void)
         }
 
         /* Each opens its own and not the other, whichever is enumerated first. */
-        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, one));
-        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
+        g_assert_true (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, one));
+        g_assert_true (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
+        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, "passphrase three"));
 
         /* Both must go: every test in this binary shares one XDG_DATA_HOME, and
-         * a pair no single passphrase opens would make every later can_decrypt
-         * refuse -- which is precisely the behaviour under test.
-         *
-         * Not asserted for the same reason: that a passphrase opening
-         * everything is accepted. The scan sees whatever the other tests have
-         * left lying around under their own passphrases. */
+         * a pair no single passphrase opens would have every later can_decrypt
+         * of a third one refuse it. */
         g_autoptr (GPasteStorageBackend) cleanup_one = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
         g_autoptr (GPasteStorageBackend) cleanup_two = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
 
@@ -7688,7 +7685,7 @@ main (int argc, char *argv[])
     add_test ("/history/load_skips_password_head", test_load_skips_password_head);
     add_test ("/history/encrypted_explicit_passphrase", test_encrypted_explicit_passphrase);
     add_test ("/history/encrypted_rekey", test_encrypted_rekey);
-    add_test ("/history/encrypted_split_keys_refuse_passphrase", test_encrypted_split_keys_refuse_passphrase);
+    add_test ("/history/encrypted_split_keys_take_either", test_encrypted_split_keys_take_either);
     add_test ("/history/encrypted_password_name_is_escaped", test_encrypted_password_name_is_escaped);
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE

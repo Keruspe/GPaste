@@ -1171,12 +1171,13 @@ g_paste_storage_is_supported (GPasteStorage storage_kind)
  * accepted and given the chance to overwrite the real data. Nothing is written
  * to find out. The active history decides when it holds data, which may leave
  * others on another passphrase -- what a change of passphrase whose rollback
- * failed leaves -- and every history decides otherwise.
+ * failed leaves -- and the others decide otherwise, any of them opening with
+ * @passphrase being enough.
  *
  * Returns: %FALSE when the active history holds data @passphrase does not
- *          unlock, or holds none and another history does; and when the
- *          histories could not be listed at all -- an unverifiable passphrase
- *          is refused rather than assumed good
+ *          unlock, or holds none and another history refutes it while none
+ *          opens with it; and when the histories could not be listed at all --
+ *          an unverifiable passphrase is refused rather than assumed good
  */
 G_PASTE_VISIBLE gboolean
 g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
@@ -1224,18 +1225,25 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
     if (klass->history_confirms_passphrase (backend, active))
         return TRUE;
 
-    /* Otherwise every history, not just up to the first that opens: with
-     * nothing to go by in the active one -- absent, never written -- a
-     * passphrase the others refute is a typo as likely as not, and the active
-     * history written under it would be one more under a passphrase of its
-     * own. */
+    /* Otherwise the others: with nothing to go by in the active one -- absent,
+     * never written -- a passphrase none of them opens and some refute is a
+     * typo as likely as not, and the active history written under it would be
+     * one more under a passphrase of its own. One some history opens is no
+     * typo: those refuting it are a store split across passphrases, each of
+     * which some history refutes. It is taken, the histories it does not open
+     * reading as unreadable, never written over, and only a passphrase in hand
+     * can bring them back to it (gpaste-client doctor). */
+    gboolean refuted = FALSE;
+
     for (GStrv name = names; name && *name; ++name)
     {
         if (klass->history_refutes_passphrase (backend, *name))
-            return FALSE;
+            refuted = TRUE;
+        else if (klass->history_confirms_passphrase (backend, *name))
+            return TRUE;
     }
 
-    return TRUE;
+    return !refuted;
 }
 
 /**
