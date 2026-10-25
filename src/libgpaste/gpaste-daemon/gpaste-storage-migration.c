@@ -92,8 +92,14 @@ journal_write (JournalOperation operation,
 
     g_autofree gchar *path = journal_path ();
 
-    return g_paste_util_ensure_history_dir_exists () &&
-           g_file_set_contents_full (path, contents->str, contents->len,
+    /* That one logs why, and sets no error of its own. */
+    if (!g_paste_util_ensure_history_dir_exists ())
+    {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED, "Could not make the history directory to write %s in", path);
+        return FALSE;
+    }
+
+    return g_file_set_contents_full (path, contents->str, contents->len,
                                      G_FILE_SET_CONTENTS_CONSISTENT | G_FILE_SET_CONTENTS_DURABLE, 0600, error);
 }
 
@@ -120,7 +126,8 @@ journal_read (JournalOperation *operation,
         return FALSE;
 
     g_auto (GStrv) lines = g_strsplit (contents, "\n", -1);
-    g_auto (GStrv) head = g_strsplit (lines[0], " ", 2);
+    /* An empty journal splits into no line at all. */
+    g_auto (GStrv) head = g_strsplit ((lines[0]) ? lines[0] : "", " ", 2);
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
     gint64 kind = -1;
 

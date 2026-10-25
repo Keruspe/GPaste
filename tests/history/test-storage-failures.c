@@ -2774,6 +2774,72 @@ test_lock_dir_unmade (void)
     g_assert_cmpint (g_chmod (parent, 0700), ==, 0);
 }
 
+/* A journal with nothing on its first line -- empty, or starting with a NUL
+ * byte -- records nothing this GPaste can act on, and goes as any such one
+ * does. */
+static void
+test_journal_empty (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Dropping*records nothing*Dropping*records nothing*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autofree gchar *path = journal_path ();
+    static const gchar nul_first[] = "\0import 1\nhistory\n";
+    const struct { const gchar *contents; gssize length; } journals[] = {
+        { "", 0 },
+        { nul_first, sizeof (nul_first) - 1 },
+    };
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    for (guint i = 0; i < G_N_ELEMENTS (journals); ++i)
+    {
+        JournalOperation operation;
+        GPasteStorage storage_kind;
+        g_auto (GStrv) names = NULL;
+
+        g_assert_true (g_file_set_contents (path, journals[i].contents, journals[i].length, NULL));
+        g_assert_false (journal_read (&operation, &storage_kind, &names));
+        g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    }
+}
+
+/* A journal that cannot be written, its directory not there to be made, fails
+ * saying why: the import or the change of passphrase it is written for reports
+ * that rather than an error nobody set. */
+static void
+test_journal_unwritable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Could not create history dir*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *parent = g_path_get_dirname (dir);
+    g_autoptr (GPtrArray) names = g_ptr_array_new ();
+    g_autoptr (GError) error = NULL;
+
+    g_assert_false (g_file_test (dir, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (g_mkdir_with_parents (parent, 0500), ==, 0);
+    g_assert_cmpint (g_chmod (parent, 0500), ==, 0);
+    g_ptr_array_add (names, "history");
+    g_assert_false (journal_write (JOURNAL_IMPORT, G_PASTE_STORAGE_FILE, names, &error));
+    g_assert_nonnull (error);
+    g_assert_cmpint (g_chmod (parent, 0700), ==, 0);
+}
+
 /* A full write that does not land sweeps nothing: what is on disk is still the
  * snapshot before it, which references the image the failed one dropped. */
 static void
@@ -5790,6 +5856,8 @@ main (int    argc,
     g_test_add_func ("/storage/synced-before-install", test_synced_before_install);
     g_test_add_func ("/storage/lock/file-unusable", test_lock_file_unusable);
     g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
+    g_test_add_func ("/storage/journal/empty", test_journal_empty);
+    g_test_add_func ("/storage/journal/unwritable", test_journal_unwritable);
     g_test_add_func ("/storage/doctor/permissions", test_doctor_permissions);
     g_test_add_func ("/storage/doctor/name-one-line", test_doctor_name_one_line);
     g_test_add_func ("/storage/doctor/linked-folder", test_doctor_linked_folder);
