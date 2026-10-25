@@ -120,7 +120,7 @@ async function filled(row, bus, uuid, value) {
 
 (async () => {
     // Text past element-size is cut with an ellipsis, and a larger size shows
-    // more of it again; 0 shows all of it.
+    // more of it again; 0 shows all of it, up to what a row could show.
     {
         const bus = client();
         const row = new context.Item(bus, 5, 1, 1);
@@ -138,6 +138,12 @@ async function filled(row, bus, uuid, value) {
         row.refresh();
         await filled(row, bus, 'a', '😀😀😀');
         assert.equal(row.label.clutter_text.text, '😀😀…');
+        // All of it, but no more than a row could ever show: the label lays
+        // the whole of what it is handed out, on GNOME Shell's main thread.
+        row.setTextSize(0);
+        row.refresh();
+        await filled(row, bus, 'a', 'x'.repeat(100000));
+        assert.equal(row.label.clutter_text.text, `${'x'.repeat(1000)}…`);
     }
 
     // Rebound to another uuid, the row selects and deletes nothing until that

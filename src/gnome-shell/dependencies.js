@@ -46,12 +46,17 @@ export function logFailure(finish) {
 /**
  * What a row's own read failing is said with: at debug level, the menu
  * rebinding every row on each copy and each opening, so one message per binding
- * would fill the journal -- as the graphical tool's rows avoid too.
+ * would fill the journal -- as the graphical tool's rows avoid too. A read
+ * failing is a GLib.Error; anything else thrown on the way -- a programming
+ * error filling the row -- is said as an error, which is what gets it noticed.
  *
  * @param {Error} error - what the read failed with
  */
 export function debugFailure(error) {
-    console.debug(`GPaste: ${error.message ?? error}`);
+    if (error instanceof GLib.Error)
+        console.debug(`GPaste: ${error.message}`);
+    else
+        console.error(error);
 }
 
 /**

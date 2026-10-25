@@ -23,11 +23,18 @@ import {GPasteFavouriteButton} from './favouriteButton.js';
 // drawn before the actor has a theme node to ask.
 const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
 
+// The most of an item's text a row lays out, element-size 0 included: the
+// label shapes the whole of what it is handed to ellipsize it, on GNOME Shell's
+// main thread, and no menu is wide enough to show more -- the graphical tool's
+// rows stop at the same (G_PASTE_UI_ITEM_MAX_SHOWN_CHARS).
+const MAX_SHOWN_CHARS = 1000;
+
 /**
  * The first @size characters of @text and an ellipsis when there are more, as
- * element-size promises -- or the whole of it for a @size of 0, its "no limit".
- * Characters rather than UTF-16 units, so nothing is cut through a surrogate
- * pair, and counted only as far as @size, an item running to a megabyte.
+ * element-size promises -- or, for a @size of 0, its "no limit", as many as a
+ * row ever shows (MAX_SHOWN_CHARS). Characters rather than UTF-16 units, so
+ * nothing is cut through a surrogate pair, and counted only as far as @size, an
+ * item running to a megabyte.
  *
  * @param {string} text - the one-lined text of an item
  * @param {number} size - the most characters to show
@@ -35,7 +42,7 @@ const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
  */
 function shownText(text, size) {
     if (size <= 0)
-        return text;
+        size = MAX_SHOWN_CHARS;
 
     let count = 0;
 

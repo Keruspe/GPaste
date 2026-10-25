@@ -59,10 +59,14 @@ const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone} = c
     assert.equal(daemonGone(new GLibError('dbus', 'other', 'Refused')), false);
     assert.equal(daemonGone(new Error('a bug down the call')), false);
 
-    // A row's read failing is said at debug level, and nowhere else.
-    debugFailure(new Error('gone'));
+    // A row's read failing is said at debug level, and nowhere else; anything
+    // else thrown filling the row is an error.
+    debugFailure(new GLibError('dbus', 'gone', 'gone'));
     assert.deepEqual(said.debug, ['GPaste: gone']);
     assert.deepEqual(said.error, []);
+    debugFailure(new TypeError('a bug'));
+    assert.equal(said.error.pop().message, 'a bug');
+    assert.deepEqual(said.debug, ['GPaste: gone']);
 
     // A call nothing waits on is finished, and a refusal said as an error.
     const client = {
