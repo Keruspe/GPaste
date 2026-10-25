@@ -857,6 +857,14 @@ class GPasteIndicator extends Button {
             return;
         }
 
+        // The entry may have taken a search since: typing over its whole text
+        // empties it first, which lists the history at once, and only then
+        // arms the search's delay (_onSearchChanged ()). The rows wait for that
+        // search, which rebinds every one of them, rather than be rebuilt for a
+        // filtered list this answer has nothing of -- blanked until it lands.
+        if (this._isFiltered())
+            return;
+
         this._passFrom = null;
         this._rebuild(this._available === 0);
     }

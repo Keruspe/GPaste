@@ -432,6 +432,26 @@ function withActions(uuids) {
     assert.equal(cleared._passFrom, 0);
     assert.deepEqual([...cleared._beginPass(2, true)].slice(1), [0, true]);
 
+    // Typing over the whole search text empties it first, which lists the
+    // history at once, and only then arms the search's delay: the reload's
+    // answer, landing with the entry searching, leaves the rows to that
+    // search rather than rebuilding them for a filtered list it has nothing
+    // of, which would blank the menu until the search answers.
+    const overtyped = withActions(['a', 'b']);
+    let overtypedRebuilt = 0;
+    let answerSize = null;
+
+    overtyped._searchItem = {text: '', favourites: false};
+    overtyped._hasSearch = () => overtyped._searchItem.text.length > 0;
+    overtyped._fetchAvailable = () => new Promise(resolve => { answerSize = resolve; });
+    overtyped._rebuild = () => ++overtypedRebuilt;
+    const overtyping = overtyped._reload();
+    overtyped._searchItem.text = 'x';
+    answerSize(true);
+    await overtyping;
+    assert.equal(overtypedRebuilt, 0);
+    assert.equal(overtyped._history.length, 2);
+
     // A call failing because its daemon left logs nothing, the presence saying
     // so next; any other failure is logged.
     const leaving = withActions([]);
