@@ -34,6 +34,16 @@ void g_paste_storage_delete_history (GPasteStorage storage_kind,
  * what keeps anyone else from planting one at all. */
 gboolean g_paste_storage_is_special_file (const gchar *path);
 
+/* Whether deleting or emptying @name through @self reaches every store keeping
+ * it. The "no storage" backend reaches none: a flavour keeping @name is an
+ * encrypted store left locked, which a dismissed unlock has the daemon run on
+ * that backend over, or what a migration to it kept. Nor does any backend reach
+ * a flavour this build cannot open, which the file flavour stands in for
+ * (storage_flavours). A deletion answered for with such a store still on disk
+ * would have the history believed gone, back once that store is opened. */
+gboolean g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
+                                                  const gchar          *name);
+
 /* How many times this process has let go of the storage lock
  * (g_paste_storage_backend_unlock ()), and g_paste_storage_backend_lock () from
  * that count on: it ends short of the lock should this process have let go of

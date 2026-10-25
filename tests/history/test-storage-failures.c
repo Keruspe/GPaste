@@ -1446,6 +1446,59 @@ test_migration_refuses_unoffered_choice (void)
     }
 }
 
+/* A build that cannot open a flavour stands the file one in for it, which
+ * reaches none of that flavour's stores: deleting or emptying a history one of
+ * them keeps is refused, as the "no storage" backend refuses one another
+ * flavour keeps (/history/noop_refuses_unmade), rather than answered as done
+ * with the history still on disk, back with the next build opening it. */
+static void
+test_unopenable_store_out_of_reach (void)
+{
+    if (!library_calls_interposed ())
+    {
+        g_test_skip ("the library binds its own calls");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) database = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+    g_autofree gchar *current = g_paste_storage_backend_get_history_file_path (database, "unopenable-current");
+    g_autofree gchar *other = g_paste_storage_backend_get_history_file_path (database, "unopenable-other");
+
+    g_assert_true (g_paste_storage_backend_write_history (database, "unopenable-current", items));
+    g_assert_true (g_paste_storage_backend_write_history (database, "unopenable-other", items));
+    g_clear_object (&database);
+    hidden_kind = G_PASTE_STORAGE_SQLITE;
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+
+    g_autoptr (GPasteStorageBackend) stand_in = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) deleted = NULL;
+    g_autoptr (GError) emptied = NULL;
+    g_autoptr (GError) other_deleted = NULL;
+
+    g_paste_history_load (history, "unopenable-current");
+    g_paste_history_add (history, g_paste_text_item_new ("this session"));
+    g_paste_storage_backend_delete_history (stand_in, "unopenable-current", &deleted);
+    g_assert_error (deleted, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_false (g_paste_history_empty (history, &emptied));
+    g_assert_error (emptied, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    /* Unlisted by the stand-in, and out of its reach rather than unknown. */
+    g_paste_daemon_methods_delete_history (&methods, "unopenable-other", &other_deleted);
+    g_assert_error (other_deleted, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_true (g_file_test (current, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
+
+    hidden_kind = -1;
+    g_paste_history_flush (history);
+    g_assert_cmpint (g_unlink (current), ==, 0);
+    g_assert_cmpint (g_unlink (other), ==, 0);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+}
+
 /* Neither toggle is offered for a source this build cannot open, and a reply
  * ticking them anyway is clamped: reading the source through the backend that
  * stands in for it would import nothing, and deleting through it would delete
@@ -6307,6 +6360,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/offered", test_migration_offers_supported);
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
+    g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);

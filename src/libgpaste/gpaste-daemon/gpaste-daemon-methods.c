@@ -3,6 +3,7 @@
 
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
@@ -698,8 +699,8 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
     /* A history no store holds is not found, as a uuid matching nothing is,
      * rather than whatever unlinking a file that is not there reports. The
      * current history is deleted whether or not anything of it was saved yet,
-     * and one another storage keeps while none is in use, which no listing
-     * shows, is g_paste_history_delete ()'s to refuse as out of reach. */
+     * and one a store out of the backend's reach keeps, which no listing shows,
+     * is g_paste_history_delete ()'s to refuse as such. */
     if (!g_paste_str_equal (name, g_paste_history_get_current (history)))
     {
         g_auto (GStrv) histories = g_paste_history_list (history, error);
@@ -707,7 +708,7 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
         if (!histories)
             return;
 
-        gboolean unreachable = g_paste_settings_get_storage_backend (self->settings) == G_PASTE_STORAGE_NOOP && g_paste_util_history_is_stored_anywhere (name);
+        gboolean unreachable = !g_paste_history_reaches_store (history, name);
 
         G_PASTE_DBUS_ASSERT (unreachable || g_strv_contains ((const gchar * const *) histories, name), G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
     }

@@ -11,6 +11,7 @@
 #include <gpaste-daemon/gpaste-history-saver.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
+#include <gpaste-daemon/gpaste-storage-backend-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -1565,19 +1566,23 @@ g_paste_history_check_no_copy (GPasteHistory *self,
     return FALSE;
 }
 
+gboolean
+g_paste_history_reaches_store (GPasteHistory *self,
+                               const gchar   *name)
+{
+    return g_paste_storage_backend_reaches_history (self->backend, name);
+}
+
 /* What empties or deletes a store checks first that the backend in use can
- * reach it. The "no storage" one cannot reach what another flavour keeps under
- * @name -- an encrypted store left locked, what a migration to it kept -- and
- * that store would bring the history back once it is used again (as in
- * g_paste_storage_backend_delete_history ()). Refused before anything changes:
- * the session's model, all that backend holds, can still be emptied one item
- * at a time. */
+ * reach it (g_paste_storage_backend_reaches_history ()). Refused before
+ * anything changes: the session's model can still be emptied one item at a
+ * time. */
 static gboolean
 g_paste_history_check_store_reachable (GPasteHistory *self,
                                        const gchar   *name,
                                        GError       **error)
 {
-    if (g_paste_storage_backend_get_kind (self->backend) != G_PASTE_STORAGE_NOOP || !g_paste_util_history_is_stored_anywhere (name))
+    if (g_paste_history_reaches_store (self, name))
         return TRUE;
 
     g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
@@ -1601,8 +1606,9 @@ g_paste_history_check_store_reachable (GPasteHistory *self,
  * Fails with %G_IO_ERROR_BUSY, having emptied nothing, when the store has been
  * handed over (see g_paste_history_flush()) or while a daemon this one took
  * over from may still be writing it (see g_paste_storage_backend_try_lock());
- * with %G_PASTE_ERROR_FAILED, having emptied nothing, when the history runs on
- * the "no storage" backend while another flavour stores it.
+ * with %G_PASTE_ERROR_FAILED, having emptied nothing, when a store the backend
+ * in use cannot reach keeps it: another flavour's while the history runs on
+ * the "no storage" backend, or one of a flavour this build cannot open.
  *
  * Returns: whether the history was emptied
  */
@@ -1889,8 +1895,8 @@ g_paste_history_copy_finish (GPasteHistory *self,
  * -- or deletes it, all of which wait for it as for any write of @name.
  *
  * Fails with %G_IO_ERROR_BUSY, as g_paste_history_sync () does, and with
- * %G_PASTE_ERROR_FAILED when the history runs on the "no storage" backend
- * while another flavour stores @name, both having done nothing, or when the
+ * %G_PASTE_ERROR_FAILED when a store the backend in use cannot reach keeps
+ * @name, as for g_paste_history_empty (), both having done nothing, or when the
  * empty history could not be written.
  */
 G_PASTE_VISIBLE void

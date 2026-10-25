@@ -603,6 +603,21 @@ g_paste_storage_delete_history (GPasteStorage storage_kind,
     _g_paste_storage_delete_history_images (name, error);
 }
 
+gboolean
+g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
+                                         const gchar          *name)
+{
+    gboolean noop = (g_paste_storage_backend_get_kind (self) == G_PASTE_STORAGE_NOOP);
+
+    for (GPasteStorage kind = G_PASTE_STORAGE_NOOP + 1; kind < G_PASTE_N_STORAGE; ++kind)
+    {
+        if ((noop || !g_paste_storage_is_supported (kind)) && g_paste_util_history_is_stored (name, kind))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 /**
  * g_paste_storage_backend_delete_history:
  * @self: a #GPasteStorageBackend instance
@@ -625,12 +640,7 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
     g_return_if_fail (G_PASTE_IS_STORAGE_BACKEND (self));
     g_return_if_fail (name);
 
-    /* The "no storage" backend has nothing of a history to delete, unless a
-     * flavour still stores its name: an encrypted store left locked, which a
-     * dismissed unlock has the daemon run on this backend over, or what a
-     * migration to it kept. That one is not this backend's to delete, and a
-     * delete answered for with it still on disk would have it believed gone. */
-    if (g_paste_storage_backend_get_kind (self) == G_PASTE_STORAGE_NOOP && g_paste_util_history_is_stored_anywhere (name))
+    if (!g_paste_storage_backend_reaches_history (self, name))
     {
         g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                      "“%s” is kept by a storage not in use, which a deletion cannot reach", name);

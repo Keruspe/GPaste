@@ -16,4 +16,9 @@ G_BEGIN_DECLS
 void g_paste_history_load (GPasteHistory *self,
                            const gchar   *name);
 
+/* Whether deleting or emptying @name reaches every store keeping it, through
+ * the backend in use (g_paste_storage_backend_reaches_history ()). */
+gboolean g_paste_history_reaches_store (GPasteHistory *self,
+                                        const gchar   *name);
+
 G_END_DECLS

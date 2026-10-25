@@ -74,7 +74,7 @@ The libadwaita backend is `GPastePromptAdw` (`src/daemon/gpaste-prompt-adw.{c,h}
 
 | Kind | Class | Extension | Built when |
 |---|---|---|---|
-| `NOOP` | `GPasteNoopBackend` — reads empty, drops writes (answering that nothing was kept), lists nothing, and refuses to delete a history another flavour still stores (`g_paste_util_history_is_stored_anywhere()`) | `noop` (never matches) | always |
+| `NOOP` | `GPasteNoopBackend` — reads empty, drops writes (answering that nothing was kept), lists nothing, and refuses to delete a history another flavour still stores (`g_paste_storage_backend_reaches_history()`, which refuses one a flavour this build cannot open stores whatever the backend, the file flavour standing in for it) | `noop` (never matches) | always |
 | `FILE` | `GPasteFileBackend` | `xml` | always |
 | `ENCRYPTED_FILE` | `GPasteFileBackend` via `g_paste_file_backend_new_encrypted (settings, passphrase)` | `xmls` | `encryption` |
 | `SQLITE` | `GPasteSqliteBackend` | `db` | `sqlite` |

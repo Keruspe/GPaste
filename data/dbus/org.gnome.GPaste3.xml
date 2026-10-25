@@ -184,6 +184,7 @@
       saved yet. With no storage in use, a history another storage still keeps
       (an encrypted store left locked, or what a migration kept) is out of its
       reach: .Error.Failed, the store and the history in use left as they were.
+      So is one a storage this build cannot open keeps, whatever is in use.
     -->
     <method name="DeleteHistory">
       <arg type="s" direction="in" name="name"/>
@@ -231,8 +232,7 @@
       Another history than the current one is emptied on disk before the
       answer: a write that fails (a full disk, or no storage in use) is
       .Error.Failed, the history left as it was. So is emptying the current
-      one with no storage in use while another storage keeps it, as for
-      DeleteHistory. Emptying a name no history goes by creates it, under a
+      one a store out of reach keeps, as for DeleteHistory. Emptying a name no history goes by creates it, under a
       name the storage in use can keep, as in SwitchHistory.
     -->
     <method name="EmptyHistory">
