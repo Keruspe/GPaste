@@ -84,6 +84,11 @@ struct _GPasteSqliteBackend
      * its read takes: the main thread asks after every write. */
     GHashTable *diverged;
     GMutex      diverged_lock;
+    /* A database deleted while @lock was taken (delete_history ()), which
+     * the cached connection must not answer for again: under @forgotten_lock,
+     * for the same reason. */
+    gchar      *forgotten;
+    GMutex      forgotten_lock;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* When set, the content columns are encrypted, the ".dbs" extension is used,
@@ -702,7 +707,13 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
 {
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
 
-    if (backend->db && g_paste_str_equal (backend->db_path, db_path))
+    g_mutex_lock (&backend->forgotten_lock);
+    gboolean forgotten = backend->forgotten && g_paste_str_equal (backend->forgotten, backend->db_path);
+
+    g_clear_pointer (&backend->forgotten, g_free);
+    g_mutex_unlock (&backend->forgotten_lock);
+
+    if (backend->db && !forgotten && g_paste_str_equal (backend->db_path, db_path))
         return backend->db;
 
     g_clear_pointer (&backend->db, g_paste_sqlite_backend_close);
@@ -2201,9 +2212,26 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend *self,
     const gchar *extension = g_paste_storage_backend_get_extension (self);
     g_autofree gchar *db_path = g_paste_util_get_history_file_path (name, extension);
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
+
+    /* Taken, the lock is a read or a write of another history -- the writes
+     * of this one landed before a delete reaches here
+     * (g_paste_history_saver_drain_history ()) --, a load among them holding
+     * it across a key derivation and the decoding of every row: waited for,
+     * that would hold the main loop, gnome-shell's compositor for the in-shell
+     * daemon. The database goes without it, and should the connection cached
+     * still be this one's, the next open drops it rather than write to a file
+     * no longer listed. */
+    if (!g_mutex_trylock (&backend->lock))
+    {
+        g_mutex_lock (&backend->forgotten_lock);
+        g_set_str (&backend->forgotten, db_path);
+        g_mutex_unlock (&backend->forgotten_lock);
+        g_paste_sqlite_backend_delete_database (db_path, error);
+        return;
+    }
 
     g_paste_sqlite_backend_unlink (backend, db_path, error);
+    g_mutex_unlock (&backend->lock);
 }
 
 static GPasteStorage
@@ -2223,8 +2251,10 @@ g_paste_sqlite_backend_finalize (GObject *object)
     g_clear_pointer (&self->diverged, g_hash_table_unref);
     g_clear_pointer (&self->db, g_paste_sqlite_backend_close);
     g_clear_pointer (&self->db_path, g_free);
+    g_clear_pointer (&self->forgotten, g_free);
     g_mutex_clear (&self->lock);
     g_mutex_clear (&self->diverged_lock);
+    g_mutex_clear (&self->forgotten_lock);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_clear_pointer (&self->key, g_paste_sqlite_backend_free_key);
     g_paste_passphrase_free (self->passphrase);
@@ -2369,6 +2399,7 @@ g_paste_sqlite_backend_init (GPasteSqliteBackend *self)
     g_mutex_init (&self->lock);
     self->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     g_mutex_init (&self->diverged_lock);
+    g_mutex_init (&self->forgotten_lock);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

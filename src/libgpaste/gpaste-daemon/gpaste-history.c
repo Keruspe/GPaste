@@ -2349,7 +2349,11 @@ g_paste_history_delete (GPasteHistory *self,
         g_paste_history_saver_abandon_load (self->saver);
 
         /* Not g_paste_history_empty (): a history that could not be read stays
-         * so until its store is gone, the unlink below being free to fail. */
+         * so until its store is gone, the unlink below being free to fail.
+         * Its emptying, landed below on this thread, waits on the SQLite
+         * flavours for the load given up on above, which sees that only at
+         * its next row: what a delete right after a switch to the history
+         * costs, a key derivation at most. */
         G_PASTE_LOCK_HISTORY;
         g_paste_history_empty_locked (self);
     }

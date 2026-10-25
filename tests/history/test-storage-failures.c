@@ -435,6 +435,15 @@ static const gchar *upgraded_meanwhile;
 static guint full_writes;
 static guint injected_failures;
 
+/* Whether a statement stepped on another thread than @step_thread waits for
+ * the case to let it go, with @step_held saying one does: a read of the SQLite
+ * backend, which holds its lock meanwhile, made as long as the case needs. */
+static GThread *step_thread;
+static gboolean hold_steps;
+static gboolean step_held;
+static GMutex   step_mutex;
+static GCond    step_cond;
+
 int
 sqlite3_exec (sqlite3    *db,
               const char *sql,
@@ -488,6 +497,16 @@ sqlite3_step (sqlite3_stmt *statement)
     Step original = (Step) dlsym (RTLD_NEXT, "sqlite3_step");
 
     g_assert_nonnull (original);
+    g_mutex_lock (&step_mutex);
+    if (hold_steps && g_thread_self () != step_thread)
+    {
+        step_held = TRUE;
+        g_cond_broadcast (&step_cond);
+        while (hold_steps)
+            g_cond_wait (&step_cond, &step_mutex);
+    }
+    g_mutex_unlock (&step_mutex);
+
     if (busy_step_sql && !g_strcmp0 (sqlite3_sql (statement), busy_step_sql))
     {
         if (busy_step_skip)
@@ -950,6 +969,85 @@ busy_or_answered (gconstpointer result,
                   gconstpointer arg G_GNUC_UNUSED)
 {
     return g_paste_storage_is_busy () || *(gpointer const *) result;
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_SQLITE
+static gpointer
+read_history_b (gpointer data)
+{
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_paste_storage_backend_read_history (data, "delete-during-read-b", NULL, &items, &size);
+    return NULL;
+}
+
+/* For a call that must not wait for the read held: one that does gets it let
+ * go two seconds on, and returns late rather than never. */
+static gpointer
+release_steps_eventually (gpointer data G_GNUC_UNUSED)
+{
+    gint64 deadline = g_get_monotonic_time () + 2 * G_USEC_PER_SEC;
+
+    g_mutex_lock (&step_mutex);
+    while (hold_steps && g_cond_wait_until (&step_cond, &step_mutex, deadline))
+        ;
+    hold_steps = FALSE;
+    g_cond_broadcast (&step_cond);
+    g_mutex_unlock (&step_mutex);
+    return NULL;
+}
+
+/* Deleting a history waits for no read of another one: a load holds the SQLite
+ * backend's lock across its key derivation and every row, which the delete, on
+ * the main loop -- gnome-shell's compositor for the in-shell daemon -- would
+ * wait out. */
+static void
+test_sqlite_delete_during_read (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("stored"));
+    g_autofree gchar *deleted = g_paste_storage_backend_get_history_file_path (backend, "delete-during-read-a");
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, "delete-during-read-a", items));
+    g_assert_true (g_paste_storage_backend_write_history (backend, "delete-during-read-b", items));
+
+    step_thread = g_thread_self ();
+    hold_steps = TRUE;
+    step_held = FALSE;
+
+    g_autoptr (GThread) reader = g_thread_new ("read-b", read_history_b, backend);
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    g_mutex_lock (&step_mutex);
+    while (!step_held)
+        g_assert_true (g_cond_wait_until (&step_cond, &step_mutex, deadline));
+    g_mutex_unlock (&step_mutex);
+
+    g_autoptr (GThread) release = g_thread_new ("release-steps", release_steps_eventually, NULL);
+    g_autoptr (GError) error = NULL;
+    gint64 start = g_get_monotonic_time ();
+
+    g_paste_storage_backend_delete_history (backend, "delete-during-read-a", &error);
+
+    gint64 elapsed = g_get_monotonic_time () - start;
+
+    g_mutex_lock (&step_mutex);
+    hold_steps = FALSE;
+    g_cond_broadcast (&step_cond);
+    g_mutex_unlock (&step_mutex);
+    g_thread_join (g_steal_pointer (&release));
+    g_thread_join (g_steal_pointer (&reader));
+
+    g_assert_no_error (error);
+    g_assert_false (g_file_test (deleted, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (elapsed, <, G_USEC_PER_SEC);
+
+    /* A history of that name written again is written anew. */
+    g_assert_true (g_paste_storage_backend_write_history (backend, "delete-during-read-a", items));
+    g_assert_true (g_file_test (deleted, G_FILE_TEST_EXISTS));
 }
 #endif
 
@@ -6100,6 +6198,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-cut-short", test_import_cut_short);
     g_test_add_func ("/storage/migration/import-cut-short-then-migrate", test_import_cut_short_then_migrate);
     g_test_add_func ("/storage/migration/import-busy", test_import_busy);
+    g_test_add_func ("/storage/sqlite/delete-during-read", test_sqlite_delete_during_read);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
     g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);
     g_test_add_func ("/storage/sqlite/rank-compaction", test_sqlite_rank_compaction);
