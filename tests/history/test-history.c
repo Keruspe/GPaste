@@ -2556,6 +2556,50 @@ test_file_encrypting_migration_lost_side_file (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
+/* A row with no uuid -- another tool's table, adopted as GPaste's when it has
+ * the columns, need not refuse one -- reads as an item of a uuid of its own,
+ * and the reconciliation of the next add that displaces anything leaves it
+ * alone: hashed as one of the model's, its NULL crashed the daemon, and
+ * gnome-shell with it in-shell, at every such add. */
+static void
+test_sqlite_null_uuid_reconciled (void)
+{
+    const gchar *name = "sqlite-null-uuid";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+    sqlite3 *db = NULL;
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (db,
+                                   "CREATE TABLE items (id INTEGER PRIMARY KEY, uuid TEXT UNIQUE, kind TEXT NOT NULL,"
+                                   " value TEXT NOT NULL, rank INTEGER NOT NULL, date INTEGER, checksum TEXT, name TEXT,"
+                                   " image BLOB, favourite INTEGER NOT NULL DEFAULT 0, timeout INTEGER NOT NULL DEFAULT 0);"
+                                   "INSERT INTO items (uuid, kind, value, rank) VALUES (NULL, 'Text', 'no uuid', 1);"
+                                   "INSERT INTO items (uuid, kind, value, rank) VALUES ('6d2c1b0a-stale', 'Text', 'stale', 2);",
+                                   NULL, NULL, NULL), ==, SQLITE_OK);
+    sqlite3_close (db);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+    {
+        g_autolist (GPasteItem) read = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (read), ==, 2);
+    }
+
+    g_autoptr (GPasteItem) added = g_paste_text_item_new ("added");
+    g_autoptr (GList) snapshot = g_list_append (NULL, added);
+
+    g_paste_storage_backend_add_item (backend, name, added, snapshot);
+
+    g_autolist (GPasteItem) read = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (read), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "added");
+    g_assert_cmpstr (g_paste_item_get_value (read->next->data), ==, "no uuid");
+}
+
 /* The same eviction against a database: the image was never a file, so nothing
  * goes looking for one -- the item carries no cache path, and the backend that
  * stored it as a blob has nothing beside its store to clean up. */
@@ -7554,6 +7598,7 @@ main (int argc, char *argv[])
     add_test ("/history/sqlite_image_blob", test_sqlite_image_blob);
     add_test ("/history/sqlite_image_date_out_of_range", test_sqlite_image_date_out_of_range);
     add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
+    add_test ("/history/sqlite_null_uuid_reconciled", test_sqlite_null_uuid_reconciled);
     add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     add_test ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
     add_test ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);

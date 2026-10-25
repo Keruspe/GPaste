@@ -1851,7 +1851,10 @@ g_paste_sqlite_backend_reconcile (GPasteStorageBackend *self,
     {
         const gchar *uuid = (const gchar *) sqlite3_column_text (stmt, 0);
 
-        if (!g_hash_table_contains (uuids, uuid))
+        /* A row with no uuid, which another tool's table can hold, is read
+         * as an item of a uuid of its own (read_history_file ()): nothing
+         * here names it, and no uuid could delete it. */
+        if (uuid && !g_hash_table_contains (uuids, uuid))
             g_strv_builder_add (extra, uuid);
     }
 

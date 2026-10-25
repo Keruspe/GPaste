@@ -69,6 +69,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix checking the store, or changing the passphrase, emptying a history kept in memory only
 - Fix a history switch or deletion that cannot be saved losing passwords from the history in use
 - Fix deleting a history briefly freezing GNOME Shell while another one loads from an encrypted database
+- Fix a crash with a history database another program wrote
 
 NEW in 51.1 (20/10/2026)
 =============
