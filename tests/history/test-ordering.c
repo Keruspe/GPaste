@@ -1129,17 +1129,24 @@ test_count_pending (void)
 
 /* What the store answers for of a history just left is what it is counted by
  * from settings changed since the snapshot was taken, too: no image with
- * images-support off, and no more than max-history-size items. */
+ * images-support off, and no more than max-history-size items. So it is on an
+ * incremental store, whose write out carries no snapshot: counted by what the
+ * history held as it left. */
+#define COUNT_IMAGES      (1 << 0)
+#define COUNT_INCREMENTAL (1 << 1)
+
 static void
 test_count_pending_settings (gconstpointer data)
 {
-    gboolean images = GPOINTER_TO_INT (data);
-    const gchar *name = (images) ? "count-images" : "count-capped";
+    gboolean images = GPOINTER_TO_INT (data) & COUNT_IMAGES;
+    gboolean incremental = GPOINTER_TO_INT (data) & COUNT_INCREMENTAL;
+    const gchar *name = (incremental) ? ((images) ? "count-incremental-images" : "count-incremental-capped")
+                                      : ((images) ? "count-images" : "count-capped");
     g_autoptr (GPasteSettings) settings = NULL;
     g_autoptr (GPasteStorageBackend) backend = NULL;
     g_autoptr (GPasteHistory) history = NULL;
 
-    fixture (&settings, &backend, &history, name);
+    fixture_in (&settings, &backend, &history, name, (incremental) ? G_PASTE_STORAGE_SQLITE : G_PASTE_STORAGE_FILE);
     g_paste_settings_set_images_support (settings, TRUE);
     if (images)
     {
@@ -1160,7 +1167,19 @@ test_count_pending_settings (gconstpointer data)
     }
     finish_history (history);
     g_paste_history_resume (history);
-    leave_with_write_out (history, (images) ? "count-images-reached" : "count-capped-reached");
+    g_autofree gchar *next = g_strconcat (name, "-reached", NULL);
+
+    /* An incremental store's history switched to is read once the writes out
+     * have landed: left, not yet loaded. */
+    if (incremental)
+    {
+        barrier.hold_write = TRUE;
+        g_paste_history_add (history, g_paste_text_item_new ("accepted"));
+        wait_worker ();
+        g_paste_history_switch (history, next);
+    }
+    else
+        leave_with_write_out (history, next);
 
     /* 3 items, the image left out; 8, capped at 5. */
     if (images)
@@ -1172,6 +1191,8 @@ test_count_pending_settings (gconstpointer data)
 
     g_assert_cmpuint (g_paste_history_get_size (history, name), ==, expected);
     release_worker ();
+    if (incremental)
+        wait_load (history);
     finish_history (history);
     g_assert_cmpuint (g_paste_history_get_size (history, name), ==, expected);
 }
@@ -1400,11 +1421,13 @@ main (int    argc,
     g_test_add_func ("/history-ordering/stopped", test_stopped);
     g_test_add_func ("/history-ordering/count-pending", test_count_pending);
     g_test_add_func ("/history-ordering/count-pending-passwords", test_count_pending_passwords);
-    g_test_add_data_func ("/history-ordering/count-pending-images-off", GINT_TO_POINTER (TRUE), test_count_pending_settings);
-    g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (FALSE), test_count_pending_settings);
+    g_test_add_data_func ("/history-ordering/count-pending-images-off", GINT_TO_POINTER (COUNT_IMAGES), test_count_pending_settings);
+    g_test_add_data_func ("/history-ordering/count-pending-capped", GINT_TO_POINTER (0), test_count_pending_settings);
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history-ordering/count-pending-password-changes", test_count_pending_password_changes);
     g_test_add_func ("/history-ordering/count-pending-incremental", test_count_pending_incremental);
+    g_test_add_data_func ("/history-ordering/count-pending-incremental-images-off", GINT_TO_POINTER (COUNT_INCREMENTAL | COUNT_IMAGES), test_count_pending_settings);
+    g_test_add_data_func ("/history-ordering/count-pending-incremental-capped", GINT_TO_POINTER (COUNT_INCREMENTAL), test_count_pending_settings);
 #endif
     g_test_add_func ("/history-ordering/rename-during-write", test_rename_during_write);
     g_test_add_func ("/history-ordering/remove-image-during-write", test_remove_image_during_write);

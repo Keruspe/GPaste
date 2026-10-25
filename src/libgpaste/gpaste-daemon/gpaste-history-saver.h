@@ -64,8 +64,7 @@ void     g_paste_history_saver_record        (GPasteHistorySaver   *self,
                                               const gchar          *name,
                                               GPasteItem           *item,
                                               const gchar          *uuid,
-                                              GList                *history,
-                                              guint64               count);
+                                              GList                *history);
 void     g_paste_history_saver_load          (GPasteHistorySaver   *self,
                                               const gchar          *name,
                                               gboolean              save_after);
@@ -96,6 +95,9 @@ void     g_paste_history_saver_drain_history (GPasteHistorySaver   *self,
 gboolean g_paste_history_saver_count_pending (GPasteHistorySaver   *self,
                                               const gchar          *name,
                                               guint64              *count);
+void     g_paste_history_saver_left          (GPasteHistorySaver   *self,
+                                              const gchar          *name,
+                                              GPtrArray            *history);
 void     g_paste_history_saver_detach        (GPasteHistorySaver   *self);
 void     g_paste_history_saver_abandon_load  (GPasteHistorySaver   *self);
 void     g_paste_history_saver_hold_loads    (GPasteHistorySaver   *self,

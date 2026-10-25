@@ -93,9 +93,9 @@ struct _GPasteHistorySaverWrite
     GPasteItem           *item; /* ref'd, or NULL */
     gchar                *uuid; /* or NULL */
     GList                *history;
-    /* How many items the store of @name holds once this has landed, as the
-     * history counted them: what a write with no @history is counted by. */
-    guint64               count;
+    /* What the history held when it left @name, for a write carrying no
+     * snapshot: what it is counted by (g_paste_history_saver_left ()). */
+    GList                *counted;
 
     /* A copy's: the history it reads when it carries no @history, the
      * caller's task, answered once it has landed, and what failed. One
@@ -116,6 +116,7 @@ g_paste_history_saver_write_free (gpointer data)
     g_clear_object (&d->item);
     g_clear_pointer (&d->uuid, g_free);
     g_clear_list (&d->history, g_object_unref);
+    g_clear_list (&d->counted, g_object_unref);
     g_clear_pointer (&d->source, g_free);
     g_clear_object (&d->done);
     g_clear_error (&d->error);
@@ -342,9 +343,6 @@ g_paste_history_saver_write_done (GObject      *source_object G_GNUC_UNUSED,
  * @history: (transfer full) (nullable) (element-type GPasteItem): a snapshot of
  *           the items, used as-is by a non-incremental backend and to reconcile
  *           an incremental add; %NULL for the operations that never consume it
- * @count: how many items the store of @name holds once this change has landed,
- *         which g_paste_history_saver_count_pending() answers until then for a
- *         change carrying no @history
  *
  * Persist a change to @name in the background. An incremental backend applies
  * the queued changes in order; for a non-incremental one (which rewrites the
@@ -357,8 +355,7 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
                               const gchar        *name,
                               GPasteItem         *item,
                               const gchar        *uuid,
-                              GList              *history,
-                              guint64             count)
+                              GList              *history)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
     g_return_if_fail (op != G_PASTE_HISTORY_SAVE_COPY);
@@ -400,7 +397,6 @@ g_paste_history_saver_record (GPasteHistorySaver *self,
     data->item = item ? g_object_ref (item) : NULL;
     data->uuid = g_strdup (uuid);
     data->history = history;
-    data->count = count;
 
     g_queue_push_tail (&self->pending, g_steal_pointer (&data));
 
@@ -622,7 +618,9 @@ g_paste_history_saver_drain_history (GPasteHistorySaver *self,
  * (g_paste_storage_backend_stores_item ()), no image while images-support is
  * off and, past the favourites, at most max-history-size items -- the SQLite
  * flavours' cap taking in the images it then leaves out, the file flavours'
- * not. */
+ * not. The one count of items the store does not hold yet, which no backend
+ * can be asked: /history-ordering/count-pending-* hold it to what the stores
+ * count once the writes have landed. */
 static guint64
 g_paste_history_saver_count_stored (GPasteHistorySaver *self,
                                     const GList        *history)
@@ -653,6 +651,26 @@ g_paste_history_saver_count_stored (GPasteHistorySaver *self,
     return count;
 }
 
+/* The latest write still out for @name, a copy's aside: one reads a store,
+ * unread yet, and the history it writes is listed once it has landed. */
+static GPasteHistorySaverWrite *
+g_paste_history_saver_latest_write (GPasteHistorySaver *self,
+                                    const gchar        *name)
+{
+    for (GList *link = self->pending.tail; link; link = link->prev)
+    {
+        GPasteHistorySaverWrite *pending = link->data;
+
+        if (pending->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (pending->name, name))
+            return pending;
+    }
+
+    if (self->writing && self->writing->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (self->writing->name, name))
+        return self->writing;
+
+    return NULL;
+}
+
 /**
  * g_paste_history_saver_count_pending:
  * @self: a #GPasteHistorySaver
@@ -661,8 +679,9 @@ g_paste_history_saver_count_stored (GPasteHistorySaver *self,
  *
  * How many items the store of @name holds once the writes still out for it have
  * landed: the snapshot the latest of them carries, counted as the store counts
- * it, or the count that write was recorded with when it carries none. A history
- * with none out has its store answer for it.
+ * it, or what the history held as it left @name when that write carries none
+ * (g_paste_history_saver_left ()). A history with none out, or left with no
+ * such note, has its store answer for it.
  *
  * Returns: whether @count was set
  */
@@ -674,29 +693,54 @@ g_paste_history_saver_count_pending (GPasteHistorySaver *self,
     g_return_val_if_fail (G_PASTE_IS_HISTORY_SAVER (self), FALSE);
     g_return_val_if_fail (count, FALSE);
 
-    const GPasteHistorySaverWrite *latest = NULL;
-
-    /* Not a copy's, whose count is the store it reads, unread yet: the history
-     * it writes is listed once it has landed. */
-    for (const GList *link = self->pending.tail; link && !latest; link = link->prev)
-    {
-        const GPasteHistorySaverWrite *pending = link->data;
-
-        if (pending->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (pending->name, name))
-            latest = pending;
-    }
-
-    if (!latest && self->writing && self->writing->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (self->writing->name, name))
-        latest = self->writing;
+    const GPasteHistorySaverWrite *latest = g_paste_history_saver_latest_write (self, name);
 
     if (!latest)
         return FALSE;
 
-    /* A snapshot is counted as the store counts it once it holds it, by the
-     * settings in force now; a write carrying none -- an incremental backend's
-     * add, remove or replace -- by what the history recorded it with. */
-    *count = (latest->history) ? g_paste_history_saver_count_stored (self, latest->history) : latest->count;
+    /* A snapshot -- an emptied history's being none at all -- is counted as
+     * the store counts it once it holds it, by the settings in force now; a
+     * write carrying none -- an incremental backend's add, remove or replace --
+     * by what the history held as it left @name, the same way. */
+    if (latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history)
+        *count = g_paste_history_saver_count_stored (self, latest->history);
+    else if (latest->counted)
+        *count = g_paste_history_saver_count_stored (self, latest->counted);
+    else
+        return FALSE;
+
     return TRUE;
+}
+
+/**
+ * g_paste_history_saver_left:
+ * @self: a #GPasteHistorySaver
+ * @name: the history its owner is leaving
+ * @history: (element-type GPasteItem): the items @name holds
+ *
+ * Note what @name holds as its owner leaves it, for the latest write still out
+ * for it, should that one carry no snapshot, to be counted by
+ * (g_paste_history_saver_count_pending ()). Recording a change costs no walk
+ * of the history that way: a switch pays for it, once.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_left (GPasteHistorySaver *self,
+                            const gchar        *name,
+                            GPtrArray          *history)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
+    g_return_if_fail (name);
+    g_return_if_fail (history);
+
+    GPasteHistorySaverWrite *latest = g_paste_history_saver_latest_write (self, name);
+
+    /* The one in flight included: its worker reads none of @counted, which
+     * only the main thread touches, as it does the write's free. */
+    if (!latest || latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history || latest->counted)
+        return;
+
+    for (guint i = history->len; i > 0; --i)
+        latest->counted = g_list_prepend (latest->counted, g_object_ref (g_ptr_array_index (history, i - 1)));
 }
 
 /**
