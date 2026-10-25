@@ -1786,12 +1786,14 @@ g_paste_history_sync (GPasteHistory *self,
  * writes holds the main thread, and the history in use is not switched away
  * from.
  *
- * Fails with %G_IO_ERROR_BUSY, as g_paste_history_sync () does, having done
- * nothing, with %G_PASTE_ERROR_ALREADY_EXISTS while writes to @target are still
- * out, and with %G_PASTE_ERROR_FAILED when the history in use could not be read
- * -- an empty model standing for data still locked away, which copied as-is
- * would answer for a valid, empty copy -- or as
- * g_paste_history_saver_copy_finish () does.
+ * Fails, having done nothing, with %G_PASTE_ERROR_INVALID_ARGUMENT when @name
+ * or @target names no history, with %G_IO_ERROR_BUSY as g_paste_history_sync ()
+ * does and while a load still fills the model of the history in use, with
+ * %G_PASTE_ERROR_ALREADY_EXISTS while writes to @target are still out, and
+ * with %G_PASTE_ERROR_FAILED when the history in use could not be read -- an
+ * empty model standing for data still locked away, which copied as-is would
+ * answer for a valid, empty copy -- or as g_paste_history_saver_copy_finish ()
+ * does.
  */
 G_PASTE_VISIBLE void
 g_paste_history_copy_async (GPasteHistory      *self,
@@ -1807,8 +1809,19 @@ g_paste_history_copy_async (GPasteHistory      *self,
     G_PASTE_LOCK_HISTORY;
 
     g_autoptr (GError) error = NULL;
-    const gchar *source = g_paste_history_resolve_name (self, name);
-    const gchar *written = g_paste_history_resolve_name (self, target);
+
+    /* Refused rather than resolved as a load resolves its name: a copy of the
+     * default history, or one written over its store, answered as the copy
+     * asked for. */
+    if (!g_paste_util_history_name_is_valid (name) || !g_paste_util_history_name_is_valid (target))
+    {
+        g_task_report_error (NULL, callback, user_data, g_paste_history_copy_async,
+                             g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "that names no history"));
+        return;
+    }
+
+    const gchar *source = name;
+    const gchar *written = target;
     gboolean current = g_paste_str_equal (source, self->name);
 
     gboolean owned = (current) ? g_paste_history_check_owned (self, source, &error)
@@ -1818,6 +1831,11 @@ g_paste_history_copy_async (GPasteHistory      *self,
         g_set_error_literal (&error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
     else if (owned && current && self->unreadable)
         g_set_error_literal (&error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "the history could not be read, so there is nothing to back up");
+    /* What a load has yet to fill is a model of what was added meanwhile
+     * alone -- and, with nothing added, a store read before the load holds the
+     * storage lock, a previous daemon possibly still writing it. */
+    else if (owned && current && g_paste_history_saver_is_loading (self->saver))
+        g_set_error_literal (&error, G_IO_ERROR, G_IO_ERROR_BUSY, "The history is still loading");
 
     if (error)
     {
@@ -1862,8 +1880,12 @@ g_paste_history_copy_finish (GPasteHistory *self,
                              GError       **error)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
-    /* Neither the saver's task nor a refusal's report names a source object. */
+    /* Neither the saver's task nor a refusal's report names a source object,
+     * and either answers: a refusal under copy_async's tag, a copy that went
+     * out under the saver's. */
     g_return_val_if_fail (g_task_is_valid (result, NULL), FALSE);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_history_copy_async ||
+                          g_task_get_source_tag (G_TASK (result)) == g_paste_history_saver_copy, FALSE);
 
     return g_task_propagate_boolean (G_TASK (result), error);
 }

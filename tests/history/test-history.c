@@ -23,6 +23,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/file.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -891,6 +892,74 @@ test_add_file_swapped (void)
     g_assert_cmpint (g_rmdir (subdir), ==, 0);
     g_assert_cmpint (g_unlink (big), ==, 0);
     g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
+static GError *
+copy_refused (GPasteHistory *history,
+              const gchar   *name,
+              const gchar   *target)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+    GError *error = NULL;
+
+    g_paste_history_copy_async (history, name, target, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_assert_false (g_paste_history_copy_finish (history, result, &error));
+
+    return error;
+}
+
+/* A copy refuses a name that names no history, rather than copy the default
+ * history or write over its store; and the history in use while a load still
+ * fills its model, which would copy what was added meanwhile alone -- as
+ * BackupHistory, its one caller in the daemon, would have refused them. */
+static void
+test_copy_refusals (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    const gchar *current = g_paste_history_get_current (history);
+    g_autofree gchar *default_path = g_paste_util_get_history_file_path (G_PASTE_DEFAULT_HISTORY, "xml");
+    g_autoptr (GError) to_invalid = NULL;
+    g_autoptr (GError) from_invalid = NULL;
+
+    g_autofree gchar *default_before = NULL;
+    g_autofree gchar *default_after = NULL;
+
+    g_file_get_contents (default_path, &default_before, NULL, NULL);
+    g_paste_history_add (history, g_paste_text_item_new ("kept"));
+    to_invalid = copy_refused (history, current, "not/a/name");
+    g_assert_error (to_invalid, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    from_invalid = copy_refused (history, "not/a/name", "copy-refused");
+    g_assert_error (from_invalid, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_file_get_contents (default_path, &default_after, NULL, NULL);
+    g_assert_cmpstr (default_after, ==, default_before);
+
+    /* A load waiting for another daemon's storage lock. */
+    g_autofree gchar *lock = g_build_filename (g_paste_util_get_history_dir_path (), "lock", NULL);
+
+    g_paste_storage_backend_unlock ();
+
+    gint held = g_open (lock, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    g_assert_cmpint (held, >=, 0);
+    g_assert_cmpint (flock (held, LOCK_EX | LOCK_NB), ==, 0);
+    g_paste_history_load_async (history, "copy-loading");
+    g_assert_true (g_paste_history_is_loading (history));
+
+    g_autoptr (GError) loading = copy_refused (history, "copy-loading", "copy-of-loading");
+
+    g_assert_error (loading, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_close (held, NULL);
+
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
+    {
+        g_main_context_iteration (NULL, FALSE);
+        g_usleep (1000);
+    }
+    g_assert_false (g_paste_history_is_loading (history));
 }
 
 /* Like make_history but without forcing a name into GSettings (which would emit
@@ -7628,6 +7697,7 @@ main (int argc, char *argv[])
     add_test ("/history/add_file_refusals", test_add_file_refusals);
     add_test ("/history/add_file_tiff", test_add_file_tiff);
     add_test ("/history/add_file_swapped", test_add_file_swapped);
+    add_test ("/history/copy_refusals", test_copy_refusals);
     add_test ("/history/add_file_unsearchable", test_add_file_unsearchable);
     add_test ("/history/add_file_unsized", test_add_file_unsized);
     add_test ("/history/add_file_unallocated", test_add_file_unallocated);

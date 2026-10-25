@@ -545,15 +545,6 @@ g_paste_daemon_methods_backup_allowed (const GPasteDaemonMethods *self,
 
     gboolean current = g_paste_str_equal (history, g_paste_history_get_current (self->history));
 
-    /* The current history is backed up from its model, which a load has yet to
-     * fill -- and whose store is not ours to read before the load has taken
-     * the storage lock, a previous daemon possibly still writing it. */
-    if (current && g_paste_history_is_loading (self->history))
-    {
-        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_BUSY, "The history is still loading");
-        return FALSE;
-    }
-
     /* Refused rather than overwritten: a backup quietly destroying an older one
      * of the same name is a loss noticed far too late to undo. A store we cannot
      * enumerate is refused too -- not knowing is not the same as knowing there
