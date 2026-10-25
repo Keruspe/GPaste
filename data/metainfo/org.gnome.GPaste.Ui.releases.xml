@@ -248,6 +248,14 @@
       </ul>
     </description>
   </release>
+  <release type="stable" date="2026-10-24" version="45.13">
+    <description>
+      <p>This is a maintenance release. Changes:</p>
+      <ul>
+        <li>Fix a crash when dealing with old images</li>
+      </ul>
+    </description>
+  </release>
   <release type="stable" date="2026-08-31" version="45.12">
     <description>
       <p>This is a maintenance release. Changes:</p>
