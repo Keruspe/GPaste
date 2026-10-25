@@ -2614,6 +2614,53 @@ test_import_spares_unwritten_destination (void)
     g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "older copy");
 }
 
+/* A destination history whose write went in without an image it could not
+ * write, which a file flavour does over a history already there, is the
+ * import's copy, and the rollback takes it back with the rest. */
+static void
+test_import_takes_back_partial_destination (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to create images directory*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    const gchar *name = "partial";
+    const guchar pixel[] = { 85, 86, 87, 255 };
+    g_autoptr (GBytes) bytes = g_bytes_new (pixel, sizeof (pixel));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, bytes, 4);
+    g_autofree gchar *images = g_paste_file_backend_images_dir (name);
+    g_autofree gchar *parent = g_path_get_dirname (images);
+    g_autofree gchar *document = g_paste_util_get_history_file_path (name, "xml");
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    {
+        g_autoptr (GPasteStorageBackend) sqlite = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) old = g_list_append (NULL, g_paste_text_item_new ("older copy"));
+        g_autolist (GPasteItem) source = g_list_append (NULL, g_paste_text_item_new ("source"));
+
+        source = g_list_prepend (source, g_paste_image_item_new (texture));
+        g_assert_true (g_paste_storage_backend_write_history (file, name, old));
+        g_assert_true (g_paste_storage_backend_write_history (sqlite, name, source));
+    }
+
+    /* What the image's directory cannot be made through. */
+    g_assert_cmpint (g_mkdir_with_parents (parent, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (images, "", 0, NULL));
+
+    g_autoptr (GError) error = NULL;
+
+    g_assert_false (import_histories (settings, G_PASTE_STORAGE_SQLITE, NULL, G_PASTE_STORAGE_FILE, NULL, &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_false (g_file_test (document, G_FILE_TEST_EXISTS));
+}
+
 /* A version 1 database whose upgrade fails at the statement @data names has
  * to come out of it exactly as it went in, so that the next open upgrades it
  * whole. */
@@ -6561,6 +6608,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/delete-during-read", test_sqlite_delete_during_read);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
     g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);
+    g_test_add_func ("/storage/migration/import-takes-back-partial-destination", test_import_takes_back_partial_destination);
     g_test_add_func ("/storage/sqlite/rank-compaction", test_sqlite_rank_compaction);
     g_test_add_func ("/storage/sqlite/diverged-write", test_sqlite_diverged_write);
     g_test_add_func ("/storage/sqlite/failed-write-leaves-no-database", test_sqlite_failed_write_leaves_no_database);

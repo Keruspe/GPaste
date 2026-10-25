@@ -619,7 +619,10 @@ import_histories (GPasteSettings *settings,
     /* Past the last history written to @chosen, which a failure takes back. A
      * copy the import replaced goes with it: what it held went with the write,
      * and the source still holds what replaced it. One whose write failed is
-     * as it was, and stays, an older copy an earlier migration kept included. */
+     * as it was, and stays, an older copy an earlier migration kept included --
+     * unless the write put its document in without an image, which a file
+     * flavour does over a history already there: that copy is the import's,
+     * and goes back with the rest. */
     GStrv written_end = names;
     /* What the journal names, which a crash leaves for the next start to take
      * back: each history before its write, the write being what may leave
@@ -676,8 +679,15 @@ import_histories (GPasteSettings *settings,
             break;
         }
 
+        GStatBuf before;
+        gboolean existed = !g_stat (destination, &before);
+
         if (!g_paste_storage_backend_write_history (next, *name, history))
         {
+            GStatBuf after;
+
+            if (existed && !g_stat (destination, &after) && (after.st_dev != before.st_dev || after.st_ino != before.st_ino))
+                written_end = name + 1;
             g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                          "The history “%s” could not be written", *name);
             ok = FALSE;

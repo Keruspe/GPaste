@@ -446,7 +446,11 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *self,
  * @history: (element-type GPasteItem): the history to write
  *
  * Save the history by writing it to our storage backend. A write that fails
- * leaves the store of @name as it was, and leaves none where there was none.
+ * leaves the store of @name as it was, and leaves none where there was none --
+ * bar a file flavour's write over a history already there that could not
+ * write one of its images: the rest goes in without it, the saver's next
+ * write trying it again, where a history one image kept failing would
+ * otherwise never be written again.
  *
  * Returns: whether the store of @name holds @history now
  */
