@@ -789,7 +789,17 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
             image_reference = g_paste_file_backend_image_path (history_name, g_paste_image_item_get_checksum (image));
 
             if (!_g_paste_file_backend_ensure_image_file (real_self, image, image_reference))
+            {
+                const gchar *read_from = g_paste_image_item_get_cache_path (image);
+
                 images_written = FALSE;
+                /* An image read from elsewhere -- GPaste 50's shared directory
+                 * -- whose copy could not be made: what it was read from is
+                 * its only copy, which the document goes on naming, or the
+                 * next start's sweep of that directory would delete it. */
+                if (!encrypted && read_from && g_file_test (read_from, G_FILE_TEST_EXISTS))
+                    g_set_str (&image_reference, read_from);
+            }
 
             gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
 
@@ -1370,9 +1380,10 @@ _g_paste_file_backend_read_fallback_image (GPasteStorageBackend *self,
 /* Where an image of the history read is: in its images directory, under the
  * name its checksum gives it, whatever path the document stored -- one spelling
  * the data directory as it was reached then, which a moved or renamed home, or
- * another XDG_DATA_HOME, no longer matches. The stored path is read only when
- * nothing is there: an image of GPaste 50's shared directory, which the next
- * save moves into the history's own. */
+ * another XDG_DATA_HOME, no longer matches. Then in GPaste 50's directory every
+ * history shared, named the same way (its histories were plain alone), which
+ * the next save copies into the history's own. The stored path is read only
+ * when nothing is in either. */
 static gchar *
 _g_paste_file_backend_image_location (const Data *data)
 {
@@ -1390,6 +1401,15 @@ _g_paste_file_backend_image_location (const Data *data)
 
         if (g_file_test (side_file, G_FILE_TEST_EXISTS))
             return g_steal_pointer (&derived);
+    }
+    else
+    {
+        g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+        g_autofree gchar *file_name = g_strconcat (data->checksum, ".png", NULL);
+        g_autofree gchar *shared = g_build_filename (history_dir, "images", file_name, NULL);
+
+        if (g_file_test (shared, G_FILE_TEST_EXISTS))
+            return g_steal_pointer (&shared);
     }
 
     return g_strdup (data->text);

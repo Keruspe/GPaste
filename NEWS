@@ -65,6 +65,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix GPaste being able to start a second time, and exit mid-way through a passphrase change, after GNOME Shell took over from it
 - Fix a timeout given to a password on the clipboard never taking it off when the application holding it answers nothing
 - Fix emptying a history that is not in use sometimes leaving its items, or bringing back one deleted right after
+- Fix screenshots kept by GPaste 50 being deleted after an upgrade when their history moved or could not be saved
 
 NEW in 51.1 (20/10/2026)
 =============

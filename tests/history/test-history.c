@@ -2205,6 +2205,119 @@ test_file_legacy_images_sweep (void)
     g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, aliased_checksum);
 }
 
+/* A GPaste 50 history holding one image, kept in
+ * the images directory every history shared, referenced at @reference. */
+static gchar *
+legacy_history (GBytes      *png,
+                const gchar *reference,
+                const gchar *checksum)
+{
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *shared = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *file_name = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *legacy = g_build_filename (shared, file_name, NULL);
+
+    g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+
+    return g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                            "<history version=\"2.0\">\n"
+                            "  <item kind=\"Image\" uuid=\"5c7a3c3e-legacy\" date=\"1234567890\" checksum=\"%s\">\n"
+                            "    <value><![CDATA[%s]]></value>\n"
+                            "  </item>\n"
+                            "</history>\n",
+                            checksum, (reference) ? reference : legacy);
+}
+
+/* A GPaste 50 image is found in the directory every history shared, by the
+ * name its checksum gives it, whatever path the document stored: a data
+ * directory reached under another path since -- a home renamed, restored
+ * elsewhere -- is no reason to drop it, nor to have the sweep delete it. */
+static void
+test_file_legacy_image_moved_home (void)
+{
+    const gchar *name = "legacy-moved-home";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (64, 65, 66);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autoptr (GPasteItem) image = g_paste_image_item_new_from_bytes (png, date, NULL);
+    const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image));
+    g_autofree gchar *stale = g_strdup_printf ("/nonexistent/old-home/.local/share/gpaste/images/%s.png", checksum);
+    g_autofree gchar *history = legacy_history (png, stale, checksum);
+    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
+
+    g_assert_true (g_file_set_contents (history_path, history, -1, NULL));
+    g_paste_file_backend_sweep_legacy_images ();
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+    {
+        g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (items), ==, 1);
+        g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+    }
+
+    g_paste_file_backend_sweep_legacy_images ();
+
+    g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (items), ==, 1);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (items->data), ==, checksum);
+}
+
+/* A GPaste 50 image the next save could not copy into its history's own
+ * images directory keeps being named where it is, its only copy: named by the
+ * copy it never got, it would be deleted by the next start's sweep. */
+static void
+test_file_legacy_image_uncopied (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "legacy-uncopied";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autoptr (GBytes) png = test_png_bytes_colored (67, 68, 69);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+        g_autoptr (GPasteItem) image = g_paste_image_item_new_from_bytes (png, date, NULL);
+        const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image));
+        g_autofree gchar *history = legacy_history (png, NULL, checksum);
+        g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
+        /* A file where the history's images directory would go. */
+        g_autofree gchar *blocker = g_paste_file_backend_images_dir (name);
+
+        g_assert_true (g_file_set_contents (history_path, history, -1, NULL));
+        g_assert_true (g_file_set_contents (blocker, "in the way", -1, NULL));
+
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+
+        {
+            g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+            g_assert_cmpuint (g_list_length (items), ==, 1);
+            g_assert_false (g_paste_storage_backend_write_history (backend, name, items));
+        }
+
+        g_assert_cmpint (g_unlink (blocker), ==, 0);
+        g_paste_file_backend_sweep_legacy_images ();
+
+        g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (items), ==, 1);
+        g_assert_cmpstr (g_paste_image_item_get_checksum (items->data), ==, checksum);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*");
+}
+
 /* An image is found under its history's images directory, by the name its
  * checksum gives it, whatever path the document stored: one spelling the data
  * directory as it was reached before a home moved is no reason to drop it --
@@ -7222,6 +7335,8 @@ main (int argc, char *argv[])
     add_test ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
     add_test ("/history/file_sweep_bounds", test_file_sweep_bounds);
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
+    add_test ("/history/file_legacy_image_moved_home", test_file_legacy_image_moved_home);
+    add_test ("/history/file_legacy_image_uncopied", test_file_legacy_image_uncopied);
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);
     add_test ("/history/file_count_matches_read", test_file_count_matches_read);
     add_test ("/history/switch_refused", test_switch_refused);
