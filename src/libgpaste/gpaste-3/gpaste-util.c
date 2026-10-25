@@ -7,6 +7,7 @@
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 
 #include <errno.h>
 #include <string.h>
@@ -357,7 +358,7 @@ g_paste_util_one_line (const gchar *text)
  * Done here rather than in the daemon because it is presentation, and because
  * the daemon got it wrong when it did it: a blind substitution over the uri
  * spelled a home file "file://~/a". */
-static gchar *
+G_PASTE_VISIBLE gchar *
 g_paste_util_uris_display_string (const gchar *value)
 {
     g_auto (GStrv) uris = g_strsplit (value, "\n", -1);

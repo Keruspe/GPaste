@@ -3176,6 +3176,28 @@ test_search_image_by_what_it_shows (void)
     g_assert_cmpuint (g_strv_length (by_size), ==, 1);
 }
 
+/* So is a file list: by the paths its row shows, decoded and with $HOME
+ * written "~", as well as by its uris. */
+static void
+test_search_files_by_what_they_show (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+    g_autofree gchar *path = g_build_filename (g_get_home_dir (), "café au lait", NULL);
+    g_autofree gchar *uri = g_filename_to_uri (path, NULL, NULL);
+
+    g_assert_nonnull (uri);
+    g_paste_history_add (history, g_paste_uris_item_new_from_str (uri));
+
+    g_autofree gchar *home_path = g_regex_escape_string ("~/café au lait", -1);
+    g_auto (GStrv) by_name = g_paste_history_search (history, "café au");
+    g_auto (GStrv) by_home_path = g_paste_history_search (history, home_path);
+    g_auto (GStrv) by_uri = g_paste_history_search (history, "caf%C3%A9");
+
+    g_assert_cmpuint (g_strv_length (by_name), ==, 1);
+    g_assert_cmpuint (g_strv_length (by_home_path), ==, 1);
+    g_assert_cmpuint (g_strv_length (by_uri), ==, 1);
+}
+
 /* A password is found by its name, whatever its case: its value is not what
  * anyone knows it by. A query that is no regular expression, or one too long, is
  * the caller's to hear of -- refused, not journalled -- and an escaped one finds
@@ -7723,6 +7745,7 @@ main (int argc, char *argv[])
     add_test ("/history/memory_eviction_evicts_repeatedly", test_memory_eviction_evicts_repeatedly);
     add_test ("/history/select_counts_image_once", test_select_counts_image_once);
     add_test ("/history/search_image_by_what_it_shows", test_search_image_by_what_it_shows);
+    add_test ("/history/search_files_by_what_they_show", test_search_files_by_what_they_show);
     add_test ("/history/search_queries", test_search_queries);
     add_test ("/history/merge_refuses_image_and_password", test_merge_refuses_image_and_password);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);

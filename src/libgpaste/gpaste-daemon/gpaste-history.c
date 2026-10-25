@@ -5,6 +5,7 @@
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-history-private.h>
@@ -2802,6 +2803,10 @@ g_paste_history_search (GPasteHistory *self,
          * typed: what its row shows, its size and when it was taken, is what a
          * search finds it by. */
         const gchar *text = (g_paste_item_get_kind (item) == G_PASTE_ITEM_KIND_IMAGE) ? g_paste_item_get_display_string (item) : g_paste_item_get_value (item);
+        /* A file list's uris are percent-encoded, a home file's spelled out in
+         * full, where its row reads the paths decoded with $HOME as "~": it is
+         * found by either. */
+        g_autofree gchar *shown = (g_paste_item_get_kind (item) == G_PASTE_ITEM_KIND_URIS) ? g_paste_util_uris_display_string (text) : NULL;
         gboolean match = FALSE;
 
         /* A password's value is not what it is known by, its name is: matched
@@ -2811,7 +2816,8 @@ g_paste_history_search (GPasteHistory *self,
             match = TRUE;
         else if (G_PASTE_IS_PASSWORD_ITEM (item))
             match = g_regex_match (regex, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
-        else if (g_regex_match (regex, text, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
+        else if (g_regex_match (regex, text, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL) ||
+                 (shown && g_regex_match (regex, shown, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL)))
             match = TRUE;
 
         if (match)

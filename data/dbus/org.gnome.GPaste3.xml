@@ -463,8 +463,10 @@
       menu and the overview do. A password is matched by its name, its value
       being what nobody knows it by, and an image by what its row shows, its
       size and when it was taken, rather than by its value, which is the
-      checksum naming its file. A query longer than 4096 bytes, or one that is
-      no regular expression, is .Error.InvalidArgument.
+      checksum naming its file. A file list is matched by its uris and by the
+      paths its row shows, decoded and with the home directory written "~". A
+      query longer than 4096 bytes, or one that is no regular expression, is
+      .Error.InvalidArgument.
     -->
     <method name="Search">
       <arg type="s"         direction="in"  name="query"/>
