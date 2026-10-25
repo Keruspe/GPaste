@@ -323,7 +323,10 @@ test_set_active_unstored (void)
 /* A history-name GSettings refuses to store leaves the history where it was,
  * which SwitchHistory says rather than answer OK; and DeleteHistory of the
  * current history, which has to switch away from it, deletes nothing then --
- * done, the next copy would have written it back. */
+ * done, the next copy would have written it back. Where it was, model and
+ * all: what only the model holds -- a password, which a plain store never
+ * keeps -- is still there, though dconf takes the write before it gives it
+ * back. */
 static void
 test_switch_refused (void)
 {
@@ -335,6 +338,7 @@ test_switch_refused (void)
 
     g_paste_history_load (history, name);
     g_paste_settings_set_history_name (settings, name);
+    g_paste_history_add (history, g_paste_password_item_new ("bank", "the secret", 0));
 
     g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
 
@@ -353,6 +357,8 @@ test_switch_refused (void)
 
     g_assert_cmpstr (g_paste_history_get_current (history), ==, name);
     g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 

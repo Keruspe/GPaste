@@ -69,6 +69,9 @@ struct _GPasteHistory
      * Unlike @stopped it belongs to the loaded history alone: starting another
      * load clears it, and that load's own result sets it again. */
     gboolean              unreadable;
+    /* g_paste_history_switch () is writing the history-name setting: what
+     * it announces meanwhile waits for the write to be known stored. */
+    gboolean              switching;
 
     /* What the memory cap evicts next: the biggest item it may evict at all,
      * which is never the first (active) one nor a favourite, and %NULL when
@@ -2210,6 +2213,8 @@ g_paste_history_load_async (GPasteHistory *self,
     g_paste_history_saver_load (self->saver, self->name, FALSE);
 }
 
+static void g_paste_history_history_name_changed (GPasteHistory *self);
+
 /**
  * g_paste_history_switch:
  * @self: a #GPasteHistory instance
@@ -2231,10 +2236,27 @@ g_paste_history_switch (GPasteHistory *self,
     g_return_val_if_fail (g_paste_util_history_name_is_valid (name), FALSE);
     g_return_val_if_fail (g_utf8_validate (name, -1, NULL), FALSE);
 
+    /* dconf announces a write it takes at once, and one it then cannot store
+     * is given back later: acted on as it is announced, the switch would have
+     * emptied the model and loaded the other history, to come back reloading
+     * this one from its store, without what only the model held -- a plain
+     * flavour's passwords. So the switch waits for the write to be read back
+     * as stored, the change announced in between being left to it. */
+    self->switching = TRUE;
     g_paste_settings_set_history_name (self->settings, name);
     g_paste_settings_sync_key (self->settings, G_PASTE_HISTORY_NAME_SETTING);
+    self->switching = FALSE;
 
-    return g_paste_str_equal (g_paste_settings_get_history_name (self->settings), name);
+    gboolean stored = g_paste_str_equal (g_paste_settings_get_history_name (self->settings), name);
+
+    if (stored)
+    {
+        G_PASTE_LOCK_HISTORY;
+
+        g_paste_history_history_name_changed (self);
+    }
+
+    return stored;
 }
 
 /**
@@ -2376,6 +2398,9 @@ g_paste_history_delete (GPasteHistory *self,
 static void
 g_paste_history_history_name_changed (GPasteHistory *self)
 {
+    if (self->switching)
+        return;
+
     const gchar *name = g_paste_history_resolve_name (self, NULL);
 
     /* The setting written with the name already in use -- a switch to the
