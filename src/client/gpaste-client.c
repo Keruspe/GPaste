@@ -366,6 +366,55 @@ g_paste_about (Context *ctx G_GNUC_UNUSED,
     return EXIT_SUCCESS;
 }
 
+typedef struct
+{
+    gboolean done;
+    gboolean legacy;
+    GError  *error;
+} LegacyAsked;
+
+static void
+on_legacy_asked (GObject      *source_object G_GNUC_UNUSED,
+                 GAsyncResult *res,
+                 gpointer      user_data)
+{
+    LegacyAsked *asked = user_data;
+
+    asked->legacy = g_paste_util_daemon_is_legacy_finish (res, &asked->error);
+    asked->done = TRUE;
+}
+
+/* Whether a daemon of this version owns the name, still starting when its
+ * presence says so: a GPaste 45 or 50 reads as starting too, the presence
+ * following this interface alone, and is told apart by what the daemon's path
+ * serves (g_paste_util_daemon_is_legacy (), the main context run for it). One
+ * that cannot be asked is not known to be either. */
+static gboolean
+daemon_still_starting (GPasteClient *client)
+{
+    if (g_paste_client_get_daemon_presence (client) != G_PASTE_DAEMON_PRESENCE_STARTING)
+        return FALSE;
+
+    LegacyAsked asked = { 0 };
+
+    g_paste_util_daemon_is_legacy (client, NULL, on_legacy_asked, &asked);
+    while (!asked.done)
+        g_main_context_iteration (NULL, TRUE);
+
+    gboolean current = !asked.error && !asked.legacy;
+
+    g_clear_error (&asked.error);
+
+    return current;
+}
+
+static void
+set_still_starting (GError **error)
+{
+    g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         _("The daemon is still starting, settling its storage: try again once it serves"));
+}
+
 /* A daemon that honours the re-exec tears its D-Bus connection down before
  * replying, so @triggered is already TRUE for the expected missing reply; this
  * only covers an unsupported method by signalling the recorded daemon pid. */
@@ -391,11 +440,10 @@ reexec_fallback (GPasteClient *client,
      * unknown method, which GDBus words as an object missing at a path: what
      * is the matter is said instead. */
     if (!triggered && error && g_error_matches (*error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD) &&
-        g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_STARTING)
+        daemon_still_starting (client))
     {
         g_clear_error (error);
-        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                             _("The daemon is still starting, settling its storage: try again once it serves"));
+        set_still_starting (error);
     }
 
     return triggered;
@@ -425,8 +473,18 @@ g_paste_migrate (Context *ctx,
      * Closed again only once the fallback has failed too, and not on the failure
      * the method call reports: the signal reexec_fallback () sends is that same
      * re-exec happening by another route, and a gate closed before it would hand
-     * the successor nothing to migrate while this printed a success. */
+     * the successor nothing to migrate while this printed a success.
+     *
+     * Not opened at all for a daemon still starting, which no re-exec reaches:
+     * one that reads the gate open before this closes it again would run the
+     * migration, prompt included, while this reports it never asked. */
     guint64 revision;
+
+    if (daemon_still_starting (ctx->client))
+    {
+        set_still_starting (error);
+        return EXIT_FAILURE;
+    }
 
     if (!g_paste_util_open_storage_migration (&revision, error))
         return EXIT_FAILURE;

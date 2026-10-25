@@ -18,8 +18,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-static guint signals_sent;
+static guint   signals_sent;
 static GError *reexec_error;
+static guint   reexecs;
 
 /* How often isatty () was asked, and fwrite () called while @writes_counted is
  * set: what printing to a terminal costs. */
@@ -60,6 +61,7 @@ static gboolean
 fake_reexecute_daemon (GPasteClient *client G_GNUC_UNUSED,
                        GError      **error)
 {
+    ++reexecs;
     if (!reexec_error)
         return TRUE;
 
@@ -86,6 +88,28 @@ fake_reexecute_legacy_daemon (GPasteClient *client G_GNUC_UNUSED,
 
     ++signals_sent;
     return TRUE;
+}
+
+/* Whether the daemon's path serves a GPaste 45 or 50's interface, which
+ * libgpaste is asked when its presence reads as starting. */
+static gboolean introspected_legacy;
+
+static void
+fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
+                       GCancellable       *cancellable,
+                       GAsyncReadyCallback callback,
+                       gpointer            user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
+
+    g_task_return_boolean (task, introspected_legacy);
+}
+
+static gboolean
+fake_daemon_is_legacy_finish (GAsyncResult *result,
+                              GError      **error)
+{
+    return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 static gchar *daemon_version;
@@ -371,6 +395,8 @@ fake_doctor_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_client_doctor_sync fake_doctor_sync
 #define g_paste_util_wait_for_daemon fake_wait_for_daemon
 #define g_paste_util_wait_for_daemon_finish fake_wait_for_daemon_finish
+#define g_paste_util_daemon_is_legacy fake_daemon_is_legacy
+#define g_paste_util_daemon_is_legacy_finish fake_daemon_is_legacy_finish
 #include "../../src/client/gpaste-client.c"
 #undef g_paste_util_wait_for_daemon_finish
 #undef g_paste_util_wait_for_daemon
@@ -676,7 +702,52 @@ test_unsupported_not_legacy (void)
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_nonnull (strstr (error->message, "still starting"));
     g_assert_cmpuint (signals_sent, ==, 0);
+    g_clear_error (&error);
+
+    /* A GPaste 45 or 50 reads as starting too, never serving this interface:
+     * its unknown method stands, there being nothing to wait for. */
+    error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    introspected_legacy = TRUE;
+    g_assert_false (reexec_fallback (NULL, FALSE, &error));
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    introspected_legacy = FALSE;
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD);
     legacy_owner = TRUE;
+}
+
+/* `gpaste-client migrate` against a daemon of this version still starting
+ * opens no gate it would close again under it, and asks no re-exec; against a
+ * GPaste 45 or 50, which reads as starting too, the signal goes out. */
+static void
+test_migrate_starting (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    reexecs = 0;
+    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_nonnull (strstr (error->message, "still starting"));
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+
+    introspected_legacy = TRUE;
+    signals_sent = 0;
+    reexec_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_SUCCESS);
+    g_assert_no_error (error);
+    g_assert_cmpuint (signals_sent, ==, 1);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 0);
+
+    introspected_legacy = FALSE;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    g_clear_error (&reexec_error);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
 }
 
 /* `gpaste-client migrate` opens the migration gate, and what closes it again is
@@ -1430,6 +1501,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/index/nonitem-arguments", test_nonitem_arguments);
     g_test_add_func ("/client/reexec/unsupported", test_unsupported);
     g_test_add_func ("/client/reexec/not-legacy", test_unsupported_not_legacy);
+    g_test_add_func ("/client/reexec/migrate-starting", test_migrate_starting);
     g_test_add_data_func ("/client/daemon_version/answered", "51.1", test_daemon_version);
     g_test_add_data_func ("/client/daemon_version/unanswered", NULL, test_daemon_version);
     g_test_add_data_func ("/client/migrate/gate_survives_fallback", GINT_TO_POINTER (TRUE), test_migrate_gate);
