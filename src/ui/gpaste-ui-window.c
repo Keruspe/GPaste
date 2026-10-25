@@ -550,14 +550,20 @@ on_preferences (GSimpleAction *action    G_GNUC_UNUSED,
     adw_dialog_present (self->preferences, GTK_WIDGET (self));
 }
 
+/* @user_data is a weak reference to the window: the question is the window's,
+ * and a reference of its own would keep the window from ever being disposed --
+ * which is what answers a question whose window is destroyed under it, so the
+ * window, its dialog and their client would all leak. */
 static void
 on_reexec_confirmed (gboolean confirmed,
                      gpointer user_data)
 {
-    g_autoptr (GPasteUiWindow) self = user_data;
+    g_autoptr (GPasteUiWindow) self = g_weak_ref_get (user_data);
+
+    g_paste_weak_ref_free (user_data);
 
     /* As in g_paste_ui_window_set_tracking (). */
-    if (confirmed && g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY)
+    if (confirmed && self && g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY)
     {
         g_paste_client_reexecute (self->client,
                                   NULL /* cancellable */,
@@ -581,7 +587,7 @@ on_restart_daemon (GSimpleAction *action    G_GNUC_UNUSED,
                                      _("Restart"),
                                      ADW_RESPONSE_DEFAULT,
                                      on_reexec_confirmed,
-                                     g_object_ref (self));
+                                     g_paste_weak_ref_new (self));
 }
 
 /* Asks the daemon, and sets nothing: the check follows the daemon's own
@@ -608,13 +614,16 @@ g_paste_ui_window_set_tracking (GPasteUiWindow *self,
                                                                : _("Could not stop tracking the clipboard")));
 }
 
+/* Handed the window as on_reexec_confirmed () is. */
 static void
 on_track_confirmed (gboolean confirmed,
                     gpointer user_data)
 {
-    g_autoptr (GPasteUiWindow) self = user_data;
+    g_autoptr (GPasteUiWindow) self = g_weak_ref_get (user_data);
 
-    if (confirmed)
+    g_paste_weak_ref_free (user_data);
+
+    if (confirmed && self)
         g_paste_ui_window_set_tracking (self, FALSE);
 }
 
@@ -634,7 +643,7 @@ on_track_changes (GSimpleAction *action,
                                          _("Stop"),
                                          ADW_RESPONSE_DEFAULT,
                                          on_track_confirmed,
-                                         g_object_ref (self));
+                                         g_paste_weak_ref_new (self));
     }
     else
         g_paste_ui_window_set_tracking (self, TRUE);

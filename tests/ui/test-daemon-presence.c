@@ -1905,14 +1905,61 @@ test_confirmed_without_daemon (void)
     Outgoing outgoing = { 0 };
     guint filter = g_dbus_connection_add_filter (connection, count_outgoing, &outgoing, NULL);
 
-    on_reexec_confirmed (TRUE, g_object_ref (window));
-    on_track_confirmed (TRUE, g_object_ref (window));
+    on_reexec_confirmed (TRUE, g_paste_weak_ref_new (window));
+    on_track_confirmed (TRUE, g_paste_weak_ref_new (window));
     g_paste_test_bus_pump (300);
     g_dbus_connection_remove_filter (connection, filter);
     g_assert_cmpint (g_atomic_int_get (&outgoing.others), ==, 0);
     g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
     gtk_window_destroy (GTK_WINDOW (window));
     drain ();
+}
+
+/* A window closed with Restart Daemon's or Stop Tracking's question up goes,
+ * and the question with it, answered as refused: nothing is sent. */
+static void
+test_closed_with_question_up (gconstpointer data)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    const gchar *action = data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+
+    GPasteUiWindow *window = activation_window (client, &daemon);
+
+    g_simple_action_set_state (G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (window), "track-changes")),
+                               g_variant_new_boolean (TRUE));
+    g_action_group_activate_action (G_ACTION_GROUP (window), action, NULL);
+    drain ();
+
+    AdwDialog *dialog = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
+
+    g_assert_true (ADW_IS_ALERT_DIALOG (dialog));
+    g_object_add_weak_pointer (G_OBJECT (window), (gpointer *) &window);
+    g_object_add_weak_pointer (G_OBJECT (dialog), (gpointer *) &dialog);
+
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    Outgoing outgoing = { 0 };
+    guint filter = g_dbus_connection_add_filter (connection, count_outgoing, &outgoing, NULL);
+
+    g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
+    gtk_window_destroy (GTK_WINDOW (window));
+    g_object_unref (window);
+    drain ();
+    g_paste_test_bus_pump (100);
+    g_dbus_connection_remove_filter (connection, filter);
+    g_assert_null (window);
+    g_assert_null (dialog);
+    g_assert_cmpint (g_atomic_int_get (&outgoing.others), ==, 0);
+    fake_daemon_stop (&daemon);
 }
 
 static gboolean
@@ -3402,6 +3449,8 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
     g_test_add_func ("/ui/daemon-presence/app-actions", test_app_actions);
     g_test_add_func ("/ui/daemon-presence/confirmed-without-daemon", test_confirmed_without_daemon);
+    g_test_add_data_func ("/ui/daemon-presence/closed-with-question-up/restart", "restart-daemon", test_closed_with_question_up);
+    g_test_add_data_func ("/ui/daemon-presence/closed-with-question-up/tracking", "track-changes", test_closed_with_question_up);
     g_test_add_func ("/ui/daemon-presence/closed-while-connecting", test_closed_while_connecting);
     g_test_add_func ("/ui/daemon-presence/listing-fails", test_listing_fails);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
