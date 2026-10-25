@@ -1127,10 +1127,11 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
  * preprocessor takes each as one macro argument, and ARGLIST supplies the comma
  * joining them -- disappearing when the list is empty.
  *
- * A handler's signature is not checked against the vfunc it is connected to, so
- * concentrating them here is also what keeps that hazard in three places, and
- * Doctor's handler of its own, rather than thirty-four: compare these against
- * struct _GPasteDaemon3Iface by hand when a method changes. */
+ * A handler's signature is not checked against the vfunc it is connected to:
+ * the macros keep the head and the return of it in three places, but each use
+ * spells its own PARAMS, and the handlers written out by hand below spell the
+ * whole of it. Compare those against struct _GPasteDaemon3Iface by hand when a
+ * method changes. */
 #define ARGLIST(...) , ##__VA_ARGS__
 
 #define G_PASTE_DAEMON_ANSWER(complete_call)                                            \

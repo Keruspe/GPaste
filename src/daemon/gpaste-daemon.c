@@ -319,6 +319,15 @@ do_change_passphrase (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
+    /* A takeover since the call let the daemon go: GtkApplication's shutdown
+     * iterates the main context, storing a selection with a clipboard
+     * manager, and runs this then. Nothing is left to change it for. */
+    if (!ctx->daemon)
+    {
+        ctx->changing_passphrase = FALSE;
+        return;
+    }
+
     g_paste_daemon_flush (ctx->daemon);
     g_paste_storage_rekey_async (ctx->prompt, ctx->settings, on_passphrase_changed, ctx);
 }
@@ -390,6 +399,14 @@ static void
 do_check_store (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
+
+    /* As in do_change_passphrase (); the daemon let go answered the callers
+     * waiting on the check itself. */
+    if (!ctx->daemon)
+    {
+        ctx->checking = FALSE;
+        return;
+    }
 
     g_paste_daemon_flush (ctx->daemon);
     g_paste_storage_doctor_async (ctx->prompt, ctx->settings, on_store_checked, ctx);
@@ -566,6 +583,7 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
             flush_history (ctx);
             g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_REEXECUTE_SELF]);
             g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_CHANGE_PASSPHRASE]);
+            g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_DOCTOR]);
             g_object_run_dispose (G_OBJECT (ctx->daemon));
             g_clear_object (&ctx->daemon);
         }

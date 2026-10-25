@@ -248,6 +248,31 @@ test_change_during_check (void)
     g_assert_false (ctx.checking);
 }
 
+/* A change of passphrase or a check of the store asked for just before a
+ * takeover finds no daemon by the time its idle runs -- GtkApplication's
+ * shutdown iterating the main context, storing a selection with a clipboard
+ * manager -- and does nothing, rather than flush and prompt for none. */
+static void
+test_concern_after_takeover (void)
+{
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    DaemonContext ctx = { .daemon = daemon };
+
+    rekeys = checks = 0;
+    change_passphrase (daemon, &ctx);
+    ctx.daemon = NULL;
+    g_paste_test_bus_pump (50);
+    g_assert_cmpuint (rekeys, ==, 0);
+    g_assert_false (ctx.changing_passphrase);
+
+    ctx.daemon = daemon;
+    check_store (daemon, &ctx);
+    ctx.daemon = NULL;
+    g_paste_test_bus_pump (50);
+    g_assert_cmpuint (checks, ==, 0);
+    g_assert_false (ctx.checking);
+}
+
 /* A stop takes the passwords whose countdown runs off before the last flush,
  * as the in-shell host does: retired after it -- at the daemon's dispose -- a
  * password's retirement is recorded nowhere, and the next daemon loads it as
@@ -400,6 +425,7 @@ main (int argc, char *argv[])
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/daemon-host/change-during-check", test_change_during_check);
+    g_test_add_func ("/daemon-host/concern-after-takeover", test_concern_after_takeover);
     g_test_add_func ("/daemon-host/takeover-lets-go", test_takeover_lets_go);
     g_test_add_func ("/daemon-host/stop-order", test_stop_order);
     g_test_add_func ("/daemon-host/reexec-order", test_reexec_order);

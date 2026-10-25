@@ -240,11 +240,12 @@ gboolean g_paste_prompt_can_import      (GPasteStorage current,
 gboolean g_paste_prompt_backend_changes (GPasteStorage current,
                                          GPasteStorage chosen);
 
-/* Whether this build can remember a passphrase at all (libsecret), and whether
- * one is currently remembered. A prompt asks the first to decide whether to
- * offer the switch, and the second for where it starts. Both live here because
- * the keyring is a feature-gated, non-introspected part of the daemon library,
- * and a prompt backend written in JS has no other way to ask. */
+/* Whether this build can remember a passphrase at all (libsecret): the build's
+ * half of what g_paste_prompt_request_offers_remember () answers a prompt
+ * deciding whether to offer the switch. Here because the keyring is a
+ * feature-gated, non-introspected part of the daemon library, and a prompt
+ * backend written in JS has no other way to ask. Where the switch starts is
+ * g_paste_prompt_remember_state ()'s, below. */
 gboolean g_paste_prompt_keyring_available      (void);
 
 /* Where the "Remember this passphrase" switch should start, and whether leaving
