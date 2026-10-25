@@ -2910,7 +2910,9 @@ g_paste_history_search_items (GPasteHistory *self,
     g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
     g_return_val_if_fail (!error || !*error, NULL);
 
-    g_debug ("history: search '%s'", pattern);
+    /* Not the pattern itself: it is what was typed in the overview, the menu or
+     * the graphical tool, and a debug log is what a bug report carries. */
+    g_debug ("history: search (%" G_GSIZE_FORMAT " bytes)", strlen (pattern));
 
     G_PASTE_LOCK_HISTORY;
     g_autoptr (GError) regex_error = NULL;
