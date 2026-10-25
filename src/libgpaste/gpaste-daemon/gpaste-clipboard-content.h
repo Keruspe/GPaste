@@ -373,6 +373,7 @@ typedef void     (*GPasteClipboardMimeReadFunc)    (gpointer                back
                                                     GPasteClipboardMimeCtx *ctx);
 
 void                    g_paste_clipboard_update_supersede                (GPasteClipboardUpdate               **slot);
+void                    g_paste_clipboard_update_owner_gone               (GPasteClipboardUpdate               **slot);
 GPasteClipboardUpdate  *g_paste_clipboard_update_new                      (GPasteClipboardProvider              *provider,
                                                                            GPasteSettings                       *settings,
                                                                            GPasteClipboardContentKind            content_kind,

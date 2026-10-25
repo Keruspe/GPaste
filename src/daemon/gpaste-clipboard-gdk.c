@@ -1103,7 +1103,21 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         content_kind = CLIPBOARD_CONTENT_IMAGE;
     else if (gdk_content_formats_is_empty (formats))
     {
-        g_paste_clipboard_gdk_supersede (self);
+        gboolean released = (g_paste_clipboard_x11_hints_get_owner (self->hints) ==
+                             G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE);
+
+        /* A release ends the update in flight with what it read, the owner gone
+         * having served its content (g_paste_clipboard_update_owner_gone ()):
+         * what it has left is the hints' own conversion, sent behind the
+         * content read, and the reads riding along with it. A new owner's empty
+         * formats supersede it, as any other change does. */
+        if (released)
+        {
+            g_paste_clipboard_update_owner_gone (&self->update);
+            g_paste_clipboard_gdk_supersede_formats_wait (self);
+        }
+        else
+            g_paste_clipboard_gdk_supersede (self);
 
         /* Empty formats identify neither a release nor the new owner's value.
          * Keep expiry and sync waiting for TARGETS; reporting empty would let
@@ -1117,9 +1131,6 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
          * How long it waits is what the server decides: a selection nobody owns
          * has already told the two apart, leaving only the gap a release and the
          * claim after it pass through (%G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE). */
-        gboolean released = (g_paste_clipboard_x11_hints_get_owner (self->hints) ==
-                             G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE);
-
         g_paste_clipboard_gdk_wait_for_formats (self, released, record, callback, user_data);
         return;
     }
@@ -1196,9 +1207,10 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
      * route reads as ordinary text -- the sync out of it above all, which would
      * then publish the cleartext onto the clipboard stripped of what says it is
      * a secret. The round trip rides along with the content read already out for
-     * the same change and holds the update open no longer than that read does,
-     * so what it costs is one request beside a transfer, not a wait of its
-     * own. */
+     * the same change, so what it costs is one request beside a transfer, not a
+     * wait of its own -- an owner leaving once it served the content, before it
+     * answered this, having its release end the update with that content
+     * (g_paste_clipboard_update_owner_gone ()). */
     if (g_paste_clipboard_x11_hints_available (self->hints))
     {
         g_paste_clipboard_update_read_special_mimes (update, formats, g_paste_clipboard_gdk_offers_mime,

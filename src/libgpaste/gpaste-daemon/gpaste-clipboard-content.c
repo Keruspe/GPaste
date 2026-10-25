@@ -1332,6 +1332,43 @@ g_paste_clipboard_update_supersede (GPasteClipboardUpdate **slot)
 }
 
 /**
+ * g_paste_clipboard_update_owner_gone:
+ * @slot: where the backend keeps the update in flight on this selection
+ *
+ * Give up on what is left of the update @slot holds, its selection having been
+ * released: the content it read is the last that selection held, and what is
+ * still out was asked of an owner that is gone and will answer none of it.
+ * Concluded on the next turn of the main loop, as its deadline would conclude
+ * it, what is still out counting as unanswered -- a hint among it leaving the
+ * content's secrecy unknown. An owner serving one request at a time and leaving
+ * once it served the content does exactly this, a paste helper set to exit
+ * after so many requests among them.
+ *
+ * An update whose content has not landed has nothing to build an item from,
+ * and is superseded (g_paste_clipboard_update_supersede ()).
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_owner_gone (GPasteClipboardUpdate **slot)
+{
+    g_return_if_fail (slot);
+
+    if (!*slot)
+        return;
+
+    if (!(*slot)->produced)
+    {
+        g_paste_clipboard_update_supersede (slot);
+        return;
+    }
+
+    /* Out of @slot as a superseded one is: the next change starting an update
+     * would supersede it there, and drop the content it read. */
+    GPasteClipboardUpdate *previous = g_steal_pointer (slot);
+
+    g_paste_clipboard_read_guard_expire_soon (&previous->guard);
+}
+
+/**
  * g_paste_clipboard_update_new:
  * @provider: the #GPasteClipboardProvider being read
  * @settings: a #GPasteSettings instance, for what the item is built under

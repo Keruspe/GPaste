@@ -129,10 +129,27 @@ mock_hints_new (GdkClipboard *clipboard G_GNUC_UNUSED,
     return NULL;
 }
 
+/* Whether the hints' TARGETS conversion is held unanswered, as by an owner gone
+ * before it served it: counted into the update and ended by the update's guard
+ * alone, as a conversion of the real workaround is. */
+static gboolean hold_hints;
+
+static void
+mock_hints_cancelled (GCancellable *cancellable G_GNUC_UNUSED,
+                      gpointer      user_data)
+{
+    g_paste_clipboard_update_on_sensitive_offer_read (user_data, FALSE);
+}
+
 static void
 mock_hints_read (GPasteClipboardX11Hints *self G_GNUC_UNUSED,
-                 GPasteClipboardUpdate   *update G_GNUC_UNUSED)
+                 GPasteClipboardUpdate   *update)
 {
+    if (!hold_hints)
+        return;
+
+    g_paste_clipboard_update_add_sensitive_offer_read (update);
+    g_cancellable_connect (update->guard.cancellable, G_CALLBACK (mock_hints_cancelled), update, NULL);
 }
 
 static gboolean
@@ -751,6 +768,35 @@ formats_release (Fixture      *f,
     g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
 }
 
+/* An owner gone once it has served the text, the hints' own TARGETS left
+ * unanswered -- a paste helper exiting after a set number of requests: its
+ * release ends what is left of the update as the deadline would, rather than
+ * giving up on the text it read, and the copy is recorded as a text whose hint
+ * could not be asked. */
+static void
+release_after_text (Fixture      *f,
+                    gconstpointer user_data G_GNUC_UNUSED)
+{
+    hold_hints = TRUE;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    set_formats (TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_nonnull (pending_text);
+    g_task_return_pointer (pending_text, g_strdup ("served then gone"), g_free);
+    g_clear_object (&pending_text);
+    pump (10);
+    g_assert_true (g_paste_clipboard_gdk_is_reading (f->clipboard));
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
+    set_formats (FALSE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+}
+
 static void
 on_expiry_unresolved (GObject      *source G_GNUC_UNUSED,
                       GAsyncResult *result,
@@ -920,6 +966,7 @@ main (int argc, char **argv)
     g_test_add ("/gdk/formats/deadline-slow-owner", Fixture, GINT_TO_POINTER (G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME), fixture_setup, formats_deadline_slow_owner, fixture_teardown);
     g_test_add ("/gdk/formats/deadline-unknown-owner", Fixture, GINT_TO_POINTER (G_PASTE_CLIPBOARD_X11_HINTS_OWNER_UNKNOWN), fixture_setup, formats_deadline_slow_owner, fixture_teardown);
     g_test_add ("/gdk/formats/release", Fixture, NULL, fixture_setup, formats_release, fixture_teardown);
+    g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/formats/stale-read-publication", Fixture, NULL, fixture_setup, stale_read_and_publication, fixture_teardown);
