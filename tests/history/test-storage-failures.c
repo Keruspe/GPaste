@@ -190,6 +190,12 @@ g_markup_parse_context_unref (GMarkupParseContext *context)
 /* The history loads handed to a thread, counted as they go: a load that has to
  * wait is told apart from one that has not run yet, however slow the worker. */
 static guint loads_started;
+/* With @defer_lock_waits, a startup gate's wait for the storage lock is kept
+ * here rather than handed to a thread, as a pool with every thread busy keeps
+ * it, until run_deferred_lock_wait (). */
+static gboolean        defer_lock_waits;
+static GTask          *deferred_lock_wait;
+static GTaskThreadFunc deferred_lock_func;
 
 void
 g_task_run_in_thread (GTask          *task,
@@ -201,7 +207,26 @@ g_task_run_in_thread (GTask          *task,
     g_assert_nonnull (original);
     if (g_paste_str_equal (g_task_get_name (task), "gpaste-history-load"))
         g_atomic_int_inc (&loads_started);
+    if (defer_lock_waits && g_paste_str_equal (g_task_get_name (task), "gpaste-storage-lock-wait"))
+    {
+        g_assert_null (deferred_lock_wait);
+        deferred_lock_wait = g_object_ref (task);
+        deferred_lock_func = task_func;
+        return;
+    }
     original (task, task_func);
+}
+
+static void
+run_deferred_lock_wait (void)
+{
+    typedef void (*Run) (GTask *, GTaskThreadFunc);
+    Run original = (Run) dlsym (RTLD_NEXT, "g_task_run_in_thread");
+    g_autoptr (GTask) task = g_steal_pointer (&deferred_lock_wait);
+
+    g_assert_nonnull (task);
+    defer_lock_waits = FALSE;
+    original (task, deferred_lock_func);
 }
 
 /* Moves whose source ends with one of these fail, as a filesystem giving out
@@ -3621,6 +3646,42 @@ test_gates_wait_for_lock (void)
 #endif
 }
 
+/* Letting go of the lock after a gate decided to wait for it, but before a
+ * thread got to the wait, ends it all the same: the in-shell daemon stopping
+ * with the pool's threads all busy, gnome-shell then holding the lock for as
+ * long as it runs, and a gate going on with a store no longer its own. */
+static void
+test_gate_released_before_wait (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+    prompt->dismiss = TRUE;
+    defer_lock_waits = TRUE;
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_backend_unlock ();
+    run_deferred_lock_wait ();
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_migration_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (prompt->migrations, ==, 0);
+
+    /* Not held: another file of this process's can take it. */
+    gint fd = hold_storage_lock ();
+
+    close (fd);
+}
+
 /* Two waits of one process -- a load and the one superseding it -- both get the
  * lock once its holder lets go: the second finds the first holds it, rather
  * than have its own flock () refused for good by its own process. */
@@ -6143,6 +6204,7 @@ main (int    argc,
     g_test_add_func ("/storage/lock/two-waits", test_storage_lock_two_waits);
     g_test_add_func ("/storage/lock/taken-is-ours", test_taken_lock_is_ours);
     g_test_add_func ("/storage/lock/gates", test_gates_wait_for_lock);
+    g_test_add_func ("/storage/lock/gate-released-before-wait", test_gate_released_before_wait);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/lock/decryption-gate-settles", test_decryption_gate_settles);
 #ifdef G_PASTE_ENABLE_LIBSECRET

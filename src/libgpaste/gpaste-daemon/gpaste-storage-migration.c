@@ -1333,10 +1333,10 @@ ask_migration (MigrationData *self)
 static void
 storage_lock_thread (GTask        *task,
                      gpointer      source_object G_GNUC_UNUSED,
-                     gpointer      task_data     G_GNUC_UNUSED,
+                     gpointer      task_data,
                      GCancellable *cancellable   G_GNUC_UNUSED)
 {
-    g_task_return_boolean (task, g_paste_storage_backend_lock (NULL));
+    g_task_return_boolean (task, g_paste_storage_backend_lock_since (GPOINTER_TO_UINT (task_data), NULL));
 }
 
 /* What a startup gate does with the store waits for this process to hold the
@@ -1349,7 +1349,12 @@ storage_lock_thread (GTask        *task,
  *
  * @gate is the gate's task, whose task data is the settings, handed to
  * @callback once the wait is over: whether the lock was had is the result's
- * boolean (when_storage_locked_finish ()). */
+ * boolean (when_storage_locked_finish ()).
+ *
+ * This process letting go of the lock is counted from here, not from when a
+ * pool thread gets to the wait: one letting go in between -- the in-shell
+ * daemon stopped, with gnome-shell going on -- would otherwise go unseen, and
+ * the wait install a lock nobody wants, for as long as gnome-shell runs. */
 static void
 when_storage_locked (GTask              *gate,
                      GAsyncReadyCallback callback)
@@ -1357,15 +1362,17 @@ when_storage_locked (GTask              *gate,
     g_autoptr (GTask) wait = g_task_new (NULL, NULL /* cancellable */, callback, gate);
 
     g_task_set_source_tag (wait, when_storage_locked);
+    g_task_set_name (wait, "gpaste-storage-lock-wait");
+    g_task_set_task_data (wait, GUINT_TO_POINTER (g_paste_storage_backend_get_releases ()), NULL);
     g_task_run_in_thread (wait, storage_lock_thread);
 }
 
 /* Whether the gate goes on, the settings it carries read again if it does.
- * Without the lock -- this process letting go of it, standing down, or no
- * lock file to take, which the load answers as unreadable all the same -- the
- * store is not the gate's to touch, and it ends with nothing done. With it,
- * what the daemon taken over from settled on is stored by now, and the
- * notification saying so may still be on its way. */
+ * Without the lock -- this process having let go of it, as standing down does
+ * -- the store is not the gate's to touch, and it ends with nothing done. With
+ * it, or with no lock file to take, which no daemon can hold either, what the
+ * daemon taken over from settled on is stored by now, and the notification
+ * saying so may still be on its way. */
 static gboolean
 when_storage_locked_finish (GTask        *gate,
                             GAsyncResult *result)

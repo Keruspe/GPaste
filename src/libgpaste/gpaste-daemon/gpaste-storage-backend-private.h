@@ -34,4 +34,14 @@ void g_paste_storage_delete_history (GPasteStorage storage_kind,
  * what keeps anyone else from planting one at all. */
 gboolean g_paste_storage_is_special_file (const gchar *path);
 
+/* How many times this process has let go of the storage lock
+ * (g_paste_storage_backend_unlock ()), and g_paste_storage_backend_lock () from
+ * that count on: it ends short of the lock should this process have let go of
+ * it since the count was read. For a wait decided on one thread and made on
+ * another, which a release in between has to end as it ends a wait already
+ * going. */
+guint    g_paste_storage_backend_get_releases (void);
+gboolean g_paste_storage_backend_lock_since   (guint         releases,
+                                               GCancellable *cancellable);
+
 G_END_DECLS

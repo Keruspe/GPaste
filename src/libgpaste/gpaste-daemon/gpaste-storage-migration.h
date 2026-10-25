@@ -47,9 +47,10 @@ guint    g_paste_storage_when_idle (GSourceOnceFunc callback,
  * dismissal is a question the user answered, an implementation error is not one
  * they can. */
 
-/* Ask the user where GPaste should store the history, and act on the answer.
- * Always shows the prompt; deciding whether it is needed is the caller's job
- * (g_paste_storage_migration_needed()). */
+/* Ask the user where GPaste should store the history, and act on the answer:
+ * once this process holds the storage lock, and only should the migration still
+ * be needed then (g_paste_storage_migration_needed()). Completes with nothing
+ * asked otherwise, as it does when this process lets go of the lock first. */
 void     g_paste_storage_migration_async  (GPastePrompt        *prompt,
                                            GPasteSettings      *settings,
                                            GAsyncReadyCallback  callback,

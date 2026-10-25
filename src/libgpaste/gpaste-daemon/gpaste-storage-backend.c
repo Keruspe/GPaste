@@ -70,11 +70,12 @@ g_paste_storage_backend_get_passphrase (void)
  * when the holder's process dies, so a crash cannot wedge the successor. */
 static GMutex   g_paste_storage_lock_mutex;
 static gint     g_paste_storage_lock_fd = -1;
-/* Set by _unlock() so a wait still in progress on the worker thread gives up
- * instead of installing a lock nobody wants any more. Written under the mutex,
- * which is only ever held for the bookkeeping — never across the wait — hence
- * read atomically from the waiting thread. */
-static gint     g_paste_storage_lock_released;
+/* Counted by _unlock() so a wait still in progress on the worker thread gives
+ * up instead of installing a lock nobody wants any more: one that began before
+ * a release, which is what the count it started from tells. Written under the
+ * mutex, which is only ever held for the bookkeeping — never across the wait —
+ * hence read atomically from the waiting thread. */
+static guint    g_paste_storage_lock_releases;
 
 #ifdef G_OS_UNIX
 /* The one file both lock () and try_lock () take, made where need be: -1 when
@@ -115,10 +116,10 @@ g_paste_storage_backend_open_lock_file (void)
  *
  * Two things end the wait short of the lock, and they answer different
  * questions: @cancellable says the load this is waiting for has been given up on
- * (superseded, or abandoned by the owner), where the released flag says this
- * process has let go of the lock and wants none. Either way no lock is
- * installed, and what was waiting must not touch the store: it is what the
- * answer says.
+ * (superseded, or abandoned by the owner), where g_paste_storage_backend_unlock()
+ * called since the wait began says this process has let go of the lock and
+ * wants none. Either way no lock is installed, and what was waiting must not
+ * touch the store: it is what the answer says.
  *
  * Returns: whether this process may touch the store: it holds the lock, or the
  *     lock file cannot be opened or locked, which no daemon can then hold either
@@ -126,14 +127,25 @@ g_paste_storage_backend_open_lock_file (void)
 G_PASTE_VISIBLE gboolean
 g_paste_storage_backend_lock (GCancellable *cancellable)
 {
+    return g_paste_storage_backend_lock_since (g_paste_storage_backend_get_releases (), cancellable);
+}
+
+G_PASTE_VISIBLE guint
+g_paste_storage_backend_get_releases (void)
+{
+    return (guint) g_atomic_int_get (&g_paste_storage_lock_releases);
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_lock_since (guint         releases,
+                                    GCancellable *cancellable)
+{
 #ifdef G_OS_UNIX
     {
         g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
         if (g_paste_storage_lock_fd >= 0)
             return TRUE;
-
-        g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
     }
 
     gint fd = g_paste_storage_backend_open_lock_file ();
@@ -174,7 +186,7 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
                 /* A wait given up on drops it, rather than hold the lock for a
                  * load nobody wants -- another wait of this process's then
                  * takes it. */
-                if (g_atomic_int_get (&g_paste_storage_lock_released) ||
+                if (g_paste_storage_backend_get_releases () != releases ||
                     g_cancellable_is_cancelled (cancellable))
                 {
                     close (fd);
@@ -203,7 +215,7 @@ g_paste_storage_backend_lock (GCancellable *cancellable)
             logged = TRUE;
         }
 
-        if (g_atomic_int_get (&g_paste_storage_lock_released) ||
+        if (g_paste_storage_backend_get_releases () != releases ||
             g_cancellable_is_cancelled (cancellable))
         {
             close (fd);
@@ -253,7 +265,6 @@ g_paste_storage_backend_try_lock (void)
         return !held_elsewhere;
     }
 
-    g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
     g_paste_storage_lock_fd = fd;
 #endif
 
@@ -273,7 +284,7 @@ g_paste_storage_backend_unlock (void)
 #ifdef G_OS_UNIX
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
-    g_atomic_int_set (&g_paste_storage_lock_released, TRUE);
+    g_atomic_int_inc (&g_paste_storage_lock_releases);
 
     if (g_paste_storage_lock_fd < 0)
         return;
