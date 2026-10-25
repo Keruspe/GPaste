@@ -1197,6 +1197,28 @@ test_password_timeout (void)
     g_paste_settings_reset (settings, G_PASTE_PASSWORD_TIMEOUT_SETTING);
 }
 
+/* Read @terminal into @buffer, of @size bytes, until @last is in it: a
+ * terminal hands what was written over in as many reads as it likes -- stdout,
+ * line buffered there, leaving in a write per line -- and one read can wake on
+ * the first write before the next has reached it. */
+static void
+read_terminal_until (gint         terminal,
+                     gchar       *buffer,
+                     gsize        size,
+                     const gchar *last)
+{
+    gsize got = 0;
+
+    memset (buffer, 0, size);
+    while (!strstr (buffer, last) && got < size - 1)
+    {
+        gssize length = read (terminal, buffer + got, size - 1 - got);
+
+        g_assert_cmpint (length, >, 0);
+        got += (gsize) length;
+    }
+}
+
 /* On a terminal, an item's control characters are shown rather than acted on:
  * an escape sequence copied off a web page neither retitles the window nor
  * writes the terminal's own clipboard -- line feeds, tabs and the carriage
@@ -1233,10 +1255,9 @@ test_terminal_controls (void)
     print_text ("x\r\ny\rz\n");
     fflush (stdout);
 
-    gchar buffer[64] = { 0 };
-    gssize length = read (terminal, buffer, sizeof (buffer) - 1);
+    gchar buffer[64];
 
-    g_assert_cmpint (length, >, 0);
+    read_terminal_until (terminal, buffer, sizeof (buffer), "z\n");
     g_assert_cmpstr (buffer, ==, "a\xef\xbf\xbd]52;c;eA==\xef\xbf\xbd" "b\xef\xbf\xbd" "x\r\ny\xef\xbf\xbdz\n");
 
     g_autofree gchar *clean = g_strnfill (1024, 'c');
@@ -1266,11 +1287,9 @@ test_terminal_controls (void)
     g_assert_cmpint (run_client ((const gchar *[]) { "get", FAKE_UUID (a), NULL }), ==, EXIT_SUCCESS);
     fflush (stdout);
 
-    gchar listed[256] = { 0 };
+    gchar listed[256];
 
-    length = read (terminal, listed, sizeof (listed) - 1);
-    g_assert_cmpint (length, >, 0);
-    g_assert_nonnull (strstr (listed, "c\xef\xbf\xbd]0;title\xef\xbf\xbd" "d"));
+    read_terminal_until (terminal, listed, sizeof (listed), "c\xef\xbf\xbd]0;title\xef\xbf\xbd" "d");
     g_assert_null (strchr (listed, '\x1b'));
     g_assert_null (strchr (listed, '\x07'));
 
@@ -1285,17 +1304,9 @@ test_terminal_controls (void)
     fake_history_name = NULL;
     doctor_report = NULL;
 
-    /* Read until the last of it is in: a terminal hands what was written over
-     * in as many reads as it likes. */
-    gchar named[512] = { 0 };
-    gsize got = 0;
+    gchar named[512];
 
-    while (!strstr (named, " belongs to another user") && got < sizeof (named) - 1)
-    {
-        length = read (terminal, named + got, sizeof (named) - 1 - got);
-        g_assert_cmpint (length, >, 0);
-        got += (gsize) length;
-    }
+    read_terminal_until (terminal, named, sizeof (named), " belongs to another user");
     g_assert_nonnull (strstr (named, "e\xef\xbf\xbd]0;history\xef\xbf\xbd" "f"));
     g_assert_nonnull (strstr (named, "g\xef\xbf\xbd]0;doctor\xef\xbf\xbd" "h"));
     g_assert_null (strchr (named, '\x1b'));
