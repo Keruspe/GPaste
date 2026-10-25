@@ -4864,7 +4864,7 @@ test_file_parser_malformed (void)
                                                  TRUE);
         g_autofree gchar *trailing = read_document ("parser-trailing",
                                                     "  <item kind=\"Text\"><value><![CDATA[kept]]>never logged</value></item>\n",
-                                                    TRUE);
+                                                    FALSE);
         g_autofree gchar *nested_item = read_document ("parser-nested-item",
                                                        "  <item kind=\"Text\"><value>a</value><item kind=\"Text\"><value>b</value></item></item>\n",
                                                        FALSE);
@@ -4885,6 +4885,13 @@ test_file_parser_malformed (void)
         g_assert_cmpstr (wrapped, ==, "own too");
         g_free (read_document ("parser-markup-in-value",
                                "  <item kind=\"Text\"><value>before<b>bold</b>after</value></item>\n",
+                               FALSE));
+        /* Two runs, which the next save would cut down to the first. */
+        g_free (read_document ("parser-split-value",
+                               "  <item kind=\"Text\"><value><![CDATA[first]]><![CDATA[second]]></value></item>\n",
+                               FALSE));
+        g_free (read_document ("parser-text-then-section",
+                               "  <item kind=\"Text\"><value>abc<![CDATA[def]]></value></item>\n",
                                FALSE));
         g_free (read_document ("parser-bad-utf8",
                                "  <item kind=\"Text\"><value><![CDATA[a value damaged \xc3]]></value></item>\n"

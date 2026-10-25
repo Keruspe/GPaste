@@ -1737,6 +1737,12 @@ on_text (GMarkupParseContext *context,
         if (!_g_paste_file_backend_is_blank (txt))
         {
             WARN_AT ("Unexpected text (%" G_GSIZE_FORMAT " bytes)", text_len);
+            /* A value's second run -- text beside a CDATA section, or a second
+             * section -- is no value GPaste wrote, which writes one section.
+             * Read as its first run alone, it would be cut short for good by
+             * the next save. */
+            if (data->state == IN_VALUE_WITH_TEXT)
+                data->malformed = TRUE;
             return;
         }
         break;
