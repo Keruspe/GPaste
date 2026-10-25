@@ -5015,6 +5015,29 @@ pump_until_loaded (GPasteHistory *history)
     return !g_paste_history_is_loading (history);
 }
 
+/* A long item reads back in a time its length bounds: two megabytes take
+ * milliseconds, where a decode measuring the rest of the text at every
+ * character took over a minute. */
+static void
+test_file_long_item_read (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autofree gchar *text = g_strnfill (2 * 1024 * 1024, 'h');
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (text));
+
+    g_paste_settings_set_max_memory_usage (settings, 1024);
+    g_assert_true (g_paste_storage_backend_write_history (backend, "long-item", items));
+
+    gint64 start = g_get_monotonic_time ();
+    g_autolist (GPasteItem) read = read_history_ok (backend, "long-item");
+
+    g_assert_cmpint (g_get_monotonic_time () - start, <, 5 * G_USEC_PER_SEC);
+    g_assert_cmpuint (g_list_length (read), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (read->data), ==, text);
+    g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
+}
+
 /* So are they when the history, the one history-name names, is deleted before
  * that load lands -- leaving it for the default history first lets go of them
  * -- and when a second reload comes before it, which gives that load up. */
@@ -7806,6 +7829,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_v1_refused_and_preserved", test_file_v1_refused_and_preserved);
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
+    add_test ("/history/file_long_item_read", test_file_long_item_read);
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);

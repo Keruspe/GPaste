@@ -75,14 +75,18 @@ g_paste_util_xml_decode (const gchar *text)
     gchar *decoded = g_malloc (strlen (text) + 1);
     gchar *out = decoded;
 
+    /* strncmp () rather than g_str_has_prefix (), whose expansion for a
+     * constant prefix measures the whole rest of the text first: at every
+     * character, that is a read quadratic in an item's length, seconds for one
+     * of a megabyte. */
     for (const gchar *in = text; *in;)
     {
-        if (g_str_has_prefix (in, "&gt;"))
+        if (!strncmp (in, "&gt;", strlen ("&gt;")))
         {
             *out++ = '>';
             in += strlen ("&gt;");
         }
-        else if (g_str_has_prefix (in, "&amp;"))
+        else if (!strncmp (in, "&amp;", strlen ("&amp;")))
         {
             *out++ = '&';
             in += strlen ("&amp;");
