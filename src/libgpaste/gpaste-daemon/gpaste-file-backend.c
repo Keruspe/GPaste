@@ -273,10 +273,16 @@ _g_paste_file_backend_install (GOutputStream *stream,
            g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, error);
 }
 
+/* Closed first, @stream: over a temporary already there, g_file_replace ()
+ * writes beside it, and its close -- at dispose, else -- renames that partial
+ * write back over the name just dropped. */
 static void
-_g_paste_file_backend_drop_beside (GFile *tmp_file)
+_g_paste_file_backend_drop_beside (GOutputStream *stream,
+                                   GFile         *tmp_file)
 {
     g_autoptr (GError) error = NULL;
+
+    g_output_stream_close (stream, NULL /* cancellable */, NULL);
 
     if (!g_file_delete (tmp_file, NULL /* cancellable */, &error) && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
         g_warning ("Failed to delete a temporary file: %s", error->message);
@@ -364,7 +370,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     }
 
     g_warning ("Failed to materialize image to %s: %s", target, error->message);
-    _g_paste_file_backend_drop_beside (tmp_file);
+    _g_paste_file_backend_drop_beside (stream, tmp_file);
 
     return FALSE;
 }
@@ -939,7 +945,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     if (success)
         _g_paste_file_backend_sweep_images (history_name, encrypted, referenced);
     else
-        _g_paste_file_backend_drop_beside (tmp_file);
+        _g_paste_file_backend_drop_beside (stream, tmp_file);
 
     if (success && images_written)
         return TRUE;
@@ -2340,9 +2346,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
     if (!ok)
     {
         g_warning ("Failed to re-encrypt %s: %s", path, (error) ? error->message : "it did not read back identical");
-        /* Best effort: the failure is already reported, and a leftover temporary
-         * beside the untouched original is the harmless outcome. */
-        g_file_delete (tmp_file, NULL, NULL);
+        _g_paste_file_backend_drop_beside (stream, tmp_file);
 
         return FALSE;
     }

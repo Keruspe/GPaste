@@ -187,6 +187,30 @@ g_markup_parse_context_unref (GMarkupParseContext *context)
 }
 #endif
 
+/* Every stream write failing while set, as a full disk would fail it. */
+static gboolean fail_writes;
+
+gboolean
+g_output_stream_write_all (GOutputStream *stream,
+                           const void    *buffer,
+                           gsize          count,
+                           gsize         *bytes_written,
+                           GCancellable  *cancellable,
+                           GError       **error)
+{
+    typedef gboolean (*WriteAll) (GOutputStream *, const void *, gsize, gsize *, GCancellable *, GError **);
+    WriteAll original = (WriteAll) dlsym (RTLD_NEXT, "g_output_stream_write_all");
+
+    g_assert_nonnull (original);
+    if (fail_writes)
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NO_SPACE, "no space this time");
+        return FALSE;
+    }
+
+    return original (stream, buffer, count, bytes_written, cancellable, error);
+}
+
 /* The history loads handed to a thread, counted as they go: a load that has to
  * wait is told apart from one that has not run yet, however slow the worker. */
 static guint loads_started;
@@ -4690,6 +4714,42 @@ write_interrupted_rekey (const gchar *name,
     write_file (image_aside, "old image");
 }
 
+/* A write that fails over a temporary an earlier one left behind leaves none:
+ * the stream writing beside that temporary puts its partial write back over
+ * the name when it closes, which the drop waits for. */
+static void
+test_failed_write_leaves_no_temporary (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    const gchar *name = "failed-write-temporary";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("never written"));
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+    g_autofree gchar *tmp = g_strconcat (path, ".tmp", NULL);
+    g_autofree gchar *dir = g_path_get_dirname (path);
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    write_file (tmp, "left by a write cut short");
+    fail_writes = TRUE;
+    g_assert_false (g_paste_storage_backend_write_history (backend, name, items));
+    fail_writes = FALSE;
+    g_assert_false (g_file_test (tmp, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GDir) listing = g_dir_open (dir, 0, NULL);
+
+    for (const gchar *entry; (entry = g_dir_read_name (listing));)
+        g_assert_false (g_str_has_prefix (entry, ".goutputstream-"));
+}
+
 /* A re-key that never reached its last rename is put back at the next start,
  * before anything reads the history or verifies a passphrase against it. */
 static void
@@ -6311,6 +6371,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/copy-cut-short", test_rekey_copy_cut_short);
     g_test_add_func ("/storage/rekey/split-reported", test_rekey_split_reported);
     g_test_add_func ("/storage/rekey/settled-back", test_rekey_settled_back);
+    g_test_add_func ("/storage/failed-write-no-temporary", test_failed_write_leaves_no_temporary);
     g_test_add_func ("/storage/rekey/settled-forward", test_rekey_settled_forward);
     g_test_add_func ("/storage/rekey/unsettled-refused", test_rekey_unsettled_refused);
     g_test_add_func ("/storage/rekey/leftovers-deleted", test_rekey_leftovers_deleted);
