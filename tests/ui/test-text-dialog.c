@@ -334,8 +334,17 @@ count_answer (gboolean confirmed,
     answers[1] = confirmed;
 }
 
+typedef enum
+{
+    CONFIRM_WINDOW_GONE,
+    CONFIRM_ANSWERED_THEN_WINDOW_GONE,
+    CONFIRM_HELD_WINDOW_GONE,
+} ConfirmCase;
+
 /* A question is answered exactly once: as a refusal when its window goes with
- * it up, and not again when its window goes after an answer. */
+ * it up -- the dialog held by something else, which its own going does not
+ * then answer, included -- and not again when its window goes after an
+ * answer. */
 static void
 confirm_answered_once (gconstpointer user_data)
 {
@@ -345,7 +354,8 @@ confirm_answered_once (gconstpointer user_data)
         return;
     }
 
-    gboolean respond = GPOINTER_TO_INT (user_data);
+    ConfirmCase which = GPOINTER_TO_INT (user_data);
+    gboolean respond = (which == CONFIRM_ANSWERED_THEN_WINDOW_GONE);
     GtkWindow *window = GTK_WINDOW (adw_window_new ());
     gint answers[2] = { 0, -1 };
 
@@ -353,6 +363,7 @@ confirm_answered_once (gconstpointer user_data)
     g_paste_gtk_util_confirm_dialog (window, "Go?", NULL, "Go", ADW_RESPONSE_DEFAULT, count_answer, answers);
 
     gpointer dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+    g_autoptr (AdwDialog) held = (which == CONFIRM_HELD_WINDOW_GONE) ? g_object_ref (dialog) : NULL;
 
     g_assert_nonnull (dialog);
     g_object_add_weak_pointer (dialog, &dialog);
@@ -367,7 +378,32 @@ confirm_answered_once (gconstpointer user_data)
     while (g_main_context_iteration (NULL, FALSE));
     g_assert_cmpint (answers[0], ==, 1);
     g_assert_cmpint (answers[1], ==, respond);
+    g_clear_object (&held);
     g_assert_null (dialog);
+    g_assert_cmpint (answers[0], ==, 1);
+}
+
+/* A call refused for what it was handed is still answered, as refused: the
+ * answer is what frees its caller's state. */
+static void
+confirm_refused_answers (gconstpointer user_data)
+{
+    const gchar *heading = user_data;
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*CRITICAL*g_paste_gtk_util_confirm_dialog*");
+        return;
+    }
+
+    gint answers[2] = { 0, -1 };
+
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+    g_paste_gtk_util_confirm_dialog (NULL, heading, NULL, "Go", ADW_RESPONSE_DEFAULT, count_answer, answers);
+    g_assert_cmpint (answers[0], ==, 1);
+    g_assert_cmpint (answers[1], ==, FALSE);
 }
 
 /* Counted as they leave the client's connection, on GDBus' worker thread. */
@@ -443,7 +479,10 @@ main (int argc, char *argv[])
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
     g_test_add_func ("/ui/text_dialog/empty_not_confirmed", empty_not_confirmed);
     g_test_add_func ("/ui/confirm_dialog/empty_without_daemon", empty_confirmed_without_daemon);
-    g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (FALSE), confirm_answered_once);
-    g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (TRUE), confirm_answered_once);
+    g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (CONFIRM_WINDOW_GONE), confirm_answered_once);
+    g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (CONFIRM_ANSWERED_THEN_WINDOW_GONE), confirm_answered_once);
+    g_test_add_data_func ("/ui/confirm_dialog/held_window_gone", GINT_TO_POINTER (CONFIRM_HELD_WINDOW_GONE), confirm_answered_once);
+    g_test_add_data_func ("/ui/confirm_dialog/refused/no-heading", NULL, confirm_refused_answers);
+    g_test_add_data_func ("/ui/confirm_dialog/refused/invalid-heading", "\xff", confirm_refused_answers);
     return g_paste_test_env_run ();
 }

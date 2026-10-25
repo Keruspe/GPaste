@@ -53,7 +53,8 @@ g_paste_gtk_confirm_dialog_refuse (AdwDialog *dialog)
  *              something is actually lost
  * @on_confirmation: (closure user_data) (scope async): handed whether the user
  *                   confirmed -- called exactly once, a dialog whose window is
- *                   destroyed under it answering %FALSE
+ *                   destroyed under it and a call that is refused both
+ *                   answering %FALSE
  *
  * Ask the user for confirmation.
  *
@@ -70,11 +71,19 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
                                  GPasteGtkConfirmDialogCallback on_confirmation,
                                  gpointer                       user_data)
 {
-    g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
-    g_return_if_fail (action);
-    g_return_if_fail (g_utf8_validate (heading, -1, NULL));
-    g_return_if_fail (!body || g_utf8_validate (body, -1, NULL));
     g_return_if_fail (on_confirmation);
+
+    /* Hand-rolled, as in g_paste_gtk_util_text_dialog (): a refused call still
+     * gives its answer. */
+    if ((parent && !GTK_IS_WINDOW (parent)) || !action || !heading || !g_utf8_validate (heading, -1, NULL) ||
+        (body && !g_utf8_validate (body, -1, NULL)))
+    {
+        g_critical ("%s: assertion failed: a #GtkWindow or no @parent, an @action, and a @heading and @body in UTF-8", G_STRFUNC);
+
+        on_confirmation (FALSE, user_data);
+
+        return;
+    }
 
     GPasteGtkConfirmDialogCallbackData *data = g_new0 (GPasteGtkConfirmDialogCallbackData, 1);
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (heading, body));

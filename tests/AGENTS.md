@@ -419,7 +419,8 @@ deleting the break between two lines is refused when the line it would make is
 past the limit. An empty text cannot be confirmed, whether the dialog opened on
 one or it was emptied. It also checks that `g_paste_gtk_util_confirm_dialog()` answers
 exactly once, a window destroyed under it answering a refusal and freeing the
-dialog, and that emptying a history confirmed with no daemon there sends
+dialog -- held by something else too -- and a call refused for a heading it
+cannot show answering one too, and that emptying a history confirmed with no daemon there sends
 nothing. It uses real GTK on the private Xvfb and skips without one.
 
 `test-settings` uses the memory GSettings backend and isolated configuration
