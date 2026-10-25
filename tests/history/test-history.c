@@ -407,13 +407,23 @@ test_delete_current_drops_passwords (void)
 }
 
 /* A current history whose delete fails is the current one still: it was left
- * for the delete's sake. */
+ * for the delete's sake. In a child of its own: a load an earlier case started
+ * on its way out -- of the default history, whose missing file a read creates,
+ * making the folder private again -- could land inside the window the chmod
+ * below opens, and the delete then succeed. */
 static void
 test_delete_current_failed_stays (void)
 {
     if (!geteuid ())
     {
         g_test_skip ("root removes files from a directory it cannot write");
+        return;
+    }
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
         return;
     }
 
