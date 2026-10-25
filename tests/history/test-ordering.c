@@ -151,6 +151,11 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *backend,
     return real_read (backend, name, cancellable, items, size);
 }
 
+/* Until the worker writing the held history has started, the main context
+ * iterated meanwhile, as the daemon's loop would be: a write recorded while
+ * the saver still waits for an earlier one's completion -- which the worker
+ * posts after it lets go of the drain -- only starts from that completion,
+ * dispatched there. */
 static void
 wait_worker (void)
 {
@@ -158,7 +163,13 @@ wait_worker (void)
 
     g_mutex_lock (&barrier.mutex);
     while (!barrier.started)
-        g_assert_true (g_cond_wait_until (&barrier.cond, &barrier.mutex, deadline));
+    {
+        g_mutex_unlock (&barrier.mutex);
+        g_assert_cmpint (g_get_monotonic_time (), <, deadline);
+        g_main_context_iteration (NULL, FALSE);
+        g_mutex_lock (&barrier.mutex);
+        g_cond_wait_until (&barrier.cond, &barrier.mutex, g_get_monotonic_time () + 10 * G_TIME_SPAN_MILLISECOND);
+    }
     g_mutex_unlock (&barrier.mutex);
 }
 
