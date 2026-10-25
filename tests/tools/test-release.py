@@ -6,8 +6,10 @@
 # msgattrib stood in for: the version it checks is meson.build's, not what a
 # build directory was last configured at; the soversions a release bumps go in
 # its commit; a file modified for anything else stops it before it commits, as
-# the tarball would; and a catalog msgattrib fails on stops it too, nothing
-# stray in po/ committed on the way.
+# the tarball would -- one beside the catalogs and the notes included, and an
+# edit of the two meson.build files beyond the version and the soversions; and
+# a catalog msgattrib fails on stops it too, nothing stray in po/ committed on
+# the way.
 
 import os
 from pathlib import Path
@@ -68,9 +70,10 @@ def scratch_repo(base):
     shutil.copy(ROOT / 'release.sh', repo)
     (repo / 'meson.build').write_text("project('x',\n  version: '9.9',\n)\n")
     (repo / 'build/configured-version').write_text('9.9')
-    (repo / 'src/libgpaste/meson.build').write_text("soversion = '1.0.0'\n")
+    (repo / 'src/libgpaste/meson.build').write_text("libx_soversion = '1.0.0'\nsources = ['x.c']\n")
     (repo / 'src/other.c').write_text('int x;\n')
-    for name in ('NEWS', 'README.md', 'data/metainfo/x.xml.in', 'po/GPaste.pot', 'po/fr.po', 'po/LINGUAS'):
+    for name in ('NEWS', 'README.md', 'data/metainfo/x.xml.in', 'data/metainfo/x.releases.xml', 'data/metainfo/meson.build',
+                 'po/GPaste.pot', 'po/fr.po', 'po/LINGUAS', 'po/POTFILES.in', 'po/meson.build'):
         (repo / name).write_text(name + '\n')
     (repo / '.gitignore').write_text('build/\n')
     git(repo, 'init', '-q')
@@ -115,7 +118,7 @@ def main():
                     failures.append(f'{name}: {problem}')
 
     def soversion_bump(repo):
-        (repo / 'src/libgpaste/meson.build').write_text("soversion = '2.0.0'\n")
+        (repo / 'src/libgpaste/meson.build').write_text("libx_soversion = '2.0.0'\nsources = ['x.c']\n")
         (repo / 'po/fr.po.orig').write_text('a leftover\n')
 
     def bumped_and_clean(repo):
@@ -130,6 +133,14 @@ def main():
     case('version off meson.build',
          lambda repo: (repo / 'meson.build').write_text("project('x',\n  version: '10.0',\n)\n"), '10.0', True)
     case('another file modified', lambda repo: (repo / 'src/other.c').write_text('int y;\n'), '9.9', False)
+    # Beside what a release holds, in the folders and the files it edits.
+    for name in ('po/POTFILES.in', 'po/meson.build', 'data/metainfo/meson.build'):
+        case(f'{name} modified', lambda repo, name=name: (repo / name).write_text('edited\n'), '9.9', False)
+    case('meson.build edited beyond its version',
+         lambda repo: (repo / 'meson.build').write_text("project('x',\n  version: '9.9',\n)\nsubdir('y')\n"), '9.9', False)
+    case('src/libgpaste/meson.build edited beyond its soversions',
+         lambda repo: (repo / 'src/libgpaste/meson.build').write_text("libx_soversion = '2.0.0'\nsources = ['x.c', 'y.c']\n"),
+         '9.9', False)
     case('msgattrib failing', lambda repo: (repo / 'po/fr.po').write_text('BROKEN\n'), '9.9', False)
 
     for f in failures:

@@ -32,8 +32,10 @@ too. It runs only with `gnome-shell`.
 `tests/tools/test-release.py` runs `release.sh` in a scratch repository with
 meson, ninja, appstreamcli and msgattrib stood in for: the version it checks is
 meson.build's, the soversions go in the release commit, a file modified for
-anything else and a catalog msgattrib fails on each stop it before it commits,
-and nothing stray in `po/` is committed.
+anything else -- beside the catalogs and the metainfo, or a line of the two
+`meson.build` files beyond the version and the soversions -- and a catalog
+msgattrib fails on each stop it before it commits, and nothing stray in `po/`
+is committed.
 
 `tests/tools/test-gen-keybindings.py` runs the control center's keybindings
 generator on headers of its own, under a locale with no UTF-8 in it: a
