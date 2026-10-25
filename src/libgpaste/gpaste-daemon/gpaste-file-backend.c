@@ -279,7 +279,7 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
         gchar *data = NULL;
         gsize length = 0;
 
-        if (!cache_path || !g_file_get_contents (cache_path, &data, &length, NULL))
+        if (!cache_path || g_paste_storage_is_special_file (cache_path) || !g_file_get_contents (cache_path, &data, &length, NULL))
             return FALSE;
 
         png = read_back = g_bytes_new_take (data, length);
@@ -664,6 +664,12 @@ g_paste_file_backend_sweep_legacy_images (void)
 
                 g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
                 gchar *text = NULL;
+
+                if (g_paste_storage_is_special_file (path))
+                {
+                    g_warning ("%s is no history document, so the images GPaste 50 left are kept", path);
+                    return;
+                }
 
                 if (!g_file_get_contents (path, &text, NULL, &error))
                 {
@@ -1353,7 +1359,7 @@ _g_paste_file_backend_read_fallback_image (GPasteStorageBackend *self,
     gchar *contents = NULL;
     gsize length = 0;
 
-    if (!checksum || !g_file_get_contents (path, &contents, &length, NULL))
+    if (!checksum || g_paste_storage_is_special_file (path) || !g_file_get_contents (path, &contents, &length, NULL))
         return NULL;
 
     g_autoptr (GBytes) png = g_bytes_new_take (contents, length);
@@ -1473,7 +1479,7 @@ add_item (Data *data)
                 gchar *contents = NULL;
                 gsize length = 0;
 
-                if (g_file_get_contents (path, &contents, &length, NULL))
+                if (!g_paste_storage_is_special_file (path) && g_file_get_contents (path, &contents, &length, NULL))
                 {
                     g_autoptr (GBytes) bytes = g_bytes_new_take (contents, length);
 
@@ -1749,6 +1755,12 @@ g_paste_file_backend_load_contents (GPasteStorageBackend *self,
 {
     if (opened)
         *opened = FALSE;
+
+    if (g_paste_storage_is_special_file (history_file_path))
+    {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_REGULAR_FILE, "%s is not a regular file", history_file_path);
+        return FALSE;
+    }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     const gchar *passphrase = g_paste_file_backend_get_passphrase (self);

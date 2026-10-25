@@ -660,10 +660,16 @@ _g_paste_storage_list_histories (const gchar *extension,
         return NULL;
 
     g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
+    g_autofree gchar *history_dir_path = g_file_get_path (history_dir);
 
     for (GStrv file = files; *file; ++file)
     {
         if (!g_str_has_suffix (*file, suffix))
+            continue;
+
+        g_autofree gchar *path = g_build_filename (history_dir_path, *file, NULL);
+
+        if (g_paste_storage_is_special_file (path))
             continue;
 
         g_autofree gchar *name = g_strdup (*file);
@@ -676,6 +682,14 @@ _g_paste_storage_list_histories (const gchar *extension,
     }
 
     return g_strv_builder_end (history_names);
+}
+
+gboolean
+g_paste_storage_is_special_file (const gchar *path)
+{
+    GStatBuf st;
+
+    return !g_stat (path, &st) && !S_ISREG (st.st_mode);
 }
 
 /**

@@ -1593,7 +1593,8 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
      * backend's lock either, which a load holds across the key derivation and
      * the decoding of every image -- and this runs on the main loop, which in
      * gnome-shell is the compositor's. A stall no test measures. */
-    if (sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (g_paste_storage_is_special_file (history_file_path) ||
+        sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
         return 0;
 
     sqlite3_busy_timeout (db, 5000);
@@ -2247,7 +2248,7 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
     g_autoptr (sqlite3) db = NULL;
 
-    if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
         return FALSE;
 
     /* As on every other connection: another one busy with the database is
@@ -2300,7 +2301,7 @@ g_paste_sqlite_backend_database_has_items (const gchar *path)
 {
     g_autoptr (sqlite3) db = NULL;
 
-    if (sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
         return FALSE;
 
     /* As check_passphrase () does, another connection busy with it is waited

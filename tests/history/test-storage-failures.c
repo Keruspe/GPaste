@@ -14,6 +14,7 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 
 #include <glib/gstdio.h>
+#include <sys/stat.h>
 
 #include <dlfcn.h>
 #include <sys/file.h>
@@ -2886,6 +2887,75 @@ test_journal_unwritable (void)
     g_assert_false (journal_write (JOURNAL_IMPORT, G_PASTE_STORAGE_FILE, names, &error));
     g_assert_nonnull (error);
     g_assert_cmpint (g_chmod (parent, 0700), ==, 0);
+}
+
+/* A FIFO named like a history is no history: left out of every listing, and a
+ * count, a read or a passphrase probe of its name answers at once rather than
+ * waiting in open(2) for a writer that never comes -- on the main loop, which
+ * is the compositor's for the in-shell daemon. Run with a deadline, so that a
+ * probe blocking fails the case rather than hanging the suite. */
+static void
+test_fifo_history (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 10 * G_USEC_PER_SEC, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    static const GPasteStorage kinds[] = {
+        G_PASTE_STORAGE_FILE,
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        G_PASTE_STORAGE_ENCRYPTED_FILE,
+#endif
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_SQLITE,
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+#endif
+#endif
+    };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_paste_storage_backend_set_passphrase ("passphrase");
+    g_paste_settings_set_history_name (settings, "fifo");
+    for (guint i = 0; i < G_N_ELEMENTS (kinds); ++i)
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (kinds[i], settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+        g_autofree gchar *fifo = g_paste_storage_backend_get_history_file_path (backend, "fifo");
+
+        g_assert_true (g_paste_storage_backend_write_history (backend, "kept", items));
+        g_assert_cmpint (mkfifo (fifo, 0600), ==, 0);
+
+        g_autoptr (GError) error = NULL;
+        g_auto (GStrv) listed = g_paste_storage_backend_list_histories (backend, &error);
+
+        g_assert_no_error (error);
+        g_assert_true (g_strv_contains ((const gchar * const *) listed, "kept"));
+        g_assert_false (g_strv_contains ((const gchar * const *) listed, "fifo"));
+        g_assert_cmpuint (g_paste_storage_backend_count_history (backend, "fifo"), ==, 0);
+        g_paste_settings_set_storage_backend (settings, kinds[i]);
+        g_paste_storage_passphrase_verifiable (kinds[i], settings);
+        g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+
+        if (!g_paste_storage_backend_is_incremental (backend))
+        {
+            g_autolist (GPasteItem) read = NULL;
+            gsize size;
+
+            g_assert_false (g_paste_storage_backend_read_history (backend, "fifo", NULL, &read, &size));
+        }
+
+        g_assert_cmpint (g_unlink (fifo), ==, 0);
+        g_paste_storage_backend_delete_history (backend, "kept", NULL);
+    }
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    g_paste_storage_backend_set_passphrase (NULL);
 }
 
 /* A full write that does not land sweeps nothing: what is on disk is still the
@@ -5906,6 +5976,7 @@ main (int    argc,
     g_test_add_func ("/storage/lock/dir-unmade", test_lock_dir_unmade);
     g_test_add_func ("/storage/journal/empty", test_journal_empty);
     g_test_add_func ("/storage/journal/unwritable", test_journal_unwritable);
+    g_test_add_func ("/storage/fifo-history", test_fifo_history);
     g_test_add_func ("/storage/doctor/permissions", test_doctor_permissions);
     g_test_add_func ("/storage/doctor/name-one-line", test_doctor_name_one_line);
     g_test_add_func ("/storage/doctor/linked-folder", test_doctor_linked_folder);

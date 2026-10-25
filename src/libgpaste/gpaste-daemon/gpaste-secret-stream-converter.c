@@ -3,6 +3,7 @@
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-secret-stream-converter.h>
+#include <gpaste-daemon/gpaste-storage-backend-private.h>
 
 #include <glib/gstdio.h>
 
@@ -576,6 +577,9 @@ g_paste_secret_stream_converter_end_at_final (GPasteSecretStreamConverter *self)
 gboolean
 g_paste_secret_stream_file_has_frame (const gchar *path)
 {
+    if (g_paste_storage_is_special_file (path))
+        return FALSE;
+
     g_autoptr (GFile) file = g_file_new_for_path (path);
     g_autoptr (GFileInputStream) stream = g_file_read (file, NULL, NULL);
     guchar head[STREAM_HEADER_LEN + 4];

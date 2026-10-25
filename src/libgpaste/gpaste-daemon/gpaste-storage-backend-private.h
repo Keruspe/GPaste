@@ -26,4 +26,12 @@ void g_paste_storage_delete_history (GPasteStorage storage_kind,
                                      const gchar  *name,
                                      GError      **error);
 
+/* Whether @path names something other than a regular file -- a FIFO, a device,
+ * a directory --, symbolic links followed: asked before a store file is
+ * opened, which for a FIFO holds open(2) until a writer comes, the main loop's
+ * reads -- a listing's counts, the unlock's probes -- included. A file swapped
+ * in after the check still blocks; the history directory being private is
+ * what keeps anyone else from planting one at all. */
+gboolean g_paste_storage_is_special_file (const gchar *path);
+
 G_END_DECLS
