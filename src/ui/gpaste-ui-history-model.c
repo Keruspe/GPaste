@@ -258,9 +258,45 @@ g_paste_ui_history_model_set_uuids (GPasteUiHistoryModel *self,
 {
     g_return_if_fail (G_PASTE_IS_UI_HISTORY_MODEL (self));
 
-    self->by_uuid = TRUE;
+    guint size = (uuids) ? g_strv_length ((GStrv) uuids) : 0;
 
-    g_paste_ui_history_model_reset (self, (uuids) ? g_strv_length ((GStrv) uuids) : 0, uuids);
+    if (!self->by_uuid)
+    {
+        self->by_uuid = TRUE;
+        g_paste_ui_history_model_reset (self, size, uuids);
+        return;
+    }
+
+    /* The named view listed again, as it is on every change of the history:
+     * the rows still listing what they listed, before and after the part that
+     * changed, keep their items. Reset, they would all be bound afresh but the
+     * one with the keyboard focus, which GTK then unparents, moving the focus
+     * to the first row. Those kept read their items again where they stand,
+     * as invalidated rows do, the history having changed under them. */
+    guint old_len = self->items->len;
+    guint prefix = 0;
+    guint suffix = 0;
+
+    while (prefix < old_len && prefix < size &&
+           g_paste_str_equal (g_paste_ui_history_item_get_uuid (g_ptr_array_index (self->items, prefix)), uuids[prefix]))
+        ++prefix;
+    while (suffix < old_len - prefix && suffix < size - prefix &&
+           g_paste_str_equal (g_paste_ui_history_item_get_uuid (g_ptr_array_index (self->items, old_len - 1 - suffix)), uuids[size - 1 - suffix]))
+        ++suffix;
+
+    guint removed = old_len - prefix - suffix;
+    guint added = size - prefix - suffix;
+
+    g_ptr_array_remove_range (self->items, prefix, removed);
+    for (guint i = 0; i < added; ++i)
+        g_ptr_array_insert (self->items, (gint) (prefix + i), g_paste_ui_history_item_new (uuids[prefix + i]));
+
+    if (removed || added)
+        g_list_model_items_changed (G_LIST_MODEL (self), prefix, removed, added);
+    if (prefix)
+        g_signal_emit (self, signals[INVALIDATED], 0, (guint64) 0, (guint64) prefix);
+    if (suffix)
+        g_signal_emit (self, signals[INVALIDATED], 0, (guint64) (prefix + added), (guint64) suffix);
 }
 
 /**

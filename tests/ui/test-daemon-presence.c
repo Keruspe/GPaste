@@ -1427,6 +1427,76 @@ test_row_read_in_place (void)
     close_activation_window (window, &daemon);
 }
 
+/* Answer the search held with five matches, the same every time. */
+static void
+answer_five_matches (FakeDaemon   *daemon,
+                     GPasteClient *client)
+{
+    static const gchar * const no_notes[] = { NULL };
+    g_auto (GVariantBuilder) items = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
+
+    for (guint i = 0; i < 5; ++i)
+    {
+        g_autofree gchar *uuid = g_strdup_printf ("00000000-0000-4000-8000-0000000000%02u", i + 10);
+        g_autofree gchar *value = g_strdup_printf ("match %u", i);
+
+        g_variant_builder_add (&items, G_PASTE_ITEM_VARIANT_FORMAT, uuid, value, G_PASTE_ITEM_KIND_TEXT, FALSE, no_notes);
+    }
+    g_dbus_method_invocation_return_value (g_steal_pointer (&daemon->held_filter),
+                                           g_variant_new ("(@" G_PASTE_ITEMS_VARIANT_STRING ")", g_variant_builder_end (&items)));
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon->connection);
+    drain ();
+}
+
+/* A search is listed again on every change of the history, and one answered
+ * with the results it already lists keeps their rows: the keyboard stays on
+ * the result it was on, rather than GTK moving it to the first one once the
+ * row it was on is rebuilt -- where Enter would then paste another item. */
+static void
+test_search_relist_keeps_focus (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 6, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+
+    daemon.hold_filters = TRUE;
+    g_paste_ui_history_search (window->history, "match");
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+    answer_five_matches (&daemon, client);
+    wait_for_layout (GTK_WIDGET (list_view));
+    gtk_widget_grab_focus (GTK_WIDGET (list_view));
+    drain ();
+    gtk_list_view_scroll_to (list_view, 3, GTK_LIST_SCROLL_FOCUS, NULL);
+    drain ();
+    wait_for_layout (GTK_WIDGET (list_view));
+
+    GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
+
+    g_assert_nonnull (focus);
+
+    g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", (guint64) 0);
+    g_paste_test_bus_wait_for_count (&daemon.filters, 2);
+    answer_five_matches (&daemon, client);
+    wait_for_layout (GTK_WIDGET (list_view));
+    g_paste_test_bus_pump (100);
+    drain ();
+
+    g_assert_true (gtk_root_get_focus (GTK_ROOT (window)) == focus);
+    g_assert_nonnull (gtk_widget_get_parent (focus));
+    close_activation_window (window, &daemon);
+}
+
 /* Entering selection mode and leaving it leave the list where it was scrolled
  * to, the focus on the row it was on, rather than back at the top with every
  * row built anew. */
@@ -3255,6 +3325,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);
     g_test_add_func ("/ui/daemon-presence/superseded-refresh", test_superseded_refresh);
     g_test_add_func ("/ui/daemon-presence/row-read-in-place", test_row_read_in_place);
+    g_test_add_func ("/ui/daemon-presence/search-relist-keeps-focus", test_search_relist_keeps_focus);
     g_test_add_func ("/ui/daemon-presence/selection-mode-keeps-place", test_selection_mode_keeps_place);
     g_test_add_func ("/ui/daemon-presence/merge-picks-shown", test_merge_picks_shown);
     g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
