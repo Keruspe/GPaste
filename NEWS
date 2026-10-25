@@ -62,6 +62,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix a crash at every start after an empty storage journal was left behind, and when the history folder cannot be made private during a migration
 - Fix a damaged encrypted history leaving part of its passwords unwiped in memory
 - Fix a file planted among the histories being able to freeze GPaste, or GNOME Shell with it
+- Fix GPaste being able to start a second time, and exit mid-way through a passphrase change, after GNOME Shell took over from it
 
 NEW in 51.1 (20/10/2026)
 =============

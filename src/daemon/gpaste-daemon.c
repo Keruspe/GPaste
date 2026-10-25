@@ -477,10 +477,11 @@ on_name_acquired (GPasteBus *bus G_GNUC_UNUSED,
 {
     DaemonContext *ctx = user_data;
 
-    /* Acquisition normally happens once; guard against a spurious re-entry, and
+    /* Acquisition normally happens once; guard against a spurious re-entry,
      * against a re-acquisition landing here while the first settle is still
-     * showing its dialogs (see ctx->settling). */
-    if (ctx->daemon || ctx->settling)
+     * showing its dialogs (see ctx->settling), and against one reaching a
+     * process on its way out (see ctx->stopping). */
+    if (ctx->daemon || ctx->settling || ctx->stopping)
         return;
 
     ctx->settling = TRUE;
@@ -543,6 +544,9 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
             g_clear_object (&ctx->daemon);
         }
 
+        /* Replaced, the request is still queued for the name, and the bus
+         * would hand it back once the successor lets go of it. */
+        g_paste_bus_unown_name (ctx->bus);
         stop_when_storage_idle (ctx);
         return;
     }
