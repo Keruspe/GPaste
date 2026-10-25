@@ -1073,22 +1073,22 @@ static const struct
     GPasteStorageBackend *(*new_encrypted) (GPasteSettings *settings,
                                             const gchar    *passphrase);
 } storage_flavours[G_PASTE_N_STORAGE] = {
-    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                  g_paste_noop_backend_get_type,   NULL },
+    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                      g_paste_noop_backend_get_type,   NULL },
     /* The temporary a save is written to before its move into place. */
-    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml.tmp",                          g_paste_file_backend_get_type,   NULL },
+    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, g_paste_file_backend_get_type,   NULL },
     /* The original a change of passphrase keeps aside. */
-    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD, g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted) },
+    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD,  g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted) },
     /* The rollback journal SQLite opens beside a new database to turn it to
      * write-ahead logging, longer than the log and its index. */
 #ifdef G_PASTE_ENABLE_SQLITE
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                       g_paste_sqlite_backend_get_type, NULL },
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                           g_paste_sqlite_backend_get_type, NULL },
 #else
     /* Not built in: the kind degrades to the file flavour
      * (_g_paste_storage_backend_get_type ()), which then keeps the history as
      * its own. */
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml.tmp",                          NULL,                            NULL },
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL,                            NULL },
 #endif
-    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                      g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)) },
+    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                          g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)) },
 };
 
 /* A plain kind this build lacks degrades to another plain kind. */

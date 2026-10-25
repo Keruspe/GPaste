@@ -123,6 +123,22 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
            (!timeout_attr || g_output_stream_write_all (stream, timeout_attr, strlen (timeout_attr), NULL, NULL /* cancellable */, error));
 }
 
+/* <history-dir>/images, where every history's images directory is, and where
+ * GPaste 50 kept the images all its histories shared, each named as the plain
+ * flavour names its own (%G_PASTE_FILE_BACKEND_IMAGE_SUFFIX): built here
+ * alone, so that the sweep of those (g_paste_file_backend_sweep_legacy_images
+ * ()) and the read still finding them (_g_paste_file_backend_image_location
+ * ()) cannot come to look in two places. What GPaste 50's documents name it
+ * by is theirs, and spelt as they spell it where the sweep reads them
+ * (_g_paste_file_backend_collect_legacy_references ()). */
+static gchar *
+_g_paste_file_backend_images_root (void)
+{
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+
+    return g_build_filename (history_dir, "images", NULL);
+}
+
 /**
  * g_paste_file_backend_images_dir:
  * @history_name: the name of a history
@@ -142,9 +158,9 @@ g_paste_file_backend_images_dir (const gchar *history_name)
      * contents of whichever directory it landed in. */
     g_return_val_if_fail (g_paste_util_history_name_is_valid (history_name), NULL);
 
-    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *images_root = _g_paste_file_backend_images_root ();
 
-    return g_build_filename (history_dir, "images", history_name, NULL);
+    return g_build_filename (images_root, history_name, NULL);
 }
 
 /**
@@ -167,7 +183,7 @@ g_paste_file_backend_image_path (const gchar *history_name,
     g_return_val_if_fail (checksum, NULL);
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (history_name);
-    g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *filename = g_strconcat (checksum, G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, NULL);
 
     return g_build_filename (images_dir, filename, NULL);
 }
@@ -177,8 +193,8 @@ g_paste_file_backend_image_path (const gchar *history_name,
  * @path: the canonical (plain) cache path of an image
  *
  * Get the path of the encrypted side file the encrypted flavour materializes
- * for @path (".pngs", mirroring ".xml"/".xmls"). This is the one owner of that
- * naming scheme.
+ * for @path (%G_PASTE_FILE_BACKEND_SIDE_SUFFIX in place of
+ * %G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, mirroring ".xml"/".xmls").
  *
  * Returns: the encrypted side file path
  */
@@ -187,7 +203,7 @@ g_paste_file_backend_encrypted_path (const gchar *path)
 {
     g_return_val_if_fail (path, NULL);
 
-    return g_strconcat (path, "s", NULL);
+    return g_strconcat (path, G_PASTE_FILE_BACKEND_SIDE_MARK, NULL);
 }
 
 /* Have what was written to @file reach the disk before it is renamed into
@@ -253,7 +269,7 @@ _g_paste_file_backend_sync_directory (const gchar *path)
 static GFile *
 _g_paste_file_backend_beside (const gchar *target)
 {
-    g_autofree gchar *tmp = g_strconcat (target, ".tmp", NULL);
+    g_autofree gchar *tmp = g_strconcat (target, G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL);
 
     return g_file_new_for_path (tmp);
 }
@@ -493,7 +509,7 @@ _g_paste_file_backend_image_file_name (GPasteImageItem *image,
     if (!checksum)
         return NULL;
 
-    return g_strconcat (checksum, (encrypted) ? ".pngs" : ".png", NULL);
+    return g_strconcat (checksum, (encrypted) ? G_PASTE_FILE_BACKEND_SIDE_SUFFIX : G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, NULL);
 }
 
 /* Whether @file_name is one _g_paste_file_backend_image_file_name() could have
@@ -502,7 +518,7 @@ static gboolean
 _g_paste_file_backend_is_image_file_name (const gchar *file_name,
                                           gboolean     encrypted)
 {
-    const gchar *suffix = (encrypted) ? ".pngs" : ".png";
+    const gchar *suffix = (encrypted) ? G_PASTE_FILE_BACKEND_SIDE_SUFFIX : G_PASTE_FILE_BACKEND_IMAGE_SUFFIX;
 
     if (!g_str_has_suffix (file_name, suffix))
         return FALSE;
@@ -514,14 +530,15 @@ _g_paste_file_backend_is_image_file_name (const gchar *file_name,
 
 /* Whether @file_name is what writing an image of either flavour leaves when it
  * is cut short between the write and the move into place: an image's name with
- * ".tmp" after it (_g_paste_file_backend_ensure_image_file ()). */
+ * the temporary's suffix after it
+ * (_g_paste_file_backend_ensure_image_file ()). */
 static gboolean
 _g_paste_file_backend_is_image_temp_name (const gchar *file_name)
 {
-    if (!g_str_has_suffix (file_name, ".tmp"))
+    if (!g_str_has_suffix (file_name, G_PASTE_FILE_BACKEND_TEMP_SUFFIX))
         return FALSE;
 
-    g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (".tmp"));
+    g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (G_PASTE_FILE_BACKEND_TEMP_SUFFIX));
 
     return _g_paste_file_backend_is_image_file_name (image, TRUE) || _g_paste_file_backend_is_image_file_name (image, FALSE);
 }
@@ -733,7 +750,7 @@ G_PASTE_VISIBLE void
 g_paste_file_backend_sweep_legacy_images (void)
 {
     g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
-    g_autofree gchar *images_dir = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *images_dir = _g_paste_file_backend_images_root ();
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) images = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
@@ -1466,9 +1483,9 @@ _g_paste_file_backend_image_location (const Data *data)
     }
     else
     {
-        g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
-        g_autofree gchar *file_name = g_strconcat (data->checksum, ".png", NULL);
-        g_autofree gchar *shared = g_build_filename (history_dir, "images", file_name, NULL);
+        g_autofree gchar *images_root = _g_paste_file_backend_images_root ();
+        g_autofree gchar *file_name = g_strconcat (data->checksum, G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, NULL);
+        g_autofree gchar *shared = g_build_filename (images_root, file_name, NULL);
 
         if (g_file_test (shared, G_FILE_TEST_EXISTS))
             return g_steal_pointer (&shared);
@@ -2268,7 +2285,7 @@ g_paste_file_backend_delete_files (const gchar *name,
      * replacement says a re-key did not finish, which a history still there
      * needs said. */
     g_autofree gchar *path = g_file_get_path (history_file);
-    g_autofree gchar *tmp = g_strconcat (path, ".tmp", NULL);
+    g_autofree gchar *tmp = g_strconcat (path, G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL);
 
     if (g_unlink (tmp) && errno != ENOENT)
         g_warning ("Could not remove %s, which a cut-short save left: %s", tmp, g_strerror (errno));
@@ -2299,8 +2316,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                       const gchar          *path)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
-    /* An image's, named by g_paste_file_backend_encrypted_path (). */
-    gboolean side_file = g_str_has_suffix (path, ".pngs");
+    gboolean side_file = g_str_has_suffix (path, G_PASTE_FILE_BACKEND_SIDE_SUFFIX);
     /* The file's plaintext -- an image's pixels as readily as a history's
      * passwords -- so it is wiped by length rather than as a string, as is the
      * @check read back below: neither is text. */
