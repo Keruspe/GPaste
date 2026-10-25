@@ -101,7 +101,7 @@ test_sensitive_offer_read (gconstpointer user_data)
         g_assert_null (hint);
 
     g_autoptr (GPasteItem) item = result.item;
-    const GPasteClipboardSecret expected[] = { CLIPBOARD_SECRET_UNKNOWN, CLIPBOARD_SECRET_NO, CLIPBOARD_SECRET_YES };
+    const GPasteClipboardSecret expected[] = { G_PASTE_CLIPBOARD_SECRET_UNKNOWN, G_PASTE_CLIPBOARD_SECRET_NO, G_PASTE_CLIPBOARD_SECRET_YES };
 
     g_assert_nonnull (item);
     g_assert_cmpint (result.secret, ==, expected[variant]);

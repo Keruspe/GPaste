@@ -207,10 +207,10 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
      * record for a password still sitting there. X is asked who owns the
      * selection, the one thing that tells the two apart, and an owner that is
      * there answers nothing: the deadline is then this selection going
-     * unidentified, which every reader of %CLIPBOARD_SECRET_UNKNOWN already
-     * knows how to hold (/gdk/formats/deadline-slow-owner). It is asked here
-     * rather than when the formats came back empty, so the milliseconds a local
-     * owner takes to publish its targets cost nothing.
+     * unidentified, which every reader of %G_PASTE_CLIPBOARD_SECRET_UNKNOWN
+     * already knows how to hold (/gdk/formats/deadline-slow-owner). It is asked
+     * here rather than when the formats came back empty, so the milliseconds a
+     * local owner takes to publish its targets cost nothing.
      *
      * Only %G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE is a release, never the
      * absence of an answer: a display that could not be asked is held like a slow
@@ -250,7 +250,7 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
     }
 
     if (callback)
-        callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded, (released) ? CLIPBOARD_SECRET_NO : CLIPBOARD_SECRET_UNKNOWN, user_data);
+        callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded, (released) ? G_PASTE_CLIPBOARD_SECRET_NO : G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
 }
 
 static void
@@ -1143,7 +1143,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         g_paste_clipboard_gdk_supersede (self);
         g_paste_clipboard_content_set_ignored (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
         return;
     }
 
@@ -1163,7 +1163,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
     if (!update)
     {
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_UNKNOWN, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
         return;
     }
 

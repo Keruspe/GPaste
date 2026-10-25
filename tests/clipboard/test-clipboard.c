@@ -104,7 +104,7 @@ update (GPasteClipboardProvider              *provider,
         g_paste_clipboard_update_add_read (pending);
     }
     else if (callback)
-        callback (provider, NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
+        callback (provider, NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
 }
 
 static GPasteClipboardPublication
@@ -1993,7 +1993,7 @@ test_hint_reply_without_value (gconstpointer user_data)
     g_paste_clipboard_update_maybe_done (pending);
 
     g_assert_null (result.item);
-    g_assert_cmpint (result.secret, ==, (served) ? CLIPBOARD_SECRET_NO : CLIPBOARD_SECRET_UNKNOWN);
+    g_assert_cmpint (result.secret, ==, (served) ? G_PASTE_CLIPBOARD_SECRET_NO : G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 }
 
 /* A secret is kept as a password when it is a text, and not at all otherwise. */
@@ -2118,7 +2118,7 @@ test_secret_text_policy (gconstpointer user_data)
 
     g_autoptr (GPasteItem) item = result.item;
 
-    g_assert_cmpint (result.secret, ==, CLIPBOARD_SECRET_YES);
+    g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_YES);
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item));
     g_assert_cmpstr (g_paste_item_get_real_value (item), ==, text);
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)), ==, 37);

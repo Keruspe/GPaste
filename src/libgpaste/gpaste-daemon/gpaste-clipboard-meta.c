@@ -1257,7 +1257,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_clear (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
         return;
     }
     else
@@ -1270,7 +1270,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         g_paste_clipboard_update_supersede (&self->update);
         g_paste_clipboard_content_set_ignored (&self->content);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
         return;
     }
 
@@ -1290,7 +1290,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     {
         g_list_free_full (mimetypes, g_free);
         if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, CLIPBOARD_SECRET_UNKNOWN, user_data);
+            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
         return;
     }
 

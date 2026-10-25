@@ -407,7 +407,7 @@ update_unmade (Fixture      *f,
         return;
     }
 
-    GPasteClipboardSecret secret = CLIPBOARD_SECRET_NO;
+    GPasteClipboardSecret secret = G_PASTE_CLIPBOARD_SECRET_NO;
 
     set_formats (TRUE);
     f->clipboard->settings = NULL;
@@ -417,7 +417,7 @@ update_unmade (Fixture      *f,
     g_paste_clipboard_gdk_update (f->clipboard, TRUE, on_update_answered, &secret);
     g_log_set_always_fatal (fatal);
     f->clipboard->settings = f->settings;
-    g_assert_cmpint (secret, ==, CLIPBOARD_SECRET_UNKNOWN);
+    g_assert_cmpint (secret, ==, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 }
 
 /* An image read leaves the selection to its owner, with every format it offers:

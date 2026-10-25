@@ -14,30 +14,33 @@ G_DECLARE_INTERFACE (GPasteClipboardProvider, g_paste_clipboard_provider, G_PAST
 
 /**
  * GPasteClipboardSecret:
- * @CLIPBOARD_SECRET_NO: the selection was asked and says its content is not one
- * @CLIPBOARD_SECRET_YES: a hint came back and matched
- * @CLIPBOARD_SECRET_UNKNOWN: nothing could be learned either way
+ * @G_PASTE_CLIPBOARD_SECRET_NO: the selection was asked and says its content is
+ *                               not one
+ * @G_PASTE_CLIPBOARD_SECRET_YES: a hint came back and matched
+ * @G_PASTE_CLIPBOARD_SECRET_UNKNOWN: nothing could be learned either way
  *
  * What an update found out about the selection carrying a secret.
  *
- * %CLIPBOARD_SECRET_UNKNOWN is not a third kind of answer but the absence of
- * one: the selection could not be asked what it offers, or a hint it does offer
- * never came back. Only %CLIPBOARD_SECRET_YES ever makes a password -- proof is
- * what a secret takes, here as everywhere -- so classifying content reads the
- * unknown as a no. The one place the two part company is a record that outlives
- * the read that made it: retiring one on "the answer never came" is retiring it
- * on no evidence, and the secret is still sitting there.
+ * %G_PASTE_CLIPBOARD_SECRET_UNKNOWN is not a third kind of answer but the
+ * absence of one: the selection could not be asked what it offers, or a hint it
+ * does offer never came back. Only %G_PASTE_CLIPBOARD_SECRET_YES ever makes a
+ * password -- proof is what a secret takes, here as everywhere -- so
+ * classifying content reads the unknown as a no. The one place the two part
+ * company is a record that outlives the read that made it: retiring one on
+ * "the answer never came" is retiring it on no evidence, and the secret is
+ * still sitting there.
  *
  * Plain C, with no GType of its own: it travels between a provider and the
- * clipboards manager and no further -- libgpaste-daemon is internal, and nothing
- * on the wire or in a binding ever names it. The enumerations a binding does see
- * are listed in the top-level AGENTS.md.
+ * clipboards manager and no further, nothing on the wire naming it. Its header
+ * being installed, it is in GPasteDaemon-1.gir all the same, which no binding
+ * reads it from: the top-level AGENTS.md says which enumerations are there and
+ * which of them a binding reads.
  */
 typedef enum
 {
-    CLIPBOARD_SECRET_NO,
-    CLIPBOARD_SECRET_YES,
-    CLIPBOARD_SECRET_UNKNOWN,
+    G_PASTE_CLIPBOARD_SECRET_NO,
+    G_PASTE_CLIPBOARD_SECRET_YES,
+    G_PASTE_CLIPBOARD_SECRET_UNKNOWN,
 } GPasteClipboardSecret;
 
 /**
@@ -59,7 +62,7 @@ typedef enum
  * apart from "@item is a password": an update that produced nothing still read
  * the selection, and a text deduped against the one already there is the only
  * word anything gets on whether what is sitting on it is still a secret.
- * %CLIPBOARD_SECRET_NO for a selection with no text (see
+ * %G_PASTE_CLIPBOARD_SECRET_NO for a selection with no text (see
  * #GPasteClipboardMimeResults).
  */
 typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *self,

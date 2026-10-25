@@ -453,18 +453,18 @@ hint_read (gconstpointer user_data)
     switch (behaviour)
     {
     case OWNER_SERVES_HINT:
-        g_assert_cmpint (result.secret, ==, CLIPBOARD_SECRET_YES);
+        g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_YES);
         g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item));
         break;
     case OWNER_NO_HINT:
-        g_assert_cmpint (result.secret, ==, CLIPBOARD_SECRET_NO);
+        g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_NO);
         g_assert_false (G_PASTE_IS_PASSWORD_ITEM (item));
         break;
     default:
         /* A refusal, an INCR reply and a silence are the same answer: the
          * selection was not identified, and nothing may read that as ordinary
          * text. */
-        g_assert_cmpint (result.secret, ==, CLIPBOARD_SECRET_UNKNOWN);
+        g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
         g_assert_false (G_PASTE_IS_PASSWORD_ITEM (item));
         break;
     }
@@ -519,7 +519,7 @@ timestamped_conversion (gconstpointer user_data)
     g_assert_cmpuint (owner->hint_requests, ==, 1);
     g_assert_cmpuint (owner->last_hint_time, !=, CurrentTime);
     g_assert_cmpuint (owner->last_hint_time, >=, owner->acquired);
-    g_assert_cmpint (result.secret, ==, CLIPBOARD_SECRET_YES);
+    g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_YES);
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item));
 
     g_clear_object (&hints);
@@ -574,7 +574,7 @@ late_reply (void)
     g_autoptr (GPasteItem) item = result.item;
 
     g_assert_true (result.answered);
-    g_assert_cmpint (result.secret, ==, CLIPBOARD_SECRET_UNKNOWN);
+    g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 
     /* And now the owner answers the conversion nobody is waiting for: the window
      * it names has to be standing for that answer to reach anything at all. */

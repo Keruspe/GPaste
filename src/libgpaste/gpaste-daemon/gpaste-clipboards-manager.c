@@ -168,9 +168,10 @@ typedef struct
      * Retired only by a read that came back with an answer: unlike @password
      * there is no item here to ask selection_holds () about -- this is the case
      * where the read produced none -- so what a read says is the only thing that
-     * can retire it, and a read that could not tell (%CLIPBOARD_SECRET_UNKNOWN)
-     * says nothing. Dropping it on that would drop it over the secret still
-     * sitting there, which is the whole of what it is for. */
+     * can retire it, and a read that could not tell
+     * (%G_PASTE_CLIPBOARD_SECRET_UNKNOWN) says nothing. Dropping it on that
+     * would drop it over the secret still sitting there, which is the whole of
+     * what it is for. */
     gboolean                 sensitive;
 } _Clipboard;
 
@@ -525,7 +526,7 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard           *clip,
                                            GPasteClipboardSecret secret)
 {
     /* Silence leaves both retry slots and their ordering intact. */
-    if (secret == CLIPBOARD_SECRET_UNKNOWN && !g_paste_clipboard_provider_get_text (clip->clipboard))
+    if (secret == G_PASTE_CLIPBOARD_SECRET_UNKNOWN && !g_paste_clipboard_provider_get_text (clip->clipboard))
         return;
 
     g_autoslist (GWeakRef) pending = g_steal_pointer (&clip->pending_refreshes);
@@ -560,7 +561,7 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard           *clip,
 
         if (g_paste_clipboards_manager_selection_holds (clip->clipboard, plain))
         {
-            if (secret != CLIPBOARD_SECRET_NO || g_paste_clipboards_manager_publish_item (clip, plain, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+            if (secret != G_PASTE_CLIPBOARD_SECRET_NO || g_paste_clipboards_manager_publish_item (clip, plain, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
                 g_paste_clipboards_manager_refuse_refresh (clip, plain);
 
             if (*item)
@@ -629,7 +630,7 @@ g_paste_clipboards_manager_capture_secret (GPasteItem **item,
  * countdown, which then takes their own copy back off.
  *
  * @item and @secret are the read's, when a read is what resolves this; every
- * other caller passes %NULL and %CLIPBOARD_SECRET_UNKNOWN. */
+ * other caller passes %NULL and %G_PASTE_CLIPBOARD_SECRET_UNKNOWN. */
 static gboolean
 g_paste_clipboards_manager_finish_expiry (_Clipboard           *clip,
                                           GPasteItem          **item,
@@ -661,7 +662,7 @@ g_paste_clipboards_manager_finish_expiry (_Clipboard           *clip,
              * Otherwise the read is the edited entry, as in preserve_password ():
              * the history's own object for it, the newest, or a capture running
              * the edit's countdown for another history's. */
-            if (item && *item && secret != CLIPBOARD_SECRET_NO)
+            if (item && *item && secret != G_PASTE_CLIPBOARD_SECRET_NO)
             {
                 GPasteItem *entry = g_paste_clipboards_manager_entry_of (clip, change->item);
 
@@ -698,7 +699,7 @@ static void
 g_paste_clipboards_manager_finish_expiry_all (GPasteClipboardsManager *self)
 {
     for (GSList *l = self->clipboards; l; l = l->next)
-        g_paste_clipboards_manager_finish_expiry (l->data, NULL, CLIPBOARD_SECRET_UNKNOWN);
+        g_paste_clipboards_manager_finish_expiry (l->data, NULL, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 }
 
 static void
@@ -719,12 +720,12 @@ g_paste_clipboards_manager_resume_sync (_Clipboard *clip)
  * says nothing about the selection and leaves the flag to the read overtaking
  * it.
  *
- * Any answer but a no counts, %CLIPBOARD_SECRET_YES included: a hint that came
- * back with no text beside it -- the text read failed, or the guard concluded
- * it -- says the selection carries *a* secret, not which one, so it confirms
- * the record no more than silence does. Taking it for a move would retire the
- * record and its countdown, and with no record nothing asks for the re-read
- * that would find the password still sitting there
+ * Any answer but a no counts, %G_PASTE_CLIPBOARD_SECRET_YES included: a hint
+ * that came back with no text beside it -- the text read failed, or the guard
+ * concluded it -- says the selection carries *a* secret, not which one, so it
+ * confirms the record no more than silence does. Taking it for a move would
+ * retire the record and its countdown, and with no record nothing asks for the
+ * re-read that would find the password still sitting there
  * (/clipboard/unconfirmed_password/secret_without_text/expiry). Only a no says
  * the selection holds no password at all. A read that identified the selection
  * settles it whatever the hint said -- any text, the empty one included, an
@@ -735,7 +736,7 @@ static void
 g_paste_clipboards_manager_confirm_password (_Clipboard           *clip,
                                              GPasteClipboardSecret secret)
 {
-    clip->password_unconfirmed = (clip->password || clip->pending_passwords) && secret != CLIPBOARD_SECRET_NO &&
+    clip->password_unconfirmed = (clip->password || clip->pending_passwords) && secret != G_PASTE_CLIPBOARD_SECRET_NO &&
                                  !g_paste_clipboard_provider_is_identified (clip->clipboard);
 }
 
@@ -748,8 +749,8 @@ g_paste_clipboards_manager_confirm_password (_Clipboard           *clip,
  *
  * A read that has just concluded answers it itself, and the fields here are what
  * notify_finish () is about to write from that answer: finish_refresh ()
- * therefore asks %CLIPBOARD_SECRET_NO of the read rather than asking this of
- * the fields it has yet to overwrite. Same question, newer evidence. */
+ * therefore asks %G_PASTE_CLIPBOARD_SECRET_NO of the read rather than asking
+ * this of the fields it has yet to overwrite. Same question, newer evidence. */
 static gboolean
 g_paste_clipboards_manager_may_carry_secret (_Clipboard *clip)
 {
@@ -763,7 +764,7 @@ g_paste_clipboards_manager_preserve_password (_Clipboard           *clip,
 {
     /* A matching exposure keeps its item and deadline even when its hint is
      * readable: the captured twin only knows the global timeout default. */
-    if (!*item || secret == CLIPBOARD_SECRET_NO || !clip->password ||
+    if (!*item || secret == G_PASTE_CLIPBOARD_SECRET_NO || !clip->password ||
         !g_paste_clipboards_manager_selection_holds (clip->clipboard, clip->password))
         return;
 
@@ -863,15 +864,15 @@ g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_
      * rest of the session on no evidence at all.
      *
      * Retired under notify_finish ()'s guard and read the same way, this being
-     * the same record and the same question: %CLIPBOARD_SECRET_UNKNOWN is a read
-     * that said nothing, and a re-read asked for *because* the selection could
-     * not be identified is the last thing that may conclude it moved on -- it
-     * would drop the record over the very cleartext it is kept for
-     * (/clipboard/unrecorded_secret/reread_keeps_record). A password record
-     * standing beside it is what that secret is, which makes it a recorded one
-     * and so not this. */
-    if (secret != CLIPBOARD_SECRET_UNKNOWN)
-        data->clip->sensitive = (secret == CLIPBOARD_SECRET_YES) && !data->clip->password;
+     * the same record and the same question: %G_PASTE_CLIPBOARD_SECRET_UNKNOWN
+     * is a read that said nothing, and a re-read asked for *because* the
+     * selection could not be identified is the last thing that may conclude it
+     * moved on -- it would drop the record over the very cleartext it is kept
+     * for (/clipboard/unrecorded_secret/reread_keeps_record). A password
+     * record standing beside it is what that secret is, which makes it a
+     * recorded one and so not this. */
+    if (secret != G_PASTE_CLIPBOARD_SECRET_UNKNOWN)
+        data->clip->sensitive = (secret == G_PASTE_CLIPBOARD_SECRET_YES) && !data->clip->password;
 
     g_paste_clipboards_manager_finish_refresh (data->clip, &identified, secret);
     g_paste_clipboards_manager_ensure_not_empty (data->clip, (data->clip->password) ? NULL : record);
@@ -1023,7 +1024,7 @@ g_paste_clipboards_manager_sync_ready (GPasteClipboardProvider *other G_GNUC_UNU
     /* As in sync_from_to ()'s password branch: a write to this selection is what
      * an edit or a forced expiry waiting on it was waiting for, and this is the
      * one publishing route with nothing after it to resolve them. */
-    g_paste_clipboards_manager_finish_expiry (data->clip, NULL, CLIPBOARD_SECRET_UNKNOWN);
+    g_paste_clipboards_manager_finish_expiry (data->clip, NULL, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 }
 
 /**
@@ -1107,7 +1108,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
             g_paste_clipboards_manager_forget_stale_password (_to);
         }
 
-        g_paste_clipboards_manager_finish_expiry (_to, NULL, CLIPBOARD_SECRET_UNKNOWN);
+        g_paste_clipboards_manager_finish_expiry (_to, NULL, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
         return;
     }
 
@@ -1289,8 +1290,9 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
      * -- which reads as ordinary text and retires a record still owed. Nothing
      * here can tell that apart from a selection that really did move on, so the
      * read says which of the two it is: an answer retires the record, and
-     * %CLIPBOARD_SECRET_UNKNOWN -- the selection never said what it offers, or
-     * offered the hint and would not serve it -- leaves it exactly as it was.
+     * %G_PASTE_CLIPBOARD_SECRET_UNKNOWN -- the selection never said what it
+     * offers, or offered the hint and would not serve it -- leaves it exactly as
+     * it was.
      *
      * The record is read as a whole rather than matched against what this read
      * saw, there being nothing to match it with: a read that produced no item
@@ -1305,8 +1307,8 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
      * An empty payload makes no history item, but a matching hint still marks
      * the selection sensitive. Refusing a bare-text sync of it loses no usable
      * text and keeps this policy independent of history admission. */
-    if (secret != CLIPBOARD_SECRET_UNKNOWN)
-        clip->sensitive = (secret == CLIPBOARD_SECRET_YES) && !clip->password;
+    if (secret != G_PASTE_CLIPBOARD_SECRET_UNKNOWN)
+        clip->sensitive = (secret == G_PASTE_CLIPBOARD_SECRET_YES) && !clip->password;
 
     /* History eviction can emit password-dropped synchronously and publish over
      * this selection, freeing the cache @synchronized_text borrows. A publication
@@ -1335,7 +1337,7 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
         g_paste_clipboards_manager_ensure_not_empty (clip, (clip->password) ? NULL : record);
 
     if (synchronized_text && clip->generation == generation &&
-        (password || secret == CLIPBOARD_SECRET_NO || !g_paste_clipboards_manager_may_carry_secret (clip)))
+        (password || secret == G_PASTE_CLIPBOARD_SECRET_NO || !g_paste_clipboards_manager_may_carry_secret (clip)))
     {
         g_debug ("clipboards-manager: synchronizing clipboards");
 
@@ -1864,7 +1866,7 @@ g_paste_clipboards_manager_ensure_not_empty (_Clipboard *clip,
     g_paste_clipboards_manager_note_published (clip);
 
     g_paste_clipboards_manager_arm_password (clip, item, FALSE);
-    g_paste_clipboards_manager_finish_expiry (clip, NULL, CLIPBOARD_SECRET_UNKNOWN);
+    g_paste_clipboards_manager_finish_expiry (clip, NULL, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 }
 
 /* Ask a selection whose record went unconfirmed what it carries.

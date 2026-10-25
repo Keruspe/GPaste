@@ -839,12 +839,12 @@ g_paste_clipboard_mime_ctx_free (GPasteClipboardMimeCtx *ctx)
 static GPasteClipboardSecret
 g_paste_clipboard_mime_results_get_secret (const GPasteClipboardMimeResults *results)
 {
-    g_return_val_if_fail (results, CLIPBOARD_SECRET_UNKNOWN);
+    g_return_val_if_fail (results, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
 
     if (results->sensitive)
-        return CLIPBOARD_SECRET_YES;
+        return G_PASTE_CLIPBOARD_SECRET_YES;
 
-    return (results->sensitive_unknown) ? CLIPBOARD_SECRET_UNKNOWN : CLIPBOARD_SECRET_NO;
+    return (results->sensitive_unknown) ? G_PASTE_CLIPBOARD_SECRET_UNKNOWN : G_PASTE_CLIPBOARD_SECRET_NO;
 }
 
 /* Record what one finished sensitive-mime read means: a sensitive mime is a fact
@@ -1069,7 +1069,7 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
         g_autoptr (GPasteClipboardProvider) provider = g_steal_pointer (&update->provider);
 
         if (update->callback)
-            update->callback (provider, NULL, TRUE, CLIPBOARD_SECRET_UNKNOWN, update->user_data);
+            update->callback (provider, NULL, TRUE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, update->user_data);
 
         return;
     }

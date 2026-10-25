@@ -52,7 +52,7 @@ update (GPasteClipboardProvider              *provider,
 {
     ++TEST_CLIPBOARD (provider)->updates;
     if (callback)
-        callback (provider, NULL, FALSE, CLIPBOARD_SECRET_NO, user_data);
+        callback (provider, NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
 }
 
 static GPasteClipboardPublication
