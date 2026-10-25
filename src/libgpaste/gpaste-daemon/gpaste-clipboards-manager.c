@@ -2017,13 +2017,22 @@ g_paste_clipboards_manager_expire_password (GPasteClipboardsManager *self)
         clip->force_expiry = clip->password_timeout || clip->password_expired || clip->pending_passwords;
         if (clip->password && (clip->password_timeout || clip->password_expired))
             g_paste_clipboards_manager_retire_password (self, clip->password);
+
+        /* Retiring one can push a password out of the history, and
+         * on_password_dropped () then drops the pending edit naming it from
+         * the very list this would walk: walk the items alone. */
+        g_autoslist (GPasteItem) timed = NULL;
+
         for (GSList *l = clip->pending_passwords; l; l = l->next)
         {
             PendingPassword *pending = l->data;
 
             if (pending->timeout)
-                g_paste_clipboards_manager_retire_password (self, pending->item);
+                timed = g_slist_prepend (timed, g_object_ref (pending->item));
         }
+        timed = g_slist_reverse (timed);
+        for (GSList *l = timed; l; l = l->next)
+            g_paste_clipboards_manager_retire_password (self, l->data);
     }
 
     g_paste_clipboards_manager_finish_expiry_all (self);

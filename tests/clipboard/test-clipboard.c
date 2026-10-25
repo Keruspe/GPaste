@@ -1316,6 +1316,59 @@ test_timeout_edit_other_history_twin (void)
     g_assert_cmpstr (clipboard->content.str, ==, "replacement");
 }
 
+/* Taking the passwords off as the daemon stands down can push out of the
+ * history the very password an edit still waits on, its pending edit going
+ * with it: a history of pins keeps nothing else to evict. */
+static void
+test_expiry_evicts_pending_edit (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_assert_true (history_loaded (history));
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_max_history_size (settings, 5);
+    for (guint i = 0; i < 5; ++i)
+    {
+        g_autofree gchar *text = g_strdup_printf ("pinned %u", i);
+        GPasteItem *pinned = g_paste_text_item_new (text);
+        g_autofree gchar *pinned_uuid = g_strdup (g_paste_item_get_uuid (pinned));
+
+        g_paste_history_add (history, pinned);
+        g_assert_true (g_paste_history_set_favourite (history, pinned_uuid, TRUE));
+    }
+
+    GPasteItem *head = g_paste_text_item_new ("made a password");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (head));
+
+    g_paste_history_add (history, head);
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "made a password");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_assert_nonnull (pending);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *password_uuid = g_paste_daemon_methods_make_password (&methods, uuid, "name", 10, &error);
+
+    g_assert_no_error (error);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+    g_paste_clipboards_manager_expire_password (manager);
+    g_assert_null (g_paste_history_get_by_uuid (history, password_uuid));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 5);
+
+    text_ready (clipboard, settings, pending, "made a password");
+    g_paste_clipboard_update_maybe_done (pending);
+}
+
 static void
 test_rename_twin_during_read (void)
 {
@@ -5147,6 +5200,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/reenable_through_history", test_reenable_pending_timeout_through_history);
     g_test_add_func ("/clipboard/timeout_edit/rename_twin", test_rename_twin_during_read);
     g_test_add_func ("/clipboard/timeout_edit/other_history_twin", test_timeout_edit_other_history_twin);
+    g_test_add_func ("/clipboard/password/expiry_evicts_pending_edit", test_expiry_evicts_pending_edit);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/select", GINT_TO_POINTER (FALSE), test_forced_expiry_without_countdown);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/edit", GINT_TO_POINTER (TRUE), test_forced_expiry_without_countdown);
     g_test_add_func ("/clipboard/trimmed_duplicate", test_trimmed_duplicate);

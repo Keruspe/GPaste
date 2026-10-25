@@ -57,6 +57,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix GNOME Shell search dropping GPaste results when an item is deleted meanwhile
 - Fix GNOME Shell stalling while a history full of images is backed up
 - Fix a history left unreadable when a daemon takes over during a change of passphrase
+- Fix a crash when GPaste stops just after an item became a password in a history of pinned items
 
 NEW in 51.1 (20/10/2026)
 =============
