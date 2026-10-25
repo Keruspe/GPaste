@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-client-private.h>
 #include <gpaste-3/gpaste-daemon3.h>
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
@@ -2350,6 +2351,16 @@ g_paste_client_unfollow_daemon (GPasteClient *self)
     self->following = FALSE;
     g_paste_client_stop_waiting (self);
     g_paste_client_update_presence (self);
+}
+
+/* See gpaste-client-private.h. Exported for the tests compiling
+ * gpaste-util.c in. */
+G_PASTE_VISIBLE gboolean
+g_paste_client_is_following (GPasteClient *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), FALSE);
+
+    return self->following;
 }
 
 /**

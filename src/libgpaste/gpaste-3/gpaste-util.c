@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-client-history.h>
+#include <gpaste-3/gpaste-client-private.h>
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
@@ -927,6 +928,14 @@ typedef struct
 {
     GPasteClient *client;
     gulong        presence_handler;
+    /* Answering the wait with the cancellation once @cancellable is cancelled:
+     * a source on the main context rather than a handler of the cancellable,
+     * from whose emission the last reference to the task could not be dropped
+     * -- the free disconnects it. */
+    GSource      *cancelled;
+    /* Whether the client followed the daemon before the wait did, as it then
+     * goes on to once the wait is over. */
+    gboolean      was_following;
     gboolean      answered;
 } DaemonWait;
 
@@ -936,10 +945,18 @@ daemon_wait_free (gpointer data)
     DaemonWait *wait = data;
 
     g_clear_signal_handler (&wait->presence_handler, wait->client);
-    g_paste_client_unfollow_daemon (wait->client);
+    if (wait->cancelled)
+    {
+        g_source_destroy (wait->cancelled);
+        g_source_unref (wait->cancelled);
+    }
+    if (!wait->was_following)
+        g_paste_client_unfollow_daemon (wait->client);
     g_object_unref (wait->client);
     g_free (wait);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (DaemonWait, daemon_wait_free)
 
 /* Answer @task once, consuming the reference its wait holds; %NULL @error for a
  * daemon serving. */
@@ -990,12 +1007,26 @@ on_daemon_wait_legacy (GObject      *source_object G_GNUC_UNUSED,
 {
     g_autoptr (GTask) task = user_data;
 
+    /* Borrowed: what the answer consumes is the wait's own reference, the
+     * probe's going with @task here. */
     if (g_paste_util_daemon_is_legacy_finish (res, NULL))
     {
-        daemon_wait_answer (g_object_ref (task),
+        daemon_wait_answer (task,
                             g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED,
                                                  _("The GPaste daemon running is an older one, which serves none of this: restart it with “gpaste-client daemon-reexec”.")));
     }
+}
+
+static gboolean
+on_daemon_wait_cancelled (GCancellable *cancellable,
+                          gpointer      user_data)
+{
+    GError *error = NULL;
+
+    g_cancellable_set_error_if_cancelled (cancellable, &error);
+    daemon_wait_answer (user_data, error);
+
+    return G_SOURCE_REMOVE;
 }
 
 /**
@@ -1022,15 +1053,25 @@ g_paste_util_wait_for_daemon (GPasteClient       *client,
                               gpointer            user_data)
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
     GTask *task = g_task_new (client, cancellable, callback, user_data);
     DaemonWait *wait = g_new0 (DaemonWait, 1);
 
     g_task_set_source_tag (task, g_paste_util_wait_for_daemon);
     wait->client = g_object_ref (client);
+    wait->was_following = g_paste_client_is_following (client);
     g_task_set_task_data (task, wait, daemon_wait_free);
     g_paste_client_follow_daemon (client, TRUE);
     wait->presence_handler = g_signal_connect (client, "notify::daemon-presence", G_CALLBACK (on_daemon_wait_presence), task);
+
+    if (cancellable)
+    {
+        wait->cancelled = g_cancellable_source_new (cancellable);
+        g_source_set_callback (wait->cancelled, G_SOURCE_FUNC (on_daemon_wait_cancelled), task, NULL);
+        g_source_set_static_name (wait->cancelled, "[GPaste] daemon wait cancelled");
+        g_source_attach (wait->cancelled, g_task_get_context (task));
+    }
 
     if (g_paste_client_get_daemon_presence (client) == G_PASTE_DAEMON_PRESENCE_STARTING)
         g_paste_util_daemon_is_legacy (client, cancellable, on_daemon_wait_legacy, g_object_ref (task));

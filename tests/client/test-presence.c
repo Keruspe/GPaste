@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-client.h>
+#include <gpaste-3/gpaste-client-private.h>
 #include <gpaste-3/gpaste-daemon3.h>
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
@@ -1255,6 +1256,51 @@ test_wait_for_daemon (void)
     g_dbus_connection_close_sync (legacy, NULL, NULL);
 }
 
+/* A wait over leaves the client as it found it: followed when its caller had
+ * it so, and holding no reference of the wait's once a GPaste 45 or 50 has
+ * answered it. Cancelled, it answers at once, with the cancellation. */
+static void
+test_wait_for_daemon_cleanup (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    guint owner;
+
+    g_assert_no_error (error);
+
+    g_autoptr (GDBusConnection) legacy = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_NONE, &owner);
+    guint registration = legacy_export (legacy);
+    Waited refused = { 0 };
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+
+    guint refs = G_OBJECT (client)->ref_count;
+
+    g_paste_util_wait_for_daemon (client, NULL, on_waited, &refused);
+    g_paste_test_bus_wait_until (is_true, &refused.done, NULL);
+    g_assert_error (refused.error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_clear_error (&refused.error);
+    g_paste_test_bus_pump (100);
+    g_assert_cmpuint (G_OBJECT (client)->ref_count, ==, refs);
+
+    g_autoptr (GCancellable) cancellable = g_cancellable_new ();
+    Waited cancelled = { 0 };
+
+    g_paste_client_follow_daemon (client, FALSE);
+    g_paste_util_wait_for_daemon (client, cancellable, on_waited, &cancelled);
+    g_cancellable_cancel (cancellable);
+    g_paste_test_bus_pump (100);
+    g_assert_true (cancelled.done);
+    g_assert_error (cancelled.error, G_IO_ERROR, G_IO_ERROR_CANCELLED);
+    g_clear_error (&cancelled.error);
+    g_assert_true (g_paste_client_is_following (client));
+    g_paste_client_unfollow_daemon (client);
+
+    g_dbus_connection_unregister_object (legacy, registration);
+    g_bus_unown_name (owner);
+    g_dbus_connection_close_sync (legacy, NULL, NULL);
+}
+
 static void
 on_shell_done (GObject      *source_object,
                GAsyncResult *res,
@@ -1328,6 +1374,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/invalid-utf8-refused", test_invalid_utf8_refused);
     g_test_add_func ("/client/presence/legacy", test_legacy);
     g_test_add_func ("/client/presence/wait-for-daemon", test_wait_for_daemon);
+    g_test_add_func ("/client/presence/wait-for-daemon-cleanup", test_wait_for_daemon_cleanup);
     g_test_add_func ("/client/presence/completion-serving-daemon", test_completion_serving_daemon);
     g_test_add_func ("/client/calls/errors-stripped", test_errors_stripped);
     g_test_add_func ("/client/calls/items-read", test_items_read);
