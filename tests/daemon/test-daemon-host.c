@@ -66,6 +66,19 @@ fake_reload_storage (GPasteDaemon *self G_GNUC_UNUSED)
 {
 }
 
+static guint resumes;
+
+static void
+fake_daemon_resume (GPasteDaemon *self G_GNUC_UNUSED)
+{
+    ++resumes;
+}
+
+static void
+fake_application_quit (GApplication *application G_GNUC_UNUSED)
+{
+}
+
 static void
 fake_doctor_done (GPasteDaemon        *self    G_GNUC_UNUSED,
                   const gchar * const *report  G_GNUC_UNUSED,
@@ -121,6 +134,8 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #define g_paste_storage_doctor_async fake_doctor_async
 #define g_paste_storage_doctor_finish fake_doctor_finish
 #define g_paste_daemon_flush fake_daemon_flush
+#define g_paste_daemon_resume fake_daemon_resume
+#define g_application_quit fake_application_quit
 #define g_paste_daemon_reload_storage fake_reload_storage
 #define g_paste_daemon_doctor_done fake_doctor_done
 #include "gpaste-daemon.c"
@@ -130,6 +145,8 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #undef g_paste_storage_is_busy
 #undef g_paste_daemon_doctor_done
 #undef g_paste_daemon_reload_storage
+#undef g_application_quit
+#undef g_paste_daemon_resume
 #undef g_paste_daemon_flush
 #undef g_paste_storage_doctor_finish
 #undef g_paste_storage_doctor_async
@@ -168,6 +185,36 @@ test_change_during_check (void)
     g_paste_test_bus_wait_until (counted, &rekeys, GUINT_TO_POINTER (1));
     g_assert_cmpuint (rekeys, ==, 1);
     g_assert_false (ctx.checking);
+}
+
+/* A stop while a change of passphrase or a check of the store is at its
+ * prompt undoes the handover before the last flush, which records what was
+ * copied meanwhile: the reload ending it goes with the process. A takeover
+ * under a worker rewriting the store leaves it alone. */
+static void
+test_stop_at_prompt (void)
+{
+    /* Never dereferenced: what reaches the daemon is stood in for. */
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    DaemonContext ctx = { .daemon = daemon };
+
+    resumes = 0;
+    quit (&ctx);
+    g_assert_cmpuint (resumes, ==, 0);
+
+    ctx.changing_passphrase = TRUE;
+    quit (&ctx);
+    g_assert_cmpuint (resumes, ==, 1);
+
+    ctx.changing_passphrase = FALSE;
+    ctx.checking = TRUE;
+    quit (&ctx);
+    g_assert_cmpuint (resumes, ==, 2);
+
+    storage_busy = TRUE;
+    flush_history (&ctx);
+    g_assert_cmpuint (resumes, ==, 2);
+    storage_busy = FALSE;
 }
 
 static gboolean
@@ -225,6 +272,7 @@ main (int argc, char *argv[])
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/daemon-host/change-during-check", test_change_during_check);
     g_test_add_func ("/daemon-host/takeover-lets-go", test_takeover_lets_go);
+    g_test_add_func ("/daemon-host/stop-at-prompt", test_stop_at_prompt);
 
     return g_paste_test_env_run ();
 }

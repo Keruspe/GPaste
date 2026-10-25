@@ -70,14 +70,31 @@ typedef struct
     gboolean         stopping;
 } DaemonContext;
 
-/* Persist the history synchronously and release the storage lock so a successor
- * daemon can take over cleanly. Idempotent, so every exit path can call it. */
+/* Persist the history synchronously, for the process to leave. A change of
+ * passphrase or a check of the store at its prompt goes with the process, and
+ * holds the history flushed: what was copied meanwhile is in the model alone,
+ * for the reload ending it to record (g_paste_history_reload_backend ()). That
+ * reload never coming, the handover is undone first, which records it -- with
+ * no worker rewriting the store, which then speaks the key the daemon holds.
+ * A stop waits any worker out (when_storage_idle ()); a takeover landing under
+ * one does not, and what was copied at the prompt goes with the daemon. */
+static void
+flush_history (DaemonContext *ctx)
+{
+    if (!ctx->daemon)
+        return;
+
+    if ((ctx->changing_passphrase || ctx->checking) && !g_paste_storage_is_busy ())
+        g_paste_daemon_resume (ctx->daemon);
+    g_paste_daemon_flush (ctx->daemon);
+}
+
+/* Persist the history and release the storage lock so a successor daemon can
+ * take over cleanly. Idempotent, so every exit path can call it. */
 static void
 flush_and_unlock (DaemonContext *ctx)
 {
-    if (ctx->daemon)
-        g_paste_daemon_flush (ctx->daemon);
-
+    flush_history (ctx);
     g_paste_storage_backend_unlock ();
 }
 
@@ -537,7 +554,7 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
          * the reason when_storage_idle () gives. */
         if (ctx->daemon)
         {
-            g_paste_daemon_flush (ctx->daemon);
+            flush_history (ctx);
             g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_REEXECUTE_SELF]);
             g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_CHANGE_PASSPHRASE]);
             g_object_run_dispose (G_OBJECT (ctx->daemon));

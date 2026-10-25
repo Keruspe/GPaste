@@ -1907,6 +1907,31 @@ test_file_flushed_eviction_keeps_image (void)
     g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
 }
 
+/* What is copied while the history is handed over reaches the store once the
+ * handover is undone (g_paste_history_resume ()): a re-exec whose exec failed,
+ * or a daemon leaving with the prompt of a change of passphrase still up, has
+ * no reload coming to record it. */
+static void
+test_resume_records_stopped_adds (void)
+{
+    const gchar *name = "resume-records";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, name);
+    g_paste_history_add (history, g_paste_text_item_new ("stored"));
+    g_paste_history_flush (history);
+    g_paste_history_add (history, g_paste_text_item_new ("copied meanwhile"));
+    g_paste_history_resume (history);
+    g_paste_history_flush (history);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (settings), settings);
+    g_autolist (GPasteItem) read = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (read), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "copied meanwhile");
+}
+
 /* An unreadable history is never written, so nothing sweeps the files its store
  * still references: the same image copied into it in the meantime, then
  * deleted, leaves the file it names alone. */
@@ -7451,6 +7476,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_backup_owns_images", test_file_backup_owns_images);
     add_test ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
     add_test ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);
+    add_test ("/history/resume_records_stopped_adds", test_resume_records_stopped_adds);
     add_test ("/history/file_image_moved_home", test_file_image_moved_home);
     add_test ("/history/file_unreadable_keeps_image", test_file_unreadable_keeps_image);
     add_test ("/history/file_skipped_image_kept_by_reads", test_file_skipped_image_kept_by_reads);

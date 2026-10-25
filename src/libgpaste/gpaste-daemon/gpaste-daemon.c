@@ -134,9 +134,11 @@ g_paste_daemon_flush (GPasteDaemon *self)
  * g_paste_daemon_resume:
  * @self: (transfer none): the #GPasteDaemon
  *
- * Undo a previous g_paste_daemon_flush(): resume recording. Meant for a handover
- * that did not happen (e.g. a re-exec whose exec failed), so the daemon that is
- * still running keeps persisting the history.
+ * Undo a previous g_paste_daemon_flush(): resume recording, as
+ * g_paste_history_resume () does. Meant for a handover that did not happen
+ * (e.g. a re-exec whose exec failed), so the daemon that is still running keeps
+ * persisting the history, and for one left unfinished by a daemon on its way
+ * out, so that the store gets what was copied meanwhile.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_resume (GPasteDaemon *self)
@@ -295,12 +297,33 @@ reexecute_stood_down (GDBusMethodInvocation *invocation)
  * is refused meanwhile, rather than answered for an exec that has not happened
  * and may never -- its later failures having no one left to tell. One without
  * an invocation (SIGUSR1) is the host's to carry out once the worker is done,
- * through g_paste_daemon_reexecute () again. Nothing execs in gnome-shell. */
+ * through g_paste_daemon_reexecute () again. Nothing execs in gnome-shell.
+ *
+ * Both are refused while a change of passphrase or a check of the store holds
+ * the history handed over at its prompt (g_paste_daemon_flush ()), for as long
+ * as the user takes to answer: an exec would take the prompt with it, and what
+ * was copied meanwhile, which only the reload ending the handover records. */
 static gboolean
 g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
                                   GDBusMethodInvocation *invocation)
 {
-    if (self->in_process || !invocation || !g_paste_storage_is_busy ())
+    if (self->in_process)
+        return FALSE;
+
+    const gchar *current = g_paste_history_get_current (self->history);
+
+    if (current && !g_paste_history_sync (self->history, current, NULL))
+    {
+        const gchar *message = "The history storage is being handed over; re-execute once that is done";
+
+        if (invocation)
+            g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_BUSY, message);
+        else
+            g_warning ("%s", message);
+        return TRUE;
+    }
+
+    if (!invocation || !g_paste_storage_is_busy ())
         return FALSE;
 
     g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_BUSY,

@@ -942,6 +942,52 @@ test_extension_paused_written_when_set (Fixture      *fixture,
     g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
 }
 
+/* A re-exec while a change of passphrase or a check of the store holds the
+ * history handed over at its prompt is refused, as one while a worker rewrites
+ * the store is: the exec would take the prompt with it, and what was copied
+ * meanwhile, which only the reload ending the handover records. Over the bus
+ * with that BUSY, from SIGUSR1 with a warning. */
+static void
+test_reexecute_handed_over (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*being handed over*");
+        return;
+    }
+
+    /* The SIGUSR1 refusal warns, which is the case itself; a critical still
+     * fails it. */
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    Fixture fixture = { 0 };
+    g_autoptr (GAsyncResult) answered = NULL;
+    g_autoptr (GError) error = NULL;
+
+    fixture_set_up (&fixture, NULL);
+    g_signal_connect (fixture.daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), &fixture);
+    g_paste_daemon_flush (fixture.daemon);
+    g_paste_history_add (fixture.daemon->history, g_paste_text_item_new ("copied at the prompt"));
+
+    g_dbus_connection_call (fixture.connection, g_dbus_connection_get_unique_name (fixture.connection),
+                            G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME, "Reexecute",
+                            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, on_reexecute_answered, &answered);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &answered, NULL);
+    g_assert_null (g_dbus_connection_call_finish (fixture.connection, answered, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+
+    g_paste_daemon_reexecute (fixture.daemon);
+    g_paste_test_bus_pump (200);
+    g_assert_cmpuint (fixture.reexecutions, ==, 0);
+
+    g_paste_daemon_resume (fixture.daemon);
+    g_paste_daemon_reexecute (fixture.daemon);
+    g_paste_test_bus_wait_for_count (&fixture.reexecutions, 1);
+    fixture_tear_down (&fixture, NULL);
+}
+
 /* The History property names the history in use from the moment the daemon is
  * on the bus: a history-name naming none leaves the daemon on the default
  * history, which is the one a client has to be told about. */
@@ -1252,6 +1298,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
+    g_test_add_func ("/daemon/reexecute/handed-over", test_reexecute_handed_over);
     g_test_add ("/daemon/reexport-follows-screensaver", Fixture, NULL, fixture_set_up, test_reexport_follows_screensaver, fixture_tear_down);
     g_test_add ("/daemon/methods/every-method-handled", Fixture, NULL, fixture_set_up, test_every_method_handled, fixture_tear_down);
     g_test_add ("/daemon/doctor/unhosted", Fixture, NULL, fixture_set_up, test_doctor_unhosted, fixture_tear_down);

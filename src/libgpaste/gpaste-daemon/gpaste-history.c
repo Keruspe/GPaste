@@ -98,6 +98,10 @@ struct _GPasteHistory
      * carries it over (g_paste_history_reload_backend ()). Uuids rather than
      * the items, so that what a cap evicts meanwhile is freed. */
     GHashTable           *stopped_adds;
+    /* Something changed while @stopped, recorded nowhere: a handover undone
+     * instead of ended by a reload writes the model whole for it
+     * (g_paste_history_resume ()). */
+    gboolean              stopped_changes;
 
     /* The passwords the model held when reload_backend () swapped it out, until
      * the reloaded model arrives: one it no longer holds -- a migration to a
@@ -381,10 +385,16 @@ g_paste_history_record (GPasteHistory      *self,
 {
     /* Don't persist intermediate states while an async load is replacing the
      * history (the load result triggers its own save when appropriate), nor once
-     * we have been flushed for handover (a successor daemon owns the file now).
-     * Nor a history nobody has named, which has no store to persist into: the
-     * saver files every write under the history's name. */
-    if (!self->name || self->stopped || self->unreadable || g_paste_history_saver_is_loading (self->saver))
+     * we have been flushed for handover (a successor daemon owns the file now)
+     * -- noted, for a handover that is undone (@stopped_changes). Nor a history
+     * nobody has named, which has no store to persist into: the saver files
+     * every write under the history's name. */
+    if (self->stopped)
+    {
+        self->stopped_changes = TRUE;
+        return;
+    }
+    if (!self->name || self->unreadable || g_paste_history_saver_is_loading (self->saver))
         return;
 
     /* A non-incremental backend rewrites everything and always needs the
@@ -1684,9 +1694,12 @@ g_paste_history_flush (GPasteHistory *self)
  * g_paste_history_resume:
  * @self: a #GPasteHistory instance
  *
- * Undo a previous g_paste_history_flush(): resume recording changes. Meant for a
- * handover that did not actually happen (e.g. a re-exec whose exec failed), so
- * the surviving daemon keeps persisting the history.
+ * Undo a previous g_paste_history_flush(): resume recording changes, the model
+ * written whole first when anything changed meanwhile. Meant for a handover
+ * that did not actually happen (e.g. a re-exec whose exec failed, or a change
+ * of passphrase left at its prompt by a daemon on its way out), so the store
+ * gets what was copied while it was handed over, which only the reload ending
+ * a handover records otherwise (g_paste_history_reload_backend ()).
  */
 G_PASTE_VISIBLE void
 g_paste_history_resume (GPasteHistory *self)
@@ -1697,6 +1710,11 @@ g_paste_history_resume (GPasteHistory *self)
 
     self->stopped = FALSE;
     g_hash_table_remove_all (self->stopped_adds);
+    if (self->stopped_changes)
+    {
+        self->stopped_changes = FALSE;
+        g_paste_history_record (self, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL, FALSE);
+    }
     /* A switch made meanwhile left its load held: this starts it. */
     g_paste_history_saver_hold_loads (self->saver, FALSE);
 }
@@ -2129,6 +2147,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
         }
     }
     g_hash_table_remove_all (self->stopped_adds);
+    self->stopped_changes = FALSE;
 
     /* A load still in flight keeps the old saver alive through the task's own
      * reference; detach it so its (pre-migration) result is dropped instead of
@@ -2426,6 +2445,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     g_paste_history_private_clear (self);
     g_clear_slist (&self->reload_passwords, g_object_unref);
     g_hash_table_remove_all (self->stopped_adds);
+    self->stopped_changes = FALSE;
     self->size = 0;
     /* Switching away from an unreadable history resumes recording: the new one
      * stands on its own (see g_paste_history_load_async). A flushed history

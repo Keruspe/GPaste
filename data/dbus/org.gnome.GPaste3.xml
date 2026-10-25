@@ -416,8 +416,10 @@
       Have the daemon exec a fresh copy of itself.
 
       Refused with the same G_IO_ERROR_BUSY as a storage handover (see above)
-      while a change of passphrase or a migration's import is rewriting the
-      store, which the exec would have to wait for: try again once it is done.
+      while a change of passphrase, a check of the store or a migration's
+      import is rewriting the store, which the exec would have to wait for, and
+      while a change of passphrase or a check of the store waits on its prompt,
+      which the exec would take with it: try again once it is done.
     -->
     <method name="Reexecute"/>
 
