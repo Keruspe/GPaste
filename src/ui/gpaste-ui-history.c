@@ -224,6 +224,10 @@ on_row_pressed (GtkGestureClick *gesture,
 
     gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
     g_paste_ui_history_toggle_pick (self, position);
+    /* Claimed, the press never reaches the row's own gesture, which is what
+     * gives a clicked row the focus: given here, or Enter would pick the row
+     * the keyboard was left on. */
+    gtk_list_view_scroll_to (self->list_view, position, GTK_LIST_SCROLL_FOCUS, NULL);
 }
 
 /* The list view recycles a small pool of row widgets: "setup" builds one empty
@@ -994,6 +998,11 @@ g_paste_ui_history_select_first (GPasteUiHistory *self,
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
     g_return_val_if_fail (search, FALSE);
 
+    /* Asked of the daemon again even when that search is what is listed: an
+     * item edited out of the match stays listed until the search runs again
+     * (a replaced item is only redrawn where it is), and the first match is
+     * the daemon's to say, not the first row shown. One round trip on a key
+     * press. */
     g_paste_ui_history_search (self, search);
 
     if (self->filtering)

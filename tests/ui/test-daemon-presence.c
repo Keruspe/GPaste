@@ -1326,6 +1326,73 @@ test_selection_mode_keys (void)
     close_activation_window (window, &daemon);
 }
 
+/* The click gesture of a row, @position's among the rows built. */
+static GtkGesture *
+row_press_gesture (GtkListView *list_view,
+                   guint        position)
+{
+    guint seen = 0;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (GTK_WIDGET (list_view)); child; child = gtk_widget_get_next_sibling (child))
+    {
+        GtkWidget *item = gtk_widget_get_first_child (child);
+
+        if (!item || !G_PASTE_IS_UI_ITEM (item) || seen++ != position)
+            continue;
+
+        g_autoptr (GListModel) controllers = gtk_widget_observe_controllers (item);
+
+        for (guint i = 0; i < g_list_model_get_n_items (controllers); ++i)
+        {
+            g_autoptr (GtkEventController) controller = g_list_model_get_item (controllers, i);
+
+            if (GTK_IS_GESTURE_CLICK (controller))
+                return GTK_GESTURE (controller);
+        }
+    }
+
+    return NULL;
+}
+
+/* While items are being picked, a row clicked takes the keyboard too, as one
+ * clicked outside selection mode does: the pick claims the press before the
+ * list's own gesture, which is what gives the focus, and Enter would then pick
+ * whichever row the keyboard was left on rather than the one clicked. */
+static void
+test_selection_click_focuses (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 3 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+
+    on_enter_selection_mode (NULL, window);
+    wait_for_layout (GTK_WIDGET (list_view));
+
+    GtkGesture *gesture = row_press_gesture (list_view, 2);
+
+    g_assert_nonnull (gesture);
+    g_signal_emit_by_name (gesture, "pressed", 1, 1.0, 1.0);
+    drain ();
+
+    GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
+    GtkWidget *clicked = gtk_widget_get_parent (gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (gesture)));
+
+    g_assert_nonnull (focus);
+    g_assert_true (focus == clicked || gtk_widget_is_ancestor (focus, clicked));
+    close_activation_window (window, &daemon);
+}
+
 /* A positional refresh superseded by another before its size came back would
  * have refetched from its own row on; the one that supersedes it does so from
  * the earlier of the two rows, its reply alone landing. */
@@ -3323,6 +3390,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/search-enter-survives-update", test_search_enter_survives_update);
     g_test_add_func ("/ui/daemon-presence/activate-unread-rows", test_activate_unread_rows);
     g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);
+    g_test_add_func ("/ui/daemon-presence/selection-click-focuses", test_selection_click_focuses);
     g_test_add_func ("/ui/daemon-presence/superseded-refresh", test_superseded_refresh);
     g_test_add_func ("/ui/daemon-presence/row-read-in-place", test_row_read_in_place);
     g_test_add_func ("/ui/daemon-presence/search-relist-keeps-focus", test_search_relist_keeps_focus);
