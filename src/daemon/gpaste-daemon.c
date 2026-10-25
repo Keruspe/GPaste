@@ -70,20 +70,26 @@ typedef struct
     gboolean         stopping;
 } DaemonContext;
 
-/* Persist the history synchronously, for the process to leave. A change of
- * passphrase or a check of the store at its prompt goes with the process, and
- * holds the history flushed: what was copied meanwhile is in the model alone,
- * for the reload ending it to record (g_paste_history_reload_backend ()). That
- * reload never coming, the handover is undone first, which records it -- with
- * no worker rewriting the store, which then speaks the key the daemon holds.
- * A stop waits any worker out (when_storage_idle ()); a takeover landing under
- * one does not, and what was copied at the prompt goes with the daemon. */
+/* Persist the history synchronously, for the process to leave. The passwords
+ * whose countdown runs come off first, as the in-shell host has them: the
+ * daemon's dispose would retire them too, but after the flush, recorded
+ * nowhere, and the next daemon would load one as the head of its history.
+ *
+ * A change of passphrase or a check of the store at its prompt goes with the
+ * process, and holds the history flushed: what was copied meanwhile is in the
+ * model alone, for the reload ending it to record
+ * (g_paste_history_reload_backend ()). That reload never coming, the handover
+ * is undone first, which records it -- with no worker rewriting the store,
+ * which then speaks the key the daemon holds. A stop waits any worker out
+ * (when_storage_idle ()); a takeover landing under one does not, and what was
+ * copied at the prompt goes with the daemon. */
 static void
 flush_history (DaemonContext *ctx)
 {
     if (!ctx->daemon)
         return;
 
+    g_paste_daemon_expire_password (ctx->daemon);
     if ((ctx->changing_passphrase || ctx->checking) && !g_paste_storage_is_busy ())
         g_paste_daemon_resume (ctx->daemon);
     g_paste_daemon_flush (ctx->daemon);
@@ -145,8 +151,8 @@ reexec (GPasteDaemon *g_paste_daemon,
 
     /* A stop or a takeover waiting on the store (stop_when_storage_idle ()) is
      * this process ending, which an exec let through by the same wait would
-     * outlive: the successor, or no daemon at all, is what was asked for. No
-     * test shows it, for the reason when_storage_idle () gives. */
+     * outlive: the successor, or no daemon at all, is what was asked for
+     * (/daemon-host/reexec-while-stopping). */
     if (ctx->stopping)
         return FALSE;
 
@@ -232,8 +238,9 @@ quit (DaemonContext *ctx)
     g_application_quit (ctx->gapp);
 }
 
-/* Quit once the store is idle, and once: when_storage_idle () says why, and
- * why no test shows it. */
+/* Quit once the store is idle (when_storage_idle () says why), and once: a
+ * second stop signal while the first waits adds nothing to it
+ * (/daemon-host/stop-once). */
 static void
 stop_when_storage_idle (DaemonContext *ctx)
 {
@@ -550,8 +557,10 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
          * session, would do both beside the one that took over -- putting its
          * own history back on a selection that one emptied. Disposed as the
          * in-shell host disposes the daemon it lets go of; only the lock, which
-         * the worker still needs, waits for the store. No test shows it, for
-         * the reason when_storage_idle () gives. */
+         * the worker still needs, waits for the store. No test shows the
+         * order: it needs a GPasteDaemon to dispose, which the host's harness
+         * (tests/daemon/test-daemon-host.c) stands in for with a pointer it
+         * never dereferences. */
         if (ctx->daemon)
         {
             flush_history (ctx);

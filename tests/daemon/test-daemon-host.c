@@ -56,9 +56,63 @@ fake_doctor_finish (GAsyncResult *result,
     return g_task_propagate_boolean (G_TASK (result), error);
 }
 
+/* What an exit asks of the daemon, in order: e for an expiry, r for a resume,
+ * f for a flush. */
+static GString *exit_calls;
+
+/* An answer the history's flush landed, queued from an idle as the saver
+ * queues a drained backup's. */
+static void
+fake_answer (gpointer user_data G_GNUC_UNUSED)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'a');
+}
+
 static void
 fake_daemon_flush (GPasteDaemon *self G_GNUC_UNUSED)
 {
+    if (exit_calls)
+    {
+        g_string_append_c (exit_calls, 'f');
+        g_idle_add_once (fake_answer, NULL);
+    }
+}
+
+/* The bus a re-exec flushes its replies on, d for that flush, and x for an
+ * exec, which fails. */
+static gboolean
+fake_connection_flush_sync (GDBusConnection *connection G_GNUC_UNUSED,
+                            GCancellable    *cancellable G_GNUC_UNUSED,
+                            GError         **error G_GNUC_UNUSED)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'd');
+    return TRUE;
+}
+
+static GDBusConnection *
+fake_get_dbus_connection (GApplication *application G_GNUC_UNUSED)
+{
+    return (GDBusConnection *) &exit_calls;
+}
+
+static int
+fake_execl (const char *path G_GNUC_UNUSED,
+            const char *arg G_GNUC_UNUSED,
+            ...)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'x');
+    errno = ENOENT;
+    return -1;
+}
+
+static void
+fake_daemon_expire_password (GPasteDaemon *self G_GNUC_UNUSED)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'e');
 }
 
 static void
@@ -66,12 +120,11 @@ fake_reload_storage (GPasteDaemon *self G_GNUC_UNUSED)
 {
 }
 
-static guint resumes;
-
 static void
 fake_daemon_resume (GPasteDaemon *self G_GNUC_UNUSED)
 {
-    ++resumes;
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'r');
 }
 
 static void
@@ -135,7 +188,11 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #define g_paste_storage_doctor_finish fake_doctor_finish
 #define g_paste_daemon_flush fake_daemon_flush
 #define g_paste_daemon_resume fake_daemon_resume
+#define g_paste_daemon_expire_password fake_daemon_expire_password
 #define g_application_quit fake_application_quit
+#define g_application_get_dbus_connection fake_get_dbus_connection
+#define g_dbus_connection_flush_sync fake_connection_flush_sync
+#define execl fake_execl
 #define g_paste_daemon_reload_storage fake_reload_storage
 #define g_paste_daemon_doctor_done fake_doctor_done
 #include "gpaste-daemon.c"
@@ -145,7 +202,11 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #undef g_paste_storage_is_busy
 #undef g_paste_daemon_doctor_done
 #undef g_paste_daemon_reload_storage
+#undef execl
+#undef g_dbus_connection_flush_sync
+#undef g_application_get_dbus_connection
 #undef g_application_quit
+#undef g_paste_daemon_expire_password
 #undef g_paste_daemon_resume
 #undef g_paste_daemon_flush
 #undef g_paste_storage_doctor_finish
@@ -187,34 +248,65 @@ test_change_during_check (void)
     g_assert_false (ctx.checking);
 }
 
-/* A stop while a change of passphrase or a check of the store is at its
- * prompt undoes the handover before the last flush, which records what was
+/* A stop takes the passwords whose countdown runs off before the last flush,
+ * as the in-shell host does: retired after it -- at the daemon's dispose -- a
+ * password's retirement is recorded nowhere, and the next daemon loads it as
+ * the head. While a change of passphrase or a check of the store is at its
+ * prompt, the handover is undone before that flush too, which records what was
  * copied meanwhile: the reload ending it goes with the process. A takeover
- * under a worker rewriting the store leaves it alone. */
+ * under a worker rewriting the store leaves the handover alone. */
 static void
-test_stop_at_prompt (void)
+test_stop_order (void)
 {
     /* Never dereferenced: what reaches the daemon is stood in for. */
     GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
     DaemonContext ctx = { .daemon = daemon };
+    g_autoptr (GString) calls = g_string_new (NULL);
 
-    resumes = 0;
+    exit_calls = calls;
     quit (&ctx);
-    g_assert_cmpuint (resumes, ==, 0);
+    g_assert_cmpstr (calls->str, ==, "ef");
 
+    g_string_truncate (calls, 0);
     ctx.changing_passphrase = TRUE;
     quit (&ctx);
-    g_assert_cmpuint (resumes, ==, 1);
+    g_assert_cmpstr (calls->str, ==, "erf");
 
+    g_string_truncate (calls, 0);
     ctx.changing_passphrase = FALSE;
     ctx.checking = TRUE;
     quit (&ctx);
-    g_assert_cmpuint (resumes, ==, 2);
+    g_assert_cmpstr (calls->str, ==, "erf");
 
+    g_string_truncate (calls, 0);
     storage_busy = TRUE;
     flush_history (&ctx);
-    g_assert_cmpuint (resumes, ==, 2);
+    g_assert_cmpstr (calls->str, ==, "ef");
     storage_busy = FALSE;
+    exit_calls = NULL;
+}
+
+/* A re-exec flushes the history first, then lets what that landed answer --
+ * a backup the flush wrote, answered from an idle -- and only then flushes the
+ * replies on the bus: flushed before, a backup's reply is queued after the
+ * flush and the exec closes the socket under it. Both execs failing here, the
+ * daemon resumes. */
+static void
+test_reexec_order (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    DaemonContext ctx = { .daemon = daemon };
+    GLogLevelFlags fatal = g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    /* What the cases before left due, their flushes' answers among it. */
+    while (g_main_context_iteration (NULL, FALSE))
+        ;
+    exit_calls = calls;
+    g_assert_false (reexec (daemon, &ctx));
+    exit_calls = NULL;
+    g_log_set_always_fatal (fatal);
+    g_assert_cmpstr (calls->str, ==, "fadxxr");
 }
 
 static gboolean
@@ -232,6 +324,43 @@ name_owned (gconstpointer data,
     g_variant_get (reply, "(b)", &owned);
 
     return owned == GPOINTER_TO_INT (arg);
+}
+
+/* A re-exec asked for while a stop waits on the store does nothing: the
+ * process is ending, which an exec would outlive. */
+static void
+test_reexec_while_stopping (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    DaemonContext ctx = { .daemon = daemon, .stopping = TRUE };
+
+    exit_calls = calls;
+    g_assert_false (reexec (daemon, &ctx));
+    exit_calls = NULL;
+    g_assert_cmpstr (calls->str, ==, "");
+}
+
+/* A stop waiting on a storage worker waits once: a second stop signal meanwhile
+ * queues no second quit behind the first. */
+static void
+test_stop_once (void)
+{
+    DaemonContext ctx = { 0 };
+
+    storage_busy = TRUE;
+    stop_when_storage_idle (&ctx);
+    g_assert_true (ctx.stopping);
+    g_assert_nonnull (idle_data);
+
+    gpointer first = g_steal_pointer (&idle_data);
+    GDestroyNotify destroy = idle_destroy;
+
+    stop_when_storage_idle (&ctx);
+    g_assert_null (idle_data);
+
+    storage_busy = FALSE;
+    destroy (first);
 }
 
 /* A takeover waiting for a storage worker lets go of the name: still queued
@@ -272,7 +401,10 @@ main (int argc, char *argv[])
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/daemon-host/change-during-check", test_change_during_check);
     g_test_add_func ("/daemon-host/takeover-lets-go", test_takeover_lets_go);
-    g_test_add_func ("/daemon-host/stop-at-prompt", test_stop_at_prompt);
+    g_test_add_func ("/daemon-host/stop-order", test_stop_order);
+    g_test_add_func ("/daemon-host/reexec-order", test_reexec_order);
+    g_test_add_func ("/daemon-host/reexec-while-stopping", test_reexec_while_stopping);
+    g_test_add_func ("/daemon-host/stop-once", test_stop_once);
 
     return g_paste_test_env_run ();
 }

@@ -516,8 +516,8 @@ export class GPasteDaemonRunner {
         // none: password-timeout defaults to 0, which is a password the user
         // asked to keep for as long as anything else, so taking that one off
         // here would be replacing whatever they had just copied. The standalone
-        // daemon's re-exec does the same thing for the same reason; its plain
-        // exit needs nothing, the selection dying with the process.
+        // daemon's re-exec and its exits do the same thing, for the head of the
+        // history its successor loads.
         this._daemon?.expire_password();
 
         // Flush before releasing the lock so a successor daemon loads our final

@@ -71,6 +71,7 @@ NEW in 51.2 (UNRELEASED)
 - Fix deleting a history briefly freezing GNOME Shell while another one loads from an encrypted database
 - Fix a crash with a history database another program wrote
 - Fix a restart, a logout or a takeover while a passphrase dialog is open losing what was copied meanwhile
+- Fix an expiring password coming back on top of the history after GPaste stops or is replaced
 
 NEW in 51.1 (20/10/2026)
 =============
