@@ -2674,6 +2674,61 @@ test_file_encrypted_side_file_verified (void)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An image a read dropped, its side file holding something else, comes back
+ * when it is copied again: the write puts its side file anew rather than
+ * taking the one at its name for complete. */
+static void
+test_file_encrypted_refused_side_file_rewritten (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "encrypted-refused-side-file";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        g_autoptr (GBytes) png = test_png_bytes_colored (60, 61, 62);
+        g_autoptr (GBytes) other = test_png_bytes_colored (63, 64, 65);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+        g_autolist (GPasteItem) others = g_list_append (NULL, g_paste_image_item_new_from_bytes (other, date, NULL));
+        g_autofree gchar *checksum = g_strdup (g_paste_image_item_get_checksum (items->data));
+        g_autofree gchar *image_png = g_paste_file_backend_image_path (name, checksum);
+        g_autofree gchar *image_pngs = g_paste_file_backend_encrypted_path (image_png);
+        g_autofree gchar *other_png = g_paste_file_backend_image_path ("encrypted-refused-other", g_paste_image_item_get_checksum (others->data));
+        g_autofree gchar *other_pngs = g_paste_file_backend_encrypted_path (other_png);
+        g_autofree gchar *contents = NULL;
+        gsize length = 0;
+
+        g_assert_true (g_paste_storage_backend_write_history (encrypted, name, items));
+        g_assert_true (g_paste_storage_backend_write_history (encrypted, "encrypted-refused-other", others));
+        g_assert_true (g_file_get_contents (other_pngs, &contents, &length, NULL));
+        g_assert_true (g_file_set_contents (image_pngs, contents, (gssize) length, NULL));
+
+        {
+            g_autolist (GPasteItem) dropped = read_history_ok (encrypted, name);
+
+            g_assert_null (dropped);
+        }
+
+        g_autolist (GPasteItem) again = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+        g_assert_true (g_paste_storage_backend_write_history (encrypted, name, again));
+
+        g_autoptr (GPasteStorageBackend) reader = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) loaded = read_history_ok (reader, name);
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not the one its encrypted history names*");
+}
+
 /* An image whose pixels a round trip through PNG does not give back exactly --
  * floating point with alpha -- is read back from the encrypted flavour all the
  * same: its side file is checked against the PNG the document names, not
@@ -8184,6 +8239,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_encrypted_fallback_verified", test_file_encrypted_fallback_verified);
     add_test ("/history/file_encrypted_side_file_verified", test_file_encrypted_side_file_verified);
     add_test ("/history/file_encrypted_image_round_trip", test_file_encrypted_image_round_trip);
+    add_test ("/history/file_encrypted_refused_side_file_rewritten", test_file_encrypted_refused_side_file_rewritten);
     add_test ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
 #endif
     add_test ("/history/content_kind_transitions", test_content_kind_transitions);

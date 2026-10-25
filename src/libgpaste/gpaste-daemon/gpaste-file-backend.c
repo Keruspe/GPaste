@@ -37,9 +37,13 @@ typedef struct
      * path, for the ones this backend wrote, or read and found to be the image
      * their history names: what a document names a side file by (see
      * _g_paste_file_backend_write_image_metadata ()). The saver's worker and the
-     * main thread both read and write histories. */
-    GMutex            png_checksums_lock;
+     * main thread both read and write histories, which the lock is for, and
+     * for the side files a read found at an image's name and could not use,
+     * which a write of that image puts anew rather than taking for complete
+     * (_g_paste_file_backend_ensure_image_file ()). */
+    GMutex            side_files_lock;
     GHashTable       *png_checksums;
+    GHashTable       *refused_side_files;
 #endif
 } GPasteFileBackendPrivate;
 
@@ -63,9 +67,32 @@ _g_paste_file_backend_remember_png (GPasteStorageBackend *self,
                                     const gchar          *png_checksum)
 {
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->png_checksums_lock);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
 
     g_hash_table_replace (priv->png_checksums, g_strdup (side_file), g_strdup (png_checksum));
+    g_hash_table_remove (priv->refused_side_files, side_file);
+}
+
+/* That @side_file is at an image's name and holds nothing a read could use. */
+static void
+_g_paste_file_backend_refuse_side_file (GPasteStorageBackend *self,
+                                        const gchar          *side_file)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
+
+    g_hash_table_remove (priv->png_checksums, side_file);
+    g_hash_table_add (priv->refused_side_files, g_strdup (side_file));
+}
+
+static gboolean
+_g_paste_file_backend_side_file_refused (GPasteStorageBackend *self,
+                                         const gchar          *side_file)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
+
+    return g_hash_table_contains (priv->refused_side_files, side_file);
 }
 
 /* The SHA-256 of the PNG @side_file holds, when this backend knows it. */
@@ -74,7 +101,7 @@ _g_paste_file_backend_png_checksum (GPasteStorageBackend *self,
                                     const gchar          *side_file)
 {
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->png_checksums_lock);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
 
     return g_strdup (g_hash_table_lookup (priv->png_checksums, side_file));
 }
@@ -321,8 +348,17 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
 {
     gboolean encrypted = g_paste_storage_backend_is_encrypted (G_PASTE_STORAGE_BACKEND (self));
     g_autofree gchar *target = (encrypted) ? g_paste_file_backend_encrypted_path (reference) : g_strdup (reference);
+    gboolean refused = FALSE;
 
-    if (g_file_test (target, G_FILE_TEST_EXISTS))
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* A side file a read could not use is no image of ours, though it has
+     * the name of one: taken for complete, an image copied again -- after
+     * noticing it gone -- would be dropped again at the next read. The plain
+     * flavour reads an image by its path, keeping it whatever the file holds. */
+    refused = encrypted && _g_paste_file_backend_side_file_refused (G_PASTE_STORAGE_BACKEND (self), target);
+#endif
+
+    if (!refused && g_file_test (target, G_FILE_TEST_EXISTS))
         return TRUE;
 
     GBytes *png = g_paste_image_item_get_png_bytes (item);
@@ -358,9 +394,9 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
      * when this backend has a passphrase, matching the target chosen above.
      *
      * Written beside the target and installed, as the history is: the check
-     * above takes any file there for a complete one, so a write cut short at
-     * its final name would have every later save skip the image and the next
-     * read drop it. */
+     * above takes any file there no read refused for a complete one, so a
+     * write cut short at its final name would have every later save skip the
+     * image and the next read drop it. */
     g_autoptr (GFile) target_file = g_file_new_for_path (target);
     g_autoptr (GFile) tmp_file = _g_paste_file_backend_beside (target);
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, tmp_file);
@@ -1588,6 +1624,17 @@ add_item (Data *data)
                     item = g_paste_image_item_new_from_bytes_at_path (path, bytes, date_time, data->checksum);
                 }
             }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+            /* Left for the next full write's sweep, a read deleting nothing --
+             * unless that write holds the image again. */
+            if (!item && g_paste_storage_backend_is_encrypted (data->backend))
+            {
+                g_autofree gchar *side_file = g_paste_file_backend_encrypted_path (path);
+
+                _g_paste_file_backend_refuse_side_file (data->backend, side_file);
+            }
+#endif
         }
         /* An image read with images turned off, or without the date to restore
          * it with, is skipped and its file left where it is: this may be no read
@@ -2940,6 +2987,7 @@ g_paste_file_backend_dispose (GObject *object)
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
 
     g_clear_pointer (&priv->png_checksums, g_hash_table_unref);
+    g_clear_pointer (&priv->refused_side_files, g_hash_table_unref);
 
     G_OBJECT_CLASS (g_paste_file_backend_parent_class)->dispose (object);
 }
@@ -2950,7 +2998,7 @@ g_paste_file_backend_finalize (GObject *object)
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
 
     g_paste_passphrase_free (priv->passphrase);
-    g_mutex_clear (&priv->png_checksums_lock);
+    g_mutex_clear (&priv->side_files_lock);
 
     G_OBJECT_CLASS (g_paste_file_backend_parent_class)->finalize (object);
 }
@@ -3032,8 +3080,9 @@ g_paste_file_backend_init (GPasteFileBackend *self G_GNUC_UNUSED)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (self);
 
-    g_mutex_init (&priv->png_checksums_lock);
+    g_mutex_init (&priv->side_files_lock);
     priv->png_checksums = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    priv->refused_side_files = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 #endif
 }
 
