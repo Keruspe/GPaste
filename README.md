@@ -136,9 +136,9 @@ sudo ninja -C build install
 sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
 
-GPaste currently needs GLib 2.90, GTK 4.24, libadwaita 1.10 and gcr 4. That
-libadwaita is newer than anything Debian ships outside experimental, so a
-deb-based build of the 51 series needs one built by hand.
+GPaste currently needs GLib 2.90, GTK 4.24, libadwaita 1.10, gcr 4 and Meson
+1.9. That libadwaita is newer than anything Debian ships outside experimental,
+so a deb-based build of the 51 series needs one built by hand.
 
 #### Build options
 
