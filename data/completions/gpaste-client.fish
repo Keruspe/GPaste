@@ -96,7 +96,7 @@ end
 __gpaste_subcommand about                              'Display the about dialog'
 __gpaste_subcommand add a                              'Set text to clipboard'
 __gpaste_subcommand add-password ap                    'Add a name / password pair to the clipboard'
-__gpaste_subcommand backup-history bh                  'Back up the current history'
+__gpaste_subcommand backup-history bh                  'Back up a history, the current one if not given'
 __gpaste_subcommand change-passphrase                  'Change the passphrase of the encrypted history'
 __gpaste_subcommand daemon-reexec dr                   'Re-execute the daemon'
 __gpaste_subcommand daemon-version dv                  'Display the daemon version'

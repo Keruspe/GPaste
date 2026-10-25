@@ -84,7 +84,7 @@ _gpaste-client_subcommands() {
         about:"Display the about dialog"
         {add,a}:"Set text to clipboard"
         {add-password,ap}:"Add a name / password pair to the clipboard"
-        {backup-history,bh}:"Back up the current history"
+        {backup-history,bh}:"Back up a history, the current one if not given"
         change-passphrase:"Change the passphrase of the encrypted history"
         {daemon-reexec,dr}:"Re-execute the daemon"
         {daemon-version,dv}:"Display the daemon version"

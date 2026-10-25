@@ -86,8 +86,8 @@ Delete the history <name>, the current one when not given
 List available histories
 .br
 .TP
-.B gpaste-client add <text>
-Add the text into the history
+.B gpaste-client add [<text>]
+Add the text into the history. Without <text>, the text is everything read from stdin
 .br
 .TP
 .B gpaste-client add-password <name> [<password>]
@@ -110,8 +110,8 @@ Get the item matching <uuid> from the history
 Put the item matching <uuid> from the history into the clipboard
 .br
 .TP
-.B gpaste-client replace <uuid> <contents>
-Replace the contents of the item matching <uuid> from the history with the provided one
+.B gpaste-client replace <uuid> [<contents>]
+Replace the contents of the item matching <uuid> from the history with the provided one. Without <contents>, they are everything read from stdin
 .br
 .TP
 .B gpaste-client strip-rich-text <uuid>
