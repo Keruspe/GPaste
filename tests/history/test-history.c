@@ -5219,6 +5219,34 @@ pump_until_loaded (GPasteHistory *history)
     return !g_paste_history_is_loading (history);
 }
 
+/* An add made while a load is out, equal to the head that load reads, takes its
+ * place -- unless it is refused, a max-memory-usage lowered meanwhile below its
+ * weight: the head read then stays, rather than both going, and the store with
+ * them at the next write. */
+static void
+test_loaded_head_kept_for_refused_add (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *name = g_strdup (g_paste_history_get_current (history));
+    g_autofree gchar *heavy = g_strnfill (6 * 1024 * 1024, 'h');
+
+    g_paste_history_add (history, g_paste_text_item_new (heavy));
+    g_paste_history_flush (history);
+    g_paste_history_resume (history);
+    g_assert_true (g_paste_history_switch (history, "loaded-head-other"));
+    g_assert_true (pump_until_loaded (history));
+
+    g_assert_true (g_paste_history_switch (history, name));
+    g_paste_history_add (history, g_paste_text_item_new (heavy));
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_true (pump_until_loaded (history));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, heavy);
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
+
 /* A long item reads back in a time its length bounds: two megabytes take
  * milliseconds, where a decode measuring the rest of the text at every
  * character took over a minute. */
@@ -8248,6 +8276,7 @@ main (int argc, char *argv[])
     add_test ("/history/switch_drops_unkept_passwords", test_switch_drops_unkept_passwords);
     add_test ("/history/delete_unnamed", test_delete_unnamed);
     add_test ("/history/delete_store_or_sweep", test_delete_store_or_sweep);
+    add_test ("/history/loaded_head_kept_for_refused_add", test_loaded_head_kept_for_refused_add);
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);

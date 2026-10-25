@@ -771,6 +771,16 @@ g_paste_history_private_merge_into_head (GPasteHistory *self,
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, 0, G_PASTE_HISTORY_SAVE_REPLACE, head, g_paste_item_get_uuid (head), FALSE);
 }
 
+/* Whether @item is refused, by an add as by what a Replace or MakePassword
+ * puts in an item's place: heavier than max-memory-usage, it would evict
+ * everything else and still not fit. */
+static gboolean
+g_paste_history_refuses (GPasteHistory *self,
+                         GPasteItem    *item)
+{
+    return g_paste_item_get_size (item) > g_paste_history_max_memory (self);
+}
+
 static void
 _g_paste_history_add (GPasteHistory *self,
                       GPasteItem    *item,
@@ -778,8 +788,6 @@ _g_paste_history_add (GPasteHistory *self,
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (G_PASTE_IS_ITEM (item));
-
-    guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
 
     /* On add (new_selection) we own @item (transfer full) and must consume it on
      * every path; on select it is borrowed (already in the history) and merely
@@ -801,7 +809,7 @@ _g_paste_history_add (GPasteHistory *self,
     /* Only an add is refused. What a select moves is already in the history,
      * where the cap lets it stay as the head or a favourite, and a select left
      * where it is would announce an item the head does not hold. */
-    if (new_selection && g_paste_item_get_size (item) > max_memory)
+    if (new_selection && g_paste_history_refuses (self, item))
         return;
 
     guint length_before = self->history->len;
@@ -1280,7 +1288,7 @@ g_paste_history_replace (GPasteHistory *self,
 
     /* Refused as an add of the same contents is (_g_paste_history_add ()):
      * kept, it would evict everything else and still not fit. */
-    if (g_paste_item_get_size (new) > g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024)
+    if (g_paste_history_refuses (self, new))
         return NULL;
 
     _g_paste_history_replace (self, index, g_object_ref (new));
@@ -1545,7 +1553,7 @@ g_paste_history_make_password (GPasteHistory *self,
      * nothing else bounds it: the replacement is spared by the cap, which
      * would evict everything else to make room for it, as Replace refuses
      * contents that heavy (g_paste_history_replace ()). */
-    if (g_paste_item_get_size (password) > g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024)
+    if (g_paste_history_refuses (self, password))
         return NULL;
 
     _g_paste_history_replace (self, index, g_object_ref (password));
@@ -2167,8 +2175,12 @@ g_paste_history_on_loaded (gpointer user_data,
     /* The head read is no head the selections get when adds go on top of it:
      * the last of those is (see below), and a selection told to take the read
      * one instead would have it published over a password just copied --
-     * dropped, even, as an image whose texture the adds idle. */
-    g_paste_history_activate_first (self, !added && !self->reload_keeps_selections);
+     * dropped, even, as an image whose texture the adds idle. Nor is it made
+     * active then, an image decoding its whole texture only to be idled at the
+     * first add: the activation below covers it should every add be refused.
+     * What that spares is time alone, which no test tells apart. */
+    if (!added)
+        g_paste_history_activate_first (self, !self->reload_keeps_selections);
     self->reload_keeps_selections = FALSE;
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
@@ -2226,7 +2238,9 @@ g_paste_history_on_loaded (gpointer user_data,
     {
         GPasteItem *item = l->data;
 
-        if (self->history->len && g_paste_item_equals (g_ptr_array_index (self->history, 0), item))
+        /* Not for an add refused below: the head would go with nothing in its
+         * place, and the store with it at the next write. */
+        if (self->history->len && !g_paste_history_refuses (self, item) && g_paste_item_equals (g_ptr_array_index (self->history, 0), item))
         {
             g_autoptr (GPasteItem) head = g_ptr_array_index (self->history, 0);
 
