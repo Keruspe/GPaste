@@ -61,10 +61,11 @@ struct _GPasteUiWindow
     GtkWidget              *merge_button;
     GtkWidget              *merge_entry; /* custom separator */
 
-    /* Both weak: the dialog belongs to whatever is presenting it, and we only
-     * keep it to raise the one already up rather than stack a second. */
+    /* All three weak: the dialog belongs to whatever is presenting it, and we
+     * only keep it to raise the one already up rather than stack a second. */
     AdwDialog              *shortcuts;
     AdwDialog              *preferences;
+    AdwDialog              *about;
     /* Takes down a shortcuts dialog the settings have moved on from. */
     guint                   shortcuts_source;
 
@@ -320,6 +321,11 @@ do_search (GPasteUiWindow *self,
            const gchar    *search)
 {
     gtk_window_present (GTK_WINDOW (self));
+
+    /* The search and its results are on the content page, which a collapsed
+     * window may have left for the histories. */
+    if (self->split_view && adw_navigation_split_view_get_collapsed (self->split_view))
+        adw_navigation_split_view_set_show_content (self->split_view, TRUE);
 
     if (g_paste_ui_history_get_selection_mode (self->history))
         exit_selection_mode (self);
@@ -672,6 +678,12 @@ on_about (GSimpleAction *action    G_GNUC_UNUSED,
         NULL
     };
 
+    if (self->about)
+    {
+        adw_dialog_present (self->about, GTK_WIDGET (self));
+        return;
+    }
+
     AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
 
     adw_about_dialog_set_application_name (dialog, PACKAGE_NAME);
@@ -690,7 +702,9 @@ on_about (GSimpleAction *action    G_GNUC_UNUSED,
      * about dialog's credits. */
     adw_about_dialog_set_translator_credits (dialog, _("translator-credits"));
 
-    adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (self));
+    self->about = ADW_DIALOG (dialog);
+    g_object_add_weak_pointer (G_OBJECT (self->about), (gpointer *) &self->about);
+    adw_dialog_present (self->about, GTK_WIDGET (self));
 }
 
 /* The two actions with nothing to ask the daemon: About is the application's own
@@ -1589,6 +1603,7 @@ g_paste_ui_window_dispose (GObject *object)
      * would have GObject write into freed memory should one outlive us. */
     g_clear_weak_pointer (&self->shortcuts);
     g_clear_weak_pointer (&self->preferences);
+    g_clear_weak_pointer (&self->about);
     g_clear_weak_pointer (&self->version_toast);
     g_clear_slist (&self->deferred, deferred_action_free);
 

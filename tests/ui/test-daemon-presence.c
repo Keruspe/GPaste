@@ -1926,6 +1926,46 @@ test_app_actions (void)
     close_activation_window (window, &daemon);
 }
 
+/* A search asked for from outside a collapsed window shows the page it is on,
+ * and About asked for twice raises the one up rather than stack another. */
+static void
+test_outside_asks (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 1 };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    adw_navigation_split_view_set_collapsed (window->split_view, TRUE);
+    adw_navigation_split_view_set_show_content (window->split_view, FALSE);
+    g_paste_ui_window_search (window, "value");
+    drain ();
+    g_assert_true (adw_navigation_split_view_get_show_content (window->split_view));
+    adw_navigation_split_view_set_collapsed (window->split_view, FALSE);
+
+    g_paste_ui_window_show_about (window);
+    drain ();
+
+    AdwDialog *about = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
+
+    g_assert_true (ADW_IS_ABOUT_DIALOG (about));
+    g_paste_ui_window_show_about (window);
+    drain ();
+    g_assert_true (adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window)) == about);
+    adw_dialog_force_close (about);
+    drain ();
+    close_activation_window (window, &daemon);
+}
+
 /* Restarting the daemon, or stopping the tracking, confirmed once the daemon
  * left with the question up sends nothing: the call would be what the bus
  * starts one on. */
@@ -3497,6 +3537,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
     g_test_add_func ("/ui/daemon-presence/app-actions", test_app_actions);
+    g_test_add_func ("/ui/daemon-presence/outside-asks", test_outside_asks);
     g_test_add_func ("/ui/daemon-presence/confirmed-without-daemon", test_confirmed_without_daemon);
     g_test_add_data_func ("/ui/daemon-presence/closed-with-question-up/restart", "restart-daemon", test_closed_with_question_up);
     g_test_add_data_func ("/ui/daemon-presence/closed-with-question-up/tracking", "track-changes", test_closed_with_question_up);

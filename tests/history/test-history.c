@@ -1809,6 +1809,48 @@ test_noop_refuses_unmade (void)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* So with an encrypted store left locked, which has the daemon run on the "no
+ * storage" backend while the setting still names that store: deleting another
+ * history a store keeps is out of reach, not a name nothing goes by. */
+static void
+test_locked_refuses_unmade (void)
+{
+    /* With no passphrase set, the keyring is asked for one, which warns on this
+     * bus that has none: the case runs where that is not fatal. */
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_storage_backend_set_passphrase (NULL);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autofree gchar *kept = g_paste_util_get_history_file_path ("locked-other", g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE));
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load (history, "locked-current");
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+    g_assert_true (g_file_set_contents (kept, "kept", -1, NULL));
+
+    g_paste_daemon_methods_delete_history (&methods, "locked-other", &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_true (g_file_test (kept, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (g_unlink (kept), ==, 0);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+}
+#endif
+
 /* The same image copied in two histories gets one file each: evicting or
  * deleting it from one history must never break the other. */
 static void
@@ -7630,6 +7672,9 @@ main (int argc, char *argv[])
     add_test ("/history/file_delete_takes_temporary", test_file_delete_takes_temporary);
     add_test ("/history/empty_other_keeps_stored_images", test_empty_other_keeps_stored_images);
     add_test ("/history/noop_refuses_unmade", test_noop_refuses_unmade);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    add_test ("/history/locked_refuses_unmade", test_locked_refuses_unmade);
+#endif
     add_test ("/history/file_backup_owns_images", test_file_backup_owns_images);
     add_test ("/history/file_eviction_deletes_image", test_file_eviction_deletes_image);
     add_test ("/history/file_flushed_eviction_keeps_image", test_file_flushed_eviction_keeps_image);
