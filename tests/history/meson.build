@@ -42,6 +42,7 @@ if not library_static
   test_storage_failures = executable(
     'test-storage-failures',
     sources: [ 'test-storage-failures.c' ],
+    c_args: library_own_calls_args,
     dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
   )
   # Its pumps and fixed waits add up to several seconds, and the encrypted

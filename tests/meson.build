@@ -37,10 +37,15 @@ gpaste_test_bus_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
-# A few suites replace a libgpaste-daemon function from the executable, which
-# reaches the library's own calls only while those go through the PLT:
+# A few suites replace a function of one of our libraries from the executable,
+# which reaches the library's own calls only while those go through the PLT:
 # -Bsymbolic-functions, in Ubuntu's default LDFLAGS for one, binds them inside
-# the library, and those suites cannot run. A static library has no PLT at all,
+# the library, and those suites cannot run. So does an optimised link-time
+# optimisation by a compiler assuming no semantic interposition -- Clang's
+# default, GCC's with -fno-semantic-interposition. Without LTO, such a compiler
+# optimising still inlines the calls a library makes within one of its files,
+# which the cases needing those skip themselves for
+# (G_PASTE_TEST_LIBRARY_INLINES_OWN_CALLS). A static library has no PLT at all,
 # and its objects define what those executables define again, so they are not
 # even built then.
 library_static = get_option('default_library') == 'static' or (get_option('default_library') == 'both' and get_option('default_both_libraries') == 'static')
@@ -50,10 +55,17 @@ foreach arg : get_option('c_link_args')
     library_interposable = false
   endif
 endforeach
+library_optimised = get_option('optimization') not in ['0', 'g']
+library_no_interposition = library_optimised and (cc.get_id() == 'clang' or get_option('c_args').contains('-fno-semantic-interposition'))
+library_lto = get_option('b_lto')
+if library_lto and library_no_interposition
+  library_interposable = false
+endif
+library_own_calls_args = (library_no_interposition) ? ['-DG_PASTE_TEST_LIBRARY_INLINES_OWN_CALLS'] : []
 if library_static
-  message('Static libraries: skipping the test suites that interpose libgpaste-daemon')
+  message('Static libraries: skipping the test suites that interpose our libraries')
 elif not library_interposable
-  message('Linking with -Bsymbolic: skipping the test suites that interpose libgpaste-daemon')
+  message('Linking with -Bsymbolic, or optimising across files with no semantic interposition: skipping the test suites that interpose our libraries')
 endif
 
 subdir('client')

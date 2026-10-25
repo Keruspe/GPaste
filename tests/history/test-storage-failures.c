@@ -746,6 +746,7 @@ g_paste_storage_is_supported (GPasteStorage storage_kind)
 static gboolean
 library_calls_interposed (void)
 {
+
     guint before = asked;
 
     g_paste_prompt_can_import (G_PASTE_STORAGE_FILE, G_PASTE_STORAGE_SQLITE);
@@ -1133,6 +1134,13 @@ test_unlock_skips_unopenable_flavour (void)
 {
     if (!g_test_subprocess ())
     {
+#ifdef G_PASTE_TEST_LIBRARY_INLINES_OWN_CALLS
+        /* The kind hidden is asked within gpaste-storage-backend.c, a call
+         * this build inlines there, where the probe asks one from another
+         * file: see tests/meson.build. */
+        g_test_skip ("libgpaste-daemon's compiler inlines its own calls");
+        return;
+#endif
         if (!library_calls_interposed ())
             return;
 
