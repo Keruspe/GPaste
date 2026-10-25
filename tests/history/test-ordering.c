@@ -120,6 +120,9 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
     return written;
 }
 
+/* How many incremental adds carried a snapshot of the history to reconcile. */
+static guint adds_with_snapshot;
+
 /* What an incremental backend is handed for an add, held the same way. */
 void
 g_paste_storage_backend_add_item (GPasteStorageBackend *backend,
@@ -128,6 +131,9 @@ g_paste_storage_backend_add_item (GPasteStorageBackend *backend,
                                   const GList          *history)
 {
     gboolean held = hold_write (name, history);
+
+    if (history)
+        ++adds_with_snapshot;
 
     real_add_item (backend, name, item, history);
     mark_written (held);
@@ -1276,6 +1282,31 @@ test_count_pending_incremental (void)
 }
 #endif
 
+#ifdef G_PASTE_ENABLE_SQLITE
+/* Selecting an item moves it and displaces nothing: its write carries no copy
+ * of the whole history to reconcile, which nothing could be dropped by. */
+static void
+test_select_carries_no_snapshot (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture_in (&settings, &backend, &history, "select-no-snapshot", G_PASTE_STORAGE_SQLITE);
+    g_paste_history_add (history, g_paste_text_item_new ("first"));
+    g_paste_history_add (history, g_paste_text_item_new ("second"));
+    finish_history (history);
+    g_paste_history_resume (history);
+
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 2)));
+
+    adds_with_snapshot = 0;
+    g_assert_true (g_paste_history_select (history, uuid));
+    finish_history (history);
+    g_assert_cmpuint (adds_with_snapshot, ==, 0);
+}
+#endif
+
 /* A password renamed while a write holding it is out: the write stores the
  * name and timeout it was recorded with, the rename putting a new item in its
  * place rather than writing over the one a worker reads. */
@@ -1426,6 +1457,7 @@ main (int    argc,
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history-ordering/count-pending-password-changes", test_count_pending_password_changes);
     g_test_add_func ("/history-ordering/count-pending-incremental", test_count_pending_incremental);
+    g_test_add_func ("/history-ordering/select-no-snapshot", test_select_carries_no_snapshot);
     g_test_add_data_func ("/history-ordering/count-pending-incremental-images-off", GINT_TO_POINTER (COUNT_INCREMENTAL | COUNT_IMAGES), test_count_pending_settings);
     g_test_add_data_func ("/history-ordering/count-pending-incremental-capped", GINT_TO_POINTER (COUNT_INCREMENTAL), test_count_pending_settings);
 #endif

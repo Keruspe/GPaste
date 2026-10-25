@@ -934,9 +934,10 @@ _g_paste_history_add (GPasteHistory *self,
     g_paste_history_private_check_size (self);
     g_paste_history_private_check_memory_usage (self);
 
-    /* One in and nothing out means nothing was deduped, grown over or evicted;
-     * anything else and the store has rows the history no longer has. */
-    gboolean displaced = self->history->len != length_before + 1;
+    /* One in for an add, none for a select moving an entry, and nothing out
+     * means nothing was deduped, grown over or evicted; anything else and the
+     * store has rows the history no longer has. */
+    gboolean displaced = self->history->len != length_before + ((new_selection) ? 1 : 0);
 
     /* TARGET_ALL whichever path got here. An ordinary add shifts every position
      * along; a grown line is a new item, with a uuid of its own, standing where
