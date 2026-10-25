@@ -8,6 +8,9 @@
 #include <gpaste-3/gpaste-util.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
+#include <errno.h>
+#include <unistd.h>
+
 /* How long a followed client waits on a daemon that is not there: a grace
  * second before a name nobody owns reads as missing -- what an upgrade takes to
  * put one back -- and two minutes before an owner that never serves stops
@@ -434,10 +437,12 @@ G_PASTE_CLIENT_METHOD_RET (add_text,
                            (const gchar *text), (text), (text))
 
 /* The path AddFile is sent. The daemon's working directory is not the
- * caller's, so a relative @file is made absolute against the caller's; and a
- * D-Bus string carries UTF-8 alone, so a path that is not -- a working
- * directory named in another encoding -- is refused here rather than sent as
- * "[Invalid UTF-8]", the daemon then looking for a file of that name. */
+ * caller's, so a relative @file is made absolute against the caller's -- asked
+ * of getcwd () rather than g_get_current_dir (), which answers "/" for one that
+ * has gone, and another file would be sent; and a D-Bus string carries UTF-8
+ * alone, so a path that is not -- a working directory named in another
+ * encoding -- is refused here rather than sent as "[Invalid UTF-8]", the
+ * daemon then looking for a file of that name. */
 static gchar *
 g_paste_client_file_path (const gchar *file,
                           GError     **error)
@@ -448,7 +453,16 @@ g_paste_client_file_path (const gchar *file,
         path = g_strdup (file);
     else
     {
-        g_autofree gchar *current_dir = g_get_current_dir ();
+        g_autofree gchar *current_dir = getcwd (NULL, 0);
+
+        if (!current_dir)
+        {
+            gint saved_errno = errno;
+
+            g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (saved_errno),
+                         "Could not tell which directory a relative path is in: %s", g_strerror (saved_errno));
+            return NULL;
+        }
 
         path = g_build_filename (current_dir, file, NULL);
     }
@@ -467,9 +481,10 @@ g_paste_client_file_path (const gchar *file,
  *
  * Add the file contents to the #GPasteDaemon
  *
- * A relative @file is taken from the caller's working directory. A path that
- * is not valid UTF-8, which a D-Bus string cannot carry, fails with
- * %G_IO_ERROR_INVALID_DATA before anything is sent.
+ * A relative @file is taken from the caller's working directory, and fails
+ * with the %G_FILE_ERROR getcwd () reports when that cannot be named -- one
+ * removed meanwhile. A path that is not valid UTF-8, which a D-Bus string
+ * cannot carry, fails with %G_IO_ERROR_INVALID_DATA before anything is sent.
  *
  * Returns: (transfer full): the uuid of the item that was added
  */
@@ -507,8 +522,9 @@ g_paste_client_add_file_sync (GPasteClient *self, const gchar *file, GError **er
  *
  * Add the file contents to the #GPasteDaemon
  *
- * As g_paste_client_add_file_sync (): a path that is not valid UTF-8 is
- * refused before anything is sent.
+ * As g_paste_client_add_file_sync (): a path that is not valid UTF-8, or a
+ * relative one whose working directory cannot be named, is refused before
+ * anything is sent.
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file (GPasteClient *self, const gchar *file, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data)

@@ -1077,7 +1077,8 @@ count_add_file (GPasteDaemon3         *skeleton,
 
 /* A path that is not UTF-8 -- a relative one in a working directory named in
  * another encoding included -- is refused before anything is sent, rather
- * than sent as "[Invalid UTF-8]". */
+ * than sent as "[Invalid UTF-8]". So is a relative one in a working directory
+ * that has gone, rather than sent as a path under "/". */
 static void
 test_add_file_not_utf8 (void)
 {
@@ -1106,6 +1107,17 @@ test_add_file_not_utf8 (void)
 
     g_assert_null (g_paste_client_add_file_finish (client, result, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+    g_assert_cmpuint (files_asked, ==, 0);
+    g_clear_error (&error);
+
+    g_autofree gchar *gone = g_dir_make_tmp ("gpaste-gone-XXXXXX", &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpint (g_chdir (gone), ==, 0);
+    g_assert_cmpint (g_rmdir (gone), ==, 0);
+    g_assert_null (g_paste_client_add_file_sync (client, "notes.txt", &error));
+    g_assert_cmpint (g_chdir (here), ==, 0);
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT);
     g_assert_cmpuint (files_asked, ==, 0);
 
     g_paste_client_add_file (client, "/tmp/notes.txt", NULL, on_replied, &reply);
