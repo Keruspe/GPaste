@@ -154,8 +154,8 @@ g_paste_util_get_history_dir_path (void)
 
     /* The history lives under PACKAGE ("gpaste"), except where a "GPaste"
      * directory (PACKAGE_NAME) is already there: that is where GPaste built by
-     * a meson defining the two the other way round put it, and the history a
-     * user has is worth more than the spelling of its directory. */
+     * a meson defining PACKAGE as "GPaste" too put it, and the history a user
+     * has is worth more than the spelling of its directory. */
     if (g_file_test (legacy_path, G_FILE_TEST_IS_DIR))
         return g_steal_pointer (&legacy_path);
 
