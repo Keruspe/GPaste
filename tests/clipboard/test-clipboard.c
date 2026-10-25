@@ -8,6 +8,11 @@
 #include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <sodium.h>
+#endif
 
 #define TEST_TYPE_CLIPBOARD (test_clipboard_get_type ())
 G_DECLARE_FINAL_TYPE (TestClipboard, test_clipboard, TEST, CLIPBOARD, GObject)
@@ -273,6 +278,51 @@ make_history (GPasteSettings *settings)
     g_paste_history_load (history, "clipboard-tests");
     return history;
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Every key this binary derives costs libsodium's minimum, as in
+ * test-storage-failures.c: the cases below need a store that keeps its
+ * passwords, not a costly key. GPaste derives with Argon2id alone. */
+int
+crypto_pwhash (unsigned char * const       out,
+               unsigned long long          outlen,
+               const char * const          passwd,
+               unsigned long long          passwdlen,
+               const unsigned char * const salt,
+               unsigned long long          opslimit G_GNUC_UNUSED,
+               size_t                      memlimit G_GNUC_UNUSED,
+               int                         alg)
+{
+    g_assert_cmpint (alg, ==, crypto_pwhash_ALG_ARGON2ID13);
+
+    return crypto_pwhash_argon2id (out, outlen, passwd, passwdlen, salt, crypto_pwhash_argon2id_OPSLIMIT_MIN, crypto_pwhash_argon2id_MEMLIMIT_MIN, alg);
+}
+
+/* A history whose store keeps its passwords, as an encrypted flavour's does: a
+ * switch away from it leaves them there, and the records naming them outlive
+ * it. Its writes land, and the passphrase -- the process's -- goes, in
+ * drop_keeping_history (), before the case's directories do. */
+static GPasteHistory *
+make_keeping_history (GPasteSettings *settings)
+{
+    g_paste_storage_backend_set_passphrase ("clipboard tests");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_track_changes (settings, TRUE);
+
+    GPasteHistory *history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "clipboard-keeping-tests");
+    return history;
+}
+
+static void
+drop_keeping_history (GPasteHistory *history)
+{
+    g_paste_history_flush (history);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+#endif
 
 static void
 test_strip_refreshes_matching_selections (gconstpointer user_data)
@@ -1347,13 +1397,15 @@ history_loaded (GPasteHistory *history)
     return !g_paste_history_is_loading (history);
 }
 
-/* A record outliving a switch is the first history's entry: an edit of a
- * distinct entry of the second sharing its value leaves its countdown alone. */
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A record outliving a switch -- away from a store that keeps its passwords --
+ * is the first history's entry: an edit of a distinct entry of the second
+ * sharing its value leaves its countdown alone. */
 static void
 test_timeout_edit_other_history_twin (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
@@ -1373,7 +1425,9 @@ test_timeout_edit_other_history_twin (void)
     g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, ==, "replacement");
+    drop_keeping_history (history);
 }
+#endif
 
 /* Taking the passwords off as the daemon stands down can push out of the
  * history the very password an edit still waits on, its pending edit going
@@ -4410,15 +4464,52 @@ test_dropped_password_pending_edit (void)
     g_assert_null (g_paste_history_get_by_uuid (history, uuid));
 }
 
-/* A record outlives a history switch, the selection still carrying what it
- * carried; a hinted re-copy of that secret in the other history is a capture of
- * its own there, not the first history's named entry, uuid and all -- running
- * the countdown the record ran, not password-timeout's. */
+/* A switch away from a store that keeps no password takes the one it leaves off
+ * the clipboard, the entry gone with its record
+ * (GPasteHistory::password-dropped); a read still out concludes on what that
+ * left there, recording neither the entry, uuid and all, nor its secret. */
+static void
+test_switch_takes_password_off (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_history_switch (history, "another-history");
+    g_assert_true (history_loaded (history));
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A record outlives a switch away from a store that keeps its passwords, the
+ * selection still carrying what it carried; a hinted re-copy of that secret in
+ * the other history is a capture of its own there, not the first history's
+ * named entry, uuid and all -- running the countdown the record ran, not
+ * password-timeout's. */
 static void
 test_record_from_another_history (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
@@ -4452,6 +4543,7 @@ test_record_from_another_history (void)
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 1);
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+    drop_keeping_history (history);
 }
 
 /* The same, the hint unanswered twice: once with the text read failing, which
@@ -4461,7 +4553,7 @@ static void
 test_record_from_another_history_unanswered (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
@@ -4495,17 +4587,18 @@ test_record_from_another_history_unanswered (void)
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
     g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (head)), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
+    drop_keeping_history (history);
 }
 
-/* A timeout edit made while a read is out outlives a switch as the record does:
- * the read concluding in the other history is a capture of its own there, not
- * the first history's entry the edit was made to, uuid and all -- running the
- * edit's countdown, not password-timeout's. */
+/* A timeout edit made while a read is out outlives such a switch as the record
+ * does: the read concluding in the other history is a capture of its own there,
+ * not the first history's entry the edit was made to, uuid and all -- running
+ * the edit's countdown, not password-timeout's. */
 static void
 test_timeout_edit_from_another_history (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
@@ -4535,7 +4628,9 @@ test_timeout_edit_from_another_history (void)
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
     g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 600);
+    drop_keeping_history (history);
 }
+#endif
 
 /* An add made while the store is handed over is answered, put on the clipboard
  * and kept by the reload ending the handover, as a copy made meanwhile is:
@@ -5212,9 +5307,12 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
     g_test_add_func ("/clipboard/capture_distinct_entry_edited", test_capture_distinct_entry_edited);
     g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);
+    g_test_add_func ("/clipboard/switch_takes_password_off", test_switch_takes_password_off);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/clipboard/record_from_another_history", test_record_from_another_history);
     g_test_add_func ("/clipboard/record_from_another_history/unanswered", test_record_from_another_history_unanswered);
     g_test_add_func ("/clipboard/timeout_edit/from_another_history", test_timeout_edit_from_another_history);
+#endif
     g_test_add_func ("/clipboard/timeout_edit/newest_object", test_timeout_edit_newest_object);
     g_test_add_func ("/clipboard/record_while_loading", test_record_while_loading);
     g_test_add_func ("/clipboard/record_identified_after_dispose", test_record_identified_after_dispose);
@@ -5330,7 +5428,9 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/reenable_pending_timeout", test_reenable_pending_timeout);
     g_test_add_func ("/clipboard/timeout_edit/reenable_through_history", test_reenable_pending_timeout_through_history);
     g_test_add_func ("/clipboard/timeout_edit/rename_twin", test_rename_twin_during_read);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/clipboard/timeout_edit/other_history_twin", test_timeout_edit_other_history_twin);
+#endif
     g_test_add_func ("/clipboard/password/expiry_evicts_pending_edit", test_expiry_evicts_pending_edit);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/select", GINT_TO_POINTER (FALSE), test_forced_expiry_without_countdown);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/edit", GINT_TO_POINTER (TRUE), test_forced_expiry_without_countdown);

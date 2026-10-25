@@ -107,8 +107,8 @@ struct _GPasteHistory
     /* The passwords the model held when reload_backend () swapped it out, until
      * the reloaded model arrives: one it no longer holds -- a migration to a
      * plain flavour imports none -- has left the history, and is announced as
-     * any other departure is. A switch starting another load drops them: that
-     * is a history swapped out, which no password leaves. */
+     * any other departure is. A switch starting another load drops them, having
+     * announced those the store does not keep (g_paste_history_swap_out ()). */
     GSList               *reload_passwords;
 
     /* The load out is a reload of a model that held something
@@ -385,6 +385,58 @@ g_paste_history_emit_update (GPasteHistory     *self,
                    NULL);
 }
 
+/* Whether the store of the history being left keeps @item, a password of the
+ * model's, for a switch back to find: not on a plain flavour, which stores no
+ * password, nor for anything added while a load was out, which nothing has
+ * recorded. */
+static gboolean
+g_paste_history_store_keeps (GPasteHistory *self,
+                             GPasteItem    *item)
+{
+    return !g_paste_history_saver_is_loading (self->saver) && g_paste_storage_backend_stores_item (self->backend, item);
+}
+
+/* A reference to each password of the history being left: those its store
+ * keeps when @kept, the others otherwise, the ones a reload set aside
+ * included. Those are asked of the store alone: they wait on that reload's
+ * load, which g_paste_history_store_keeps () would take for their having been
+ * added while it was out. */
+static GSList *
+g_paste_history_collect_passwords (GPasteHistory *self,
+                                   gboolean       kept)
+{
+    g_autoslist (GPasteItem) list = NULL;
+
+    for (guint i = 0; i < self->history->len; ++i)
+    {
+        GPasteItem *item = g_ptr_array_index (self->history, i);
+
+        if (G_PASTE_IS_PASSWORD_ITEM (item) && !g_paste_history_store_keeps (self, item) == !kept)
+            list = g_slist_prepend (list, g_object_ref (item));
+    }
+
+    for (GSList *l = self->reload_passwords; l; l = l->next)
+    {
+        if (!g_paste_storage_backend_stores_item (self->backend, l->data) == !kept)
+            list = g_slist_prepend (list, g_object_ref (l->data));
+    }
+
+    return g_steal_pointer (&list);
+}
+
+/* Swap the model out for the load of another history: the passwords the history
+ * left holds that its store does not keep go with it for good, and are
+ * announced as any other departure is (GPasteHistory::password-dropped), the
+ * ones a reload set aside included; those it keeps are still there to come
+ * back to. */
+static void
+g_paste_history_swap_out (GPasteHistory *self)
+{
+    self->pending_dropped = g_slist_concat (g_paste_history_collect_passwords (self, FALSE), self->pending_dropped);
+    g_paste_history_private_clear (self);
+    g_clear_slist (&self->reload_passwords, g_object_unref);
+}
+
 /* Hand the saver what the history being left holds, for a write still out for
  * it to be counted by (g_paste_history_saver_left ()). Not while a load is
  * out: the model then holds none of what its writes are writing, nothing
@@ -394,6 +446,23 @@ g_paste_history_leave (GPasteHistory *self)
 {
     if (self->name && !g_paste_history_saver_is_loading (self->saver))
         g_paste_history_saver_left (self->saver, self->name, self->history);
+}
+
+/* Leave the history in use for the one called @name, whose load is to fill
+ * the model. One that could not be read must not keep the next from being
+ * persisted: that load's own result decides (g_paste_history_on_loaded ()),
+ * nothing being recorded meanwhile. @stopped is deliberately left alone: a
+ * handover is not ours to undo. */
+static void
+g_paste_history_swap_to (GPasteHistory *self,
+                         const gchar   *name)
+{
+    g_paste_history_leave (self);
+    g_paste_history_swap_out (self);
+    g_set_str (&self->name, name);
+    self->size = 0;
+    self->unreadable = FALSE;
+    self->reload_keeps_selections = FALSE;
 }
 
 /* Have the saver persist a change to the history. @displaced says whether
@@ -2297,20 +2366,17 @@ g_paste_history_load_async (GPasteHistory *self,
     G_PASTE_LOCK_HISTORY;
 
     const gchar *resolved = g_paste_history_resolve_name (self, name);
+    gboolean same = self->name && g_paste_str_equal (resolved, self->name);
 
-    if (self->name && g_paste_str_equal (resolved, self->name) && !g_paste_history_saver_is_loading (self->saver))
+    if (same && !g_paste_history_saver_is_loading (self->saver))
         return;
 
-    g_paste_history_leave (self);
-    g_set_str (&self->name, resolved);
-    g_paste_history_private_clear (self);
-    self->size = 0;
-    /* A previously unreadable history must not keep the *next* one from being
-     * persisted: the load's own result decides (see g_paste_history_on_loaded).
-     * Nothing is recorded in the meantime, since a load is now in progress.
-     * @stopped is deliberately left alone — a handover is not ours to undo. */
-    self->unreadable = FALSE;
-    self->reload_keeps_selections = FALSE;
+    /* The history loading asked for again keeps its model: what was copied
+     * while the first load was out goes on top of what the second reads
+     * (g_paste_history_on_loaded ()). Another one is swapped in, as a switch
+     * swaps it (g_paste_history_history_name_changed ()). */
+    if (!same)
+        g_paste_history_swap_to (self, resolved);
 
     g_paste_history_saver_load (self->saver, self->name, FALSE);
 }
@@ -2410,21 +2476,11 @@ g_paste_history_delete (GPasteHistory *self,
         /* The default history is where a deleted current history leaves the
          * daemon, and leaving comes first: a history-name GSettings refuses to
          * store would keep it current, and deleting it then would have the next
-         * copy write it back. A switch announces no password, so those it held
-         * are kept to be announced once it is gone. One the setting does not
-         * name -- loaded by name -- is emptied where it is, below. */
-        for (guint i = 0; i < self->history->len; ++i)
-        {
-            GPasteItem *item = g_ptr_array_index (self->history, i);
-
-            if (G_PASTE_IS_PASSWORD_ITEM (item))
-                passwords = g_slist_prepend (passwords, g_object_ref (item));
-        }
-
-        /* And those a reload set aside while its load is out, which the switch
-         * lets go of unannounced: the store about to be unlinked held them. */
-        for (GSList *l = self->reload_passwords; l; l = l->next)
-            passwords = g_slist_prepend (passwords, g_object_ref (l->data));
+         * copy write it back. A switch announces the passwords its store does
+         * not keep (g_paste_history_swap_out ()); those it keeps are kept here
+         * to be announced once the store holding them is gone. One the setting
+         * does not name -- loaded by name -- is emptied where it is, below. */
+        passwords = g_paste_history_collect_passwords (self, TRUE);
 
         /* The load the switch starts waits for the unlink: on the SQLite
          * flavours it holds the backend's one lock across its whole read -- a
@@ -2518,28 +2574,22 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     if (self->name && g_paste_str_equal (name, self->name))
         return;
 
-    g_paste_history_leave (self);
-    g_set_str (&self->name, name);
-
-    g_debug ("history: name changed to '%s'", self->name);
-
     /* What was added while a load of the history being left was out goes with
      * it, unrecorded: only the list that load was reading could have taken it
      * on top, a file history being written whole, and that load is given up. */
-    g_paste_history_private_clear (self);
-    g_clear_slist (&self->reload_passwords, g_object_unref);
+    g_paste_history_swap_to (self, name);
+
+    g_debug ("history: name changed to '%s'", self->name);
+
     g_hash_table_remove_all (self->stopped_adds);
     self->stopped_changes = FALSE;
-    self->reload_keeps_selections = FALSE;
-    self->size = 0;
-    /* Switching away from an unreadable history resumes recording: the new one
-     * stands on its own (see g_paste_history_load_async). A flushed history
-     * stays flushed, though — the in-shell daemon keeps answering the bus right
-     * through its migration, so a switch can land inside that window and must
-     * not put the pre-migration backend back to work: its load waits for the
-     * handover to end, held where the saver holds loads, and supersedes the
-     * load still out for the history left right away -- installed, that one
-     * would stand as the history switched to.
+
+    /* A flushed history stays flushed -- the in-shell daemon keeps answering
+     * the bus right through its migration, so a switch can land inside that
+     * window and must not put the pre-migration backend back to work: its load
+     * waits for the handover to end, held where the saver holds loads, and
+     * supersedes the load still out for the history left right away --
+     * installed, that one would stand as the history switched to.
      *
      * Nothing is written back: a trim the load makes saves itself
      * (g_paste_history_on_loaded ()), and what a read otherwise normalizes --
@@ -2547,8 +2597,6 @@ g_paste_history_history_name_changed (GPasteHistory *self)
      * as for the load g_paste_history_load_async () makes. A write here would
      * be the whole history rewritten for every switch, re-encrypted and
      * synced. */
-    self->unreadable = FALSE;
-
     g_paste_history_emit_switch (self, self->name);
     g_paste_history_saver_load_when_released (self->saver, self->name, FALSE);
 }

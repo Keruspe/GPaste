@@ -555,6 +555,10 @@ A plain-text sync whose reply lands after MakePassword turned the source's text
 into a password puts the password, countdown included, on the other selection,
 and its expiry takes it off both.
 
+The clipboard suite's encrypted stores derive every key at libsodium's minimum,
+the binary defining `crypto_pwhash()` as `storage-failures` does: those cases
+need a store that keeps its passwords, not a costly key.
+
 The clipboard suite also checks unlisted password capture/merge twins against
 unrelated named entries, strips and automatic synchronization after an
 unanswered sensitive hint, and queued strips across failed identifying reads.

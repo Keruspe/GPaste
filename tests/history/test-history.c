@@ -5242,6 +5242,89 @@ test_file_long_item_read (void)
     g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
 }
 
+/* A switch leaves behind a plain flavour's passwords for good, its store keeping
+ * none, and announces them -- once: switching back finds nothing to announce
+ * again. An encrypted flavour's store keeps them, and a switch announces none,
+ * as a delete of a history then announces what its store took with it, those
+ * its switch to the default history announced aside. And a history asked to
+ * load again while its load is out keeps what was copied meanwhile. */
+static void
+test_switch_drops_unkept_passwords (void)
+{
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    {
+        g_autoptr (GPasteSettings) settings = NULL;
+        g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+        g_autofree gchar *left = g_strdup (g_paste_history_get_current (history));
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+        g_paste_history_add (history, g_paste_password_item_new ("plain", "plain secret", 0));
+        g_paste_history_add (history, g_paste_text_item_new ("a text"));
+        g_assert_true (g_paste_history_switch (history, "switch-drops-other"));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 1);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "plain secret");
+
+        g_assert_true (g_paste_history_switch (history, left));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 1);
+
+        /* Deleted, the history in use is left first: announced there, once. */
+        g_assert_true (g_paste_history_switch (history, "switch-drops-deleted"));
+        g_assert_true (pump_until_loaded (history));
+        g_paste_history_add (history, g_paste_password_item_new ("deleted", "deleted secret", 0));
+        g_paste_history_flush (history);
+        g_paste_history_resume (history);
+        g_assert_true (g_paste_history_delete (history, NULL, NULL));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 2);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 1), ==, "deleted secret");
+        g_signal_handlers_disconnect_by_data (history, dropped);
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    }
+
+    {
+        g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+        g_paste_history_load_async (history, "load-twice");
+        g_paste_history_add (history, g_paste_text_item_new ("copied meanwhile"));
+        g_paste_history_load_async (history, "load-twice");
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "copied meanwhile");
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    {
+        g_paste_storage_backend_set_passphrase ("switch passphrase");
+
+        /* Set before the history is made, so that it loads from that flavour:
+         * the settings all share the one memory backend. */
+        {
+            g_autoptr (GPasteSettings) encrypted = g_paste_settings_new ();
+
+            g_paste_settings_set_storage_backend (encrypted, G_PASTE_STORAGE_ENCRYPTED_FILE);
+        }
+
+        g_autoptr (GPasteSettings) settings = NULL;
+        g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+        g_paste_history_add (history, g_paste_password_item_new ("kept", "kept secret", 0));
+        g_paste_history_flush (history);
+        g_paste_history_resume (history);
+        g_assert_true (g_paste_history_switch (history, "switch-keeps-other"));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 2);
+        g_signal_handlers_disconnect_by_data (history, dropped);
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+        g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+        g_paste_storage_backend_set_passphrase (NULL);
+    }
+#endif
+}
+
 /* So are they when the history, the one history-name names, is deleted before
  * that load lands -- leaving it for the default history first lets go of them
  * -- and when a second reload comes before it, which gives that load up. */
@@ -8073,6 +8156,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
     add_test ("/history/file_long_item_read", test_file_long_item_read);
+    add_test ("/history/switch_drops_unkept_passwords", test_switch_drops_unkept_passwords);
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
