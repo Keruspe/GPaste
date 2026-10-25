@@ -44,6 +44,24 @@
 #endif
 #endif
 
+/* Every history a case builds, held weakly, so that run_from_defaults () can
+ * see each of them gone before the next case starts. */
+static GPtrArray *case_histories;
+
+static GPasteHistory *
+track_history (GPasteSettings *settings)
+{
+    GPasteHistory *history = g_paste_history_new (settings);
+
+    if (case_histories)
+        g_ptr_array_add (case_histories, g_paste_weak_ref_new (history));
+
+    return history;
+}
+
+/* Every history below is built through track_history (). */
+#define g_paste_history_new track_history
+
 /* The timeout the storage round-trips carry on their password entry: a value no
  * default would produce, so reading one back proves it was persisted rather than
  * merely defaulted. */
@@ -3986,22 +4004,12 @@ history_dir_listing (void)
 /* A history nobody has named has no store, so its changes are kept in memory
  * and persisted nowhere: the saver files every write under a history's name.
  * Several of them in a row, and a flush applying what is queued on the spot,
- * write nothing at all. The process and data directory are this case's alone:
- * other cases' named histories can still have saves in flight while the main
- * loop is pumped. */
+ * write nothing at all. */
 static void
 test_unnamed_history_persists_nothing (void)
 {
-    if (!g_test_subprocess ())
-    {
-        G_PASTE_TEST_TRAP_SUBPROCESS ("");
-        return;
-    }
-
     g_autoptr (GPasteHistory) history = make_plain_history ();
     g_auto (GStrv) before = history_dir_listing ();
-
-    g_assert_cmpuint (g_strv_length (before), ==, 0);
 
     for (guint i = 0; i < 3; ++i)
     {
@@ -7102,10 +7110,71 @@ test_history_dir_is_private (void)
     g_assert_cmpuint (st.st_mode & 0777, ==, 0700);
 }
 
+static gboolean
+case_histories_gone (void)
+{
+    for (guint i = 0; i < case_histories->len; ++i)
+    {
+        g_autoptr (GPasteHistory) history = g_weak_ref_get (case_histories->pdata[i]);
+
+        if (history)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* Every handler connected on @instance, whatever it was connected for. */
+static void
+disconnect_all (gpointer instance)
+{
+    for (GType type = G_OBJECT_TYPE (instance); type; type = g_type_parent (type))
+    {
+        guint n_ids = 0;
+        g_autofree guint *ids = g_signal_list_ids (type, &n_ids);
+
+        for (guint i = 0; i < n_ids; ++i)
+            g_signal_handlers_disconnect_matched (instance, G_SIGNAL_MATCH_ID, ids[i], 0, NULL, NULL, NULL);
+    }
+}
+
+/* A history's writes still out hold it, the saver's task keeping it until the
+ * write lands, so one a case let go of can outlive the case: its handlers then
+ * run into a stack frame long gone once the next case resets the settings, and
+ * its saves come and go under the next case's assertions. So every case ends
+ * with each history it built flushed -- what it still had queued written on the
+ * spot -- and gone. Its handlers go first: the frame they may point into is
+ * gone already, and the flush and the writes landing still emit. Whether one
+ * of them runs then is the scheduler's to decide, so no case shows it every
+ * time; under load, /history/signals_outside_lock can crash without this. */
+static void
+drain_case_histories (void)
+{
+    for (guint i = 0; i < case_histories->len; ++i)
+    {
+        g_autoptr (GPasteHistory) history = g_weak_ref_get (case_histories->pdata[i]);
+
+        if (!history)
+            continue;
+
+        disconnect_all (history);
+        g_paste_history_flush (history);
+    }
+
+    for (guint i = 0; i < 10000 && !case_histories_gone (); ++i)
+        pump_once ();
+
+    if (!case_histories_gone ())
+        g_error ("A history %s built outlives it", g_test_get_path ());
+
+    g_clear_pointer (&case_histories, g_ptr_array_unref);
+}
+
 /* Every case starts from the schema's defaults: the memory backend is shared by
  * the whole binary, so a key one case sets (the storage backend, most of all)
  * would otherwise reach every case after it, and a case run alone with -p would
- * see different settings. */
+ * see different settings. It ends with what it built drained
+ * (drain_case_histories ()). */
 static void
 run_from_defaults (gconstpointer test)
 {
@@ -7119,7 +7188,9 @@ run_from_defaults (gconstpointer test)
     for (GStrv key = keys; *key; ++key)
         g_settings_reset (raw, *key);
 
+    case_histories = g_ptr_array_new_with_free_func (g_paste_weak_ref_free);
     ((GTestFunc) test) ();
+    drain_case_histories ();
 }
 
 static void
