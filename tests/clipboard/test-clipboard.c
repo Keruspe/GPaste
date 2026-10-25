@@ -4238,6 +4238,47 @@ test_distinct_entry_edited (void)
     g_assert_cmpuint (clipboard->publications, ==, publications + 1);
 }
 
+/* A nameless capture no entry lists -- a password copied while tracking is
+ * paused -- is no record of a distinct named entry sharing its value: renaming
+ * that entry, its timeout of 0 unchanged, leaves the capture's countdown
+ * running, where re-armed with the entry's it would be none at all. */
+static void
+test_capture_distinct_entry_edited (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_password_timeout (settings, 1);
+    g_paste_history_add (history, g_paste_text_item_new ("replacement"));
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_history_add (history, g_paste_text_item_new ("unrelated"));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_settings_set_track_changes (settings, FALSE);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_cmpstr (clipboard->content.str, ==, "s3cret");
+
+    g_autofree gchar *uuid = g_paste_history_make_password (history, g_paste_item_get_uuid (bank), "bank, renamed", G_PASTE_PASSWORD_TIMEOUT_UNCHANGED);
+
+    g_assert_nonnull (uuid);
+    g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
+    pump_for (1500);
+    g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+}
+
 /* A timeout edit waiting on a read is the edited entry's alone: publishing a
  * distinct named entry sharing its value runs that entry's own countdown. */
 static void
@@ -5111,6 +5152,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/dropped_password/pending_edit", test_dropped_password_pending_edit);
     g_test_add_func ("/clipboard/strip_after_unconfirmed_read", test_strip_after_unconfirmed_read);
     g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
+    g_test_add_func ("/clipboard/capture_distinct_entry_edited", test_capture_distinct_entry_edited);
     g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);
     g_test_add_func ("/clipboard/record_from_another_history", test_record_from_another_history);
     g_test_add_func ("/clipboard/record_from_another_history/unanswered", test_record_from_another_history_unanswered);

@@ -2195,12 +2195,17 @@ g_paste_clipboards_manager_expire_password_finish (GPasteClipboardsManager *self
 
 /* Whether an edit of @item is about the record @clip keeps: the same entry, or
  * the one a nameless record no entry names any more has converged on by value
- * -- a capture merged into the head it matched; an object MakePassword replaced
- * keeps the uuid. A distinct entry merely sharing the value is not: renaming or
- * re-timing it is no business of the countdown the selected entry runs, nor of
- * the record a later deletion of that entry looks for. Nor is a named record no
- * entry names another history's entry to converge on: it is the one selected
- * there, the record outliving a switch.
+ * -- a capture merged into the head it matched, which g_paste_item_equals ()
+ * tells: nameless, with the same value; an object MakePassword replaced keeps
+ * the uuid. A distinct entry merely sharing the value is not, a named one
+ * included: renaming or re-timing it is no business of the countdown the
+ * selected entry, or the capture, runs, nor of the record a later deletion of
+ * that entry looks for. Nothing tells such an entry from the head a capture
+ * merged into once that head is named, so naming it before the record has
+ * converged on it leaves the record the capture's, with the capture's own
+ * countdown -- the side that still takes the secret off. Nor is a named record
+ * no entry names another history's entry to converge on: it is the one
+ * selected there, the record outliving a switch.
  *
  * Not entry_of (), which asks which entry a read stands for and takes a record
  * at its word while the history loads: asked of an edit of another entry, that
@@ -2214,7 +2219,7 @@ g_paste_clipboards_manager_edit_concerns (_Clipboard *clip,
     return !clip->password ||
            g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
            ((!history || !g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (clip->password))) &&
-            g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (clip->password)), G_PASTE_PASSWORD_ITEM_NO_NAME));
+            g_paste_item_equals (clip->password, item));
 }
 
 /**
