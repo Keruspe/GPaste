@@ -11,6 +11,12 @@ test(
 )
 
 test(
+  'release',
+  find_program('test-release.py'),
+  suite: 'gpaste',
+)
+
+test(
   'bash-completion',
   find_program('test-bash-completion.py'),
   suite: 'gpaste',

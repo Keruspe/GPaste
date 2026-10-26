@@ -227,6 +227,8 @@ Key rules:
 - When adding or removing a public function from any library under `src/libgpaste/`, update the corresponding `.sym` file (`libgpaste.sym` or `libgpaste-gtk4.sym`).
 - When updating source files in this repository, keep `CLAUDE.md` up to date to reflect any new patterns, rules, or architectural decisions introduced.
 
+**`release.sh VERSION` cuts a release**: it refuses a version `meson.build` is not at, regenerates the catalogs, and commits only what a release holds -- the catalogs of `po/`, `NEWS`, `README.md`, the version of `meson.build`, the soversions of `src/libgpaste/meson.build` and the metainfo of `data/metainfo/` -- before the tarball and the tag; a file modified for anything else stops it before it commits, those beside the catalogs and the metainfo and any other line of the two `meson.build` files included (`tests/tools/test-release.py`).
+
 ## Architecture
 
 GPaste is a GNOME clipboard manager split across several binaries and a shared library.
