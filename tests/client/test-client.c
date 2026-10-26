@@ -40,6 +40,7 @@ typedef struct
     gchar           *last_stderr;
     const gchar     *delete_error;
     const gchar     *activation_token;
+    gboolean         cwd_gone;
     guint            registration;
     gboolean         refuse_reexecute;
 } Fixture;
@@ -175,11 +176,16 @@ run_client_with_input (Fixture             *f,
     g_autoptr (GError) error = NULL;
     g_autoptr (GAsyncResult) exited = NULL;
 
+    /* Run from a directory removed under it, as a shell left in one is. */
+    if (f->cwd_gone)
+        g_strv_builder_addv (builder, (const gchar *[]) { "sh", "-c", "mkdir gone && cd gone && rmdir ../gone && exec \"$@\"", "sh", NULL });
     g_strv_builder_add (builder, g_getenv ("G_PASTE_CLIENT"));
     g_strv_builder_addv (builder, (const gchar **) args);
 
     g_auto (GStrv) argv = g_strv_builder_end (builder);
     g_autoptr (GSubprocessLauncher) launcher = g_subprocess_launcher_new (G_SUBPROCESS_FLAGS_STDIN_PIPE | G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_PIPE);
+
+    g_subprocess_launcher_set_cwd (launcher, f->runtime_dir);
 
     g_subprocess_launcher_setenv (launcher, "LC_ALL", "C", TRUE);
     if (f->stdin_closed)
@@ -743,6 +749,63 @@ test_activation_token (Fixture      *f,
     g_dbus_connection_unregister_object (f->server, registration);
 }
 
+/* A relative path is made absolute against the client's working directory,
+ * and refused when that has gone, rather than sent as if it were in "/". */
+static void
+test_add_file_cwd_gone (Fixture      *f,
+                        gconstpointer data G_GNUC_UNUSED)
+{
+    run_client (f, (const gchar * const []) { "file", "relative", NULL }, TRUE, NULL);
+
+    g_autofree gchar *expected = g_strdup_printf ("AddFile('%s/relative',)\n", f->runtime_dir);
+
+    g_assert_cmpstr (f->log->str, ==, expected);
+
+    g_string_truncate (f->log, 0);
+    f->cwd_gone = TRUE;
+    run_client (f, (const gchar * const []) { "file", "relative", NULL }, FALSE, "*Could not tell which directory a relative path is in*");
+    g_assert_cmpstr (f->log->str, ==, "");
+}
+
+/* The same refusal from g_paste_client_add_file (), in a child whose own
+ * working directory is removed under it. */
+static void
+test_add_file_async_cwd_gone (Fixture      *f,
+                              gconstpointer data G_GNUC_UNUSED)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GAsyncResult) built = NULL;
+
+    /* Built asynchronously: the fake daemon is served by this very thread, and
+     * a sync construction's GetAll would wait on it until the call times out. */
+    g_paste_client_new (on_exited, &built);
+    while (!built)
+        g_main_context_iteration (NULL, TRUE);
+
+    g_autoptr (GPasteClient) client = g_paste_client_new_finish (built, &error);
+    g_autofree gchar *gone = g_build_filename (f->runtime_dir, "gone", NULL);
+    g_autoptr (GAsyncResult) added = NULL;
+
+    g_assert_no_error (error);
+    g_assert_cmpint (g_mkdir (gone, 0700), ==, 0);
+    g_assert_cmpint (g_chdir (gone), ==, 0);
+    g_assert_cmpint (g_rmdir (gone), ==, 0);
+
+    g_paste_client_add_file (client, "relative", on_exited, &added);
+    while (!added)
+        g_main_context_iteration (NULL, TRUE);
+    g_paste_client_add_file_finish (client, added, &error);
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT);
+    g_assert_cmpstr (f->log->str, ==, "");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -755,6 +818,8 @@ main (int argc, char **argv)
     g_test_add ("/client/terminal-controls", Fixture, NULL, fixture_set_up, test_terminal_controls, fixture_tear_down);
     g_test_add ("/client/remote-error-prefix", Fixture, NULL, fixture_set_up, test_remote_error_prefix, fixture_tear_down);
     g_test_add ("/client/activation-token", Fixture, NULL, fixture_set_up, test_activation_token, fixture_tear_down);
+    g_test_add ("/client/add-file-cwd-gone", Fixture, NULL, fixture_set_up, test_add_file_cwd_gone, fixture_tear_down);
+    g_test_add ("/client/add-file-async-cwd-gone", Fixture, NULL, fixture_set_up, test_add_file_async_cwd_gone, fixture_tear_down);
     g_test_add ("/client/pipe", Fixture, NULL, fixture_set_up, test_pipe, fixture_tear_down);
     g_test_add ("/client/stdin-closed", Fixture, NULL, fixture_set_up, test_stdin_closed, fixture_tear_down);
     g_test_add ("/client/pipe-refused-unconnected", Fixture, NULL, fixture_set_up, test_pipe_refused_unconnected, fixture_tear_down);

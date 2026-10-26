@@ -4,6 +4,9 @@
 #include <gpaste/gpaste-gdbus-macros.h>
 #include <gpaste/gpaste-update-enums.h>
 
+#include <errno.h>
+#include <unistd.h>
+
 struct _GPasteClient
 {
     GDBusProxy parent_instance;
@@ -209,6 +212,31 @@ g_paste_client_add_sync (GPasteClient *self,
     DBUS_CALL_ONE_PARAM_NO_RETURN (ADD, string, text);
 }
 
+/* The path AddFile is sent. The daemon's working directory is not the
+ * caller's, so a relative @file is made absolute against the caller's -- asked
+ * of getcwd () rather than g_get_current_dir (), which answers "/" for one that
+ * has gone, and another file would be sent. */
+static gchar *
+g_paste_client_file_path (const gchar *file,
+                          GError     **error)
+{
+    if (g_path_is_absolute (file))
+        return g_strdup (file);
+
+    g_autofree gchar *current_dir = getcwd (NULL, 0);
+
+    if (!current_dir)
+    {
+        gint saved_errno = errno;
+
+        g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (saved_errno),
+                     "Could not tell which directory a relative path is in: %s", g_strerror (saved_errno));
+        return NULL;
+    }
+
+    return g_build_filename (current_dir, file, NULL);
+}
+
 /**
  * g_paste_client_add_file_sync:
  * @self: a #GPasteClient instance
@@ -216,21 +244,22 @@ g_paste_client_add_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Add the file contents to the #GPasteDaemon
+ *
+ * A relative @file is taken from the caller's working directory, and fails
+ * with the %G_FILE_ERROR getcwd () reports when that cannot be named -- one
+ * removed meanwhile -- before anything is sent.
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file_sync (GPasteClient *self,
                               const gchar  *file,
                               GError      **error)
 {
-    g_autofree gchar *absolute_path = NULL;
+    g_autofree gchar *path = g_paste_client_file_path (file, error);
 
-    if (!g_path_is_absolute (file))
-    {
-        g_autofree gchar *current_dir = g_get_current_dir ();
-        absolute_path = g_build_filename (current_dir, file, NULL);
-    }
+    if (!path)
+        return;
 
-    DBUS_CALL_ONE_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+    DBUS_CALL_ONE_PARAM_NO_RETURN (ADD_FILE, string, path);
 }
 
 /**
@@ -803,6 +832,9 @@ g_paste_client_add (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Add the file contents to the #GPasteDaemon
+ *
+ * As g_paste_client_add_file_sync (): a relative @file whose working directory
+ * cannot be named is refused before anything is sent.
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file (GPasteClient       *self,
@@ -810,15 +842,16 @@ g_paste_client_add_file (GPasteClient       *self,
                          GAsyncReadyCallback callback,
                          gpointer            user_data)
 {
-    g_autofree gchar *absolute_path = NULL;
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *path = g_paste_client_file_path (file, &error);
 
-    if (!g_path_is_absolute (file))
+    if (!path)
     {
-        g_autofree gchar *current_dir = g_get_current_dir ();
-        absolute_path = g_build_filename (current_dir, file, NULL);
+        g_task_report_error (self, callback, user_data, g_paste_client_add_file, g_steal_pointer (&error));
+        return;
     }
 
-    DBUS_CALL_ONE_PARAM_ASYNC (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+    DBUS_CALL_ONE_PARAM_ASYNC (ADD_FILE, string, path);
 }
 
 /**
@@ -1443,6 +1476,13 @@ g_paste_client_add_file_finish (GPasteClient *self,
                                 GAsyncResult *result,
                                 GError      **error)
 {
+    /* A path refused before anything was sent. */
+    if (g_async_result_is_tagged (result, g_paste_client_add_file))
+    {
+        g_task_propagate_boolean (G_TASK (result), error);
+        return;
+    }
+
     DBUS_ASYNC_FINISH_NO_RETURN;
 }
 
