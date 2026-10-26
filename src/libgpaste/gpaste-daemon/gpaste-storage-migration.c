@@ -1627,7 +1627,8 @@ decryption_pending (GPasteStorage storage_kind)
  * process left unfinished is settled, the copies an import it did not finish
  * wrote are taken back, and, once per process, the images GPaste 50 kept in
  * the history directory's shared images/ that no history names any more are
- * deleted.
+ * deleted, as is what a write or a delete cut short left under a name no
+ * history has.
  *
  * Returns: whether g_paste_storage_decryption_async() has something to ask or
  *     tell
@@ -1637,8 +1638,9 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
 
-    /* Every start asks this before loading anything, which is what the sweep
-     * needs: see g_paste_file_backend_sweep_legacy_images (). Once per process,
+    /* Every start asks this before loading anything, which is what the sweeps
+     * need: see g_paste_file_backend_sweep_legacy_images () and
+     * g_paste_file_backend_sweep_unstored (). Once per process,
      * gnome-shell asking again before an in-place migration, with a history
      * loaded. */
     static gsize legacy_images_swept = 0;
@@ -1646,6 +1648,7 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
     if (g_once_init_enter (&legacy_images_swept))
     {
         g_paste_file_backend_sweep_legacy_images ();
+        g_paste_file_backend_sweep_unstored ();
         g_once_init_leave (&legacy_images_swept, 1);
     }
 

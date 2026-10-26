@@ -32,6 +32,7 @@ gchar *g_paste_file_backend_image_path     (const gchar *history_name,
 gchar *g_paste_file_backend_encrypted_path (const gchar *path);
 
 void g_paste_file_backend_sweep_legacy_images (void);
+void g_paste_file_backend_sweep_unstored      (void);
 
 void g_paste_file_backend_delete_files (const gchar *name,
                                         gboolean     encrypted,

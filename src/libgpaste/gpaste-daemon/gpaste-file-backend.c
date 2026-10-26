@@ -769,6 +769,89 @@ _g_paste_file_backend_collect_legacy_documents (const gchar *history_dir,
 }
 
 /**
+ * g_paste_file_backend_sweep_unstored:
+ *
+ * Delete what a write or a delete cut short left under a name no file flavour
+ * stores a history of: the images a first write of the history put in before
+ * its document, or a delete left once it had taken the document, and the
+ * temporary a save writes the document to. No listing shows such a name, so
+ * nothing else ever reaches those files -- the clipboard's screenshots, and
+ * the history itself, in clear on the plain flavour.
+ *
+ * A write in progress leaves the same files until it is done, so this runs
+ * only where none can be: before this process writes anything, with the
+ * storage lock held.
+ */
+G_PASTE_VISIBLE void
+g_paste_file_backend_sweep_unstored (void)
+{
+    if (g_paste_storage_is_busy () || !g_paste_storage_backend_try_lock ())
+        return;
+
+    static const GPasteStorage flavours[] = { G_PASTE_STORAGE_FILE, G_PASTE_STORAGE_ENCRYPTED_FILE };
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autoptr (GFile) dir = g_file_new_for_path (history_dir);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!files)
+    {
+        g_warning ("Could not list the histories to remove what a cut-short write left: %s", error->message);
+        return;
+    }
+
+    for (gsize i = 0; i < G_N_ELEMENTS (flavours); ++i)
+    {
+        g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (flavours[i]), G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL);
+
+        for (GStrv file = files; *file; ++file)
+        {
+            if (!g_str_has_suffix (*file, suffix))
+                continue;
+
+            g_autofree gchar *name = g_strndup (*file, strlen (*file) - strlen (suffix));
+
+            if (!g_paste_util_history_name_is_valid (name) || g_paste_util_history_is_stored (name, flavours[i]))
+                continue;
+
+            g_autofree gchar *path = g_build_filename (history_dir, *file, NULL);
+
+            if (g_unlink (path) && errno != ENOENT)
+                g_warning ("Could not remove %s, which a cut-short save left: %s", path, g_strerror (errno));
+        }
+    }
+
+    g_autofree gchar *images_path = _g_paste_file_backend_images_root ();
+    g_autoptr (GFile) images = g_file_new_for_path (images_path);
+    /* A store that never held an image has no directory, and lists nothing.
+     * Listed here rather than with g_paste_file_backend_sweep_legacy_images ():
+     * that sweep goes over this directory with the lock held or not, this one
+     * only with it. */
+    g_auto (GStrv) names = g_paste_util_list_directory (images, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!names)
+    {
+        g_warning ("Could not list the images to remove what a cut-short write left: %s", error->message);
+        return;
+    }
+
+    for (GStrv name = names; *name; ++name)
+    {
+        g_autofree gchar *path = g_build_filename (images_path, *name, NULL);
+        g_autoptr (GError) images_error = NULL;
+
+        /* A history's directory, the files beside them being GPaste 50's
+         * (g_paste_file_backend_sweep_legacy_images ()), and never one reached
+         * through a link: its listing would be somewhere else's. */
+        if (!g_paste_util_history_name_is_valid (*name) || g_file_test (path, G_FILE_TEST_IS_SYMLINK) || !g_file_test (path, G_FILE_TEST_IS_DIR))
+            continue;
+
+        if (!g_paste_storage_backend_delete_history_images (*name, &images_error))
+            g_warning ("Could not remove the images of \"%s\", which no history holds: %s", *name, images_error->message);
+    }
+}
+
+/**
  * g_paste_file_backend_sweep_legacy_images:
  *
  * Delete the images GPaste 50 kept in the one directory every history shared

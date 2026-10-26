@@ -4380,6 +4380,59 @@ test_empty_alternative (gconstpointer data)
     g_paste_storage_backend_write_history (backend, name, items);
 }
 
+static void
+write_file (const gchar *path,
+            const gchar *contents)
+{
+    g_autofree gchar *dir = g_path_get_dirname (path);
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (path, contents, -1, NULL));
+}
+
+/* What a write or a delete cut short left under a name no history has goes
+ * at the next start, the plain flavour's screenshots and a save's temporary
+ * holding the history in clear; what a stored history has stays. */
+static void
+test_unstored_leftovers_swept (void)
+{
+    /* Once per process, as every start's gate sweeps. */
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+    const gchar *image = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.png";
+    g_autofree gchar *stored_images = g_paste_file_backend_images_dir ("leftovers-stored");
+    g_autofree gchar *unstored_images = g_paste_file_backend_images_dir ("leftovers-unstored");
+    g_autofree gchar *stored_image = g_build_filename (stored_images, image, NULL);
+    g_autofree gchar *unstored_image = g_build_filename (unstored_images, image, NULL);
+    g_autofree gchar *stored_document = g_paste_util_get_history_file_path ("leftovers-stored", "xml");
+    g_autofree gchar *stored_tmp = g_strconcat (stored_document, ".tmp", NULL);
+    g_autofree gchar *unstored_tmp = g_paste_util_get_history_file_path ("leftovers-unstored", "xml.tmp");
+    g_autofree gchar *unstored_encrypted_tmp = g_paste_util_get_history_file_path ("leftovers-unstored", "xmls.tmp");
+
+    g_assert_true (g_paste_storage_backend_write_history (file, "leftovers-stored", items));
+    write_file (stored_image, "an image");
+    write_file (stored_tmp, "a save cut short");
+    write_file (unstored_image, "a screenshot");
+    write_file (unstored_tmp, "a first save cut short");
+    write_file (unstored_encrypted_tmp, "another");
+
+    g_paste_storage_decryption_needed (settings);
+
+    g_assert_true (g_file_test (stored_image, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (stored_tmp, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (unstored_images, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (unstored_tmp, G_FILE_TEST_EXISTS));
+    g_assert_false (g_file_test (unstored_encrypted_tmp, G_FILE_TEST_EXISTS));
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* An encrypted file history called @name holding an image, whose history file
  * and image side file are handed back through @history and @image. */
@@ -4623,16 +4676,6 @@ test_rekey_copy_cut_short (void)
     g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &items, &size));
     g_assert_cmpuint (g_list_length (items), ==, 2);
     g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data)));
-}
-
-static void
-write_file (const gchar *path,
-            const gchar *contents)
-{
-    g_autofree gchar *dir = g_path_get_dirname (path);
-
-    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (path, contents, -1, NULL));
 }
 
 static void
@@ -6511,6 +6554,7 @@ main (int    argc,
 #endif
     g_test_add_func ("/storage/image-name-not-utf8", test_image_name_not_utf8);
     g_test_add_func ("/storage/image-write-failed", test_image_write_failed);
+    g_test_add_func ("/storage/unstored-leftovers-swept", test_unstored_leftovers_swept);
     g_test_add_func ("/storage/new-history-write-failed", test_new_history_write_failed);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-synced-before-install", test_encrypted_synced_before_install);
