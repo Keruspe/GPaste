@@ -726,10 +726,19 @@ _g_paste_history_add (GPasteHistory *self,
             return;
         }
 
+        /* Where an older copy of @item is looked for: past the head, or from
+         * the top once a grown line has taken the head's place. */
+        guint dedup_from = 1;
+
         if (new_selection && g_paste_history_private_is_growing_line (self, old_first, item))
         {
+            /* The head is never the one tracked, but were it so, the string
+             * would go with old_first below, before the scan reads it. */
             if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (old_first)))
+            {
+                self->biggest_uuid = NULL;
                 election_needed = TRUE;
+            }
             /* The grown line is the same line the user pinned, only longer, so
              * it inherits the pin: dropping it here would quietly make what a
              * user asked to keep evictable again, one keystroke at a time. */
@@ -738,6 +747,7 @@ _g_paste_history_add (GPasteHistory *self,
             /* No departure: the grown item carries the same line on. */
             g_autoptr (GPasteItem) dropped = old_first;
             g_paste_history_private_remove (self, 0, FALSE);
+            dedup_from = 0;
         }
         else
         {
@@ -757,37 +767,53 @@ _g_paste_history_add (GPasteHistory *self,
                 self->biggest_uuid = g_paste_item_get_uuid (old_first);
                 self->biggest_size = size;
             }
+        }
 
-            /* Dedup is by value, not by uuid, so the index cannot help here --
-             * and no more on select, where the uuid it does answer for leads
-             * back to the object rather than to where it sits. */
-            for (guint i = 1; i < self->history->len; ++i)
+        /* Dedup is by value, not by uuid, so the index cannot help here --
+         * and no more on select, where the uuid it does answer for leads
+         * back to the object rather than to where it sits. An exact copy
+         * first; failing one, and only when the head stays, a line deeper
+         * that the new one grows over -- "c" for "abc" -- is replaced as the
+         * head would be. Never both, and never the growing match in the exact
+         * copy's stead, which would leave it listed twice. */
+        guint older = G_MAXUINT;
+        guint grown = G_MAXUINT;
+
+        for (guint i = dedup_from; i < self->history->len; ++i)
+        {
+            GPasteItem *entry = g_ptr_array_index (self->history, i);
+
+            /* Identity on select, for the reason the head is asked the same
+             * way: the entry to move is the one that *is* @item, and a
+             * likeness deeper in the history is somebody else's row. */
+            if ((new_selection) ? g_paste_item_equals (entry, item) : (entry == item))
             {
-                GPasteItem *entry = g_ptr_array_index (self->history, i);
-                /* Identity on select, for the reason the head is asked the same
-                 * way: the entry to move is the one that *is* @item, and a
-                 * likeness deeper in the history is somebody else's row. */
-                gboolean matches = (new_selection) ? (g_paste_item_equals (entry, item) ||
-                                                      g_paste_history_private_is_growing_line (self, entry, item))
-                                                   : (entry == item);
-
-                if (matches)
-                {
-                    if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (entry)))
-                        election_needed = TRUE;
-                    /* Same as above: what arrives takes the place of a pinned
-                     * entry, so it takes its pin with it. On select the two are
-                     * one object and this says nothing new. */
-                    if (g_paste_item_is_favourite (entry))
-                        g_paste_item_set_favourite (item, TRUE);
-                    /* On add, @entry is a distinct duplicate to free. On select,
-                     * @entry IS @item being moved to the front, so its ref must
-                     * be left alone. */
-                    g_autoptr (GPasteItem) dropped = new_selection ? entry : NULL;
-                    g_paste_history_private_remove (self, i, FALSE);
-                    break;
-                }
+                older = i;
+                break;
             }
+            if (grown == G_MAXUINT && new_selection && dedup_from && g_paste_history_private_is_growing_line (self, entry, item))
+                grown = i;
+        }
+
+        if (older == G_MAXUINT)
+            older = grown;
+
+        if (older != G_MAXUINT)
+        {
+            GPasteItem *entry = g_ptr_array_index (self->history, older);
+
+            if (g_paste_str_equal (self->biggest_uuid, g_paste_item_get_uuid (entry)))
+                election_needed = TRUE;
+            /* Same as above: what arrives takes the place of a pinned entry,
+             * so it takes its pin with it. On select the two are one object
+             * and this says nothing new. */
+            if (g_paste_item_is_favourite (entry))
+                g_paste_item_set_favourite (item, TRUE);
+            /* On add, @entry is a distinct duplicate to free. On select,
+             * @entry IS @item being moved to the front, so its ref must be
+             * left alone. */
+            g_autoptr (GPasteItem) dropped = new_selection ? entry : NULL;
+            g_paste_history_private_remove (self, older, FALSE);
         }
     }
 

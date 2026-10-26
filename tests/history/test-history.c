@@ -4136,6 +4136,83 @@ test_favourite_survives_growing_line (void)
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 
+/* A line growing over the head can also be a copy of something deeper in the
+ * history, which goes as it would for any other copy: the history lists that
+ * text once, and the pin the older copy carried comes along. */
+static void
+test_growing_line_dedups (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 5);
+
+    g_paste_settings_set_growing_lines (settings, TRUE);
+
+    g_paste_history_add (history, g_paste_text_item_new ("hello world"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_assert_true (g_paste_history_set_favourite (history, uuid, TRUE));
+
+    g_paste_history_add (history, g_paste_text_item_new ("unrelated"));
+    g_paste_history_add (history, g_paste_text_item_new ("hello"));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+
+    g_paste_history_add (history, g_paste_text_item_new ("hello world"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (value_at (history, 0), ==, "hello world");
+    g_assert_cmpstr (value_at (history, 1), ==, "unrelated");
+    g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
+}
+
+/* An exact copy deeper in the history is the one that goes, a line the new
+ * one merely ends with being another item, kept -- whether the head grew or
+ * stayed. Failing an exact copy, and only when the head stays, a line deeper
+ * that the new one grows over is replaced, as the head would be. */
+static void
+test_growing_line_prefers_exact_copy (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+    g_paste_settings_set_growing_lines (settings, TRUE);
+
+    /* The head grows: "abcdef" over "abcde", with "def", which it ends with,
+     * and its exact copy below. */
+    g_paste_history_add (history, g_paste_text_item_new ("abcdef"));
+    g_paste_history_add (history, g_paste_text_item_new ("def"));
+    g_paste_history_add (history, g_paste_text_item_new ("abcde"));
+    g_paste_history_add (history, g_paste_text_item_new ("abcdef"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (value_at (history, 0), ==, "abcdef");
+    g_assert_cmpstr (value_at (history, 1), ==, "def");
+
+    /* The head stays: "c", which "abc" ends with, is kept below "x", and the
+     * exact copy goes. */
+    g_autoptr (GPasteSettings) kept_settings = NULL;
+    g_autoptr (GPasteHistory) kept = make_history (&kept_settings, 10);
+
+    g_paste_settings_set_growing_lines (kept_settings, TRUE);
+    g_paste_history_add (kept, g_paste_text_item_new ("abc"));
+    g_paste_history_add (kept, g_paste_text_item_new ("c"));
+    g_paste_history_add (kept, g_paste_text_item_new ("x"));
+    g_paste_history_add (kept, g_paste_text_item_new ("abc"));
+
+    g_assert_cmpuint (g_paste_history_get_length (kept), ==, 3);
+    g_assert_cmpstr (value_at (kept, 0), ==, "abc");
+    g_assert_cmpstr (value_at (kept, 1), ==, "x");
+    g_assert_cmpstr (value_at (kept, 2), ==, "c");
+
+    /* No exact copy: "cde" replaces the "c" it grows over. */
+    g_paste_history_add (kept, g_paste_text_item_new ("cde"));
+
+    g_assert_cmpuint (g_paste_history_get_length (kept), ==, 3);
+    g_assert_cmpstr (value_at (kept, 0), ==, "cde");
+    g_assert_cmpstr (value_at (kept, 1), ==, "abc");
+    g_assert_cmpstr (value_at (kept, 2), ==, "x");
+}
+
 static void
 test_favourite_survives_dedup (void)
 {
@@ -7816,6 +7893,8 @@ main (int argc, char *argv[])
     add_test ("/history/edit_and_make_password_drop_rich_text", test_edit_and_make_password_drop_rich_text);
     add_test ("/history/favourite_survives_growing_line", test_favourite_survives_growing_line);
     add_test ("/history/favourite_survives_dedup", test_favourite_survives_dedup);
+    add_test ("/history/growing_line_dedups", test_growing_line_dedups);
+    add_test ("/history/growing_line_prefers_exact_copy", test_growing_line_prefers_exact_copy);
     add_test ("/history/uris_item_answers_its_uris", test_uris_item_answers_its_uris);
     add_test ("/history/load_applies_the_caps", test_load_applies_the_caps);
     add_test ("/history/load_leaves_a_flushed_history_alone", test_load_leaves_a_flushed_history_alone);
