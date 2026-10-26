@@ -25,6 +25,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix clearing a number in the preferences setting its minimum, trimming the history to five items
 - Fix opening the preferences again not bringing the open window forward
 - Fix error messages starting with "GDBus.Error:" and the error's internal name
+- Fix the graphical tool opened from the command line or a launcher staying behind on Wayland
 
 NEW in 50.10 (08/09/2026)
 =============

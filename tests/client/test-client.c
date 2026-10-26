@@ -39,6 +39,7 @@ typedef struct
     gchar           *runtime_dir;
     gchar           *last_stderr;
     const gchar     *delete_error;
+    const gchar     *activation_token;
     guint            registration;
     gboolean         refuse_reexecute;
 } Fixture;
@@ -193,6 +194,12 @@ run_client_with_input (Fixture             *f,
     if (f->no_bus)
         g_subprocess_launcher_setenv (launcher, "DBUS_SESSION_BUS_ADDRESS", "unix:path=/nonexistent", TRUE);
     g_subprocess_launcher_setenv (launcher, "XDG_RUNTIME_DIR", f->runtime_dir, TRUE);
+    /* Never the test's own, which a run from a launcher's terminal inherits. */
+    g_subprocess_launcher_unsetenv (launcher, "DESKTOP_STARTUP_ID");
+    if (f->activation_token)
+        g_subprocess_launcher_setenv (launcher, "XDG_ACTIVATION_TOKEN", f->activation_token, TRUE);
+    else
+        g_subprocess_launcher_unsetenv (launcher, "XDG_ACTIVATION_TOKEN");
 
     g_autoptr (GSubprocess) client = g_subprocess_launcher_spawnv (launcher, (const gchar * const *) argv, &error);
 
@@ -699,6 +706,43 @@ test_remote_error_prefix (Fixture      *f,
     run_client (f, (const gchar * const []) { "delete", uuid, NULL }, FALSE, "*GDBus.Error:org.example.Error: no such item*");
 }
 
+/* The graphical tool, as a launch reaches it: org.freedesktop.Application on
+ * its own name. */
+static const gchar application_xml[] =
+    "<node><interface name='org.freedesktop.Application'>"
+    "<method name='Activate'><arg type='a{sv}' direction='in'/></method>"
+    "</interface></node>";
+
+/* A launcher's activation token, which Wayland raises a window with, reaches
+ * the graphical tool `gpaste-client ui` opens. */
+static void
+test_activation_token (Fixture      *f,
+                       gconstpointer data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GDBusNodeInfo) info = g_dbus_node_info_new_for_xml (application_xml, &error);
+
+    g_assert_no_error (error);
+
+    guint registration = g_dbus_connection_register_object (f->server, "/org/gnome/GPaste/Ui", info->interfaces[0],
+                                                            &vtable, f, NULL, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_paste_test_bus_name_call (f->server, "RequestName",
+                                                  g_variant_new ("(su)", "org.gnome.GPaste.Ui", 0)), ==, 1);
+
+    f->activation_token = "token";
+    run_client (f, (const gchar * const []) { "ui", NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "Activate({'activation-token': <'token'>},)\n");
+
+    g_string_truncate (f->log, 0);
+    f->activation_token = NULL;
+    run_client (f, (const gchar * const []) { "ui", NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "Activate({},)\n");
+
+    g_dbus_connection_unregister_object (f->server, registration);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -710,6 +754,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/locale", test_locale_set);
     g_test_add ("/client/terminal-controls", Fixture, NULL, fixture_set_up, test_terminal_controls, fixture_tear_down);
     g_test_add ("/client/remote-error-prefix", Fixture, NULL, fixture_set_up, test_remote_error_prefix, fixture_tear_down);
+    g_test_add ("/client/activation-token", Fixture, NULL, fixture_set_up, test_activation_token, fixture_tear_down);
     g_test_add ("/client/pipe", Fixture, NULL, fixture_set_up, test_pipe, fixture_tear_down);
     g_test_add ("/client/stdin-closed", Fixture, NULL, fixture_set_up, test_stdin_closed, fixture_tear_down);
     g_test_add ("/client/pipe-refused-unconnected", Fixture, NULL, fixture_set_up, test_pipe_refused_unconnected, fixture_tear_down);

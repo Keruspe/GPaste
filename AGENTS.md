@@ -75,7 +75,9 @@ runtime directory of its own and its stdin piped: an item printed on a terminal
 U+FFFD, and goes as it is to a pipe; a failed call's error reaches the command
 line without GDBus' "GDBus.Error:<name>: " prefix when the error maps to a
 domain or is the daemon's own `org.gnome.GPaste.Error`, and with it otherwise
-(`g_paste_dbus_strip_remote_error ()`); piped input is read whole, a
+(`g_paste_dbus_strip_remote_error ()`); `gpaste-client ui` hands a fake
+`org.gnome.GPaste.Ui` the launcher's XDG_ACTIVATION_TOKEN as `activation-token`
+platform data, and none when it has none; piped input is read whole, a
 non-blocking stdin waited on to its end, and refused when it carries a NUL or is
 not UTF-8, before any bus is reached, as is any word of a command line not in
 UTF-8; only a command line taking it reads stdin, `--help` and `--version`
