@@ -2,10 +2,10 @@ gpaste_client_sources = [
   'gpaste-client.c',
 ]
 
-executable(
+gpaste_client_exe = executable(
   'gpaste-client',
   sources: gpaste_client_sources,
   install: true,
-  dependencies: [ glib_dep, gobject_dep, libgpaste_internal_dep ],
+  dependencies: [ glib_dep, gobject_dep, gio_dep, libgpaste_internal_dep ],
   install_dir: get_option('bindir'),
 )

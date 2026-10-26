@@ -54,6 +54,12 @@ replaced when there is no exact copy; that a damaged file's text stays out of
 the warnings about it; and that a FIFO named like a history is neither listed
 nor read (in a child with a timeout, since reading one hangs).
 
+`test-use-index` runs the built `gpaste-client` (its path in `G_PASTE_CLIENT`)
+against a fake daemon on a private bus that logs every call it is sent: a
+malformed index under `--use-index` is refused before any call, a valid one is
+looked up and its uuid used, and a verb naming no item reads no index out of its
+argument.
+
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests
 while a reply is pending, disabling shortcuts before a grab completes, and a shell

@@ -9,6 +9,7 @@ gpaste_test_bus_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
+subdir('client')
 subdir('gnome-shell-client')
 subdir('global-shortcut-client')
 

@@ -11,7 +11,6 @@ typedef struct {
     gint          argc;
     const gchar **args;
     gchar        *pipe_data;
-    const gchar  *uuid;
     gboolean      help;
     gboolean      version;
     gboolean      oneline;
@@ -137,6 +136,38 @@ print_history_line (gchar       *line,
             printf ("%s: ", uuid);
     }
     printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
+}
+
+/* The uuid of the item @ctx's first argument names: under --use-index, that of
+ * the item at the position it reads as, looked up only by the verbs naming an
+ * item, so that the text, name or path the others take is never read as an
+ * index.
+ *
+ * An index is a complete unsigned decimal number: g_ascii_strtoull () alone
+ * would read "abc" as 0 and "1x" as 1, and act on items nobody named.
+ * g_ascii_string_to_unsigned () refuses a sign or a space in front, but tells
+ * a space by g_ascii_isspace (), which a vertical tab is not, while the
+ * strtoull () beneath it skips one: the digit asked of the first character is
+ * what keeps "\v-1" from reading as G_MAXUINT64. */
+static gchar *
+item_uuid (Context *ctx,
+           GError **error)
+{
+    const gchar *arg = ctx->args[0];
+    guint64 index = 0;
+
+    if (!ctx->use_index)
+        return g_strdup (arg);
+
+    if (!g_ascii_isdigit (*arg) || !g_ascii_string_to_unsigned (arg, 10, 0, G_MAXUINT64, &index, NULL))
+    {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT, _("Invalid item index: %s"), arg);
+        return NULL;
+    }
+
+    g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_sync (ctx->client, index, error);
+
+    return (item) ? g_strdup (g_paste_client_item_get_uuid (item)) : NULL;
 }
 
 static gint
@@ -528,7 +559,12 @@ static gint
 g_paste_delete (Context *ctx,
                 GError **error)
 {
-    g_paste_client_delete_sync (ctx->client, ctx->uuid, error);
+    g_autofree gchar *uuid = item_uuid (ctx, error);
+
+    if (!uuid)
+        return EXIT_FAILURE;
+
+    g_paste_client_delete_sync (ctx->client, uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -555,7 +591,12 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autofree gchar *value = ((ctx->raw) ? g_paste_client_get_raw_element_sync : g_paste_client_get_element_sync) (ctx->client, ctx->uuid, error);
+    g_autofree gchar *uuid = item_uuid (ctx, error);
+
+    if (!uuid)
+        return EXIT_FAILURE;
+
+    g_autofree gchar *value = ((ctx->raw) ? g_paste_client_get_raw_element_sync : g_paste_client_get_element_sync) (ctx->client, uuid, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -574,7 +615,12 @@ g_paste_replace (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_paste_client_replace_sync (ctx->client, ctx->uuid, data, error);
+    g_autofree gchar *uuid = item_uuid (ctx, error);
+
+    if (!uuid)
+        return EXIT_FAILURE;
+
+    g_paste_client_replace_sync (ctx->client, uuid, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -609,7 +655,12 @@ static gint
 g_paste_select (Context *ctx,
                 GError **error)
 {
-    g_paste_client_select_sync (ctx->client, ctx->uuid, error);
+    g_autofree gchar *uuid = item_uuid (ctx, error);
+
+    if (!uuid)
+        return EXIT_FAILURE;
+
+    g_paste_client_select_sync (ctx->client, uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -627,7 +678,12 @@ static gint
 g_paste_upload (Context *ctx,
                 GError **error)
 {
-    g_paste_client_upload_sync (ctx->client, ctx->uuid, error);
+    g_autofree gchar *uuid = item_uuid (ctx, error);
+
+    if (!uuid)
+        return EXIT_FAILURE;
+
+    g_paste_client_upload_sync (ctx->client, uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -645,7 +701,12 @@ static gint
 g_paste_set_password (Context *ctx,
                       GError **error)
 {
-    g_paste_client_set_password_sync (ctx->client, ctx->uuid, ctx->args[1], error);
+    g_autofree gchar *uuid = item_uuid (ctx, error);
+
+    if (!uuid)
+        return EXIT_FAILURE;
+
+    g_paste_client_set_password_sync (ctx->client, uuid, ctx->args[1], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -771,14 +832,13 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     g_autoptr (GError) error = NULL;
-    Context ctx = { NULL, 0, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context ctx = { NULL, 0, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     gint status = EXIT_SUCCESS;
 
     if (parse_cmdline (&argc, &argv, &ctx))
     {
         g_autoptr (GPasteClient) client = ctx.client = g_paste_client_new_sync (&error);
         g_autofree gchar *pipe_data = ctx.pipe_data = extract_pipe_data ();
-        g_autofree gchar *uuid = NULL;
 
         /* Failing to reach the daemon is not fatal for every verb: "help",
          * "version" and the launchers are marked as needing no client. Move that
@@ -787,24 +847,9 @@ main (gint argc, gchar *argv[])
          * live one would trip the assert of whatever runs next. */
         g_autoptr (GError) connect_error = (ctx.client) ? NULL : g_steal_pointer (&error);
 
-        /* Only worth resolving the index while there is a daemon to resolve it
-         * in: without one this would hand a %NULL client to a call that refuses
-         * it, and every verb that could use the uuid needs a client anyway. */
-        if (ctx.client && ctx.use_index && ctx.argc > 0)
-        {
-            g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
-
-            if (!error)
-                ctx.uuid = uuid = g_strdup (g_paste_client_item_get_uuid (item));
-        }
-        else
-            ctx.uuid = ctx.args[0];
-
-        /* Only a failure of our own lookup above (which did need a client) skips
-         * the dispatch; a missing daemon does not, since the client-less verbs
-         * still have work to do. */
-        if (!error)
-            status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
+        /* A missing daemon does not skip the dispatch, since the client-less
+         * verbs still have work to do. */
+        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
 
         /* Nothing matched the command line at all: a verb we do not know, or one
          * we do with the wrong number of arguments after it. Say so the way a
