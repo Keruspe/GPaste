@@ -1448,9 +1448,15 @@ on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
     gtk_widget_set_sensitive (self->merge_button, count >= 2);
 }
 
+/* The window is held, and the application with it: closed while the picks
+ * are read, the window stays undisposed, its client with it, and the last
+ * window going ends no main loop the reads still need. The merge asked for
+ * before the close goes out, the flush ending the application sending it
+ * (/ui/daemon-presence/merge-after-close). */
 typedef struct
 {
     GPasteUiWindow *window;
+    GApplication   *application;
     gchar          *separator;
 } MergeData;
 
@@ -1458,6 +1464,7 @@ static void
 merge_data_free (MergeData *data)
 {
     g_clear_object (&data->window);
+    g_clear_pointer (&data->application, g_application_release);
     g_free (data->separator);
     g_free (data);
 }
@@ -1501,7 +1508,11 @@ do_merge (GPasteUiWindow *self,
     MergeData *data = g_new0 (MergeData, 1);
 
     data->window = g_object_ref (self);
+    data->application = G_APPLICATION (gtk_window_get_application (GTK_WINDOW (self)));
     data->separator = g_strdup (separator);
+
+    if (data->application)
+        g_application_hold (data->application);
 
     gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_ancestor (origin, GTK_TYPE_POPOVER)));
     g_paste_ui_history_get_selected_uuids (self->history, on_selection_resolved, data);

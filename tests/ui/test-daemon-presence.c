@@ -77,10 +77,37 @@ failing_client_new_finish (GAsyncResult *result,
 #include <gpaste-3/gpaste-daemon3.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 
-static gboolean have_display;
 /* One for the whole binary: an application stays exported on the bus for as
  * long as anything holds it, which a closed window may still do. */
 static GtkApplication *app;
+
+/* How many holds on it are out, the window's and GTK's alike: what a merge
+ * outliving its window holds is told by the count moving. */
+static gint app_holds;
+
+void
+g_application_hold (GApplication *application)
+{
+    typedef void (*Hold) (GApplication *);
+    Hold original = (Hold) dlsym (RTLD_NEXT, "g_application_hold");
+
+    if (app && application == G_APPLICATION (app))
+        ++app_holds;
+    original (application);
+}
+
+void
+g_application_release (GApplication *application)
+{
+    typedef void (*Release) (GApplication *);
+    Release original = (Release) dlsym (RTLD_NEXT, "g_application_release");
+
+    if (app && application == G_APPLICATION (app))
+        --app_holds;
+    original (application);
+}
+
+static gboolean have_display;
 
 /* A daemon stood in for by the generated skeleton on a connection of its own,
  * owning the name before it exports anything, as both real daemons do. It
@@ -1972,6 +1999,53 @@ test_merge_picks_unread (void)
     close_activation_window (window, &daemon);
 }
 
+/* A merge whose picks are still being read when the window closes goes out
+ * once they are, the merge holding the window that merges, and the
+ * application until it goes. */
+static void
+test_merge_after_close (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 10, .hold_items = TRUE };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
+    drain ();
+    on_enter_selection_mode (NULL, window);
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 3));
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
+
+    guint held = daemon.held_items->len;
+    const gchar *expected[] = { "00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000000", NULL };
+
+    do_merge (window, gtk_widget_get_next_sibling (window->merge_entry), ",");
+    g_paste_test_bus_wait_for_count (&daemon.held_items->len, held + 1);
+    g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
+    gtk_window_destroy (GTK_WINDOW (window));
+    g_clear_object (&window);
+    drain ();
+
+    gint holds = app_holds;
+
+    release_items (&daemon);
+    g_paste_test_bus_wait_until (merged, &daemon, NULL);
+    g_assert_cmpstrv (daemon.merged, expected);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_cmpint (app_holds, ==, holds - 1);
+    fake_daemon_stop (&daemon);
+}
+
 /* A row picked while it is read again where it stands is about to show what
  * its position holds then, and is merged as that, not as the item it showed
  * before the history moved under it. */
@@ -3839,6 +3913,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/merge-picks-shown", test_merge_picks_shown);
     g_test_add_func ("/ui/daemon-presence/merge-picks-unread", test_merge_picks_unread);
     g_test_add_func ("/ui/daemon-presence/merge-pick-during-reread", test_merge_pick_during_reread);
+    g_test_add_func ("/ui/daemon-presence/merge-after-close", test_merge_after_close);
     g_test_add_func ("/ui/daemon-presence/image-preview-off", test_image_preview_off);
     g_test_add_func ("/ui/daemon-presence/short-history-grows", test_short_history_grows);
     g_test_add_func ("/ui/daemon-presence/sidebar-choice", test_sidebar_choice);
