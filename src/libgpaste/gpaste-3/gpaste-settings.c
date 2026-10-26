@@ -1143,6 +1143,22 @@ g_paste_settings_private_read (GPasteSettings *self)
         setting_entries[i].from_dconf (self);
 }
 
+/* Have @read answer through a backend of its own, fresh from the keyfile,
+ * rather than the copy of it the live one holds (g_paste_settings_reload () and
+ * g_paste_settings_sync_key () say when they need it). */
+static void
+g_paste_settings_private_read_fresh (GPasteSettings *self,
+                                     void (*read) (GPasteSettings *self))
+{
+    g_autoptr (GSettingsBackend) backend = g_keyfile_settings_backend_new (self->keyfile_path, G_PASTE_SETTINGS_PATH, PACKAGE_NAME);
+    g_autoptr (GSettings) fresh = g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
+    GSettings *live = self->settings;
+
+    self->settings = fresh;
+    read (self);
+    self->settings = live;
+}
+
 /**
  * g_paste_settings_reload:
  * @self: a #GPasteSettings instance
@@ -1172,15 +1188,7 @@ g_paste_settings_reload (GPasteSettings *self)
      * with its default, where the live one keeps its copy (GLib ignores the
      * deletion), the copy this process goes on writing to. */
     if (self->keyfile_path && g_file_test (self->keyfile_path, G_FILE_TEST_EXISTS))
-    {
-        g_autoptr (GSettingsBackend) backend = g_keyfile_settings_backend_new (self->keyfile_path, G_PASTE_SETTINGS_PATH, PACKAGE_NAME);
-        g_autoptr (GSettings) fresh = g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
-        GSettings *live = self->settings;
-
-        self->settings = fresh;
-        g_paste_settings_private_read (self);
-        self->settings = live;
-    }
+        g_paste_settings_private_read_fresh (self, g_paste_settings_private_read);
     else
         g_paste_settings_private_read (self);
 
@@ -1197,7 +1205,8 @@ g_paste_settings_reload (GPasteSettings *self)
  * what was. A backend may take a write and give it back once storing it fails
  * -- dconf does, with a database it cannot write -- and the "changed" saying so
  * comes later, from the main loop: until then the getter answers what was
- * asked for. A caller that has to know whether a write took calls this before
+ * asked for. The keyfile backend never gives one back, and the file is read
+ * again instead. A caller that has to know whether a write took calls this before
  * reading the setting back. It blocks until the backend answers, as
  * g_paste_settings_sync() does.
  */
@@ -1211,13 +1220,21 @@ g_paste_settings_sync_key (GPasteSettings *self,
 
     for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
     {
+        if (!g_paste_str_equal (setting_entries[i].key, key))
+            continue;
+
         /* Quietly, as g_paste_settings_reload () does: the "changed" on its
-         * way is what announces it. */
-        if (g_paste_str_equal (setting_entries[i].key, key))
-        {
+         * way is what announces it. The keyfile backend takes a write in its
+         * copy before storing it, and only warns when the storing fails,
+         * sending nothing back: a fresh backend reads what the file holds,
+         * which is what was stored -- a file missing reading as the defaults
+         * it stands for. */
+        if (self->keyfile_path)
+            g_paste_settings_private_read_fresh (self, setting_entries[i].from_dconf);
+        else
             setting_entries[i].from_dconf (self);
-            return;
-        }
+
+        return;
     }
 
     g_return_if_reached ();

@@ -450,7 +450,8 @@ keeps what the process was using; a file where older builds spelled the
 directory `GPaste` is found; and the storage migration's gate opens by
 resetting the revision and closes back to what it was -- a completed
 migration's winning over a late failure, a key with no value left with none --
-a gate the file could not be rewritten to open being none.
+a gate the file could not be rewritten to open being none, and a write it
+could not store reading back as what the file holds (`sync-key-unstored`).
 
 `test-shell-settings` supplies a minimal test-local Shell schema and real memory
 and non-writable GSettings backends. It compiles the shipped settings source,

@@ -230,6 +230,40 @@ keyfile_gate_unwritable (void)
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
 }
 
+/* A write the keyfile backend took but could not store reads back as what the
+ * file holds, for a caller that has to know whether it took: SetActive,
+ * SwitchHistory and the migration's switch of backend. */
+static void
+keyfile_sync_key_unstored (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!geteuid ())
+        {
+            g_test_skip ("root writes a directory of mode 0500");
+            return;
+        }
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to write keyfile*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+    g_autofree gchar *path = keyfile_new (PACKAGE, "[" PACKAGE_NAME "]\nhistory-name='work'\n");
+    g_autofree gchar *dir = g_path_get_dirname (path);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_assert_cmpstr (g_paste_settings_get_history_name (settings), ==, "work");
+    g_assert_cmpint (g_chmod (dir, 0500), ==, 0);
+    g_paste_settings_set_history_name (settings, "other");
+    g_paste_settings_sync_key (settings, G_PASTE_HISTORY_NAME_SETTING);
+    g_assert_cmpint (g_chmod (dir, 0700), ==, 0);
+    g_assert_cmpstr (g_paste_settings_get_history_name (settings), ==, "work");
+}
+
 /* A settings file where the meson builds defining PACKAGE as "GPaste" looked
  * for it is still found. */
 static void
@@ -254,6 +288,7 @@ main (int argc, char **argv)
     g_test_add_func ("/settings/keyfile/reload", keyfile_reload);
     g_test_add_func ("/settings/keyfile/removed", keyfile_removed);
     g_test_add_func ("/settings/keyfile/gate-unwritable", keyfile_gate_unwritable);
+    g_test_add_func ("/settings/keyfile/sync-key-unstored", keyfile_sync_key_unstored);
     g_test_add_func ("/settings/keyfile/legacy-path", keyfile_legacy_path);
     return g_paste_test_env_run ();
 }
