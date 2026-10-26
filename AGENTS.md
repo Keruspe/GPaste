@@ -42,15 +42,17 @@ detail filtering, without reading or writing user preferences.
 `test-history` links the daemon's own code but for its `main ()` (the
 `gpaste-daemon-core` library of `src/daemon/meson.build`), against the memory
 GSettings backend and directories of the test's own, to drive the history and
-its storage directly: selecting an idle image counts its texture once, a value
-of whitespace alone reads back, an attribute an item's kind has no use for -- a
-checksum on a text -- is skipped, its uuid kept, and an image checksum that is
-no SHA-256 is dropped rather than written back unescaped, and an image whose
-path is not UTF-8 is left out of the file the rest of the history is saved in
-(its child's directories made under a TMPDIR that is not UTF-8), and a line
-growing over the head drops an older copy of what it grew into, a line deeper it
-merely ends with kept, and one it grows over replaced when there is no exact
-copy, and a damaged file's text stays out of the warnings about it.
+its storage directly. It checks that selecting an idle image counts its texture
+once; that a value of whitespace alone reads back; that an attribute an item's
+kind has no use for -- a checksum on a text -- is skipped, its uuid kept; that
+an image checksum that is no SHA-256 is dropped rather than written back
+unescaped; that an image whose path is not UTF-8 is left out of the file the
+rest of the history is saved in (its child's directories made under a TMPDIR
+that is not UTF-8); that a line growing over the head drops an older copy of
+what it grew into, a line deeper it merely ends with kept, and one it grows over
+replaced when there is no exact copy; that a damaged file's text stays out of
+the warnings about it; and that a FIFO named like a history is neither listed
+nor read (in a child with a timeout, since reading one hangs).
 
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests

@@ -741,6 +741,15 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         gsize text_length;
         g_autoptr (GError) error = NULL;
 
+        /* A FIFO named like a history would hold the read until a writer
+         * came, which none ever does, freezing the daemon on it: what is not a
+         * regular file is no history. */
+        if (!g_file_test (history_file_path, G_FILE_TEST_IS_REGULAR))
+        {
+            g_warning ("Not reading history file “%s”, which is not a regular file", history_file_path);
+            return;
+        }
+
         if (!g_file_get_contents (history_file_path, &text, &text_length, &error))
         {
             g_warning ("Failed to read history file: %s", error->message);
@@ -807,7 +816,7 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
     g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
-                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME "," G_FILE_ATTRIBUTE_STANDARD_TYPE,
                                                                        G_FILE_QUERY_INFO_NONE,
                                                                        NULL,
                                                                        error);
@@ -834,7 +843,9 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
 
         const gchar *raw_name = g_file_info_get_display_name (h);
 
-        if (g_str_has_suffix (raw_name, ".xml"))
+        /* Only a regular file is a history: see
+         * g_paste_file_backend_read_history_file (). */
+        if (g_file_info_get_file_type (h) == G_FILE_TYPE_REGULAR && g_str_has_suffix (raw_name, ".xml"))
         {
             g_autofree gchar *name = g_strdup (raw_name);
 

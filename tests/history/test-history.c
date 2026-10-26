@@ -12,6 +12,7 @@
 #include <glib/gstdio.h>
 
 #include <string.h>
+#include <sys/stat.h>
 
 /* Iterate the main context until @path exists: what an image item writes at
  * capture, on a worker thread. */
@@ -434,6 +435,50 @@ test_damage_not_logged (void)
     settle_writes ("damaged");
 }
 
+/* A FIFO named like a history holds open (2) until a writer comes, which none
+ * ever does: it is no history, left out of the listing and read as none,
+ * rather than the daemon frozen on it. The child gets 10 s, so a hang fails
+ * the test rather than stalling the suite. */
+static void
+test_fifo_not_a_history (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 10 * G_USEC_PER_SEC, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*not a regular file*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *fifo = g_paste_util_get_history_file_path ("fifo", "xml");
+    g_autofree gchar *dir = g_path_get_dirname (fifo);
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_cmpint (mkfifo (fifo, 0600), ==, 0);
+
+    {
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+        g_paste_history_load (history, "regular");
+        g_paste_history_add (history, g_paste_text_item_new ("stored"));
+        wait_for_saved ("regular", "stored");
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) histories = g_paste_history_list (history, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstrv (histories, ((const gchar * const []) { "regular", NULL }));
+
+    g_paste_history_load (history, "fifo");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    settle_writes ("fifo");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -445,6 +490,7 @@ main (int argc, char **argv)
     g_test_add_func ("/history/unnamable-image-left-out", test_unnamable_image_left_out);
     g_test_add_func ("/history/growing-line-drops-older-copy", test_growing_line_drops_older_copy);
     g_test_add_func ("/history/damage-not-logged", test_damage_not_logged);
+    g_test_add_func ("/history/fifo-not-a-history", test_fifo_not_a_history);
 
     return g_test_run ();
 }
