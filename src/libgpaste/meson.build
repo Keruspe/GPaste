@@ -212,7 +212,10 @@ libgpaste_daemon_soversion = '3.0.0'
 # What this library promises to the outside world. The gnome-shell extension is
 # its only external consumer and reaches it through the GPasteDaemon-1 typelib:
 # it drives GPasteBus, GPasteDaemon, GPasteSearchProvider, GPastePrompt (which
-# prompt.js implements) and GPasteStorageBackend's static passphrase helpers.
+# prompt.js implements), GPasteStorageBackend's static passphrase helpers and
+# gpaste-storage-migration.h's functions, which daemon.js calls directly:
+# whether the store is busy or needs a migration or a decryption, and running
+# those, a passphrase change and a check of the store.
 #
 # The rest of this list is what those headers drag in, not a separate promise:
 # gpaste-daemon.h declares g_paste_daemon_new(), hence the clipboard provider,

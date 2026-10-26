@@ -103,7 +103,7 @@ On Debian, Ubuntu and other deb-based distributions:
 # Build dependencies
 sudo apt install meson ninja-build build-essential pkg-config gettext \
                  libglib2.0-dev libgtk-4-dev libadwaita-1-dev libgcr-4-dev \
-                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center \
+                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center-dev \
                  gobject-introspection libgirepository1.0-dev valac
 # and the libmutter-N-dev of the mutter GNOME Shell runs on
 
@@ -119,7 +119,8 @@ three, and without the extension and the bindings.
 dbus, systemd and gnome-control-center are wanted for their pkg-config files
 alone, which say where the D-Bus service and interface files, the systemd user
 unit and the control-center keybinding files go. Fedora ships systemd's in the
-base package, which is why only the apt line names it. A packager who would
+base package, which is why only the apt line names it, and Debian ships
+gnome-control-center's in its -dev package. A packager who would
 rather not pull any of them in can name the four directories outright —
 `-Ddbus-services-dir`, `-Ddbus-interfaces-dir`, `-Dsystemd-user-unit-dir` and
 `-Dcontrol-center-keybindings-dir` — and dbus and gnome-control-center are still
