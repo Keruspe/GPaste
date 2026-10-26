@@ -125,6 +125,7 @@ fake_get_version (GPasteClient *client G_GNUC_UNUSED)
 }
 
 static gchar *uploaded_and_copied;
+static const gchar *uploaded_url = "https://paste.rs/x";
 
 /* What `upload-and-copy` has the daemon do, recorded rather than sent: the
  * verb is a thin call, and what matters is that it is UploadAndCopy it makes,
@@ -136,7 +137,7 @@ fake_upload_and_copy_sync (GPasteClient *client G_GNUC_UNUSED,
 {
     g_set_str (&uploaded_and_copied, uuid);
 
-    return g_strdup ("https://paste.rs/x");
+    return g_strdup (uploaded_url);
 }
 
 /* The uuid of the faked daemon's item @n, a hex digit. */
@@ -1409,6 +1410,27 @@ test_terminal_controls (void)
     read_terminal_until (terminal, buffer, sizeof (buffer), "z\n");
     g_assert_cmpstr (buffer, ==, "a\xef\xbf\xbd]52;c;eA==\xef\xbf\xbd" "b\xef\xbf\xbd" "x\r\ny\xef\xbf\xbdz\n");
 
+    /* A text that is not UTF-8 -- a refusal echoing an option's value as typed
+     * -- is not read past its end by a sequence cut short there, the bytes
+     * beyond it holding a control character that would be found and written
+     * out with them, nor has an escape character a lead byte comes before
+     * stepped over. Written to memory, which keeps every byte, the terminal
+     * having been found once already for stdout's. */
+    static const gchar cut_short[] = { '5', '\xe2', '\0', 'X', '\x1b', '\0' };
+    g_autofree gchar *shown = NULL;
+    gsize shown_size = 0;
+    FILE *memory = open_memstream (&shown, &shown_size);
+
+    print_text_to (memory, cut_short);
+    g_assert_cmpint (fclose (memory), ==, 0);
+    g_assert_cmpmem (shown, shown_size, "5\xef\xbf\xbd", 4);
+    g_clear_pointer (&shown, g_free);
+
+    memory = open_memstream (&shown, &shown_size);
+    print_text_to (memory, "\xe2\x1b]0;title\x07");
+    g_assert_cmpint (fclose (memory), ==, 0);
+    g_assert_cmpstr (shown, ==, "\xef\xbf\xbd\xef\xbf\xbd]0;title\xef\xbf\xbd");
+
     g_autofree gchar *clean = g_strnfill (1024, 'c');
     g_autofree gchar *echoed = g_malloc (2048);
     guint asked = terminal_asks;
@@ -1459,6 +1481,33 @@ test_terminal_controls (void)
     g_assert_nonnull (strstr (named, "e\xef\xbf\xbd]0;history\xef\xbf\xbd" "f"));
     g_assert_nonnull (strstr (named, "g\xef\xbf\xbd]0;doctor\xef\xbf\xbd" "h"));
     g_assert_null (strchr (named, '\x1b'));
+
+    /* Nor what a daemon answers -- an older one checking none of it -- or
+     * refuses with, on stderr: a version, an upload's url, an error quoting a
+     * history's name. */
+    g_autofree gchar *version = g_steal_pointer (&daemon_version);
+
+    daemon_version = g_strdup ("v\x1b]0;version\x07" "w");
+    uploaded_url = "u\x1b]0;url\x07" "x";
+    reexec_error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "y\x1b]0;error\x07" "z refused");
+    fflush (stderr);
+    g_assert_cmpint (dup2 (client_side, STDERR_FILENO), ==, STDERR_FILENO);
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-version", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "upload-and-copy", FAKE_UUID (a), NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_FAILURE);
+    fflush (stdout);
+    fflush (stderr);
+    g_clear_error (&reexec_error);
+    g_set_str_take (&daemon_version, g_steal_pointer (&version));
+    uploaded_url = "https://paste.rs/x";
+
+    gchar answered[512];
+
+    read_terminal_until (terminal, answered, sizeof (answered), "z refused");
+    g_assert_nonnull (strstr (answered, "v\xef\xbf\xbd]0;version\xef\xbf\xbd" "w"));
+    g_assert_nonnull (strstr (answered, "u\xef\xbf\xbd]0;url\xef\xbf\xbd" "x"));
+    g_assert_nonnull (strstr (answered, "y\xef\xbf\xbd]0;error\xef\xbf\xbd" "z"));
+    g_assert_null (strchr (answered, '\x1b'));
     g_assert_true (g_close (client_side, NULL));
     g_assert_true (g_close (terminal, NULL));
 }

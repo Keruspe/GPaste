@@ -305,37 +305,62 @@ extract_pipe_data (gchar   **data,
  * does not -- a lone one, writing over its line, is shown. Anywhere else it is
  * written as it is, a script reading the bytes the item holds.
  *
- * Whether stdout is a terminal is asked once, a listing printing many items,
- * and what lies between two such characters is written in one go. */
+ * Whether the stream is a terminal is asked once, a listing printing many
+ * items, and what lies between two such characters is written in one go.
+ *
+ * stderr too: what the daemon refuses with quotes a history name, which any
+ * client of the session bus, or any writer of the settings, picked. */
 static void
-print_text (const gchar *text)
+print_text_to (FILE        *stream,
+               const gchar *text)
 {
-    static gint terminal = -1;
+    static gint terminal[2] = { -1, -1 };
+    gboolean error_stream = stream == stderr;
 
-    if (terminal < 0)
-        terminal = isatty (STDOUT_FILENO);
+    if (terminal[error_stream] < 0)
+        terminal[error_stream] = isatty ((error_stream) ? STDERR_FILENO : STDOUT_FILENO);
 
-    if (!terminal)
+    if (!terminal[error_stream])
     {
-        fputs (text, stdout);
+        fputs (text, stream);
         return;
     }
 
-    const gchar *run = text;
+    /* The text may not be UTF-8 -- a refusal quoting an option's value echoes
+     * it as typed -- and is walked as GLib makes it valid, a byte that is not
+     * part of a character shown as U+FFFD, as a control character is: a copy
+     * made for such a text alone. */
+    g_autofree gchar *valid = (g_utf8_validate (text, -1, NULL)) ? NULL : g_utf8_make_valid (text, -1);
+    const gchar *run = (valid) ? valid : text;
 
-    for (const gchar *c = text; *c; c = g_utf8_next_char (c))
+    for (const gchar *c = run; *c; c = g_utf8_next_char (c))
     {
         gunichar u = g_utf8_get_char (c);
 
         if (u == '\n' || u == '\t' || (u == '\r' && c[1] == '\n') || !g_unichar_iscntrl (u))
             continue;
 
-        fwrite (run, 1, (gsize) (c - run), stdout);
-        fputs ("\xef\xbf\xbd", stdout);
+        fwrite (run, 1, (gsize) (c - run), stream);
+        fputs ("\xef\xbf\xbd", stream);
         run = g_utf8_next_char (c);
     }
 
-    fputs (run, stdout);
+    fputs (run, stream);
+}
+
+static void
+print_text (const gchar *text)
+{
+    print_text_to (stdout, text);
+}
+
+/* @text as print_text_to () writes it, ending a line. */
+static void
+print_line_to (FILE        *stream,
+               const gchar *text)
+{
+    print_text_to (stream, text);
+    fputc ('\n', stream);
 }
 
 static void
@@ -642,12 +667,9 @@ g_paste_doctor (Context *ctx,
         return EXIT_FAILURE;
 
     /* A line names files of the history directory, another user's among them:
-     * through print_text (), as an item is. */
+     * through print_text_to (), as an item is. */
     for (GStrv line = report; *line; ++line)
-    {
-        print_text (*line);
-        putchar ('\n');
-    }
+        print_line_to (stdout, *line);
 
     if (!*report)
         printf ("%s\n", _("Nothing to put right"));
@@ -669,7 +691,9 @@ g_paste_daemon_version (Context *ctx,
         return EXIT_FAILURE;
     }
 
-    printf ("%s\n", v);
+    /* What a daemon answers goes out through print_text_to (): one of an
+     * older GPaste, still running after an update, checks none of it. */
+    print_line_to (stdout, v);
 
     return EXIT_SUCCESS;
 }
@@ -715,8 +739,7 @@ g_paste_get_history (Context *ctx,
         return EXIT_FAILURE;
 
     /* A name is a file's, which any process of the session may choose. */
-    print_text (name);
-    putchar ('\n');
+    print_line_to (stdout, name);
 
     return EXIT_SUCCESS;
 }
@@ -1027,7 +1050,8 @@ g_paste_upload (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s\n", url);
+    /* As g_paste_daemon_version () prints what the daemon answers. */
+    print_line_to (stdout, url);
 
     return EXIT_SUCCESS;
 }
@@ -1043,7 +1067,7 @@ g_paste_upload_and_copy (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s\n", url);
+    print_line_to (stdout, url);
 
     return EXIT_SUCCESS;
 }
@@ -1619,7 +1643,7 @@ main (gint argc, gchar *argv[])
          * for a bug, and which G_DEBUG=fatal-criticals turns into a crash. */
         if (error)
         {
-            g_printerr ("%s\n", error->message);
+            print_line_to (stderr, error->message);
             status = EXIT_FAILURE;
         }
     }
@@ -1627,7 +1651,7 @@ main (gint argc, gchar *argv[])
      * says which there are; one whose value is wrong is named here. */
     else if (error)
     {
-        g_printerr ("%s\n", error->message);
+        print_line_to (stderr, error->message);
         status = EXIT_FAILURE;
     }
     else
