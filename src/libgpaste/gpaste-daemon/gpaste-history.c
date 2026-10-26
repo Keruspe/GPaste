@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-client-history.h>
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
@@ -120,6 +121,13 @@ struct _GPasteHistory
      * when it was first loaded, and carry what was copied since, which the
      * history need not hold -- the reload publishes nothing over that. */
     gboolean              reload_keeps_selections;
+
+    /* The listings out (g_paste_history_list_sizes_async ()), told of whatever
+     * makes the size one took of a history stale while it counts the stores:
+     * another history emptied, its store written meanwhile, and the history in
+     * use left, which it sized from the model. Borrowed, each listing taking
+     * itself off as it ends; the main thread's alone. */
+    GSList               *listings;
 };
 
 G_PASTE_DEFINE_TYPE (History, history, G_TYPE_OBJECT)
@@ -455,6 +463,9 @@ g_paste_history_swap_out (GPasteHistory *self)
     g_clear_slist (&self->reload_passwords, g_object_unref);
 }
 
+static void g_paste_history_listings_resize (GPasteHistory *self,
+                                             const gchar   *name);
+
 /* Hand the saver what the history being left holds, for a write still out for
  * it to be counted by (g_paste_history_saver_left ()). Not while a load is
  * out: the model then holds none of what its writes are writing, nothing
@@ -462,6 +473,7 @@ g_paste_history_swap_out (GPasteHistory *self)
 static void
 g_paste_history_leave (GPasteHistory *self)
 {
+    g_paste_history_listings_resize (self, self->name);
     if (self->name && !g_paste_history_saver_is_loading (self->saver))
         g_paste_history_saver_left (self->saver, self->name, self->history);
 }
@@ -2095,6 +2107,7 @@ g_paste_history_empty_other_async (GPasteHistory      *self,
     /* As in g_paste_history_copy_async (). */
     g_autoptr (GPasteStorageBackend) elsewhere = g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
 
+    g_paste_history_listings_resize (self, name);
     g_paste_history_saver_empty (self->saver, elsewhere, name, callback, user_data);
 }
 
@@ -2734,6 +2747,7 @@ g_paste_history_finalize (GObject *object)
     GPasteHistory *self = G_PASTE_HISTORY (object);
 
     g_free (self->name);
+    g_slist_free (self->listings);
     g_mutex_clear (&self->lock);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->finalize (object);
@@ -3152,6 +3166,242 @@ g_paste_history_search_items_finish (GAsyncResult *result,
     return g_task_propagate_pointer (G_TASK (result), error);
 }
 
+/* How many items @name holds by what is in memory, when that answers: @size is
+ * written only then, the store answering otherwise. */
+static gboolean
+g_paste_history_size_in_memory (GPasteHistory *self,
+                                const gchar   *name,
+                                guint64       *size)
+{
+    /* The model, even while a load fills it: the store is the load's to read
+     * until then, and on an encrypted flavour a read of our own would derive
+     * the key again, on the main thread. The update the load raises once it is
+     * in is what a listing asks again on (GetHistorySize in the interface). */
+    if (g_paste_str_equal (name, g_paste_history_get_current (self)))
+    {
+        *size = g_paste_history_get_length (self);
+        return TRUE;
+    }
+
+    /* A history just switched away from can still have writes out, which a
+     * count of its store would not see yet: what they say it holds comes first
+     * (/history-ordering/count-pending). */
+    return g_paste_history_saver_count_pending (self->saver, name, size);
+}
+
+typedef struct
+{
+    /* Weakly, as anything the history tracks (@listings in GPasteHistory)
+     * holds it: one let go of while the stores are counted goes as its owner
+     * drops it, rather than once the counts are over. */
+    GWeakRef              history;
+    GPasteStorageBackend *backend;
+    GStrv                 names;
+    guint64              *sizes;
+    /* Whether the pass out counts each store, which its worker reads. */
+    gboolean             *counting;
+    /* Whether the size taken of each history stands: none does before the
+     * first pass, nor one the history changed since its size was taken
+     * (g_paste_history_listings_resize ()). */
+    gboolean             *sized;
+} ListSizesData;
+
+static void
+list_sizes_data_free (ListSizesData *data)
+{
+    g_autoptr (GPasteHistory) history = g_weak_ref_get (&data->history);
+
+    if (history)
+        history->listings = g_slist_remove (history->listings, data);
+    g_weak_ref_clear (&data->history);
+    g_clear_object (&data->backend);
+    g_strfreev (data->names);
+    g_free (data->sizes);
+    g_free (data->counting);
+    g_free (data->sized);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (ListSizesData, list_sizes_data_free)
+
+/* Have every listing out size @name again (@listings in GPasteHistory). */
+static void
+g_paste_history_listings_resize (GPasteHistory *self,
+                                 const gchar   *name)
+{
+    for (GSList *l = self->listings; l; l = l->next)
+    {
+        ListSizesData *data = l->data;
+
+        for (guint i = 0; data->names[i]; ++i)
+        {
+            if (g_paste_str_equal (data->names[i], name))
+                data->sized[i] = FALSE;
+        }
+    }
+}
+
+static gboolean
+list_sizes_data_stands (ListSizesData *data)
+{
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        if (!data->sized[i])
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void
+g_paste_history_list_sizes_thread (GTask        *task,
+                                   gpointer      source_object G_GNUC_UNUSED,
+                                   gpointer      task_data,
+                                   GCancellable *cancellable G_GNUC_UNUSED)
+{
+    ListSizesData *data = task_data;
+
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        if (data->counting[i])
+            data->sizes[i] = g_paste_storage_backend_count_history (data->backend, data->names[i]);
+    }
+
+    g_task_return_boolean (task, TRUE);
+}
+
+static void g_paste_history_list_sizes_pass (GTask         *task,
+                                             GPasteHistory *self);
+
+static void
+on_list_sizes_counted (GObject      *source_object G_GNUC_UNUSED,
+                       GAsyncResult *result        G_GNUC_UNUSED,
+                       gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    ListSizesData *data = g_task_get_task_data (task);
+    g_autoptr (GPasteHistory) self = g_weak_ref_get (&data->history);
+
+    /* Only what changed meanwhile is sized again, once however often it
+     * changed: every store counted again would hold back the answer for as
+     * long as changes kept landing in a pass, a key derivation apiece on an
+     * encrypted store. A history gone changes nothing more, and what was
+     * counted stands. */
+    if (self && !list_sizes_data_stands (data))
+        g_paste_history_list_sizes_pass (g_steal_pointer (&task), self);
+    else
+        g_task_return_boolean (task, TRUE);
+}
+
+/* One count of the stores of the histories whose size does not stand, bar
+ * those in use or with writes out: what those hold now is noted here, to stand
+ * should they be neither by the time g_paste_history_list_sizes_finish () sizes
+ * them again, as the answer goes out. @task is the listing's, which this
+ * pass's own holds until it is over. */
+static void
+g_paste_history_list_sizes_pass (GTask         *task,
+                                 GPasteHistory *self)
+{
+    ListSizesData *data = g_task_get_task_data (task);
+
+    g_set_object (&data->backend, self->backend);
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        data->counting[i] = !data->sized[i] && !g_paste_history_size_in_memory (self, data->names[i], &data->sizes[i]);
+        data->sized[i] = TRUE;
+    }
+
+    g_autoptr (GTask) pass = g_task_new (NULL, NULL, on_list_sizes_counted, task);
+
+    g_task_set_static_name (pass, "gpaste-history-list-sizes");
+    g_task_set_task_data (pass, data, NULL);
+    g_task_run_in_thread (pass, g_paste_history_list_sizes_thread);
+}
+
+/**
+ * g_paste_history_list_sizes_async:
+ * @self: a #GPasteHistory instance
+ * @names: (transfer full) (array zero-terminated=1): the histories to size, in
+ *     the order to answer them in
+ * @callback: (scope async): called with every history and its size
+ * @user_data: data passed to @callback
+ *
+ * Size every history @names lists, as g_paste_history_get_size () does each.
+ * The stores are counted on a worker thread: a count reads a whole document
+ * of a file history -- and derives a key, for an encrypted one -- which on the
+ * main loop would stall it for as long. The history in use, and any with
+ * writes out, are sized from what is in memory as
+ * g_paste_history_list_sizes_finish () builds the answer: a size of the
+ * history in use asked after the listing, and answered before it, is then no
+ * newer than what the listing says. A history emptied while the stores are
+ * counted, or the one in use left meanwhile, is sized again: a store counted
+ * before a write reached it would otherwise be answered for as it no longer
+ * is. @self is held weakly: let go of meanwhile, it goes there and then, and
+ * the listing answers what it counted.
+ */
+void
+g_paste_history_list_sizes_async (GPasteHistory      *self,
+                                  GStrv               names,
+                                  GAsyncReadyCallback callback,
+                                  gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (names);
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    guint length = g_strv_length (names);
+    g_autoptr (ListSizesData) data = g_new0 (ListSizesData, 1);
+
+    g_task_set_source_tag (task, g_paste_history_list_sizes_async);
+    g_weak_ref_init (&data->history, self);
+    data->names = names;
+    data->sizes = g_new0 (guint64, length);
+    data->counting = g_new0 (gboolean, length);
+    data->sized = g_new0 (gboolean, length);
+    self->listings = g_slist_prepend (self->listings, data);
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) list_sizes_data_free);
+    g_paste_history_list_sizes_pass (g_steal_pointer (&task), self);
+}
+
+/**
+ * g_paste_history_list_sizes_finish:
+ * @result: the #GAsyncResult g_paste_history_list_sizes_async () handed its
+ *     callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Never fails: @error is left unset. The history in use and those with writes
+ * out are sized here: the answer is to go out from where this is called. Once
+ * the history is gone, every size is the one counted.
+ *
+ * Returns: (transfer full): every history and its size, as ListHistories
+ *     answers them
+ */
+GVariant *
+g_paste_history_list_sizes_finish (GAsyncResult *result,
+                                   GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_history_list_sizes_async, NULL);
+
+    if (!g_task_propagate_boolean (G_TASK (result), error))
+        return NULL;
+
+    ListSizesData *data = g_task_get_task_data (G_TASK (result));
+    g_autoptr (GPasteHistory) self = g_weak_ref_get (&data->history);
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_HISTORIES_VARIANT_TYPE);
+
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        guint64 size = data->sizes[i];
+
+        if (self)
+            g_paste_history_size_in_memory (self, data->names[i], &size);
+        g_variant_builder_add (&builder, G_PASTE_HISTORY_VARIANT_STRING, data->names[i], size);
+    }
+
+    return g_variant_ref_sink (g_variant_builder_end (&builder));
+}
+
 /**
  * g_paste_history_new:
  * @settings: (transfer none): a #GPasteSettings instance
@@ -3229,20 +3479,10 @@ g_paste_history_get_size (GPasteHistory *self,
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
     g_return_val_if_fail (name, 0);
 
-    /* The model, even while a load fills it: the store is the load's to read
-     * until then, and on an encrypted flavour a read of our own would derive
-     * the key again, on the main thread. The update the load raises once it is
-     * in is what a listing asks again on (GetHistorySize in the interface). */
-    if (g_paste_str_equal (name, g_paste_history_get_current (self)))
-        return g_paste_history_get_length (self);
+    guint64 size;
 
-    /* A history just switched away from can still have writes out, which a
-     * count of its store would not see yet: what they say it holds comes first
-     * (/history-ordering/count-pending). */
-    guint64 count;
-
-    if (g_paste_history_saver_count_pending (self->saver, name, &count))
-        return count;
+    if (g_paste_history_size_in_memory (self, name, &size))
+        return size;
 
     return g_paste_storage_backend_count_history (self->backend, name);
 }

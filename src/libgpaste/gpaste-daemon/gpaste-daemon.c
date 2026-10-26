@@ -1391,9 +1391,33 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_uris,
                                 g_auto (GStrv) uris, (const gchar * const *) uris,
                                 (const gchar *uuid), (uuid))
 
-G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
-                                GVariant *histories, histories,
-                                (), ())
+static void
+on_histories_listed (GObject      *source_object G_GNUC_UNUSED,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    GError *error = NULL;
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    if (histories)
+        g_dbus_method_invocation_return_value (invocation, g_variant_new ("(@" G_PASTE_HISTORIES_VARIANT_STRING ")", histories));
+    else
+        g_dbus_method_invocation_take_error (invocation, error);
+}
+
+/* The stores counted on a worker thread: see
+ * g_paste_history_list_sizes_async (). */
+static gboolean
+g_paste_daemon_handle_list_histories (GPasteDaemon          *self,
+                                      GDBusMethodInvocation *invocation)
+{
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_list_histories_async (&methods, on_histories_listed, invocation);
+
+    return TRUE;
+}
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (make_password,
                                 g_autofree gchar *new_uuid, new_uuid,

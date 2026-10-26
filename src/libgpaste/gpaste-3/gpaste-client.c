@@ -289,14 +289,13 @@ g_paste_client_strip_remote_error (GError **error)
  * reports a failure the upload did not have, having already succeeded on the
  * daemon's side.
  *
- * BackupHistory and EmptyHistory answer once a worker thread has been through
- * a store, ListHistories once the daemon has been through every other one: a
- * backup writes the whole copy behind the writes already out, a write and a
- * sync per image for a history of screenshots; emptying another history
- * writes its store; a listing counts every other history in its own, deriving
- * a key for each encrypted one. Slow storage or a long queue pushes them past
- * the default too, and a backup that timed out is one still being written,
- * which a retry is refused for.
+ * BackupHistory, EmptyHistory and ListHistories answer once a worker thread
+ * has been through a store: a backup writes the whole copy behind the writes
+ * already out, a write and a sync per image for a history of screenshots;
+ * emptying another history writes its store; a listing counts every other
+ * history in its own, deriving a key for each encrypted one. Slow storage or a
+ * long queue pushes them past the default too, and a backup that timed out is
+ * one still being written, which a retry is refused for.
  *
  * Reexecute is another: expiry waits for the selections to be identified.
  * Each wait has a sixty-second deadline and completion revalidation retries

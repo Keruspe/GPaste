@@ -1069,6 +1069,35 @@ pathconf (const char *path,
     return original (path, name);
 }
 
+/* The thread the last count of a store ran on, while @counts_watched is set;
+ * how many counts @counted_name's store had; and every count held at
+ * @count_gate once it has counted, while it is closed. */
+static gboolean     counts_watched;
+static GThread     *counted_on;
+static const gchar *counted_name;
+static guint        counted_times;
+static Gate         count_gate;
+
+gsize
+g_paste_storage_backend_count_history (GPasteStorageBackend *self,
+                                       const gchar          *name)
+{
+    typedef gsize (*Count) (GPasteStorageBackend *, const gchar *);
+    Count original = (Count) dlsym (RTLD_NEXT, "g_paste_storage_backend_count_history");
+
+    g_assert_nonnull (original);
+    if (counts_watched)
+        g_atomic_pointer_set (&counted_on, g_thread_self ());
+    if (g_paste_str_equal (name, counted_name))
+        g_atomic_int_inc (&counted_times);
+
+    gsize count = original (self, name);
+
+    gate_pass (&count_gate);
+
+    return count;
+}
+
 #if defined(G_PASTE_ENABLE_ENCRYPTION) || defined(G_PASTE_ENABLE_SQLITE)
 /* Whether the library's own calls reach this binary's definitions -- the
  * interposer above, the storage-migration functions its copy built in here
@@ -1078,9 +1107,10 @@ pathconf (const char *path,
  * cases needing them hide a flavour that can be missing, count a storage
  * worker in this binary's copy of the counter the library asks
  * g_paste_storage_is_busy () of, or count the reads of the process
- * passphrase. Every other case interposes calls the library
- * makes into another one, or that the migration makes from its copy, which
- * -Bsymbolic leaves alone. */
+ * passphrase; the ListHistories cases, which hold or watch the counts of a
+ * store, ask counts_interposed () instead. Every other case interposes calls
+ * the library makes into another one, or that the migration makes from its
+ * copy, which -Bsymbolic leaves alone. */
 static gboolean
 library_calls_interposed (void)
 {
@@ -2358,6 +2388,284 @@ empty_history (const GPasteDaemonMethods *methods,
     g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
     g_paste_test_env_wait_result_within (&result, 60);
     g_paste_daemon_methods_empty_history_finish (result, error);
+}
+
+/* Whether a count of a store reaches the interposer above, the case skipped
+ * when it does not: a call from gpaste-history.c into
+ * gpaste-storage-backend.c, which -Bsymbolic binds inside the library, and an
+ * optimising compiler may inline there (see tests/meson.build). */
+static gboolean
+counts_interposed (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    /* On the plain flavour, whatever an earlier case left set: an encrypted
+     * one's count asks the keyring for the passphrase. */
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    counted_on = NULL;
+    counts_watched = TRUE;
+    g_paste_history_get_size (history, "counts-probe");
+    counts_watched = FALSE;
+    if (g_atomic_pointer_get (&counted_on))
+        return TRUE;
+
+    g_test_skip ("libgpaste-daemon binds its own calls");
+
+    return FALSE;
+}
+
+/* What a ListHistories answer says @name holds. */
+static guint64
+listed_size (GVariant    *histories,
+             const gchar *name)
+{
+    for (gsize i = 0; i < g_variant_n_children (histories); ++i)
+    {
+        const gchar *listed = NULL;
+        guint64 size = 0;
+
+        g_variant_get_child (histories, i, "(&st)", &listed, &size);
+        if (g_paste_str_equal (listed, name))
+            return size;
+    }
+    g_assert_not_reached ();
+}
+
+/* The ListHistories cases' histories: "listed-other", a file history holding
+ * @texts, and "listed-current", which the history returned loads. */
+static GPasteHistory *
+listed_histories_new (GPasteSettings       **settings,
+                      GPasteStorageBackend **backend,
+                      const gchar * const   *texts)
+{
+    *settings = g_paste_settings_new ();
+    g_paste_settings_set_storage_backend (*settings, G_PASTE_STORAGE_FILE);
+    *backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, *settings);
+
+    g_autolist (GPasteItem) items = NULL;
+
+    for (const gchar * const *text = texts; *text; ++text)
+        items = g_list_append (items, g_paste_text_item_new (*text));
+    g_assert_true (g_paste_storage_backend_write_history (*backend, "listed-other", items));
+
+    GPasteHistory *history = g_paste_history_new (*settings);
+
+    g_paste_history_load (history, "listed-current");
+
+    return history;
+}
+
+/* Both histories gone, and the storage back to its default. */
+static void
+listed_histories_clear (GPasteSettings       *settings,
+                        GPasteStorageBackend *backend,
+                        GPasteHistory        *history)
+{
+    g_paste_history_flush (history);
+    g_paste_storage_backend_delete_history (backend, "listed-other", NULL);
+    g_paste_storage_backend_delete_history (backend, "listed-current", NULL);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+}
+
+/* ListHistories counts every history but the one in use in its store, which
+ * for a file history reads its whole document -- and derives a key, for an
+ * encrypted one: on a worker thread, where on the main loop it would stall
+ * the daemon, gnome-shell for the in-shell one, for as long. The sizes are
+ * checked wherever the library binds its own calls, only the thread they were
+ * counted on needing the interposer. */
+static void
+test_list_histories_counted_off_main_loop (void)
+{
+    gboolean interposed = counts_interposed ();
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = listed_histories_new (&settings, &backend, (const gchar *[]) { "first", "second", NULL });
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_add (history, g_paste_text_item_new ("this session"));
+    counted_on = NULL;
+    counts_watched = TRUE;
+    g_paste_daemon_methods_list_histories_async (&methods, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    counts_watched = FALSE;
+
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (listed_size (histories, "listed-other"), ==, 2);
+    g_assert_cmpuint (listed_size (histories, "listed-current"), ==, 1);
+    listed_histories_clear (settings, backend, history);
+    if (!interposed)
+        return;
+
+    GThread *thread = g_atomic_pointer_get (&counted_on);
+
+    g_assert_nonnull (thread);
+    g_assert_true (thread != g_thread_self ());
+}
+
+/* A listing sizes the history in use as its answer goes out: what is copied
+ * while the other histories are counted is in it, as it is in a
+ * GetHistorySize asked after the listing and answered first, whose count the
+ * listing would otherwise land over with an older one. */
+static void
+test_list_histories_current_as_answered (void)
+{
+    if (!counts_interposed ())
+        return;
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = listed_histories_new (&settings, &backend, (const gchar *[]) { "other", NULL });
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_add (history, g_paste_text_item_new ("before"));
+    gate_close (&count_gate);
+    g_paste_daemon_methods_list_histories_async (&methods, g_paste_test_env_keep_result, &result);
+    g_paste_test_bus_wait_for_count (&count_gate.held, 1);
+    g_paste_history_add (history, g_paste_text_item_new ("while counted"));
+    gate_open (&count_gate);
+    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (listed_size (histories, "listed-current"), ==, 2);
+    g_assert_cmpuint (listed_size (histories, "listed-other"), ==, 1);
+    listed_histories_clear (settings, backend, history);
+}
+
+/* Another history emptied while a listing counts the stores is sized again:
+ * counted before the emptying reached it, its store would be answered for as
+ * it was after HistoryEmptied has said it holds nothing, which the graphical
+ * tool's sidebar takes as the row's count. It alone: every store counted again
+ * would hold the answer back for as long as emptyings kept landing in a pass,
+ * a key derivation apiece on an encrypted store. It runs in a child only for
+ * the storage lock the emptying needs, which would otherwise outlive the case,
+ * and so keeps warnings fatal (gpaste-test-history.h). */
+static void
+test_list_histories_recounted_after_empty (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!counts_interposed ())
+            return;
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_assert_true (g_paste_storage_backend_try_lock ());
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = listed_histories_new (&settings, &backend, (const gchar *[]) { "first", "second", NULL });
+    g_autolist (GPasteItem) kept = NULL;
+
+    kept = g_list_append (kept, g_paste_text_item_new ("first"));
+    kept = g_list_append (kept, g_paste_text_item_new ("second"));
+    g_assert_true (g_paste_storage_backend_write_history (backend, "listed-kept", kept));
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    counted_name = "listed-kept";
+    gate_close (&count_gate);
+    g_paste_daemon_methods_list_histories_async (&methods, g_paste_test_env_keep_result, &result);
+    g_paste_test_bus_wait_for_count (&count_gate.held, 1);
+    empty_history (&methods, "listed-other", &error);
+    g_assert_no_error (error);
+    gate_open (&count_gate);
+    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (listed_size (histories, "listed-other"), ==, 0);
+    g_assert_cmpuint (listed_size (histories, "listed-kept"), ==, 2);
+    g_assert_cmpuint (g_atomic_int_get (&counted_times), ==, 1);
+}
+
+/* So with the history in use left while the stores are counted: noted as it
+ * was when the count began, it would be answered for with what it held then,
+ * though by the time the answer goes out it is neither in use nor writing, and
+ * its store holds more. */
+static void
+test_list_histories_recounted_after_leave (void)
+{
+    if (!counts_interposed ())
+        return;
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = listed_histories_new (&settings, &backend, (const gchar *[]) { "other", NULL });
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_add (history, g_paste_text_item_new ("before"));
+    gate_close (&count_gate);
+    g_paste_daemon_methods_list_histories_async (&methods, g_paste_test_env_keep_result, &result);
+    g_paste_test_bus_wait_for_count (&count_gate.held, 1);
+    g_paste_history_add (history, g_paste_text_item_new ("while counted"));
+    g_paste_history_load (history, "listed-next");
+    g_paste_history_flush (history);
+    gate_open (&count_gate);
+    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (listed_size (histories, "listed-current"), ==, 2);
+    listed_histories_clear (settings, backend, history);
+    g_paste_storage_backend_delete_history (backend, "listed-next", NULL);
+}
+
+/* A history let go of while a listing counts its stores goes there and then,
+ * the listing answering what it counted: held until the counts were over, the
+ * in-shell daemon's history would outlive its dispose, its items with it, and
+ * still follow the settings the successor writes. */
+static void
+test_list_histories_history_dropped (void)
+{
+    if (!counts_interposed ())
+        return;
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    GPasteHistory *history = listed_histories_new (&settings, &backend, (const gchar *[]) { "other", NULL });
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_flush (history);
+    g_object_add_weak_pointer (G_OBJECT (history), (gpointer *) &history);
+    gate_close (&count_gate);
+    g_paste_daemon_methods_list_histories_async (&methods, g_paste_test_env_keep_result, &result);
+    g_paste_test_bus_wait_for_count (&count_gate.held, 1);
+    g_object_unref (history);
+    g_assert_null (history);
+    gate_open (&count_gate);
+    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (listed_size (histories, "listed-other"), ==, 1);
+    /* As listed_histories_clear (), the history being gone already. */
+    g_paste_storage_backend_delete_history (backend, "listed-other", NULL);
+    g_paste_storage_backend_delete_history (backend, "listed-current", NULL);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 
 /* The file flavour's store lags a history whose last save failed too: the
@@ -8208,6 +8516,11 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/verification-empty-active-database", test_verification_empty_active_database);
 #endif
     g_test_add_func ("/storage/migration/offered", test_migration_offers_supported);
+    g_test_add_func ("/storage/list-histories-off-main-loop", test_list_histories_counted_off_main_loop);
+    g_test_add_func ("/storage/list-histories-current-as-answered", test_list_histories_current_as_answered);
+    g_test_add_func ("/storage/list-histories-recounted-after-empty", test_list_histories_recounted_after_empty);
+    g_test_add_func ("/storage/list-histories-recounted-after-leave", test_list_histories_recounted_after_leave);
+    g_test_add_func ("/storage/list-histories-history-dropped", test_list_histories_history_dropped);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

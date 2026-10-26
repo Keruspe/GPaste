@@ -1079,47 +1079,113 @@ g_paste_daemon_methods_get_password_timeout (const GPasteDaemonMethods *self,
     return g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item));
 }
 
-/* Every history with how many items it holds, in the order the store lists them,
- * which is the order such a listing is drawn in. The size rides along because
- * everything listing histories draws their sizes beside them, and asking one at
- * a time would mean one full load of one history apiece. */
-G_PASTE_VISIBLE GVariant *
-g_paste_daemon_methods_list_histories (const GPasteDaemonMethods *self,
-                                       GError                   **error)
+/* The names ListHistories answers for, in its order.
+ *
+ * The backends answer with the names on disk, which is what everything that
+ * opens those files needs, but this answer travels back over the bus, where a
+ * name that is not valid UTF-8 has no place. Such a history could not be
+ * switched to either, since that call names it the same way, so it is left
+ * out rather than handed back a name nothing can act on.
+ *
+ * The current history is one whether or not its store holds it yet: one just
+ * switched to has none until its load has read it, and a listing asked for on
+ * the HistoriesChanged that switch raised would otherwise leave out the very
+ * history it was raised for. */
+static GStrv
+g_paste_daemon_methods_listed_names (const GPasteDaemonMethods *self,
+                                     GError                   **error)
 {
-    g_auto (GStrv) names = g_paste_history_list (self->history, error);
+    /* The vector alone: each name is taken out of it below. */
+    g_autofree gchar **names = g_paste_history_list (self->history, error);
 
     if (!names)
         return NULL;
 
-    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_HISTORIES_VARIANT_TYPE);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    const gchar *current = g_paste_history_get_current (self->history);
+    gboolean listed = current && g_strv_contains ((const gchar * const *) names, current);
 
     for (GStrv name = names; *name; ++name)
     {
-        /* The backends answer with the names on disk, which is what everything
-         * that opens those files needs, but this answer travels back over the
-         * bus, where a name that is not valid UTF-8 has no place. Such a history
-         * could not be switched to either, since that call names it the same
-         * way, so leave it out rather than hand back a name nothing can act
-         * on. */
-        if (!g_utf8_validate (*name, -1, NULL))
-            continue;
+        g_autofree gchar *owned = g_steal_pointer (name);
 
-        g_variant_builder_add (&builder, G_PASTE_HISTORY_VARIANT_STRING,
-                               *name,
-                               g_paste_history_get_size (self->history, *name));
+        if (g_utf8_validate (owned, -1, NULL))
+            g_strv_builder_take (builder, g_steal_pointer (&owned));
+    }
+    if (current && !listed)
+        g_strv_builder_add (builder, current);
+
+    return g_strv_builder_end (builder);
+}
+
+/* @task was made when the call landed, so GTask calls back from within its
+ * return here: the answer goes out with the size of the history in use that
+ * g_paste_history_list_sizes_finish () has just read, nothing having run in
+ * between (g_paste_history_list_sizes_async ()). */
+static void
+on_histories_sized (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    GVariant *histories = g_paste_history_list_sizes_finish (result, &error);
+
+    if (histories)
+        g_task_return_pointer (task, histories, (GDestroyNotify) g_variant_unref);
+    else
+        g_task_return_error (task, g_steal_pointer (&error));
+}
+
+/**
+ * g_paste_daemon_methods_list_histories_async:
+ * @self: the daemon's methods
+ * @callback: (scope async): called with the histories, or the failure
+ * @user_data: data passed to @callback
+ *
+ * Every history with how many items it holds, in the order the store lists
+ * them, which is the order such a listing is drawn in. The size rides along
+ * because everything listing histories draws their sizes beside them, and
+ * asking one at a time would mean one full load of one history apiece. The
+ * stores are counted on a worker thread (g_paste_history_list_sizes_async ()).
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_list_histories_async (const GPasteDaemonMethods *self,
+                                             GAsyncReadyCallback        callback,
+                                             gpointer                   user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) names = g_paste_daemon_methods_listed_names (self, &error);
+
+    g_task_set_source_tag (task, g_paste_daemon_methods_list_histories_async);
+    if (!names)
+    {
+        g_task_return_error (task, g_steal_pointer (&error));
+        return;
     }
 
-    /* The current history is one whether or not its store holds it yet: one
-     * just switched to has none until its load has read it, and a listing
-     * asked for on the HistoriesChanged that switch raised would otherwise
-     * leave out the very history it was raised for. */
-    const gchar *current = g_paste_history_get_current (self->history);
+    g_paste_history_list_sizes_async (self->history, g_steal_pointer (&names), on_histories_sized, g_steal_pointer (&task));
+}
 
-    if (current && !g_strv_contains ((const gchar * const *) names, current))
-        g_variant_builder_add (&builder, G_PASTE_HISTORY_VARIANT_STRING, current, g_paste_history_get_size (self->history, current));
+/**
+ * g_paste_daemon_methods_list_histories_finish:
+ * @result: the #GAsyncResult g_paste_daemon_methods_list_histories_async ()
+ *     handed its callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails when the store cannot list the histories.
+ *
+ * Returns: (transfer full): every history with its size, or %NULL
+ */
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_list_histories_finish (GAsyncResult *result,
+                                              GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_daemon_methods_list_histories_async, NULL);
 
-    return g_variant_builder_end (&builder);
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 /* Daemon-side because it has to be: what gets joined is each item's whole

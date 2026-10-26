@@ -995,8 +995,8 @@ test_doctor_answers (void)
 }
 
 /* Past the proxy's default timeout, which the test cuts to a fifth of a
- * second: the stand-in answering, as the daemon does, once it has been through
- * the store. */
+ * second: the stand-in answering, as the daemon does, once a worker has been
+ * through the store. */
 #define STORE_ANSWER_MS 600
 
 static gboolean
@@ -1025,8 +1025,8 @@ store_call_later (gpointer               data G_GNUC_UNUSED,
 }
 
 /* BackupHistory, EmptyHistory and ListHistories wait for their answer past the
- * proxy's default timeout: the daemon answers each once it has written or
- * counted a store, which slow storage or a long queue of writes can take
+ * proxy's default timeout: the daemon answers each once a worker has written
+ * or counted a store, which slow storage or a long queue of writes can take
  * longer than that over, and a backup reported failed is one still written. */
 static void
 test_store_calls_wait (void)

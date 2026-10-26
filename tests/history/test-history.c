@@ -512,6 +512,19 @@ backup_history (const GPasteDaemonMethods *methods,
     g_paste_daemon_methods_backup_history_finish (result, error);
 }
 
+/* ListHistories through the daemon's methods, waited for. */
+static GVariant *
+list_histories (const GPasteDaemonMethods *methods,
+                GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_list_histories_async (methods, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+
+    return g_paste_daemon_methods_list_histories_finish (result, error);
+}
+
 /* Search through the daemon's methods, waited for. */
 static GVariant *
 search (const GPasteDaemonMethods *methods,
@@ -614,7 +627,7 @@ test_list_histories_has_current (void)
 
     g_paste_history_load (history, "listed-without-store");
 
-    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories (&methods, &error);
+    g_autoptr (GVariant) histories = list_histories (&methods, &error);
     const gchar *name = NULL;
     guint64 size = 0;
 

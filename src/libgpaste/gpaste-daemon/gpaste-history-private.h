@@ -51,6 +51,13 @@ void       g_paste_history_search_items_async  (GPasteHistory      *self,
 GPtrArray *g_paste_history_search_items_finish (GAsyncResult       *result,
                                                 GError            **error);
 
+void      g_paste_history_list_sizes_async  (GPasteHistory      *self,
+                                             GStrv               names,
+                                             GAsyncReadyCallback callback,
+                                             gpointer            user_data);
+GVariant *g_paste_history_list_sizes_finish (GAsyncResult       *result,
+                                             GError            **error);
+
 /* The passwords the change being announced takes out of the history, which
  * GPasteHistory::password-dropped announces after ::selected: a handler of the
  * one can tell a head elected because a password went from any other. %NULL

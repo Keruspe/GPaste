@@ -107,7 +107,10 @@ guint     g_paste_daemon_methods_get_password_timeout       (const GPasteDaemonM
 GStrv     g_paste_daemon_methods_get_uris                   (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_list_histories             (const GPasteDaemonMethods *self,
+void      g_paste_daemon_methods_list_histories_async       (const GPasteDaemonMethods *self,
+                                                             GAsyncReadyCallback        callback,
+                                                             gpointer                   user_data);
+GVariant *g_paste_daemon_methods_list_histories_finish      (GAsyncResult              *result,
                                                              GError                   **error);
 gchar    *g_paste_daemon_methods_merge                      (const GPasteDaemonMethods *self,
                                                              const gchar               *decoration,

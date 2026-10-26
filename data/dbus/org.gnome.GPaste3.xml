@@ -380,7 +380,9 @@
       history apiece, inside the daemon's main loop. The order is the storage
       backend's, which is the order such a listing is drawn in. The current
       history is listed whether or not anything of it is stored yet, last when
-      it is not, and its size is GetHistorySize's, loading or not.
+      it is not, and its size is GetHistorySize's, loading or not, read as the
+      answer goes out: a GetHistorySize asked after this call and answered
+      before it says nothing newer.
     -->
     <method name="ListHistories">
       <arg type="a(st)" direction="out" name="histories"/>

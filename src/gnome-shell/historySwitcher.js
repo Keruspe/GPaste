@@ -514,9 +514,11 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this._refreshIfOpen();
     }
 
-    // ListHistories parses inactive file histories on the daemon's main thread.
-    // Pay for it only while the chooser is being used, including reopening to
-    // pick up changes made on disk outside this daemon.
+    // ListHistories counts every inactive history in its store, reading the
+    // whole of a file one and deriving a key for an encrypted one: on a worker
+    // thread of the daemon's, but a cost all the same. Pay for it only while
+    // the chooser is being used, including reopening to pick up changes made
+    // on disk outside this daemon.
     setSubmenuShown(open) {
         super.setSubmenuShown(open);
         if (open) {
@@ -545,12 +547,12 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
 
     // An empty changes the one count the signal names: that row is set to
     // nothing, rather than every history listed again, which would count each
-    // inactive history's store on the daemon's main thread for that number. A
-    // listing still out was asked before the empty and would paint the old
-    // count back on landing, so it is superseded instead, and a size of the
-    // history in use given up on for the same reason. A history with no row
-    // is a new one, which histories-changed announces too, its listing drawing
-    // it (test-history-switcher.cjs).
+    // inactive history in its store for that number. A listing still out, and
+    // a size of the history in use, were asked before the empty: the listing
+    // is superseded and the size given up on, so that nothing counted before
+    // the empty lands after it. A history with no row is a new one, which
+    // histories-changed announces too, its listing drawing it
+    // (test-history-switcher.cjs).
     _onHistoryEmptied(client, history) {
         if (!this.menu.isOpen || !this._daemonReady())
             return;
@@ -580,9 +582,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this._sizeCurrent().catch(console.error);
     }
 
-    // Only while there is a chooser to show it, and a daemon to ask. A size and
-    // a listing land in the order they were asked, the daemon answering both
-    // from its main loop, so whichever landed last is the newer count.
+    // Only while there is a chooser to show it, and a daemon to ask. A listing
+    // can land after a size asked after it, but the daemon counts the history
+    // in use as each answer goes out, so whichever landed last is the newer
+    // count.
     async _sizeCurrent() {
         if (!this.menu.isOpen || !this._daemonReady())
             return;
