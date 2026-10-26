@@ -174,7 +174,20 @@ g_paste_clipboard_provider_update_full (GPasteClipboardProvider              *se
                                         GPasteClipboardProviderUpdateCallback callback,
                                         gpointer                              user_data)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    /* Hand-rolled, as in g_paste_clipboard_provider_sync_text (): @callback is
+     * the one release of @user_data, so a bare return would leak it and what it
+     * holds -- a manager's update data holds the manager. Answered as a read
+     * whose provider is gone, the shape that asks of the callback nothing but
+     * the release. */
+    if (!G_PASTE_IS_CLIPBOARD_PROVIDER (self))
+    {
+        g_critical ("%s: assertion failed: G_PASTE_IS_CLIPBOARD_PROVIDER (self)", G_STRFUNC);
+
+        if (callback)
+            callback (NULL, NULL, TRUE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
+
+        return;
+    }
 
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->update (self, record, callback, user_data);
 }

@@ -6039,6 +6039,42 @@ test_sync_over_sensitive_unknown_read (void)
     g_assert_cmpuint (primary->publications, ==, publications + 1);
 }
 
+static void
+on_unprovided_update (GPasteClipboardProvider *provider,
+                      GPasteItem              *item,
+                      gboolean                 superseded,
+                      GPasteClipboardSecret    secret G_GNUC_UNUSED,
+                      gpointer                 user_data)
+{
+    g_assert_null (provider);
+    g_assert_null (item);
+    g_assert_true (superseded);
+    *(gboolean *) user_data = TRUE;
+}
+
+/* An update asked of something that is no provider is a programming error,
+ * and says so -- but its callback still runs, the one release of what the
+ * caller gave it, a manager's update data holding the manager. */
+static void
+test_update_not_a_provider (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*G_PASTE_IS_CLIPBOARD_PROVIDER*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GObject) object = g_object_new (G_TYPE_OBJECT, NULL);
+    gboolean answered = FALSE;
+
+    g_paste_clipboard_provider_update_full ((GPasteClipboardProvider *) object, FALSE, on_unprovided_update, &answered);
+    g_assert_true (answered);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -6050,6 +6086,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/merged_password/expiry", GINT_TO_POINTER (FALSE), test_merged_password_expiry);
     g_test_add_data_func ("/clipboard/merged_password/bootstrap_expiry", GINT_TO_POINTER (TRUE), test_merged_password_expiry);
     g_test_add_func ("/clipboard/select/refused_claim", test_select_refused_claim);
+    g_test_add_func ("/clipboard/update/not_a_provider", test_update_not_a_provider);
     g_test_add_func ("/clipboard/ensure_not_empty/refused", test_ensure_not_empty_refused);
     g_test_add_func ("/clipboard/password/expiry_refused_claim", test_expiry_refused_claim);
     g_test_add_data_func ("/clipboard/sensitive_followup/strip", GINT_TO_POINTER (FALSE), test_sensitive_followup);
