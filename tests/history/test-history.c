@@ -7037,18 +7037,36 @@ test_sqlite_image_date_out_of_range (void)
     }
 
     g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
-    sqlite3 *db = NULL;
+    /* Past year 9999, and the rows read_item () drops for having no date or
+     * no blob: counted as the read finds them. */
+    static const gchar * const damages[] = {
+        "UPDATE items SET date = 100000000000000 WHERE kind = 'Image';",
+        "UPDATE items SET date = NULL WHERE kind = 'Image';",
+        "UPDATE items SET image = NULL WHERE kind = 'Image';",
+    };
 
-    /* Past year 9999. */
-    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
-    g_assert_cmpint (sqlite3_exec (db, "UPDATE items SET date = 100000000000000 WHERE kind = 'Image';", NULL, NULL, NULL), ==, SQLITE_OK);
-    sqlite3_close (db);
+    for (gsize i = 0; i < G_N_ELEMENTS (damages); ++i)
+    {
+        sqlite3 *db = NULL;
 
-    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-    g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
 
-    g_assert_cmpuint (g_list_length (loaded), ==, 1);
-    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_assert_cmpuint (g_paste_storage_backend_count_history (backend, name), ==, 2);
+        }
+
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, damages[i], NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
+        g_assert_cmpuint (g_paste_storage_backend_count_history (backend, name), ==, 1);
+    }
 }
 
 /* A row whose value is not UTF-8 -- another tool's, a damaged page -- is one

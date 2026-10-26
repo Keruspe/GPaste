@@ -1666,12 +1666,16 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
     gboolean images_support = g_paste_storage_backend_reads_images (self);
     const gchar *query;
 
+    /* With images, the image rows read_item () drops on purpose are left out
+     * too -- no blob, no date, or one GDateTime cannot hold -- each still
+     * taking its place under the cap, as it does in the read. */
     if (version >= 2)
     {
         query = (images_support)
             ? "SELECT COUNT (*) FROM items "
-              "WHERE favourite = 1 "
-              "   OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?1);"
+              "WHERE (favourite = 1 "
+              "       OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?1)) "
+              "  AND (kind != ?2 OR (image IS NOT NULL AND date BETWEEN ?3 AND ?4));"
             : "SELECT COUNT (*) FROM items "
               "WHERE kind != ?2 "
               "  AND (favourite = 1 "
@@ -1684,7 +1688,8 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
          * applied to all of it. */
         query = (images_support)
             ? "SELECT COUNT (*) FROM items "
-              "WHERE id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1);"
+              "WHERE id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1) "
+              "  AND (kind != ?2 OR (image IS NOT NULL AND date BETWEEN ?3 AND ?4));"
             : "SELECT COUNT (*) FROM items "
               "WHERE kind != ?2 "
               "  AND id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1);";
@@ -1704,8 +1709,17 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
 
     /* The nick the rows were written with, not a literal: it is one enum
      * registration away from being something else. */
-    if (!images_support)
-        sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (G_PASTE_ITEM_KIND_IMAGE), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (G_PASTE_ITEM_KIND_IMAGE), -1, SQLITE_STATIC);
+    if (images_support)
+    {
+        /* The dates g_date_time_new_from_unix_local () takes, which read_item ()
+         * builds an image's from. */
+        g_autoptr (GDateTime) first = g_date_time_new_local (1, 1, 1, 0, 0, 0);
+        g_autoptr (GDateTime) last = g_date_time_new_local (9999, 12, 31, 23, 59, 59);
+
+        sqlite3_bind_int64 (stmt, 3, (first) ? g_date_time_to_unix (first) : G_MININT64);
+        sqlite3_bind_int64 (stmt, 4, (last) ? g_date_time_to_unix (last) : G_MAXINT64);
+    }
 
     if (sqlite3_step (stmt) == SQLITE_ROW)
         count = sqlite3_column_int64 (stmt, 0);
