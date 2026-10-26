@@ -1255,11 +1255,11 @@ on_legacy_reexecuted (GObject      *source_object G_GNUC_UNUSED,
     if (!restarted)
         g_warning ("Could not restart the older daemon: %s", error->message);
 
-    /* As in on_client_ready (): a window disposed meanwhile has no widgets left
-     * to say anything with. Closing it does not get there, gtk_window_destroy ()
-     * leaving the dispose to the last reference, which this callback holds --
-     * so no test can, short of disposing it by hand. */
-    if (!self->banner)
+    /* As in on_client_ready (): a window closed meanwhile is GTK's no more,
+     * though the reference this callback holds keeps its widgets standing, and
+     * there is nobody left to tell. What it would have said goes on a window
+     * nothing shows any more, which is why no test can see it. */
+    if (!g_paste_ui_window_is_toplevel (self))
         return;
 
     /* What comes back is a daemon starting, until the presence says more. */
@@ -1678,10 +1678,9 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     GtkWidget *banner = adw_banner_new ("");
     self->banner = ADW_BANNER (banner);
-    /* As in g_paste_gtk_util_toast (): what it says is a translation. Said,
-     * though libadwaita 1.10 starts a banner with markup off, against its
-     * property's default of on, which a later release may honour: no case here
-     * can tell the two apart. */
+    /* As in g_paste_gtk_util_toast (): what it says is a translation. Said
+     * for the reason the prompt's warning banner gives
+     * (gpaste-prompt-adw.c). */
     adw_banner_set_use_markup (self->banner, FALSE);
     g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_retry), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
