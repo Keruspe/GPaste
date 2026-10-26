@@ -3387,6 +3387,86 @@ test_merge_refuses_image_and_password (void)
     }
 }
 
+/* What a caller repeats is measured before anything is built from it: a merge
+ * of one item thousands of times under a megabyte of decoration is refused as
+ * too long without the gigabytes being joined, and a listing asked for one
+ * item more often than the history could hold it is refused rather than
+ * copying its value every time. */
+static void
+test_repeats_measured_first (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+    g_paste_settings_set_trim_items (settings, FALSE);
+    g_paste_history_add (history, g_paste_text_item_new ("text"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+    g_autofree gchar *decoration = g_strnfill (1024 * 1024, '=');
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    for (guint i = 0; i < 4096; ++i)
+        g_strv_builder_add (builder, uuid);
+
+    g_auto (GStrv) repeated = g_strv_builder_end (builder);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *merged = g_paste_daemon_methods_merge (&methods, decoration, "", (const gchar * const *) repeated, &error);
+
+    g_assert_null (merged);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    g_autoptr (GError) items_error = NULL;
+    g_autoptr (GVariant) twice = g_paste_daemon_methods_get_items (&methods, (const gchar * const *) repeated + 4094, &items_error);
+
+    g_assert_no_error (items_error);
+    g_assert_cmpuint (g_variant_n_children (twice), ==, 2);
+
+    g_paste_history_add (history, g_paste_text_item_new (decoration));
+
+    g_autofree gchar *large = dup_uuid_at (history, 0);
+    g_autoptr (GStrvBuilder) large_builder = g_strv_builder_new ();
+
+    /* Past the 6 MiB a history may hold. */
+    for (guint i = 0; i < 8; ++i)
+        g_strv_builder_add (large_builder, large);
+
+    g_auto (GStrv) larges = g_strv_builder_end (large_builder);
+    g_autoptr (GVariant) items = NULL;
+
+    g_paste_settings_set_max_memory_usage (settings, 6);
+    items = g_paste_daemon_methods_get_items (&methods, (const gchar * const *) larges, &items_error);
+    g_assert_null (items);
+    g_assert_error (items_error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+
+    /* Distinct items are answered whatever they weigh: pinned ones, which the
+     * memory cap never evicts, past it. */
+    g_autoptr (GStrvBuilder) pinned_builder = g_strv_builder_new ();
+
+    g_paste_settings_set_max_memory_usage (settings, 100);
+    for (guint i = 0; i < 7; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("%u%s", i, decoration);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+
+        g_autofree gchar *pinned = dup_uuid_at (history, 0);
+
+        g_assert_true (g_paste_history_set_favourite (history, pinned, TRUE));
+        g_strv_builder_add (pinned_builder, pinned);
+    }
+    g_paste_settings_set_max_memory_usage (settings, 6);
+
+    g_auto (GStrv) pinned = g_strv_builder_end (pinned_builder);
+    g_autoptr (GVariant) all_pinned = NULL;
+
+    g_clear_error (&items_error);
+    all_pinned = g_paste_daemon_methods_get_items (&methods, (const gchar * const *) pinned, &items_error);
+    g_assert_no_error (items_error);
+    g_assert_cmpuint (g_variant_n_children (all_pinned), ==, 7);
+}
+
 /* Selecting an idle image decodes it again, and the history's total has to
  * count that texture once: counted twice, the memory cap evicts entries to pay
  * for memory nothing uses -- here every one but the head, the image weighing
@@ -8276,6 +8356,7 @@ main (int argc, char *argv[])
     add_test ("/history/search_files_by_what_they_show", test_search_files_by_what_they_show);
     add_test ("/history/search_queries", test_search_queries);
     add_test ("/history/merge_refuses_image_and_password", test_merge_refuses_image_and_password);
+    add_test ("/history/repeats_measured_first", test_repeats_measured_first);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);

@@ -944,12 +944,26 @@ g_paste_daemon_methods_get_items (const GPasteDaemonMethods *self,
 {
     GPasteHistory *history = self->history;
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
+    guint64 cap = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
+    g_autoptr (GHashTable) seen = g_hash_table_new (g_str_hash, g_str_equal);
+    guint64 repeated = 0;
 
     for (gsize i = 0; uuids && uuids[i]; ++i)
     {
         GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
 
         G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
+
+        /* What repeats, no more than the history may hold: a uuid asked for
+         * again would otherwise have one small call copy an item's whole value
+         * into the reply as many times as the caller cares to ask. Distinct
+         * items are the history's own and answered whatever they weigh, pinned
+         * ones -- which the memory cap never evicts -- past it included. */
+        if (!g_hash_table_add (seen, (gpointer) g_paste_item_get_uuid (item)))
+        {
+            repeated += strlen (g_paste_item_get_value (item));
+            G_PASTE_DBUS_ASSERT_FULL (repeated <= cap, G_PASTE_ERROR_INVALID_ARGUMENT, "more than the history may hold", NULL);
+        }
 
         g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (item));
     }
@@ -1117,8 +1131,19 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (length, G_PASTE_ERROR_INVALID_ARGUMENT, "nothing to merge", NULL);
 
     GPasteHistory *history = self->history;
-    g_autoptr (GString) str = g_string_new (NULL);
+    /* Borrowed from the history, which nothing changes before they are
+     * joined. */
+    g_autoptr (GPtrArray) items = g_ptr_array_sized_new (length);
+    guint64 decoration_length = strlen (decoration);
+    guint64 separator_length = strlen (separator);
+    guint64 merged_length = 0;
+    guint64 first_length = 0;
+    guint64 last_length = 0;
 
+    /* Every item checked, and the merged text measured, before any of it is
+     * joined: what a caller repeats, decorates and separates is the caller's to
+     * choose, and joined first it could be gigabytes, allocated in the daemon
+     * -- gnome-shell, for the in-shell one -- only to be refused. */
     for (gsize i = 0; i < length; ++i)
     {
         GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
@@ -1127,11 +1152,30 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
         G_PASTE_DBUS_ASSERT_FULL (!G_PASTE_IS_IMAGE_ITEM (item) && !G_PASTE_IS_PASSWORD_ITEM (item),
                                   G_PASTE_ERROR_WRONG_ITEM_KIND, "an image or a password has no text to merge", NULL);
 
-        g_string_append_printf (str, "%s%s%s%s",
-                                (i) ? separator : "",
-                                decoration,
-                                g_paste_item_get_value (item),
-                                decoration);
+        g_ptr_array_add (items, item);
+        last_length = strlen (g_paste_item_get_value (item));
+        if (!i)
+            first_length = last_length;
+        merged_length += ((i) ? separator_length : 0) + 2 * decoration_length + last_length;
+    }
+
+    /* What do_add () measures is the text trimmed, when trimming is on, which
+     * can take off no more than the first item and its decoration at one end
+     * and the last at the other: past that, the cap refuses it whatever. */
+    guint64 trimmable = (g_paste_settings_get_trim_items (self->settings)) ? 2 * decoration_length + first_length + last_length : 0;
+
+    G_PASTE_DBUS_ASSERT_FULL (merged_length <= g_paste_settings_get_max_text_item_size (self->settings) + trimmable,
+                              G_PASTE_ERROR_REJECTED, "the content is longer than max-text-item-size", NULL);
+
+    g_autoptr (GString) str = g_string_sized_new ((gsize) merged_length);
+
+    for (guint i = 0; i < items->len; ++i)
+    {
+        if (i)
+            g_string_append (str, separator);
+        g_string_append (str, decoration);
+        g_string_append (str, g_paste_item_get_value (g_ptr_array_index (items, i)));
+        g_string_append (str, decoration);
     }
 
     return g_paste_daemon_methods_do_add (self, str->str, str->len, error);

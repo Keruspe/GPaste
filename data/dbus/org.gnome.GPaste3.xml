@@ -309,7 +309,12 @@
       <arg type="(ssubas)" direction="out" name="item"/>
     </method>
 
-    <!-- The items for the given uuids -->
+    <!--
+      The items for the given uuids. A uuid asked for again is answered again,
+      and the values repeated that way past "max-memory-usage" fail with
+      org.gnome.GPaste.Error.InvalidArgument; distinct items are answered
+      whatever they weigh.
+    -->
     <method name="GetItems">
       <arg type="as"        direction="in"  name="uuids"/>
       <arg type="a(ssubas)" direction="out" name="items"/>
@@ -416,7 +421,10 @@
       value, and the only string an item travels with here is the one a user is
       shown. @decoration wraps each item, @separator goes between them. An image
       or a password has no text to join, and fails with
-      org.gnome.GPaste.Error.WrongItemKind, the history left as it was.
+      org.gnome.GPaste.Error.WrongItemKind, the history left as it was. The
+      merged text is measured before it is joined, one longer than
+      "max-text-item-size" failing with org.gnome.GPaste.Error.Rejected as an
+      added text would.
     -->
     <method name="Merge">
       <arg type="s"  direction="in"  name="decoration"/>
