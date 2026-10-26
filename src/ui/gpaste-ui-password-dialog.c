@@ -5,6 +5,7 @@
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
+#include <gpaste-ui-composer.h>
 #include <gpaste-ui-password-dialog.h>
 #include <gpaste-ui-window.h>
 
@@ -15,9 +16,9 @@
  * @uuid is what says which call: an item to turn into a password, or %NULL for
  * a password being added from nothing -- which is the one shape carrying
  * @password, since that is the only thing the daemon cannot be asked for.
- * @editing tells a password being edited from a text item being made one,
- * @read_name is the name such an edit read back, and @timeout_changed whether
- * the user moved the timeout it read. */
+ * @read_name is the name a password being edited read back, which is what
+ * tells it from a text item being made one, and @timeout_changed whether the
+ * user moved the timeout it read. */
 typedef struct
 {
     GPasteClient        *client;
@@ -28,7 +29,6 @@ typedef struct
     GtkWidget           *strength;
     GtkAdjustment       *timeout;
     AdwPreferencesGroup *group;
-    gboolean             editing;
     gboolean             timeout_changed;
 } PasswordDialogData;
 
@@ -63,37 +63,35 @@ is_complete (PasswordDialogData *data)
     return password && *password;
 }
 
-/* A pending call must not keep a cancelled dialog and its password alive. */
-typedef struct
-{
-    GWeakRef             dialog;
-    GPasteUiStringFinish finish;
-} PasswordRequest;
-
+/* The composers' reply (g_paste_ui_composer_reply ()), which holds the dialog
+ * weakly: a pending call must not keep a cancelled dialog and its password
+ * alive, so what it reports a failure as is carried there rather than read off
+ * the dialog. */
 static void
 on_password_saved (GObject      *source_object,
                    GAsyncResult *result,
                    gpointer      user_data)
 {
-    g_autofree PasswordRequest *request = user_data;
+    g_autoptr (GPasteUiComposerReply) request = user_data;
     g_autoptr (GError) error = NULL;
     g_autofree gchar *uuid = request->finish (G_PASTE_CLIENT (source_object), result, &error);
     g_autoptr (AdwDialog) dialog = g_weak_ref_get (&request->dialog);
 
-    g_weak_ref_clear (&request->dialog);
+    gboolean conflict = g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS);
+    const gchar *message = conflict ? _("A password with this name already exists. Choose another name.")
+                                    : request->message;
 
-    if (!dialog)
+    /* With its dialog gone, or no longer presented, the journal is all that
+     * is left to tell, as for the text composers (g_paste_ui_composer_reply_cb
+     * ()): the failure is warned about rather than dropped. */
+    if (!dialog || !g_paste_gtk_util_form_dialog_done (dialog, (uuid) ? NULL : message))
+    {
+        if (error)
+            g_warning ("%s: %s", request->message, error->message);
         return;
+    }
 
     PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
-    gboolean conflict = g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS);
-    const gchar *message = conflict      ? _("A password with this name already exists. Choose another name.")
-                         : data->editing ? _("Could not save the password")
-                         : data->uuid    ? _("Could not make the item a password")
-                                         : _("Could not add the password");
-
-    if (!g_paste_gtk_util_form_dialog_done (dialog, (uuid) ? NULL : message))
-        return;
 
     gtk_widget_set_sensitive (GTK_WIDGET (data->group), TRUE);
     if (conflict)
@@ -118,7 +116,7 @@ on_confirm (GtkButton *button,
      * would put a new password in the item's place for no change, and the name
      * read back would go over a rename made elsewhere meanwhile
      * (/ui/password/edit_unchanged). */
-    if (data->editing && !data->timeout_changed && g_paste_str_equal (name, data->read_name))
+    if (data->read_name && !data->timeout_changed && g_paste_str_equal (name, data->read_name))
     {
         adw_dialog_close (dialog);
         return;
@@ -130,12 +128,13 @@ on_confirm (GtkButton *button,
     /* A timeout left as it was read back is sent as unchanged rather than
      * echoed: another client may have changed it since, and echoing would put
      * the old one back and restart a running countdown with it. */
-    guint timeout = (data->editing && !data->timeout_changed) ? G_PASTE_PASSWORD_TIMEOUT_UNCHANGED
-                                                              : (guint) gtk_adjustment_get_value (data->timeout);
-    PasswordRequest *request = g_new0 (PasswordRequest, 1);
-
-    g_weak_ref_init (&request->dialog, dialog);
-    request->finish = data->uuid ? g_paste_client_make_password_finish : g_paste_client_add_password_finish;
+    guint timeout = (data->read_name && !data->timeout_changed) ? G_PASTE_PASSWORD_TIMEOUT_UNCHANGED
+                                                                : (guint) gtk_adjustment_get_value (data->timeout);
+    GPasteUiStringFinish finish = data->uuid ? g_paste_client_make_password_finish : g_paste_client_add_password_finish;
+    const gchar *failure = data->read_name ? _("Could not save the password")
+                         : data->uuid      ? _("Could not make the item a password")
+                                           : _("Could not add the password");
+    GPasteUiComposerReply *request = g_paste_ui_composer_reply (dialog, finish, failure);
 
     gtk_widget_set_sensitive (GTK_WIDGET (data->group), FALSE);
 
@@ -190,7 +189,6 @@ static void
 password_dialog (GPasteClient *client,
                  GtkWindow    *rootwin,
                  const gchar  *uuid,
-                 gboolean      editing,
                  const gchar  *heading,
                  const gchar  *confirm_label,
                  const gchar  *name,
@@ -250,8 +248,7 @@ password_dialog (GPasteClient *client,
 
     data->client = g_object_ref (client);
     data->uuid = g_strdup (uuid);
-    data->read_name = (editing) ? g_strdup (name) : NULL;
-    data->editing = editing;
+    data->read_name = g_strdup (name);
     data->name = GTK_EDITABLE (name_row);
     data->timeout = adw_spin_row_get_adjustment (ADW_SPIN_ROW (timeout_row));
     data->group = ADW_PREFERENCES_GROUP (group);
@@ -317,7 +314,7 @@ edit_data_reply (EditData *data)
     g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
 
     if (rootwin && !data->failed && !g_cancellable_is_cancelled (data->cancellable))
-        password_dialog (data->client, rootwin, data->uuid, TRUE, _("Edit Password"), _("Save"), data->name, data->timeout);
+        password_dialog (data->client, rootwin, data->uuid, _("Edit Password"), _("Save"), data->name, data->timeout);
 
     g_clear_object (&data->client);
     g_weak_ref_clear (&data->rootwin);
@@ -418,7 +415,7 @@ g_paste_ui_password_dialog_add (GPasteClient   *client,
     g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
     g_return_if_fail (GTK_IS_WINDOW (rootwin));
 
-    password_dialog (client, rootwin, NULL, FALSE, _("New Password"), _("Add"), NULL,
+    password_dialog (client, rootwin, NULL, _("New Password"), _("Add"), NULL,
                      (guint) g_paste_settings_get_password_timeout (settings));
 }
 
@@ -445,7 +442,7 @@ g_paste_ui_password_dialog_make (GPasteClient   *client,
     g_return_if_fail (GTK_IS_WINDOW (rootwin));
     g_return_if_fail (uuid);
 
-    password_dialog (client, rootwin, uuid, FALSE, _("Make Password"), _("Make Password"), NULL,
+    password_dialog (client, rootwin, uuid, _("Make Password"), _("Make Password"), NULL,
                      (guint) g_paste_settings_get_password_timeout (settings));
 }
 

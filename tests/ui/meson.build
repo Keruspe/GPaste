@@ -20,7 +20,7 @@ test('test-ui-shortcuts', ui_shortcuts_test, depends: [gpaste_schemas, test_bus_
 
 ui_password_test = executable(
   'gpaste-ui-password-test',
-  sources: ['test-password-dialog.c'],
+  sources: ['test-password-dialog.c', '../../src/ui/gpaste-ui-composer.c'],
   # Route logs through g_test_expect_message in this test build.
   c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),

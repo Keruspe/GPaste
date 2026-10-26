@@ -306,6 +306,16 @@ edit_keeps_timeout (void)
     gtk_window_destroy (window);
 }
 
+/* The save refused, its item gone, which is warned about. */
+static void
+answer_gone (GPasteClient *client)
+{
+    save.error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "gone");
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not save the password: gone");
+    g_paste_test_gtk_save_answer (&save, client);
+    g_test_assert_expected_messages ();
+}
+
 /* While the save is out, the dialog cannot be closed: the call would go
  * through all the same, the user believing it cancelled. A failure is reported
  * as one to save the password, which it already is. */
@@ -333,10 +343,7 @@ edit_held_while_saving (void)
     g_assert_true (adw_window_get_visible_dialog (ADW_WINDOW (window)) == dialog);
     g_assert_true (g_paste_gtk_util_form_dialog_is_held (dialog));
 
-    save.error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "gone");
-    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not save the password: gone");
-    g_paste_test_gtk_save_answer (&save, client);
-    g_test_assert_expected_messages ();
+    answer_gone (client);
     AdwBanner *banner = ADW_BANNER (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), ADW_TYPE_BANNER));
 
     g_assert_true (adw_banner_get_revealed (banner));
@@ -354,7 +361,8 @@ edit_held_while_saving (void)
     gtk_window_destroy (window);
     g_clear_object (&retained);
     g_assert_null (weak_dialog);
-    g_paste_test_gtk_save_answer (&save, client);
+    /* Its failure is still warned about, nobody being left to tell. */
+    answer_gone (client);
 
     /* Nor when something else still holds the dialog, which is then no longer
      * presented: there is nobody to close it for. */
@@ -367,8 +375,7 @@ edit_held_while_saving (void)
     gtk_editable_set_text (data->name, "renamed");
     send_save (dialog);
     gtk_window_destroy (window);
-    g_clear_error (&save.error);
-    g_paste_test_gtk_save_answer (&save, client);
+    answer_gone (client);
 }
 
 /* An edit that changed neither the name nor the timeout sends nothing and

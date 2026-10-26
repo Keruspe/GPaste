@@ -7,7 +7,8 @@
 
 /**
  * g_paste_ui_composer_reply:
- * @dialog: the dialog g_paste_gtk_util_text_dialog () handed to its submit
+ * @dialog: the composer's dialog: for g_paste_ui_composer_reply_cb (), the one
+ *          g_paste_gtk_util_text_dialog () handed to its submit
  * @finish: the call's _finish ()
  * @message: what to say should the call have failed
  *

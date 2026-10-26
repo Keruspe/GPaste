@@ -634,8 +634,9 @@ edit held.
 `test-ui-new-item` checks that a window closed under the New Item composer
 goes and frees what the composer held, that a window the dialog would
 refuse is refused on the way in, and that a refused item stays in the dialog as
-Edit Item's does, over an application window as the graphical tool's is. Both
-build `gpaste-ui-composer.c` in, without `G_LOG_USE_STRUCTURED`.
+Edit Item's does, over an application window as the graphical tool's is. Both,
+and `test-ui-password`, build `gpaste-ui-composer.c` in, without
+`G_LOG_USE_STRUCTURED`.
 
 Clipboard regressions also cover synchronous password eviction invalidating a
 source cache during synchronization, distinct named passwords sharing a value,

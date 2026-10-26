@@ -16,8 +16,9 @@ typedef struct
     const gchar         *message;
 } GPasteUiComposerReply;
 
-/* Tell a text dialog how the call made of what it submitted went, the way
- * g_paste_ui_report_string () tells the window:
+/* Tell a composer's dialog how the call made of what it submitted went, the
+ * way g_paste_ui_report_string () tells the window -- a text dialog through
+ * g_paste_ui_composer_reply_cb ():
  *
  *   g_paste_client_add_text (client, text, NULL,
  *                            g_paste_ui_composer_reply_cb,
@@ -25,7 +26,9 @@ typedef struct
  *                                                       g_paste_client_add_text_finish,
  *                                                       what_to_say_if_it_failed));
  *
- * @message is a translated literal, kept by pointer rather than copied. */
+ * and any other through a callback of its own reading the same reply, as the
+ * password composer's does. @message is a translated literal, kept by pointer
+ * rather than copied. */
 GPasteUiComposerReply *g_paste_ui_composer_reply      (AdwDialog             *dialog,
                                                        GPasteUiStringFinish   finish,
                                                        const gchar           *message);
