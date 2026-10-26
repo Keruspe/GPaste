@@ -1440,6 +1440,16 @@ on_portal_name_owner_changed (GPasteGtkGlobalShortcutClient *self,
      * handoff on every owner notification. */
     if (!owner || (priv->portal_owner && !g_paste_str_equal (priv->portal_owner, owner)))
         portal_lost (self);
+    /* An owner appearing where there was none is a portal come up -- one not yet
+     * running at login, nor activatable: the retries spent against nobody say
+     * nothing of it, and a retry armed against nobody is the grab asked for
+     * below. As in portal_lost (), it gets the whole budget, one still starting
+     * failing its first ask. */
+    else if (!priv->portal_owner)
+    {
+        g_clear_handle_id (&priv->retry_source, g_source_remove);
+        priv->retries = 0;
+    }
 
     g_set_str (&priv->portal_owner, owner);
 

@@ -265,6 +265,8 @@ setup (Fixture *f, gconstpointer user_data)
     f->watchdog = g_timeout_add_seconds (10, test_timed_out, NULL);
     f->bus = g_test_dbus_new (G_TEST_DBUS_NONE);
     gboolean activate = GPOINTER_TO_UINT (user_data) == 100;
+    /* Nobody owns the name at first, nor can the bus start anyone for it. */
+    gboolean unowned = GPOINTER_TO_UINT (user_data) == 200;
     if (activate)
         g_test_dbus_add_service_dir (f->bus, g_test_get_dir (G_TEST_BUILT));
     g_test_dbus_up (f->bus);
@@ -274,7 +276,7 @@ setup (Fixture *f, gconstpointer user_data)
     f->binds = g_ptr_array_new_with_free_func (request_free);
     f->server = new_server (f, &f->registration);
     /* ALLOW_REPLACEMENT lets tests exercise a direct owner handoff. */
-    if (!activate)
+    if (!activate && !unowned)
     {
         g_assert_cmpuint (g_paste_test_bus_name_call (f->server, "RequestName",
                                                       g_variant_new ("(su)", PORTAL_NAME, 1u)), ==, 1);
@@ -822,6 +824,59 @@ method_error (Request *request)
     g_clear_object (&request->invocation);
 }
 
+/* The CreateSession calls the client sends, which a name nobody owns keeps the
+ * server from counting as it counts the others. */
+static gint creates_sent;
+
+static GDBusMessage *
+count_creates_sent (GDBusConnection *connection G_GNUC_UNUSED,
+                    GDBusMessage    *message,
+                    gboolean         incoming,
+                    gpointer         user_data G_GNUC_UNUSED)
+{
+    if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+        g_strcmp0 (g_dbus_message_get_member (message), "CreateSession") == 0)
+        g_atomic_int_inc (&creates_sent);
+
+    return message;
+}
+
+/* Retries spent against a name nobody owned say nothing of the portal that then
+ * comes up: it gets the whole budget, a failure of its first ask retried rather
+ * than given up on. */
+static void
+retries_reset_on_appearance (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_atomic_int_set (&creates_sent, 0);
+
+    guint filter = g_dbus_connection_add_filter (f->connection, count_creates_sent, NULL, NULL);
+
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "*binding the global shortcuts failed:*");
+    g_paste_keybinding_provider_grab_all (G_PASTE_KEYBINDING_PROVIDER (f->client), shortcuts);
+    /* The first ask and its ten retries, counted as they go out; the bus
+     * answers the last ahead of the barrier, which then has that answer land. */
+    while (g_atomic_int_get (&creates_sent) < 11)
+        g_main_context_iteration (NULL, TRUE);
+    g_dbus_connection_remove_filter (f->connection, filter);
+    barrier (f);
+    g_test_assert_expected_messages ();
+    g_assert_cmpuint (f->creates->len, ==, 0);
+
+    g_assert_cmpuint (g_paste_test_bus_name_call (f->server, "RequestName",
+                                                  g_variant_new ("(su)", PORTAL_NAME, 1u)), ==, 1);
+    while (f->creates->len < 1)
+        g_main_context_iteration (NULL, TRUE);
+    complete (f, g_ptr_array_index (f->creates, 0), FALSE, 2);
+    while (f->creates->len < 2)
+        g_main_context_iteration (NULL, TRUE);
+
+    Request *current = g_ptr_array_index (f->creates, 1);
+
+    complete (f, bind_session (f, current, FALSE), FALSE, 0);
+    activate (f, current);
+    g_assert_cmpuint (f->activations, ==, 1);
+}
+
 static void
 retry_exhaustion (Fixture *f, gconstpointer user_data)
 {
@@ -1321,6 +1376,7 @@ main (int argc, char **argv)
     g_test_add ("/portal/denied-create-restart", Fixture, GUINT_TO_POINTER (1), setup, denied_restart, teardown);
     g_test_add ("/portal/failed-bind-restart", Fixture, GUINT_TO_POINTER (2), setup, denied_restart, teardown);
     g_test_add ("/portal/failed-create-restart", Fixture, GUINT_TO_POINTER (3), setup, denied_restart, teardown);
+    g_test_add ("/portal/retries-reset-on-appearance", Fixture, GUINT_TO_POINTER (200), setup, retries_reset_on_appearance, teardown);
     g_test_add ("/portal/failed-bind-retry", Fixture, GUINT_TO_POINTER (0), setup, failed_bind_retry, teardown);
     g_test_add ("/portal/failed-create-retry", Fixture, GUINT_TO_POINTER (1), setup, failed_bind_retry, teardown);
     g_test_add ("/portal/drop-with-pending-create", Fixture, NULL, setup, drop_with_pending_create, teardown);

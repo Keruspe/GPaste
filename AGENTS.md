@@ -123,22 +123,23 @@ private buses, without GTK initialization or a desktop session. It controls
 method replies and `Response` signals independently, including both reply
 orders, superseded operations, pending and repeated disposal, actual request
 paths differing from predictions, invalid session handles, untrusted senders,
-partial/empty grants, retry exhaustion and cancellation, and retired-request
-deadlines. Name handoffs leave the old server alive and assert that its known
-and late-created sessions are closed on its unique connection; separate tests
-actually disconnect that server. `Closed` immediately following a create
-response is queued on the I/O thread before main-context dispatch to test the
-subscription race. Close failures are retried after the client is dropped,
-with a bounded budget. A removed-session test unregisters the real GDBus object
-and verifies that cleanup does not retry its UnknownMethod reply. Unexpected
-warnings are fatal; retry exhaustion explicitly expects one warning, while
-intermediate failures only log at debug level. Each fixture has a ten-second
-watchdog naming the stalled case, with a 120-second Meson suite timeout.
-A D-Bus service file activates this test executable in
+partial/empty grants, retry exhaustion and cancellation, the whole budget given
+back to a portal appearing after retries were spent against a name nobody owned,
+and retired-request deadlines. Name handoffs leave the old server alive and
+assert that its known and late-created sessions are closed on its unique
+connection; separate tests actually disconnect that server. `Closed` immediately
+following a create response is queued on the I/O thread before main-context
+dispatch to test the subscription race. Close failures are retried after the
+client is dropped, with a bounded budget. A removed-session test unregisters the
+real GDBus object and verifies that cleanup does not retry its UnknownMethod
+reply. Unexpected warnings are fatal; retry exhaustion explicitly expects one
+warning, while intermediate failures only log at debug level. Each fixture has a
+ten-second watchdog naming the stalled case, with a 120-second Meson suite
+timeout. A D-Bus service file activates this test executable in
 `--activated-portal` mode to cover startup without an owner, including disposing
-the client before activation completes. The test target compiles the same
-client source with a 50 ms retry interval and a 1 s retirement deadline;
-production uses one second and ten minutes respectively.
+the client before activation completes. The test target compiles the same client
+source with a 50 ms retry interval and a 1 s retirement deadline; production
+uses one second and ten minutes respectively.
 
 A test that needs a fake service on a private bus links `gpaste_test_bus_dep`
 (`tests/gpaste-test-bus.c`) rather than rolling its own: `g_paste_test_bus_new_server()`
