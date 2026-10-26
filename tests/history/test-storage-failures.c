@@ -1649,6 +1649,30 @@ test_unopenable_store_out_of_reach (void)
  * ticking them anyway is clamped: reading the source through the backend that
  * stands in for it would import nothing, and deleting through it would delete
  * another flavour's histories. */
+/* A history of a flavour this build cannot delete is refused, not skipped: the
+ * start taking back what an import left would otherwise read its copies as
+ * gone. A kind past the table stands for one, and so do the SQLite flavours in
+ * a build without SQLite. */
+static void
+test_delete_unsupported_refused (void)
+{
+    GPasteStorage kinds[] = {
+        G_PASTE_N_STORAGE,
+#ifndef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_SQLITE,
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+#endif
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (kinds); ++i)
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_storage_delete_history (kinds[i], "unsupported", &error);
+        g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    }
+}
+
 /* A new history's name is bounded by what the history directory's filesystem
  * takes -- asked of the folder above it while it is not made yet -- where a
  * name past it would be switched to and filled with nothing of it ever saved. */
@@ -7327,6 +7351,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
     g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
+    g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);

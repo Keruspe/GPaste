@@ -570,6 +570,94 @@ g_paste_storage_backend_delete_history_images (const gchar *name,
     return FALSE;
 }
 
+/* What g_paste_storage_delete_history () does per flavour, through
+ * storage_flavours[] below. A history of the no-storage flavour has nothing on
+ * the disk to delete. */
+static void
+delete_nothing (GPasteStorage storage_kind G_GNUC_UNUSED,
+                const gchar  *name         G_GNUC_UNUSED,
+                GError      **error        G_GNUC_UNUSED)
+{
+}
+
+static void
+delete_file_history (GPasteStorage storage_kind,
+                     const gchar  *name,
+                     GError      **error)
+{
+    g_paste_file_backend_delete_files (name, storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE, error);
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+static void
+delete_database_history (GPasteStorage storage_kind,
+                         const gchar  *name,
+                         GError      **error)
+{
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (storage_kind));
+
+    g_paste_sqlite_backend_delete_database (path, error);
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#define WITH_ENCRYPTION(constructor) constructor
+#else
+#define WITH_ENCRYPTION(constructor) NULL
+#endif
+
+#ifdef G_PASTE_ENABLE_SQLITE
+#define WITH_SQLITE(constructor) constructor
+#else
+#define WITH_SQLITE(constructor) NULL
+#endif
+
+/* Every storage flavour, indexed by its kind: what it is called on disk, what
+ * the longest file it keeps for a history adds after the history's name, and
+ * how this build constructs it -- a plain one through its class, an encrypted
+ * one through a constructor keying it -- a flavour whose feature is not built
+ * naming neither; how a history of it is deleted with no backend open on it,
+ * and, for an encrypted one, which of its files hold what a wrong passphrase
+ * is refused over (g_paste_storage_passphrase_verifiable ()), NULL again for
+ * what this build cannot do. Adding a flavour is one row plus its enum value,
+ * every lookup of a kind going through here, g_paste_storage_is_supported ()
+ * included; a reader wanting several flavours names the ones it wants, in its
+ * own order (detect_current_backend (),
+ * _g_paste_storage_backend_history_still_stored ()).
+ *
+ * @get_type for an encrypted flavour is the no-storage backend on purpose:
+ * anything reaching it has already failed to key one. Keeping the history in
+ * memory is the only safe answer -- never plaintext on disk. */
+static const struct
+{
+    const gchar          *extension;
+    const gchar          *longest_suffix;
+    GType                 (*get_type)       (void);
+    GPasteStorageBackend *(*new_encrypted)  (GPasteSettings *settings,
+                                             const gchar    *passphrase);
+    void                  (*delete_history) (GPasteStorage storage_kind,
+                                             const gchar  *name,
+                                             GError      **error);
+    gboolean              (*holds_data)     (const gchar *path);
+} storage_flavours[G_PASTE_N_STORAGE] = {
+    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                      g_paste_noop_backend_get_type,   NULL,                                                                 delete_nothing,                        NULL },
+    /* The temporary a save is written to before its move into place. */
+    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, g_paste_file_backend_get_type,   NULL,                                                                 delete_file_history,                   NULL },
+    /* The original a change of passphrase keeps aside. */
+    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD,  g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted),                 delete_file_history,                   WITH_ENCRYPTION (g_paste_secret_stream_file_has_frame) },
+    /* The rollback journal SQLite opens beside a new database to turn it to
+     * write-ahead logging, longer than the log and its index. */
+#ifdef G_PASTE_ENABLE_SQLITE
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                           g_paste_sqlite_backend_get_type, NULL,                                                                 delete_database_history,               NULL },
+#else
+    /* Not built in: the kind degrades to the file flavour
+     * (_g_paste_storage_backend_get_type ()), which then keeps the history as
+     * its own. */
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL,                            NULL,                                                                 NULL,                                  NULL },
+#endif
+    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                          g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)), WITH_SQLITE (delete_database_history), WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_database_has_items)) },
+};
+
 /* What follows a delete of the history called @name, whatever deleted it: its
  * images directory, once no flavour stores the name. @error keeps the store's
  * own failure over this one. */
@@ -596,26 +684,15 @@ g_paste_storage_delete_history (GPasteStorage storage_kind,
                                 const gchar  *name,
                                 GError      **error)
 {
-    switch (storage_kind)
+    /* Refused rather than skipped: a caller taking back what an import left
+     * would otherwise read the copies as gone. */
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].delete_history)
     {
-    case G_PASTE_STORAGE_FILE:
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-        g_paste_file_backend_delete_files (name, storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE, error);
-        break;
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_SQLITE:
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-    {
-        g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (storage_kind));
-
-        g_paste_sqlite_backend_delete_database (path, error);
-        break;
-    }
-#endif
-    default:
+        g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "This build cannot delete a history stored as “%s”", g_paste_storage_get_extension (storage_kind));
         return;
     }
 
+    storage_flavours[storage_kind].delete_history (storage_kind, name, error);
     _g_paste_storage_delete_history_images (name, error);
 }
 
@@ -1139,56 +1216,6 @@ g_paste_storage_backend_init (GPasteStorageBackend *self)
     g_mutex_init (&priv->records_lock);
 }
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-#define WITH_ENCRYPTION(constructor) constructor
-#else
-#define WITH_ENCRYPTION(constructor) NULL
-#endif
-
-#ifdef G_PASTE_ENABLE_SQLITE
-#define WITH_SQLITE(constructor) constructor
-#else
-#define WITH_SQLITE(constructor) NULL
-#endif
-
-/* Every storage flavour, indexed by its kind: what it is called on disk, what
- * the longest file it keeps for a history adds after the history's name, and
- * how this build constructs it -- a plain one through its class, an encrypted
- * one through a constructor keying it -- a flavour whose feature is not built
- * naming neither. Adding a flavour is one row plus its enum value, every lookup
- * of a kind going through here, g_paste_storage_is_supported () included; a
- * reader wanting several flavours names the ones it wants, in its own order
- * (detect_current_backend (), _g_paste_storage_backend_history_still_stored ()).
- *
- * @get_type for an encrypted flavour is the no-storage backend on purpose:
- * anything reaching it has already failed to key one. Keeping the history in
- * memory is the only safe answer -- never plaintext on disk. */
-static const struct
-{
-    const gchar          *extension;
-    const gchar          *longest_suffix;
-    GType                 (*get_type)      (void);
-    GPasteStorageBackend *(*new_encrypted) (GPasteSettings *settings,
-                                            const gchar    *passphrase);
-} storage_flavours[G_PASTE_N_STORAGE] = {
-    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                      g_paste_noop_backend_get_type,   NULL },
-    /* The temporary a save is written to before its move into place. */
-    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, g_paste_file_backend_get_type,   NULL },
-    /* The original a change of passphrase keeps aside. */
-    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD,  g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted) },
-    /* The rollback journal SQLite opens beside a new database to turn it to
-     * write-ahead logging, longer than the log and its index. */
-#ifdef G_PASTE_ENABLE_SQLITE
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                           g_paste_sqlite_backend_get_type, NULL },
-#else
-    /* Not built in: the kind degrades to the file flavour
-     * (_g_paste_storage_backend_get_type ()), which then keeps the history as
-     * its own. */
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL,                            NULL },
-#endif
-    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                          g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)) },
-};
-
 /* A plain kind this build lacks degrades to another plain kind. */
 static GType
 _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
@@ -1427,21 +1454,10 @@ g_paste_storage_passphrase_verifiable (GPasteStorage   storage_kind,
 
     /* Asked of the files, by name: no key could be checked without the
      * passphrase this is about. */
-    gboolean (*refutable) (const gchar *path);
-
-    switch (storage_kind)
-    {
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-        refutable = g_paste_secret_stream_file_has_frame;
-        break;
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-        refutable = g_paste_sqlite_backend_database_has_items;
-        break;
-#endif
-    default:
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].holds_data)
         return FALSE;
-    }
+
+    gboolean (*refutable) (const gchar *path) = storage_flavours[storage_kind].holds_data;
 
     const gchar *extension = g_paste_storage_get_extension (storage_kind);
     g_auto (GStrv) names = _g_paste_storage_list_histories (extension, NULL);
