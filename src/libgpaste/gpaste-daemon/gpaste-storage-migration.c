@@ -33,7 +33,9 @@ static guint g_paste_storage_workers;
  * "storage-journal" in the history directory, which names no history, those
  * being listed by their flavour's extension. Its first line is the operation
  * and the flavour it writes, each line after it a history written there,
- * escaped.
+ * escaped -- for an import, one it created there -- and a change of
+ * passphrase's last line, behind a '/' no history's name holds, the history it
+ * was changing when it wrote it.
  *
  * An import's copies go at the next start, unless the setting already names
  * the flavour imported to -- the move happened, and what was written is the
@@ -54,14 +56,20 @@ typedef enum
 static const gchar * const journal_operations[JOURNAL_N_OPERATIONS] = { "import", "rekey" };
 
 /* The re-key the last process did not finish, its histories on the new
- * passphrase: reported by g_paste_storage_decryption_async (), once. */
-static GStrv rekey_cut_short;
+ * passphrase and the one it was changing, which may be on either: reported
+ * once, through the first prompt to get to it -- the migration's before it
+ * asks anything, or the decryption gate's (report_rekey_cut_short ()) --, its
+ * journal going then. */
+static GStrv  rekey_cut_short;
+static gchar *rekey_under_way;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* g_paste_storage_decryption_needed () found the store another daemon's, and
  * left settling it and asking the keyring to g_paste_storage_decryption_async
  * (), once that daemon lets go. */
 static gboolean decryption_left_to_gate;
+
+static void report_rekey_cut_short (GPastePrompt *prompt);
 #endif
 
 static gchar *
@@ -78,6 +86,7 @@ static gboolean
 journal_write (JournalOperation operation,
                GPasteStorage    storage_kind,
                const GPtrArray *names,
+               const gchar     *under_way,
                GError         **error)
 {
     g_autoptr (GString) contents = g_string_new (NULL);
@@ -88,6 +97,12 @@ journal_write (JournalOperation operation,
         g_autofree gchar *escaped = g_strescape (g_ptr_array_index (names, i), NULL);
 
         g_string_append_printf (contents, "%s\n", escaped);
+    }
+    if (under_way)
+    {
+        g_autofree gchar *escaped = g_strescape (under_way, NULL);
+
+        g_string_append_printf (contents, "/%s\n", escaped);
     }
 
     g_autofree gchar *path = journal_path ();
@@ -112,12 +127,34 @@ journal_remove (void)
         g_warning ("Could not remove %s: %s", path, g_strerror (errno));
 }
 
+/* Whether a journal is on the disk, which at the start of an operation is
+ * copies left to take back -- by journal_settle () or a failed import's
+ * rollback, kept for the next start, a change of passphrase cut short being
+ * told before either operation can start (report_rekey_cut_short ()) -- or
+ * the journal of a flavour this build cannot open, which journal_settle ()
+ * leaves, told or not, to a build that can: a worker writing its own over it
+ * would lose what it names, so the operation is refused until it is settled. */
+static gboolean
+journal_pending (GError **error)
+{
+    g_autofree gchar *path = journal_path ();
+
+    if (!g_file_test (path, G_FILE_TEST_EXISTS))
+        return FALSE;
+
+    g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                         "What an earlier change of the storage was cut short on could not all be taken back yet; that is tried again at the next start");
+
+    return TRUE;
+}
+
 /* %FALSE for no journal, and for one that says nothing this GPaste can act on,
  * which goes. */
 static gboolean
 journal_read (JournalOperation *operation,
               GPasteStorage    *storage_kind,
-              GStrv            *names)
+              GStrv            *names,
+              gchar           **under_way)
 {
     g_autofree gchar *path = journal_path ();
     g_autofree gchar *contents = NULL;
@@ -146,11 +183,17 @@ journal_read (JournalOperation *operation,
         return FALSE;
     }
 
+    *under_way = NULL;
     for (GStrv line = lines + 1; *line; ++line)
     {
-        g_autofree gchar *name = g_strcompress (*line);
+        gboolean marked = **line == '/';
+        g_autofree gchar *name = g_strcompress (*line + ((marked) ? 1 : 0));
 
-        if (g_paste_util_history_name_is_valid (name))
+        if (!g_paste_util_history_name_is_valid (name))
+            continue;
+        if (marked)
+            g_set_str_take (under_way, g_steal_pointer (&name));
+        else
             g_strv_builder_take (builder, g_steal_pointer (&name));
     }
 
@@ -169,18 +212,55 @@ journal_settle (GPasteSettings *settings)
     JournalOperation operation;
     GPasteStorage storage_kind;
     g_auto (GStrv) names = NULL;
+    g_autofree gchar *under_way = NULL;
 
     if (g_paste_storage_is_busy () || !g_paste_storage_backend_try_lock () ||
-        !journal_read (&operation, &storage_kind, &names))
+        !journal_read (&operation, &storage_kind, &names, &under_way))
         return;
 
+    /* A flavour this build cannot open -- a re-key's included, in a build
+     * without encryption -- has a journal only a build that can settles: taking
+     * its copies back needs that flavour, and a split is reported by the gate
+     * encryption builds alone run. Left for that build, as
+     * detect_current_backend () keeps such a flavour named; no build this
+     * suite runs lacks one, which is why no test shows it. */
+    if (!g_paste_storage_is_supported (storage_kind))
+        return;
+
+    /* Every history put back: what a re-key's rollback leaves, the process
+     * dying before the journal goes. Nothing is on the new passphrase. */
+    if (operation == JOURNAL_REKEY && !*names && !under_way)
+    {
+        journal_remove ();
+        return;
+    }
+
+    /* Left on the disk until reported, a process ending first leaving it for
+     * the next start to report: read again by every settle until then. */
     if (operation == JOURNAL_REKEY)
     {
-        g_autofree gchar *listed = g_strjoinv ("”, “", names);
+        if (rekey_cut_short)
+            return;
 
-        g_warning ("A change of passphrase was cut short: “%s” are on the new passphrase, the other histories on the previous one", listed);
-        g_strfreev (rekey_cut_short);
-        rekey_cut_short = g_steal_pointer (&names);
+        /* Saying only what there is, as report_rekey_cut_short () does: a
+         * re-key dying in its first history has none on the new passphrase,
+         * one dying between two none under way. */
+        g_autoptr (GString) told = g_string_new ("A change of passphrase was cut short: ");
+
+        if (*names)
+        {
+            g_autofree gchar *listed = g_strjoinv ("”, “", names);
+
+            g_string_append_printf (told, "“%s” %s on the new passphrase, ", listed, (names[1]) ? "are" : "is");
+        }
+        if (under_way)
+            g_string_append_printf (told, "“%s” on either, ", under_way);
+        g_string_append (told, "the other histories on the previous one");
+        g_warning ("%s", told->str);
+        g_set_strv_take (&rekey_cut_short, g_steal_pointer (&names));
+        g_set_str_take (&rekey_under_way, g_steal_pointer (&under_way));
+
+        return;
     }
     else if (g_paste_settings_get_storage_backend (settings) != storage_kind)
     {
@@ -269,7 +349,7 @@ typedef struct
     GPastePassphrase     *source_passphrase;
     /* The process-wide passphrase as the migration found it, which is what
      * opens @current when this migration never unlocked it itself. */
-    GPastePassphrase              *held_passphrase;
+    GPastePassphrase     *held_passphrase;
 
     /* Whether a new passphrase was asked for (only then is there a choice to
      * honour), and whether the user asked to remember it. Acted on once the
@@ -589,6 +669,9 @@ import_histories (GPasteSettings *settings,
     g_paste_storage_backend_read_whole (next);
     gboolean ok = TRUE;
 
+    if (journal_pending (error))
+        return FALSE;
+
     /* A source we could not even list is not an empty one: importing nothing and
      * reporting success would let the caller delete histories still on disk. */
     if (!names)
@@ -664,19 +747,23 @@ import_histories (GPasteSettings *settings,
             }
         }
 
+        GStatBuf before;
+        gboolean existed = !g_stat (destination, &before);
         g_autoptr (GError) journal_error = NULL;
 
-        g_ptr_array_add (journaled, *name);
-        if (!journal_write (JOURNAL_IMPORT, chosen, journaled, &journal_error))
+        /* Not one the destination already holds: the next start deletes what
+         * the journal names, and a write cut short leaves such a copy as it was
+         * -- one an earlier migration kept, which a failed write leaves standing
+         * too -- or, landed, a copy of what the source still holds. */
+        if (!existed)
+            g_ptr_array_add (journaled, *name);
+        if (!existed && !journal_write (JOURNAL_IMPORT, chosen, journaled, NULL, &journal_error))
         {
             g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                          "Could not record the import of the history “%s”: %s", *name, journal_error->message);
             ok = FALSE;
             break;
         }
-
-        GStatBuf before;
-        gboolean existed = !g_stat (destination, &before);
 
         if (!g_paste_storage_backend_write_history (next, *name, history))
         {
@@ -743,6 +830,8 @@ import_histories (GPasteSettings *settings,
     /* The destination's image directory goes only once no flavour stores the
      * name, which the source still does: that is the base delete_history()'s
      * rule, and it keeps the source's own images. */
+    g_autoptr (GPtrArray) left = g_ptr_array_new ();
+
     for (GStrv name = names; name != written_end; ++name)
     {
         g_autoptr (GError) delete_error = NULL;
@@ -750,10 +839,34 @@ import_histories (GPasteSettings *settings,
         g_paste_storage_backend_delete_history (next, *name, &delete_error);
 
         if (delete_error)
+        {
             g_warning ("Could not remove the incomplete copy of the history “%s”: %s", *name, delete_error->message);
+            g_ptr_array_add (left, *name);
+        }
     }
 
-    journal_remove ();
+    /* A copy left behind stays journaled, for the next start to take back as it
+     * takes back an import cut short -- in clear, out of an encrypted flavour
+     * into a plain one -- and the report says so. */
+    if (!left->len)
+    {
+        journal_remove ();
+        return FALSE;
+    }
+
+    g_autoptr (GError) journal_error = NULL;
+    gboolean journaled_left = journal_write (JOURNAL_IMPORT, chosen, left, NULL, &journal_error);
+
+    if (!journaled_left)
+        g_warning ("Could not record the copies an import left: %s", journal_error->message);
+
+    if (error && *error)
+    {
+        g_set_str_take (&(*error)->message,
+                        g_strconcat ((*error)->message, ". ",
+                                     (journaled_left) ? "What it copied could not all be taken back, and is at the next start" : "What it copied could not all be taken back, nor recorded to be",
+                                     NULL));
+    }
 
     return FALSE;
 }
@@ -920,8 +1033,11 @@ apply_migration_settle (MigrationData *self,
     }
 
     /* The import is settled: what it wrote is the store, or a complete copy
-     * the lock refused, which stays as an older copy does. */
-    journal_remove ();
+     * the lock refused, which stays as an older copy does. Only the journal it
+     * wrote: a failed one settled its own, and without one, any journal there
+     * is the one journal_settle () kept. */
+    if (import && imported)
+        journal_remove ();
 
     if (!moved)
     {
@@ -1432,6 +1548,13 @@ on_migration_locked (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* Told before the migration asks anything rather than left to the
+     * decryption gate after it: the journal, kept until then, would refuse
+     * the import (journal_pending ()). */
+    report_rekey_cut_short (prompt);
+#endif
+
     /* Detect the backend the history currently lives in from the files on disk,
      * and apply it right away so this session keeps the right backend even if the
      * prompt is dismissed without an explicit choice (importantly, an encrypted
@@ -1710,20 +1833,35 @@ on_decryption_settled (gboolean unlocked G_GNUC_UNUSED,
 }
 
 /* A change cut short between two histories, said through @prompt whether or
- * not the gate then asks for anything. */
+ * not the migration or the gate then asks for anything. */
 static void
 report_rekey_cut_short (GPastePrompt *prompt)
 {
     if (!rekey_cut_short)
         return;
 
-    g_autofree gchar *listed = g_strjoinv ("”, “", rekey_cut_short);
-    g_autofree gchar *message = g_strdup_printf ("%s\n\nThe change of passphrase was cut short: “%s” are on the new passphrase.",
-                                                 g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION),
-                                                 listed);
+    g_autoptr (GString) message = g_string_new (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION));
+
+    if (*rekey_cut_short)
+    {
+        g_autofree gchar *listed = g_strjoinv ("”, “", rekey_cut_short);
+        g_autofree gchar *quoted = g_strdup_printf ("“%s”", listed);
+
+        g_string_append (message, "\n\n");
+        g_string_append_printf (message, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED), quoted);
+    }
+    if (rekey_under_way)
+    {
+        g_autofree gchar *quoted = g_strdup_printf ("“%s”", rekey_under_way);
+
+        g_string_append (message, (*rekey_cut_short) ? " " : "\n\n");
+        g_string_append_printf (message, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY), quoted);
+    }
 
     g_clear_pointer (&rekey_cut_short, g_strfreev);
-    g_paste_prompt_report (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE), message);
+    g_clear_pointer (&rekey_under_way, g_free);
+    g_paste_prompt_report (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_FAILED_TITLE), message->str);
+    journal_remove ();
 }
 
 /* Once the store is this process's: what g_paste_storage_decryption_needed ()
@@ -1935,6 +2073,9 @@ rekey_histories (RekeyData   *self,
     g_autoptr (GError) list_error = NULL;
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, &list_error);
 
+    if (journal_pending (error))
+        return FALSE;
+
     /* Not "no histories" (that is an empty list): the listing itself failed, so
      * we have no idea what would be left behind. */
     if (!names)
@@ -1953,15 +2094,17 @@ rekey_histories (RekeyData   *self,
         gboolean split = FALSE;
         g_autoptr (GError) journal_error = NULL;
 
-        if (rekey_history (self->storage_kind, self->settings, *name, current, passphrase, &split))
+        /* Recorded as under way before it is touched, and as done once it is,
+         * so that a process dying in one or between two leaves which is on
+         * what said (journal_settle ()). */
+        if (journal_write (JOURNAL_REKEY, self->storage_kind, rekeyed, *name, &journal_error) &&
+            rekey_history (self->storage_kind, self->settings, *name, current, passphrase, &split))
         {
             g_ptr_array_add (rekeyed, *name);
-            /* Recorded before the next is touched, so that a process dying
-             * between two leaves which is on what said (journal_settle ()). */
-            if (journal_write (JOURNAL_REKEY, self->storage_kind, rekeyed, &journal_error))
+            if (journal_write (JOURNAL_REKEY, self->storage_kind, rekeyed, NULL, &journal_error))
                 continue;
         }
-        else
+        else if (!journal_error)
         {
             /* A history this passphrase does not open is on another -- what a
              * change whose rollback failed leaves -- and stays on it: the
@@ -2009,18 +2152,22 @@ rekey_histories (RekeyData   *self,
             }
 
             g_ptr_array_remove_index (rekeyed, i - 1);
-            journal_write (JOURNAL_REKEY, self->storage_kind, rekeyed, NULL);
+            journal_write (JOURNAL_REKEY, self->storage_kind, rekeyed, NULL, NULL);
         }
 
         /* What this left, the report says. */
         journal_remove ();
 
         if (journal_error)
+        {
             g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                          "Could not record the change of passphrase: %s", journal_error->message);
+        }
         else
+        {
             g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                          "Failed to change the passphrase of the history \"%s\"", *name);
+        }
 
         return FALSE;
     }

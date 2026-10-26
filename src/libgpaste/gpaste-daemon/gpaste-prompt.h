@@ -223,6 +223,12 @@ typedef enum
      * so only C reads it. */
     G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,
     G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,
+    /* What a change of passphrase the last process did not finish is reported
+     * with, after REKEY_SPLIT_DESCRIPTION: format strings, their %s the quoted
+     * names of the histories on the new passphrase, and of the one it was
+     * changing, so only C reads them. */
+    G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED,
+    G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,
 } GPastePromptText;
 
 #define G_PASTE_TYPE_PROMPT_TEXT (g_paste_prompt_text_get_type ())

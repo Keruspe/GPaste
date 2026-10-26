@@ -976,7 +976,9 @@ G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,    "migration-description-unkept"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,    "other-passphrase-description"),
-                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,          "other-passphrase-wrong"))
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,          "other-passphrase-wrong"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED,         "rekey-cut-short-changed"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,       "rekey-cut-short-under-way"))
 
 /**
  * g_paste_prompt_text:
@@ -1064,6 +1066,12 @@ g_paste_prompt_text (GPastePromptText text)
         return _("These histories are encrypted with another passphrase than the history in use: %s. Enter it to encrypt them with the passphrase in use.");
     case G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG:
         return _("This passphrase opens none of them, please try again");
+    case G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED:
+        /* Translators: %s is the names of the histories, each quoted, separated by commas. */
+        return _("The change of passphrase was cut short: %s are on the new passphrase.");
+    case G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY:
+        /* Translators: %s is the quoted name of a history. */
+        return _("%s was being changed, and may be on either passphrase.");
     default:
         return "";
     }
