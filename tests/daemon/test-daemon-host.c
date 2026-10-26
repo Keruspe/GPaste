@@ -120,6 +120,23 @@ fake_reload_storage (GPasteDaemon *self G_GNUC_UNUSED)
 {
 }
 
+/* g for the extension reported gone, and whether it runs, as a case has it. */
+static gboolean extension_runs;
+
+static void
+fake_extension_state_changed (GPasteDaemon *self G_GNUC_UNUSED,
+                              gboolean      state)
+{
+    if (exit_calls && !state)
+        g_string_append_c (exit_calls, 'g');
+}
+
+static gboolean
+fake_get_extension_enabled (GPasteSettings *settings G_GNUC_UNUSED)
+{
+    return extension_runs;
+}
+
 /* R for a re-exec asked of the daemon, which brings its countdowns forward. */
 static void
 fake_daemon_reexecute (GPasteDaemon *self G_GNUC_UNUSED)
@@ -197,6 +214,8 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #define g_paste_daemon_flush fake_daemon_flush
 #define g_paste_daemon_resume fake_daemon_resume
 #define g_paste_daemon_reexecute fake_daemon_reexecute
+#define g_paste_daemon_extension_state_changed fake_extension_state_changed
+#define g_paste_settings_get_extension_enabled fake_get_extension_enabled
 #define g_paste_daemon_expire_password fake_daemon_expire_password
 #define g_application_quit fake_application_quit
 #define g_application_get_dbus_connection fake_get_dbus_connection
@@ -375,6 +394,33 @@ test_reexec_while_stopping (void)
     g_assert_cmpstr (calls->str, ==, "");
 }
 
+/* An extension disabled while the settle held the daemon at a prompt is
+ * reported gone once the daemon is there to be told, its own report having
+ * reached an owner serving nothing; one that ran nothing then, or still runs,
+ * is reported nothing. */
+static void
+test_extension_gone_while_settling (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    DaemonContext ctx = { .daemon = (GPasteDaemon *) &rekeys };
+    const struct { gboolean ran, runs; const gchar *told; } cases[] = {
+        { TRUE,  FALSE, "g" },
+        { TRUE,  TRUE,  ""  },
+        { FALSE, FALSE, ""  },
+    };
+
+    exit_calls = calls;
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_string_truncate (calls, 0);
+        ctx.extension_ran = cases[i].ran;
+        extension_runs = cases[i].runs;
+        report_extension_gone (&ctx);
+        g_assert_cmpstr (calls->str, ==, cases[i].told);
+    }
+    exit_calls = NULL;
+}
+
 /* SIGUSR1 asks the daemon for a re-exec, its countdowns brought forward, only
  * once the store is idle and with no stop waiting on it: not for an exec a stop
  * refuses, nor minutes before one a storage worker puts off. */
@@ -485,6 +531,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/daemon-host/stop-order", test_stop_order);
     g_test_add_func ("/daemon-host/reexec-order", test_reexec_order);
     g_test_add_func ("/daemon-host/reexec-while-stopping", test_reexec_while_stopping);
+    g_test_add_func ("/daemon-host/extension-gone-while-settling", test_extension_gone_while_settling);
     g_test_add_func ("/daemon-host/stop-once", test_stop_once);
     g_test_add_func ("/daemon-host/usr1-waits-for-store", test_usr1_waits_for_store);
     g_test_add_func ("/daemon-host/exit-answers", test_exit_answers);

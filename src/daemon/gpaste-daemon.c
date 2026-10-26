@@ -64,6 +64,9 @@ typedef struct
      * the first is rewriting, then build a second daemon over the first. The
      * gnome-shell host gates the same window with _settleStorage(). */
     gboolean         settling;
+    /* Whether GNOME Shell ran GPaste's extension as the settle began: see
+     * report_extension_gone (). */
+    gboolean         extension_ran;
     /* A stop signal or a takeover is waiting for the store to be idle
      * (stop_when_storage_idle ()): the settle it interrupts goes no further,
      * and another one changes nothing. */
@@ -435,6 +438,18 @@ check_store (GPasteDaemon *daemon,
     g_source_set_name_by_id (g_idle_add_once (do_check_store, ctx), "[GPaste] store check");
 }
 
+/* The extension disabled while the settle held the daemon at a prompt: its
+ * ReportExtensionState reached an owner serving nothing yet, and was refused
+ * with no object to answer it. Told now, for "track-extension-state" to stop
+ * the tracking it would have stopped
+ * (/daemon-host/extension-gone-while-settling). */
+static void
+report_extension_gone (DaemonContext *ctx)
+{
+    if (ctx->extension_ran && !g_paste_settings_get_extension_enabled (ctx->settings))
+        g_paste_daemon_extension_state_changed (ctx->daemon, FALSE);
+}
+
 /* Final step, once the name is owned, the backend choice is settled and any
  * encrypted history is unlocked: build the daemon and expose it on the bus. */
 static void
@@ -456,6 +471,7 @@ on_storage_ready (DaemonContext *ctx)
     ctx->c_signals[C_CHANGE_PASSPHRASE] = g_signal_connect (ctx->daemon, "change-passphrase",
                                                             G_CALLBACK (change_passphrase), ctx);
     ctx->c_signals[C_DOCTOR] = g_signal_connect (ctx->daemon, "doctor", G_CALLBACK (check_store), ctx);
+    report_extension_gone (ctx);
 
     /* The name is already owned, so the bus registers these immediately. */
     g_paste_bus_add_object (ctx->bus, G_PASTE_BUS_OBJECT (ctx->daemon));
@@ -526,6 +542,7 @@ on_name_acquired (GPasteBus *bus G_GNUC_UNUSED,
         return;
 
     ctx->settling = TRUE;
+    ctx->extension_ran = g_paste_settings_get_extension_enabled (ctx->settings);
 
     /* Get the history store ready (backend choice + encrypted-history unlock)
      * before the daemon starts persisting anything. libadwaita was initialised by
