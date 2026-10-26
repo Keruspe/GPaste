@@ -368,8 +368,9 @@ test_reset_menu_goes_with_row (void)
     gtk_window_destroy (window);
 }
 
-/* Shift is no modifier for a global shortcut: a key it is added to still types
- * or selects. A function key stands alone, Shift or not. */
+/* Shift is no modifier for a global shortcut with a key it leaves typing or
+ * selecting, and one with a key it leaves doing neither. A function key stands
+ * alone, Shift or not. */
 static void
 test_shortcut_shift_alone (void)
 {
@@ -377,11 +378,19 @@ test_shortcut_shift_alone (void)
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_exclam, GDK_SHIFT_MASK));
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Return, GDK_SHIFT_MASK));
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Left, GDK_SHIFT_MASK));
+    g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_KP_Home, GDK_SHIFT_MASK));
+    g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Tab, GDK_SHIFT_MASK));
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_v, 0));
+    g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Pause, 0));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_A, GDK_SHIFT_MASK | GDK_CONTROL_MASK));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_v, GDK_SUPER_MASK));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_F9, 0));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_F9, GDK_SHIFT_MASK));
+
+    /* With a key that neither types nor moves, Shift is a modifier. */
+    g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Pause, GDK_SHIFT_MASK));
+    g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Print, GDK_SHIFT_MASK));
+    g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Menu, GDK_SHIFT_MASK));
 
     /* What is captured is the key pressed: a keypad key is no main-row one,
      * Shift+Tab's ISO_Left_Tab is Tab. */
