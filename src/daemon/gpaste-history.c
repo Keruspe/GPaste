@@ -486,8 +486,11 @@ _g_paste_history_add (GPasteHistory *self,
     priv->history = g_list_prepend (priv->history, item);
     g_steal_pointer (&owned); /* ownership transferred to the history list */
 
-    g_paste_history_activate_first (self, FALSE);
+    /* Counted in at what it weighs now, and only then made active: activating
+     * takes the head out at that weight and puts it back at its active one, so
+     * an idle image being selected adds its texture once. */
     priv->size += g_paste_item_get_size (item);
+    g_paste_history_activate_first (self, FALSE);
 
     g_paste_history_private_check_size (priv);
 

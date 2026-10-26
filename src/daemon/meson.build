@@ -6,7 +6,6 @@ gpaste_daemon_sources = [
   'gpaste-color-item.c',
   'gpaste-clipboards-manager.c',
   'gpaste-daemon.c',
-  'main.c',
   'gpaste-file-backend.c',
   'gpaste-history.c',
   'gpaste-image-item.c',
@@ -66,10 +65,25 @@ gpaste_daemon_headers_dep = declare_dependency(
   sources: gpaste_daemon_headers,
 )
 
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ] + keybinder_deps
+
+# What the daemon is made of but its main (), built once for the executable and
+# the tests that link it in.
+gpaste_daemon_core = static_library(
+  'gpaste-daemon-core',
+  sources: gpaste_daemon_sources,
+  dependencies: gpaste_daemon_deps,
+)
+
+gpaste_daemon_core_dep = declare_dependency(
+  link_with: gpaste_daemon_core,
+  dependencies: gpaste_daemon_deps,
+)
+
 executable(
   'gpaste-daemon',
-  sources: gpaste_daemon_sources,
+  sources: 'main.c',
   install: true,
-  dependencies: [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ] + keybinder_deps,
+  dependencies: gpaste_daemon_core_dep,
   install_dir: get_option('libexecdir') / 'gpaste',
 )

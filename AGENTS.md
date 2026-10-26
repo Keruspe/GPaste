@@ -39,6 +39,11 @@ ninja test
 directories to check ordinary and detailed `rebind` signal key arguments and
 detail filtering, without reading or writing user preferences.
 
+`test-history` links the daemon's own code but for its `main ()` (the
+`gpaste-daemon-core` library of `src/daemon/meson.build`), against the memory
+GSettings backend and directories of the test's own, to drive the history and
+its storage directly: selecting an idle image counts its texture once.
+
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests
 while a reply is pending, disabling shortcuts before a grab completes, and a shell
