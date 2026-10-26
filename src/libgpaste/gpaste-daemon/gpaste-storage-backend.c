@@ -300,6 +300,14 @@ typedef struct
     GPasteSettings *settings;
     gboolean        read_whole;
     gboolean        unverifiable;
+
+    /* The items, by uuid, a write left out of the store as too large for it
+     * (g_paste_storage_backend_leave_out ()). Guarded by @records_lock rather
+     * than by a backend's own lock, which a load may hold for as long as its
+     * read takes: the writes record into it on storage workers, a backend's
+     * lock held. Nothing else is ever taken under @records_lock. */
+    GHashTable     *left_out;
+    GMutex          records_lock;
 } GPasteStorageBackendPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
@@ -968,6 +976,56 @@ g_paste_storage_backend_has_diverged (GPasteStorageBackend *self,
     return klass->has_diverged && klass->has_diverged (self, name);
 }
 
+void
+g_paste_storage_backend_leave_out (GPasteStorageBackend *self,
+                                   GPasteItem           *item)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    g_hash_table_add (priv->left_out, g_strdup (g_paste_item_get_uuid (item)));
+}
+
+/* What g_paste_storage_backend_left_out () answers, @records_lock held. */
+static gboolean
+g_paste_storage_backend_left_out_locked (GPasteStorageBackend        *self,
+                                         GPasteStorageBackendPrivate *priv,
+                                         GPasteItem                  *item)
+{
+    return !g_paste_storage_backend_stores_item (self, item) ||
+           g_hash_table_contains (priv->left_out, g_paste_item_get_uuid (item));
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_left_out (GPasteStorageBackend *self,
+                                  GPasteItem           *item)
+{
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
+
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    return g_paste_storage_backend_left_out_locked (self, priv, item);
+}
+
+gint64
+g_paste_storage_backend_count_kept (GPasteStorageBackend *self,
+                                    const GList          *history)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+    gint64 kept = 0;
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        if (!g_paste_storage_backend_left_out_locked (self, priv, h->data))
+            ++kept;
+    }
+
+    return kept;
+}
+
 static void
 g_paste_storage_backend_dispose (GObject *object)
 {
@@ -976,6 +1034,20 @@ g_paste_storage_backend_dispose (GObject *object)
     g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
+}
+
+/* The records go with the mutex guarding them, which only finalize () may
+ * clear: a write still out on a backend disposed early, with
+ * g_object_run_dispose (), records into them as it lands. */
+static void
+g_paste_storage_backend_finalize (GObject *object)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (G_PASTE_STORAGE_BACKEND (object));
+
+    g_hash_table_unref (priv->left_out);
+    g_mutex_clear (&priv->records_lock);
+
+    G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->finalize (object);
 }
 
 G_PASTE_VISIBLE void
@@ -1055,11 +1127,16 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->clear_history = NULL;
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
+    G_OBJECT_CLASS (klass)->finalize = g_paste_storage_backend_finalize;
 }
 
 static void
-g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
+g_paste_storage_backend_init (GPasteStorageBackend *self)
 {
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    priv->left_out = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    g_mutex_init (&priv->records_lock);
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION

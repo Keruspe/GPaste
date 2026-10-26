@@ -51,6 +51,20 @@ gboolean g_paste_storage_is_special_file (const gchar *path);
 gboolean g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
                                                   const gchar          *name);
 
+/* That a write of @self left @item out of its store as too large for it, the
+ * rest of its history written around it; and whether a write of @self left
+ * @item out, that or the item being one @self does not store at all
+ * (g_paste_storage_backend_stores_item ()): what a reader checking the store
+ * holds every item it was handed has to excuse. And how many of @history's
+ * items a write of @self keeps, those it does not leave out, counted under
+ * one hold of the records. */
+void     g_paste_storage_backend_leave_out  (GPasteStorageBackend *self,
+                                             GPasteItem           *item);
+gboolean g_paste_storage_backend_left_out   (GPasteStorageBackend *self,
+                                             GPasteItem           *item);
+gint64   g_paste_storage_backend_count_kept (GPasteStorageBackend *self,
+                                             const GList          *history);
+
 /* How many times this process has let go of the storage lock
  * (g_paste_storage_backend_unlock ()), and g_paste_storage_backend_lock () from
  * that count on: it ends short of the lock should this process have let go of

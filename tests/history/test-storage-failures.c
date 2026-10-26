@@ -2803,6 +2803,42 @@ test_import_spares_unwritten_destination (void)
     g_assert_cmpstr (g_paste_item_get_value (items->data), ==, "older copy");
 }
 
+/* An item a SQLite destination leaves out as too large for a row is excused
+ * by the import's read-back as a plain destination's password is: the import
+ * goes through, every other item copied. */
+static void
+test_import_excuses_left_out (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*too large to store*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "left-out-imported";
+    g_autofree gchar *large = g_strnfill (2048, 'x');
+    g_autofree gchar *copy = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_SQLITE));
+
+    {
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (large));
+
+        items = g_list_append (items, g_paste_text_item_new ("small"));
+        g_assert_true (g_paste_storage_backend_write_history (file, name, items));
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    refused_bind_length = 1024;
+    g_assert_true (import_histories (settings, G_PASTE_STORAGE_FILE, NULL, G_PASTE_STORAGE_SQLITE, NULL, &error));
+    refused_bind_length = 0;
+    g_assert_no_error (error);
+    g_assert_cmpint (sqlite_query_int (copy, "SELECT COUNT (*) FROM items;"), ==, 1);
+}
+
 /* A destination history whose write went in without an image it could not
  * write, which a file flavour does over a history already there, is the
  * import's copy, and the rollback takes it back with the rest. */
@@ -6920,6 +6956,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
     g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);
     g_test_add_func ("/storage/migration/import-takes-back-partial-destination", test_import_takes_back_partial_destination);
+    g_test_add_func ("/storage/migration/import-excuses-left-out", test_import_excuses_left_out);
     g_test_add_func ("/storage/sqlite/rank-compaction", test_sqlite_rank_compaction);
     g_test_add_func ("/storage/sqlite/diverged-write", test_sqlite_diverged_write);
     g_test_add_func ("/storage/sqlite/failed-write-leaves-no-database", test_sqlite_failed_write_leaves_no_database);

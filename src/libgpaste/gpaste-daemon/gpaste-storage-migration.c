@@ -587,10 +587,6 @@ import_histories (GPasteSettings *settings,
      * what the cleanup that may follow deletes along with the rest. */
     g_paste_storage_backend_read_whole (previous);
     g_paste_storage_backend_read_whole (next);
-    /* Only the plain flavors drop password items; an encrypted destination stores
-     * them, so a password missing from the read-back is a genuine write failure
-     * there and must not be waved through (the caller may then delete the source). */
-    const gboolean chosen_stores_passwords = g_paste_storage_is_encrypted (chosen);
     gboolean ok = TRUE;
 
     /* A source we could not even list is not an empty one: importing nothing and
@@ -720,7 +716,14 @@ import_histories (GPasteSettings *settings,
                 w = g_list_next (w);
             }
             else
-                ok = !chosen_stores_passwords && g_paste_item_get_kind (h->data) == G_PASTE_ITEM_KIND_PASSWORD;
+            {
+                /* What the destination does not store -- a password in a
+                 * plain flavour, an item too large for a row -- is all that
+                 * may be missing: anything else missing is a write that
+                 * failed, which must not be waved through, as the caller may
+                 * delete the source next. */
+                ok = g_paste_storage_backend_left_out (next, h->data);
+            }
         }
 
         /* Nothing may read back that was not written. */
