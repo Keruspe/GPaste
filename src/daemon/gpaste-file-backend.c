@@ -269,6 +269,16 @@ history_contains_uuid (const GList *history,
     return FALSE;
 }
 
+/* A SHA-256 in lowercase hex: what g_paste_image_item_get_checksum () answers
+ * for an image, and the only checksum a document may name. */
+static gboolean
+is_image_checksum (const gchar *checksum)
+{
+    gsize length = 2 * (gsize) g_checksum_type_get_length (G_CHECKSUM_SHA256);
+
+    return strspn (checksum, "0123456789abcdef") == length && !checksum[length];
+}
+
 static void
 start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
            const gchar         *element_name,
@@ -347,8 +357,18 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 if (data->type != IMAGE)
                 {
                     g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
-                    return;
+                    continue;
                 }
+                /* Only one the image could have computed: anything else would
+                 * be written back as it is, unescaped (see the writer), and a
+                 * quote in it then makes the whole file unreadable. Dropped,
+                 * the image computes its own again. */
+                if (!is_image_checksum (*v))
+                {
+                    g_warning ("Ignoring an invalid image checksum in file “%s”", data->history_file_path);
+                    continue;
+                }
+                g_free (data->checksum);
                 data->checksum = g_strdup (*v);
             }
             else if (g_paste_str_equal (*a, "name"))
@@ -542,7 +562,19 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         if (data->version == HISTORY_2_0)
         {
             g_autofree gchar *value = g_paste_util_xml_decode (txt);
-            if (*g_strstrip (txt))
+
+            /* GMarkup hands the runs either side of a CDATA section over apart
+             * from it, so whitespace alone may be the indentation around the
+             * value rather than the value: it stands only until a run that is
+             * not whitespace comes. A plain value of whitespace alone -- blank
+             * lines copied -- is written verbatim and kept, where a special
+             * value is base64, which whitespace alone is none of. */
+            if (!*g_strstrip (txt))
+            {
+                if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID && value && *value && !data->text)
+                    data->text = g_steal_pointer (&value);
+            }
+            else
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
                 if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)

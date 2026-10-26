@@ -50,6 +50,30 @@ settle_writes (const gchar *name)
     }
 }
 
+/* Iterate the main context until the history file @name holds @needle: what a
+ * write on the history's own thread lands with, the history writing every
+ * change of its own. */
+static void
+wait_for_saved (const gchar *name,
+                const gchar *needle)
+{
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xml");
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    for (;;)
+    {
+        g_autofree gchar *contents = NULL;
+
+        if (g_file_get_contents (path, &contents, NULL, NULL) && strstr (contents, needle))
+            break;
+        g_assert_cmpint (g_get_monotonic_time (), <, deadline);
+        g_main_context_iteration (NULL, FALSE);
+        g_usleep (G_USEC_PER_SEC / 100);
+    }
+
+    settle_writes (name);
+}
+
 static gchar *
 dup_uuid_at (GPasteHistory *history,
              guint64        index)
@@ -126,11 +150,131 @@ test_select_counts_image_once (void)
     settle_writes ("select-counts-image-once");
 }
 
+/* A value of whitespace alone -- blank lines copied -- is written as it is, and
+ * read back: dropped, it would be gone for good at the next save. */
+static void
+test_blank_value_kept (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    {
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+        g_paste_history_load (history, "blank-value");
+        g_paste_history_add (history, g_paste_text_item_new ("  \n\t "));
+        g_paste_history_add (history, g_paste_text_item_new ("visible"));
+        wait_for_saved ("blank-value", "visible");
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "blank-value");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 1)), ==, "  \n\t ");
+    settle_writes ("blank-value");
+}
+
+/* An attribute that does not belong to an item's kind -- a checksum on a
+ * text -- is skipped, the item keeping the attributes after it, its uuid
+ * among them. */
+static void
+test_stray_checksum_skipped (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("stray", "xml");
+    g_autofree gchar *dir = g_path_get_dirname (path);
+    const gchar *document = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                            "<history version=\"2.0\">\n"
+                            "  <item kind=\"Text\" checksum=\"0000000000000000000000000000000000000000000000000000000000000000\" "
+                            "uuid=\"00000000-0000-4000-8000-000000000001\">\n"
+                            "    <value><![CDATA[kept]]></value>\n  </item>\n"
+                            "</history>\n";
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (path, document, -1, NULL));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "stray");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "kept");
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, "00000000-0000-4000-8000-000000000001");
+    settle_writes ("stray");
+}
+
+/* An image's checksum is a SHA-256 in lowercase hex, and the writer puts it in
+ * an attribute as it is: one read off a file that is anything else -- a quote
+ * in it -- is dropped, the image computing its own again, rather than written
+ * back unescaped, which would make the whole file unreadable at the next
+ * start. */
+static void
+test_invalid_checksum_dropped (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*invalid image checksum*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *images = g_build_filename (dir, "images", NULL);
+    g_autofree gchar *png = g_build_filename (images, "quoted.png", NULL);
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("quoted-checksum", "xml");
+    g_autoptr (GPasteItem) source = uniform_image (4);
+
+    g_paste_settings_set_images_support (settings, TRUE);
+    g_assert_cmpint (g_mkdir_with_parents (images, 0700), ==, 0);
+    g_assert_true (gdk_texture_save_to_png (g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (source)), png));
+
+    g_autofree gchar *document = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                                                  "<history version=\"2.0\">\n"
+                                                  "  <item kind=\"Text\" uuid=\"%s\">\n    <value><![CDATA[text]]></value>\n  </item>\n"
+                                                  "  <item kind=\"Image\" uuid=\"%s\" date=\"1234567890\" checksum=\"ab&quot;cd\">\n"
+                                                  "    <value><![CDATA[%s]]></value>\n  </item>\n"
+                                                  "</history>\n",
+                                                  "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", png);
+
+    g_assert_true (g_file_set_contents (path, document, -1, NULL));
+
+    {
+        g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+        g_paste_history_load (history, "quoted-checksum");
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+        /* Any change writes the file again. */
+        g_paste_history_add (history, g_paste_text_item_new ("written back"));
+        wait_for_saved ("quoted-checksum", "written back");
+    }
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "quoted-checksum");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    settle_writes ("quoted-checksum");
+}
+
 int
 main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add_func ("/history/select-counts-image-once", test_select_counts_image_once);
+    g_test_add_func ("/history/blank-value-kept", test_blank_value_kept);
+    g_test_add_func ("/history/stray-checksum-skipped", test_stray_checksum_skipped);
+    g_test_add_func ("/history/invalid-checksum-dropped", test_invalid_checksum_dropped);
 
     return g_test_run ();
 }
