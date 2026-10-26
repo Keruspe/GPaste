@@ -12,6 +12,19 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
     g_application_quit (G_APPLICATION (user_data));
 }
 
+/* Presented with no parent, the dialog makes a window of its own: made the
+ * application's, it is the one a second launch raises
+ * (g_paste_gtk_util_show_window ()) and the one the shell matches to the
+ * desktop entry. No test shows it, since that takes a display. */
+static void
+present_preferences (GtkApplication *app)
+{
+    AdwDialog *dialog = g_paste_gtk_preferences_dialog_new (G_APPLICATION (app));
+
+    adw_dialog_present (dialog, NULL);
+    gtk_window_set_application (GTK_WINDOW (gtk_widget_get_root (GTK_WIDGET (dialog))), app);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -23,9 +36,7 @@ main (gint argc, gchar *argv[])
 
     g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
 
-    AdwDialog *dialog = g_paste_gtk_preferences_dialog_new (gapp);
-
-    adw_dialog_present (dialog, NULL);
+    present_preferences (app);
 
     return g_application_run (gapp, argc, argv);
 }

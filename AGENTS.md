@@ -406,9 +406,11 @@ The main graphical history browser. Launched via `gpaste-client ui`. Contains wi
 
 ### `src/preferences/` — GTK4 + Adwaita preferences application
 
-Standalone preferences window. Uses GTK4 and libadwaita for a modern look. A
-range row commits only a value its range takes (`GTK_UPDATE_IF_VALID`, a blank
-field refused in `input`).
+Standalone preferences window. Uses GTK4 and libadwaita for a modern look. The
+dialog is presented with no parent, which makes a window of its own, and that
+window is made the application's (`present_preferences ()`): it is what a second
+launch raises. A range row commits only a value its range takes
+(`GTK_UPDATE_IF_VALID`, a blank field refused in `input`).
 
 A page registers itself with the `GPasteGtkPreferencesManager` **after it has
 built its rows**, not before: `setting_changed()` is handed every `changed` from

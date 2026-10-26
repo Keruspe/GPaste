@@ -23,6 +23,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix searches for text with characters like ( * + . finding nothing or the wrong items
 - Fix GNOME Shell's menu not finding a password by a name with capital letters
 - Fix clearing a number in the preferences setting its minimum, trimming the history to five items
+- Fix opening the preferences again not bringing the open window forward
 
 NEW in 50.10 (08/09/2026)
 =============
