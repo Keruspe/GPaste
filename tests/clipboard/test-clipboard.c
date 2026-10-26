@@ -5716,6 +5716,34 @@ test_guard_concludes_with_hint_out (void)
     g_assert_cmpstr (primary->content.str, ==, "destination");
 }
 
+/* A capture the bootstrap read identifies once the history has loaded is
+ * linked to the entry it equals wherever that sits, as a link made after the
+ * load is: below a head that is no copy of it, the entry's stored timeout is
+ * what takes it off, password-timeout being 0. */
+static void
+test_bootstrap_after_load_entry_below_head (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    hinted_read (clipboard, settings, "secret");
+    g_assert_cmpstr (clipboard->content.str, ==, "secret");
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "head");
+}
+
 /* An explicit sync out of a selection its owner emptied with "" publishes
  * the empty text. */
 static void
@@ -6053,6 +6081,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/sync/over_counted_password_unknown_read", GINT_TO_POINTER (TRUE), test_sync_over_counted_password);
     g_test_add_func ("/clipboard/guard/concludes_with_hint_out", test_guard_concludes_with_hint_out);
     g_test_add_func ("/clipboard/sync/empty_text", test_sync_empty_text);
+    g_test_add_func ("/clipboard/bootstrap_after_load/entry_below_head", test_bootstrap_after_load_entry_below_head);
     g_test_add_func ("/clipboard/sync/over_sensitive_unknown_read", test_sync_over_sensitive_unknown_read);
     g_test_add_func ("/clipboard/dropped_password/twin_spares_selection", test_dropped_twin_spares_selection);
     g_test_add_func ("/clipboard/dropped_password/takes_paused_capture", test_dropped_entry_takes_paused_capture);

@@ -786,6 +786,27 @@ g_paste_clipboards_manager_preserve_password (_Clipboard           *clip,
         g_paste_clipboards_manager_capture_secret (item, clip->password_timeout);
 }
 
+/* The password entry of the history @capture is a copy of, wherever it sits --
+ * what was added since, a password copied since included, may stand above it
+ * -- or %NULL: what a capture of a secret already on a selection is linked
+ * to, by identify_ready () and link_captures () alike. */
+static GPasteItem *
+g_paste_clipboards_manager_equal_entry (GPasteClipboardsManager *self,
+                                        GPasteItem              *capture)
+{
+    guint64 length = g_paste_history_get_length (self->history);
+
+    for (guint64 i = 0; i < length; ++i)
+    {
+        g_autoptr (GPasteItem) candidate = g_paste_history_dup (self->history, i);
+
+        if (candidate && candidate != capture && G_PASTE_IS_PASSWORD_ITEM (candidate) && g_paste_item_equals (capture, candidate))
+            return g_steal_pointer (&candidate);
+    }
+
+    return NULL;
+}
+
 /* A read asked so that the selection is identified, not so that a copy is
  * recorded: the one that bootstraps a provider, and the one a waiter for expiry
  * asks for (reread_unconfirmed ()).
@@ -838,19 +859,21 @@ g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_
 
         if (!data->clip->password)
         {
-            /* A head seen while the history is still loading is one the load is
-             * about to replace -- an add made in the meantime, which it then puts
-             * back on top of what it read -- and not the one to link against, as
-             * link_captures () says for itself
-             * (/clipboard/bootstrap_before_load/identify_during_load). */
+            /* A history still loading holds only what was added in the
+             * meantime, which the load then puts back on top of what it read:
+             * none of the store's entries to link against, as link_captures ()
+             * says for itself
+             * (/clipboard/bootstrap_during_load/password_added_during_load). */
             gboolean loading = g_paste_history_is_loading (data->manager->history);
-            g_autoptr (GPasteItem) head = (loading) ? NULL : g_paste_history_dup (data->manager->history, 0);
+            g_autoptr (GPasteItem) entry = (loading) ? NULL : g_paste_clipboards_manager_equal_entry (data->manager, identified);
 
-            /* An initial capture equal to the history head shares its identity
-             * and stored timeout. Later reads preserve the standing record. */
-            if (head && g_paste_item_equals (identified, head))
-                g_set_object (&identified, head);
-            headless = !head;
+            /* An initial capture equal to an entry of the history shares its
+             * identity and stored timeout, wherever the entry sits, as
+             * link_captures () finds it. Later reads preserve the standing
+             * record. */
+            if (entry)
+                g_set_object (&identified, entry);
+            headless = loading || !g_paste_history_get_length (data->manager->history);
         }
         g_paste_clipboards_manager_arm_password (data->clip, identified, FALSE);
         /* No head to link to may be a history still loading, the daemon
@@ -2614,8 +2637,6 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
     if (!self->history || g_paste_history_is_loading (self->history))
         return G_SOURCE_REMOVE;
 
-    guint64 length = g_paste_history_get_length (self->history);
-
     for (GSList *l = self->clipboards; l; l = g_slist_next (l))
     {
         _Clipboard *clip = l->data;
@@ -2628,16 +2649,7 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
         if (!clip->password)
             continue;
 
-        g_autoptr (GPasteItem) entry = NULL;
-
-        for (guint64 i = 0; !entry && i < length; ++i)
-        {
-            g_autoptr (GPasteItem) candidate = g_paste_history_dup (self->history, i);
-
-            if (candidate && candidate != clip->password && G_PASTE_IS_PASSWORD_ITEM (candidate) &&
-                g_paste_item_equals (clip->password, candidate))
-                entry = g_steal_pointer (&candidate);
-        }
+        g_autoptr (GPasteItem) entry = g_paste_clipboards_manager_equal_entry (self, clip->password);
 
         if (!entry)
             continue;
