@@ -128,6 +128,18 @@ g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *se
     return row;
 }
 
+/* Nothing to read a number from is no number: left alone, a cleared field
+ * would commit 0 as it loses the focus. */
+static gint
+refuse_blank_input (AdwSpinRow *row,
+                    gdouble    *new_value G_GNUC_UNUSED,
+                    gpointer    user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *text = g_strdup (gtk_editable_get_text (GTK_EDITABLE (row)));
+
+    return (*g_strstrip (text)) ? FALSE : GTK_INPUT_ERROR;
+}
+
 static void
 range_wrapper (AdwSpinRow *spin_row,
                GParamSpec *pspec G_GNUC_UNUSED,
@@ -170,6 +182,14 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
 
     AdwSpinRow *row = ADW_SPIN_ROW (adw_spin_row_new_with_range (min, max, step));
 
+    /* Only a value the range takes is committed: anything else puts the row's
+     * own value back. Committing whatever is there -- a field cleared to type
+     * another number into, or holding no number at all -- would set the
+     * range's minimum as it loses the focus, a maximum history size trimming
+     * the history to five items there and then. No test shows it, since that
+     * takes a display. */
+    adw_spin_row_set_update_policy (row, GTK_UPDATE_IF_VALID);
+    g_signal_connect (row, "input", G_CALLBACK (refuse_blank_input), NULL);
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
     adw_spin_row_set_value (row, value);
 
