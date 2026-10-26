@@ -60,7 +60,7 @@ _gpaste-client_complete_subcommands() {
         {add,a}:"Set text to clipboard"
         {add-password,ap}:"Add a name - password couple to the clipboard"
         "about:Display the about dialog"
-        {backup-history,bh}:"Backup current history"
+        {backup-history,bh}:"Back up a history, the current one if not given"
         {daemon-reexec,dr}:"Reexecute the daemon"
         {daemon-version,dv}:"Display the daemon version"
         {delete,del,d,remove,rm}:"Delete an element of the history"

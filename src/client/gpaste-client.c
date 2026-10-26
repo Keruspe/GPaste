@@ -315,8 +315,8 @@ show_help (void)
     printf ("  %s history-size: %s\n", progname, _("print the size of the history"));
     /* Translators: help for gpaste get-history */
     printf ("  %s get-history: %s\n", progname, _("get the name of the current history"));
-    /* Translators: help for gpaste backup-history <name> */
-    printf ("  %s backup-history <%s>: %s\n", progname, _("name"), _("backup current history"));
+    /* Translators: help for gpaste backup-history [<history>] <name> */
+    printf ("  %s backup-history [<%s>] <%s>: %s\n", progname, _("history"), _("name"), _("back up <history>, the current one if not given, as <name>"));
     /* Translators: help for gpaste switch-history <name> */
     printf ("  %s switch-history <%s>: %s\n", progname, _("name"), _("switch to another history"));
     /* Translators: help for gpaste delete-history <name> */

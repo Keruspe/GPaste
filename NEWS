@@ -34,6 +34,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix adding a file by a relative path from a removed directory adding another file
 - Fix a backup named like the current history being lost at its next save
 - Fix history names holding a / reaching files outside the history directory
+- Fix gpaste-client's help and man page for backup-history
 
 NEW in 50.10 (08/09/2026)
 =============
