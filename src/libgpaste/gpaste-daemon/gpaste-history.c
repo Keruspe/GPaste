@@ -1676,9 +1676,15 @@ g_paste_history_resolve_name (GPasteHistory *self,
 
     /* @name is what a NULL setting resolved to, so it can still be NULL here,
      * and printf ("%s", NULL) is undefined -- it is glibc that prints
-     * "(null)", not C. */
+     * "(null)", not C. Escaped otherwise: the setting is anybody's to write,
+     * an older GPaste's SwitchHistory included, and the journal is read on a
+     * terminal. */
     if (resolved != name)
-        g_warning ("“%s” does not name a history; using “%s” instead", (name) ?: "(none)", resolved);
+    {
+        g_autofree gchar *escaped = (name) ? g_strescape (name, NULL) : NULL;
+
+        g_warning ("“%s” does not name a history; using “%s” instead", (escaped) ?: "(none)", resolved);
+    }
 
     return resolved;
 }

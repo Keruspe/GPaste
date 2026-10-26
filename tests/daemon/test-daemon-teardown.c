@@ -998,7 +998,9 @@ test_history_property_seed (void)
     {
         g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
         g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*does not name a history*");
+        g_test_trap_assert_stderr ("*“not/a/\\033]0;title\\007name” does not name a history*");
+        /* Escaped, its control characters left out of the journal. */
+        g_test_trap_assert_stderr_unmatched ("*\033*");
         return;
     }
 
@@ -1008,7 +1010,7 @@ test_history_property_seed (void)
 
     Fixture fixture = { 0 };
 
-    fixture_set_up (&fixture, "not/a/name");
+    fixture_set_up (&fixture, "not/a/\033]0;title\007name");
     g_assert_cmpstr (g_paste_daemon3_get_history (fixture.daemon->skeleton), ==, G_PASTE_DEFAULT_HISTORY);
     fixture_tear_down (&fixture, NULL);
 }
