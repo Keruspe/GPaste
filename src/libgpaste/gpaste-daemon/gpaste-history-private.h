@@ -39,6 +39,18 @@ GPtrArray *g_paste_history_search_items (GPasteHistory *self,
                                          const gchar   *pattern,
                                          GError       **error);
 
+/* The same, matched on a worker thread rather than under the history's lock:
+ * a pattern can take its regular expression's match limit on every item, tens
+ * of milliseconds apiece whatever their length, which on the main loop --
+ * gnome-shell's compositor, for the in-shell daemon -- would stall it for as
+ * long. The items are taken as the history holds them when it is asked. */
+void       g_paste_history_search_items_async  (GPasteHistory      *self,
+                                                const gchar        *pattern,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+GPtrArray *g_paste_history_search_items_finish (GAsyncResult       *result,
+                                                GError            **error);
+
 /* The passwords the change being announced takes out of the history, which
  * GPasteHistory::password-dropped announces after ::selected: a handler of the
  * one can tell a head elected because a password went from any other. %NULL

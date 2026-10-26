@@ -1431,9 +1431,33 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (replace,
                                 g_autofree gchar *new_uuid, new_uuid,
                                 (const gchar *uuid, const gchar *contents), (uuid, contents))
 
-G_PASTE_DAEMON_HANDLER_RET_ERR (search,
-                                GVariant *results, results,
-                                (const gchar *query), (query))
+static void
+on_search_answered (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    GError *error = NULL;
+    g_autoptr (GVariant) results = g_paste_daemon_methods_search_finish (result, &error);
+
+    if (results)
+        g_dbus_method_invocation_return_value (invocation, g_variant_new ("(@" G_PASTE_ITEMS_VARIANT_STRING ")", results));
+    else
+        g_dbus_method_invocation_take_error (invocation, error);
+}
+
+/* Matched on a worker thread: see g_paste_history_search_items_async (). */
+static gboolean
+g_paste_daemon_handle_search (GPasteDaemon          *self,
+                              GDBusMethodInvocation *invocation,
+                              const gchar           *query)
+{
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_search_async (&methods, query, on_search_answered, invocation);
+
+    return TRUE;
+}
 
 G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 

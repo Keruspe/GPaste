@@ -2980,40 +2980,43 @@ g_paste_history_search (GPasteHistory *self,
     return g_strv_builder_end (results);
 }
 
-GPtrArray *
-g_paste_history_search_items (GPasteHistory *self,
-                              const gchar   *pattern,
-                              GError       **error)
+/* @pattern as every search compiles it, @error saying when it is none. */
+static GRegex *
+g_paste_history_compile_search (const gchar *pattern,
+                                GError     **error)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
-    g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
-    g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
-    g_return_val_if_fail (!error || !*error, NULL);
-
     /* Not the pattern itself: it is what was typed in the overview, the menu or
      * the graphical tool, and a debug log is what a bug report carries. */
     g_debug ("history: search (%" G_GSIZE_FORMAT " bytes)", strlen (pattern));
 
-    G_PASTE_LOCK_HISTORY;
     g_autoptr (GError) regex_error = NULL;
-    g_autoptr (GRegex) regex = g_regex_new (pattern,
-                                            G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
-                                            G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
-                                            &regex_error);
+    GRegex *regex = g_regex_new (pattern,
+                                 G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
+                                 G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
+                                 &regex_error);
 
     /* GLib's own words after ours: what is wrong with the query, rather than
      * that something is. */
     if (!regex)
-    {
         g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression: %s", regex_error->message);
-        return NULL;
-    }
 
+    return regex;
+}
+
+/* The items of @items matching @regex, or named by @pattern as a uuid, each
+ * read by the strings it was built with -- its value, its name, an image's
+ * row -- which nothing changes once it is in a history: what lets a worker
+ * thread match what g_paste_history_search_items_async () took. */
+static GPtrArray *
+g_paste_history_match_items (const GPtrArray *items,
+                             const gchar     *pattern,
+                             GRegex          *regex)
+{
     g_autoptr (GPtrArray) results = g_ptr_array_new_with_free_func (g_object_unref);
 
-    for (guint i = 0; i < self->history->len; ++i)
+    for (guint i = 0; i < items->len; ++i)
     {
-        GPasteItem *item = g_ptr_array_index (self->history, i);
+        GPasteItem *item = g_ptr_array_index (items, i);
         const gchar *uuid = g_paste_item_get_uuid (item);
         /* An image's value is the checksum naming its file, which nobody ever
          * typed: what its row shows, its size and when it was taken, is what a
@@ -3048,6 +3051,105 @@ g_paste_history_search_items (GPasteHistory *self,
     }
 
     return g_steal_pointer (&results);
+}
+
+GPtrArray *
+g_paste_history_search_items (GPasteHistory *self,
+                              const gchar   *pattern,
+                              GError       **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
+    g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
+    g_return_val_if_fail (!error || !*error, NULL);
+
+    g_autoptr (GRegex) regex = g_paste_history_compile_search (pattern, error);
+
+    if (!regex)
+        return NULL;
+
+    G_PASTE_LOCK_HISTORY;
+
+    return g_paste_history_match_items (self->history, pattern, regex);
+}
+
+typedef struct
+{
+    gchar     *pattern;
+    GRegex    *regex;
+    GPtrArray *items;
+} SearchData;
+
+static void
+search_data_free (SearchData *data)
+{
+    /* NULL-safe, as the other task data's free functions are: the autoptr in
+     * g_paste_history_search_items_async () frees the struct half-built should
+     * it return before filling it, which no path does, so no test tells. */
+    g_free (data->pattern);
+    g_clear_pointer (&data->regex, g_regex_unref);
+    g_clear_pointer (&data->items, g_ptr_array_unref);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (SearchData, search_data_free)
+
+static void
+g_paste_history_search_thread (GTask        *task,
+                               gpointer      source_object G_GNUC_UNUSED,
+                               gpointer      task_data,
+                               GCancellable *cancellable G_GNUC_UNUSED)
+{
+    SearchData *data = task_data;
+
+    g_task_return_pointer (task, g_paste_history_match_items (data->items, data->pattern, data->regex), (GDestroyNotify) g_ptr_array_unref);
+}
+
+G_PASTE_VISIBLE void
+g_paste_history_search_items_async (GPasteHistory      *self,
+                                    const gchar        *pattern,
+                                    GAsyncReadyCallback callback,
+                                    gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (pattern && g_utf8_validate (pattern, -1, NULL));
+    g_return_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH);
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    g_autoptr (GError) error = NULL;
+    GRegex *regex = g_paste_history_compile_search (pattern, &error);
+
+    g_task_set_source_tag (task, g_paste_history_search_items_async);
+    if (!regex)
+    {
+        g_task_return_error (task, g_steal_pointer (&error));
+        return;
+    }
+
+    g_autoptr (SearchData) data = g_new0 (SearchData, 1);
+
+    data->pattern = g_strdup (pattern);
+    data->regex = regex;
+
+    {
+        G_PASTE_LOCK_HISTORY;
+
+        data->items = g_ptr_array_copy (self->history, (GCopyFunc) (void (*) (void)) g_object_ref, NULL);
+        g_ptr_array_set_free_func (data->items, g_object_unref);
+    }
+
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) search_data_free);
+    g_task_run_in_thread (task, g_paste_history_search_thread);
+}
+
+G_PASTE_VISIBLE GPtrArray *
+g_paste_history_search_items_finish (GAsyncResult *result,
+                                     GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_history_search_items_async, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 /**

@@ -220,6 +220,11 @@ and `/history/switch_unstored` has dconf give it back: SwitchHistory fails, and
 DeleteHistory of the current history deletes nothing.
 `/history/sqlite_save_elsewhere_keeps_connection` interposes `sqlite3_open_v2()`
 to count the connections opened on a history saved under another name.
+`/history/search_off_main_loop` interposes `g_regex_match()` to hold a
+search's first match until the main loop has turned, and checks that it ran on
+another thread, however fast the regex engine is;
+`/history/search_past_match_limit` has a pattern PCRE2 gives up on answer no
+match, with no error and no warning.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers that

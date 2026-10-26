@@ -84,7 +84,8 @@ const gchar *g_paste_history_get_current (GPasteHistory *self);
  * escaped by a front end (a character becoming at most two). It bounds the
  * pattern, not what matching it costs: one no front end escaped, with nested
  * quantifiers, can run every item into PCRE2's match limit, tens of
- * milliseconds apiece. */
+ * milliseconds apiece -- which is why the daemon's Search matches on a worker
+ * thread (g_paste_history_search_items_async ()). */
 #define G_PASTE_HISTORY_MAX_SEARCH_LENGTH 4096
 
 GStrv g_paste_history_search (GPasteHistory *self,

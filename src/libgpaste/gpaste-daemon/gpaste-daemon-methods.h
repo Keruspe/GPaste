@@ -114,8 +114,11 @@ gchar    *g_paste_daemon_methods_merge                      (const GPasteDaemonM
                                                              const gchar               *separator,
                                                              const gchar * const       *uuids,
                                                              GError                   **error);
-GVariant *g_paste_daemon_methods_search                     (const GPasteDaemonMethods *self,
+void      g_paste_daemon_methods_search_async               (const GPasteDaemonMethods *self,
                                                              const gchar               *query,
+                                                             GAsyncReadyCallback        callback,
+                                                             gpointer                   user_data);
+GVariant *g_paste_daemon_methods_search_finish              (GAsyncResult              *result,
                                                              GError                   **error);
 void      g_paste_daemon_methods_select                     (const GPasteDaemonMethods *self,
                                                              const gchar               *uuid,

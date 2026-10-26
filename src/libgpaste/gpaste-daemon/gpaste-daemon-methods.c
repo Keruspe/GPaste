@@ -1242,25 +1242,74 @@ g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
     }
 }
 
-/* The matches themselves, not their uuids: a caller wanting to show them would
- * only have to ask for every one of them straight back.
+static void
+on_search_matched (GObject      *source_object G_GNUC_UNUSED,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPtrArray) items = g_paste_history_search_items_finish (result, &error);
+
+    if (items)
+        g_task_return_pointer (task, g_variant_ref_sink (g_paste_daemon_methods_items_variant (items)), (GDestroyNotify) g_variant_unref);
+    else
+        g_task_return_error (task, g_steal_pointer (&error));
+}
+
+/**
+ * g_paste_daemon_methods_search_async:
+ * @self: the daemon's methods
+ * @query: the regular expression to match
+ * @callback: (scope async): called with the matches, or the refusal
+ * @user_data: data passed to @callback
+ *
+ * Search, the matching done on a worker thread
+ * (g_paste_history_search_items_async ()). The matches themselves, not their
+ * uuids: a caller wanting to show them would only have to ask for every one of
+ * them straight back.
  *
  * A query too long, or no regular expression at all, is the caller's to hear
  * of rather than the daemon's journal, once per keystroke: refused, the
- * history's one compile of it saying which. */
-G_PASTE_VISIBLE GVariant *
-g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
-                               const gchar               *query,
-                               GError                   **error)
+ * history's one compile of it saying which.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_search_async (const GPasteDaemonMethods *self,
+                                     const gchar               *query,
+                                     GAsyncReadyCallback        callback,
+                                     gpointer                   user_data)
 {
-    G_PASTE_DBUS_ASSERT_FULL (strlen (query) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is too long", NULL);
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
 
-    g_autoptr (GPtrArray) items = g_paste_history_search_items (self->history, query, error);
+    g_task_set_source_tag (task, g_paste_daemon_methods_search_async);
+    if (strlen (query) > G_PASTE_HISTORY_MAX_SEARCH_LENGTH)
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is too long");
+        return;
+    }
 
-    if (!items)
-        return NULL;
+    g_paste_history_search_items_async (self->history, query, on_search_matched, g_steal_pointer (&task));
+}
 
-    return g_paste_daemon_methods_items_variant (items);
+/**
+ * g_paste_daemon_methods_search_finish:
+ * @result: the #GAsyncResult g_paste_daemon_methods_search_async () handed its
+ *     callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails with %G_PASTE_ERROR_INVALID_ARGUMENT for a query too long or no
+ * regular expression.
+ *
+ * Returns: (transfer full): the matching items, or %NULL
+ */
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_search_finish (GAsyncResult *result,
+                                      GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_daemon_methods_search_async, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 G_PASTE_VISIBLE void

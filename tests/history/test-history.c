@@ -512,6 +512,20 @@ backup_history (const GPasteDaemonMethods *methods,
     g_paste_daemon_methods_backup_history_finish (result, error);
 }
 
+/* Search through the daemon's methods, waited for. */
+static GVariant *
+search (const GPasteDaemonMethods *methods,
+        const gchar               *query,
+        GError                   **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_daemon_methods_search_async (methods, query, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+
+    return g_paste_daemon_methods_search_finish (result, error);
+}
+
 /* @name copied as @target, waited for. */
 static void G_GNUC_UNUSED
 copy_history (GPasteHistory *history,
@@ -3491,7 +3505,7 @@ test_search_queries (void)
     g_assert_cmpuint (g_strv_length (by_uuid), ==, 1);
     g_assert_cmpstr (by_uuid[0], ==, nameless);
 
-    g_assert_null (g_paste_daemon_methods_search (&methods, "c++ (gcc", &error));
+    g_assert_null (search (&methods, "c++ (gcc", &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
 
     /* Saying what is wrong with it, in GLib's words. */
@@ -3504,14 +3518,119 @@ test_search_queries (void)
 
     g_autofree gchar *long_query = g_strnfill (G_PASTE_HISTORY_MAX_SEARCH_LENGTH + 1, 'a');
 
-    g_assert_null (g_paste_daemon_methods_search (&methods, long_query, &error));
+    g_assert_null (search (&methods, long_query, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
     g_clear_error (&error);
 
-    g_autoptr (GVariant) found = g_paste_daemon_methods_search (&methods, escaped, &error);
+    g_autoptr (GVariant) found = search (&methods, escaped, &error);
 
     g_assert_no_error (error);
     g_assert_cmpuint (g_variant_n_children (found), ==, 1);
+}
+
+/* The thread a search's first match runs on, and whether the main loop turned
+ * while it ran, recorded while @matches_watched is set: that match waits for
+ * the main loop to turn, as one taking its match limit lets it, a second at
+ * most -- on the main thread, nothing turns it. */
+static gint     matches_watched;
+static GThread *matched_on;
+static gint     main_loop_turns;
+static gint     turned_while_matching;
+
+gboolean
+g_regex_match (const GRegex    *regex,
+               const gchar     *string,
+               GRegexMatchFlags match_options,
+               GMatchInfo     **match_info)
+{
+    typedef gboolean (*Match) (const GRegex *, const gchar *, GRegexMatchFlags, GMatchInfo **);
+    Match original = (Match) dlsym (RTLD_NEXT, "g_regex_match");
+
+    g_assert_nonnull (original);
+    if (g_atomic_int_get (&matches_watched) && g_atomic_pointer_compare_and_exchange (&matched_on, NULL, g_thread_self ()))
+    {
+        gint turns = g_atomic_int_get (&main_loop_turns);
+        gint64 deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
+
+        while (g_atomic_int_get (&main_loop_turns) == turns && g_get_monotonic_time () < deadline)
+            g_usleep (1000);
+        g_atomic_int_set (&turned_while_matching, g_atomic_int_get (&main_loop_turns) != turns);
+    }
+
+    return original (regex, string, match_options, match_info);
+}
+
+static gboolean
+count_tick (gpointer user_data)
+{
+    g_atomic_int_inc ((gint *) user_data);
+
+    return G_SOURCE_CONTINUE;
+}
+
+/* A search is matched on a worker thread, the main loop turning meanwhile: a
+ * pattern taking its match limit on every item -- nested quantifiers over a
+ * run of what they repeat -- would otherwise stall the daemon, gnome-shell for
+ * the in-shell one, for as long, under the history's lock on the main loop.
+ * The match held until the main loop turns stands in for one that slow, which
+ * how fast a regex engine is would otherwise decide. */
+static void
+test_search_off_main_loop (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 50);
+
+    g_paste_history_add (history, g_paste_text_item_new ("needle"));
+    g_paste_history_add (history, g_paste_text_item_new ("haystack"));
+
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+    guint tick = g_timeout_add (1, count_tick, &main_loop_turns);
+
+    g_source_set_name_by_id (tick, "[GPaste] test main loop turns");
+    g_atomic_pointer_set (&matched_on, NULL);
+    g_atomic_int_set (&turned_while_matching, FALSE);
+    g_atomic_int_set (&matches_watched, TRUE);
+    g_paste_history_search_items_async (history, "needle", g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_atomic_int_set (&matches_watched, FALSE);
+    g_source_remove (tick);
+
+    g_autoptr (GPtrArray) found = g_paste_history_search_items_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (found->len, ==, 1);
+    g_assert_nonnull (g_atomic_pointer_get (&matched_on));
+    g_assert_true (g_atomic_pointer_get (&matched_on) != g_thread_self ());
+    g_assert_true (g_atomic_int_get (&turned_while_matching));
+}
+
+/* A pattern of nested quantifiers over a run of what they repeat, with nothing
+ * at the end they could match, takes PCRE2's match limit on each item where
+ * its build has one low enough: the search answers no match, with no error
+ * and no warning, which the fatal warnings of this binary would abort on. A
+ * build matching it to the end answers the same. */
+static void
+test_search_past_match_limit (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    for (guint i = 0; i < 4; ++i)
+    {
+        g_autofree gchar *run = g_strdup_printf ("%u aaaaaaaaaaaaaaaaaaaaaaaaaaaaab", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (run));
+    }
+
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_search_items_async (history, "(a+)+$", g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GPtrArray) found = g_paste_history_search_items_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (found->len, ==, 0);
 }
 
 /* Merge joins text: an image's value is a checksum and a password's a
@@ -8517,6 +8636,8 @@ main (int argc, char *argv[])
     add_test ("/history/search_image_by_what_it_shows", test_search_image_by_what_it_shows);
     add_test ("/history/search_files_by_what_they_show", test_search_files_by_what_they_show);
     add_test ("/history/search_queries", test_search_queries);
+    add_test ("/history/search_off_main_loop", test_search_off_main_loop);
+    add_test ("/history/search_past_match_limit", test_search_past_match_limit);
     add_test ("/history/merge_refuses_image_and_password", test_merge_refuses_image_and_password);
     add_test ("/history/repeats_measured_first", test_repeats_measured_first);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
