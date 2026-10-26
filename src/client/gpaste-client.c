@@ -4,8 +4,12 @@
 #include <gpaste/gpaste-gdbus-defines.h>
 #include <gpaste/gpaste-util.h>
 
+#include <errno.h>
 #include <getopt.h>
+#include <poll.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 typedef struct {
     GPasteClient *client;
@@ -96,20 +100,92 @@ parse_cmdline (int     *argc,
     return TRUE;
 }
 
-static gchar *
-extract_pipe_data (void)
+/* The read of the input failing, @input what came in before it did. */
+static gboolean
+pipe_read_failed (const GString *input,
+                  gboolean      *unreadable,
+                  GError       **error)
 {
+    gint saved_errno = errno;
+
+    *unreadable = !input->len;
+
+    g_set_error (error, G_IO_ERROR, g_io_error_from_errno (saved_errno), _("Could not read the input: %s"), g_strerror (saved_errno));
+    return FALSE;
+}
+
+/* What is piped in, whole, in @data -- %NULL for nothing piped. A read that
+ * fails, setting @unreadable when it does before anything came in, is refused
+ * rather than cut short, as is input no D-Bus string can carry -- one with a
+ * NUL byte or not in UTF-8: a prefix of the input would otherwise go for all
+ * of it, and an empty one for nothing piped -- the listing, then, on a line
+ * with no verb. A stdin its parent left non-blocking is waited on: EAGAIN
+ * there only says that nothing more has come in yet. */
+static gboolean
+extract_pipe_data (gchar   **data,
+                   gboolean *unreadable,
+                   GError  **error)
+{
+    *data = NULL;
+    *unreadable = FALSE;
+
     if (isatty (STDIN_FILENO))
-        return NULL; /* We're not being piped */
+        return TRUE;
 
-    g_autoptr (GString) data = g_string_new (NULL);
-    gint64 c;
+    g_autoptr (GString) input = g_string_new (NULL);
+    gchar buffer[8192];
 
-    while ((c = fgetc (stdin)) != EOF)
-        data = g_string_append_c (data, (guchar)c);
-    g_string_append_c (data, '\0');
+    for (;;)
+    {
+        gssize length = read (STDIN_FILENO, buffer, sizeof (buffer));
 
-    return (*data->str) ? g_strdup (data->str) : NULL;
+        if (length > 0)
+            g_string_append_len (input, buffer, length);
+        else if (!length)
+            break;
+        else if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            struct pollfd readable = { .fd = STDIN_FILENO, .events = POLLIN };
+
+            if (poll (&readable, 1, -1) < 0 && errno != EINTR)
+                return pipe_read_failed (input, unreadable, error);
+        }
+        else if (errno != EINTR)
+            return pipe_read_failed (input, unreadable, error);
+    }
+
+    if (memchr (input->str, '\0', input->len))
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, _("Cannot use input carrying a NUL byte."));
+        return FALSE;
+    }
+
+    if (!g_utf8_validate_len (input->str, input->len, NULL))
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, _("Cannot use text not in UTF-8."));
+        return FALSE;
+    }
+
+    if (input->len)
+        *data = g_string_free_and_steal (g_steal_pointer (&input));
+
+    return TRUE;
+}
+
+/* Whether every word after the verb, and merge's decoration and separator, is
+ * in UTF-8: each goes out as a D-Bus string, which GVariant would only meet
+ * with a critical otherwise. Piped input is checked as it is read. */
+static gboolean
+strings_are_text (const Context *ctx)
+{
+    for (gint i = 0; i < ctx->argc; ++i)
+    {
+        if (!g_utf8_validate (ctx->args[i], -1, NULL))
+            return FALSE;
+    }
+
+    return (!ctx->decoration || g_utf8_validate (ctx->decoration, -1, NULL)) &&
+           (!ctx->separator || g_utf8_validate (ctx->separator, -1, NULL));
 }
 
 static const gchar *
@@ -540,12 +616,6 @@ g_paste_add (Context *ctx,
     if (!data)
         return -1;
 
-    if (!g_utf8_validate(data, -1, NULL))
-    {
-        g_critical (_("Cannot add non utf8 data as text."));
-        return EXIT_FAILURE;
-    }
-
     g_paste_client_add_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
@@ -558,7 +628,7 @@ g_paste_add_password (Context *ctx,
     const gchar *data = (ctx->argc > 1) ? ctx->args[1] : ctx->pipe_data;
 
     if (!data)
-        return EXIT_FAILURE;
+        return -1;
 
     g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, error);
 
@@ -638,7 +708,7 @@ g_paste_replace (Context *ctx,
     const gchar *data = (ctx->argc > 1) ? ctx->args[1] : ctx->pipe_data;
 
     if (!data)
-        return EXIT_FAILURE;
+        return -1;
 
     g_autofree gchar *uuid = item_uuid (ctx, error);
 
@@ -749,88 +819,115 @@ g_paste_merge (Context *ctx,
  * Main
  */
 
+/* Each command line: its verb, how many words it has, the verb included --
+ * @argc, up to @extra_args more -- and its handler, run on a line that matches.
+ * A handler answering -1 leaves the line to the entries after it. @reads_pipe
+ * marks an entry taking its text from stdin at @argc exactly, its last word
+ * left out: stdin is read for these alone, as any other command would wait on
+ * a stdin its parent left open, or be refused for one left closed, for input
+ * it never reads. */
+static const struct {
+    gint         argc;
+    const gchar *verb;
+    gint         extra_args;
+    gboolean     needs_client;
+    gboolean     reads_pipe;
+    gint       (*handler) (Context *ctx,
+                           GError **error);
+} dispatch[] = {
+    { 0, NULL,              G_MAXINT, FALSE, FALSE, g_paste_flag_action     },
+    { 0, NULL,              0,        TRUE,  TRUE,  g_paste_add             },
+    { 0, NULL,              0,        TRUE,  FALSE, g_paste_history         },
+    { 1, "help",            0,        FALSE, FALSE, g_paste_help            },
+    { 1, "v",               0,        FALSE, FALSE, g_paste_version         },
+    { 1, "version",         0,        FALSE, FALSE, g_paste_version         },
+    { 1, "about",           0,        TRUE,  FALSE, g_paste_about           },
+    { 1, "dr",              0,        TRUE,  FALSE, g_paste_daemon_reexec   },
+    { 1, "daemon-reexec",   0,        TRUE,  FALSE, g_paste_daemon_reexec   },
+    { 1, "dv",              0,        TRUE,  FALSE, g_paste_daemon_version  },
+    { 1, "daemon-version",  0,        TRUE,  FALSE, g_paste_daemon_version  },
+    { 1, "e",               1,        TRUE,  FALSE, g_paste_empty           },
+    { 1, "empty",           1,        TRUE,  FALSE, g_paste_empty           },
+    { 1, "gh",              0,        TRUE,  FALSE, g_paste_get_history     },
+    { 1, "get-history",     0,        TRUE,  FALSE, g_paste_get_history     },
+    { 1, "h",               0,        TRUE,  FALSE, g_paste_history         },
+    { 1, "history",         0,        TRUE,  FALSE, g_paste_history         },
+    { 1, "hs",              1,        TRUE,  FALSE, g_paste_history_size    },
+    { 1, "history-size",    1,        TRUE,  FALSE, g_paste_history_size    },
+    { 1, "lh",              0,        TRUE,  FALSE, g_paste_list_histories  },
+    { 1, "list-histories",  0,        TRUE,  FALSE, g_paste_list_histories  },
+    { 1, "dh",              1,        TRUE,  FALSE, g_paste_delete_history  },
+    { 1, "delete-history",  1,        TRUE,  FALSE, g_paste_delete_history  },
+    { 1, "settings",        0,        FALSE, FALSE, g_paste_preferences     },
+    { 1, "p",               0,        FALSE, FALSE, g_paste_preferences     },
+    { 1, "preferences",     0,        FALSE, FALSE, g_paste_preferences     },
+    { 1, "show-history",    0,        TRUE,  FALSE, g_paste_show_history    },
+    { 1, "start",           0,        TRUE,  FALSE, g_paste_start           },
+    { 1, "d",               0,        TRUE,  FALSE, g_paste_start           },
+    { 1, "daemon",          0,        TRUE,  FALSE, g_paste_start           },
+    { 1, "stop",            0,        TRUE,  FALSE, g_paste_stop            },
+    { 1, "q",               0,        TRUE,  FALSE, g_paste_stop            },
+    { 1, "quit",            0,        TRUE,  FALSE, g_paste_stop            },
+    { 1, "ui",              0,        FALSE, FALSE, g_paste_ui              },
+    { 1, "a",               1,        TRUE,  TRUE,  g_paste_add             },
+    { 1, "add",             1,        TRUE,  TRUE,  g_paste_add             },
+    { 2, "ap",              1,        TRUE,  TRUE,  g_paste_add_password    },
+    { 2, "add-password",    1,        TRUE,  TRUE,  g_paste_add_password    },
+    { 2, "bh",              1,        TRUE,  FALSE, g_paste_backup_history  },
+    { 2, "backup-history",  1,        TRUE,  FALSE, g_paste_backup_history  },
+    { 2, "d",               0,        TRUE,  FALSE, g_paste_delete          },
+    { 2, "del",             0,        TRUE,  FALSE, g_paste_delete          },
+    { 2, "delete",          0,        TRUE,  FALSE, g_paste_delete          },
+    { 2, "rm",              0,        TRUE,  FALSE, g_paste_delete          },
+    { 2, "remove",          0,        TRUE,  FALSE, g_paste_delete          },
+    { 2, "dp",              0,        TRUE,  FALSE, g_paste_delete_password },
+    { 2, "delete-password", 0,        TRUE,  FALSE, g_paste_delete_password },
+    { 2, "f",               0,        TRUE,  FALSE, g_paste_file            },
+    { 2, "file",            0,        TRUE,  FALSE, g_paste_file            },
+    { 2, "g",               0,        TRUE,  FALSE, g_paste_get             },
+    { 2, "get",             0,        TRUE,  FALSE, g_paste_get             },
+    { 2, "replace",         1,        TRUE,  TRUE,  g_paste_replace         },
+    { 2, "search",          0,        TRUE,  FALSE, g_paste_search          },
+    { 2, "s",               0,        TRUE,  FALSE, g_paste_select          },
+    { 2, "set",             0,        TRUE,  FALSE, g_paste_select          },
+    { 2, "select",          0,        TRUE,  FALSE, g_paste_select          },
+    { 2, "sh",              0,        TRUE,  FALSE, g_paste_switch_history  },
+    { 2, "switch-history",  0,        TRUE,  FALSE, g_paste_switch_history  },
+    { 2, "u",               0,        TRUE,  FALSE, g_paste_upload          },
+    { 2, "upload",          0,        TRUE,  FALSE, g_paste_upload          },
+    { 3, "rp",              0,        TRUE,  FALSE, g_paste_rename_password },
+    { 3, "rename-password", 0,        TRUE,  FALSE, g_paste_rename_password },
+    { 3, "sp",              0,        TRUE,  FALSE, g_paste_set_password    },
+    { 3, "set-password",    0,        TRUE,  FALSE, g_paste_set_password    },
+    { 4, "m",               G_MAXINT, TRUE,  FALSE, g_paste_merge           },
+    { 4, "merge",           G_MAXINT, TRUE,  FALSE, g_paste_merge           },
+};
+
+/* Whether the command line @argc and @verb make takes its text from stdin:
+ * --help and --version, which g_paste_flag_action () answers first, never do. */
+static gboolean
+command_reads_pipe (const Context *ctx,
+                    gint           argc,
+                    const gchar   *verb)
+{
+    if (ctx->help || ctx->version)
+        return FALSE;
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
+    {
+        if (dispatch[i].reads_pipe && argc == dispatch[i].argc && (!argc || g_paste_str_equal (verb, dispatch[i].verb)))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static gint
 g_paste_dispatch (gint         argc,
                   const gchar *verb,
                   Context     *ctx,
                   GError     **error)
 {
-    static struct {
-        gint         argc;
-        const gchar *verb;
-        gint         extra_args;
-        gboolean     needs_client;
-        gint       (*handler) (Context *ctx,
-                               GError **error);
-    } dispatch[] = {
-        { 0, NULL,              G_MAXINT, FALSE, g_paste_flag_action     },
-        { 0, NULL,              0,        TRUE,  g_paste_add             },
-        { 0, NULL,              0,        TRUE,  g_paste_history         },
-        { 1, "help",            0,        FALSE, g_paste_help            },
-        { 1, "v",               0,        FALSE, g_paste_version         },
-        { 1, "version",         0,        FALSE, g_paste_version         },
-        { 1, "about",           0,        TRUE,  g_paste_about           },
-        { 1, "dr",              0,        TRUE,  g_paste_daemon_reexec   },
-        { 1, "daemon-reexec",   0,        TRUE,  g_paste_daemon_reexec   },
-        { 1, "dv",              0,        TRUE,  g_paste_daemon_version  },
-        { 1, "daemon-version",  0,        TRUE,  g_paste_daemon_version  },
-        { 1, "e",               1,        TRUE,  g_paste_empty           },
-        { 1, "empty",           1,        TRUE,  g_paste_empty           },
-        { 1, "gh",              0,        TRUE,  g_paste_get_history     },
-        { 1, "get-history",     0,        TRUE,  g_paste_get_history     },
-        { 1, "h",               0,        TRUE,  g_paste_history         },
-        { 1, "history",         0,        TRUE,  g_paste_history         },
-        { 1, "hs",              1,        TRUE,  g_paste_history_size    },
-        { 1, "history-size",    1,        TRUE,  g_paste_history_size    },
-        { 1, "lh",              0,        TRUE,  g_paste_list_histories  },
-        { 1, "list-histories",  0,        TRUE,  g_paste_list_histories  },
-        { 1, "dh",              1,        TRUE,  g_paste_delete_history  },
-        { 1, "delete-history",  1,        TRUE,  g_paste_delete_history  },
-        { 1, "settings",        0,        FALSE, g_paste_preferences     },
-        { 1, "p",               0,        FALSE, g_paste_preferences     },
-        { 1, "preferences",     0,        FALSE, g_paste_preferences     },
-        { 1, "show-history",    0,        TRUE,  g_paste_show_history    },
-        { 1, "start",           0,        TRUE,  g_paste_start           },
-        { 1, "d",               0,        TRUE,  g_paste_start           },
-        { 1, "daemon",          0,        TRUE,  g_paste_start           },
-        { 1, "stop",            0,        TRUE,  g_paste_stop            },
-        { 1, "q",               0,        TRUE,  g_paste_stop            },
-        { 1, "quit",            0,        TRUE,  g_paste_stop            },
-        { 1, "ui",              0,        FALSE, g_paste_ui              },
-        { 1, "a",               1,        TRUE,  g_paste_add             },
-        { 1, "add",             1,        TRUE,  g_paste_add             },
-        { 2, "ap",              1,        TRUE,  g_paste_add_password    },
-        { 2, "add-password",    1,        TRUE,  g_paste_add_password    },
-        { 2, "bh",              1,        TRUE,  g_paste_backup_history  },
-        { 2, "backup-history",  1,        TRUE,  g_paste_backup_history  },
-        { 2, "d",               0,        TRUE,  g_paste_delete          },
-        { 2, "del",             0,        TRUE,  g_paste_delete          },
-        { 2, "delete",          0,        TRUE,  g_paste_delete          },
-        { 2, "rm",              0,        TRUE,  g_paste_delete          },
-        { 2, "remove",          0,        TRUE,  g_paste_delete          },
-        { 2, "dp",              0,        TRUE,  g_paste_delete_password },
-        { 2, "delete-password", 0,        TRUE,  g_paste_delete_password },
-        { 2, "f",               0,        TRUE,  g_paste_file            },
-        { 2, "file",            0,        TRUE,  g_paste_file            },
-        { 2, "g",               0,        TRUE,  g_paste_get             },
-        { 2, "get",             0,        TRUE,  g_paste_get             },
-        { 2, "replace",         1,        TRUE,  g_paste_replace         },
-        { 2, "search",          0,        TRUE,  g_paste_search          },
-        { 2, "s",               0,        TRUE,  g_paste_select          },
-        { 2, "set",             0,        TRUE,  g_paste_select          },
-        { 2, "select",          0,        TRUE,  g_paste_select          },
-        { 2, "sh",              0,        TRUE,  g_paste_switch_history  },
-        { 2, "switch-history",  0,        TRUE,  g_paste_switch_history  },
-        { 2, "u",               0,        TRUE,  g_paste_upload          },
-        { 2, "upload",          0,        TRUE,  g_paste_upload          },
-        { 3, "rp",              0,        TRUE,  g_paste_rename_password },
-        { 3, "rename-password", 0,        TRUE,  g_paste_rename_password },
-        { 3, "sp",              0,        TRUE,  g_paste_set_password    },
-        { 3, "set-password",    0,        TRUE,  g_paste_set_password    },
-        { 4, "m",               G_MAXINT, TRUE,  g_paste_merge           },
-        { 4, "merge",           G_MAXINT, TRUE,  g_paste_merge           },
-    };
-
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
     {
         if (argc == dispatch[i].argc || dispatch[i].extra_args == G_MAXINT || (argc > dispatch[i].argc && argc <= (dispatch[i].argc + dispatch[i].extra_args)))
@@ -862,8 +959,33 @@ main (gint argc, gchar *argv[])
 
     if (parse_cmdline (&argc, &argv, &ctx))
     {
+        g_autofree gchar *pipe_data = NULL;
+        gboolean unreadable = FALSE;
+
+        if (!ctx.help && !ctx.version && !strings_are_text (&ctx))
+        {
+            g_critical ("%s", _("Cannot use text not in UTF-8."));
+            return EXIT_FAILURE;
+        }
+
+        /* Read before the daemon is reached, which a command line refused for
+         * its input has no use for. With no verb, a stdin nothing can be read
+         * from is nothing piped, and the history is listed. */
+        if (command_reads_pipe (&ctx, argc, (argc > 0) ? argv[0] : NULL) &&
+            !extract_pipe_data (&pipe_data, &unreadable, &error))
+        {
+            if (argc || !unreadable)
+            {
+                g_critical ("%s\n", error->message);
+                return EXIT_FAILURE;
+            }
+
+            g_clear_error (&error);
+        }
+
+        ctx.pipe_data = pipe_data;
+
         g_autoptr (GPasteClient) client = ctx.client = g_paste_client_new_sync (&error);
-        g_autofree gchar *pipe_data = ctx.pipe_data = extract_pipe_data ();
 
         /* Failing to reach the daemon is not fatal for every verb: "help",
          * "version" and the launchers are marked as needing no client. Move that

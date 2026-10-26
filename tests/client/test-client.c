@@ -19,6 +19,10 @@ typedef struct
     GDBusConnection *server;
     GDBusNodeInfo   *info;
     GString         *log;
+    gboolean         stdin_closed;
+    gboolean         no_bus;
+    gint             stdin_fd;
+    gchar           *last_stdout;
     gchar           *runtime_dir;
     guint            registration;
     gboolean         refuse_reexecute;
@@ -56,6 +60,8 @@ on_method_call (GDBusConnection       *connection G_GNUC_UNUSED,
 
     if (g_str_equal (method, G_PASTE_DAEMON_REEXECUTE) && f->refuse_reexecute)
         g_dbus_method_invocation_return_dbus_error (invocation, "org.freedesktop.DBus.Error.Failed", "refused");
+    else if (g_str_equal (method, G_PASTE_DAEMON_GET_HISTORY))
+        g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("(@a(ss) [],)"));
     else if (g_str_equal (method, G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX))
     {
         guint64 index;
@@ -81,6 +87,7 @@ fixture_set_up (Fixture      *f,
     f->info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE, &error);
     g_assert_no_error (error);
     f->log = g_string_new (NULL);
+    f->stdin_fd = -1;
     /* The case's own, under G_TEST_OPTION_ISOLATE_DIRS, which GLib removes
      * once the case is done. */
     f->runtime_dir = g_strdup (g_get_user_runtime_dir ());
@@ -99,6 +106,8 @@ fixture_tear_down (Fixture      *f,
     g_clear_object (&f->server);
     g_clear_pointer (&f->info, g_dbus_node_info_unref);
     g_string_free (f->log, TRUE);
+    g_clear_fd (&f->stdin_fd, NULL);
+    g_clear_pointer (&f->last_stdout, g_free);
     g_clear_pointer (&f->runtime_dir, g_free);
     g_test_dbus_down (f->bus);
     g_clear_object (&f->bus);
@@ -106,44 +115,86 @@ fixture_tear_down (Fixture      *f,
 
 static void
 on_exited (GObject      *source G_GNUC_UNUSED,
-           GAsyncResult *result G_GNUC_UNUSED,
+           GAsyncResult *result,
            gpointer      user_data)
 {
-    *((gboolean *) user_data) = TRUE;
+    *((GAsyncResult **) user_data) = g_object_ref (result);
 }
 
-/* Runs gpaste-client with @args, serving its calls meanwhile, and checks its
+static gboolean
+on_wait_over (gpointer user_data)
+{
+    *((gboolean *) user_data) = TRUE;
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Run in the child, which then has no stdin at all, as a parent may leave it. */
+static void
+close_stdin (gpointer user_data G_GNUC_UNUSED)
+{
+    g_close (0, NULL);
+}
+
+/* Runs gpaste-client with @args and @input piped in -- or the fixture's stdin_fd
+ * as its stdin, when it holds one -- serving its calls meanwhile, and checks its
  * exit status and what it said on stderr. */
 static void
-run_client (Fixture             *f,
-            const gchar * const *args,
-            gboolean             success,
-            const gchar         *stderr_pattern)
+run_client_with_input (Fixture             *f,
+                       const gchar * const *args,
+                       GBytes              *input,
+                       gboolean             success,
+                       const gchar         *stderr_pattern)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
     g_autoptr (GError) error = NULL;
-    gboolean exited = FALSE;
+    g_autoptr (GAsyncResult) exited = NULL;
 
     g_strv_builder_add (builder, g_getenv ("G_PASTE_CLIENT"));
     g_strv_builder_addv (builder, (const gchar **) args);
 
     g_auto (GStrv) argv = g_strv_builder_end (builder);
-    g_autoptr (GSubprocessLauncher) launcher = g_subprocess_launcher_new (G_SUBPROCESS_FLAGS_STDERR_PIPE);
+    g_autoptr (GSubprocessLauncher) launcher = g_subprocess_launcher_new (G_SUBPROCESS_FLAGS_STDIN_PIPE | G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_PIPE);
 
     g_subprocess_launcher_setenv (launcher, "LC_ALL", "C", TRUE);
+    if (f->stdin_closed)
+        g_subprocess_launcher_set_child_setup (launcher, close_stdin, NULL, NULL);
+    if (f->stdin_fd >= 0)
+    {
+        g_subprocess_launcher_set_flags (launcher, G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_PIPE);
+        g_subprocess_launcher_take_stdin_fd (launcher, g_steal_fd (&f->stdin_fd));
+        input = NULL;
+    }
+    /* With no bus to reach a daemon on. */
+    if (f->no_bus)
+        g_subprocess_launcher_setenv (launcher, "DBUS_SESSION_BUS_ADDRESS", "unix:path=/nonexistent", TRUE);
     g_subprocess_launcher_setenv (launcher, "XDG_RUNTIME_DIR", f->runtime_dir, TRUE);
 
     g_autoptr (GSubprocess) client = g_subprocess_launcher_spawnv (launcher, (const gchar * const *) argv, &error);
 
     g_assert_no_error (error);
-    g_subprocess_wait_async (client, NULL, on_exited, &exited);
-    while (!exited)
+
+    /* Bounded, so that a client waiting on its stdin fails the case rather
+     * than stalling the suite. */
+    gboolean over = FALSE;
+    guint timeout = g_timeout_add_seconds (10, on_wait_over, &over);
+
+    g_source_set_name_by_id (timeout, "[GPaste] client run watchdog");
+    g_subprocess_communicate_async (client, input, NULL, on_exited, &exited);
+    while (!exited && !over)
         g_main_context_iteration (NULL, TRUE);
+    if (!exited)
+        g_subprocess_force_exit (client);
+    g_assert_false (over);
+    g_source_remove (timeout);
 
-    g_autoptr (GInputStream) err = g_object_ref (g_subprocess_get_stderr_pipe (client));
-    g_autoptr (GBytes) bytes = g_input_stream_read_bytes (err, 65536, NULL, &error);
+    g_autoptr (GBytes) out = NULL;
+    g_autoptr (GBytes) bytes = NULL;
 
+    g_assert_true (g_subprocess_communicate_finish (client, exited, &out, &bytes, &error));
     g_assert_no_error (error);
+    g_free (f->last_stdout);
+    f->last_stdout = g_strndup (g_bytes_get_data (out, NULL) ?: "", g_bytes_get_size (out));
 
     g_autofree gchar *text = g_strndup (g_bytes_get_data (bytes, NULL), g_bytes_get_size (bytes));
 
@@ -151,6 +202,17 @@ run_client (Fixture             *f,
     g_assert_cmpint (g_subprocess_get_successful (client), ==, success);
     if (stderr_pattern)
         g_assert_true (g_pattern_match_simple (stderr_pattern, text));
+}
+
+static void
+run_client (Fixture             *f,
+            const gchar * const *args,
+            gboolean             success,
+            const gchar         *stderr_pattern)
+{
+    g_autoptr (GBytes) none = g_bytes_new_static ("", 0);
+
+    run_client_with_input (f, args, none, success, stderr_pattern);
 }
 
 /* Anything but a complete unsigned decimal number is refused before the
@@ -228,14 +290,6 @@ test_reexec_stray_pid (Fixture      *f,
 }
 
 static gboolean
-on_wait_over (gpointer user_data)
-{
-    *((gboolean *) user_data) = TRUE;
-
-    return G_SOURCE_REMOVE;
-}
-
-static gboolean
 on_usr1 (gpointer user_data)
 {
     *((gboolean *) user_data) = TRUE;
@@ -300,6 +354,188 @@ test_reexec_damaged_pid_file (Fixture      *f,
     g_source_remove (source);
 }
 
+/* A stdin the client cannot read is refused by a verb taking its input from
+ * there alone: one that takes none goes on. */
+static void
+test_stdin_closed (Fixture      *f,
+                   gconstpointer data G_GNUC_UNUSED)
+{
+    f->stdin_closed = TRUE;
+    run_client (f, (const gchar * const []) { "switch-history", "work", NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "SwitchHistory('work',)\n");
+
+    g_string_truncate (f->log, 0);
+    run_client (f, (const gchar * const []) { "add", NULL }, FALSE, "*Could not read the input*");
+    g_assert_cmpstr (f->log->str, ==, "");
+
+    /* With no verb, nothing to read is nothing piped: the history is listed. */
+    run_client (f, (const gchar * const []) { NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "GetHistory()\n");
+}
+
+/* Input refused is refused before the daemon is reached: with no bus at all,
+ * the refusal is still what the client says. */
+static void
+test_pipe_refused_unconnected (Fixture      *f,
+                               gconstpointer data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) nul = g_bytes_new_static ("a\0b", 3);
+    g_autoptr (GBytes) invalid = g_bytes_new_static ("\xff", 1);
+
+    f->no_bus = TRUE;
+    run_client_with_input (f, (const gchar * const []) { "add", NULL }, nul, FALSE, "*NUL byte*");
+    run_client_with_input (f, (const gchar * const []) { "add", NULL }, invalid, FALSE, "*not in UTF-8*");
+    run_client (f, (const gchar * const []) { "switch-history", "\xff", NULL }, FALSE, "*not in UTF-8*");
+}
+
+/* The read end of a pipe holding @written, made non-blocking when @nonblocking
+ * says so, as @f's stdin_fd for the next run; the write end, which the caller
+ * holds open, is returned. */
+static gint
+hold_stdin (Fixture     *f,
+            const gchar *written,
+            gboolean     nonblocking)
+{
+    g_autoptr (GError) error = NULL;
+    gint fds[2];
+
+    g_assert_true (g_unix_open_pipe (fds, O_CLOEXEC, &error));
+    g_assert_no_error (error);
+    if (nonblocking)
+    {
+        g_assert_true (g_unix_set_fd_nonblocking (fds[0], TRUE, &error));
+        g_assert_no_error (error);
+    }
+    if (written)
+        g_assert_cmpint (write (fds[1], written, strlen (written)), ==, (gssize) strlen (written));
+    f->stdin_fd = fds[0];
+
+    return fds[1];
+}
+
+/* A verb that takes no input does not read stdin, and goes on though its
+ * parent holds that open, writing nothing to it; nor do --help and --version,
+ * which answer before any verb. */
+static void
+test_stdin_left_open (Fixture      *f,
+                      gconstpointer data G_GNUC_UNUSED)
+{
+    g_autofd gint verb = hold_stdin (f, NULL, FALSE);
+
+    run_client (f, (const gchar * const []) { "switch-history", "work", NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "SwitchHistory('work',)\n");
+
+    g_string_truncate (f->log, 0);
+
+    g_autofd gint version = hold_stdin (f, NULL, FALSE);
+
+    run_client (f, (const gchar * const []) { "--version", "add", NULL }, TRUE, NULL);
+
+    g_autofd gint help = hold_stdin (f, NULL, FALSE);
+
+    run_client (f, (const gchar * const []) { "--help", NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "");
+}
+
+/* The rest of the input, written and its pipe closed once the client is
+ * waiting on it. */
+static gboolean
+write_rest (gpointer user_data)
+{
+    gint *writer = user_data;
+
+    g_assert_cmpint (write (*writer, "c", 1), ==, 1);
+    g_clear_fd (writer, NULL);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* A stdin its parent left non-blocking is read on as the input comes in, to
+ * its end, where EAGAIN would cut it short: "ab" there before the client runs,
+ * the "c" only once it is waiting. */
+static void
+test_stdin_nonblocking (Fixture      *f,
+                        gconstpointer data G_GNUC_UNUSED)
+{
+    g_autofd gint writer = hold_stdin (f, "ab", TRUE);
+
+    g_source_set_name_by_id (g_timeout_add (200, write_rest, &writer), "[GPaste] rest of the input");
+    run_client (f, (const gchar * const []) { "add", NULL }, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "Add('abc',)\n");
+}
+
+/* Text not in UTF-8, which no D-Bus string can carry, is refused before it is
+ * sent, whatever the command and whether it is piped or given on the command
+ * line, merge's decoration and separator included. */
+static void
+test_text_not_utf8 (Fixture      *f,
+                    gconstpointer data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) invalid = g_bytes_new_static ("\xff", 1);
+    g_autofree gchar *uuid = uuid_at (0);
+    const gchar * const *given[] = {
+        (const gchar * const []) { "add", "\xff", NULL },
+        (const gchar * const []) { "add-password", "bank", "\xff", NULL },
+        (const gchar * const []) { "add-password", "\xff", "secret", NULL },
+        (const gchar * const []) { "replace", uuid, "\xff", NULL },
+        (const gchar * const []) { "set-password", uuid, "\xff", NULL },
+        (const gchar * const []) { "rename-password", "bank", "\xff", NULL },
+        (const gchar * const []) { "delete-password", "\xff", NULL },
+        (const gchar * const []) { "switch-history", "\xff", NULL },
+        (const gchar * const []) { "search", "\xff", NULL },
+        (const gchar * const []) { "file", "\xff", NULL },
+        (const gchar * const []) { "--decoration", "\xff", "merge", uuid, uuid, NULL },
+        (const gchar * const []) { "--separator", "\xff", "merge", uuid, uuid, NULL },
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (given); ++i)
+        run_client (f, given[i], FALSE, "*not in UTF-8*");
+    run_client_with_input (f, (const gchar * const []) { "add", NULL }, invalid, FALSE, "*not in UTF-8*");
+    run_client_with_input (f, (const gchar * const []) { "add-password", "bank", NULL }, invalid, FALSE, "*not in UTF-8*");
+    run_client_with_input (f, (const gchar * const []) { "replace", uuid, NULL }, invalid, FALSE, "*not in UTF-8*");
+    g_assert_cmpstr (f->log->str, ==, "");
+}
+
+/* add-password and replace given no text, and none piped, show the help, as
+ * add does, rather than fail without a word. */
+static void
+test_text_missing (Fixture      *f,
+                   gconstpointer data G_GNUC_UNUSED)
+{
+    g_autofree gchar *uuid = uuid_at (0);
+
+    run_client (f, (const gchar * const []) { "add-password", "bank", NULL }, FALSE, NULL);
+    g_assert_true (g_pattern_match_simple ("Usage:*", f->last_stdout));
+    run_client (f, (const gchar * const []) { "replace", uuid, NULL }, FALSE, NULL);
+    g_assert_true (g_pattern_match_simple ("Usage:*", f->last_stdout));
+    g_assert_cmpstr (f->log->str, ==, "");
+}
+
+/* Piped input is read whole, or refused when it carries a NUL, which no D-Bus
+ * string can carry: cut there, a prefix would go for all of it, and an empty
+ * one for nothing piped -- the listing, on a line with no verb. */
+static void
+test_pipe (Fixture      *f,
+           gconstpointer data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) whole = g_bytes_new_static ("a b", 3);
+    g_autoptr (GBytes) inner_nul = g_bytes_new_static ("a\0b", 3);
+    g_autoptr (GBytes) leading_nul = g_bytes_new_static ("\0b", 2);
+
+    run_client_with_input (f, (const gchar * const []) { "add", NULL }, whole, TRUE, NULL);
+    g_assert_cmpstr (f->log->str, ==, "Add('a b',)\n");
+
+    g_string_truncate (f->log, 0);
+    run_client_with_input (f, (const gchar * const []) { "add", NULL }, inner_nul, FALSE, "*NUL byte*");
+    g_assert_cmpstr (f->log->str, ==, "");
+
+    run_client_with_input (f, (const gchar * const []) { NULL }, leading_nul, FALSE, "*NUL byte*");
+    g_assert_cmpstr (f->log->str, ==, "");
+
+    /* --version reads nothing, a NUL piped included. */
+    run_client_with_input (f, (const gchar * const []) { "--version", NULL }, inner_nul, TRUE, NULL);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -308,6 +544,13 @@ main (int argc, char **argv)
     g_test_add ("/client/use-index/malformed", Fixture, NULL, fixture_set_up, test_malformed, fixture_tear_down);
     g_test_add ("/client/use-index/index", Fixture, NULL, fixture_set_up, test_index, fixture_tear_down);
     g_test_add ("/client/use-index/not-an-item", Fixture, NULL, fixture_set_up, test_not_an_item, fixture_tear_down);
+    g_test_add ("/client/pipe", Fixture, NULL, fixture_set_up, test_pipe, fixture_tear_down);
+    g_test_add ("/client/stdin-closed", Fixture, NULL, fixture_set_up, test_stdin_closed, fixture_tear_down);
+    g_test_add ("/client/pipe-refused-unconnected", Fixture, NULL, fixture_set_up, test_pipe_refused_unconnected, fixture_tear_down);
+    g_test_add ("/client/stdin-left-open", Fixture, NULL, fixture_set_up, test_stdin_left_open, fixture_tear_down);
+    g_test_add ("/client/stdin-nonblocking", Fixture, NULL, fixture_set_up, test_stdin_nonblocking, fixture_tear_down);
+    g_test_add ("/client/text-not-utf8", Fixture, NULL, fixture_set_up, test_text_not_utf8, fixture_tear_down);
+    g_test_add ("/client/text-missing", Fixture, NULL, fixture_set_up, test_text_missing, fixture_tear_down);
     g_test_add ("/client/reexec/stray-pid", Fixture, NULL, fixture_set_up, test_reexec_stray_pid, fixture_tear_down);
     g_test_add ("/client/reexec/owner", Fixture, NULL, fixture_set_up, test_reexec_owner, fixture_tear_down);
     g_test_add ("/client/reexec/damaged-pid-file", Fixture, NULL, fixture_set_up, test_reexec_damaged_pid_file, fixture_tear_down);
