@@ -4340,6 +4340,46 @@ test_secure_memory_wiped_halfway (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A stream damaged in its third frame reads its first two before the error:
+ * the call meeting the damage has written the second's plaintext, which it
+ * hands back, the failure coming with the next call. */
+static void
+test_stream_error_after_progress (void)
+{
+    g_autofree gchar *plaintext = g_strnfill (10000, 'p');
+    g_autoptr (GConverter) encrypt = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_ENCRYPT, "passphrase");
+    g_autoptr (GInputStream) plain = g_memory_input_stream_new_from_data (plaintext, 10000, NULL);
+    g_autoptr (GInputStream) encrypting = g_converter_input_stream_new (plain, encrypt);
+    g_autoptr (GOutputStream) sink = g_memory_output_stream_new_resizable ();
+    g_autoptr (GError) error = NULL;
+
+    g_assert_cmpint (g_output_stream_splice (sink, encrypting, G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET, NULL, &error), >, 0);
+    g_assert_no_error (error);
+
+    g_autoptr (GBytes) sealed = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (sink));
+    gsize length = 0;
+    g_autofree guint8 *damaged = g_memdup2 (g_bytes_get_data (sealed, &length), g_bytes_get_size (sealed));
+    /* As in test_passphrase_survives_damage (): the third frame's ciphertext. */
+    const gsize third_chunk = 64 + 2 * (4 + 4096 + 17) + 4;
+
+    g_assert_cmpuint (length, >, third_chunk + 16);
+    damaged[third_chunk + 16] ^= 1;
+
+    g_autoptr (GConverter) decrypt = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_DECRYPT, "passphrase");
+    g_autoptr (GInputStream) sealed_in = g_memory_input_stream_new_from_data (damaged, length, NULL);
+    g_autoptr (GInputStream) decrypting = g_converter_input_stream_new (sealed_in, decrypt);
+    guint8 buffer[3000];
+    gsize total = 0;
+    gssize got;
+
+    while ((got = g_input_stream_read (decrypting, buffer, sizeof (buffer), NULL, &error)) > 0)
+        total += (gsize) got;
+
+    g_assert_cmpint (got, ==, -1);
+    g_assert_nonnull (error);
+    g_assert_cmpuint (total, ==, 2 * 4096);
+}
+
 /* An encrypted history goes through the converter's fixed buffers a frame at a
  * time, many chunks of it reading back whole; carried on past its FINAL frame
  * -- bytes appended, or a second stream after the first -- it is refused rather
@@ -7565,6 +7605,9 @@ main (int    argc,
     g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/encrypted-stream-error-after-progress", test_stream_error_after_progress);
+#endif
     g_test_add_func ("/storage/cancelled-read-creates-nothing", test_cancelled_read_creates_nothing);
     g_test_add_func ("/storage/file-diverged-history", test_file_diverged_history);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

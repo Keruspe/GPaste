@@ -109,6 +109,21 @@ secure_buffer_consume (SecureBuffer *buffer,
     buffer->len = left;
 }
 
+/* Move as much of what @buffer holds as @room bytes take into @dest, returning
+ * how much. */
+static gsize
+secure_buffer_take (SecureBuffer *buffer,
+                    gpointer      dest,
+                    gsize         room)
+{
+    gsize n = MIN (buffer->len, room);
+
+    memcpy (dest, buffer->data, n);
+    secure_buffer_consume (buffer, n);
+
+    return n;
+}
+
 static void
 secure_buffer_clear (SecureBuffer *buffer)
 {
@@ -138,6 +153,10 @@ struct _GPasteSecretStreamConverter
 
     SecureBuffer                in;  /* input not processed yet */
     SecureBuffer                out; /* output not handed back yet */
+
+    /* A failure that came after the call meeting it had made progress, which
+     * the next call reports: see convert (). */
+    GError                     *failure;
 };
 
 static void g_paste_secret_stream_converter_iface_init (GConverterIface *iface);
@@ -469,6 +488,17 @@ decrypt_process (GPasteSecretStreamConverter *self,
     return TRUE;
 }
 
+static gboolean
+process (GPasteSecretStreamConverter *self,
+         gboolean                     flush,
+         gboolean                     at_end,
+         GError                     **error)
+{
+    return (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
+        ? encrypt_process (self, flush, at_end, error)
+        : decrypt_process (self, error);
+}
+
 static GConverterResult
 g_paste_secret_stream_converter_convert (GConverter     *converter,
                                          const void     *inbuf,
@@ -483,8 +513,21 @@ g_paste_secret_stream_converter_convert (GConverter     *converter,
     GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (converter);
 
-    *bytes_read = MIN (inbuf_size, secure_buffer_room (&self->in));
+    *bytes_read = 0;
     *bytes_written = 0;
+
+    if (self->failure)
+    {
+        /* What the call meeting it produced and had no room for goes first. */
+        *bytes_written = secure_buffer_take (&self->out, outbuf, outbuf_size);
+        if (*bytes_written)
+            return G_CONVERTER_CONVERTED;
+
+        g_propagate_error (error, g_steal_pointer (&self->failure));
+        return G_CONVERTER_ERROR;
+    }
+
+    *bytes_read = MIN (inbuf_size, secure_buffer_room (&self->in));
 
     /* Take what fits, then process what we can: input left over is handed in
      * again, so the end of the input, and a flush, only stand once the last of
@@ -495,29 +538,33 @@ g_paste_secret_stream_converter_convert (GConverter     *converter,
     gboolean all_in = (*bytes_read == inbuf_size);
     gboolean at_end = all_in && (flags & G_CONVERTER_INPUT_AT_END);
     gboolean flush = all_in && (flags & G_CONVERTER_FLUSH);
-    gboolean ok = (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
-        ? encrypt_process (self, flush, at_end, error)
-        : decrypt_process (self, error);
-
-    if (!ok)
-        return G_CONVERTER_ERROR;
+    /* A call that errs has its progress thrown away by GConverter -- its input
+     * handed in again, its output dropped -- so one that took input or wrote
+     * output reports that, and keeps the failure for the next call: a stream
+     * damaged in its third frame reads its first two, rather than lose what the
+     * failing call had written of the second, and take the input it buffered a
+     * second time on a retry. */
+    g_autoptr (GError) failure = NULL;
+    gboolean ok = process (self, flush, at_end, &failure);
 
     /* Hand back as much produced output as fits, then process again: what the
      * output had no room for may now fit. */
-    while (self->out.len && *bytes_written < outbuf_size)
+    while (ok && self->out.len && *bytes_written < outbuf_size)
     {
-        gsize n = MIN (self->out.len, outbuf_size - *bytes_written);
+        *bytes_written += secure_buffer_take (&self->out, (guint8 *) outbuf + *bytes_written, outbuf_size - *bytes_written);
+        ok = process (self, flush, at_end, &failure);
+    }
 
-        memcpy ((guint8 *) outbuf + *bytes_written, self->out.data, n);
-        secure_buffer_consume (&self->out, n);
-        *bytes_written += n;
+    if (!ok)
+    {
+        if (*bytes_read || *bytes_written)
+        {
+            self->failure = g_steal_pointer (&failure);
+            return G_CONVERTER_CONVERTED;
+        }
 
-        ok = (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
-            ? encrypt_process (self, flush, at_end, error)
-            : decrypt_process (self, error);
-
-        if (!ok)
-            return G_CONVERTER_ERROR;
+        g_propagate_error (error, g_steal_pointer (&failure));
+        return G_CONVERTER_ERROR;
     }
 
     /* Finished once nothing more can come: when decrypting, input past the
@@ -556,6 +603,7 @@ g_paste_secret_stream_converter_reset (GConverter *converter)
     self->header_done = FALSE;
     self->finished = FALSE;
     self->opened = FALSE;
+    g_clear_error (&self->failure);
     sodium_memzero (self->key, KEYBYTES);
     sodium_memzero (self->state, sizeof (*self->state));
     secure_buffer_clear (&self->in);
@@ -635,6 +683,7 @@ g_paste_secret_stream_converter_finalize (GObject *object)
     g_paste_util_secure_free (self->state, sizeof (*self->state));
     g_paste_util_secure_free (self->in.data, self->in.capacity);
     g_paste_util_secure_free (self->out.data, self->out.capacity);
+    g_clear_error (&self->failure);
 
     G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->finalize (object);
 }
