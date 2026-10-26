@@ -147,8 +147,10 @@
       called @backup, or the one a backup still being written is to be: a backup
       silently destroying an older one of the same name is a loss noticed far
       too late. A @history no store holds is .Error.NotFound, there being
-      nothing to back up. A @backup too long a name for the storage in use is
-      .Error.InvalidArgument, as in SwitchHistory.
+      nothing to back up; one only a store the storage in use cannot reach holds
+      (none in use, an encrypted store left locked) is .Error.Failed. A @backup
+      too long a name for the storage in use is .Error.InvalidArgument, as in
+      SwitchHistory.
 
       The backup holds every change the daemon has accepted for @history, those
       still on their way to the disk included. The current history cannot be

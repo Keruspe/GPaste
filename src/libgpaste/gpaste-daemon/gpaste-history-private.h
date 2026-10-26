@@ -25,8 +25,8 @@ gboolean g_paste_history_delete_full (GPasteHistory *self,
                                       gboolean      *deleted,
                                       GError       **error);
 
-/* Whether deleting or emptying @name reaches every store keeping it, through
- * the backend in use (g_paste_storage_backend_reaches_history ()). */
+/* Whether deleting, emptying or backing up @name reaches every store keeping
+ * it, through the backend in use (g_paste_storage_backend_reaches_history ()). */
 gboolean g_paste_history_reaches_store (GPasteHistory *self,
                                         const gchar   *name);
 

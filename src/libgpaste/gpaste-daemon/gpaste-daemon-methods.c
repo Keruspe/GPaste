@@ -576,8 +576,12 @@ g_paste_daemon_methods_backup_allowed (const GPasteDaemonMethods *self,
                               G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage", FALSE);
 
     /* Nor is a history no store holds one to back up: reading it would create
-     * an empty one under that name, and the backup of it would answer OK. */
-    G_PASTE_DBUS_ASSERT_FULL (current || g_strv_contains ((const gchar * const *) histories, history),
+     * an empty one under that name, and the backup of it would answer OK. One a
+     * store out of the backend's reach keeps -- none in use, over what a
+     * migration kept or an encrypted store left locked -- which no listing
+     * shows, is there all the same, g_paste_history_copy_async ()'s to refuse
+     * as failed. */
+    G_PASTE_DBUS_ASSERT_FULL (current || g_strv_contains ((const gchar * const *) histories, history) || !g_paste_history_reaches_store (self->history, history),
                               G_PASTE_ERROR_NOT_FOUND, "no history goes by that name", FALSE);
 
     return TRUE;

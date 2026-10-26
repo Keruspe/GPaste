@@ -1554,7 +1554,9 @@ test_migration_refuses_unoffered_choice (void)
  * reaches none of that flavour's stores: deleting or emptying a history one of
  * them keeps is refused, as the "no storage" backend refuses one another
  * flavour keeps (/history/noop_refuses_unmade), rather than answered as done
- * with the history still on disk, back with the next build opening it. */
+ * with the history still on disk, back with the next build opening it. Backing
+ * one up is refused only when the stand-in keeps none of it: one it keeps is
+ * listed, and copied as listed. */
 static void
 test_unopenable_store_out_of_reach (void)
 {
@@ -1569,16 +1571,19 @@ test_unopenable_store_out_of_reach (void)
     g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
     g_autofree gchar *current = g_paste_storage_backend_get_history_file_path (database, "unopenable-current");
     g_autofree gchar *other = g_paste_storage_backend_get_history_file_path (database, "unopenable-other");
+    g_autofree gchar *listed = g_paste_storage_backend_get_history_file_path (database, "unopenable-listed");
 
     g_assert_true (g_paste_storage_backend_write_history (database, "unopenable-current", items));
     g_assert_true (g_paste_storage_backend_write_history (database, "unopenable-other", items));
+    g_assert_true (g_paste_storage_backend_write_history (database, "unopenable-listed", items));
     g_clear_object (&database);
     hidden_kind = G_PASTE_STORAGE_SQLITE;
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
 
     g_autoptr (GPasteStorageBackend) stand_in = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
-    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
     g_autoptr (GError) deleted = NULL;
     g_autoptr (GError) emptied = NULL;
     g_autoptr (GError) other_deleted = NULL;
@@ -1596,10 +1601,28 @@ test_unopenable_store_out_of_reach (void)
     g_assert_true (g_file_test (current, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
 
+    g_autoptr (GError) other_backed_up = NULL;
+    g_autoptr (GError) listed_backed_up = NULL;
+    g_autolist (GPasteItem) plain = g_list_append (NULL, g_paste_text_item_new ("listed"));
+    g_autolist (GPasteItem) copied = NULL;
+    gsize size;
+
+    backup_history (&methods, "unopenable-other", "unopenable-other-copy", &other_backed_up);
+    g_assert_error (other_backed_up, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_true (g_paste_storage_backend_write_history (stand_in, "unopenable-listed", plain));
+    backup_history (&methods, "unopenable-listed", "unopenable-listed-copy", &listed_backed_up);
+    g_assert_no_error (listed_backed_up);
+    g_assert_true (g_paste_storage_backend_read_history (stand_in, "unopenable-listed-copy", NULL, &copied, &size));
+    g_assert_cmpuint (g_list_length (copied), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (copied->data), ==, "listed");
+
     hidden_kind = -1;
     g_paste_history_flush (history);
     g_assert_cmpint (g_unlink (current), ==, 0);
     g_assert_cmpint (g_unlink (other), ==, 0);
+    g_assert_cmpint (g_unlink (listed), ==, 0);
+    g_paste_storage_backend_delete_history (stand_in, "unopenable-listed", NULL);
+    g_paste_storage_backend_delete_history (stand_in, "unopenable-listed-copy", NULL);
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 

@@ -1832,6 +1832,12 @@ test_noop_refuses_unmade (void)
         g_assert_error (other_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
         g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
 
+        /* Nor is another one stored out of reach no history to back up. */
+        g_autoptr (GError) backup_error = NULL;
+
+        backup_history (&methods, "noop-other", "noop-other-copy", &backup_error);
+        g_assert_error (backup_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+
         g_assert_cmpint (g_unlink (kept), ==, 0);
         g_assert_cmpint (g_unlink (other), ==, 0);
     }

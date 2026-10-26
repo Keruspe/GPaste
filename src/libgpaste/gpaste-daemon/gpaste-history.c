@@ -1725,10 +1725,11 @@ g_paste_history_reaches_store (GPasteHistory *self,
     return g_paste_storage_backend_reaches_history (self->backend, name);
 }
 
-/* What empties or deletes a store checks first that the backend in use can
- * reach it (g_paste_storage_backend_reaches_history ()). Refused before
- * anything changes: the session's model can still be emptied one item at a
- * time. */
+/* What empties or deletes a store, or backs up one the backend in use keeps
+ * none of (g_paste_history_check_source_reachable ()), checks first that the
+ * backend in use can reach it (g_paste_storage_backend_reaches_history ()).
+ * Refused before anything changes: the session's model can still be emptied
+ * one item at a time. */
 static gboolean
 g_paste_history_check_store_reachable (GPasteHistory *self,
                                        const gchar   *name,
@@ -1740,6 +1741,19 @@ g_paste_history_check_store_reachable (GPasteHistory *self,
     g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                  "“%s” is kept by a storage this one cannot reach", name);
     return FALSE;
+}
+
+/* A backup reading another history's store is refused as an emptying is only
+ * when the backend in use keeps none of it, the read finding nothing: one it
+ * keeps is what a listing shows and a switch loads, and is copied as such,
+ * what a store out of reach keeps beside it left where it is. */
+static gboolean
+g_paste_history_check_source_reachable (GPasteHistory *self,
+                                        const gchar   *name,
+                                        GError       **error)
+{
+    return g_paste_util_history_is_stored (name, g_paste_storage_backend_get_kind (self->backend)) ||
+           g_paste_history_check_store_reachable (self, name, error);
 }
 
 /**
@@ -1940,10 +1954,12 @@ g_paste_history_sync (GPasteHistory *self,
  * or @target names no history, with %G_IO_ERROR_BUSY as g_paste_history_sync ()
  * does and while a load still fills the model of the history in use, with
  * %G_PASTE_ERROR_ALREADY_EXISTS while writes to @target are still out, and
- * with %G_PASTE_ERROR_FAILED when the history in use could not be read -- an
- * empty model standing for data still locked away, which copied as-is would
- * answer for a valid, empty copy -- or when the history copied could not be
- * read, or the copy could not be written.
+ * with %G_PASTE_ERROR_FAILED when another history is kept by no store but one
+ * the backend in use cannot reach, as g_paste_history_delete () refuses it, when
+ * the history in use could not be read -- an empty model standing for data
+ * still locked away, which copied as-is would answer for a valid, empty copy
+ * -- or when the history copied could not be read, or the copy could not be
+ * written.
  */
 G_PASTE_VISIBLE void
 g_paste_history_copy_async (GPasteHistory      *self,
@@ -1975,7 +1991,7 @@ g_paste_history_copy_async (GPasteHistory      *self,
     gboolean current = g_paste_str_equal (source, self->name);
 
     gboolean owned = (current) ? g_paste_history_check_owned (self, source, &error)
-                               : g_paste_history_check_store_owned (self, source, &error);
+                               : g_paste_history_check_store_owned (self, source, &error) && g_paste_history_check_source_reachable (self, source, &error);
 
     if (owned && g_paste_history_saver_holds_writes (self->saver, written))
         g_set_error_literal (&error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
