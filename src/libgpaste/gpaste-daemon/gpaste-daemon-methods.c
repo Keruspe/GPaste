@@ -366,15 +366,16 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
                                                     G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_SIZE,
                                                     G_FILE_QUERY_INFO_NONE,
                                                     NULL /* cancellable */,
-                                                    error);
-
-    if (!info)
-        return NULL;
+                                                    NULL /* error */);
 
     /* GLib's local backend answers a path it could not stat -- one in a folder
      * the daemon cannot enter -- with an info holding none of what was asked,
-     * rather than failing: the stat says why (/history/add_file_unsearchable). */
-    if (!g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_TYPE) ||
+     * rather than failing: the stat says why (/history/add_file_unsearchable).
+     * So does a path it fails on, missing among them, in %G_FILE_ERROR as the
+     * open and the reads below are: one file, one domain
+     * (/history/add_file_missing). */
+    if (!info ||
+        !g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_TYPE) ||
         !g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_SIZE))
     {
         GStatBuf unread;

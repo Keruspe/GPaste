@@ -110,6 +110,14 @@
       procfs ones do, is read to its end, and refused the same way once past
       "max-memory-usage". With "trim-items" off, so does a file larger than
       "max-text-item-size" whose first bytes begin a text, read no further.
+
+      A file the daemon cannot look up, open or read, missing or out of its
+      reach, fails with the GLib file error saying why (G_FILE_ERROR_NOENT,
+      G_FILE_ERROR_ACCES, ...), its lookup's included. Its text is then added
+      as AddText adds one: an empty file is .Error.InvalidArgument, and a text
+      shorter than "min-text-item-size", longer than "max-text-item-size" or
+      blank once trimmed .Error.Rejected; and what the clipboard refuses to
+      carry, the history head it matches included, .Error.Failed.
     -->
     <method name="AddFile">
       <arg type="s" direction="in"  name="path"/>

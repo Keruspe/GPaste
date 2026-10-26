@@ -83,11 +83,10 @@ struct _GPasteClient
  *   g_paste_client_get_item_at_index () fail on and a listing leaves out.
  *
  * A call reading a file fails as the read does, which is about the request
- * too: g_paste_client_add_file_sync ()'s in %G_IO_ERROR for a file the daemon
- * cannot look up (%G_IO_ERROR_NOT_FOUND, %G_IO_ERROR_PERMISSION_DENIED, ...)
- * and in %G_FILE_ERROR for one its open or a read fails on, as
- * g_paste_client_get_image_sync () does for an image whose cache file cannot be
- * read.
+ * too: g_paste_client_add_file_sync ()'s in %G_FILE_ERROR for a file the daemon
+ * cannot look up, open or read (%G_FILE_ERROR_NOENT, %G_FILE_ERROR_ACCES,
+ * ...), as g_paste_client_get_image_sync () does for an image whose cache
+ * file cannot be read.
  *
  * A caller that wants to tell "the daemon said no" from "the daemon is not
  * there" should therefore check the domain with g_error_matches(), not the bare

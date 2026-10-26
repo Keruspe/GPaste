@@ -779,6 +779,23 @@ test_add_file_refusals (void)
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
+/* A path naming nothing is refused in %G_FILE_ERROR, as an open or a read
+ * failing is: one file, one domain, rather than GIO's for the lookup alone. */
+static void
+test_add_file_missing (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autofree gchar *missing = g_build_filename (g_get_user_cache_dir (), "add-file-missing", NULL);
+    g_autoptr (GError) error = NULL;
+
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, missing, &error));
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+}
+
 /* A file in a folder AddFile cannot enter is refused for that, as the read
  * the stat could not make would be: GLib's local backend answers a path it
  * could not stat with an info holding none of what was asked, whose getters
@@ -8382,6 +8399,7 @@ main (int argc, char *argv[])
     add_test ("/history/add_file_swapped", test_add_file_swapped);
     add_test ("/history/copy_refusals", test_copy_refusals);
     add_test ("/history/add_file_unsearchable", test_add_file_unsearchable);
+    add_test ("/history/add_file_missing", test_add_file_missing);
     add_test ("/history/add_file_unsized", test_add_file_unsized);
     add_test ("/history/add_file_unallocated", test_add_file_unallocated);
     add_test ("/history/set_active_refused", test_set_active_refused);
