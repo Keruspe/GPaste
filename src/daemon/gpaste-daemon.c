@@ -8,7 +8,7 @@
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-daemon/gpaste-bus.h>
-#include <gpaste-daemon/gpaste-daemon.h>
+#include <gpaste-daemon/gpaste-daemon-private.h>
 #include <gpaste-daemon/gpaste-search-provider.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
@@ -26,6 +26,7 @@ enum
     C_NAME_ACQUIRED,
     C_NAME_LOST,
     C_REEXECUTE_SELF,
+    C_REEXECUTE_HELD,
     C_CHANGE_PASSPHRASE,
     C_DOCTOR,
 
@@ -55,6 +56,9 @@ typedef struct
      * owed until it is done. */
     gboolean         checking;
     gboolean         passphrase_change_owed;
+    /* A re-exec one of those let through, carried out once neither is under
+     * way any more (run_owed_reexec ()). */
+    gboolean         reexec_owed;
 
     /* The startup storage settle (migration, then encrypted-history unlock) is
      * running. It can sit on a dialog for minutes, and the bus dropping and
@@ -72,6 +76,13 @@ typedef struct
      * and another one changes nothing. */
     gboolean         stopping;
 } DaemonContext;
+
+/* A check of the store or a change of passphrase is under way. */
+static gboolean
+store_prompt_running (DaemonContext *ctx)
+{
+    return ctx->checking || ctx->changing_passphrase;
+}
 
 /* Persist the history synchronously, for the process to leave. The passwords
  * whose countdown runs come off first, as the in-shell host has them: the
@@ -93,7 +104,7 @@ flush_history (DaemonContext *ctx)
         return;
 
     g_paste_daemon_expire_password (ctx->daemon);
-    if ((ctx->changing_passphrase || ctx->checking) && !g_paste_storage_is_busy ())
+    if (store_prompt_running (ctx) && !g_paste_storage_is_busy ())
         g_paste_daemon_resume (ctx->daemon);
     g_paste_daemon_flush (ctx->daemon);
 }
@@ -146,18 +157,33 @@ when_storage_idle (DaemonContext  *ctx,
 
 static void reexec_once_idle (DaemonContext *ctx);
 
+/* Whether reexec () gives way to something under way, its answer then being
+ * !ctx->stopping: refused while a stop waits, accepted otherwise. A daemon
+ * already @flushed for the exec records again while a storage worker is
+ * waited for, the exec that follows flushing it anew. */
 static gboolean
-reexec (GPasteDaemon *g_paste_daemon,
-        gpointer      user_data)
+reexec_put_off (DaemonContext *ctx,
+                GPasteDaemon  *flushed)
 {
-    DaemonContext *ctx = user_data;
-
     /* A stop or a takeover waiting on the store (stop_when_storage_idle ()) is
      * this process ending, which an exec let through by the same wait would
      * outlive: the successor, or no daemon at all, is what was asked for
      * (/daemon-host/reexec-while-stopping). */
     if (ctx->stopping)
-        return FALSE;
+        return TRUE;
+
+    /* Nor while a check of the store or a change of passphrase is under way:
+     * an exec would take its prompt with it, what was copied meanwhile, and
+     * the Doctor calls waiting on a check, left to the bus's NoReply. Owed
+     * instead, and carried out once that is done: a request over the bus is
+     * held back before the passwords come off (reexecute_held ()), so what
+     * gets here is one that came past that as a check or a change started,
+     * or SIGUSR1 (/daemon-host/reexec-while-checking). */
+    if (store_prompt_running (ctx))
+    {
+        ctx->reexec_owed = TRUE;
+        return TRUE;
+    }
 
     /* As for a stop signal (when_storage_idle ()). Accepted all the same: the
      * exec follows once the write it would cut short is done -- a request over
@@ -165,9 +191,23 @@ reexec (GPasteDaemon *g_paste_daemon,
      * once its expiry had run (g_paste_daemon_reexecute_refused ()). */
     if (g_paste_storage_is_busy ())
     {
+        if (flushed)
+            g_paste_daemon_resume (flushed);
         when_storage_idle (ctx, reexec_once_idle);
         return TRUE;
     }
+
+    return FALSE;
+}
+
+static gboolean
+reexec (GPasteDaemon *g_paste_daemon,
+        gpointer      user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    if (reexec_put_off (ctx, NULL))
+        return !ctx->stopping;
 
     /* Make sure the history hits the disk before we hand over to the new
      * process, which blocks on the storage lock until we release it. The lock is
@@ -182,6 +222,24 @@ reexec (GPasteDaemon *g_paste_daemon,
      * too, against a history that records nothing more. */
     while (g_main_context_iteration (NULL, FALSE))
         ;
+
+    /* That turn of the loop may have let through what a re-exec gives way to,
+     * asked again as on the way in: a stop or a takeover, which has flushed,
+     * is quitting and may have let the daemon go; a check of the store or a
+     * change of passphrase, which has handed the history over itself, its own
+     * end reloading it -- owed, the history left as it is; a storage worker,
+     * waited for. */
+    if (reexec_put_off (ctx, g_paste_daemon))
+        return !ctx->stopping;
+
+    /* Nothing puts the exec off past this point, which is why the uploads out
+     * end here, the daemon leaving them running for an exec it cannot tell
+     * will come: an exec replaces this process with one that knows nothing of
+     * their commands. Answered there and then, this running in a dispatch of
+     * the main loop, the flush below carries their answers -- the uploads gone
+     * for good should it, or the exec, fail. */
+    if (g_paste_daemon)
+        g_paste_daemon_cancel_uploads (g_paste_daemon);
 
     GDBusConnection *connection = g_application_get_dbus_connection (ctx->gapp);
     g_autoptr (GError) error = NULL;
@@ -234,6 +292,30 @@ reexec_once_idle (DaemonContext *ctx)
      * reexec () skips the flush for a NULL daemon. */
     else
         reexec (NULL, ctx);
+}
+
+/* What reexec () would not carry out now, asked before the daemon takes the
+ * passwords off for a request over the bus (GPasteDaemon::reexecute-held),
+ * which is then refused as busy rather than answered for an exec put off. */
+static gboolean
+reexecute_held (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
+                gpointer      user_data)
+{
+    DaemonContext *ctx = user_data;
+
+    return ctx->stopping || store_prompt_running (ctx);
+}
+
+/* The re-exec a check of the store or a change of passphrase owed, once
+ * neither is under way. */
+static void
+run_owed_reexec (DaemonContext *ctx)
+{
+    if (!ctx->reexec_owed || store_prompt_running (ctx))
+        return;
+
+    ctx->reexec_owed = FALSE;
+    reexec_once_idle (ctx);
 }
 
 static void
@@ -311,6 +393,7 @@ on_passphrase_changed (GObject      *source G_GNUC_UNUSED,
     /* A daemon stood down meanwhile (on_name_lost ()) has nothing to reload. */
     if (ctx->daemon)
         g_paste_daemon_reload_storage (ctx->daemon);
+    run_owed_reexec (ctx);
 }
 
 /* Changing the passphrase rewrites every history on disk, so stop persisting
@@ -394,6 +477,8 @@ on_store_checked (GObject      *source G_GNUC_UNUSED,
             change_passphrase (ctx->daemon, ctx);
         }
     }
+
+    run_owed_reexec (ctx);
 }
 
 /* As do_change_passphrase (): the history down on disk first, then the check
@@ -468,6 +553,8 @@ on_storage_ready (DaemonContext *ctx)
 
     ctx->c_signals[C_REEXECUTE_SELF] = g_signal_connect (ctx->daemon, "reexecute-self",
                                                          G_CALLBACK (reexec), ctx);
+    ctx->c_signals[C_REEXECUTE_HELD] = g_signal_connect (ctx->daemon, "reexecute-held",
+                                                         G_CALLBACK (reexecute_held), ctx);
     ctx->c_signals[C_CHANGE_PASSPHRASE] = g_signal_connect (ctx->daemon, "change-passphrase",
                                                             G_CALLBACK (change_passphrase), ctx);
     ctx->c_signals[C_DOCTOR] = g_signal_connect (ctx->daemon, "doctor", G_CALLBACK (check_store), ctx);
@@ -478,6 +565,17 @@ on_storage_ready (DaemonContext *ctx)
     g_paste_bus_add_object (ctx->bus, ctx->search_provider);
 
     g_paste_util_write_pid_file ("Daemon");
+}
+
+/* Disconnects the handlers on_storage_ready () connected, which are handed
+ * @ctx, from a daemon let go of that something else may still hold. */
+static void
+disconnect_daemon (DaemonContext *ctx)
+{
+    g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_REEXECUTE_SELF]);
+    g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_REEXECUTE_HELD]);
+    g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_CHANGE_PASSPHRASE]);
+    g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_DOCTOR]);
 }
 
 static void
@@ -598,9 +696,7 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
         if (ctx->daemon)
         {
             flush_history (ctx);
-            g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_REEXECUTE_SELF]);
-            g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_CHANGE_PASSPHRASE]);
-            g_signal_handler_disconnect (ctx->daemon, ctx->c_signals[C_DOCTOR]);
+            disconnect_daemon (ctx);
             g_object_run_dispose (G_OBJECT (ctx->daemon));
             g_clear_object (&ctx->daemon);
         }
@@ -714,11 +810,7 @@ main (gint argc, gchar *argv[])
         g_signal_handler_disconnect (ctx.bus, ctx.c_signals[C_NAME_LOST]);
     }
     if (ctx.daemon)
-    {
-        g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_REEXECUTE_SELF]);
-        g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_CHANGE_PASSPHRASE]);
-        g_signal_handler_disconnect (ctx.daemon, ctx.c_signals[C_DOCTOR]);
-    }
+        disconnect_daemon (&ctx);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* Wipe the master passphrase from secure memory before exiting. */

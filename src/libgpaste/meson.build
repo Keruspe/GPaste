@@ -288,6 +288,7 @@ gpaste_daemon_internal_headers = [
   'gpaste-daemon/gpaste-clipboards-manager.h',
   'gpaste-daemon/gpaste-color-item.h',
   'gpaste-daemon/gpaste-daemon-methods.h',
+  'gpaste-daemon/gpaste-daemon-private.h',
   'gpaste-daemon/gpaste-file-backend.h',
   'gpaste-daemon/gpaste-global-shortcut-client.h',
   'gpaste-daemon/gpaste-history-private.h',
