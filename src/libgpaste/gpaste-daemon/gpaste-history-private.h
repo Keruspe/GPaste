@@ -25,6 +25,13 @@ gboolean g_paste_history_delete_full (GPasteHistory *self,
                                       gboolean      *deleted,
                                       GError       **error);
 
+/* Whether the history in use may change, its store not handed over
+ * (g_paste_history_sync ()), as every D-Bus method and shortcut changing it
+ * asks first: a history nobody has named yet has no store to have handed
+ * over. Exported for the tests compiling gpaste-daemon.c in. */
+gboolean g_paste_history_check_current_owned (GPasteHistory *self,
+                                              GError       **error);
+
 /* Whether deleting, emptying or backing up @name reaches every store keeping
  * it, through the backend in use (g_paste_storage_backend_reaches_history ()). */
 gboolean g_paste_history_reaches_store (GPasteHistory *self,

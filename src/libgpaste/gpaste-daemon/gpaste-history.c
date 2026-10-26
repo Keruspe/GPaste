@@ -1690,6 +1690,17 @@ g_paste_history_check_owned (GPasteHistory *self,
     return FALSE;
 }
 
+G_PASTE_VISIBLE gboolean
+g_paste_history_check_current_owned (GPasteHistory *self,
+                                     GError       **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+
+    G_PASTE_LOCK_HISTORY;
+
+    return !self->name || g_paste_history_check_owned (self, self->name, error);
+}
+
 /* What reads or writes a store outside the model also waits for the daemon it
  * takes over from to be done writing it, as the first load does: until this
  * process holds the storage lock, a write that daemon still has out for the

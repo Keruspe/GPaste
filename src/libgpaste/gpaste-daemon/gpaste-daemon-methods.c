@@ -73,10 +73,7 @@ static gboolean
 g_paste_daemon_methods_check_owned (const GPasteDaemonMethods *self,
                                     GError                   **error)
 {
-    const gchar *current = g_paste_history_get_current (self->history);
-
-    /* A history nobody has named yet has no store to have handed over. */
-    return !current || g_paste_history_sync (self->history, current, error);
+    return g_paste_history_check_current_owned (self->history, error);
 }
 
 /* Whether a password called @name exists is asked of every password the

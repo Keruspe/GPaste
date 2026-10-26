@@ -6,6 +6,7 @@
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-daemon.h>
 #include <gpaste-daemon/gpaste-history.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-keybinder.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-prompt.h>
@@ -964,15 +965,15 @@ g_paste_daemon_upload_finish (GPasteDaemon *self,
 /****************/
 
 /* Whether a shortcut may change the history's items, as every D-Bus method
- * changing one asks (g_paste_daemon_methods_check_owned ()): while the store is
- * handed over the change would be recorded nowhere, and the reload ending the
- * handover would undo it. */
+ * changing one asks (g_paste_history_check_current_owned ()): while the store
+ * is handed over the change would be recorded nowhere, and the reload ending
+ * the handover would undo it. */
 static gboolean
 keybinding_may_change (GPasteHistory *history)
 {
     g_autoptr (GError) error = NULL;
 
-    if (g_paste_history_sync (history, g_paste_history_get_current (history), &error))
+    if (g_paste_history_check_current_owned (history, &error))
         return TRUE;
 
     g_message ("Keyboard shortcut ignored: %s", error->message);

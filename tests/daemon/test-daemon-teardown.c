@@ -237,6 +237,19 @@ test_shortcuts_handed_over (Fixture      *fixture,
     g_paste_history_resume (history);
 }
 
+/* A history nobody has named yet has no store to have handed over: a shortcut
+ * changes it, as the methods do, rather than ask a store it has none of. */
+static void
+test_shortcuts_unnamed_history (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_add (history, g_paste_text_item_new ("popped"));
+    keybinding_pop (NULL, NULL, history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+}
+
 /* Exported again, as GPasteBus does when it owns the name anew, the daemon
  * follows the screensaver as it did: unexporting stops it, and nothing else
  * would start it again. */
@@ -1468,6 +1481,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/dispose-twice", Fixture, NULL, fixture_set_up, test_dispose_twice, fixture_tear_down);
     g_test_add ("/daemon/teardown/dispose-ends-manager", Fixture, NULL, fixture_set_up, test_dispose_ends_manager, fixture_tear_down);
     g_test_add ("/daemon/shortcuts/handed-over", Fixture, NULL, fixture_set_up, test_shortcuts_handed_over, fixture_tear_down);
+    g_test_add_func ("/daemon/shortcuts/unnamed-history", test_shortcuts_unnamed_history);
     g_test_add_func ("/daemon/methods/extension-pause-carried-over", test_extension_pause_carried_over);
     g_test_add_func ("/daemon/teardown/dispose-before-clients", test_dispose_before_clients);
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
