@@ -1842,6 +1842,10 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     gint rc = SQLITE_DONE;
     gboolean complete = TRUE;
     gboolean cancelled = FALSE;
+    /* The rows read with no valid uuid of their own, and the one their item was
+     * given instead (see below). */
+    g_autoptr (GArray) adopted_ids = g_array_new (FALSE, FALSE, sizeof (sqlite3_int64));
+    g_autoptr (GPtrArray) adopted_uuids = g_ptr_array_new_with_free_func (g_free);
 
     /* Row by row, this being a read that does stop halfway: what has been built
      * so far is dropped by the caller either way, so the rows after the cancel
@@ -1869,6 +1873,13 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
         if (uuid && g_uuid_string_is_valid (uuid))
             g_paste_item_set_uuid (item, uuid);
+        else
+        {
+            sqlite3_int64 id = sqlite3_column_int64 (stmt, 0);
+
+            g_array_append_val (adopted_ids, id);
+            g_ptr_array_add (adopted_uuids, g_strdup (g_paste_item_get_uuid (item)));
+        }
 
         g_paste_item_set_favourite (item, sqlite3_column_int (stmt, 8));
 
@@ -1897,6 +1908,30 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
     sqlite3_finalize (sv_stmt);
     sqlite3_finalize (stmt);
+
+    /* A row another tool wrote with no valid uuid is read with the one its item
+     * was built with, and every write after this read keys on that uuid: the
+     * row is given it in the store too, once the scan is done, or a delete of
+     * the item would delete nothing and the next reconcile delete the row as
+     * one the history no longer holds (/history/sqlite_null_uuid_adopted).
+     * A row that cannot be given it leaves the history unread, as one cut
+     * short does, rather than installed over a row no write can reach. */
+    if (complete && adopted_ids->len)
+    {
+        sqlite3_stmt *adopt = NULL;
+
+        complete = sqlite3_prepare_v2 (db, "UPDATE items SET uuid = ?1 WHERE id = ?2;", -1, &adopt, NULL) == SQLITE_OK;
+        for (guint i = 0; complete && i < adopted_ids->len; ++i)
+        {
+            sqlite3_bind_text (adopt, 1, adopted_uuids->pdata[i], -1, SQLITE_STATIC);
+            sqlite3_bind_int64 (adopt, 2, g_array_index (adopted_ids, sqlite3_int64, i));
+            complete = sqlite3_step (adopt) == SQLITE_DONE;
+            sqlite3_reset (adopt);
+        }
+        if (!complete)
+            g_warning ("sqlite: could not give a row with no valid uuid one: %s", sqlite3_errmsg (db));
+        sqlite3_finalize (adopt);
+    }
 
     /* A scan cut short is not the end of the history. Handing back the rows it
      * did reach, as a successful read, is what has the caller install them as

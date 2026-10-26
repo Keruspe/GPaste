@@ -2918,13 +2918,15 @@ test_file_encrypting_migration_lost_side_file (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
-/* A row with no uuid -- another tool's table, adopted as GPaste's when it has
- * the columns, need not refuse one -- reads as an item of a uuid of its own,
- * and the reconciliation of the next add that displaces anything leaves it
- * alone: hashed as one of the model's, its NULL crashed the daemon, and
- * gnome-shell with it in-shell, at every such add. */
+/* A row with no valid uuid -- another tool's table, adopted as GPaste's when it
+ * has the columns, need not refuse one -- reads as an item of a uuid of its
+ * own, which the row is given in the store too: the next read finds it there,
+ * the reconciliation of an add that displaces anything keeps the row as the
+ * model's -- hashed as one of the model's, a NULL crashed the daemon, and
+ * gnome-shell with it in-shell, at every such add -- and a delete of the item
+ * reaches it rather than deleting nothing. */
 static void
-test_sqlite_null_uuid_reconciled (void)
+test_sqlite_null_uuid_adopted (void)
 {
     const gchar *name = "sqlite-null-uuid";
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
@@ -2943,23 +2945,44 @@ test_sqlite_null_uuid_reconciled (void)
     sqlite3_close (db);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) first = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (first), ==, 2);
+
+    /* The uuids they were read with are theirs in the store now. */
+    {
+        g_autoptr (GPasteStorageBackend) again = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) reread = read_history_ok (again, name);
+
+        g_assert_cmpuint (g_list_length (reread), ==, 2);
+        for (const GList *a = first, *b = reread; a && b; a = a->next, b = b->next)
+            g_assert_cmpstr (g_paste_item_get_uuid (a->data), ==, g_paste_item_get_uuid (b->data));
+    }
+
+    g_autoptr (GPasteItem) added = g_paste_text_item_new ("added");
+    g_autoptr (GList) snapshot = g_list_prepend (g_list_copy (first), added);
+
+    g_paste_storage_backend_add_item (backend, name, added, snapshot);
 
     {
         g_autolist (GPasteItem) read = read_history_ok (backend, name);
 
-        g_assert_cmpuint (g_list_length (read), ==, 2);
+        g_assert_cmpuint (g_list_length (read), ==, 3);
+        g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "added");
     }
 
-    g_autoptr (GPasteItem) added = g_paste_text_item_new ("added");
-    g_autoptr (GList) snapshot = g_list_append (NULL, added);
+    /* Deleted, the row read with no uuid of its own goes. */
+    GPasteItem *uuidless = g_list_last (first)->data;
 
-    g_paste_storage_backend_add_item (backend, name, added, snapshot);
+    g_assert_cmpstr (g_paste_item_get_value (uuidless), ==, "no uuid");
+    snapshot = g_list_remove (snapshot, uuidless);
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (uuidless), snapshot);
 
     g_autolist (GPasteItem) read = read_history_ok (backend, name);
 
     g_assert_cmpuint (g_list_length (read), ==, 2);
-    g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "added");
-    g_assert_cmpstr (g_paste_item_get_value (read->next->data), ==, "no uuid");
+    for (const GList *l = read; l; l = l->next)
+        g_assert_cmpstr (g_paste_item_get_value (l->data), !=, "no uuid");
 }
 
 /* The same eviction against a database: the image was never a file, so nothing
@@ -8559,7 +8582,7 @@ main (int argc, char *argv[])
     add_test ("/history/sqlite_image_date_out_of_range", test_sqlite_image_date_out_of_range);
     add_test ("/history/sqlite_value_not_utf8", test_sqlite_value_not_utf8);
     add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
-    add_test ("/history/sqlite_null_uuid_reconciled", test_sqlite_null_uuid_reconciled);
+    add_test ("/history/sqlite_null_uuid_adopted", test_sqlite_null_uuid_adopted);
     add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     add_test ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
     add_test ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);
