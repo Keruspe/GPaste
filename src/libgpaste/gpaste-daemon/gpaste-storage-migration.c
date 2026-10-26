@@ -2479,10 +2479,16 @@ typedef struct
 
     /* The passphrase the history in use takes, %NULL unless the store is
      * encrypted and unlocked; the one last typed for @refuting; and the
-     * histories that one is wanted for, which this one does not open. */
+     * histories that one is wanted for, which this one does not open -- or
+     * opens, but not all of their images, which @refused_images names by
+     * history. Those are asked about once a check, a damaged image opening
+     * with no passphrase: the ones still unread then are @unreadable, offered
+     * to be deleted. */
     GPastePassphrase *passphrase;
     GPastePassphrase *other;
     GPtrArray        *refuting;
+    GHashTable       *refused_images;
+    GPtrArray        *unreadable;
     gboolean          other_opened;
 
     GStrvBuilder     *report;
@@ -2521,6 +2527,8 @@ doctor_finish (DoctorData *self,
     g_paste_passphrase_free (self->other);
 #endif
     g_clear_pointer (&self->refuting, g_ptr_array_unref);
+    g_clear_pointer (&self->refused_images, g_hash_table_unref);
+    g_clear_pointer (&self->unreadable, g_ptr_array_unref);
     g_object_unref (self->settings);
     g_object_unref (self->prompt);
     g_free (self);
@@ -2797,6 +2805,25 @@ doctor_inspect_run (GTask        *task,
 
         if (!g_paste_storage_backend_read_history (backend, *name, NULL /* cancellable */, &items, &size))
             doctor_note (self, FALSE, _("The history “%s” could not be read"), *name);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+        /* Read, with images the read could not use -- on another passphrase,
+         * as a change of passphrase cut short leaves a history split between
+         * two, or damaged -- which it dropped and the next full write sweeps:
+         * the other passphrase is asked for as for a history the one in use
+         * does not open, and re-keys them (doctor_rekey_run ()). Found only
+         * until that write, made from a model without them, which leaves no
+         * entry naming them for any read to refuse. */
+        else if (encrypted && G_PASTE_IS_FILE_BACKEND (backend))
+        {
+            GStrv refused = g_paste_file_backend_refused_images (backend, *name);
+
+            if (refused)
+            {
+                g_hash_table_insert (self->refused_images, g_strdup (*name), refused);
+                g_ptr_array_add (self->refuting, g_strdup (*name));
+            }
+        }
+#endif
     }
 
     g_task_return_boolean (task, TRUE);
@@ -2857,7 +2884,18 @@ doctor_rekey_run (GTask        *task,
     for (guint i = 0; i < refuting->len; ++i)
     {
         const gchar *name = g_ptr_array_index (refuting, i);
+        const gchar * const *refused = g_hash_table_lookup (self->refused_images, name);
         gboolean split = FALSE;
+
+        /* One whose images alone are elsewhere opens with the passphrase in
+         * use: the one typed is theirs when it reads one of them, and they are
+         * unreadable when it reads none -- not asked about again, a damaged
+         * image being one no passphrase opens. */
+        if (refused && !g_paste_file_backend_reads_any (backend, refused))
+        {
+            g_ptr_array_add (self->unreadable, g_strdup (name));
+            continue;
+        }
 
         /* Asked before the re-key, which derives @other's key for the history
          * again: nothing here keeps a key from one open to the next. The other
@@ -2866,7 +2904,7 @@ doctor_rekey_run (GTask        *task,
          * history it cannot read for each -- a mistyped answer being what
          * this prompt has to expect, where a change of passphrase starts from
          * one the store already took. */
-        if (g_paste_storage_backend_refutes_passphrase (backend, name))
+        if (!refused && g_paste_storage_backend_refutes_passphrase (backend, name))
         {
             g_ptr_array_add (self->refuting, g_strdup (name));
             continue;
@@ -2885,6 +2923,96 @@ doctor_rekey_run (GTask        *task,
     g_task_return_boolean (task, TRUE);
 }
 
+/* The images of every history in @self->unreadable, deleted; or kept, and
+ * said to be unreadable. */
+static void
+doctor_settle_unreadable (DoctorData *self,
+                          gboolean    delete)
+{
+    for (guint i = 0; i < self->unreadable->len; ++i)
+    {
+        const gchar *name = g_ptr_array_index (self->unreadable, i);
+        const gchar * const *refused = g_hash_table_lookup (self->refused_images, name);
+        g_autofree gchar *failure = NULL;
+
+        if (!delete)
+        {
+            doctor_note (self, FALSE, _("Images of the history “%s” could not be read with the passphrase in use"), name);
+            continue;
+        }
+
+        /* The document still names them: its next read leaves them out as
+         * missing, and its next write drops them. */
+        for (const gchar * const *side_file = refused; *side_file; ++side_file)
+        {
+            if (g_unlink (*side_file) && errno != ENOENT && !failure)
+                failure = g_strdup (g_strerror (errno));
+        }
+
+        if (failure)
+            doctor_note (self, FALSE, _("Could not delete the unreadable images of the history “%s”: %s"), name, failure);
+        else
+            doctor_note (self, TRUE, _("Deleted the unreadable images of the history “%s”"), name);
+    }
+}
+
+static void
+on_doctor_delete_confirmed (GObject      *source,
+                            GAsyncResult *result,
+                            gpointer      user_data)
+{
+    DoctorData *self = user_data;
+    g_autoptr (GError) prompt_error = NULL;
+    gboolean delete = g_paste_prompt_confirm_finish (G_PASTE_PROMPT (source), result, &prompt_error);
+
+    if (prompt_error)
+    {
+        doctor_finish (self, g_steal_pointer (&prompt_error));
+        return;
+    }
+
+    doctor_settle_unreadable (self, delete);
+    doctor_finish (self, NULL);
+}
+
+/* @names, separated by commas, for a prompt naming them. */
+static gchar *
+doctor_join (GPtrArray *names)
+{
+    g_autoptr (GString) joined = g_string_new (NULL);
+
+    for (guint i = 0; i < names->len; ++i)
+    {
+        if (i)
+            g_string_append (joined, ", ");
+        g_string_append (joined, g_ptr_array_index (names, i));
+    }
+
+    return g_string_free_and_steal (g_steal_pointer (&joined));
+}
+
+/* The end of a check that asked for other passphrases: what no passphrase
+ * read is offered to be deleted, nothing else being left to do with it. */
+static void
+doctor_end (DoctorData *self)
+{
+    if (!self->unreadable->len)
+    {
+        doctor_finish (self, NULL);
+        return;
+    }
+
+    g_autofree gchar *joined = doctor_join (self->unreadable);
+    /* Translators: %s is the names of the histories, separated by commas. */
+    g_autofree gchar *description = g_strdup_printf (_("Some images of these histories could not be read with any passphrase given: %s. "
+                                                       "They are damaged, or encrypted with a passphrase that is lost. Deleting them "
+                                                       "cannot be undone."),
+                                                     joined);
+
+    g_paste_prompt_confirm_async (self->prompt, _("Delete Unreadable Images?"), description, _("Delete"),
+                                  on_doctor_delete_confirmed, self);
+}
+
 static void
 on_doctor_rekeyed (GObject      *source G_GNUC_UNUSED,
                    GAsyncResult *result G_GNUC_UNUSED,
@@ -2894,7 +3022,7 @@ on_doctor_rekeyed (GObject      *source G_GNUC_UNUSED,
 
     if (!self->refuting->len)
     {
-        doctor_finish (self, NULL);
+        doctor_end (self);
         return;
     }
 
@@ -2923,11 +3051,15 @@ on_doctor_other_passphrase (GObject      *source,
     {
         for (guint i = 0; i < self->refuting->len; ++i)
         {
-            doctor_note (self, FALSE, _("The history “%s” is still encrypted with another passphrase"),
-                         (const gchar *) g_ptr_array_index (self->refuting, i));
+            const gchar *name = g_ptr_array_index (self->refuting, i);
+
+            if (g_hash_table_contains (self->refused_images, name))
+                g_ptr_array_add (self->unreadable, g_strdup (name));
+            else
+                doctor_note (self, FALSE, _("The history “%s” is still encrypted with another passphrase"), name);
         }
 
-        doctor_finish (self, NULL);
+        doctor_end (self);
         return;
     }
 
@@ -2943,13 +3075,7 @@ static void
 doctor_ask (DoctorData  *self,
             const gchar *error_message)
 {
-    g_autoptr (GStrvBuilder) names = g_strv_builder_new ();
-
-    for (guint i = 0; i < self->refuting->len; ++i)
-        g_strv_builder_add (names, g_ptr_array_index (self->refuting, i));
-
-    g_auto (GStrv) listed = g_strv_builder_end (names);
-    g_autofree gchar *joined = g_strjoinv (", ", listed);
+    g_autofree gchar *joined = doctor_join (self->refuting);
     g_autofree gchar *description = g_strdup_printf (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION),
                                                      joined);
 
@@ -3009,6 +3135,8 @@ g_paste_storage_doctor_async (GPastePrompt       *prompt,
     self->task = g_task_new (prompt, NULL /* cancellable */, callback, user_data);
     self->storage_kind = g_paste_settings_get_storage_backend (settings);
     self->refuting = g_ptr_array_new_with_free_func (g_free);
+    self->refused_images = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_strfreev);
+    self->unreadable = g_ptr_array_new_with_free_func (g_free);
     self->report = g_strv_builder_new ();
     self->healthy = TRUE;
 

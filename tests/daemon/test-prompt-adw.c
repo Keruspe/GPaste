@@ -7,6 +7,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-test-bus.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-daemon/gpaste-prompt.h>
 
 /* The private bus has no keyring, and looking one up warns, which g_test makes
@@ -63,6 +64,19 @@ on_passphrase_answered (GObject      *source,
     g_autoptr (GError) error = NULL;
 
     answer->passphrase = g_paste_prompt_passphrase_finish (G_PASTE_PROMPT (source), result, &answer->remember, &error);
+    g_assert_no_error (error);
+    answer->done = TRUE;
+}
+
+static void
+on_confirm_answered (GObject      *source,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+    Answer *answer = user_data;
+    g_autoptr (GError) error = NULL;
+
+    answer->confirmed = g_paste_prompt_confirm_finish (G_PASTE_PROMPT (source), result, &error);
     g_assert_no_error (error);
     answer->done = TRUE;
 }
@@ -519,6 +533,59 @@ test_passphrase_other_histories (void)
     g_clear_pointer (&answer.passphrase, g_paste_passphrase_free);
 }
 
+/* A confirmation shows what its caller worded, escaped, and answers yes from
+ * its destructive button alone; Cancel is what Enter answers with, and has the
+ * focus; Cancel, Escape and the window going decline. */
+static void
+test_confirm_answered (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    static const gchar *description = "Images of \"a & b <c>\" go";
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
+    Answer accepted = { 0 };
+    Answer cancelled = { .confirmed = TRUE };
+    Answer escaped = { 0 };
+    Answer closed = { 0 };
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &accepted);
+
+    GtkWindow *window = shown_window ();
+    GtkWidget *accept = g_paste_test_gtk_find_button (GTK_WIDGET (window), "Delete");
+    GtkWidget *cancel = g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CANCEL));
+
+    g_assert_nonnull (accept);
+    g_assert_nonnull (cancel);
+    g_assert_true (shows (window, description));
+    g_assert_true (gtk_widget_has_css_class (accept, "destructive-action"));
+    g_assert_true (gtk_window_get_default_widget (window) == cancel);
+    g_assert_true (gtk_window_get_focus (window) == cancel);
+    g_signal_emit_by_name (accept, "clicked");
+    wait_for (&accepted);
+    g_assert_true (accepted.confirmed);
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &cancelled);
+    cancel = g_paste_test_gtk_find_button (GTK_WIDGET (shown_window ()), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CANCEL));
+    g_assert_nonnull (cancel);
+    g_signal_emit_by_name (cancel, "clicked");
+    wait_for (&cancelled);
+    g_assert_false (cancelled.confirmed);
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &escaped);
+    press_escape (shown_window ());
+    wait_for (&escaped);
+    g_assert_false (escaped.confirmed);
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &closed);
+    gtk_window_destroy (shown_window ());
+    wait_for (&closed);
+    g_assert_false (closed.confirmed);
+}
+
 /* A report says what it was given, a "&" in it included. */
 static void
 test_report_shown (void)
@@ -570,6 +637,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/prompt-adw/passphrase/other-histories", test_passphrase_other_histories);
     g_test_add_func ("/prompt-adw/passphrase/remember-answer", test_remember_answer);
     g_test_add_func ("/prompt-adw/report/shown", test_report_shown);
+    g_test_add_func ("/prompt-adw/confirm/answered", test_confirm_answered);
 
     return g_paste_test_env_run ();
 }

@@ -82,6 +82,25 @@ prompt_window_new (GPastePrompt *prompt,
     return GTK_WINDOW (window);
 }
 
+/* The page a report or a question warns with. Its description is Pango markup
+ * (its title is not), and @description carries a GError's text or names
+ * histories: names the user chose and paths from the filesystem. One "&" in
+ * either makes the markup fail to parse, and the window would go up with an
+ * empty description -- a warning that says nothing. */
+static GtkWidget *
+warning_status_page_new (const gchar *title,
+                         const gchar *description)
+{
+    GtkWidget *status = adw_status_page_new ();
+    g_autofree gchar *escaped = g_markup_escape_text (description, -1);
+
+    adw_status_page_set_icon_name (ADW_STATUS_PAGE (status), "dialog-warning-symbolic");
+    adw_status_page_set_title (ADW_STATUS_PAGE (status), title);
+    adw_status_page_set_description (ADW_STATUS_PAGE (status), escaped);
+
+    return status;
+}
+
 /*
  * The migration dialog
  */
@@ -570,20 +589,59 @@ g_paste_prompt_adw_report (GPastePrompt *prompt,
 
     adw_header_bar_pack_end (ADW_HEADER_BAR (header), close);
 
-    GtkWidget *status = adw_status_page_new ();
-    /* The description is Pango markup (the title is not), and @message carries a
-     * GError's text: history names the user chose and paths from the filesystem.
-     * One "&" in either makes the markup fail to parse, and the window would go
-     * up with an empty description -- a report that reports nothing. */
-    g_autofree gchar *escaped = g_markup_escape_text (message, -1);
-
-    adw_status_page_set_icon_name (ADW_STATUS_PAGE (status), "dialog-warning-symbolic");
-    adw_status_page_set_title (ADW_STATUS_PAGE (status), title);
-    adw_status_page_set_description (ADW_STATUS_PAGE (status), escaped);
-
+    GtkWidget *status = warning_status_page_new (title, message);
     GtkWindow *window = prompt_window_new (prompt, title, 420, header, status);
 
     g_signal_connect_swapped (close, "clicked", G_CALLBACK (gtk_window_destroy), window);
+    gtk_window_present (window);
+}
+
+/*
+ * The confirmation
+ */
+
+static void
+on_confirm_accepted (GtkButton *button G_GNUC_UNUSED,
+                     gpointer   user_data)
+{
+    GtkWindow *window = user_data;
+
+    g_paste_prompt_request_reply_confirm (g_object_get_data (G_OBJECT (window), "gpaste-confirm-request"));
+    gtk_window_destroy (window);
+}
+
+/* Cancel is the default and has the focus, the destructive answer at the other
+ * end of the header bar: the question takes the keyboard from wherever the user
+ * was typing, and an Enter meant for that must not be what goes through with
+ * it. Cancel, Escape and the window going decline. */
+static void
+g_paste_prompt_adw_confirm (GPastePrompt        *prompt,
+                            GPastePromptRequest *request)
+{
+    const gchar *title = g_paste_prompt_request_get_title (request);
+    GtkWidget *cancel = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CANCEL));
+    GtkWidget *accept = gtk_button_new_with_label (g_paste_prompt_request_get_accept_label (request));
+
+    gtk_widget_add_css_class (accept, "destructive-action");
+
+    GtkWidget *header = adw_header_bar_new ();
+
+    adw_header_bar_set_show_end_title_buttons (ADW_HEADER_BAR (header), FALSE);
+    adw_header_bar_pack_start (ADW_HEADER_BAR (header), cancel);
+    adw_header_bar_pack_end (ADW_HEADER_BAR (header), accept);
+
+    GtkWidget *status = warning_status_page_new (title, g_paste_prompt_request_get_description (request));
+    GtkWindow *window = prompt_window_new (prompt, title, 420, header, status);
+
+    g_object_set_data_full (G_OBJECT (window), "gpaste-confirm-request", g_object_ref (request), g_object_unref);
+    /* See migration_dialog_dismiss (): every way of losing the window but the
+     * accepting button declines, the request held above until then. */
+    g_signal_connect_swapped (window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), request);
+    g_signal_connect_swapped (cancel, "clicked", G_CALLBACK (gtk_window_destroy), window);
+    g_signal_connect (accept, "clicked", G_CALLBACK (on_confirm_accepted), window);
+
+    gtk_window_set_default_widget (window, cancel);
+    gtk_window_set_focus (window, cancel);
     gtk_window_present (window);
 }
 
@@ -593,6 +651,7 @@ g_paste_prompt_adw_prompt_iface_init (GPastePromptInterface *iface)
     iface->passphrase = g_paste_prompt_adw_passphrase;
     iface->migration = g_paste_prompt_adw_migration;
     iface->report = g_paste_prompt_adw_report;
+    iface->confirm = g_paste_prompt_adw_confirm;
 }
 
 static void

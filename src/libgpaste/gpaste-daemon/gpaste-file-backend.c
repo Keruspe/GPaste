@@ -2502,6 +2502,138 @@ _g_paste_file_backend_reads (GPasteStorageBackend *backend,
     return read;
 }
 
+/**
+ * g_paste_file_backend_refused_images:
+ * @self: an encrypted #GPasteFileBackend
+ * @history_name: a history @self has read
+ *
+ * The side files of @history_name's images there on the disk that a read by
+ * @self found and could not use -- damaged, or under another key, as a change
+ * of passphrase cut short leaves a history split between two: what that read
+ * dropped, and the next full write of the history sweeps.
+ *
+ * Returns: (transfer full) (nullable): their paths, %NULL for none
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_file_backend_refused_images (GPasteStorageBackend *self,
+                                     const gchar          *history_name)
+{
+    g_return_val_if_fail (G_PASTE_IS_FILE_BACKEND (self), NULL);
+    g_return_val_if_fail (history_name, NULL);
+
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autofree gchar *dir = g_paste_file_backend_images_dir (history_name);
+    g_autofree gchar *prefix = g_strconcat (dir, G_DIR_SEPARATOR_S, NULL);
+    g_autoptr (GStrvBuilder) refused = g_strv_builder_new ();
+    gboolean any = FALSE;
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
+    GHashTableIter iter;
+    gpointer side_file;
+
+    g_hash_table_iter_init (&iter, priv->refused_side_files);
+    while (g_hash_table_iter_next (&iter, &side_file, NULL))
+    {
+        if (g_str_has_prefix (side_file, prefix) && g_file_test (side_file, G_FILE_TEST_EXISTS))
+        {
+            g_strv_builder_add (refused, side_file);
+            any = TRUE;
+        }
+    }
+
+    return (any) ? g_strv_builder_end (refused) : NULL;
+}
+
+/**
+ * g_paste_file_backend_reads_any:
+ * @self: an encrypted #GPasteFileBackend
+ * @paths: (array zero-terminated=1): encrypted files
+ *
+ * Whether the key @self holds reads one of @paths at least.
+ *
+ * Each file has a salt of its own, so a key that opens none of them is
+ * derived once per file, which no cap on the files tried saves without taking
+ * an image the key would open, behind damaged ones, for damaged too: the
+ * doctor asks this once a check (doctor_rekey_run ()), on a worker.
+ *
+ * Returns: whether one of @paths opens with @self's key
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_file_backend_reads_any (GPasteStorageBackend *self,
+                                const gchar * const  *paths)
+{
+    g_return_val_if_fail (G_PASTE_IS_FILE_BACKEND (self), FALSE);
+
+    for (const gchar * const *path = paths; path && *path; ++path)
+    {
+        if (_g_paste_file_backend_reads (self, *path))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* Whether @copy holds what @original does, byte for byte: a chunk of each at a
+ * time, a document or a side file of any size costing two buffers. */
+static gboolean
+_g_paste_file_backend_same_bytes (GFile   *original,
+                                  GFile   *copy,
+                                  GError **error)
+{
+    g_autoptr (GFileInputStream) expected = g_file_read (original, NULL /* cancellable */, error);
+    g_autoptr (GFileInputStream) found = (expected) ? g_file_read (copy, NULL /* cancellable */, error) : NULL;
+
+    if (!found)
+        return FALSE;
+
+    g_autofree guchar *expected_chunk = g_malloc (G_PASTE_FILE_BACKEND_READ_SIZE);
+    g_autofree guchar *found_chunk = g_malloc (G_PASTE_FILE_BACKEND_READ_SIZE);
+
+    for (;;)
+    {
+        gsize expected_length = 0;
+        gsize found_length = 0;
+
+        if (!g_input_stream_read_all (G_INPUT_STREAM (expected), expected_chunk, G_PASTE_FILE_BACKEND_READ_SIZE, &expected_length, NULL /* cancellable */, error) ||
+            !g_input_stream_read_all (G_INPUT_STREAM (found), found_chunk, G_PASTE_FILE_BACKEND_READ_SIZE, &found_length, NULL /* cancellable */, error))
+            return FALSE;
+        if (found_length != expected_length || memcmp (found_chunk, expected_chunk, expected_length))
+            return FALSE;
+        if (!expected_length)
+            return TRUE;
+    }
+}
+
+/* @path's bytes, as they are, as its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling,
+ * when the key @rekeyed holds, the one a re-key goes to, reads them: the
+ * replacement of a file under that key already. That key is asked of @path
+ * itself, so that nothing is written for a file it refuses too -- a history on
+ * a third passphrase, or damaged, which every change of passphrase meets --
+ * and the copy is checked against it byte for byte rather than read through
+ * that key again: one derivation in all. */
+static gboolean
+_g_paste_file_backend_copy_as_rekeyed (GPasteStorageBackend *rekeyed,
+                                       const gchar          *path)
+{
+    if (!_g_paste_file_backend_reads (rekeyed, path))
+        return FALSE;
+
+    g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+    g_autoptr (GError) error = NULL;
+
+    if (!g_file_copy (file, tmp_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error) || !_g_paste_file_backend_sync (tmp_file, &error))
+        g_warning ("Could not copy %s for the change of passphrase: %s", path, error->message);
+    else if (_g_paste_file_backend_same_bytes (file, tmp_file, &error))
+        return TRUE;
+    else
+        g_warning ("Could not keep %s, already under the new passphrase, for the change: %s", path, (error) ? error->message : "it does not read back");
+
+    _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+    return FALSE;
+}
+
 /* Re-encrypt one file's bytes from the key @self holds to the one @rekeyed does,
  * into its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling. The bytes are copied
  * verbatim — this is a key change, not a rewrite — and read back through the
@@ -2899,7 +3031,13 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     {
         gboolean unreadable;
 
-        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, *path, &unreadable))
+        /* Re-encrypted, or the history itself under the key the change goes to
+         * already, its images left on the other one -- what a change cut short
+         * leaves, which the doctor re-keys from that one: it goes through as it
+         * is, its replacement being what says a re-key is under way
+         * (_g_paste_file_backend_settle_rekey ()). */
+        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, *path, &unreadable) ||
+            (unreadable && path == files && _g_paste_file_backend_copy_as_rekeyed (rekeyed, *path)))
         {
             g_strv_builder_add (rekeying, *path);
             continue;

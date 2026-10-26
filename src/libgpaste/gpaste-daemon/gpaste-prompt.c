@@ -17,6 +17,7 @@ typedef enum
 {
     REQUEST_PASSPHRASE,
     REQUEST_MIGRATION,
+    REQUEST_CONFIRM,
 } RequestKind;
 
 struct _GPastePromptRequest
@@ -28,7 +29,9 @@ struct _GPastePromptRequest
     RequestKind           kind;
 
     gboolean              confirm;
+    gchar                *title;
     gchar                *description;
+    gchar                *accept_label;
     gchar                *error_message;
     GPasteStorageRemember remember;
 
@@ -88,7 +91,9 @@ g_paste_prompt_request_finalize (GObject *object)
 {
     GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (object);
 
+    g_free (self->title);
     g_free (self->description);
+    g_free (self->accept_label);
     g_free (self->error_message);
     g_free (self->offered);
 
@@ -171,12 +176,29 @@ g_paste_prompt_request_get_confirm (GPastePromptRequest *self)
 }
 
 /**
+ * g_paste_prompt_request_get_title:
+ * @self: a #GPastePromptRequest
+ *
+ * The question a confirmation asks (g_paste_prompt_confirm_async()).
+ *
+ * Returns: (nullable): read-only string, %NULL for any other request
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_title (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    return self->title;
+}
+
+/**
  * g_paste_prompt_request_get_description:
  * @self: a #GPastePromptRequest
  *
  * What to explain in place of the standing description, for a passphrase asked
  * for histories other than the one in use
- * (g_paste_prompt_other_passphrase_async()).
+ * (g_paste_prompt_other_passphrase_async()); what accepting a confirmation
+ * does (g_paste_prompt_confirm_async()).
  *
  * Returns: (nullable): read-only string, or %NULL for the standing description
  */
@@ -219,7 +241,8 @@ g_paste_prompt_request_get_shown_description (GPastePromptRequest *self)
  * The label of the button accepting the passphrase: the one for a new
  * passphrase or the one for unlocking, as g_paste_prompt_request_get_confirm()
  * says, worked out here for both dialogs as
- * g_paste_prompt_request_get_shown_description() is.
+ * g_paste_prompt_request_get_shown_description() is. For a confirmation, the
+ * label its caller gave, which says what goes.
  *
  * Returns: read-only string
  */
@@ -227,6 +250,9 @@ G_PASTE_VISIBLE const gchar *
 g_paste_prompt_request_get_accept_label (GPastePromptRequest *self)
 {
     g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    if (self->kind == REQUEST_CONFIRM)
+        return self->accept_label;
 
     return g_paste_prompt_text ((self->confirm) ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT
                                                 : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT);
@@ -464,6 +490,27 @@ g_paste_prompt_request_reply_migration (GPastePromptRequest *self,
 }
 
 /**
+ * g_paste_prompt_request_reply_confirm:
+ * @self: a #GPastePromptRequest
+ *
+ * Answer a confirmation with "go ahead": declining it is dismissing it.
+ */
+G_PASTE_VISIBLE void
+g_paste_prompt_request_reply_confirm (GPastePromptRequest *self)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT_REQUEST (self));
+
+    if (!g_paste_prompt_request_answers (self, REQUEST_CONFIRM))
+        return;
+
+    g_autoptr (GTask) task = g_paste_prompt_request_claim (self);
+
+    /* Any pointer but %NULL, which is a dismissal's. */
+    if (task)
+        g_task_return_pointer (task, GINT_TO_POINTER (TRUE), NULL);
+}
+
+/**
  * g_paste_prompt_request_dismiss:
  * @self: a #GPastePromptRequest
  *
@@ -505,6 +552,7 @@ g_paste_prompt_default_init (GPastePromptInterface *iface)
     iface->passphrase = g_paste_prompt_default_prompt;
     iface->migration = g_paste_prompt_default_prompt;
     iface->report = g_paste_prompt_default_report;
+    iface->confirm = g_paste_prompt_default_prompt;
 }
 
 /* @text, nullable, as UTF-8: see g_paste_prompt_report (). */
@@ -540,6 +588,67 @@ g_paste_prompt_report (GPastePrompt *self,
     g_autofree gchar *valid_message = g_utf8_make_valid (message, -1);
 
     G_PASTE_PROMPT_GET_IFACE (self)->report (self, valid_title, valid_message);
+}
+
+/**
+ * g_paste_prompt_confirm_async:
+ * @self: a #GPastePrompt instance
+ * @title: the question, in the user's words
+ * @description: what accepting does, and that it cannot be undone
+ * @accept_label: the label of the button that goes through with it
+ * @callback: (scope async): called once the prompt is answered or dismissed
+ * @user_data: data passed to @callback
+ *
+ * Ask whether to go through with something that cannot be undone. A backend
+ * shows the accepting button as destructive, and dismissing is declining.
+ */
+G_PASTE_VISIBLE void
+g_paste_prompt_confirm_async (GPastePrompt       *self,
+                              const gchar        *title,
+                              const gchar        *description,
+                              const gchar        *accept_label,
+                              GAsyncReadyCallback callback,
+                              gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT (self));
+    g_return_if_fail (title && *title);
+    g_return_if_fail (description && *description);
+    g_return_if_fail (accept_label && *accept_label);
+
+    /* As in g_paste_prompt_passphrase_async (). The texts name histories,
+     * whose names need not be UTF-8 (g_paste_prompt_report ()). */
+    g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_CONFIRM,
+                                                                          g_paste_prompt_confirm_async,
+                                                                          callback, user_data);
+    request->title = g_paste_prompt_valid (title);
+    request->description = g_paste_prompt_valid (description);
+    request->accept_label = g_paste_prompt_valid (accept_label);
+
+    G_PASTE_PROMPT_GET_IFACE (self)->confirm (self, request);
+}
+
+/**
+ * g_paste_prompt_confirm_finish:
+ * @self: a #GPastePrompt instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect the answer to g_paste_prompt_confirm_async(). As for
+ * g_paste_prompt_passphrase_finish(), a dismissal is no failure: %FALSE with
+ * @error left unset.
+ *
+ * Returns: whether the user accepted
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_confirm_finish (GPastePrompt *self,
+                               GAsyncResult *result,
+                               GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT (self), FALSE);
+    g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_prompt_confirm_async, FALSE);
+
+    return g_task_propagate_pointer (G_TASK (result), error) != NULL;
 }
 
 /**

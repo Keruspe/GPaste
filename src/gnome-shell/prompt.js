@@ -37,15 +37,50 @@ function explanation(text) {
     return label;
 }
 
-// A wrong passphrase is reported by re-asking with an error message, so the
-// dialog never has to know whether the one it collected was any good.
-const PassphraseDialog = GObject.registerClass(
-class GPastePassphraseDialog extends ModalDialog.ModalDialog {
+// A dialog asking @request: whichever way it goes away, the request gets
+// exactly one answer. Replying marks it, so 'closed' and 'destroy' only bite on
+// a real dismissal. Both are connected because a dialog can be destroyed
+// without being closed, and 'closed' alone would then strand the request — and
+// with it the daemon waiting on the storage to settle. A close is followed by
+// 'destroy' too, ModalDialog destroying a dialog it closes, so no case tells
+// the 'closed' connection missing (test-prompt.cjs pins 'destroy').
+const RequestDialog = GObject.registerClass(
+class GPasteRequestDialog extends ModalDialog.ModalDialog {
     constructor(request) {
         super({styleClass: 'prompt-dialog'});
 
         this._request = request;
         this._answered = false;
+
+        this.connect('closed', () => this._dismiss());
+        this.connect('destroy', () => this._dismiss());
+    }
+
+    _dismiss() {
+        this._answer(() => this._request.dismiss());
+    }
+
+    _answer(reply) {
+        if (this._answered)
+            return;
+
+        this._answered = true;
+        reply();
+    }
+
+    _reply(reply) {
+        this._answer(reply);
+        this.close();
+    }
+});
+
+// A wrong passphrase is reported by re-asking with an error message, so the
+// dialog never has to know whether the one it collected was any good.
+const PassphraseDialog = GObject.registerClass(
+class GPastePassphraseDialog extends RequestDialog {
+    constructor(request) {
+        super(request);
+
         this._strengthRatingId = 0;
 
         const confirm = request.get_confirm();
@@ -105,14 +140,6 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
         this.setInitialKeyFocus(this._entry);
         this._updateOk();
-
-        // Whichever way the dialog goes away, the request gets exactly one
-        // answer: replying already marked it, so these only bite on a real
-        // dismissal. Both are connected because a dialog can be destroyed
-        // without being closed, and 'closed' alone would then strand the
-        // request — and with it the daemon waiting on the storage to settle.
-        this.connect('closed', () => this._dismiss());
-        this.connect('destroy', () => this._dismiss());
     }
 
     _dismiss() {
@@ -123,7 +150,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
             this._strengthRatingId = 0;
         }
 
-        this._answer(null, GPasteDaemon.StorageRemember.UNCHANGED);
+        this._answer(() => this._request.reply_passphrase(null, GPasteDaemon.StorageRemember.UNCHANGED));
     }
 
     _addEntry(content, hintText) {
@@ -238,26 +265,14 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         // What the switch answers is asked C-side too, as where it starts is.
         const remember = GPasteDaemon.Prompt.remember_answer(!!this._remember?.checked, !!this._remembered);
 
-        this._answer(this._entry.get_text(), remember);
-        this.close();
-    }
-
-    _answer(passphrase, remember) {
-        if (this._answered)
-            return;
-
-        this._answered = true;
-        this._request.reply_passphrase(passphrase, remember);
+        this._reply(() => this._request.reply_passphrase(this._entry.get_text(), remember));
     }
 });
 
 const MigrationDialog = GObject.registerClass(
-class GPasteMigrationDialog extends ModalDialog.ModalDialog {
+class GPasteMigrationDialog extends RequestDialog {
     constructor(request) {
-        super({styleClass: 'prompt-dialog'});
-
-        this._request = request;
-        this._answered = false;
+        super(request);
 
         this._current = request.get_current();
         this._offered = request.get_offered();
@@ -344,20 +359,6 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         });
 
         this._updateState();
-
-        // See the passphrase dialog: exactly one answer, whichever way we go.
-        this.connect('closed', () => this._dismiss());
-        this.connect('destroy', () => this._dismiss());
-    }
-
-    // Dismissing is an answer of its own: the storage layer takes it as "no
-    // choice made", leaves the revision alone and asks again on the next start.
-    _dismiss() {
-        if (this._answered)
-            return;
-
-        this._answered = true;
-        this._request.dismiss();
     }
 
     _selectBackend(backend) {
@@ -407,25 +408,41 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         if (this._chosen === null)
             return;
 
-        if (!this._answered) {
-            this._answered = true;
-            this._request.reply_migration(this._chosen, this._import.checked, this._cleanup.checked);
-        }
-
-        this.close();
+        this._reply(() => this._request.reply_migration(this._chosen, this._import.checked, this._cleanup.checked));
     }
 
     // "Nothing changes, and stop asking", which Cancel next to it does not do:
-    // dismissing leaves the revision alone and the dialog comes back on the next
-    // start. Answers with the current backend rather than what is ticked, so it
-    // undoes the fiddling too.
+    // dismissing, the storage layer's "no choice made", leaves the revision
+    // alone and the dialog comes back on the next start. Answers with the
+    // current backend rather than what is ticked, so it undoes the fiddling
+    // too.
     _onKeep() {
-        if (!this._answered) {
-            this._answered = true;
-            this._request.reply_migration(this._current, false, false);
-        }
+        this._reply(() => this._request.reply_migration(this._current, false, false));
+    }
+});
 
-        this.close();
+// Whether to go through with what cannot be undone, worded by the request:
+// Cancel is the default, the destructive answer never one a stray Enter gives.
+const ConfirmDialog = GObject.registerClass(
+class GPasteConfirmDialog extends RequestDialog {
+    constructor(request) {
+        super(request);
+
+        this.contentLayout.add_child(new Dialog.MessageDialogContent({
+            title: request.get_title(),
+            description: request.get_description(),
+        }));
+
+        this.addButton({
+            label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CANCEL),
+            action: () => this.close(),
+            key: Clutter.KEY_Escape,
+            default: true,
+        });
+        this.addButton({
+            label: request.get_accept_label(),
+            action: () => this._reply(() => request.reply_confirm()),
+        });
     }
 });
 
@@ -474,8 +491,14 @@ export const GPasteShellPrompt = GObject.registerClass({
     // shield's.
     //
     // @create builds the dialog once it can be shown; @abandon answers for one
-    // that never is (shutdown ()).
+    // that never is, asked once the extension is going or still held back by
+    // the lock then (shutdown ()).
     _show(create, abandon) {
+        if (this._shutDown) {
+            abandon();
+            return;
+        }
+
         if (Main.sessionMode.isLocked) {
             this._deferred.push({create, abandon});
             return;
@@ -533,27 +556,20 @@ export const GPasteShellPrompt = GObject.registerClass({
     }
 
     vfunc_passphrase(request) {
-        if (this._shutDown)
-            request.dismiss();
-        else
-            this._show(() => new PassphraseDialog(request), () => request.dismiss());
+        this._show(() => new PassphraseDialog(request), () => request.dismiss());
     }
 
     vfunc_migration(request) {
-        if (this._shutDown)
-            request.dismiss();
-        else
-            this._show(() => new MigrationDialog(request), () => request.dismiss());
+        this._show(() => new MigrationDialog(request), () => request.dismiss());
+    }
+
+    vfunc_confirm(request) {
+        this._show(() => new ConfirmDialog(request), () => request.dismiss());
     }
 
     // There is nothing to dismiss here, so a report never shown ends in the
     // log rather than nowhere: it still has to reach someone.
     vfunc_report(title, message) {
-        const log = () => console.error(`GPaste: ${title}: ${message}`);
-
-        if (this._shutDown)
-            log();
-        else
-            this._show(() => new ReportDialog(title, message), log);
+        this._show(() => new ReportDialog(title, message), () => console.error(`GPaste: ${title}: ${message}`));
     }
 });

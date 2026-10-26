@@ -74,6 +74,13 @@ G_DECLARE_INTERFACE (GPastePrompt, g_paste_prompt, G_PASTE, PROMPT, GObject)
  * happen — a passphrase that did not change, old data that was not deleted —
  * where a log line would leave them believing it did. Its default implementation
  * is that log line, so a backend that skips it loses the dialog, not the report.
+ *
+ * @confirm asks whether to go through with something that cannot be undone,
+ * such as deleting what nothing can read: a request whose title, description
+ * and accept label the caller words, answered by
+ * g_paste_prompt_request_reply_confirm() or dismissed. Being last, it is the
+ * one a backend written against an older contract does not know of, and its
+ * default dismissal leaves everything where it is.
  */
 struct _GPastePromptInterface
 {
@@ -86,11 +93,14 @@ struct _GPastePromptInterface
     void (*report)     (GPastePrompt        *self,
                         const gchar         *title,
                         const gchar         *message);
+    void (*confirm)    (GPastePrompt        *self,
+                        GPastePromptRequest *request);
 };
 
 /* What the prompt was asked. Only the getters matching the vfunc that received
  * the request are meaningful. */
 gboolean              g_paste_prompt_request_get_confirm       (GPastePromptRequest *self);
+const gchar          *g_paste_prompt_request_get_title         (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_description   (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_error_message (GPastePromptRequest *self);
 /* What a passphrase dialog says, worked out once for both: its standing
@@ -113,6 +123,7 @@ void g_paste_prompt_request_reply_migration  (GPastePromptRequest *self,
                                               GPasteStorage        chosen,
                                               gboolean             import,
                                               gboolean             cleanup);
+void g_paste_prompt_request_reply_confirm    (GPastePromptRequest *self);
 void g_paste_prompt_request_dismiss          (GPastePromptRequest *self);
 
 /* The answer comes back as a #GPastePassphrase — secure memory with its own
@@ -157,6 +168,18 @@ gboolean g_paste_prompt_migration_finish (GPastePrompt   *self,
                                           gboolean       *import,
                                           gboolean       *cleanup,
                                           GError        **error);
+
+/* Ask whether to go through with what cannot be undone: %TRUE once the user
+ * accepted, %FALSE for a dismissal, @error left unset. */
+void     g_paste_prompt_confirm_async  (GPastePrompt       *self,
+                                        const gchar        *title,
+                                        const gchar        *description,
+                                        const gchar        *accept_label,
+                                        GAsyncReadyCallback callback,
+                                        gpointer            user_data);
+gboolean g_paste_prompt_confirm_finish (GPastePrompt *self,
+                                        GAsyncResult *result,
+                                        GError      **error);
 
 /* Tell the user something did not happen. Nothing comes back: this is the end of
  * a concern, not a question, and the caller has already put everything back the

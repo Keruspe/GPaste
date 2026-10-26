@@ -620,8 +620,12 @@ link (const char *from,
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* Whether the copy keeping a history's original aside, on a filesystem without
  * hard links, stops part way and has the next start's settle look at what it
- * left: a process dying in that copy, and the next one starting. */
+ * left: a process dying in that copy, and the next one starting. And how many
+ * copies a re-key made as a file's replacement, which come out a bit off at
+ * their end while @rekey_copies_damaged is set. */
 static gboolean settle_mid_copy;
+static guint    rekey_copies;
+static gboolean rekey_copies_damaged;
 
 gboolean
 g_file_copy (GFile                *source,
@@ -652,7 +656,24 @@ g_file_copy (GFile                *source,
         return FALSE;
     }
 
-    return original (source, destination, flags, cancellable, progress, data, error);
+    if (!g_str_has_suffix (to, G_PASTE_FILE_BACKEND_REKEY_NEW))
+        return original (source, destination, flags, cancellable, progress, data, error);
+
+    ++rekey_copies;
+    if (!original (source, destination, flags, cancellable, progress, data, error))
+        return FALSE;
+
+    if (rekey_copies_damaged)
+    {
+        g_autofree gchar *contents = NULL;
+        gsize length;
+
+        g_assert_true (g_file_get_contents (to, &contents, &length, NULL));
+        contents[length - 1] ^= 1;
+        g_assert_true (g_file_set_contents (to, contents, length, NULL));
+    }
+
+    return TRUE;
 }
 #endif
 
@@ -1238,6 +1259,11 @@ struct _TestMigrationPrompt
     guint                migrations;
     /* How many of those had been made when the last report came. */
     guint                migrations_at_report;
+    /* What confirmations answer, how many were asked, and what the last one
+     * explained. */
+    gboolean             confirm;
+    guint                confirms;
+    gchar               *confirm_description;
 };
 
 static void test_migration_prompt_iface_init (GPastePromptInterface *iface);
@@ -1316,11 +1342,27 @@ assert_import_failure_reported (TestMigrationPrompt *prompt)
 #endif
 
 static void
+test_migration_prompt_confirm (GPastePrompt        *prompt,
+                               GPastePromptRequest *request)
+{
+    TestMigrationPrompt *self = TEST_MIGRATION_PROMPT (prompt);
+
+    ++self->confirms;
+    g_set_str (&self->confirm_description, g_paste_prompt_request_get_description (request));
+
+    if (self->confirm)
+        g_paste_prompt_request_reply_confirm (request);
+    else
+        g_paste_prompt_request_dismiss (request);
+}
+
+static void
 test_migration_prompt_iface_init (GPastePromptInterface *iface)
 {
     iface->passphrase = test_migration_prompt_passphrase;
     iface->migration = test_migration_prompt_migration;
     iface->report = test_migration_prompt_report;
+    iface->confirm = test_migration_prompt_confirm;
 }
 
 static void
@@ -1330,6 +1372,7 @@ test_migration_prompt_finalize (GObject *object)
     g_free (TEST_MIGRATION_PROMPT (object)->message);
     g_free (TEST_MIGRATION_PROMPT (object)->passphrase_error);
     g_free (TEST_MIGRATION_PROMPT (object)->passphrase_description);
+    g_free (TEST_MIGRATION_PROMPT (object)->confirm_description);
 
     G_OBJECT_CLASS (test_migration_prompt_parent_class)->finalize (object);
 }
@@ -7606,6 +7649,10 @@ test_rekey_split_passphrases (void)
     g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
     g_assert_true (g_paste_storage_rekey_finish (result, &error));
     g_assert_no_error (error);
+    /* Nothing written for the history left on its passphrase either: asked
+     * whether it is under the new one already, it says it is not before it is
+     * copied as its replacement. */
+    g_assert_cmpuint (rekey_copies, ==, 0);
 
     g_autoptr (GPasteStorageBackend) three = g_paste_file_backend_new_encrypted (settings, "three");
     g_autoptr (GPasteStorageBackend) two = g_paste_file_backend_new_encrypted (settings, "two");
@@ -8158,6 +8205,221 @@ test_doctor_split_dismissed (void)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A history whose document opens with the passphrase in use, its image left
+ * on another one, as a change of passphrase cut short leaves it: the image's
+ * side file. */
+static gchar *
+write_split_by_images (GPasteSettings *settings,
+                       const gchar    *name)
+{
+    g_autofree gchar *history = NULL;
+    gchar *image = NULL;
+    g_autofree gchar *elsewhere_history = NULL;
+    g_autofree gchar *elsewhere_image = NULL;
+
+    write_encrypted_history (settings, "images-elsewhere", "two", &elsewhere_history, &elsewhere_image);
+
+    g_autoptr (GBytes) on_two = read_bytes (elsewhere_image);
+
+    {
+        g_autoptr (GPasteStorageBackend) two = g_paste_file_backend_new_encrypted (settings, "two");
+
+        g_paste_storage_backend_delete_history (two, "images-elsewhere", NULL);
+    }
+    write_encrypted_history (settings, name, "one", &history, &image);
+    write_bytes (image, on_two);
+
+    return image;
+}
+
+/* Whether @name opens under @passphrase with its image whole. */
+static gboolean
+opens_with_image (GPasteSettings *settings,
+                  const gchar    *passphrase,
+                  const gchar    *name)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
+    g_autolist (GPasteItem) items = NULL;
+    gsize size = 0;
+
+    return g_paste_storage_backend_read_history (backend, name, NULL, &items, &size) && g_list_length (items) == 2 &&
+           g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (items->next->data));
+}
+
+/* A history whose document opens with the passphrase in use but whose images
+ * are on another one is no healthy one either, the read dropping them and the
+ * next full write sweeping them: the other passphrase is asked for, naming
+ * it, and the images are encrypted with the one in use, the document left as
+ * it is. Dismissed, they are said to be unreadable. */
+static void
+test_doctor_split_images (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to load image*");
+        return;
+    }
+
+    /* The image's read warns, which is the case itself; a critical still
+     * fails it. */
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+    g_autofree gchar *image = write_split_by_images (settings, name);
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+    g_assert_false (opens_with_image (settings, "one", name));
+
+    /* Dismissed, the image is offered to be deleted, and kept when that is
+     * declined too. */
+    {
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+        gboolean healthy = TRUE;
+        g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+        g_assert_false (healthy);
+        g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+        g_assert_cmpuint (prompt->confirms, ==, 1);
+        g_assert_nonnull (strstr (prompt->confirm_description, name));
+        g_assert_cmpuint (g_strv_length (report), ==, 1);
+        g_assert_nonnull (strstr (report[0], "Images of the history"));
+        g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    const gchar * const typed[] = { "two", NULL };
+    gboolean healthy = FALSE;
+
+    prompt->passphrases = typed;
+
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_true (healthy);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+    g_assert_cmpuint (prompt->confirms, ==, 0);
+    g_assert_nonnull (strstr (prompt->passphrase_description, name));
+    g_assert_true (opens_with_image (settings, "one", name));
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* The document of a history split by its images goes through the re-key as it
+ * is, copied as its replacement, the new key asked of it once: the copy is read
+ * back by its bytes, one that does not having the re-key fail with nothing
+ * moved, rather than put in place a document no key reads. */
+static void
+test_rekey_document_carried_through (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*does not read back*");
+        return;
+    }
+
+    /* As in test_doctor_split_images (). */
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "document-carried-through";
+    g_autofree gchar *image = write_split_by_images (settings, name);
+    g_autoptr (GPasteStorageBackend) two = g_paste_file_backend_new_encrypted (settings, "two");
+    g_autofree gchar *document = g_paste_storage_backend_get_history_file_path (two, name);
+    g_autofree gchar *replacement = g_strconcat (document, G_PASTE_FILE_BACKEND_REKEY_NEW, NULL);
+    g_autoptr (GBytes) before = read_bytes (document);
+    gboolean split = FALSE;
+
+    rekey_copies_damaged = TRUE;
+    g_assert_false (g_paste_storage_backend_rekey (two, name, "one", &split));
+    rekey_copies_damaged = FALSE;
+    g_assert_false (split);
+    g_assert_false (g_file_test (replacement, G_FILE_TEST_EXISTS));
+
+    {
+        g_autoptr (GBytes) kept = read_bytes (document);
+
+        g_assert_true (g_bytes_equal (before, kept));
+        g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+    }
+
+    g_atomic_int_set (&derivations, 0);
+    g_assert_true (g_paste_storage_backend_rekey (two, name, "one", &split));
+    /* The document refusing the old key and asked of the new one, then the
+     * image read with the old key, and written and read back with the new. */
+    g_assert_cmpint (g_atomic_int_get (&derivations), ==, 2 + 3);
+
+    g_autoptr (GBytes) after = read_bytes (document);
+
+    g_assert_true (g_bytes_equal (before, after));
+    g_assert_true (opens_with_image (settings, "one", name));
+}
+
+/* An image no passphrase typed opens -- damaged, as no passphrase opens it --
+ * is asked about once a check rather than until the prompt is dismissed, and
+ * deleted once that is confirmed: the check after finds nothing wrong. */
+static void
+test_doctor_split_images_unreadable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Failed to load image*");
+        return;
+    }
+
+    /* As in test_doctor_split_images (). */
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = g_paste_settings_get_history_name (settings);
+    g_autofree gchar *image = write_split_by_images (settings, name);
+    const gchar * const typed[] = { "three", "two", NULL };
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_storage_backend_set_passphrase ("one");
+
+    {
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+        gboolean healthy = TRUE;
+
+        prompt->passphrases = typed;
+
+        g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+        g_assert_false (healthy);
+        g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
+        g_assert_cmpuint (prompt->confirms, ==, 1);
+        g_assert_cmpuint (g_strv_length (report), ==, 1);
+        g_assert_nonnull (strstr (report[0], "Images of the history"));
+        g_assert_true (g_file_test (image, G_FILE_TEST_EXISTS));
+    }
+
+    {
+        g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+        gboolean healthy = FALSE;
+
+        prompt->passphrases = typed;
+        prompt->confirm = TRUE;
+
+        g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+        g_assert_true (healthy);
+        g_assert_cmpuint (prompt->confirms, ==, 1);
+        g_assert_cmpuint (g_strv_length (report), ==, 1);
+        g_assert_nonnull (strstr (report[0], "Deleted the unreadable images"));
+        g_assert_false (g_file_test (image, G_FILE_TEST_EXISTS));
+    }
+
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    gboolean healthy = FALSE;
+    g_auto (GStrv) report = run_doctor (settings, prompt, &healthy);
+
+    g_assert_true (healthy);
+    g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
+    g_assert_cmpuint (prompt->confirms, ==, 0);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
 /* What a change of passphrase the daemon taken over from did not live to
  * finish leaves is settled once that daemon lets go of the store, by the
  * decryption gate as by the migration one, though nothing is left to unlock:
@@ -8475,6 +8737,9 @@ main (int    argc,
     g_test_add_func ("/storage/doctor/split-repaired", test_doctor_split_repaired);
     g_test_add_func ("/storage/doctor/split-empty-active", test_doctor_split_empty_active);
     g_test_add_func ("/storage/doctor/split-dismissed", test_doctor_split_dismissed);
+    g_test_add_func ("/storage/doctor/split-images", test_doctor_split_images);
+    g_test_add_func ("/storage/rekey/document-carried-through", test_rekey_document_carried_through);
+    g_test_add_func ("/storage/doctor/split-images-unreadable", test_doctor_split_images_unreadable);
     g_test_add_func ("/storage/doctor/locked", test_doctor_locked);
     g_test_add_func ("/storage/rekey/settled-under-lock", test_rekey_settled_under_lock);
     g_test_add_func ("/storage/rekey/settled-while-busy", test_rekey_settled_while_busy);

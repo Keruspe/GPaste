@@ -63,6 +63,11 @@ GPasteStorageBackend *g_paste_file_backend_new_encrypted (GPasteSettings *settin
                                                           const gchar    *passphrase);
 
 void g_paste_file_backend_settle_rekeys (void);
+
+GStrv    g_paste_file_backend_refused_images (GPasteStorageBackend *self,
+                                              const gchar          *history_name);
+gboolean g_paste_file_backend_reads_any      (GPasteStorageBackend *self,
+                                              const gchar * const  *paths);
 #endif
 
 G_END_DECLS
