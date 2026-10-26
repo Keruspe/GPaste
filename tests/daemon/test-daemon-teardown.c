@@ -110,6 +110,11 @@ on_counted_expiry (GObject      *source_object,
     expiry->callback (source_object, result, expiry->user_data);
 }
 
+/* Whether a storage worker is rewriting the store, as a case has it, and
+ * whether one starts while a re-exec's expiry runs. */
+static gboolean storage_busy;
+static gboolean busy_during_expiry;
+
 /* Every expiry a re-exec asks for, before handing it on. */
 static void
 counting_expiry (GPasteClipboardsManager *self,
@@ -120,11 +125,10 @@ counting_expiry (GPasteClipboardsManager *self,
 
     *expiry = (Expiry) { callback, user_data };
     ++expiries;
+    if (busy_during_expiry)
+        storage_busy = TRUE;
     g_paste_clipboards_manager_expire_password_async (self, on_counted_expiry, expiry);
 }
-
-/* Whether a storage worker is rewriting the store, as a case has it. */
-static gboolean storage_busy;
 
 static gboolean
 test_storage_is_busy (void)
@@ -151,6 +155,10 @@ typedef struct
     GDBusConnection *connection;
     guint            reexecutions;
     guint            expired_at_reexecution;
+    /* An upload's result, when a case has one out, and whether it was in by
+     * the time the host was told to exec. */
+    GAsyncResult   **uploaded;
+    gboolean         uploaded_at_reexecution;
 } Fixture;
 
 static gboolean
@@ -419,6 +427,7 @@ on_reexecute_self (GPasteDaemon *daemon G_GNUC_UNUSED,
     Fixture *fixture = user_data;
 
     fixture->expired_at_reexecution = expired;
+    fixture->uploaded_at_reexecution = fixture->uploaded && *fixture->uploaded;
     ++fixture->reexecutions;
     return TRUE;
 }
@@ -695,9 +704,16 @@ test_upload_answer_is_one_url (Fixture      *fixture,
     }
 }
 
+static gboolean
+is_cleared (gconstpointer pointer,
+            gconstpointer arg G_GNUC_UNUSED)
+{
+    return !*((gconstpointer const *) pointer);
+}
+
 /* An upload out when the daemon leaves the bus is given up on there, its
  * command killed: answered as cancelled at once rather than at the deadline,
- * it lets the daemon go with it. */
+ * it lets the daemon go with it once the killed command's parts are back. */
 static void
 test_upload_ends_with_export (Fixture      *fixture,
                               gconstpointer user_data G_GNUC_UNUSED)
@@ -721,14 +737,8 @@ test_upload_ends_with_export (Fixture      *fixture,
     g_clear_object (&result);
     g_object_add_weak_pointer (G_OBJECT (daemon), (gpointer *) &daemon);
     g_clear_object (&fixture->daemon);
+    g_paste_test_bus_wait_until (is_cleared, &daemon, NULL);
     g_assert_null (daemon);
-}
-
-static gboolean
-is_cleared (gconstpointer pointer,
-            gconstpointer arg G_GNUC_UNUSED)
-{
-    return !*((gconstpointer const *) pointer);
 }
 
 /* The shortcut's upload, given up on as the daemon leaves the bus, is no
@@ -766,8 +776,12 @@ upload_through_reexec (Fixture *fixture,
     g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
     g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
     g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
+    fixture->uploaded = &result;
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+    fixture->uploaded = NULL;
+    /* Answered before the host execs, which leaves no turn for it after. */
+    g_assert_true (fixture->uploaded_at_reexecution == !in_process);
 
     if (in_process)
     {
@@ -845,6 +859,33 @@ test_reexecute_store_busy (Fixture      *fixture,
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
     g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &uploaded, NULL);
     g_assert_nonnull (uploaded);
+}
+
+/* A storage worker starting while a re-exec's expiry runs defers the exec, the
+ * host carrying it out once the worker is done, rather than refuse it with the
+ * passwords already taken off for it. */
+static void
+test_reexecute_busy_after_expiry (Fixture      *fixture,
+                                  gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GAsyncResult) answered = NULL;
+    g_autoptr (GError) error = NULL;
+
+    expiries = 0;
+    busy_during_expiry = TRUE;
+    g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
+    g_dbus_connection_call (fixture->connection, g_dbus_connection_get_unique_name (fixture->connection),
+                            G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME, "Reexecute",
+                            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, on_reexecute_answered, &answered);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &answered, NULL);
+    busy_during_expiry = FALSE;
+    storage_busy = FALSE;
+
+    g_autoptr (GVariant) reply = g_dbus_connection_call_finish (fixture->connection, answered, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (expiries, ==, 1);
+    g_assert_cmpuint (fixture->reexecutions, ==, 1);
 }
 
 /* Under track-extension-state, the extension going pauses the tracking and its
@@ -1347,6 +1388,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/reexecute/expires-first", Fixture, NULL, fixture_set_up, test_reexecute_expires_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
+    g_test_add ("/daemon/reexecute/busy-after-expiry", Fixture, NULL, fixture_set_up, test_reexecute_busy_after_expiry, fixture_tear_down);
     g_test_add_func ("/daemon/reexecute/handed-over", test_reexecute_handed_over);
     g_test_add ("/daemon/reexport-follows-screensaver", Fixture, NULL, fixture_set_up, test_reexport_follows_screensaver, fixture_tear_down);
     g_test_add ("/daemon/methods/every-method-handled", Fixture, NULL, fixture_set_up, test_every_method_handled, fixture_tear_down);

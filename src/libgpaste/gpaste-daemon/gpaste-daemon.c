@@ -299,13 +299,20 @@ reexecute_stood_down (GDBusMethodInvocation *invocation)
  * an invocation (SIGUSR1) is the host's to carry out once the worker is done,
  * through g_paste_daemon_reexecute () again. Nothing execs in gnome-shell.
  *
+ * Once the expiry has brought the countdowns forward for it (@expired), a
+ * worker started meanwhile defers the exec instead, which the host carries out
+ * once the worker is done (reexec () in src/daemon/gpaste-daemon.c), and the
+ * request is answered as accepted: refused, the passwords would have come off
+ * for no restart.
+ *
  * Both are refused while a change of passphrase or a check of the store holds
  * the history handed over at its prompt (g_paste_daemon_flush ()), for as long
  * as the user takes to answer: an exec would take the prompt with it, and what
  * was copied meanwhile, which only the reload ending the handover records. */
 static gboolean
 g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
-                                  GDBusMethodInvocation *invocation)
+                                  GDBusMethodInvocation *invocation,
+                                  gboolean               expired)
 {
     if (self->in_process)
         return FALSE;
@@ -323,7 +330,7 @@ g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
         return TRUE;
     }
 
-    if (!invocation || !g_paste_storage_is_busy ())
+    if (expired || !invocation || !g_paste_storage_is_busy ())
         return FALSE;
 
     g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_BUSY,
@@ -335,9 +342,10 @@ static void g_paste_daemon_cancel_uploads (GPasteDaemon *self);
 
 static void
 g_paste_daemon_reexecute_now (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation)
+                              GDBusMethodInvocation *invocation,
+                              gboolean               expired)
 {
-    if (g_paste_daemon_reexecute_refused (self, invocation))
+    if (g_paste_daemon_reexecute_refused (self, invocation, expired))
         return;
 
     /* Nothing is handed to a clipboard manager first: one taking a selection
@@ -415,7 +423,7 @@ on_reexecute_passwords_expired (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    g_paste_daemon_reexecute_now (self, data->invocation);
+    g_paste_daemon_reexecute_now (self, data->invocation, TRUE);
 }
 
 static void
@@ -434,12 +442,12 @@ g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
      * no restart. */
     if (self->in_process)
     {
-        g_paste_daemon_reexecute_now (self, invocation);
+        g_paste_daemon_reexecute_now (self, invocation, FALSE);
         return;
     }
 
     /* Before any countdown is brought forward for it. */
-    if (g_paste_daemon_reexecute_refused (self, invocation))
+    if (g_paste_daemon_reexecute_refused (self, invocation, FALSE))
         return;
 
     /* Await classification and expiry first, so the successor inherits no
@@ -546,9 +554,11 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
  * the last of the three to come back judges the upload. */
 typedef struct
 {
+    GTask        *task;        /* borrowed: the task owns this */
     GSubprocess  *upload;      /* the deadline has to be able to kill it */
     GCancellable *cancellable;
     guint         timeout_id;
+    gboolean      given_up;    /* answered already (g_paste_daemon_cancel_uploads ()) */
     GBytes       *item;        /* the value going in, holding its item */
     guint         pending;     /* the write, the read and the exit still out */
     gboolean      timed_out;
@@ -593,7 +603,7 @@ g_paste_daemon_upload_done (GTask *task)
 {
     UploadData *data = g_task_get_task_data (task);
 
-    if (--data->pending)
+    if (--data->pending || data->given_up)
         return;
 
     GPasteDaemon *self = g_task_get_source_object (task);
@@ -611,15 +621,6 @@ g_paste_daemon_upload_done (GTask *task)
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "The upload command did not answer within %d seconds.",
                                  G_PASTE_DAEMON_UPLOAD_TIMEOUT);
-        return;
-    }
-
-    /* Given up on by the daemon going away (g_paste_daemon_cancel_uploads ()):
-     * the kill that ended the command is not an answer it gave, and nobody is
-     * left to put an address anywhere. */
-    if (g_cancellable_is_cancelled (data->cancellable))
-    {
-        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CANCELLED, "The upload was given up on, the daemon going away.");
         return;
     }
 
@@ -773,17 +774,29 @@ on_upload_exited (GObject      *source_object,
     g_paste_daemon_upload_done (task);
 }
 
-/* Each upload out given up on and its command killed, which brings all three of
- * its parts back at once: what answers it then is the cancellation. */
+/* Each upload out given up on, its command killed, and answered as cancelled
+ * there and then: the kill is not an answer the command gave, and nobody is
+ * left to put an address anywhere. Not left to its three parts coming back, a
+ * main loop turn later: an exec or a stop following in the same turn gives
+ * them none, and the caller would hear the bus's NoReply instead. What comes
+ * back then only cleans up (g_paste_daemon_upload_done ()). A command killed
+ * for an exec is the new image's to reap, which knows nothing of it: a zombie
+ * until that one exits, where waiting on the kill could block on a command
+ * stuck in the kernel. */
 static void
 g_paste_daemon_cancel_uploads (GPasteDaemon *self)
 {
-    for (const GList *u = self->uploads; u; u = u->next)
+    g_autoptr (GList) uploads = g_steal_pointer (&self->uploads);
+
+    for (const GList *u = uploads; u; u = u->next)
     {
         UploadData *data = u->data;
 
+        data->given_up = TRUE;
+        g_clear_handle_id (&data->timeout_id, g_source_remove);
         g_cancellable_cancel (data->cancellable);
         g_subprocess_force_exit (data->upload);
+        g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_CANCELLED, "The upload was given up on, the daemon going away.");
     }
 }
 
@@ -871,6 +884,7 @@ g_paste_daemon_upload (GPasteDaemon       *self,
 
     g_autoptr (UploadData) data = g_new0 (UploadData, 1);
 
+    data->task = task;
     data->upload = upload;
     data->cancellable = g_cancellable_new ();
     /* The item's own string, which never changes once in the history, held

@@ -158,7 +158,8 @@ reexec (GPasteDaemon *g_paste_daemon,
 
     /* As for a stop signal (when_storage_idle ()). Accepted all the same: the
      * exec follows once the write it would cut short is done -- a request over
-     * the bus being refused before it gets here (g_paste_daemon_reexecute ()). */
+     * the bus being refused before it gets here, unless a worker started only
+     * once its expiry had run (g_paste_daemon_reexecute_refused ()). */
     if (g_paste_storage_is_busy ())
     {
         when_storage_idle (ctx, reexec_once_idle);
@@ -226,6 +227,8 @@ reexec_once_idle (DaemonContext *ctx)
 
     if (ctx->daemon)
         g_paste_daemon_reexecute (ctx->daemon);
+    /* Before the daemon is built there is nothing to expire nor flush, and
+     * reexec () skips the flush for a NULL daemon. */
     else
         reexec (NULL, ctx);
 }
@@ -270,19 +273,17 @@ usr1_handler (gpointer user_data)
 {
     DaemonContext *ctx = user_data;
 
-    /* Through the daemon while there is one, so the passwords its reads are
-     * still classifying come off first (g_paste_daemon_reexecute()); it then
-     * ends in reexec() through "reexecute-self" like the D-Bus method does.
-     * Before it is built there is nothing to expire nor flush, and reexec()
-     * skips the flush for a NULL daemon. */
-    if (ctx->daemon)
-        g_paste_daemon_reexecute (ctx->daemon);
-    else
-        when_storage_idle (ctx, reexec_once_idle);
+    /* Once the store is idle, and only if no stop waits on it
+     * (reexec_once_idle ()), as reexec () would refuse or defer it: the
+     * countdowns are brought forward for an exec that follows, not for one
+     * refused or minutes away. */
+    when_storage_idle (ctx, reexec_once_idle);
 
-    /* Either way the exec comes after this handler returns: the expiry runs
-     * asynchronously, and the store may have a worker to wait for. Keep
-     * listening if that request is refused or the exec fails. */
+    /* With a daemon built, or a worker to wait for, the exec comes after this
+     * handler returns, the expiry running asynchronously; before the daemon
+     * is, with the store idle, it happens within this very call
+     * (reexec_once_idle ()). Keep listening if the re-exec is refused or the
+     * exec fails. */
     return G_SOURCE_CONTINUE;
 }
 #endif
@@ -601,6 +602,23 @@ on_name_lost (GPasteBus *bus       G_GNUC_UNUSED,
     exit (EXIT_FAILURE);
 }
 
+/* What the daemon answered as it went -- the uploads it gave up on, from idles
+ * (g_paste_daemon_cancel_uploads ()) -- which the main loop, ended by then,
+ * runs no more: run, and sent before the process ends, rather than leave the
+ * callers to the bus's NoReply. Whatever else is due runs too, a stop having
+ * left nothing to carry out (ctx->stopping). */
+static void
+answer_before_exit (DaemonContext *ctx)
+{
+    while (g_main_context_iteration (NULL, FALSE))
+        ;
+
+    GDBusConnection *connection = g_application_get_dbus_connection (ctx->gapp);
+
+    if (connection)
+        g_dbus_connection_flush_sync (connection, NULL, NULL);
+}
+
 /* Pull a bare "--replace" out of argv (shifting the rest down) so it never
  * reaches GApplication's option handling, and report whether it was present. */
 static gboolean
@@ -700,6 +718,7 @@ main (gint argc, gchar *argv[])
 
     g_clear_object (&ctx.search_provider);
     g_clear_object (&ctx.daemon);
+    answer_before_exit (&ctx);
     g_clear_object (&ctx.bus);
 
     return exit_status;

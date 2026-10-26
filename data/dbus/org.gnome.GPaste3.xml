@@ -446,7 +446,9 @@
       while a change of passphrase, a check of the store or a migration's
       import is rewriting the store, which the exec would have to wait for, and
       while a change of passphrase or a check of the store waits on its prompt,
-      which the exec would take with it: try again once it is done.
+      which the exec would take with it: try again once it is done. A rewrite
+      starting only once the passwords have been taken off for the exec defers
+      it instead, until the rewrite is done, the call answered as accepted.
     -->
     <method name="Reexecute"/>
 

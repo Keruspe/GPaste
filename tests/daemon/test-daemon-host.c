@@ -120,6 +120,14 @@ fake_reload_storage (GPasteDaemon *self G_GNUC_UNUSED)
 {
 }
 
+/* R for a re-exec asked of the daemon, which brings its countdowns forward. */
+static void
+fake_daemon_reexecute (GPasteDaemon *self G_GNUC_UNUSED)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'R');
+}
+
 static void
 fake_daemon_resume (GPasteDaemon *self G_GNUC_UNUSED)
 {
@@ -188,6 +196,7 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #define g_paste_storage_doctor_finish fake_doctor_finish
 #define g_paste_daemon_flush fake_daemon_flush
 #define g_paste_daemon_resume fake_daemon_resume
+#define g_paste_daemon_reexecute fake_daemon_reexecute
 #define g_paste_daemon_expire_password fake_daemon_expire_password
 #define g_application_quit fake_application_quit
 #define g_application_get_dbus_connection fake_get_dbus_connection
@@ -366,6 +375,35 @@ test_reexec_while_stopping (void)
     g_assert_cmpstr (calls->str, ==, "");
 }
 
+/* SIGUSR1 asks the daemon for a re-exec, its countdowns brought forward, only
+ * once the store is idle and with no stop waiting on it: not for an exec a stop
+ * refuses, nor minutes before one a storage worker puts off. */
+static void
+test_usr1_waits_for_store (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    DaemonContext ctx = { .daemon = daemon, .stopping = TRUE };
+
+    exit_calls = calls;
+    usr1_handler (&ctx);
+    g_assert_cmpstr (calls->str, ==, "");
+
+    ctx.stopping = FALSE;
+    storage_busy = TRUE;
+    usr1_handler (&ctx);
+    g_assert_cmpstr (calls->str, ==, "");
+    g_assert_nonnull (idle_data);
+
+    gpointer wait = g_steal_pointer (&idle_data);
+
+    storage_busy = FALSE;
+    on_storage_idle (wait);
+    idle_destroy (wait);
+    exit_calls = NULL;
+    g_assert_cmpstr (calls->str, ==, "R");
+}
+
 /* A stop waiting on a storage worker waits once: a second stop signal meanwhile
  * queues no second quit behind the first. */
 static void
@@ -419,6 +457,23 @@ test_takeover_lets_go (void)
     g_clear_pointer (&idle_data, idle_destroy);
 }
 
+/* What the daemon answered from idles as it went, which the ended main loop
+ * no longer runs, goes out before the exit flushes the bus. */
+static void
+test_exit_answers (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    DaemonContext ctx = { 0 };
+
+    while (g_main_context_iteration (NULL, FALSE))
+        ;
+    exit_calls = calls;
+    g_source_set_name_by_id (g_idle_add_once (fake_answer, NULL), "[GPaste] test idle answer");
+    answer_before_exit (&ctx);
+    exit_calls = NULL;
+    g_assert_cmpstr (calls->str, ==, "ad");
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -431,6 +486,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/daemon-host/reexec-order", test_reexec_order);
     g_test_add_func ("/daemon-host/reexec-while-stopping", test_reexec_while_stopping);
     g_test_add_func ("/daemon-host/stop-once", test_stop_once);
+    g_test_add_func ("/daemon-host/usr1-waits-for-store", test_usr1_waits_for_store);
+    g_test_add_func ("/daemon-host/exit-answers", test_exit_answers);
 
     return g_paste_test_env_run ();
 }
