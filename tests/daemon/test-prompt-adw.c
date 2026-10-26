@@ -282,6 +282,13 @@ test_migration_current_picked (void)
 
     gtk_check_button_set_active (dialog->backend_checks[1], TRUE);
     g_assert_false (gtk_check_button_get_active (dialog->backend_checks[0]));
+
+    /* Deleting the old data without importing it is warned about
+     * (g_paste_prompt_cleanup_warns ()). */
+    g_assert_false (adw_banner_get_revealed (dialog->warning));
+    adw_switch_row_set_active (dialog->cleanup_row, TRUE);
+    g_assert_true (adw_banner_get_revealed (dialog->warning));
+    adw_switch_row_set_active (dialog->cleanup_row, FALSE);
     g_signal_emit_by_name (dialog->apply, "clicked");
     wait_for (&answer);
     g_assert_true (answer.confirmed);
@@ -438,6 +445,7 @@ test_passphrase_confirmed (gconstpointer user_data)
     PassphraseDialog *dialog = g_object_get_data (G_OBJECT (window), "gpaste-passphrase-dialog");
 
     assert_plain_rows (window);
+    g_assert_cmpstr (gtk_button_get_label (GTK_BUTTON (dialog->ok)), ==, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT));
     g_assert_false (gtk_widget_get_sensitive (dialog->ok));
     gtk_editable_set_text (dialog->entry, "correct horse");
     gtk_editable_set_text (dialog->confirm_entry, "correct hors");
@@ -498,6 +506,7 @@ test_passphrase_other_histories (void)
 
     assert_plain_rows (window);
     g_assert_true (shows (window, description));
+    g_assert_true (has_button (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT)));
     g_assert_false (shows (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION)));
     g_assert_null (dialog->remember);
 

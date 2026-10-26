@@ -176,10 +176,9 @@ update_state (MigrationDialog *self)
     if (!backend_changes)
         adw_switch_row_set_active (self->cleanup_row, FALSE);
 
-    /* Deleting the old data without importing it first throws it away. */
     adw_banner_set_revealed (self->warning,
-                             adw_switch_row_get_active (self->cleanup_row) &&
-                             !adw_switch_row_get_active (self->import_row));
+                             g_paste_prompt_cleanup_warns (adw_switch_row_get_active (self->import_row),
+                                                           adw_switch_row_get_active (self->cleanup_row)));
 }
 
 static void
@@ -464,7 +463,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
 
     self->request = g_object_ref (request);
 
-    GtkWidget *ok = gtk_button_new_with_label (g_paste_prompt_text (confirm ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT));
+    GtkWidget *ok = gtk_button_new_with_label (g_paste_prompt_request_get_accept_label (request));
 
     self->ok = ok;
     gtk_widget_add_css_class (ok, "suggested-action");
@@ -515,18 +514,10 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), self->strength_row);
     }
 
-    /* Whatever the prompt has to say, said once. The standing explanation
-     * depends on which question is being asked, unless the request brings its
-     * own; an error joins it rather than replacing it, and the shell backend
-     * shows both the same way. */
-    const gchar *standing = g_paste_prompt_request_get_description (request);
-
-    if (!standing)
-    {
-        standing = confirm
-            ? g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION)
-            : g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
-    }
+    /* Whatever the prompt has to say, said once: an error joins the standing
+     * explanation rather than replacing it, and the shell backend shows both
+     * the same way. */
+    const gchar *standing = g_paste_prompt_request_get_shown_description (request);
     g_autofree gchar *description = error_message ? g_strconcat (error_message, "\n\n", standing, NULL)
                                                   : NULL;
 

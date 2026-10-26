@@ -93,6 +93,10 @@ struct _GPastePromptInterface
 gboolean              g_paste_prompt_request_get_confirm       (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_description   (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_error_message (GPastePromptRequest *self);
+/* What a passphrase dialog says, worked out once for both: its standing
+ * explanation and the label of the button accepting the passphrase. */
+const gchar          *g_paste_prompt_request_get_shown_description (GPastePromptRequest *self);
+const gchar          *g_paste_prompt_request_get_accept_label      (GPastePromptRequest *self);
 GPasteStorageRemember g_paste_prompt_request_get_remember      (GPastePromptRequest *self);
 gboolean              g_paste_prompt_request_offers_remember   (GPastePromptRequest *self);
 const GPasteStorage  *g_paste_prompt_request_get_offered       (GPastePromptRequest *self,
@@ -246,6 +250,8 @@ gboolean g_paste_prompt_can_import      (GPasteStorage current,
                                          GPasteStorage chosen);
 gboolean g_paste_prompt_backend_changes (GPasteStorage current,
                                          GPasteStorage chosen);
+gboolean g_paste_prompt_cleanup_warns   (gboolean      import,
+                                         gboolean      cleanup);
 
 /* Whether this build can remember a passphrase at all (libsecret): the build's
  * half of what g_paste_prompt_request_offers_remember () answers a prompt

@@ -90,6 +90,7 @@ const context = vm.createContext({
             storage_label: storage => `storage ${storage}`,
             can_import: () => false,
             backend_changes: () => false,
+            cleanup_warns: () => false,
             remember_state: () => [false, true],
             // What it was asked, to be told apart from anything prompt.js
             // would decide for itself.
@@ -109,6 +110,9 @@ function request() {
         answers: [],
         get_confirm: () => true,
         get_description: () => null,
+        // What the C side works out, marked as remember_answer () is.
+        get_shown_description() { return `shown(${this.get_description() ?? this.get_confirm()})`; },
+        get_accept_label() { return `accept(${this.get_confirm()})`; },
         get_error_message: () => null,
         get_remember: () => 0,
         offers_remember: () => false,
@@ -226,9 +230,10 @@ const [otherContent] = dialogs.at(-2).contentLayout.children;
 const [ownContent] = dialogs.at(-1).contentLayout.children;
 const switches = content => [...actors(content)].filter(actor => actor instanceof CheckBox);
 
-assert.equal(otherContent.description, 'Other histories');
+assert.equal(otherContent.description, 'shown(Other histories)');
 assert.equal(switches(otherContent).length, 0);
-assert.equal(ownContent.description, 'PASSPHRASE_DESCRIPTION');
+assert.equal(ownContent.description, 'shown(false)');
+assert.equal(dialogs.at(-1)._okButton.label, 'accept(false)');
 assert.deepEqual(switches(ownContent).map(box => box.label), ['REMEMBER']);
 assert.ok([...actors(ownContent)].some(actor => actor.text === 'REMEMBER_SUBTITLE'));
 

@@ -53,11 +53,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
         const content = new Dialog.MessageDialogContent({
             title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_TITLE),
-            description: request.get_description() ?? (confirm
-                // Translators: shown when choosing a new passphrase for the encrypted history
-                ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_DESCRIPTION)
-                // Translators: shown when unlocking the encrypted history at startup
-                : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_DESCRIPTION)),
+            description: request.get_shown_description(),
         });
 
         this._entry = this._addEntry(content, GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE));
@@ -97,7 +93,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         this.contentLayout.add_child(content);
 
         this._okButton = this.addButton({
-            label: confirm ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_ACCEPT) : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_ACCEPT),
+            label: request.get_accept_label(),
             action: () => this._onOk(),
             default: true,
         });
@@ -389,8 +385,7 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         this._setSensitive(this._import, canImport);
         this._setSensitive(this._cleanup, backendChanges);
 
-        // Deleting the old data without importing it first throws it away.
-        this._warning.visible = this._cleanup.checked && !this._import.checked;
+        this._warning.visible = GPasteDaemon.Prompt.cleanup_warns(this._import.checked, this._cleanup.checked);
     }
 
     _setSensitive(check, sensitive) {

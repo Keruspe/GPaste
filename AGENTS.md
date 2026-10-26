@@ -148,9 +148,10 @@ now written down once; add to the list, not to its consumers.
 **The prompts are built twice, but say one thing.** St and Adwaita share no
 widget vocabulary, so `src/gnome-shell/prompt.js` and `src/daemon/gpaste-prompt-adw.c`
 each build their own dialog -- but every *decision* (`can_keep`, `can_import`,
-`backend_changes`, `passphrase_is_complete`, `remember_state`,
+`backend_changes`, `cleanup_warns`, `passphrase_is_complete`, `remember_state`,
 `remember_answer`, `passphrase_strength`) and every *word*
-(`g_paste_prompt_text()`, `g_paste_prompt_storage_label()`) comes from the C
+(`g_paste_prompt_text()`, `g_paste_prompt_storage_label()`, a passphrase
+request's `get_shown_description()` and `get_accept_label()`) comes from the C
 side. Add a string there, not in a dialog -- and to both dialogs, which
 `tests/gnome-shell/test-prompt.cjs` holds to the same words.
 

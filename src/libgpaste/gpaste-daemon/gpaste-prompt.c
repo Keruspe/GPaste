@@ -189,6 +189,50 @@ g_paste_prompt_request_get_description (GPastePromptRequest *self)
 }
 
 /**
+ * g_paste_prompt_request_get_shown_description:
+ * @self: a #GPastePromptRequest
+ *
+ * What a passphrase dialog explains under its title: the request's own
+ * description (g_paste_prompt_request_get_description()), else the wording
+ * for choosing a new passphrase or for unlocking, as
+ * g_paste_prompt_request_get_confirm() says. Both dialogs ask here, so that
+ * they cannot come to explain one question differently.
+ *
+ * Returns: read-only string
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_shown_description (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    if (self->description)
+        return self->description;
+
+    return g_paste_prompt_text ((self->confirm) ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION
+                                                : G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
+}
+
+/**
+ * g_paste_prompt_request_get_accept_label:
+ * @self: a #GPastePromptRequest
+ *
+ * The label of the button accepting the passphrase: the one for a new
+ * passphrase or the one for unlocking, as g_paste_prompt_request_get_confirm()
+ * says, worked out here for both dialogs as
+ * g_paste_prompt_request_get_shown_description() is.
+ *
+ * Returns: read-only string
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_accept_label (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    return g_paste_prompt_text ((self->confirm) ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT
+                                                : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT);
+}
+
+/**
  * g_paste_prompt_request_get_error_message:
  * @self: a #GPastePromptRequest
  *
@@ -778,6 +822,23 @@ g_paste_prompt_backend_changes (GPasteStorage current,
     return current != G_PASTE_STORAGE_NOOP &&
            chosen != current &&
            g_paste_storage_is_supported (current);
+}
+
+/**
+ * g_paste_prompt_cleanup_warns:
+ * @import: whether importing the existing data is ticked
+ * @cleanup: whether deleting the old data is ticked
+ *
+ * Whether the migration dialog warns that the old data is lost: deleting it
+ * without importing it first throws it away.
+ *
+ * Returns: whether to show the warning
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_cleanup_warns (gboolean import,
+                              gboolean cleanup)
+{
+    return cleanup && !import;
 }
 
 /**
