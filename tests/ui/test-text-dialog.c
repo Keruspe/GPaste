@@ -283,6 +283,108 @@ join_into_a_long_line (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+/* The replace of a selection, as a typed character makes one: its deletion,
+ * then the insertion at the cursor, whatever the deletion did. */
+static void
+type_over_selection (GtkTextBuffer *buffer,
+                     const gchar   *typed)
+{
+    gtk_text_buffer_begin_user_action (buffer);
+    gtk_text_buffer_delete_selection (buffer, TRUE, TRUE);
+    gtk_text_buffer_end_user_action (buffer);
+    gtk_text_buffer_begin_user_action (buffer);
+    gtk_text_buffer_insert_interactive_at_cursor (buffer, typed, -1, TRUE);
+    gtk_text_buffer_end_user_action (buffer);
+}
+
+static void
+on_paste_done (GtkTextBuffer *buffer    G_GNUC_UNUSED,
+               GdkClipboard  *clipboard G_GNUC_UNUSED,
+               gpointer       user_data)
+{
+    *((gboolean *) user_data) = TRUE;
+}
+
+/* The replace of a selection by a paste, through the view's own binding. */
+static void
+paste_over_selection (GtkTextView *view,
+                      const gchar *pasted)
+{
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+    gboolean done = FALSE;
+    gulong id = g_signal_connect (buffer, "paste-done", G_CALLBACK (on_paste_done), &done);
+
+    gdk_clipboard_set_text (gtk_widget_get_clipboard (GTK_WIDGET (view)), pasted);
+    g_signal_emit_by_name (view, "paste-clipboard");
+    while (!done && g_get_monotonic_time () < deadline)
+        g_main_context_iteration (NULL, FALSE);
+    g_signal_handler_disconnect (buffer, id);
+    g_assert_true (done);
+}
+
+/* Typing or pasting over a selection whose deletion would join two lines past
+ * the limit is refused whole: the insertion does not land beside the text it
+ * was meant to replace. A replace whose deletion fits goes through. */
+static void
+replace_into_a_long_line (void)
+{
+    g_autofree gchar *line = make_line (UNDER_THE_LIMIT);
+    g_autofree gchar *text = g_strdup_printf ("%s\n%s\nshort\nshort", line, line);
+
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
+
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, never_submitted, NULL, NULL);
+
+    AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
+    g_assert_nonnull (dialog);
+
+    GtkTextView *view = find_text_view (GTK_WIDGET (dialog));
+    g_assert_nonnull (view);
+
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
+    gint count = gtk_text_buffer_get_char_count (buffer);
+    GtkTextIter start;
+    GtkTextIter end;
+
+    /* The break after the first long line. */
+    gtk_text_buffer_get_iter_at_offset (buffer, &start, UNDER_THE_LIMIT);
+    gtk_text_buffer_get_iter_at_offset (buffer, &end, UNDER_THE_LIMIT + 1);
+    gtk_text_buffer_select_range (buffer, &start, &end);
+    type_over_selection (buffer, "X");
+    g_assert_cmpint (gtk_text_buffer_get_char_count (buffer), ==, count);
+
+    gtk_text_buffer_get_iter_at_offset (buffer, &start, UNDER_THE_LIMIT);
+    gtk_text_buffer_get_iter_at_offset (buffer, &end, UNDER_THE_LIMIT + 1);
+    gtk_text_buffer_select_range (buffer, &start, &end);
+    paste_over_selection (view, "X");
+    g_assert_cmpint (gtk_text_buffer_get_char_count (buffer), ==, count);
+
+    /* The break between the two short lines, replaced. */
+    gtk_text_buffer_get_end_iter (buffer, &end);
+    gtk_text_iter_backward_chars (&end, strlen ("short"));
+    start = end;
+    gtk_text_iter_backward_char (&start);
+    gtk_text_buffer_select_range (buffer, &start, &end);
+    type_over_selection (buffer, "X");
+    g_assert_cmpint (gtk_text_buffer_get_char_count (buffer), ==, count);
+
+    g_autofree gchar *all = NULL;
+
+    gtk_text_buffer_get_bounds (buffer, &start, &end);
+    all = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+    g_assert_true (g_str_has_suffix (all, "\nshortXshort"));
+
+    adw_dialog_force_close (dialog);
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 static GtkWidget *
 find_button (GtkWidget   *root,
              const gchar *label)
@@ -552,6 +654,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog/crlf_lines_opened", "\r\n", open_other_delimiters);
     g_test_add_data_func ("/ui/text_dialog/paragraph_separator_lines_opened", "\u2029", open_other_delimiters);
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
+    g_test_add_func ("/ui/text_dialog/joined_line_replace_refused", replace_into_a_long_line);
     g_test_add_func ("/ui/text_dialog/empty_not_confirmed", empty_not_confirmed);
     g_test_add_func ("/ui/form_dialog/held", form_dialog_held);
     g_test_add_func ("/ui/toast/plain", toast_plain);

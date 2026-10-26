@@ -654,10 +654,51 @@ chars_after_on_line (const GtkTextIter *iter)
     return gtk_text_iter_get_offset (&end) - gtk_text_iter_get_offset (iter);
 }
 
+/* Whether deleting from @start to @end would join two lines into one past the
+ * limit.
+ *
+ * Deleting across a line break makes one line out of the text ahead of @start on
+ * its line and the text behind @end on its own, and two lines each under the
+ * limit can add up to one well past it: the insertion check never sees that,
+ * nothing being inserted, and without this the limit is one Delete key away
+ * from the freeze it exists to prevent (/ui/text_dialog/joined_line_refused). */
+static gboolean
+deletion_has_uncomposable_line (const GtkTextIter *start,
+                                const GtkTextIter *end)
+{
+    /* Within one line, a deletion only ever shortens it. */
+    if (gtk_text_iter_get_line (start) == gtk_text_iter_get_line (end))
+        return FALSE;
+
+    return gtk_text_iter_get_line_offset (start) + chars_after_on_line (end) > MAX_COMPOSABLE_LINE;
+}
+
+/* Whether an insertion at @location is the second half of a replace whose first
+ * half, the deletion of the selection, was refused. GTK replaces a selection
+ * with two emissions, one after the other whatever the first one did -- the
+ * typed text going in at the cursor, a paste at the selection's start -- so the
+ * selection is still there, and the insertion would land beside the very text
+ * it was meant to replace (/ui/text_dialog/joined_line_replace_refused). */
+static gboolean
+replaces_undeletable_selection (GtkTextBuffer     *buffer,
+                                const GtkTextIter *location)
+{
+    GtkTextIter start;
+    GtkTextIter end;
+
+    if (!gtk_text_buffer_get_selection_bounds (buffer, &start, &end))
+        return FALSE;
+    if (gtk_text_iter_compare (location, &start) < 0 || gtk_text_iter_compare (location, &end) > 0)
+        return FALSE;
+
+    return deletion_has_uncomposable_line (&start, &end);
+}
+
 /* Refuse an insertion that would take a line past the limit -- a paste, above
  * all, which is how a line that long gets into a view that refused to open with
- * one. The bell is what says so: a toast would come up behind the dialog it is
- * about. */
+ * one -- or that replaces a selection whose deletion was refused. The bell is
+ * what says so, rung once for a replace, by its deletion: a toast would come up
+ * behind the dialog it is about. */
 static void
 on_text_dialog_insert_text (GtkTextBuffer *buffer,
                             GtkTextIter   *location,
@@ -670,6 +711,12 @@ on_text_dialog_insert_text (GtkTextBuffer *buffer,
     glong before = gtk_text_iter_get_line_offset (location);
     glong after = chars_after_on_line (location);
 
+    if (replaces_undeletable_selection (buffer, location))
+    {
+        g_signal_stop_emission_by_name (buffer, "insert-text");
+        return;
+    }
+
     if (!insertion_has_uncomposable_line (text, size, before, after))
         return;
 
@@ -677,14 +724,8 @@ on_text_dialog_insert_text (GtkTextBuffer *buffer,
     g_signal_stop_emission_by_name (buffer, "insert-text");
 }
 
-/* Refuse a deletion that would join two lines into one past the limit.
- *
- * Deleting across a line break makes one line out of the text ahead of @start on
- * its line and the text behind @end on its own, and two lines each under the
- * limit can add up to one well past it: the insertion check above never sees
- * that, nothing being inserted, and without this the limit is one Delete key
- * away from the freeze it exists to prevent. Refused the way an insertion is
- * (/ui/text_dialog/joined_line_refused). */
+/* Refuse a deletion that would join two lines into one past the limit, the way
+ * an insertion is. */
 static void
 on_text_dialog_delete_range (GtkTextBuffer *buffer,
                              GtkTextIter   *start,
@@ -693,11 +734,7 @@ on_text_dialog_delete_range (GtkTextBuffer *buffer,
 {
     GtkWidget *view = user_data;
 
-    /* Within one line, a deletion only ever shortens it. */
-    if (gtk_text_iter_get_line (start) == gtk_text_iter_get_line (end))
-        return;
-
-    if (gtk_text_iter_get_line_offset (start) + chars_after_on_line (end) <= MAX_COMPOSABLE_LINE)
+    if (!deletion_has_uncomposable_line (start, end))
         return;
 
     gtk_widget_error_bell (view);
