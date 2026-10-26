@@ -466,7 +466,8 @@
       checksum naming its file. A file list is matched by its uris and by the
       paths its row shows, decoded and with the home directory written "~". A
       query longer than 4096 bytes, or one that is no regular expression, is
-      .Error.InvalidArgument.
+      .Error.InvalidArgument, the message of the latter saying what is wrong
+      with it.
     -->
     <method name="Search">
       <arg type="s"         direction="in"  name="query"/>

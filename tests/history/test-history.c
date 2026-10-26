@@ -3232,6 +3232,13 @@ test_search_queries (void)
 
     g_assert_null (g_paste_daemon_methods_search (&methods, "c++ (gcc", &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+
+    /* Saying what is wrong with it, in GLib's words. */
+    g_autoptr (GError) glib_error = NULL;
+    g_autoptr (GRegex) none = g_regex_new ("c++ (gcc", G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, &glib_error);
+
+    g_assert_null (none);
+    g_assert_nonnull (strstr (error->message, glib_error->message));
     g_clear_error (&error);
 
     g_autofree gchar *long_query = g_strnfill (G_PASTE_HISTORY_MAX_SEARCH_LENGTH + 1, 'a');

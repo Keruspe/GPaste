@@ -2836,14 +2836,17 @@ g_paste_history_search_items (GPasteHistory *self,
     g_debug ("history: search '%s'", pattern);
 
     G_PASTE_LOCK_HISTORY;
+    g_autoptr (GError) regex_error = NULL;
     g_autoptr (GRegex) regex = g_regex_new (pattern,
                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
                                             G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
-                                            NULL);
+                                            &regex_error);
 
+    /* GLib's own words after ours: what is wrong with the query, rather than
+     * that something is. */
     if (!regex)
     {
-        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression");
+        g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression: %s", regex_error->message);
         return NULL;
     }
 
