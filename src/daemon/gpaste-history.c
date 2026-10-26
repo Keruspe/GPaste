@@ -435,7 +435,11 @@ _g_paste_history_add (GPasteHistory *self,
     {
         GPasteItem *old_first = history->data;
 
-        if (g_paste_item_equals (old_first, item))
+        /* By value on add, where @item is a new object; by identity on select,
+         * where it is one of the history's own: two items may hold the same
+         * text -- a replace can make them so -- and the one selected is the
+         * one to move, not whichever of them comes first. */
+        if ((new_selection) ? g_paste_item_equals (old_first, item) : (old_first == item))
             return;
 
         gboolean replaced = new_selection && g_paste_history_private_is_growing_line (priv, old_first, item);
@@ -479,7 +483,7 @@ _g_paste_history_add (GPasteHistory *self,
 
         for (history = (replaced) ? priv->history : priv->history->next; history; history = history->next)
         {
-            if (g_paste_item_equals (history->data, item))
+            if ((new_selection) ? g_paste_item_equals (history->data, item) : (history->data == item))
             {
                 older = history;
                 break;

@@ -718,6 +718,46 @@ test_history_name_valid (void)
         g_assert_false (g_paste_history_name_is_valid (invalid[i]));
 }
 
+/* Two items may hold the same text, a replace making them so: selecting the
+ * deeper one moves that one, the other staying where it is, rather than the
+ * first of them unlinked and the selected one listed twice. */
+static void
+test_select_moves_the_item_selected (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "select-twin");
+    g_paste_history_add (history, g_paste_text_item_new ("b"));
+    g_paste_history_add (history, g_paste_text_item_new ("a"));
+    g_paste_history_add (history, g_paste_text_item_new ("y"));
+
+    g_autofree gchar *first = dup_uuid_at (history, 1);
+    g_autofree gchar *b = dup_uuid_at (history, 2);
+
+    /* A new item, of a uuid of its own, in b's place. */
+    g_paste_history_replace (history, b, "a");
+
+    g_autofree gchar *twin = dup_uuid_at (history, 2);
+
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 2)), ==, "a");
+    g_assert_true (g_paste_history_select (history, twin));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, twin);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 1)), ==, "y");
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 2)), ==, first);
+
+    /* And the head holding the same text is not the one selected either. */
+    g_assert_true (g_paste_history_select (history, first));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, first);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 1)), ==, twin);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 2)), ==, "y");
+    settle_writes ("select-twin");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -725,6 +765,7 @@ main (int argc, char **argv)
     g_test_add_func ("/history/select-counts-image-once", test_select_counts_image_once);
     g_test_add_func ("/history/blank-value-kept", test_blank_value_kept);
     g_test_add_func ("/history/stray-checksum-skipped", test_stray_checksum_skipped);
+    g_test_add_func ("/history/select-moves-the-item-selected", test_select_moves_the_item_selected);
     g_test_add_func ("/history/invalid-checksum-dropped", test_invalid_checksum_dropped);
     g_test_add_func ("/history/unnamable-image-left-out", test_unnamable_image_left_out);
     g_test_add_func ("/history/growing-line-drops-older-copy", test_growing_line_drops_older_copy);

@@ -77,7 +77,9 @@ the graphical tool, the GNOME Shell menu and the overview's provider goes out
 escaped as text, never lowercased. It also checks that
 `g_paste_history_name_is_valid ()` refuses a history name holding a "/", and
 only that, that a history-name setting holding one loads the default history
-instead, said in an escaped warning, and that a path is never built from one.
+instead, said in an escaped warning, and that a path is never built from one;
+and that selecting one of two items holding the same text moves the one
+selected, the other staying where it is.
 
 `test-search-provider` links the same daemon code and runs the overview's search
 provider against a fake daemon on a private `GTestDBus` bus: a result's metas
