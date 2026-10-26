@@ -47,6 +47,7 @@ static Barrier barrier;
 static gboolean (*real_write) (GPasteStorageBackend *, const gchar *, const GList *);
 static gboolean (*real_read) (GPasteStorageBackend *, const gchar *, GCancellable *, GList **, gsize *);
 static void (*real_add_item) (GPasteStorageBackend *, const gchar *, GPasteItem *, const GList *);
+static void (*real_clear) (GPasteStorageBackend *, const gchar *, const GList *);
 
 /* Holds the worker writing @name, when the case asked for that, until the case
  * releases it; answers whether it did. */
@@ -136,6 +137,18 @@ g_paste_storage_backend_add_item (GPasteStorageBackend *backend,
         ++adds_with_snapshot;
 
     real_add_item (backend, name, item, history);
+    mark_written (held);
+}
+
+/* What an incremental backend is handed for an emptying, held the same way. */
+void
+g_paste_storage_backend_clear_history (GPasteStorageBackend *backend,
+                                       const gchar          *name,
+                                       const GList          *history)
+{
+    gboolean held = hold_write (name, history);
+
+    real_clear (backend, name, history);
     mark_written (held);
 }
 
@@ -1279,6 +1292,73 @@ test_count_pending_incremental (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
+/* Another history emptied is counted as empty while its emptying is still
+ * out: the daemon has answered it as emptied, and a listing counting the store
+ * would paint the old count back over the 0. */
+static void
+test_count_pending_emptied_other (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "count-stays-current");
+
+    g_autolist (GPasteItem) other = g_list_prepend (NULL, g_paste_text_item_new ("other stored item"));
+
+    real_write (backend, "count-emptied-elsewhere", other);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 1);
+    g_mutex_lock (&barrier.mutex);
+    barrier.name = "count-emptied-elsewhere";
+    barrier.hold_write = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_empty_history_async (&methods, "count-emptied-elsewhere", on_emptied, &result);
+    wait_worker ();
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 0);
+    release_worker ();
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
+    g_assert_no_error (error);
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 0);
+}
+
+/* An incremental store's emptying carries no snapshot either, and a history
+ * emptied and left before it lands holds nothing all the same, whatever its
+ * store still holds. */
+static void
+test_count_pending_emptied (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+    g_autoptr (GError) error = NULL;
+
+    fixture_in (&settings, &backend, &history, "count-emptied", G_PASTE_STORAGE_SQLITE);
+    g_paste_history_add (history, g_paste_text_item_new ("first"));
+    g_paste_history_add (history, g_paste_text_item_new ("second"));
+    finish_history (history);
+    g_paste_history_resume (history);
+
+    barrier.hold_write = TRUE;
+    g_assert_true (g_paste_history_empty (history, &error));
+    g_assert_no_error (error);
+    wait_worker ();
+    g_paste_history_switch (history, "count-emptied-next");
+
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied"), ==, 0);
+    release_worker ();
+    wait_load (history);
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied"), ==, 0);
+}
+
 /* Selecting an item moves it and displaces nothing: its write carries no copy
  * of the whole history to reconcile, which nothing could be dropped by. */
 static void
@@ -1421,8 +1501,10 @@ main (int    argc,
     real_write = dlsym (RTLD_NEXT, "g_paste_storage_backend_write_history");
     real_read = dlsym (RTLD_NEXT, "g_paste_storage_backend_read_history");
     real_add_item = dlsym (RTLD_NEXT, "g_paste_storage_backend_add_item");
+    real_clear = dlsym (RTLD_NEXT, "g_paste_storage_backend_clear_history");
     g_assert_nonnull (real_write);
     g_assert_nonnull (real_read);
+    g_assert_nonnull (real_clear);
     g_assert_nonnull (real_add_item);
 
     g_test_add_func ("/history-ordering/delete-pending", test_delete_pending);
@@ -1453,6 +1535,8 @@ main (int    argc,
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history-ordering/count-pending-password-changes", test_count_pending_password_changes);
     g_test_add_func ("/history-ordering/count-pending-incremental", test_count_pending_incremental);
+    g_test_add_func ("/history-ordering/count-pending-emptied", test_count_pending_emptied);
+    g_test_add_func ("/history-ordering/count-pending-emptied-other", test_count_pending_emptied_other);
     g_test_add_func ("/history-ordering/select-no-snapshot", test_select_carries_no_snapshot);
     g_test_add_data_func ("/history-ordering/count-pending-incremental-images-off", GINT_TO_POINTER (COUNT_INCREMENTAL | COUNT_IMAGES), test_count_pending_settings);
     g_test_add_data_func ("/history-ordering/count-pending-incremental-capped", GINT_TO_POINTER (COUNT_INCREMENTAL), test_count_pending_settings);

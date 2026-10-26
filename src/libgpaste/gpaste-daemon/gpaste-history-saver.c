@@ -651,8 +651,9 @@ g_paste_history_saver_count_stored (GPasteHistorySaver *self,
     return count;
 }
 
-/* The latest write still out for @name, a copy's aside: one reads a store,
- * unread yet, and the history it writes is listed once it has landed. */
+/* The latest write still out to @name, a copy's included: it writes @name
+ * whole, from the snapshot it carries, from nothing when it empties @name
+ * (g_paste_history_saver_empty ()), or from a store it has yet to read. */
 static GPasteHistorySaverWrite *
 g_paste_history_saver_latest_write (GPasteHistorySaver *self,
                                     const gchar        *name)
@@ -661,11 +662,11 @@ g_paste_history_saver_latest_write (GPasteHistorySaver *self,
     {
         GPasteHistorySaverWrite *pending = link->data;
 
-        if (pending->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (pending->name, name))
+        if (g_paste_str_equal (pending->name, name))
             return pending;
     }
 
-    if (self->writing && self->writing->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (self->writing->name, name))
+    if (self->writing && g_paste_str_equal (self->writing->name, name))
         return self->writing;
 
     return NULL;
@@ -698,11 +699,17 @@ g_paste_history_saver_count_pending (GPasteHistorySaver *self,
     if (!latest)
         return FALSE;
 
-    /* A snapshot -- an emptied history's being none at all -- is counted as
-     * the store counts it once it holds it, by the settings in force now; a
-     * write carrying none -- an incremental backend's add, remove or replace --
-     * by what the history held as it left @name, the same way. */
-    if (latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history)
+    /* An emptying leaves nothing, whatever the store holds until it lands: an
+     * incremental backend's carries no snapshot, and the history left after it
+     * none to count either; another history's is a copy of nothing, answered
+     * by the daemon as emptied before it lands. A snapshot is counted as the
+     * store counts it once it holds it, by the settings in force now; a write
+     * carrying none -- an incremental backend's add, remove or replace -- by
+     * what the history held as it left @name, the same way. A copy from a
+     * store it has yet to read leaves the count to the store. */
+    if (latest->op == G_PASTE_HISTORY_SAVE_CLEAR || (latest->op == G_PASTE_HISTORY_SAVE_COPY && !latest->history && !latest->source))
+        *count = 0;
+    else if (latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history)
         *count = g_paste_history_saver_count_stored (self, latest->history);
     else if (latest->counted)
         *count = g_paste_history_saver_count_stored (self, latest->counted);
@@ -735,8 +742,9 @@ g_paste_history_saver_left (GPasteHistorySaver *self,
     GPasteHistorySaverWrite *latest = g_paste_history_saver_latest_write (self, name);
 
     /* The one in flight included: its worker reads none of @counted, which
-     * only the main thread touches, as it does the write's free. */
-    if (!latest || latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history || latest->counted)
+     * only the main thread touches, as it does the write's free. A copy is
+     * never counted by it. */
+    if (!latest || latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->op == G_PASTE_HISTORY_SAVE_COPY || latest->history || latest->counted)
         return;
 
     for (guint i = history->len; i > 0; --i)
