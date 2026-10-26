@@ -2345,6 +2345,15 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
     }
     else if (!count_only)
     {
+        /* A load given up on creates nothing: the one superseded by a delete
+         * of its history would bring that history back, empty. Asked once the
+         * file was found missing, which a delete cancelling the load before
+         * its unlink can only make it find after the cancel. A history that
+         * had no file to unlink can still come back, should the delete fall
+         * between this check and the create below: two calls' worth. */
+        if (g_cancellable_is_cancelled (cancellable))
+            return FALSE;
+
         /* Create the empty file to be listed as an available history */
         if (g_paste_util_ensure_history_dir_exists ())
         {

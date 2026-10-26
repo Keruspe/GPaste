@@ -1784,12 +1784,20 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
-    /* Opening creates the database on first read, so a fresh history shows up
-     * in listings just like the file backend's empty placeholder. */
-    sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
     *history = NULL;
     *size = 0;
+
+    /* As in the file flavour's read: a load given up on creates nothing. Asked
+     * under the lock a delete takes as well: a delete that cancelled this load
+     * and took the lock first is seen here, and one coming later waits for this
+     * read to be done before it unlinks. */
+    if (g_cancellable_is_cancelled (cancellable))
+        return FALSE;
+
+    /* Opening creates the database on first read, so a fresh history shows up
+     * in listings just like the file backend's empty placeholder. */
+    sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
     /* A NULL db means the (possibly encrypted) database is present but could not
      * be opened/decrypted: report the failure so a caller never mistakes it for

@@ -1707,6 +1707,36 @@ test_unopenable_store_out_of_reach (void)
  * ticking them anyway is clamped: reading the source through the backend that
  * stands in for it would import nothing, and deleting through it would delete
  * another flavour's histories. */
+/* A read given up on before it reached the store creates none: a load a delete
+ * of its history superseded would bring that history back, empty. */
+static void
+test_cancelled_read_creates_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GCancellable) cancelled = g_cancellable_new ();
+    GPasteStorage kinds[] = {
+        G_PASTE_STORAGE_FILE,
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_SQLITE,
+#endif
+    };
+
+    g_cancellable_cancel (cancelled);
+    g_assert_true (g_paste_util_ensure_history_dir_exists ());
+
+    for (gsize i = 0; i < G_N_ELEMENTS (kinds); ++i)
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (kinds[i], settings);
+        g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "given-up");
+        g_autolist (GPasteItem) items = NULL;
+        gsize size = 0;
+
+        g_paste_storage_backend_read_history (backend, "given-up", cancelled, &items, &size);
+        g_assert_null (items);
+        g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    }
+}
+
 /* A history of a flavour this build cannot delete is refused, not skipped: the
  * start taking back what an import left would otherwise read its copies as
  * gone. A kind past the table stands for one, and so do the SQLite flavours in
@@ -7535,6 +7565,7 @@ main (int    argc,
     g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
+    g_test_add_func ("/storage/cancelled-read-creates-nothing", test_cancelled_read_creates_nothing);
     g_test_add_func ("/storage/file-diverged-history", test_file_diverged_history);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/passphrase/damaged-active-asked-once", test_passphrase_damaged_active_asked_once);
