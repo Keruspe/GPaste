@@ -2341,6 +2341,52 @@ noisy_image_new (void)
     return g_paste_image_item_new (texture);
 }
 
+/* An item left out as too large is one the model holds and the store does
+ * not: a displacing add's count takes it away, or the row the add displaced
+ * would make up for it and stay; and an edit of it, which no row stands for,
+ * has the next full write put it in. */
+static void
+test_sqlite_left_out_accounted (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*too large to store*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "left-out-accounted";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autofree gchar *large = g_strnfill (2048, 'x');
+    g_autoptr (GPasteItem) big = g_paste_text_item_new (large);
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GPasteItem) x = g_paste_text_item_new ("x");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (g_list_prepend (NULL, b), a), big);
+
+    refused_bind_length = 1024;
+    g_paste_storage_backend_write_history (backend, name, history);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+
+    /* x in, b displaced. */
+    history = g_list_remove (history, b);
+    history = g_list_prepend (history, x);
+    g_paste_storage_backend_add_item (backend, name, x, history);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items WHERE value = 'b';"), ==, 0);
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+
+    g_autoptr (GPasteItem) edited = g_paste_text_item_new ("edited");
+
+    g_list_find (history, big)->data = edited;
+    g_paste_storage_backend_replace_item (backend, name, g_paste_item_get_uuid (big), edited, history);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+    refused_bind_length = 0;
+}
+
 /* An item too large for a row is left out of the store, the rest of its
  * history written around it: refused, it would fail every write of that
  * history for as long as the history held it -- or, bound as the NULL a
@@ -6764,6 +6810,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/schema/upgraded-meanwhile", test_schema_upgraded_meanwhile);
     g_test_add_func ("/storage/sqlite/eviction-checkpoints-nothing", test_sqlite_eviction_checkpoints_nothing);
     g_test_add_func ("/storage/sqlite/checkpoint-spares-readers", test_sqlite_checkpoint_spares_readers);
+    g_test_add_func ("/storage/sqlite/left-out-accounted", test_sqlite_left_out_accounted);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/sqlite/rekey-checkpoints", test_sqlite_rekey_checkpoints);
 #endif

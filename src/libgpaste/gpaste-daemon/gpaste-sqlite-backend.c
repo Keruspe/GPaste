@@ -80,6 +80,11 @@ struct _GPasteSqliteBackend
     sqlite3          *db;
     gchar            *db_path;
     GMutex            lock;
+    /* The items left out of their history's store as too large for a row, by
+     * uuid, under @lock: the model holds them where the store does not, which
+     * reconcile ()'s count has to take away -- the store holding an extra row
+     * would otherwise count as many rows as the model holds stored items. */
+    GHashTable       *left_out;
     /* The histories a write failed for since their last full one that landed:
      * nothing retries a write, and the next add's reconciliation only drops
      * rows, so the store would lag the model for good. The next add, which
@@ -1094,10 +1099,11 @@ g_paste_sqlite_backend_left_out (sqlite3 *db,
  * flavour, rather than failing the write: every write of its history would
  * carry it, and fail, for as long as the history held it. */
 static gboolean
-g_paste_sqlite_backend_upsert_item (sqlite3      *db,
-                                    const guchar *key,
-                                    GPasteItem   *item,
-                                    gint64        rank)
+g_paste_sqlite_backend_upsert_item (GPasteSqliteBackend *backend,
+                                    sqlite3             *db,
+                                    const guchar        *key,
+                                    GPasteItem          *item,
+                                    gint64               rank)
 {
     sqlite3_stmt *stmt = NULL;
 
@@ -1123,6 +1129,8 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
 
     sqlite3_finalize (stmt);
 
+    if (left_out)
+        g_hash_table_add (backend->left_out, g_strdup (g_paste_item_get_uuid (item)));
     if (ret != SQLITE_ROW)
         return left_out;
 
@@ -1132,7 +1140,8 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
 /* How many of @history's items this backend actually persists. Used to rank a
  * full rewrite (front item gets the highest rank) and to tell whether the store
  * has drifted from the snapshot during reconcile — one definition so the two can
- * never disagree on which items count. */
+ * never disagree on which items count, the reconciliation taking away those left
+ * out as too large (@left_out), which the ranking leaves gaps for. */
 static gint64
 g_paste_sqlite_backend_count_stored (GPasteStorageBackend *self,
                                      const GList          *history)
@@ -1293,7 +1302,7 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
         if (!g_paste_storage_backend_stores_item (self, item))
             continue;
 
-        success = g_paste_sqlite_backend_upsert_item (db, key, item, rank--);
+        success = g_paste_sqlite_backend_upsert_item (backend, db, key, item, rank--);
     }
 
     if (began)
@@ -1855,7 +1864,14 @@ g_paste_sqlite_backend_reconcile (GPasteStorageBackend *self,
                                   sqlite3              *db,
                                   const GList          *history)
 {
+    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     gint64 expected = g_paste_sqlite_backend_count_stored (self, history);
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        if (g_hash_table_contains (backend->left_out, g_paste_item_get_uuid (h->data)))
+            --expected;
+    }
 
     /* The common case: nothing rode along, the store already matches. Only
      * build the uuid set (and scan the table) when it actually does not, or
@@ -1972,7 +1988,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
          * newest item 1, the bottom of the store, and commit it there. */
         gint64 top = g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", -1);
 
-        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (db, key, item, top + 1));
+        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (backend, db, key, item, top + 1));
     }
 
     /* A %NULL history says nothing was displaced by this add, so no row can
@@ -2094,8 +2110,9 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     if (ret == SQLITE_OK)
         ret = sqlite3_step (stmt);
 
-    /* No row means the replaced item was never persisted (e.g. renaming a
-     * password): nothing to update. */
+    /* No row means the replaced item was never persisted -- left out as too
+     * large -- and the replacement, which this flavour stores, is then written
+     * by no update: the next full write is what puts it in. */
     gboolean found = (ret == SQLITE_ROW);
     gint64 item_id = found ? sqlite3_column_int64 (stmt, 0) : 0;
     gboolean left_out = FALSE;
@@ -2113,12 +2130,12 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     if (left_out)
     {
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        g_hash_table_add (backend->left_out, g_strdup (g_paste_item_get_uuid (item)));
         g_paste_sqlite_backend_remove_locked (backend, db, name, old_uuid);
         return;
     }
 
-    if (success && found)
-        success = g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
+    success = success && found && g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 
     if (!g_paste_sqlite_backend_finish_transaction (db, success))
         g_paste_sqlite_backend_diverge (backend, name);
@@ -2305,6 +2322,7 @@ g_paste_sqlite_backend_finalize (GObject *object)
      * read it for as long as they can run, which is until the last reference
      * goes. */
     g_clear_pointer (&self->diverged, g_hash_table_unref);
+    g_clear_pointer (&self->left_out, g_hash_table_unref);
     g_clear_pointer (&self->db, g_paste_sqlite_backend_close);
     g_clear_pointer (&self->db_path, g_free);
     g_clear_pointer (&self->forgotten, g_free);
@@ -2476,6 +2494,7 @@ static void
 g_paste_sqlite_backend_init (GPasteSqliteBackend *self)
 {
     g_mutex_init (&self->lock);
+    self->left_out = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     self->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     g_mutex_init (&self->diverged_lock);
     g_mutex_init (&self->forgotten_lock);
