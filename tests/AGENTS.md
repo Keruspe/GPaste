@@ -244,7 +244,9 @@ is an error alone and left out of a list; a file path not in UTF-8, a relative
 one's working directory included, is refused before anything is sent, and a
 NULL one at the precondition; and a Reexecute the stand-in leaves unanswered by
 closing its connection is a success where one refused with
-`G_IO_ERROR_NOT_DIRECTORY`, NoReply's code in another domain, is not.
+`G_IO_ERROR_NOT_DIRECTORY`, NoReply's code in another domain, is not; and
+BackupHistory, EmptyHistory and ListHistories wait for their answer past the
+proxy's default timeout (`store-calls-wait`).
 
 `test-client-give-up` compiles `gpaste-client.c` in with
 `G_PASTE_CLIENT_GIVE_UP_SECONDS` at two seconds, the two minutes a followed

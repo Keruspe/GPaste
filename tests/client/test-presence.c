@@ -994,6 +994,87 @@ test_doctor_answers (void)
     stand_in_stop (&stand_in);
 }
 
+/* Past the proxy's default timeout, which the test cuts to a fifth of a
+ * second: the stand-in answering, as the daemon does, once it has been through
+ * the store. */
+#define STORE_ANSWER_MS 600
+
+static gboolean
+answer_store_call (gpointer user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    const gchar *method = g_dbus_method_invocation_get_method_name (invocation);
+
+    if (g_paste_str_equal (method, "ListHistories"))
+        g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("(@a(st) [('history', 0)],)"));
+    else
+        g_dbus_method_invocation_return_value (invocation, NULL);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Connected swapped, so that one handler serves the three methods: the
+ * arguments past the invocation are not read. */
+static gboolean
+store_call_later (gpointer               data G_GNUC_UNUSED,
+                  GDBusMethodInvocation *invocation)
+{
+    g_source_set_name_by_id (g_timeout_add (STORE_ANSWER_MS, answer_store_call, invocation), "[GPaste] test store answer");
+
+    return TRUE;
+}
+
+/* BackupHistory, EmptyHistory and ListHistories wait for their answer past the
+ * proxy's default timeout: the daemon answers each once it has written or
+ * counted a store, which slow storage or a long queue of writes can take
+ * longer than that over, and a backup reported failed is one still written. */
+static void
+test_store_calls_wait (void)
+{
+    StandIn stand_in = { 0 };
+    g_autoptr (GPasteClient) client = ready_client (&stand_in);
+    Reply reply = { 0 };
+
+    g_signal_connect_swapped (stand_in.skeleton, "handle-backup-history", G_CALLBACK (store_call_later), NULL);
+    g_signal_connect_swapped (stand_in.skeleton, "handle-empty-history", G_CALLBACK (store_call_later), NULL);
+    g_signal_connect_swapped (stand_in.skeleton, "handle-list-histories", G_CALLBACK (store_call_later), NULL);
+    g_dbus_proxy_set_default_timeout (G_DBUS_PROXY (client), STORE_ANSWER_MS / 3);
+
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_client_backup_history (client, "history", "backup", NULL, on_replied, &reply);
+
+        g_autoptr (GAsyncResult) result = wait_reply (&reply);
+
+        g_paste_client_backup_history_finish (client, result, &error);
+        g_assert_no_error (error);
+    }
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_client_empty_history (client, "other", NULL, on_replied, &reply);
+
+        g_autoptr (GAsyncResult) result = wait_reply (&reply);
+
+        g_paste_client_empty_history_finish (client, result, &error);
+        g_assert_no_error (error);
+    }
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_client_list_histories (client, NULL, on_replied, &reply);
+
+        g_autoptr (GAsyncResult) result = wait_reply (&reply);
+        g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_finish (client, result, &error);
+
+        g_assert_no_error (error);
+        g_assert_cmpuint (g_list_length (histories), ==, 1);
+    }
+
+    stand_in_stop (&stand_in);
+}
+
 /* What the stand-in answers GetItem and GetHistory with. */
 static const gchar *served_uuid;
 static guint32      served_kind;
@@ -1587,5 +1668,6 @@ main (int argc, char **argv)
     g_test_add_func ("/client/calls/add-file-null", test_add_file_null);
     g_test_add_func ("/client/calls/reexecute-answers", test_reexecute_answers);
     g_test_add_func ("/client/calls/doctor-answers", test_doctor_answers);
+    g_test_add_func ("/client/calls/store-calls-wait", test_store_calls_wait);
     return g_paste_test_env_run ();
 }

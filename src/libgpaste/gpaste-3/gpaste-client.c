@@ -249,7 +249,6 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
         }                                                                                                \
     } while (FALSE)
 
-
 /* A single item's reply, or an error for one GPaste's own daemon never sends:
  * an item with no valid uuid, which the parser leaves out
  * (g_paste_util_get_dbus_item_result ()), a call that succeeded handing back
@@ -278,7 +277,39 @@ g_paste_client_strip_remote_error (GError **error)
         g_dbus_error_strip_remote_error (*error);
 }
 
-#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS, STRINGS)                                      \
+/* Every method but the ones below is answered out of what the daemon already
+ * holds, so the GDBusProxy default is as much time as any of them can need.
+ * Upload and UploadAndCopy are one exception: they answer only once the
+ * pastebin has taken the paste, a network round trip a large item or a loaded
+ * service pushes well past those 25 seconds -- and a call that times out
+ * reports a failure the upload did not have, having already succeeded on the
+ * daemon's side.
+ *
+ * BackupHistory and EmptyHistory answer once a worker thread has been through
+ * a store, ListHistories once the daemon has been through every other one: a
+ * backup writes the whole copy behind the writes already out, a write and a
+ * sync per image for a history of screenshots; emptying another history
+ * writes its store; a listing counts every other history in its own, deriving
+ * a key for each encrypted one. Slow storage or a long queue pushes them past
+ * the default too, and a backup that timed out is one still being written,
+ * which a retry is refused for.
+ *
+ * Reexecute is another: expiry waits for the selections to be identified.
+ * Each wait has a sixty-second deadline and completion revalidation retries
+ * for at most thirty seconds, so this allowance also covers the final wait.
+ * The CLI preserves deadline errors; only an unsupported method uses SIGUSR1.
+ *
+ * Doctor is the last, and waits for as long as it takes: the check answers once
+ * the user has typed whatever passphrase it asks for, or turned it down.
+ */
+#define G_PASTE_CLIENT_TIMEOUT_DEFAULT   -1
+#define G_PASTE_CLIENT_TIMEOUT_UPLOAD    (10 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_STORE     (10 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_REEXECUTE (2 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_DOCTOR    G_MAXINT
+
+/* A method that answers nothing, waiting @timeout for its reply. */
+#define G_PASTE_CLIENT_METHOD_FULL(name, timeout, PARAMS, ARGS, STRINGS)                        \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
@@ -291,7 +322,7 @@ g_paste_client_strip_remote_error (GError **error)
                                                                                                 \
         g_paste_daemon3_call_##name##_sync (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                \
                                             G_DBUS_CALL_FLAGS_NONE,                             \
-                                            -1, /* timeout */                                   \
+                                            timeout,                                            \
                                             NULL, /* cancellable */                             \
                                             error);                                             \
         g_paste_client_strip_remote_error (error);                                              \
@@ -308,7 +339,7 @@ g_paste_client_strip_remote_error (GError **error)
                                                                                                 \
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
-                                     -1, /* timeout */                                          \
+                                     timeout,                                                   \
                                      cancellable,                                               \
                                      callback,                                                  \
                                      user_data);                                                \
@@ -329,25 +360,8 @@ g_paste_client_strip_remote_error (GError **error)
         g_paste_client_strip_remote_error (error);                                              \
     }
 
-/* Every method but four is answered out of what the daemon already holds, so
- * the GDBusProxy default is as much time as any of them can need. Upload and
- * UploadAndCopy are one exception: they answer only once the pastebin has
- * taken the paste, a network round trip a large item or a loaded service pushes
- * well past those 25 seconds -- and a call that times out reports a failure the
- * upload did not have, having already succeeded on the daemon's side.
- *
- * Reexecute is another: expiry waits for the selections to be identified.
- * Each wait has a sixty-second deadline and completion revalidation retries
- * for at most thirty seconds, so this allowance also covers the final wait.
- * The CLI preserves deadline errors; only an unsupported method uses SIGUSR1.
- *
- * Doctor is the last, and waits for as long as it takes: the check answers once
- * the user has typed whatever passphrase it asks for, or turned it down.
- */
-#define G_PASTE_CLIENT_TIMEOUT_DEFAULT   -1
-#define G_PASTE_CLIENT_TIMEOUT_UPLOAD    (10 * 60 * 1000)
-#define G_PASTE_CLIENT_TIMEOUT_REEXECUTE (2 * 60 * 1000)
-#define G_PASTE_CLIENT_TIMEOUT_DOCTOR    G_MAXINT
+#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS, STRINGS)                                      \
+    G_PASTE_CLIENT_METHOD_FULL (name, G_PASTE_CLIENT_TIMEOUT_DEFAULT, PARAMS, ARGS, STRINGS)
 
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
@@ -681,8 +695,8 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
  *
  * Backup the current history
  */
-G_PASTE_CLIENT_METHOD (backup_history,
-                       (const gchar *history, const gchar *backup), (history, backup), (history, backup))
+G_PASTE_CLIENT_METHOD_FULL (backup_history, G_PASTE_CLIENT_TIMEOUT_STORE,
+                            (const gchar *history, const gchar *backup), (history, backup), (history, backup))
 
 /**
  * g_paste_client_change_passphrase_sync:
@@ -945,8 +959,8 @@ g_paste_client_doctor_finish (GPasteClient *self,
  *
  * Empty the history from the #GPasteDaemon
  */
-G_PASTE_CLIENT_METHOD (empty_history,
-                       (const gchar *name), (name), (name))
+G_PASTE_CLIENT_METHOD_FULL (empty_history, G_PASTE_CLIENT_TIMEOUT_STORE,
+                            (const gchar *name), (name), (name))
 
 /**
  * g_paste_client_get_item_sync:
@@ -1371,10 +1385,10 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
  *
  * Returns: (element-type GPasteClientHistory) (transfer full): a newly allocated list of histories
  */
-G_PASTE_CLIENT_METHOD_RET (list_histories,
-                           GList *, NULL,
-                           g_autoptr (GVariant) histories = NULL, &histories, g_paste_util_get_dbus_histories_result (histories),
-                           (), (), ())
+G_PASTE_CLIENT_METHOD_RET_FULL (list_histories, G_PASTE_CLIENT_TIMEOUT_STORE,
+                                GList *, NULL,
+                                g_autoptr (GVariant) histories = NULL, &histories, g_paste_util_get_dbus_histories_result (histories),
+                                (), (), ())
 
 /**
  * g_paste_client_merge_sync:
