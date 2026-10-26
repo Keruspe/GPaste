@@ -335,6 +335,66 @@ test_unnamable_image_left_out (void)
     settle_writes ("unnamable-image");
 }
 
+/* A line growing over the head replaces it, and an older copy of the line it
+ * grew into goes as any duplicate does: the history then lists it once. */
+static void
+test_growing_line_drops_older_copy (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, TRUE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "growing-line");
+    g_paste_history_add (history, g_paste_text_item_new ("abcdef"));
+    g_paste_history_add (history, g_paste_text_item_new ("x"));
+    g_paste_history_add (history, g_paste_text_item_new ("abc"));
+    g_paste_history_add (history, g_paste_text_item_new ("abcdef"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "abcdef");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 1)), ==, "x");
+
+    /* A line the grown one merely ends with is another item, kept: the exact
+     * copy deeper is the one that goes. */
+    g_paste_history_add (history, g_paste_text_item_new ("def"));
+    g_paste_history_add (history, g_paste_text_item_new ("abcde"));
+    g_paste_history_add (history, g_paste_text_item_new ("abcdef"));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "abcdef");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 1)), ==, "def");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 2)), ==, "x");
+
+    settle_writes ("growing-line");
+
+    /* Nor when the head stays: "x" grows into nothing, and the "c" a new "abc"
+     * ends with is kept, its exact copy deeper the one that goes. */
+    g_autoptr (GPasteHistory) kept = g_paste_history_new (settings);
+
+    g_paste_history_load (kept, "growing-line-kept");
+    g_paste_history_add (kept, g_paste_text_item_new ("abc"));
+    g_paste_history_add (kept, g_paste_text_item_new ("c"));
+    g_paste_history_add (kept, g_paste_text_item_new ("x"));
+    g_paste_history_add (kept, g_paste_text_item_new ("abc"));
+
+    g_assert_cmpuint (g_paste_history_get_length (kept), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (kept, 0)), ==, "abc");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (kept, 1)), ==, "x");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (kept, 2)), ==, "c");
+
+    /* Failing an exact copy, a line deeper that the new one grows over is
+     * replaced, as the head would be: "c" by "cde", below "abc". */
+    g_paste_history_add (kept, g_paste_text_item_new ("cde"));
+
+    g_assert_cmpuint (g_paste_history_get_length (kept), ==, 3);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (kept, 0)), ==, "cde");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (kept, 1)), ==, "abc");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (kept, 2)), ==, "x");
+    settle_writes ("growing-line-kept");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -344,6 +404,7 @@ main (int argc, char **argv)
     g_test_add_func ("/history/stray-checksum-skipped", test_stray_checksum_skipped);
     g_test_add_func ("/history/invalid-checksum-dropped", test_invalid_checksum_dropped);
     g_test_add_func ("/history/unnamable-image-left-out", test_unnamable_image_left_out);
+    g_test_add_func ("/history/growing-line-drops-older-copy", test_growing_line_drops_older_copy);
 
     return g_test_run ();
 }

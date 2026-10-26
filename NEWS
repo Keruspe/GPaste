@@ -5,6 +5,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix copied blank lines vanishing from the history after a restart
 - Fix a crash right after a save emptying the history on some filesystems
 - Fix a crash saving an image when the home directory name is not UTF-8
+- Fix a growing line listing the same text twice when it was copied before
 
 NEW in 50.10 (08/09/2026)
 =============

@@ -438,7 +438,9 @@ _g_paste_history_add (GPasteHistory *self,
         if (g_paste_item_equals (old_first, item))
             return;
 
-        if (new_selection && g_paste_history_private_is_growing_line (priv, old_first, item))
+        gboolean replaced = new_selection && g_paste_history_private_is_growing_line (priv, old_first, item);
+
+        if (replaced)
         {
             if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (old_first)))
                 election_needed = TRUE;
@@ -463,23 +465,43 @@ _g_paste_history_add (GPasteHistory *self,
                 priv->biggest_uuid = g_paste_item_get_uuid (old_first);
                 priv->biggest_size = size;
             }
+        }
 
-            for (history = history->next; history; history = history->next)
+        /* An older copy of the item goes, whether the head was a shorter one of
+         * it, replaced above, or stays: from the top when the head was
+         * replaced, the link it stood in being gone, from below it otherwise.
+         * An exact copy first; failing one, and only when the head stays, a
+         * line deeper that the new one grows over -- "c" for "abc" -- is
+         * replaced as the head would be. Never both, and never the growing
+         * match in the exact copy's stead, which would leave it listed twice. */
+        GList *older = NULL;
+        GList *grown = NULL;
+
+        for (history = (replaced) ? priv->history : priv->history->next; history; history = history->next)
+        {
+            if (g_paste_item_equals (history->data, item))
             {
-                if (g_paste_item_equals (history->data, item) || (new_selection && g_paste_history_private_is_growing_line (priv, history->data, item)))
-                {
-                    GPasteItem *entry = history->data;
-
-                    if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (entry)))
-                        election_needed = TRUE;
-                    /* On add, @entry is a distinct duplicate to free (its shared
-                     * backing file is kept). On select, @entry IS @item being moved
-                     * to the front, so its ref must be left alone. */
-                    g_autoptr (GPasteItem) dropped = new_selection ? entry : NULL;
-                    g_paste_history_private_remove (priv, history, FALSE);
-                    break;
-                }
+                older = history;
+                break;
             }
+            if (!grown && new_selection && !replaced && g_paste_history_private_is_growing_line (priv, history->data, item))
+                grown = history;
+        }
+
+        if (!older)
+            older = grown;
+
+        if (older)
+        {
+            GPasteItem *entry = older->data;
+
+            if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (entry)))
+                election_needed = TRUE;
+            /* On add, @entry is a distinct duplicate to free (its shared
+             * backing file is kept). On select, @entry IS @item being moved
+             * to the front, so its ref must be left alone. */
+            g_autoptr (GPasteItem) dropped = new_selection ? entry : NULL;
+            g_paste_history_private_remove (priv, older, FALSE);
         }
     }
 
