@@ -575,6 +575,34 @@ reexec_fallback (GPasteClient *client,
     return triggered;
 }
 
+/* Whether GNOME Shell runs the daemon @client talks to: its name and the
+ * Shell's own are owned by one connection. Such a daemon answers a re-exec
+ * without restarting anything, the Shell keeping the code it loaded, which the
+ * graphical tool knows too (g_paste_ui_window_restart_can_help ()). An owner
+ * that cannot be asked is not known to be the Shell. */
+static gboolean
+daemon_in_shell (GPasteClient *client)
+{
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (client));
+
+    if (!connection || !owner)
+        return FALSE;
+
+    g_autoptr (GVariant) reply = g_dbus_connection_call_sync (connection, "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                                              "org.freedesktop.DBus", "GetNameOwner",
+                                                              g_variant_new ("(s)", "org.gnome.Shell"), G_VARIANT_TYPE ("(s)"),
+                                                              G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL);
+    const gchar *shell = NULL;
+
+    if (!reply)
+        return FALSE;
+
+    g_variant_get (reply, "(&s)", &shell);
+
+    return g_paste_str_equal (owner, shell);
+}
+
 static gint
 g_paste_daemon_reexec (Context *ctx,
                        GError **error)
@@ -582,7 +610,10 @@ g_paste_daemon_reexec (Context *ctx,
     if (!reexec_fallback (ctx->client, g_paste_util_reexecute_daemon (ctx->client, error), error))
         return EXIT_FAILURE;
 
-    printf ("%s\n", _("Successfully re-executed the daemon"));
+    if (daemon_in_shell (ctx->client))
+        printf ("%s\n", _("GNOME Shell runs the daemon, which keeps the code it started with until you log out and back in"));
+    else
+        printf ("%s\n", _("Successfully re-executed the daemon"));
 
     return EXIT_SUCCESS;
 }
