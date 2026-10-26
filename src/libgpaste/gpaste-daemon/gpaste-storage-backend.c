@@ -301,11 +301,17 @@ typedef struct
     gboolean        read_whole;
     gboolean        unverifiable;
 
-    /* The items, by uuid, a write left out of the store as too large for it
+    /* The histories a write failed for since the last full one of them that
+     * landed, for a backend with no has_diverged of its own: the full writes
+     * g_paste_storage_backend_write_history () sees, and those an incremental
+     * backend records itself (g_paste_storage_backend_diverge ()). And the
+     * items, by uuid, a write left out of the store as too large for it
      * (g_paste_storage_backend_leave_out ()). Guarded by @records_lock rather
      * than by a backend's own lock, which a load may hold for as long as its
-     * read takes: the writes record into it on storage workers, a backend's
-     * lock held. Nothing else is ever taken under @records_lock. */
+     * read takes: the writes record into them on storage workers, a backend's
+     * lock held, and the main thread asks after every write. Nothing else is
+     * ever taken under @records_lock. */
+    GHashTable     *diverged;
     GHashTable     *left_out;
     GMutex          records_lock;
 } GPasteStorageBackendPrivate;
@@ -471,7 +477,18 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *self,
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
 
-    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, name, history);
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+    gboolean written = klass->write_history_file (self, name, history);
+
+    if (!klass->has_diverged)
+    {
+        if (written)
+            g_paste_storage_backend_converge (self, name);
+        else
+            g_paste_storage_backend_diverge (self, name);
+    }
+
+    return written;
 }
 
 /* Whether a file flavour still keeps a history under @name. The images/<name>/
@@ -1050,7 +1067,33 @@ g_paste_storage_backend_has_diverged (GPasteStorageBackend *self,
 
     const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
 
-    return klass->has_diverged && klass->has_diverged (self, name);
+    if (klass->has_diverged)
+        return klass->has_diverged (self, name);
+
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    return g_hash_table_contains (priv->diverged, name);
+}
+
+void
+g_paste_storage_backend_diverge (GPasteStorageBackend *self,
+                                 const gchar          *name)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    g_hash_table_add (priv->diverged, g_strdup (name));
+}
+
+void
+g_paste_storage_backend_converge (GPasteStorageBackend *self,
+                                  const gchar          *name)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    g_hash_table_remove (priv->diverged, name);
 }
 
 void
@@ -1121,6 +1164,7 @@ g_paste_storage_backend_finalize (GObject *object)
 {
     GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (G_PASTE_STORAGE_BACKEND (object));
 
+    g_hash_table_unref (priv->diverged);
     g_hash_table_unref (priv->left_out);
     g_mutex_clear (&priv->records_lock);
 
@@ -1212,6 +1256,7 @@ g_paste_storage_backend_init (GPasteStorageBackend *self)
 {
     GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
 
+    priv->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->left_out = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     g_mutex_init (&priv->records_lock);
 }

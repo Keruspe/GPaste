@@ -80,18 +80,9 @@ struct _GPasteSqliteBackend
     sqlite3          *db;
     gchar            *db_path;
     GMutex            lock;
-    /* The histories a write failed for since their last full one that landed:
-     * nothing retries a write, and the next add's reconciliation only drops
-     * rows, so the store would lag the model for good. The next add, which
-     * carries the whole snapshot, writes it in full instead, and the history
-     * asks for one sooner (g_paste_storage_backend_has_diverged ()). Under
-     * @diverged_lock rather than @lock, which a load may hold for as long as
-     * its read takes: the main thread asks after every write. */
-    GHashTable       *diverged;
-    GMutex            diverged_lock;
     /* A database deleted while @lock was taken (delete_history ()), which
-     * the cached connection must not answer for again: under @forgotten_lock,
-     * for the same reason. */
+     * the cached connection must not answer for again: under @forgotten_lock
+     * rather than @lock, which a load may hold for as long as its read takes. */
     gchar            *forgotten;
     GMutex            forgotten_lock;
 
@@ -1315,38 +1306,10 @@ g_paste_sqlite_backend_forget_deleted (sqlite3 *db)
     sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 }
 
-/* Remember that a write of @name failed, or that a full one landed: see
- * @diverged. */
-static void
-g_paste_sqlite_backend_diverge (GPasteSqliteBackend *backend,
-                                const gchar         *name)
-{
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
-
-    g_hash_table_add (backend->diverged, g_strdup (name));
-}
-
-static void
-g_paste_sqlite_backend_converge (GPasteSqliteBackend *backend,
-                                 const gchar         *name)
-{
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
-
-    g_hash_table_remove (backend->diverged, name);
-}
-
-static gboolean
-g_paste_sqlite_backend_has_diverged (GPasteStorageBackend *self,
-                                     const gchar          *name)
-{
-    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
-
-    return g_hash_table_contains (backend->diverged, name);
-}
-
 /* Write @history over the history called @name, @backend's lock held: see
- * write_history_file in #GPasteStorageBackendClass for what it returns. */
+ * write_history_file in #GPasteStorageBackendClass for what it returns, which
+ * its callers record: the base class for the vfunc, add_item () for the full
+ * write it makes itself. */
 static gboolean
 g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
                                      const gchar          *name,
@@ -1366,7 +1329,6 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
     {
         if (created)
             g_paste_sqlite_backend_unlink (backend, history_file_path, NULL);
-        g_paste_sqlite_backend_diverge (backend, name);
         return FALSE;
     }
 
@@ -1395,14 +1357,12 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
 
     if (success)
     {
-        g_paste_sqlite_backend_converge (backend, name);
         g_paste_sqlite_backend_forget_deleted (db);
         return TRUE;
     }
 
     if (created)
         g_paste_sqlite_backend_unlink (backend, history_file_path, NULL);
-    g_paste_sqlite_backend_diverge (backend, name);
 
     return FALSE;
 }
@@ -2060,9 +2020,14 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
 
-    if (history && g_paste_sqlite_backend_has_diverged (self, name))
+    /* A store some write left behind lags the model for good otherwise:
+     * nothing retries a write, and the reconciliation below only drops rows.
+     * An add carrying the whole snapshot writes it in full instead, the history
+     * asking for one sooner, and the store still lags should that fail too. */
+    if (history && g_paste_storage_backend_has_diverged (self, name))
     {
-        g_paste_sqlite_backend_write_locked (self, name, history);
+        if (g_paste_sqlite_backend_write_locked (self, name, history))
+            g_paste_storage_backend_converge (self, name);
         return;
     }
 
@@ -2070,7 +2035,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
 
     if (!db || !g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2099,23 +2064,23 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
      * adds -- nothing the user deleted. A checkpoint with its syncs on every
      * copy is what SQLite's own, every thousand pages, spares. */
     if (!g_paste_sqlite_backend_finish_transaction (db, success) || !reconciled)
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
 }
 
 /* The removal of @uuid from @db, under the backend's lock already: see
  * write_locked (). */
 static void
-g_paste_sqlite_backend_remove_locked (GPasteSqliteBackend *backend,
-                                      sqlite3             *db,
-                                      const gchar         *name,
-                                      const gchar         *uuid)
+g_paste_sqlite_backend_remove_locked (GPasteStorageBackend *self,
+                                      sqlite3              *db,
+                                      const gchar          *name,
+                                      const gchar          *uuid)
 {
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare item removal: %s", sqlite3_errmsg (db));
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2124,7 +2089,7 @@ g_paste_sqlite_backend_remove_locked (GPasteSqliteBackend *backend,
     if (sqlite3_step (stmt) != SQLITE_DONE)
     {
         g_warning ("sqlite: failed to remove an item: %s", sqlite3_errmsg (db));
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
     }
 
     sqlite3_finalize (stmt);
@@ -2143,11 +2108,11 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
 
     if (!db)
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
-    g_paste_sqlite_backend_remove_locked (backend, db, name, uuid);
+    g_paste_sqlite_backend_remove_locked (self, db, name, uuid);
 }
 
 static void
@@ -2163,7 +2128,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     if (!db)
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2174,13 +2139,13 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
      * rewrite. The encrypted flavor persists it like any other item. */
     if (!g_paste_storage_backend_stores_item (self, item))
     {
-        g_paste_sqlite_backend_remove_locked (backend, db, name, old_uuid);
+        g_paste_sqlite_backend_remove_locked (self, db, name, old_uuid);
         return;
     }
 
     if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2194,7 +2159,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     {
         g_warning ("sqlite: failed to prepare item replacement: %s", sqlite3_errmsg (db));
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2226,14 +2191,14 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     {
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
         g_paste_storage_backend_leave_out (self, item);
-        g_paste_sqlite_backend_remove_locked (backend, db, name, old_uuid);
+        g_paste_sqlite_backend_remove_locked (self, db, name, old_uuid);
         return;
     }
 
     success = success && found && g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 
     if (!g_paste_sqlite_backend_finish_transaction (db, success))
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
     else
         g_paste_sqlite_backend_forget_deleted (db);
 }
@@ -2271,7 +2236,7 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
             g_warning ("sqlite: could not replace “%s” with an empty history: %s", db_path, error->message);
     }
 
-    g_paste_sqlite_backend_diverge (backend, name);
+    g_paste_storage_backend_diverge (self, name);
 }
 
 /**************/
@@ -2416,12 +2381,10 @@ g_paste_sqlite_backend_finalize (GObject *object)
     /* With the connection, here rather than in dispose (): the write vfuncs
      * read it for as long as they can run, which is until the last reference
      * goes. */
-    g_clear_pointer (&self->diverged, g_hash_table_unref);
     g_clear_pointer (&self->db, g_paste_sqlite_backend_close);
     g_clear_pointer (&self->db_path, g_free);
     g_clear_pointer (&self->forgotten, g_free);
     g_mutex_clear (&self->lock);
-    g_mutex_clear (&self->diverged_lock);
     g_mutex_clear (&self->forgotten_lock);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_clear_pointer (&self->key, g_paste_sqlite_backend_free_key);
@@ -2573,7 +2536,6 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->remove_item = g_paste_sqlite_backend_remove_item;
     storage_class->replace_item = g_paste_sqlite_backend_replace_item;
     storage_class->clear_history = g_paste_sqlite_backend_clear_history;
-    storage_class->has_diverged = g_paste_sqlite_backend_has_diverged;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     storage_class->rekey = g_paste_sqlite_backend_rekey;
@@ -2588,8 +2550,6 @@ static void
 g_paste_sqlite_backend_init (GPasteSqliteBackend *self)
 {
     g_mutex_init (&self->lock);
-    self->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    g_mutex_init (&self->diverged_lock);
     g_mutex_init (&self->forgotten_lock);
 }
 

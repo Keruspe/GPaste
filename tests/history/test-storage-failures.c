@@ -204,8 +204,63 @@ g_markup_parse_context_unref (GMarkupParseContext *context)
 }
 #endif
 
-/* Every stream write failing while set, as a full disk would fail it. */
+/* Where a stand-in holds the threads reaching it, from gate_close () until
+ * gate_open (), @held counting those it held: a storage worker kept waiting as
+ * long as a case needs. The thread that closed it goes through, being the one
+ * to open it again; and a thread is held ten seconds at most, failing the case
+ * past that rather than leaving the binary to meson's timeout. A static Gate
+ * needs no initialisation. */
+typedef struct
+{
+    GMutex   mutex;
+    GCond    cond;
+    GThread *spared;
+    gboolean closed;
+    guint    held;
+} Gate;
+
+static void
+gate_close (Gate *gate)
+{
+    g_mutex_lock (&gate->mutex);
+    gate->spared = g_thread_self ();
+    gate->closed = TRUE;
+    g_atomic_int_set (&gate->held, 0);
+    g_mutex_unlock (&gate->mutex);
+}
+
+static void
+gate_open (Gate *gate)
+{
+    g_mutex_lock (&gate->mutex);
+    gate->closed = FALSE;
+    g_cond_broadcast (&gate->cond);
+    g_mutex_unlock (&gate->mutex);
+}
+
+static void
+gate_pass (Gate *gate)
+{
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    g_mutex_lock (&gate->mutex);
+    if (gate->closed && g_thread_self () != gate->spared)
+    {
+        g_atomic_int_inc (&gate->held);
+        /* Counted off the main thread: see g_paste_test_bus_wait_for_count (). */
+        g_main_context_wakeup (NULL);
+        while (gate->closed && g_cond_wait_until (&gate->cond, &gate->mutex, deadline))
+            ;
+        g_assert_false (gate->closed);
+    }
+    g_mutex_unlock (&gate->mutex);
+}
+
+/* Every stream write failing while set, as a full disk would fail it, and
+ * how many did; and every one held at @write_gate while it is closed. */
 static gboolean fail_writes;
+static guint    failed_writes;
+static Gate     write_gate;
 
 gboolean
 g_output_stream_write_all (GOutputStream *stream,
@@ -219,8 +274,11 @@ g_output_stream_write_all (GOutputStream *stream,
     WriteAll original = (WriteAll) dlsym (RTLD_NEXT, "g_output_stream_write_all");
 
     g_assert_nonnull (original);
+    gate_pass (&write_gate);
+
     if (fail_writes)
     {
+        g_atomic_int_inc (&failed_writes);
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NO_SPACE, "no space this time");
         return FALSE;
     }
@@ -2025,6 +2083,56 @@ empty_history (const GPasteDaemonMethods *methods,
     g_paste_daemon_methods_empty_history_finish (result, error);
 }
 
+/* The file flavour's store lags a history whose last save failed too: the
+ * flush an exit makes writes it level, where the successor would load what
+ * the last save that landed left. */
+static void
+test_file_diverged_history (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*no space this time*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const gchar *name = "file-diverged-history";
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_FILE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_assert_true (g_paste_storage_backend_try_lock ());
+    g_paste_history_load (history, name);
+
+    failed_writes = 0;
+    fail_writes = TRUE;
+    gate_close (&write_gate);
+    /* Two writes, both failing: the second recorded while the first is out,
+     * which waits for it, and so queued behind it. Nothing comes after them:
+     * every write of this flavour is a full one, which no failure has made
+     * again before the next change. */
+    g_paste_history_add (history, g_paste_text_item_new ("a"));
+    g_paste_test_bus_wait_for_count (&write_gate.held, 1);
+    g_paste_history_add (history, g_paste_text_item_new ("b"));
+    gate_open (&write_gate);
+    g_paste_test_bus_wait_for_count (&failed_writes, 2);
+    fail_writes = FALSE;
+
+    /* Room again, and nothing copied since: the flush an exit makes writes
+     * the store level. */
+    g_paste_history_flush (history);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) read = NULL;
+    gsize size = 0;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL, &read, &size));
+    g_assert_cmpuint (g_list_length (read), ==, 2);
+}
+
 #ifdef G_PASTE_ENABLE_SQLITE
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 static void
@@ -2538,6 +2646,48 @@ test_sqlite_unranked_add (void)
     g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
 }
 
+/* An add carrying the history onto a store some write left behind writes it
+ * whole, which levels the store, and leaves it behind still when that write
+ * fails too: the add records its own full write, which no wrapper sees. */
+static void
+test_sqlite_diverged_add_converges (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected disk-full failure*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GList) history = g_list_prepend (NULL, a);
+    const gchar *name = "diverged-add-converges";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, history));
+    failed_prepare_sql = "DELETE FROM items WHERE uuid = ?;";
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (a), NULL);
+    g_assert_null (failed_prepare_sql);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+
+    history = g_list_prepend (history, b);
+    full_writes = 0;
+    failed_sql = "DELETE FROM items;";
+    g_paste_storage_backend_add_item (backend, name, b, history);
+    failed_sql = NULL;
+    g_assert_cmpuint (full_writes, ==, 1);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+
+    g_paste_storage_backend_add_item (backend, name, b, history);
+    g_assert_cmpuint (full_writes, ==, 2);
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+}
+
 /* An image of noise, whose PNG is some kilobytes. */
 static GPasteItem *
 noisy_image_new (void)
@@ -2740,7 +2890,6 @@ test_sqlite_diverged_history (void)
     g_paste_history_flush (history);
     g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 4);
 }
-
 
 /* A backup, or the emptying of another history, whose write fails answers
  * that it failed: the backup is not there to be listed, and the history
@@ -7386,6 +7535,7 @@ main (int    argc,
     g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
+    g_test_add_func ("/storage/file-diverged-history", test_file_diverged_history);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/passphrase/damaged-active-asked-once", test_passphrase_damaged_active_asked_once);
 #endif
@@ -7416,6 +7566,7 @@ main (int    argc,
 
         g_test_add_data_func (path, &incremental_failures[i], test_sqlite_incremental_failed);
     }
+    g_test_add_func ("/storage/sqlite/diverged-add-converges", test_sqlite_diverged_add_converges);
     g_test_add_func ("/storage/sqlite/unranked-add", test_sqlite_unranked_add);
     g_test_add_func ("/storage/sqlite/item-too-large", test_sqlite_item_too_large);
 #endif

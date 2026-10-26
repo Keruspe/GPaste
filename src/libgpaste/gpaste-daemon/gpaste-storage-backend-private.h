@@ -51,6 +51,16 @@ gboolean g_paste_storage_is_special_file (const gchar *path);
 gboolean g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
                                                   const gchar          *name);
 
+/* What a backend with incremental writes records of them, for
+ * g_paste_storage_backend_has_diverged () to answer from as it answers from
+ * the full writes it sees: that a write of the history called @name failed,
+ * the store lagging the history until a full write of it lands, or that a
+ * full one did. */
+void g_paste_storage_backend_diverge  (GPasteStorageBackend *self,
+                                       const gchar          *name);
+void g_paste_storage_backend_converge (GPasteStorageBackend *self,
+                                       const gchar          *name);
+
 /* That a write of @self left @item out of its store as too large for it, the
  * rest of its history written around it; and whether a write of @self left
  * @item out, that or the item being one @self does not store at all
