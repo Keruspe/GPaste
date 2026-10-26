@@ -23,10 +23,11 @@
 
     THE CURRENT HISTORY IS WHAT EVERY ITEM CALL ACTS ON. Reading items
     (GetHistory, GetItem, GetItemAtIndex, GetItems, GetFavourites, GetImage,
-    GetUris, Search, GetHistorySize) and changing them (the Add* calls, Merge,
-    Replace, MakePassword, Select, SetFavourite, DeleteItem, DeletePassword)
-    never name a history: they are about the one in use, which the History
-    property carries.
+    GetUris, GetPasswordTimeout, Search, GetHistorySize, and Upload and
+    UploadAndCopy, which read the item they upload) and changing them (the Add*
+    calls, Merge, Replace, MakePassword, Select, SetFavourite, StripRichText,
+    DeleteItem, DeletePassword) never name a history: they are about the one in
+    use, which the History property carries.
     The calls that name a history are the ones that treat histories as objects
     rather than as a place to put items: ListHistories, BackupHistory,
     EmptyHistory, DeleteHistory and SwitchHistory. Inspecting another history
