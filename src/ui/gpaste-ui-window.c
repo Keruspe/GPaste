@@ -684,7 +684,11 @@ on_about (GSimpleAction *action    G_GNUC_UNUSED,
         return;
     }
 
-    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
+    /* Held until presented, as the shortcuts dialog is, for the reason
+     * on_show_help_overlay () gives. No test shows it: the leak is a present
+     * that does not take the dialog, which takes a window to fail on. */
+    g_autoptr (AdwDialog) held = ADW_DIALOG (g_object_ref_sink (adw_about_dialog_new ()));
+    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (held);
 
     adw_about_dialog_set_application_name (dialog, PACKAGE_NAME);
     adw_about_dialog_set_version (dialog, PACKAGE_VERSION);
@@ -702,8 +706,7 @@ on_about (GSimpleAction *action    G_GNUC_UNUSED,
      * about dialog's credits. */
     adw_about_dialog_set_translator_credits (dialog, _("translator-credits"));
 
-    self->about = ADW_DIALOG (dialog);
-    g_object_add_weak_pointer (G_OBJECT (self->about), (gpointer *) &self->about);
+    g_set_weak_pointer (&self->about, held);
     adw_dialog_present (self->about, GTK_WIDGET (self));
 }
 
