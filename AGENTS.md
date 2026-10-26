@@ -48,6 +48,12 @@ in the parent where a read-only directory is written all the same). It runs
 against a schema holding those keys alone (`tests/settings/shell-schema/`), so
 whether or not a shell is installed.
 
+`tests/tools/test-bash-completion.py` sources the bash completion and asks it to
+complete command lines in a scratch directory: a path is completed from the word
+typed, each name whole and offered as a name for bash to quote (`compopt`
+recorded by a stand-in), the word matched rather than expanded against the
+directory, and `get` and `history` are offered their options.
+
 `test-history` links the daemon's own code but for its `main ()` (the
 `gpaste-daemon-core` library of `src/daemon/meson.build`), against the memory
 GSettings backend and directories of the test's own, to drive the history and

@@ -9,3 +9,9 @@ test(
   find_program('test-eslint-launcher.py'),
   suite: 'gpaste',
 )
+
+test(
+  'bash-completion',
+  find_program('test-bash-completion.py'),
+  suite: 'gpaste',
+)

@@ -29,6 +29,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix the preferences showing the GNOME Shell extension enabled when GNOME Shell keeps it disabled
 - Fix picking a password or an image from the overview's search adding its name or size to the history
 - Fix keyboard shortcuts never working when the portal started after GPaste
+- Fix the bash completion offering every file whatever was typed, and wrong options after get and history
 
 NEW in 50.10 (08/09/2026)
 =============
