@@ -1323,6 +1323,36 @@ test_output_failure (void)
     clearerr (stdout);
 }
 
+/* A write that failed earlier, which ferror () remembers, is said without a
+ * reason: errno has been written over since, and a flush with nothing left to
+ * write leaves it as it was. */
+static void
+test_output_failure_reason (void)
+{
+    if (!g_file_test ("/dev/full", G_FILE_TEST_EXISTS))
+    {
+        g_test_skip ("No /dev/full to write to");
+        return;
+    }
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("Could not write the output\n");
+        return;
+    }
+
+    FILE *full = fopen ("/dev/full", "we");
+
+    g_assert_nonnull (full);
+    g_assert_cmpint (setvbuf (full, NULL, _IONBF, 0), ==, 0);
+    g_assert_cmpint (fputs ("lost", full), ==, EOF);
+    errno = EINVAL;
+    g_assert_false (output_written (full));
+    fclose (full);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -1687,6 +1717,7 @@ main (int argc, char **argv)
     g_test_add_data_func ("/client/search/reverse", GINT_TO_POINTER (TRUE), test_search_output);
     g_test_add_func ("/client/list-histories/zero", test_list_histories_zero);
     g_test_add_func ("/client/output-failure", test_output_failure);
+    g_test_add_func ("/client/output-failure/reason", test_output_failure_reason);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/merge-takes-two", test_merge_takes_two);
     g_test_add_func ("/client/doctor/report", test_doctor_report);

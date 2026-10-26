@@ -1637,6 +1637,27 @@ g_paste_dispatch (gint         argc,
     return -1;
 }
 
+/* Whether what was printed to @output reached it, said on stderr when it did
+ * not. errno says why only when the flush is what fails: a write failing
+ * earlier, which ferror () remembers, left it to every call since to write
+ * over, and a flush with nothing left to write leaves it as it was. */
+static gboolean
+output_written (FILE *output)
+{
+    gboolean flushed = !fflush (output);
+    gint saved_errno = errno;
+
+    if (flushed && !ferror (output))
+        return TRUE;
+
+    if (!flushed)
+        g_printerr ("%s: %s\n", _("Could not write the output"), g_strerror (saved_errno));
+    else
+        g_printerr ("%s\n", _("Could not write the output"));
+
+    return FALSE;
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -1704,13 +1725,8 @@ main (gint argc, gchar *argv[])
     /* What a command prints is what it is run for -- a script saving an item,
      * a backup reading the history -- so output that could not be written is
      * a failure: a full disk, a closed pipe. */
-    if (fflush (stdout) || ferror (stdout))
-    {
-        gint saved_errno = errno;
-
-        g_printerr ("%s: %s\n", _("Could not write the output"), g_strerror (saved_errno));
+    if (!output_written (stdout))
         status = EXIT_FAILURE;
-    }
 
     return status;
 }
