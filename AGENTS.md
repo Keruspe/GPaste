@@ -50,7 +50,7 @@ path is not UTF-8 is left out of the file the rest of the history is saved in
 (its child's directories made under a TMPDIR that is not UTF-8), and a line
 growing over the head drops an older copy of what it grew into, a line deeper it
 merely ends with kept, and one it grows over replaced when there is no exact
-copy.
+copy, and a damaged file's text stays out of the warnings about it.
 
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests

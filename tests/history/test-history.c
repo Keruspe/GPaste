@@ -395,6 +395,45 @@ test_growing_line_drops_older_copy (void)
     settle_writes ("growing-line-kept");
 }
 
+/* What a damaged history file holds stays out of the journal, which outlives
+ * it and has readers of its own: a value not in UTF-8 and text out of place
+ * are said to be there, not quoted. */
+static void
+test_damage_not_logged (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        /* A word no path holds: the program's own, in every line, may be
+         * under meson-private/. */
+        g_test_trap_assert_stderr_unmatched ("*xyzzy*");
+        g_test_trap_assert_stderr ("*history file*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("damaged", "xml");
+    g_autofree gchar *dir = g_path_get_dirname (path);
+    const gchar *document = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                            "<history version=\"2.0\">\n"
+                            "  <item kind=\"Text\" uuid=\"00000000-0000-4000-8000-000000000001\">xyzzy text out of place\n"
+                            "    <value><![CDATA[kept]]></value>\n  </item>\n"
+                            "  <item kind=\"Text\" uuid=\"00000000-0000-4000-8000-000000000002\">\n"
+                            "    <value><![CDATA[xyzzy \xff value]]></value>\n  </item>\n"
+                            "</history>\n";
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (path, document, -1, NULL));
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "damaged");
+    settle_writes ("damaged");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -405,6 +444,7 @@ main (int argc, char **argv)
     g_test_add_func ("/history/invalid-checksum-dropped", test_invalid_checksum_dropped);
     g_test_add_func ("/history/unnamable-image-left-out", test_unnamable_image_left_out);
     g_test_add_func ("/history/growing-line-drops-older-copy", test_growing_line_drops_older_copy);
+    g_test_add_func ("/history/damage-not-logged", test_damage_not_logged);
 
     return g_test_run ();
 }

@@ -596,12 +596,16 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
     g_autofree gchar *txt = g_strndup (text, text_len);
     switch (data->state)
     {
+    /* Text out of place is still the history's -- a password's among it, when
+     * the file is damaged -- and the journal outlives the history it would be
+     * copied from, with readers of its own: its length is all that is said of
+     * it. */
     case IN_HISTORY:
     case IN_ITEM_WITH_TEXT:
     case IN_VALUE_WITH_TEXT:
         if (*g_strstrip (txt))
         {
-            g_warning ("Unexpected text: %s", txt);
+            g_warning ("Unexpected text (%" G_GSIZE_FORMAT " bytes) in history file “%s”", text_len, data->history_file_path);
             return;
         }
         break;
@@ -616,7 +620,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                 g_clear_pointer (&data->text, g_free);
         }
         else if (*g_strstrip (txt))
-            g_warning ("Unexpected text in item for history version != 1.0 %s", txt);
+            g_warning ("Unexpected text in an item (%" G_GSIZE_FORMAT " bytes) in history file “%s”", text_len, data->history_file_path);
         break;
     }
     case IN_VALUE:
@@ -661,11 +665,31 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
     }
 }
 
-static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
-                      GError              *error,
-                      gpointer             user_data G_GNUC_UNUSED)
+/* What GMarkup found wrong, without its message: that quotes the document -- a
+ * value not in UTF-8 whole -- and the journal outlives the history (see
+ * on_text ()). Every error the parse reports is GMarkup's own, the callbacks
+ * setting none. */
+static const gchar *
+markup_error_description (const GError *error)
 {
-    g_warning ("error: %s", error->message);
+    switch (error->code)
+    {
+    case G_MARKUP_ERROR_BAD_UTF8:
+        return "text not in UTF-8";
+    case G_MARKUP_ERROR_EMPTY:
+        return "an empty document";
+    default:
+        return "markup that does not parse";
+    }
+}
+
+static void on_error (GMarkupParseContext *context G_GNUC_UNUSED,
+                      GError              *error,
+                      gpointer             user_data)
+{
+    const Data *data = user_data;
+
+    g_warning ("History file “%s” holding %s", data->history_file_path, markup_error_description (error));
 }
 
 /******************/
@@ -723,11 +747,13 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             return;
         }
 
-        gboolean parsed = (g_markup_parse_context_parse (ctx, text, text_length, &error) &&
-                           g_markup_parse_context_end_parse (ctx, &error));
+        /* No GError: on_error () reports each, and a second one set over the
+         * first would have GLib log its message. */
+        gboolean parsed = (g_markup_parse_context_parse (ctx, text, text_length, NULL) &&
+                           g_markup_parse_context_end_parse (ctx, NULL));
 
         if (!parsed)
-            g_warning ("Failed to parse history file: %s", error->message);
+            g_warning ("Failed to parse history file “%s”", history_file_path);
 
         if (data.state != END)
             g_warning ("Unexpected state after parsing history: %" G_GINT32_FORMAT, data.state);
