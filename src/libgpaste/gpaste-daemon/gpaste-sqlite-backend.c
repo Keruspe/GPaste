@@ -1076,6 +1076,16 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3      *db,
     return success && g_paste_sqlite_backend_write_special_values (db, key, item_id, item);
 }
 
+/* The timeout column of @item's row: only a password ever carries one, but
+ * the column is NOT NULL, so every other item stores 0. As an int64, since a
+ * timeout is a guint and the ones above G_MAXINT would otherwise be stored
+ * negative. Plaintext, being a duration, not content. */
+static gint64
+g_paste_sqlite_backend_item_timeout (GPasteItem *item)
+{
+    return (G_PASTE_IS_PASSWORD_ITEM (item)) ? (gint64) g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)) : 0;
+}
+
 /* Bind an item's content columns: uuid, kind and value at the fixed positions
  * 1-3, then the image (date, checksum, image blob) or password (name) columns
  * starting at @meta_base, with the favourite flag and the password timeout
@@ -1103,11 +1113,7 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
     /* Every kind has one, so it is bound outside the per-kind branches below.
      * Plaintext like rank and date: the read has to order and filter on it. */
     sqlite3_bind_int (stmt, meta_base + 4, g_paste_item_is_favourite (item));
-    /* Only a password ever carries one, but the column is NOT NULL: leaving it
-     * unbound would insert the NULL that constraint refuses. Plaintext too --
-     * it is a duration, not content. As an int64, since a timeout is a guint and
-     * the ones above G_MAXINT would otherwise be stored negative. */
-    sqlite3_bind_int64 (stmt, meta_base + 5, (G_PASTE_IS_PASSWORD_ITEM (item)) ? (gint64) g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)) : 0);
+    sqlite3_bind_int64 (stmt, meta_base + 5, g_paste_sqlite_backend_item_timeout (item));
 
     if (G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -1146,19 +1152,52 @@ g_paste_sqlite_backend_left_out (sqlite3 *db,
 
 /* Insert @item with @rank, or move the already-stored item with the same uuid
  * to @rank (its value never changes, only its position and whether it is
- * pinned). Special values are rewritten from the item either way.
+ * pinned). Special values are written with a new row, and left as they are by
+ * a move: an item's strings never change once it is in its history, a strip
+ * or an edit putting a new item in its place (replace_item ()), so a select
+ * binds no value, image or alternative only for the conflict to discard it.
  *
  * An item too large for a row is left out, the way a password is in the plain
  * flavour, rather than failing the write: every write of its history would
- * carry it, and fail, for as long as the history held it. */
+ * carry it, and fail, for as long as the history held it.
+ *
+ * @maybe_stored says whether a row of @item may be there already: a full write
+ * has just emptied the table, and tries no move it knows cannot match. */
 static gboolean
 g_paste_sqlite_backend_upsert_item (GPasteSqliteBackend *backend,
                                     sqlite3             *db,
                                     const guchar        *key,
                                     GPasteItem          *item,
-                                    gint64               rank)
+                                    gint64               rank,
+                                    gboolean             maybe_stored)
 {
     sqlite3_stmt *stmt = NULL;
+
+    if (maybe_stored)
+    {
+        if (sqlite3_prepare_v2 (db, "UPDATE items SET rank = ?, favourite = ?, timeout = ? WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
+        {
+            g_warning ("sqlite: failed to prepare item move: %s", sqlite3_errmsg (db));
+            return FALSE;
+        }
+
+        sqlite3_bind_int64 (stmt, 1, rank);
+        sqlite3_bind_int (stmt, 2, g_paste_item_is_favourite (item));
+        sqlite3_bind_int64 (stmt, 3, g_paste_sqlite_backend_item_timeout (item));
+        sqlite3_bind_text (stmt, 4, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
+
+        gint moved = sqlite3_step (stmt);
+
+        sqlite3_finalize (stmt);
+        stmt = NULL;
+        if (moved != SQLITE_DONE)
+        {
+            g_warning ("sqlite: failed to move an item: %s", sqlite3_errmsg (db));
+            return FALSE;
+        }
+        if (sqlite3_changes (db))
+            return TRUE;
+    }
 
     if (sqlite3_prepare_v2 (db,
                             "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image, favourite, timeout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
@@ -1355,7 +1394,7 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
         if (!g_paste_storage_backend_stores_item (self, item))
             continue;
 
-        success = g_paste_sqlite_backend_upsert_item (backend, db, key, item, rank--);
+        success = g_paste_sqlite_backend_upsert_item (backend, db, key, item, rank--, FALSE);
     }
 
     if (began)
@@ -2055,7 +2094,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
          * newest item 1, the bottom of the store, and commit it there. */
         gint64 top = g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", -1);
 
-        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (backend, db, key, item, top + 1));
+        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (backend, db, key, item, top + 1, TRUE));
     }
 
     /* A %NULL history says nothing was displaced by this add, so no row can

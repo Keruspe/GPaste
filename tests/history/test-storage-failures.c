@@ -643,6 +643,10 @@ sqlite3_wal_checkpoint_v2 (sqlite3    *db,
  * fail it: NULL for none. */
 static const gchar *failed_prepare_sql;
 
+/* How often the statement @counted_prepare_sql was prepared: NULL for none. */
+static const gchar *counted_prepare_sql;
+static guint counted_prepares;
+
 int
 sqlite3_prepare_v2 (sqlite3       *db,
                     const char    *sql,
@@ -654,6 +658,8 @@ sqlite3_prepare_v2 (sqlite3       *db,
     Prepare original = (Prepare) dlsym (RTLD_NEXT, "sqlite3_prepare_v2");
 
     g_assert_nonnull (original);
+    if (counted_prepare_sql && !g_strcmp0 (sql, counted_prepare_sql))
+        ++counted_prepares;
     if (failed_prepare_sql && !g_strcmp0 (sql, failed_prepare_sql))
     {
         failed_prepare_sql = NULL;
@@ -1923,6 +1929,37 @@ test_sqlite_keyed_meanwhile (void)
     g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "written meanwhile");
 }
 #endif
+
+/* Moving an item to the front binds none of its content again, where an
+ * insert would bind its value, image and alternatives -- sealing them afresh,
+ * in the encrypted flavour -- only for the conflict to keep nothing of them: a
+ * bind of the value, refused, would leave the item out. */
+static void
+test_sqlite_select_moves_only (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "select-moves-only";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autoptr (GPasteItem) selected = g_paste_text_item_new ("a value longer than the uuid it is stored under");
+    g_autoptr (GPasteItem) other = g_paste_text_item_new ("other");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, selected), other);
+
+    /* A full write tries no move, the table it fills just emptied. */
+    counted_prepare_sql = "UPDATE items SET rank = ?, favourite = ?, timeout = ? WHERE uuid = ?;";
+    counted_prepares = 0;
+    g_paste_storage_backend_write_history (backend, name, history);
+    g_assert_cmpuint (counted_prepares, ==, 0);
+
+    refused_bind_length = strlen (g_paste_item_get_uuid (selected));
+    g_paste_storage_backend_add_item (backend, name, selected, NULL);
+    refused_bind_length = 0;
+    g_assert_cmpuint (counted_prepares, ==, 1);
+    counted_prepare_sql = NULL;
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 2);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items WHERE value = 'other' AND rank = (SELECT MIN (rank) FROM items);"), ==, 1);
+}
 
 /* A delete's checkpoint is put off by a reader holding the log rather than
  * waited for: the backend's lock is held all along, and every write of the
@@ -6856,6 +6893,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/eviction-checkpoints-nothing", test_sqlite_eviction_checkpoints_nothing);
     g_test_add_func ("/storage/sqlite/checkpoint-spares-readers", test_sqlite_checkpoint_spares_readers);
     g_test_add_func ("/storage/sqlite/left-out-accounted", test_sqlite_left_out_accounted);
+    g_test_add_func ("/storage/sqlite/select-moves-only", test_sqlite_select_moves_only);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/sqlite/rekey-checkpoints", test_sqlite_rekey_checkpoints);
     g_test_add_func ("/storage/sqlite/keyed-meanwhile", test_sqlite_keyed_meanwhile);
