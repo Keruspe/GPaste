@@ -16,22 +16,25 @@
 
 typedef struct
 {
-    GPasteClient *client;
-    gint          argc;
-    const gchar **args;
-    gchar        *pipe_data;
-    gboolean      help;
-    gboolean      version;
-    gboolean      favourites;
-    gboolean      oneline;
-    gboolean      raw;
-    gboolean      reverse;
-    gboolean      use_index;
-    gboolean      zero;
-    guint         timeout;
-    const gchar  *decoration;
-    const gchar  *separator;
-    guint         given;      /* the options on the command line, by option_bit () */
+    GPasteClient     *client;
+    gint              argc;
+    const gchar     **args;
+    gchar            *pipe_data;
+    gboolean          help;
+    gboolean          version;
+    gboolean          favourites;
+    gboolean          oneline;
+    gboolean          raw;
+    gboolean          reverse;
+    gboolean          use_index;
+    gboolean          zero;
+    guint             timeout;
+    const gchar      *decoration;
+    const gchar      *separator;
+    guint             given;      /* the options on the command line, by option_bit () */
+    /* The item a single --use-index looked up, for a verb reading it whole
+     * not to read it again; owned by g_paste_dispatch (). */
+    GPasteClientItem *indexed;
 } Context;
 
 /* The --help headings the options are listed under, in that order. */
@@ -974,7 +977,7 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_sync (ctx->client, ctx->args[0], error);
+    g_autoptr (GPasteClientItem) item = (ctx->indexed) ? g_object_ref (ctx->indexed) : g_paste_client_get_item_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -1409,11 +1412,12 @@ read_pipe_for (gint         argc,
 
 /* Whether every string a command line carries -- its arguments, what is
  * piped in for one, merge's decoration and separator -- is UTF-8, as a D-Bus
- * string has to be. GLib would otherwise send "[Invalid UTF-8]" in its place,
- * and the daemon act on that: switch to a history of that name, or store a
- * password under it. A path is no exception: AddFile takes it as a string and
- * opens the file the string names, so one that is not UTF-8 cannot reach the
- * daemon at all, and converting it would name a file that is not there. */
+ * string has to be. GPasteClient refuses one that is not before sending it;
+ * asked here, before the client is even built, it starts no daemon for a
+ * command that would be refused. A path is no exception: AddFile takes it as a
+ * string and opens the file the string names, so one that is not UTF-8 cannot
+ * reach the daemon at all, and converting it would name a file that is not
+ * there. */
 static gboolean
 check_utf8 (const Context *ctx,
             GError       **error)
@@ -1474,9 +1478,10 @@ item_indexes (const Command *command,
  * single index cannot be caught that way, and its own lookup spares reading
  * the listing, which carries the text of every item. */
 static GStrv
-resolve_item_args (const Context *ctx,
-                   GArray        *indexes,
-                   GError       **error)
+resolve_item_args (const Context     *ctx,
+                   GArray            *indexes,
+                   GPasteClientItem **indexed,
+                   GError           **error)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
@@ -1488,6 +1493,7 @@ resolve_item_args (const Context *ctx,
             return NULL;
 
         g_strv_builder_add (builder, g_paste_client_item_get_uuid (item));
+        *indexed = g_steal_pointer (&item);
     }
     else
     {
@@ -1502,11 +1508,13 @@ resolve_item_args (const Context *ctx,
         {
             guint64 index = g_array_index (indexes, guint64, i);
 
-            /* The error GetItemAtIndex answers past the end, so that one index
-             * or several report it alike. */
+            /* The domain and code GetItemAtIndex answers past the end, so that
+             * a script tells one index or several past it alike. */
             if (index >= length)
             {
-                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX, "No item at index %" G_GUINT64_FORMAT, index);
+                g_autofree gchar *named = g_strdup_printf ("%" G_GUINT64_FORMAT, index);
+
+                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX, _("No item at index %s"), named);
                 return NULL;
             }
 
@@ -1608,14 +1616,16 @@ g_paste_dispatch (gint         argc,
 
             Context command_ctx = *ctx;
             g_auto (GStrv) resolved = NULL;
+            g_autoptr (GPasteClientItem) indexed = NULL;
 
             if (indexes)
             {
-                resolved = resolve_item_args (ctx, indexes, error);
+                resolved = resolve_item_args (ctx, indexes, &indexed, error);
                 if (!resolved)
                     return EXIT_FAILURE;
 
                 command_ctx.args = (const gchar **) resolved;
+                command_ctx.indexed = indexed;
             }
 
             gint ret = c->handler (&command_ctx, error);

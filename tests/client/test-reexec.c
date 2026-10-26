@@ -191,6 +191,7 @@ static GPtrArray *fake_history;
 static const gchar *copied_after_answer;
 static guint clients_created;
 static guint index_lookups;
+static guint item_reads;
 static guint history_reads;
 static gchar *deleted_uuid;
 static GStrv merged_uuids;
@@ -271,6 +272,7 @@ fake_get_item_sync (GPasteClient *client G_GNUC_UNUSED,
                     const gchar  *uuid,
                     GError      **error G_GNUC_UNUSED)
 {
+    ++item_reads;
     return g_paste_client_item_new (uuid, fake_value, G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
 }
 
@@ -494,6 +496,11 @@ test_item_index (void)
     g_assert_cmpuint (index_lookups, ==, 1);
     g_assert_cmpuint (history_reads, ==, 0);
     g_clear_pointer (&deleted_uuid, g_free);
+
+    /* The item looked up is the one get prints, not read a second time. */
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "get", "1", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpuint (index_lookups, ==, 2);
+    g_assert_cmpuint (item_reads, ==, 0);
 }
 
 /* A re-exec of a daemon GNOME Shell runs restarts nothing, the Shell keeping
