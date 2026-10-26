@@ -10,6 +10,7 @@ gpaste_test_bus_dep = declare_dependency(
 )
 
 subdir('client')
+subdir('clipboard')
 subdir('gnome-shell-client')
 subdir('global-shortcut-client')
 

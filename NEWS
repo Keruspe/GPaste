@@ -9,6 +9,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix a history's text reaching the system journal when its file is damaged
 - Fix the daemon freezing on a pipe named like a history
 - Fix gpaste-client --use-index treating a non-number as the newest item
+- Fix copied spreadsheet cells being kept as a picture, and copied images losing their other formats
 
 NEW in 50.10 (08/09/2026)
 =============

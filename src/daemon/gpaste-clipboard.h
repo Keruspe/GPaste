@@ -13,6 +13,19 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 
+typedef enum
+{
+    CLIPBOARD_CONTENT_NONE,
+    CLIPBOARD_CONTENT_TEXT,
+    CLIPBOARD_CONTENT_IMAGE,
+    CLIPBOARD_CONTENT_FILE_LIST,
+    CLIPBOARD_CONTENT_COLOR,
+    /* The selection has an owner but only offers types we don't handle
+     * (e.g. an image while images-support is disabled): not tracked, but
+     * must not be overridden by ensure_not_empty either. */
+    CLIPBOARD_CONTENT_IGNORED,
+} GPasteClipboardContent;
+
 /**
  * GPasteClipboardUpdateCallback:
  * @self: the #GPasteClipboard that was updated
@@ -26,6 +39,9 @@ G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 typedef void (*GPasteClipboardUpdateCallback) (GPasteClipboard *self,
                                                GPasteItem      *item,
                                                gpointer         user_data);
+
+GPasteClipboardContent g_paste_clipboard_content_for_formats (GdkContentFormats *formats,
+                                                              gboolean           images_support);
 
 void          g_paste_clipboard_update             (GPasteClipboard              *self,
                                                     GPasteClipboardUpdateCallback callback,

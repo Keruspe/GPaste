@@ -23,19 +23,6 @@ enum
     C_LAST_SIGNAL
 };
 
-typedef enum
-{
-    CLIPBOARD_CONTENT_NONE,
-    CLIPBOARD_CONTENT_TEXT,
-    CLIPBOARD_CONTENT_IMAGE,
-    CLIPBOARD_CONTENT_FILE_LIST,
-    CLIPBOARD_CONTENT_COLOR,
-    /* The selection has an owner but only offers types we don't handle
-     * (e.g. an image while images-support is disabled): not tracked, but
-     * must not be overridden by ensure_not_empty either. */
-    CLIPBOARD_CONTENT_IGNORED,
-} GPasteClipboardContent;
-
 typedef struct
 {
     GdkClipboard          *real;
@@ -466,13 +453,16 @@ g_paste_clipboard_on_texture_ready (GObject      *source_object,
     g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
     GdkTexture *result = NULL;
 
-    if (priv->content_kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->str))
+    /* Not re-owned, as a text read is not unless trimmed: the selection stays
+     * its owner's, with every format it offers. Once the owner goes, the
+     * clipboard holds what a clipboard manager keeps -- mutter's, under GNOME
+     * Shell -- and the history the image: a release reaches no update here,
+     * the changed it makes being one with empty formats, which
+     * on_real_changed () skips. No test shows it, since that takes a display
+     * and a selection owner of their own. */
+    if (priv->content_kind != CLIPBOARD_CONTENT_IMAGE || !g_paste_str_equal (checksum, priv->str))
     {
-        /* Same image, nothing to do */
-    }
-    else
-    {
-        g_paste_clipboard_private_select_texture (priv, texture, checksum);
+        g_paste_clipboard_private_set_image_checksum (priv, checksum);
         result = texture;  /* borrowed from the g_autoptr above */
     }
 
@@ -843,6 +833,38 @@ g_paste_clipboard_update_on_special_atom_ready (GPasteClipboard  *self G_GNUC_UN
 }
 
 /**
+ * g_paste_clipboard_content_for_formats:
+ * @formats: what a selection offers
+ * @images_support: whether images are read
+ *
+ * Returns: what an update reads out of a selection offering @formats:
+ *          %CLIPBOARD_CONTENT_NONE for one with no owner, and
+ *          %CLIPBOARD_CONTENT_IGNORED for one offering nothing GPaste reads
+ */
+GPasteClipboardContent
+g_paste_clipboard_content_for_formats (GdkContentFormats *formats,
+                                       gboolean           images_support)
+{
+    /* Text before an image: a copy offering both -- spreadsheet cells, which
+     * come with a picture of themselves -- is the text, and an image is only
+     * what is copied when it is all there is. An image offered beside a text
+     * fallback, its address or a drawing's source, is recorded as that text
+     * too: the formats alone do not tell the two apart, and text is what
+     * pastes anywhere. */
+    if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
+        return CLIPBOARD_CONTENT_FILE_LIST;
+    if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA))
+        return CLIPBOARD_CONTENT_COLOR;
+    if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
+        return CLIPBOARD_CONTENT_TEXT;
+    if (images_support && gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE))
+        return CLIPBOARD_CONTENT_IMAGE;
+    if (gdk_content_formats_is_empty (formats))
+        return CLIPBOARD_CONTENT_NONE;
+    return CLIPBOARD_CONTENT_IGNORED;
+}
+
+/**
  * g_paste_clipboard_update:
  * @self: a #GPasteClipboard instance
  * @callback: (scope async): the callback to be called when the clipboard content is ready
@@ -861,26 +883,24 @@ g_paste_clipboard_update (GPasteClipboard              *self,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GdkContentFormats *formats = gdk_clipboard_get_formats (priv->real);
-    GPasteClipboardContent content_kind = CLIPBOARD_CONTENT_NONE;
-    if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
-        content_kind = CLIPBOARD_CONTENT_FILE_LIST;
-    else if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA))
-        content_kind = CLIPBOARD_CONTENT_COLOR;
-    else if (g_paste_settings_get_images_support (priv->settings) &&
-             gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE))
-        content_kind = CLIPBOARD_CONTENT_IMAGE;
-    else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
-        content_kind = CLIPBOARD_CONTENT_TEXT;
-    else if (gdk_content_formats_is_empty (formats))
+    GPasteClipboardContent content_kind = g_paste_clipboard_content_for_formats (formats, g_paste_settings_get_images_support (priv->settings));
+
+    if (content_kind == CLIPBOARD_CONTENT_NONE)
     {
-        /* The selection was released: clear our cache so callers see an
-         * empty clipboard and act accordingly (e.g. ensure_not_empty). */
+        /* No format offered: nobody owns the selection, or GDK has yet to
+         * learn what its owner offers -- at startup, the clipboards manager
+         * reading it before any change. Clear our cache: callers see an
+         * empty clipboard and act accordingly (e.g. ensure_not_empty, which
+         * selects the history's head). That leaves an owner GDK has not heard
+         * from yet alone only because the daemon loads the history once the
+         * clipboards are added, so that it is still empty here at startup. A
+         * release later on never gets here (see on_texture_ready ()). */
         g_paste_clipboard_private_clear_content (priv);
         if (callback)
             callback (self, NULL, user_data);
         return;
     }
-    else
+    else if (content_kind == CLIPBOARD_CONTENT_IGNORED)
     {
         /* The owner only provides types we don't handle (e.g. an image
          * while images-support is disabled). Don't track it, but flag the

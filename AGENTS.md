@@ -54,6 +54,11 @@ replaced when there is no exact copy; that a damaged file's text stays out of
 the warnings about it; and that a FIFO named like a history is neither listed
 nor read (in a child with a timeout, since reading one hangs).
 
+`test-clipboard` links the same daemon code and checks what an update reads out
+of a selection offering several formats, with no display:
+`g_paste_clipboard_content_for_formats ()` takes the text over an image offered
+beside it.
+
 `test-use-index` runs the built `gpaste-client` (its path in `G_PASTE_CLIENT`)
 against a fake daemon on a private bus that logs every call it is sent: a
 malformed index under `--use-index` is refused before any call, a valid one is
