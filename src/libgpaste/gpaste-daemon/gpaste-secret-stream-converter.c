@@ -657,18 +657,24 @@ g_paste_secret_stream_file_has_frame (const gchar *path)
     g_autoptr (GFileInputStream) stream = g_file_read (file, NULL, NULL);
     guchar head[STREAM_HEADER_LEN + 4];
     gsize length = 0;
-    GStatBuf stat_buf;
 
     if (!stream || !g_input_stream_read_all (G_INPUT_STREAM (stream), head, sizeof (head), &length, NULL, NULL) ||
-        length < sizeof (head) || memcmp (head, G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN) ||
-        g_stat (path, &stat_buf))
+        length < sizeof (head) || memcmp (head, G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN))
+        return FALSE;
+
+    /* The size of the file the frame length was read from, asked of the
+     * stream rather than of @path: a file renamed over the history meanwhile
+     * would pair one file's frame with another's size. */
+    g_autoptr (GFileInfo) info = g_file_input_stream_query_info (stream, G_FILE_ATTRIBUTE_STANDARD_SIZE, NULL, NULL);
+
+    if (!info)
         return FALSE;
 
     const guchar *limits = head + G_PASTE_SECRET_STREAM_MAGIC_LEN + SALTBYTES;
     guint32 clen = read_u32_le (head + STREAM_HEADER_LEN);
 
     return g_paste_crypto_parameters_derivable (read_u64_le (limits), read_u64_le (limits + 8)) &&
-           clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) stat_buf.st_size >= sizeof (head) + clen;
+           clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) g_file_info_get_size (info) >= sizeof (head) + clen;
 }
 
 static void

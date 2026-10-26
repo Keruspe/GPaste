@@ -1015,6 +1015,35 @@ fstatat (int          dirfd,
     return result;
 }
 
+/* While set, the next whole read of a stream has @renamed_from renamed over
+ * @renamed_path once it is done, as a sync tool replacing a file does while
+ * it is being read. */
+static const gchar *renamed_path;
+static const gchar *renamed_from;
+
+gboolean
+g_input_stream_read_all (GInputStream *stream,
+                         void         *buffer,
+                         gsize         count,
+                         gsize        *bytes_read,
+                         GCancellable *cancellable,
+                         GError      **error)
+{
+    typedef gboolean (*ReadAll) (GInputStream *, void *, gsize, gsize *, GCancellable *, GError **);
+    ReadAll original = (ReadAll) dlsym (RTLD_NEXT, "g_input_stream_read_all");
+    gboolean read = original (stream, buffer, count, bytes_read, cancellable, error);
+
+    if (renamed_path)
+    {
+        const gchar *path = renamed_path;
+
+        renamed_path = NULL;
+        g_assert_cmpint (g_rename (renamed_from, path), ==, 0);
+    }
+
+    return read;
+}
+
 /* The migration's own static helpers, detect_current_backend() and
  * import_histories() among them, are what these cases drive. */
 #include "../../src/libgpaste/gpaste-daemon/gpaste-storage-migration.c"
@@ -1703,10 +1732,8 @@ test_unopenable_store_out_of_reach (void)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 
-/* Neither toggle is offered for a source this build cannot open, and a reply
- * ticking them anyway is clamped: reading the source through the backend that
- * stands in for it would import nothing, and deleting through it would delete
- * another flavour's histories. */
+#endif
+
 /* A read given up on before it reached the store creates none: a load a delete
  * of its history superseded would bring that history back, empty. */
 static void
@@ -1789,6 +1816,11 @@ test_name_fits_directory (void)
     g_assert_true (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, too_long));
 }
 
+#ifdef G_PASTE_ENABLE_SQLITE
+/* Neither toggle is offered for a source this build cannot open, and a reply
+ * ticking them anyway is clamped: reading the source through the backend that
+ * stands in for it would import nothing, and deleting through it would delete
+ * another flavour's histories. */
 static void
 test_migration_clamps_unopenable_source (void)
 {
@@ -4340,6 +4372,28 @@ test_secure_memory_wiped_halfway (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Whether a history holds a whole first frame -- what makes a passphrase
+ * verifiable -- is answered of one file: a file renamed over it while it is
+ * looked at pairs no frame length with another file's size. */
+static void
+test_has_frame_reads_one_file (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("framed"));
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("frame-probe", "xmls");
+    g_autofree gchar *replacement = g_strconcat (path, ".replacement", NULL);
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, "frame-probe", items));
+    g_assert_true (g_file_set_contents (replacement, "", 0, NULL));
+    renamed_path = path;
+    renamed_from = replacement;
+    g_assert_true (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_FILE, settings));
+    renamed_path = NULL;
+    g_unlink (replacement);
+    g_assert_cmpint (g_unlink (path), ==, 0);
+}
+
 /* A stream damaged in its third frame reads its first two before the error:
  * the call meeting the damage has written the second's plaintext, which it
  * hands back, the failure coming with the next call. */
@@ -7600,19 +7654,20 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/verification-empty-active-database", test_verification_empty_active_database);
 #endif
     g_test_add_func ("/storage/migration/offered", test_migration_offers_supported);
-#ifdef G_PASTE_ENABLE_SQLITE
-    g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
-    g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/encrypted-stream-error-after-progress", test_stream_error_after_progress);
+    g_test_add_func ("/storage/has-frame-reads-one-file", test_has_frame_reads_one_file);
 #endif
     g_test_add_func ("/storage/cancelled-read-creates-nothing", test_cancelled_read_creates_nothing);
     g_test_add_func ("/storage/file-diverged-history", test_file_diverged_history);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/passphrase/damaged-active-asked-once", test_passphrase_damaged_active_asked_once);
 #endif
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
+    g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
