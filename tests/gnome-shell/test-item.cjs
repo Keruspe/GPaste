@@ -93,7 +93,7 @@ vm.runInContext(`${source}\nthis.Item = GPasteItem;`, context);
 // need of: it is drawn from the line libgpaste cuts.
 let valuesRead = 0;
 
-function item(uuid, value, favourite = false) {
+function item(uuid, value, kind = 0, favourite = false) {
     return {
         get_uuid: () => uuid,
         get_value: () => { ++valuesRead; return value; },
@@ -104,7 +104,7 @@ function item(uuid, value, favourite = false) {
             return size > 0 && chars.length > size ? `${chars.slice(0, size).join('')}…` : value;
         },
         is_favourite: () => favourite,
-        get_kind: () => 0,
+        get_kind: () => kind,
     };
 }
 
@@ -126,8 +126,8 @@ function client() {
     };
 }
 
-async function filled(row, bus, uuid, value, favourite = false) {
-    bus.pending.resolve(item(uuid, value, favourite));
+async function filled(row, bus, uuid, value, kind = 0, favourite = false) {
+    bus.pending.resolve(item(uuid, value, kind, favourite));
     await new Promise(resolve => setImmediate(resolve));
 }
 
@@ -184,7 +184,7 @@ runSuite('Item', async () => {
         unlooked();
 
         row.refresh();
-        await filled(row, bus, 'a', 'abc', true);
+        await filled(row, bus, 'a', 'abc', 0, true);
         assert.equal(row._favouriteItem.visible, true);
         assert.deepEqual(width(), [30, 522]);
         looked();
@@ -253,6 +253,20 @@ runSuite('Item', async () => {
         row._favouriteItem.emit('popup-menu');
         row._deleteItem.emit('popup-menu');
         assert.deepEqual(asked, [['text', true], ['text', true]]);
+    }
+
+    // Only a text row has actions to offer: one of another kind opens nothing
+    // rather than a row of buttons that cannot act on it.
+    {
+        const bus = client();
+        const row = new context.Item(bus, 50, 1, 1);
+        const asked = [];
+
+        row.connect('actions', (actor, uuid, fromKeyboard) => asked.push([uuid, fromKeyboard]));
+        await filled(row, bus, 'colour', '#336699', 2);
+        row.emit('popup-menu');
+        row._favouriteItem.emit('popup-menu');
+        assert.deepEqual(asked, []);
     }
 
     // A read failing for a row is said at debug level, not as an error.
