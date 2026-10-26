@@ -13,6 +13,7 @@
 
 #include <fcntl.h>
 #include <signal.h>
+#include <string.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
@@ -36,6 +37,8 @@ typedef struct
     gint             stdin_fd;
     gchar           *last_stdout;
     gchar           *runtime_dir;
+    gchar           *last_stderr;
+    const gchar     *delete_error;
     guint            registration;
     gboolean         refuse_reexecute;
 } Fixture;
@@ -70,7 +73,9 @@ on_method_call (GDBusConnection       *connection G_GNUC_UNUSED,
 
     g_string_append_printf (f->log, "%s%s\n", method, args);
 
-    if (g_str_equal (method, G_PASTE_DAEMON_REEXECUTE) && f->refuse_reexecute)
+    if (g_str_equal (method, G_PASTE_DAEMON_DELETE) && f->delete_error)
+        g_dbus_method_invocation_return_dbus_error (invocation, f->delete_error, "no such item");
+    else if (g_str_equal (method, G_PASTE_DAEMON_REEXECUTE) && f->refuse_reexecute)
         g_dbus_method_invocation_return_dbus_error (invocation, "org.freedesktop.DBus.Error.Failed", "refused");
     else if (g_str_equal (method, G_PASTE_DAEMON_GET_HISTORY))
     {
@@ -127,6 +132,7 @@ fixture_tear_down (Fixture      *f,
     g_clear_fd (&f->stdin_fd, NULL);
     g_clear_pointer (&f->last_stdout, g_free);
     g_clear_pointer (&f->runtime_dir, g_free);
+    g_clear_pointer (&f->last_stderr, g_free);
     g_test_dbus_down (f->bus);
     g_clear_object (&f->bus);
 }
@@ -220,6 +226,8 @@ run_client_with_input (Fixture             *f,
     g_assert_cmpint (g_subprocess_get_successful (client), ==, success);
     if (stderr_pattern)
         g_assert_true (g_pattern_match_simple (stderr_pattern, text));
+    g_free (f->last_stderr);
+    f->last_stderr = g_steal_pointer (&text);
 }
 
 static void
@@ -671,6 +679,26 @@ test_terminal_controls (Fixture      *f G_GNUC_UNUSED,
     assert_output ((const gchar * const []) { "get", uuid, NULL }, FALSE, ESCAPED_TEXT);
 }
 
+/* A call's error reaches the command line in the daemon's words, but for an
+ * error GDBus maps to no domain, whose name is all there is to tell it by. */
+static void
+test_remote_error_prefix (Fixture      *f,
+                          gconstpointer data G_GNUC_UNUSED)
+{
+    g_autofree gchar *uuid = uuid_at (0);
+
+    f->delete_error = G_PASTE_BUS_NAME ".Error";
+    run_client (f, (const gchar * const []) { "delete", uuid, NULL }, FALSE, "*no such item*");
+    g_assert_null (strstr (f->last_stderr, "GDBus.Error"));
+
+    f->delete_error = "org.freedesktop.DBus.Error.InvalidArgs";
+    run_client (f, (const gchar * const []) { "delete", uuid, NULL }, FALSE, "*no such item*");
+    g_assert_null (strstr (f->last_stderr, "GDBus.Error"));
+
+    f->delete_error = "org.example.Error";
+    run_client (f, (const gchar * const []) { "delete", uuid, NULL }, FALSE, "*GDBus.Error:org.example.Error: no such item*");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -681,6 +709,7 @@ main (int argc, char **argv)
     g_test_add ("/client/use-index/not-an-item", Fixture, NULL, fixture_set_up, test_not_an_item, fixture_tear_down);
     g_test_add_func ("/client/locale", test_locale_set);
     g_test_add ("/client/terminal-controls", Fixture, NULL, fixture_set_up, test_terminal_controls, fixture_tear_down);
+    g_test_add ("/client/remote-error-prefix", Fixture, NULL, fixture_set_up, test_remote_error_prefix, fixture_tear_down);
     g_test_add ("/client/pipe", Fixture, NULL, fixture_set_up, test_pipe, fixture_tear_down);
     g_test_add ("/client/stdin-closed", Fixture, NULL, fixture_set_up, test_stdin_closed, fixture_tear_down);
     g_test_add ("/client/pipe-refused-unconnected", Fixture, NULL, fixture_set_up, test_pipe_refused_unconnected, fixture_tear_down);

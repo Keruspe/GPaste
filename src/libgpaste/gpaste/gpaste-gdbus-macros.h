@@ -14,6 +14,28 @@
 
 G_BEGIN_DECLS
 
+/* An error a call failed with, as its caller shows it -- a notification, the
+ * command line. GDBus' "GDBus.Error:<name>: " prefix goes where the domain and
+ * code already say what it does, and where the name is the daemon's own
+ * catch-all, which says nothing the message does not; any other unmapped
+ * error keeps it, its name being all there is to tell it by. */
+static inline void
+g_paste_dbus_strip_remote_error (GError **error)
+{
+    if (!error || !*error || !g_dbus_error_is_remote_error (*error))
+        return;
+
+    if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR))
+    {
+        g_autofree gchar *name = g_dbus_error_get_remote_error (*error);
+
+        if (g_strcmp0 (name, G_PASTE_BUS_NAME ".Error"))
+            return;
+    }
+
+    g_dbus_error_strip_remote_error (*error);
+}
+
 /***************/
 /* Constructor */
 /***************/
@@ -85,7 +107,10 @@ G_BEGIN_DECLS
 
 #define DBUS_RETURN(if_fail, extract_and_return_answer) \
     if (!_result)                                       \
+    {                                                   \
+        g_paste_dbus_strip_remote_error (error);        \
         return if_fail;                                 \
+    }                                                   \
     extract_and_return_answer
 
 /*****************************/
