@@ -3,6 +3,7 @@ NEW in 50.11 (UNRELEASED)
 
 - Fix selecting an image making the memory limit remove other items
 - Fix copied blank lines vanishing from the history after a restart
+- Fix a crash right after a save emptying the history on some filesystems
 
 NEW in 50.10 (08/09/2026)
 =============

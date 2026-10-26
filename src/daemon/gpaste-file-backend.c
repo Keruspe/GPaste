@@ -9,7 +9,42 @@
 #include <gpaste-password-item.h>
 #include <gpaste-uris-item.h>
 
+#include <glib/gstdio.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 G_PASTE_DEFINE_TYPE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
+
+/* Have what was written to @file on the disk before it is renamed over the
+ * file it replaces: without it, a filesystem lacking ext4's rename heuristic --
+ * XFS, ext4 mounted noauto_da_alloc -- may keep the rename and lose the data in
+ * a crash right after a save, and the empty file left reads as an empty
+ * history, which the next save makes for good. No test tells a synced file
+ * from one that was not.
+ *
+ * Not left to the g_file_replace () the stream comes from: GIO syncs as it
+ * closes only a file it replaced, which the temporary one, made afresh, never
+ * is. Replacing the history file itself through it would sync, but have GIO's
+ * own temporary file stand in for the one get_output_stream writes and
+ * g_file_move () then puts in place. */
+static gboolean
+_g_paste_file_backend_sync (GFile   *file,
+                            GError **error)
+{
+    g_autofree gchar *path = g_file_get_path (file);
+    g_autofd gint fd = g_open (path, O_RDONLY | O_CLOEXEC, 0);
+
+    if (fd >= 0 && !fsync (fd))
+        return TRUE;
+
+    gint saved_errno = errno;
+
+    g_set_error (error, G_IO_ERROR, g_io_error_from_errno (saved_errno), "Could not sync %s: %s", path, g_strerror (saved_errno));
+
+    return FALSE;
+}
 
 static gboolean
 _g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
@@ -151,6 +186,13 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
     if (success && !g_output_stream_close (stream, NULL /* cancellable */, &error))
     {
         g_warning ("Failed to close history temp file: %s", error->message);
+        g_clear_error (&error);
+        success = FALSE;
+    }
+
+    if (success && !_g_paste_file_backend_sync (tmp_file, &error))
+    {
+        g_warning ("Failed to sync history temp file: %s", error->message);
         g_clear_error (&error);
         success = FALSE;
     }
