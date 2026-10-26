@@ -13,3 +13,4 @@ subdir('gnome-shell-client')
 subdir('global-shortcut-client')
 
 subdir('settings')
+subdir('tools')
