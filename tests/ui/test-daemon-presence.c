@@ -44,9 +44,28 @@ counted_reexecute_legacy_daemon (GPasteClient *client,
     return g_paste_util_reexecute_legacy_daemon (client, error);
 }
 
+/* Set to have the window's client fail to build, as with the session bus out
+ * of reach: the suite's bus is always there. */
+static gboolean fail_client_builds;
+
+static GPasteClient *
+failing_client_new_finish (GAsyncResult *result,
+                           GError      **error)
+{
+    if (!fail_client_builds)
+        return g_paste_client_new_finish (result, error);
+
+    g_autoptr (GPasteClient) built = g_paste_client_new_finish (result, NULL);
+
+    g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED, "no bus");
+    return NULL;
+}
+
 /* Reach the window's banner, actions and setup. */
 #define g_paste_util_reexecute_legacy_daemon counted_reexecute_legacy_daemon
+#define g_paste_client_new_finish failing_client_new_finish
 #include <gpaste-ui-window.c>
+#undef g_paste_client_new_finish
 #undef g_paste_util_reexecute_legacy_daemon
 #include <gpaste-ui-item.h>
 
@@ -2311,6 +2330,54 @@ test_closed_while_connecting (void)
     g_assert_false (gtk_widget_get_visible (GTK_WIDGET (window)));
 }
 
+static gboolean
+connection_answered (gconstpointer window,
+                     gconstpointer arg G_GNUC_UNUSED)
+{
+    return !((GPasteUiWindow *) window)->connecting;
+}
+
+/* A window whose client could not be built has a header bar to close it by,
+ * every other one belonging to a page setup builds, until a retry gets as far
+ * as setup, whose pages bring their own. */
+static void
+test_client_fails (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    fail_client_builds = TRUE;
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Couldn't connect to GPaste: no bus");
+
+    g_autoptr (GPasteUiWindow) window = g_object_ref (G_PASTE_UI_WINDOW (g_paste_ui_window_new (app)));
+
+    g_paste_test_bus_wait_until (connection_answered, window, NULL);
+    g_test_assert_expected_messages ();
+    fail_client_builds = FALSE;
+    g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
+
+    GtkWidget *header = find_widget (GTK_WIDGET (window), ADW_TYPE_HEADER_BAR);
+
+    g_assert_nonnull (header);
+    g_assert_true (adw_header_bar_get_show_end_title_buttons (ADW_HEADER_BAR (header)));
+
+    FakeDaemon daemon = { .size = 1 };
+
+    fake_daemon_start (&daemon);
+    g_signal_emit_by_name (window->banner, "button-clicked");
+    g_paste_test_bus_wait_until (connection_answered, window, NULL);
+    g_assert_nonnull (window->client);
+    g_assert_null (window->daemonless_header);
+    g_assert_true (gtk_widget_get_first_child (GTK_WIDGET (window->content_box)) == GTK_WIDGET (window->banner));
+
+    gtk_window_destroy (GTK_WINDOW (window));
+    drain ();
+    fake_daemon_stop (&daemon);
+}
+
 /* A daemon that could not list its histories is warned about -- a failure of
  * the session's, not a bug of the program's -- and leaves the rows usable. */
 static void
@@ -3781,6 +3848,7 @@ main (int argc, char **argv)
     g_test_add_data_func ("/ui/daemon-presence/closed-with-question-up/restart", "restart-daemon", test_closed_with_question_up);
     g_test_add_data_func ("/ui/daemon-presence/closed-with-question-up/tracking", "track-changes", test_closed_with_question_up);
     g_test_add_func ("/ui/daemon-presence/closed-while-connecting", test_closed_while_connecting);
+    g_test_add_func ("/ui/daemon-presence/client-fails", test_client_fails);
     g_test_add_func ("/ui/daemon-presence/listing-fails", test_listing_fails);
     g_test_add_func ("/ui/daemon-presence/legacy-daemon", test_legacy_daemon);
     g_test_add_func ("/ui/daemon-presence/search-escaped", test_search_escaped);

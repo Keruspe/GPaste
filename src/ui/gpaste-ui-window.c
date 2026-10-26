@@ -44,6 +44,9 @@ struct _GPasteUiWindow
     GtkSearchBar           *search_bar;
     GtkSearchEntry         *search_entry;
     GtkBox                 *content_box;
+    /* Borrowed, the content box owning it: the header bar of a window whose
+     * client could not be built, until setup's pages bring their own. */
+    GtkWidget              *daemonless_header;
     AdwToastOverlay        *toast_overlay;
     AdwBanner              *banner;
     /* Weak, the overlay owning it: the offer to restart a daemon older than
@@ -1622,6 +1625,7 @@ g_paste_ui_window_dispose (GObject *object)
     self->search_bar = NULL;
     self->search_entry = NULL;
     self->content_box = NULL;
+    self->daemonless_header = NULL;
     self->toast_overlay = NULL;
     self->banner = NULL;
     self->merge_bar = NULL;
@@ -1821,6 +1825,8 @@ g_paste_ui_window_setup (GPasteUiWindow *self,
     gtk_widget_set_halign (nav_split_view, GTK_ALIGN_FILL);
     gtk_widget_set_valign (nav_split_view, GTK_ALIGN_FILL);
 
+    if (self->daemonless_header)
+        gtk_box_remove (self->content_box, g_steal_pointer (&self->daemonless_header));
     gtk_box_append (self->content_box, nav_split_view);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (self->header), "active",
@@ -1890,8 +1896,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (error)
     {
-        /* A warning, as in the panel's failed listing. No test builds a client
-         * that fails: the bus the suite runs on is always there. */
+        /* A warning, as in the panel's failed listing. */
         g_warning ("Couldn't connect to GPaste: %s", error->message);
         /* No wait here, unlike a daemon that merely went away: building the
          * proxy is what failed -- the session bus unreachable, or a daemon it
@@ -1902,6 +1907,12 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         if (self->initialized)
             return;
 
+        /* Every header bar belongs to a page setup builds, so with none the
+         * window would have nothing to close it with or drag it by, the
+         * banner's one button only retrying: this one stands in until a retry
+         * gets as far as setup (/ui/daemon-presence/client-fails). */
+        self->daemonless_header = adw_header_bar_new ();
+        gtk_box_prepend (self->content_box, self->daemonless_header);
         add_daemonless_window_actions (self);
         /* Present anyway: the banner explaining what went wrong is the whole
          * point, and a window that is never shown leaves the application
