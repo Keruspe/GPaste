@@ -89,8 +89,10 @@ struct _GPasteUiWindow
      * question out to find out: see g_paste_ui_window_probe_legacy (). */
     gboolean                legacy;
     GCancellable           *legacy_probe;
-    /* A restart of that daemon is out: see on_banner_retry (). */
+    /* A restart of that daemon is out, or asked for while that question is:
+     * see on_banner_retry (). */
     gboolean                legacy_restarting;
+    gboolean                legacy_restart_asked;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -1108,14 +1110,6 @@ g_paste_ui_window_on_daemon_host (GPasteUiWindow *self)
     g_paste_ui_window_update_version_toast (self);
 }
 
-static void
-on_daemon_owner_changed (GPasteClient *client G_GNUC_UNUSED,
-                         GParamSpec   *pspec  G_GNUC_UNUSED,
-                         gpointer      user_data)
-{
-    g_paste_ui_window_on_daemon_host (user_data);
-}
-
 /* The watch is dropped in dispose (), after which no callback runs, so @self
  * is borrowed. */
 static void
@@ -1144,6 +1138,8 @@ on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
     g_paste_ui_window_on_shell_owner (user_data, NULL);
 }
 
+static void g_paste_ui_window_restart_legacy (GPasteUiWindow *self);
+
 static void
 on_legacy_probed (GObject      *source_object G_GNUC_UNUSED,
                   GAsyncResult *res,
@@ -1163,29 +1159,63 @@ on_legacy_probed (GObject      *source_object G_GNUC_UNUSED,
     g_clear_object (&self->legacy_probe);
     self->legacy = legacy;
     g_paste_ui_window_update_banner (self);
+
+    if (self->legacy_restart_asked)
+    {
+        self->legacy_restart_asked = FALSE;
+        if (legacy)
+            g_paste_ui_window_restart_legacy (self);
+    }
 }
 
 /* A GPaste 45 or 50 left running by a package update owns the name and serves
  * none of this interface, so it is never ready for this version: the window
  * would say it is connecting, then offer a retry that waits for it forever.
- * Asked whenever the presence moves while something owns the name, the window
- * held weakly, as the question is one dispose () ends. */
+ * Asked whenever the presence moves, or the name changes hands, while something
+ * owns it, the window held weakly, as the question is one dispose () ends. The
+ * verdict stands until the answer replaces it: dropped while the question is
+ * out, it would have the banner offer a retry, which cannot help such a daemon,
+ * for a round trip on every move (/ui/daemon-presence/legacy-kept), and a
+ * Restart pressed meanwhile waits for the answer (on_banner_retry ()). */
 static void
 g_paste_ui_window_probe_legacy (GPasteUiWindow *self)
 {
     g_paste_clear_cancellable (&self->legacy_probe);
-    self->legacy = FALSE;
 
-    if (g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY)
-        return;
-
-    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
+    g_autofree gchar *owner = (g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY) ? NULL : g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
 
     if (!owner)
+    {
+        self->legacy = FALSE;
+        self->legacy_restart_asked = FALSE;
         return;
+    }
 
     self->legacy_probe = g_cancellable_new ();
     g_paste_util_daemon_is_legacy (self->client, self->legacy_probe, on_legacy_probed, g_paste_weak_ref_new (self));
+}
+
+/* An older daemon re-executing as this version, by a signal of the command
+ * line's or a service restart, hands the name over with the presence still
+ * starting on both sides of it, which nothing then announces: the verdict on
+ * whether an older daemon runs is asked again of whoever owns the name now
+ * (/ui/daemon-presence/legacy-replaced). A daemon arriving as the presence
+ * moves is asked about twice, the presence's handler running first and its
+ * question given up on here: rare enough, and cheap enough, not to keep the
+ * owner a question went out for. */
+static void
+on_daemon_owner_changed (GPasteClient *client G_GNUC_UNUSED,
+                         GParamSpec   *pspec  G_GNUC_UNUSED,
+                         gpointer      user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    if (self->client)
+    {
+        g_paste_ui_window_probe_legacy (self);
+        g_paste_ui_window_update_banner (self);
+    }
+    g_paste_ui_window_on_daemon_host (self);
 }
 
 /* The list and the sidebar follow the daemon on their own; the window says so
@@ -1272,6 +1302,24 @@ on_legacy_reexecuted (GObject      *source_object G_GNUC_UNUSED,
         g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not restart the older daemon"));
 }
 
+/* Restarted by signal (g_paste_util_reexecute_legacy_daemon ()): what comes
+ * back is this version's daemon, which the presence follows. Once: a second
+ * press would find the new daemon and say the restart failed, or signal the
+ * old one again as it execs, before the new one handles it. */
+static void
+g_paste_ui_window_restart_legacy (GPasteUiWindow *self)
+{
+    if (self->legacy_restarting)
+        return;
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_legacy_reexecuted, g_object_ref (self));
+
+    self->legacy_restarting = TRUE;
+
+    g_task_set_task_data (task, g_object_ref (self->client), g_object_unref);
+    g_task_run_in_thread (task, reexecute_legacy_in_thread);
+}
+
 /* The banner's button, an offer only while there is no daemon: ask for one now,
  * this being the user asking, and wait for it from the start again. */
 static void
@@ -1285,21 +1333,18 @@ on_banner_retry (AdwBanner *banner G_GNUC_UNUSED,
     if (self->connecting)
         return;
 
-    /* Restarted by signal (g_paste_util_reexecute_legacy_daemon ()): what comes
-     * back is this version's daemon, which the presence follows. Once: a
-     * second press would find the new daemon and say the restart failed, or
-     * signal the old one again as it execs, before the new one handles it. */
+    /* Pressed while the window asks again whether an older daemon runs --
+     * the presence moved, or the name changed hands -- the restart waits for
+     * the answer, carried out once it is in should it still be yes: the
+     * verdict the banner shows stands meanwhile, and may be that of a daemon
+     * that has let the name go to this version's, which a restart could only
+     * fail on. */
     if (self->legacy)
     {
-        if (self->legacy_restarting)
-            return;
-
-        g_autoptr (GTask) task = g_task_new (NULL, NULL, on_legacy_reexecuted, g_object_ref (self));
-
-        self->legacy_restarting = TRUE;
-
-        g_task_set_task_data (task, g_object_ref (self->client), g_object_unref);
-        g_task_run_in_thread (task, reexecute_legacy_in_thread);
+        if (self->legacy_probe)
+            self->legacy_restart_asked = TRUE;
+        else
+            g_paste_ui_window_restart_legacy (self);
         return;
     }
 

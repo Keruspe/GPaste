@@ -310,7 +310,11 @@ window closes lets the sidebar go. A window presented
 for a failed connection and set up again into a daemon already there takes its
 banner down. A daemon serving only `org.gnome.GPaste2` gets the banner offering to
 restart it, which signals it, this process standing in for it and the pid file
-naming it.
+naming it; asked again whether one runs, the presence moved or the name passed
+to another such daemon, the banner goes on offering the restart while the
+question is out, a recorder on its title seeing nothing else (`legacy-kept`),
+and a Restart pressed as the name passes on waits for the answer, signalling
+another such daemon and nothing at all for this version's (`legacy-restart-asked`).
 A window closed and let go of while the list's size request is out leaves the
 list standing, held by the reply, and the reply lands without reaching for the
 sidebar that went with the window. With the widest window buttons (KDE's
