@@ -93,6 +93,10 @@ struct _GPasteHistory
     GPasteItem           *pending_selection;
     gboolean              pending_clear;
     GSList               *pending_dropped;
+    /* @pending_dropped's passwords while they are announced, from the
+     * selection made with their departure to their own announcements, borrowed
+     * from the list the emission owns (g_paste_history_get_dropping ()). */
+    const GSList         *dropping;
 
     /* The uuids of what was added while @stopped: in the model and nowhere
      * else, recording having stopped, until the reload ending the handover
@@ -154,6 +158,11 @@ g_paste_history_emit_pending (GPasteHistorySelectionScope *scope)
         dropped = g_steal_pointer (&self->pending_dropped);
     }
 
+    /* A handler emitting pending changes of its own sees its own, and this
+     * emission its own again once it returns. */
+    const GSList *outer = self->dropping;
+
+    self->dropping = dropped;
     if (item || clear)
     {
         g_debug ("history: selected");
@@ -178,6 +187,13 @@ g_paste_history_emit_pending (GPasteHistorySelectionScope *scope)
                        l->data,
                        NULL);
     }
+    self->dropping = outer;
+}
+
+const GSList *
+g_paste_history_get_dropping (GPasteHistory *self)
+{
+    return self->dropping;
 }
 
 G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (GPasteHistorySelectionScope, g_paste_history_emit_pending)

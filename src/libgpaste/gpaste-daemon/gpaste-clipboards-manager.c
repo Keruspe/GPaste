@@ -5,6 +5,7 @@
 #include <gpaste-3/gpaste-update-enums.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
@@ -2456,6 +2457,37 @@ g_paste_clipboards_manager_retry_refresh (GPasteClipboardsManager *self,
     }
 }
 
+/* Whether @clip's record names @item, a password leaving the history: its own
+ * entry, or the unlisted twin of one -- a capture or a merge equal to it -- but
+ * never a record whose own entry is still listed, named passwords staying
+ * distinct entries for sharing a value. */
+static gboolean
+g_paste_clipboards_manager_record_names (GPasteClipboardsManager *self,
+                                         _Clipboard              *clip,
+                                         GPasteItem              *item)
+{
+    if (!clip->password || g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)))
+        return FALSE;
+
+    return g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
+           g_paste_item_equals (clip->password, item);
+}
+
+/* Whether @clip's record names a password the change of the history being
+ * announced drops (g_paste_history_get_dropping ()). */
+static gboolean
+g_paste_clipboards_manager_record_dropping (GPasteClipboardsManager *self,
+                                            _Clipboard              *clip)
+{
+    for (const GSList *l = g_paste_history_get_dropping (self->history); l; l = l->next)
+    {
+        if (g_paste_clipboards_manager_record_names (self, clip, l->data))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 /**
  * g_paste_clipboards_manager_select:
  * @self: a #GPasteClipboardsManager instance
@@ -2480,14 +2512,17 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = clipboard->data;
 
-        /* The selection carries a password the history no longer lists --
-         * deleted at the head, @item heading in its place -- and @item is that
-         * very secret as plain text: published, it would put the secret back in
-         * clear with nothing to take it off. Taken off the way a dropped
-         * password is, with the newest entry fit to replace it
-         * (deselect_password ()). */
+        /* The selection carries a password the history is dropping -- deleted
+         * at the head, @item heading in its place, announced once this is
+         * published -- and @item is that very secret as plain text: published,
+         * it would put the secret back in clear with nothing to take it off.
+         * Taken off the way a dropped password is, with the newest entry fit to
+         * replace it (deselect_password ()). A record the history never listed
+         * -- a copy read with tracking paused, another history's entry -- is
+         * no password taken off, and a plain entry of it selected goes out as
+         * any other. */
         if (clip->password && !G_PASTE_IS_PASSWORD_ITEM (item) && self->history &&
-            !g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)) &&
+            g_paste_clipboards_manager_record_dropping (self, clip) &&
             g_paste_clipboards_manager_is_twin (g_paste_item_get_real_value (item), g_paste_item_get_real_value (clip->password)))
         {
             g_paste_clipboards_manager_deselect_password (clip);
@@ -2750,22 +2785,12 @@ on_password_dropped (GPasteClipboardsManager *self,
                 link = &node->next;
         }
 
-        /* Named passwords can share a value while remaining distinct entries.
-         * A record whose own entry survives is not the password being dropped.
-         * Unlisted capture/merge twins are compared below. */
-        if (clip->password && g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)))
-            continue;
-
         /* The record may hold an earlier object of the very entry that went:
          * updating a password puts a new one in its place under the same uuid
          * (g_paste_history_make_password ()), and a record whose selection was
          * being read then is left on the old one until a read identifies it
-         * (/clipboard/dropped_password/renamed_twin). Capture/merge twins are
-         * equal nameless items. Named entries remain distinct even when their
-         * cleartext matches an unlisted twin. */
-        if (clip->password &&
-            (g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
-             g_paste_item_equals (clip->password, item)))
+         * (/clipboard/dropped_password/renamed_twin). */
+        if (g_paste_clipboards_manager_record_names (self, clip, item))
         {
             g_paste_clipboards_manager_deselect_password (clip);
             /* As in on_password_timeout (): an unconfirmed record is only

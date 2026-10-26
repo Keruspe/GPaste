@@ -39,4 +39,10 @@ GPtrArray *g_paste_history_search_items (GPasteHistory *self,
                                          const gchar   *pattern,
                                          GError       **error);
 
+/* The passwords the change being announced takes out of the history, which
+ * GPasteHistory::password-dropped announces after ::selected: a handler of the
+ * one can tell a head elected because a password went from any other. %NULL
+ * outside of an announcement. */
+const GSList *g_paste_history_get_dropping (GPasteHistory *self);
+
 G_END_DECLS
