@@ -304,7 +304,7 @@ g_paste_clipboard_meta_decode_file_list (GValue  *value,
     if (file_list)
         g_value_take_boxed (value, file_list);
     else
-        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "More than %u files", G_PASTE_CLIPBOARD_MAX_FILES);
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "No file, or more than %u files", G_PASTE_CLIPBOARD_MAX_FILES);
 }
 
 static void

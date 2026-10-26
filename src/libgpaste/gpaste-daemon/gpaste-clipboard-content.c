@@ -357,7 +357,9 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
         return FALSE;
 
     /* gdk_file_list_get_files is (transfer container): it hands back a fresh
-     * GSList whose GFiles stay owned by the list, hence g_autoptr (GSList). */
+     * GSList whose GFiles stay owned by the list, hence g_autoptr (GSList). The
+     * other sites taking one say so in a line of their own, the trap being one
+     * each of them can fall into. */
     g_autoptr (GSList) files_a = gdk_file_list_get_files (a);
     g_autoptr (GSList) files_b = gdk_file_list_get_files (b);
     const GSList *fa = files_a;
@@ -405,7 +407,7 @@ g_paste_clipboard_file_list_new (const gchar * const *uris)
  * any of it is decoded.
  *
  * Returns: (transfer full) (nullable): the #GdkFileList @bytes lists, or %NULL
- *          for one listing too many files
+ *          for one listing too many files, or none
  */
 G_PASTE_VISIBLE GdkFileList *
 g_paste_clipboard_file_list_from_bytes (GBytes *bytes)
@@ -414,6 +416,11 @@ g_paste_clipboard_file_list_from_bytes (GBytes *bytes)
 
     gsize size = 0;
     const gchar *data = g_bytes_get_data (bytes, &size);
+
+    /* No list at all, its data perhaps no pointer. */
+    if (!size)
+        return NULL;
+
     const gchar *end = data + size;
     guint newlines = 0;
 
@@ -883,8 +890,15 @@ g_paste_clipboard_mime_results_store_special (GPasteClipboardMimeResults *result
     if (!bytes || !g_bytes_get_size (bytes))
         return;
 
+    gsize size = 0;
+    gconstpointer data = g_bytes_get_data (bytes, &size);
+
+    /* A copy of its size: a transfer's bytes are its stream's buffer, grown by
+     * doubling, which an item kept in the history would otherwise hold whole
+     * while only its size counts against max-memory-usage. No test sees what a
+     * GBytes was allocated with. */
     g_clear_object (&results->special_mime[mime]);
-    results->special_mime[mime] = g_paste_binary_data_new (mime, g_bytes_ref (bytes));
+    results->special_mime[mime] = g_paste_binary_data_new (mime, g_bytes_new (data, size));
 }
 
 /**
@@ -1147,11 +1161,14 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
              * /clipboard/empty_text_retires_record tests). The mutter
              * backend hands an empty transfer over as that empty
              * string too (g_paste_clipboard_meta_update_on_text ()).
-             * A text over the size limits -- never a secret, which
-             * they do not apply to -- is still held as unidentified:
-             * its bytes are what the cache must not hold. */
+             * A text over max-text-item-size -- never a secret, which
+             * the limits do not apply to -- is what the cache must not hold.
+             * One under min-text-item-size is a few bytes, kept as any text
+             * a read could not identify is, so that a standing record is
+             * matched against what sits there rather than left unconfirmed
+             * (/clipboard/unknown_hint/short). */
             empty_text = !*update->text;
-            unidentified = FALSE;
+            unidentified = unidentified && !empty_text && strlen (update->text) <= g_paste_settings_get_max_text_item_size (update->settings);
             break;
         case G_PASTE_CLIPBOARD_TEXT_RESELECT:
             update->reselect = TRUE;

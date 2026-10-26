@@ -4058,6 +4058,35 @@ test_unknown_hint_dropped_text (void)
     g_assert_cmpuint (clipboard->publications, ==, 0);
 }
 
+/* A text the size policy turns down for being too short is a few bytes, which
+ * the cache keeps as it keeps any text a read could not identify: what a
+ * standing password record is then matched against. */
+static void
+test_unknown_hint_short_text (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_min_text_item_size (settings, 3);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    text_ready (clipboard, settings, pending, "ab");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard)), ==, "ab");
+}
+
 /* A password's entry leaving the history takes its cleartext off the selections
  * carrying it, from whatever position that entry held: with password-timeout at 0
  * there is no countdown to take it off, and the entry the user just deleted was
@@ -6068,6 +6097,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/strip_idle_password", test_strip_preserves_idle_password);
     g_test_add_data_func ("/clipboard/unknown_hint/primary", GINT_TO_POINTER (FALSE), test_unknown_hint_text_policy);
     g_test_add_func ("/clipboard/unknown_hint/dropped", test_unknown_hint_dropped_text);
+    g_test_add_func ("/clipboard/unknown_hint/short", test_unknown_hint_short_text);
     g_test_add_data_func ("/clipboard/dropped_password/removed", GINT_TO_POINTER (FALSE), test_dropped_password);
     g_test_add_data_func ("/clipboard/dropped_password/emptied", GINT_TO_POINTER (TRUE), test_dropped_password);
     g_test_add_data_func ("/clipboard/unknown_hint/clipboard", GINT_TO_POINTER (TRUE), test_unknown_hint_text_policy);
