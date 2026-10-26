@@ -77,7 +77,12 @@ refused before any call, a valid one is looked up and its uuid used, and a verb
 naming no item reads no index out of its argument; a daemon refusing Reexecute
 is sent SIGUSR1 only when the pid file holds a positive decimal pid naming the
 process that owns the bus name -- the test process itself, a stray `sleep` being
-left alone.
+left alone. `/client/locale` checks that `G_PASTE_INIT_GETTEXT ()` sets the
+locale the environment names, which the client has nothing else to set.
+
+`tests/tools/test-client-strings.py` reads `src/client/gpaste-client.c`: every
+error the client builds is marked for translation, and no translation is handed
+to a printf-like or logging call as its format.
 
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests

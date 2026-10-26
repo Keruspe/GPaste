@@ -1,4 +1,10 @@
 test(
+  'client-strings',
+  find_program('test-client-strings.py'),
+  suite: 'gpaste',
+)
+
+test(
   'eslint-launcher',
   find_program('test-eslint-launcher.py'),
   suite: 'gpaste',

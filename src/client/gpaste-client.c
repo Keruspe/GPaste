@@ -266,7 +266,7 @@ show_help (void)
 {
     const char *progname = g_get_prgname ();
 
-    printf (_("Usage:\n"));
+    printf ("%s", _("Usage:\n"));
     /* Translators: help for gpaste history */
     printf ("  %s [history]: %s\n", progname, _("print the history with UUIDs"));
     /* Translators: help for gpaste history-size */
@@ -333,13 +333,13 @@ show_help (void)
     printf ("  %s about: %s\n", progname, _("display the about dialog"));
 
     printf("\n");
-    printf(_("Convenience options:"));
+    printf ("%s", _("Convenience options:"));
     printf("\n");
     /* Translators: help for --use-index */
     printf("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
 
     printf("\n");
-    printf(_("Display options:"));
+    printf ("%s", _("Display options:"));
     printf("\n");
     /* Translators: help for --oneline */
     printf("  --oneline: %s\n", _("display each item on only one line"));
@@ -351,7 +351,7 @@ show_help (void)
     printf("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
 
     printf("\n");
-    printf(_("Merge options:"));
+    printf ("%s", _("Merge options:"));
     printf("\n");
     /* Translators: help for --decoration <string> */
     printf("  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
@@ -477,7 +477,7 @@ g_paste_daemon_reexec (Context *ctx,
     if (!success)
         return EXIT_FAILURE;
 
-    printf (_("Successfully reexecuted the daemon\n"));
+    printf ("%s", _("Successfully reexecuted the daemon\n"));
 
     return EXIT_SUCCESS;
 }

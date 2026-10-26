@@ -3,6 +3,7 @@
 
 #include <gpaste-test-bus.h>
 #include <gpaste/gpaste-gdbus-defines.h>
+#include <gpaste/gpaste-util.h>
 
 #include <glib-unix.h>
 #include <glib/gstdio.h>
@@ -536,6 +537,29 @@ test_pipe (Fixture      *f,
     run_client_with_input (f, (const gchar * const []) { "--version", NULL }, inner_nul, TRUE, NULL);
 }
 
+/* G_PASTE_INIT_GETTEXT () sets the locale the environment names: see the
+ * macro for why. */
+static void
+test_locale_set (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!setlocale (LC_ALL, "C.UTF-8"))
+        {
+            g_test_skip ("no C.UTF-8 locale");
+            return;
+        }
+        setlocale (LC_ALL, "C");
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_assert_true (g_setenv ("LC_ALL", "C.UTF-8", TRUE));
+    G_PASTE_INIT_GETTEXT ();
+    g_assert_cmpstr (setlocale (LC_ALL, NULL), ==, "C.UTF-8");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -544,6 +568,7 @@ main (int argc, char **argv)
     g_test_add ("/client/use-index/malformed", Fixture, NULL, fixture_set_up, test_malformed, fixture_tear_down);
     g_test_add ("/client/use-index/index", Fixture, NULL, fixture_set_up, test_index, fixture_tear_down);
     g_test_add ("/client/use-index/not-an-item", Fixture, NULL, fixture_set_up, test_not_an_item, fixture_tear_down);
+    g_test_add_func ("/client/locale", test_locale_set);
     g_test_add ("/client/pipe", Fixture, NULL, fixture_set_up, test_pipe, fixture_tear_down);
     g_test_add ("/client/stdin-closed", Fixture, NULL, fixture_set_up, test_stdin_closed, fixture_tear_down);
     g_test_add ("/client/pipe-refused-unconnected", Fixture, NULL, fixture_set_up, test_pipe_refused_unconnected, fixture_tear_down);
