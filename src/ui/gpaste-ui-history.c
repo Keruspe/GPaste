@@ -428,8 +428,12 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     self->loading = FALSE;
 
-    /* A failed size says nothing about the rows already shown. With none, show
-     * an error and a way to retry rather than leaving a loading page up. */
+    /* A failed size says nothing about the rows already shown, when they are
+     * the history's. With none, show an error and a way to retry rather than
+     * leaving a loading page up -- and the same when they are a search's or the
+     * pinned items', this refresh being the one leaving that view: under no
+     * filter they would read as the history, Ctrl+0 pasting a search result
+     * (/ui/daemon-presence/size-fails-leaving-search). */
     if (error)
     {
         /* Its daemon gone, the presence says so and lists again: no failure
@@ -439,8 +443,12 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
             return;
 
         g_warning ("Could not get the size of history \"%s\": %s", cdata->name, error->message);
-        if (!self->size)
-            g_paste_ui_history_show_load_error (self);
+        if (self->size && !g_paste_ui_history_model_lists_uuids (self->model))
+            return;
+
+        self->size = 0;
+        g_paste_ui_history_model_set_size (self->model, 0);
+        g_paste_ui_history_show_load_error (self);
         return;
     }
 
@@ -653,11 +661,27 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
 
     /* Its daemon gone, no answer that nothing matched: the page stays as it is
      * until the presence lists again (g_paste_client_is_daemon_gone_error ();
-     * /ui/daemon-presence/listing-daemon-gone). Any other failure reads as no
-     * match: the daemon answered, and what it said was not a list. */
+     * /ui/daemon-presence/listing-daemon-gone). Any other failure -- the call
+     * refused, timed out, or answered with what the client cannot read -- is
+     * no answer either, and is reported as the size read reports one: the rows
+     * of the view being left go, under an error and a way to retry, rather
+     * than "No Results" or "No Pinned Items" the daemon never said
+     * (/ui/daemon-presence/filter-fails). */
     if (g_paste_client_is_daemon_gone_error (error))
         return;
 
+    if (error)
+    {
+        if (cdata->searched)
+            g_warning ("Could not search the history: %s", error->message);
+        else
+            g_warning ("Could not list the pinned items: %s", error->message);
+
+        self->size = 0;
+        g_paste_ui_history_model_set_uuids (self->model, NULL);
+        g_paste_ui_history_show_load_error (self);
+        return;
+    }
 
     g_autoptr (GStrvBuilder) uuids = g_strv_builder_new ();
 

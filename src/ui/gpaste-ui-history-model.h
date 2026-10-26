@@ -27,6 +27,7 @@ GPasteUiHistoryItem *g_paste_ui_history_model_peek (GPasteUiHistoryModel *self,
 
 gboolean g_paste_ui_history_model_set_size              (GPasteUiHistoryModel *self,
                                                          guint64               size);
+gboolean g_paste_ui_history_model_lists_uuids           (GPasteUiHistoryModel *self);
 void     g_paste_ui_history_model_set_uuids             (GPasteUiHistoryModel *self,
                                                          const gchar * const  *uuids);
 void     g_paste_ui_history_model_invalidate            (GPasteUiHistoryModel *self,

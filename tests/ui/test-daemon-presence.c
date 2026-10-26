@@ -1322,6 +1322,101 @@ test_status_plain (void)
     close_activation_window (window, &daemon);
 }
 
+/* Leaving a search whose history then cannot be sized leaves no search result
+ * on screen as if it were the history, Ctrl+0 pasting it: the rows go, under
+ * an error and a way to retry. */
+static void
+test_size_fails_leaving_search (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    daemon.hold_filters = TRUE;
+    g_paste_ui_history_search (window->history, "match");
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+    answer_filter (&daemon);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_true (list_shown (window, NULL));
+
+    guint sized = daemon.sizings;
+
+    daemon.hold_sizes = TRUE;
+    g_paste_ui_history_search (window->history, "");
+    g_paste_test_bus_wait_for_count (&daemon.sizings, sized + 1);
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not get the size of history*size failed");
+    g_dbus_method_invocation_return_dbus_error (g_steal_pointer (&daemon.held_size), "org.gnome.GPaste.Test.Size", "size failed");
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_test_assert_expected_messages ();
+
+    AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
+
+    g_assert_false (list_shown (window, NULL));
+    g_assert_cmpstr (adw_status_page_get_title (status), ==, _("Could Not Load History"));
+
+    /* Ctrl+0 is the history's first item, read by its index. */
+    daemon.hold_sizes = FALSE;
+    g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
+    g_paste_test_bus_wait_until (selected, &daemon, NULL);
+    g_assert_cmpstr (daemon.selected, !=, daemon.match);
+    close_activation_window (window, &daemon);
+}
+
+/* A search or the pinned items the daemon fails to list is no answer that
+ * nothing matched or nothing is pinned: it is warned about, and the page says
+ * the history could not be loaded, with a way to retry. */
+static void
+test_filter_fails (gconstpointer data)
+{
+    gboolean searched = GPOINTER_TO_INT (data);
+
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    daemon.hold_filters = TRUE;
+    if (searched)
+        g_paste_ui_history_search (window->history, "match");
+    else
+        g_paste_ui_history_set_favourites (window->history, TRUE);
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, (searched) ? "Could not search the history*filter failed" : "Could not list the pinned items*filter failed");
+    g_dbus_method_invocation_return_dbus_error (g_steal_pointer (&daemon.held_filter), "org.gnome.GPaste.Test.Filter", "filter failed");
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_test_assert_expected_messages ();
+
+    AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
+
+    g_assert_false (list_shown (window, NULL));
+    g_assert_cmpstr (adw_status_page_get_title (status), ==, _("Could Not Load History"));
+    g_assert_true (gtk_widget_get_visible (adw_status_page_get_child (status)));
+    daemon.hold_filters = FALSE;
+    close_activation_window (window, &daemon);
+}
+
 /* A row bound before its item has been read activates all the same, read by its
  * index, as is one past the rows loaded so far, as far as the history goes. */
 static void
@@ -3661,6 +3756,9 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/owner-learned", test_owner_learned);
     g_test_add_func ("/ui/daemon-presence/listing-daemon-gone", test_listing_daemon_gone);
     g_test_add_func ("/ui/daemon-presence/status-plain", test_status_plain);
+    g_test_add_func ("/ui/daemon-presence/size-fails-leaving-search", test_size_fails_leaving_search);
+    g_test_add_data_func ("/ui/daemon-presence/filter-fails/search", GINT_TO_POINTER (TRUE), test_filter_fails);
+    g_test_add_data_func ("/ui/daemon-presence/filter-fails/pinned", GINT_TO_POINTER (FALSE), test_filter_fails);
     g_test_add_func ("/ui/daemon-presence/upload", test_upload);
     g_test_add_func ("/ui/daemon-presence/upload-after-row-removed", test_upload_after_row_removed);
     g_test_add_func ("/ui/daemon-presence/focus-restored", test_focus_restored);
