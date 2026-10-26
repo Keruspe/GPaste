@@ -6,7 +6,7 @@
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
-#include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-image-item-private.h>
 #include <gpaste-daemon/gpaste-item.h>
 #include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -1519,6 +1519,17 @@ start_tag (GMarkupParseContext *context,
  * its side file holds, by @png_checksum, when it was written knowing it; else
  * the image is checked by its pixels, against its @checksum.
  *
+ * A document naming no PNG is one GPaste 51.0 wrote, or a save that never read
+ * the side file wrote, its @checksum taken off the copied texture: a high-depth
+ * one -- 16-bit premultiplied, float -- does not come back the same through PNG,
+ * and its pixels never match. Its encrypted side file, which only this
+ * passphrase writes, is trusted then, under @checksum, though another of the
+ * user's own could stand in its place: the price of not dropping such an image
+ * at the first read after 51.0, paid until the next save names its PNG for
+ * every read after (/history/file_encrypted_image_round_trip). The
+ * plaintext fallback, which anyone writing the images directory could have put
+ * there, is not.
+ *
  * @side_file is where @png was decrypted from, which this backend then knows
  * the PNG of, or %NULL for the plaintext fallback. */
 static GPasteItem *
@@ -1542,8 +1553,15 @@ _g_paste_file_backend_named_image (GPasteStorageBackend *self,
     {
         item = g_paste_image_item_new_from_bytes_at_path (path, png, date, NULL /* computed */);
 
+        /* Stamped with @checksum where trusted, rather than decoded again
+         * under it. */
         if (item && !g_paste_str_equal (g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)), checksum))
-            g_clear_object (&item);
+        {
+            if (side_file && checksum)
+                g_paste_image_item_set_stored_checksum (G_PASTE_IMAGE_ITEM (item), checksum);
+            else
+                g_clear_object (&item);
+        }
     }
 
     if (!item)

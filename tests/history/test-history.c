@@ -25,6 +25,26 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <string.h>
+
+/* The PNGs decoded while @counting_decodes is set
+ * (/history/file_encrypted_image_round_trip). */
+static gboolean counting_decodes;
+static guint    decodes;
+
+GdkTexture *
+gdk_texture_new_from_bytes (GBytes  *bytes,
+                            GError **error)
+{
+    typedef GdkTexture *(*Decode) (GBytes *, GError **);
+    static Decode original;
+
+    if (!original)
+        original = (Decode) dlsym (RTLD_NEXT, "gdk_texture_new_from_bytes");
+    if (counting_decodes)
+        ++decodes;
+
+    return original (bytes, error);
+}
 #include <sys/file.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -2824,6 +2844,28 @@ test_file_encrypted_image_round_trip (void)
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+
+    /* Written again by a backend that never read its side file, the document
+     * names no PNG for it, as GPaste 51.0's never did: its encrypted side file
+     * is still read, under the history's checksum, its pixels failing the
+     * check through PNG -- decoded once for both. */
+    {
+        g_autoptr (GPasteStorageBackend) unaware = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+        g_assert_true (g_paste_storage_backend_write_history (unaware, name, items));
+    }
+
+    g_autoptr (GPasteStorageBackend) upgraded = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+    decodes = 0;
+    counting_decodes = TRUE;
+
+    g_autolist (GPasteItem) kept = read_history_ok (upgraded, name);
+
+    counting_decodes = FALSE;
+    g_assert_cmpuint (decodes, ==, 1);
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (kept->data), ==, checksum);
 }
 #endif
 

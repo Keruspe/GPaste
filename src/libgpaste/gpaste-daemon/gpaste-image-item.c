@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-daemon/gpaste-daemon-util.h>
-#include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-image-item-private.h>
 
 #include <string.h>
 
@@ -320,6 +320,21 @@ g_paste_image_item_compute_checksum (GdkTexture *image)
     gdk_texture_download (image, data, stride);
 
     return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
+}
+
+void
+g_paste_image_item_set_stored_checksum (GPasteImageItem *self,
+                                        const gchar     *checksum)
+{
+    g_return_if_fail (G_PASTE_IS_IMAGE_ITEM (self));
+    g_return_if_fail (g_paste_image_item_is_checksum (checksum));
+
+    /* Through g_set_str (), which leaves the checksum alone when @checksum is
+     * already it -- g_paste_image_item_get_checksum ()'s string itself
+     * included. The one caller, _g_paste_file_backend_named_image (), only
+     * ever hands it another, so no test sees that case. */
+    g_set_str (&self->checksum, checksum);
+    g_paste_item_set_value (G_PASTE_ITEM (self), self->checksum);
 }
 
 /**
