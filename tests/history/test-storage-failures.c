@@ -1883,6 +1883,62 @@ empty_history (const GPasteDaemonMethods *methods,
  * full, leaves the write-ahead log to SQLite's own checkpoints: what a delete
  * takes is checkpointed out of it at once, but an item aged out is nothing the
  * user deleted, and a checkpoint on every copy syncs the disk on every copy. */
+/* A delete's checkpoint is put off by a reader holding the log rather than
+ * waited for: the backend's lock is held all along, and every write of the
+ * store would sit out the busy timeout behind it. */
+static void
+test_sqlite_checkpoint_spares_readers (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    const gchar *name = "checkpoint-reader";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GPasteItem) b = g_paste_text_item_new ("b");
+    g_autoptr (GList) history = g_list_prepend (g_list_prepend (NULL, a), b);
+    g_autoptr (sqlite3) reader = NULL;
+
+    g_paste_storage_backend_write_history (backend, name, history);
+    g_assert_cmpint (sqlite3_open (path, &reader), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite3_exec (reader, "BEGIN; SELECT COUNT (*) FROM items;", NULL, NULL, NULL), ==, SQLITE_OK);
+
+    gint64 start = g_get_monotonic_time ();
+
+    history = g_list_remove (history, b);
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (b), history);
+    g_assert_cmpint (g_get_monotonic_time () - start, <, G_USEC_PER_SEC);
+
+    g_assert_cmpint (sqlite3_exec (reader, "COMMIT;", NULL, NULL, NULL), ==, SQLITE_OK);
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 1);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A re-key empties the write-ahead log once committed, the live history's
+ * backend holding a connection of its own: the database file alone, its log
+ * lost with a process dying, would otherwise open under the passphrase being
+ * retired. */
+static void
+test_sqlite_rekey_checkpoints (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) live = g_paste_sqlite_backend_new_encrypted (settings, "old");
+    const gchar *name = "rekey-checkpoints";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (live, name);
+    g_autofree gchar *wal = g_strconcat (path, "-wal", NULL);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("secret"));
+    GStatBuf wal_stat;
+
+    g_assert_true (g_paste_storage_backend_write_history (live, name, items));
+
+    g_autoptr (GPasteStorageBackend) rekeyer = g_paste_sqlite_backend_new_encrypted (settings, "old");
+    gboolean split = TRUE;
+
+    g_assert_true (g_paste_storage_backend_rekey (rekeyer, name, "new", &split));
+    g_assert_false (split);
+    g_assert_true (g_stat (wal, &wal_stat) || !wal_stat.st_size);
+}
+#endif
+
 static void
 test_sqlite_eviction_checkpoints_nothing (void)
 {
@@ -6707,6 +6763,10 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/schema/unreadable-version", test_schema_version_unreadable);
     g_test_add_func ("/storage/sqlite/schema/upgraded-meanwhile", test_schema_upgraded_meanwhile);
     g_test_add_func ("/storage/sqlite/eviction-checkpoints-nothing", test_sqlite_eviction_checkpoints_nothing);
+    g_test_add_func ("/storage/sqlite/checkpoint-spares-readers", test_sqlite_checkpoint_spares_readers);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/sqlite/rekey-checkpoints", test_sqlite_rekey_checkpoints);
+#endif
 #endif
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)
     g_test_add_func ("/storage/sqlite/incomplete-crypto", test_incomplete_crypto);

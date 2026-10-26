@@ -66,6 +66,10 @@
  * guard against: past this, ranks are compacted back to 1..N on open. */
 #define G_PASTE_SQLITE_RANK_COMPACT_THRESHOLD (G_GINT64_CONSTANT (1) << 62)
 
+/* How long a connection waits out another one holding the database, in
+ * milliseconds: every connection of this backend's, its probes' included. */
+#define G_PASTE_SQLITE_BUSY_TIMEOUT 5000
+
 struct _GPasteSqliteBackend
 {
     GPasteStorageBackend parent_instance;
@@ -736,7 +740,7 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
         return NULL;
     }
 
-    sqlite3_busy_timeout (db, 5000);
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     /* secure_delete zeroes what a delete frees, which SQLite keeps otherwise
      * unless built with SQLITE_SECURE_DELETE -- as Fedora's is, which is why no
@@ -1205,12 +1209,16 @@ g_paste_sqlite_backend_delete_database (const gchar *db_path,
  * checkpoint, for as long as the connection lives: truncated here, which writes
  * those pages back and empties the log. The encrypted flavour's too: an image's
  * date and checksum and an alternative's mime are stored in clear. Best effort:
- * a reader holding the log defers it to the next delete. */
+ * a reader holding the log defers it to the next delete -- at once, the busy
+ * timeout lifted for it, a checkpoint waiting otherwise for every reader to be
+ * done, the backend's lock held all along. */
 static void
 g_paste_sqlite_backend_forget_deleted (sqlite3 *db)
 {
+    sqlite3_busy_timeout (db, 0);
     if (sqlite3_wal_checkpoint_v2 (db, NULL, SQLITE_CHECKPOINT_TRUNCATE, NULL, NULL) != SQLITE_OK)
         g_debug ("sqlite: could not empty the write-ahead log: %s", sqlite3_errmsg (db));
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 }
 
 /* Remember that a write of @name failed, or that a full one landed: see
@@ -1637,7 +1645,7 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
         sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
         return 0;
 
-    sqlite3_busy_timeout (db, 5000);
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
 
@@ -2230,6 +2238,12 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
+    /* The pages under the passphrase being retired leave the database file now
+     * rather than once its last connection closes: the live history's backend
+     * holds one, and the file alone, its log lost with a process dying
+     * meanwhile, would open under that passphrase. */
+    g_paste_sqlite_backend_forget_deleted (db);
+
     /* Committed. This instance deliberately stays keyed to the passphrase it was
      * built with: a passphrase change re-keys every history through one backend,
      * so adopting the new one here would make the next history — still encrypted
@@ -2327,7 +2341,7 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
      * waited out. Without it the reads below fail at once, the meta read
      * leaving nothing to refute with and the count reading as an empty
      * history, either way accepting a passphrase the key check refuses. */
-    sqlite3_busy_timeout (db, 5000);
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     guchar salt[crypto_pwhash_SALTBYTES];
     guint64 opslimit = 0;
@@ -2391,7 +2405,7 @@ g_paste_sqlite_backend_database_has_items (const gchar *path)
 
     /* As check_passphrase () does, another connection busy with it is waited
      * out rather than read as an empty database. */
-    sqlite3_busy_timeout (db, 5000);
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     guchar salt[crypto_pwhash_SALTBYTES];
     guint64 opslimit = 0;
