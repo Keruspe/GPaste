@@ -132,7 +132,8 @@ process.on('exit', () => {
     // the keyboard staying on it; the row of one gone is destroyed, its focus
     // going to the switcher row.
     const kept = switcher();
-    const listing = (sizes, names) => async () => names.map(name => ({get_name: () => name, get_size: () => sizes}));
+    // What ListHistories answers: @names, each holding @size items.
+    const histories = (size, names) => names.map(name => ({get_name: () => name, get_size: () => size}));
     // The menu's items, placed as PopupMenuBase places them: a position counts
     // the items other than the one placed.
     const placed = [];
@@ -146,20 +147,20 @@ process.on('exit', () => {
         focus = null;
     };
     kept._actions.visible = false;
-    kept._client.list_histories = listing(1, ['work', 'play']);
+    kept._client.list_histories = async () => histories(1, ['work', 'play']);
     await kept.refresh();
 
     const [defaultRow, workRow, playRow] = kept._rows;
 
     assert.deepEqual([...kept._rows].map(r => r.history), ['default', 'work', 'play']);
     workRow.grab_key_focus();
-    kept._client.list_histories = listing(2, ['play', 'work']);
+    kept._client.list_histories = async () => histories(2, ['play', 'work']);
     await kept.refresh();
     assert.deepEqual([...kept._rows], [defaultRow, playRow, workRow]);
     assert.deepEqual(shownRows(), [defaultRow, playRow, workRow]);
     assert.equal(workRow.size, 2);
     assert.equal(focus, workRow);
-    kept._client.list_histories = listing(2, ['play']);
+    kept._client.list_histories = async () => histories(2, ['play']);
     await kept.refresh();
     assert.deepEqual([...kept._rows], [defaultRow, playRow]);
     assert.equal(workRow.destroyed, true);
@@ -175,6 +176,7 @@ process.on('exit', () => {
     // Mid-handoff: the name still has an owner, the daemon standing down.
     item._client.get_name_owner = () => ':1.42';
     item._client.daemon_presence = 1;
+    item._listing = {cancel() { this.cancelled = true; }};
     item._sizing = {cancel() { this.cancelled = true; }};
     item.vfunc_hide();
     assert.equal(dialog.closed, true);
@@ -336,6 +338,54 @@ process.on('exit', () => {
     backup._backup('work', 'work_backup');
     assert.deepEqual(errors.splice(0), ['already exists']);
 
+    // An empty sets the count the signal names, listing nothing, and gives up
+    // on a size of the history in use asked before it; with a listing out,
+    // asked before the empty, a fresh one supersedes it instead, and is still
+    // the listing out once the one it superseded settles, so that a second
+    // empty supersedes it in turn: whichever lands first, nothing counted
+    // before an empty is drawn after it.
+    const emptied = switcher();
+    const answers = [];
+
+    emptied._actions.visible = false;
+    emptied._client.list_histories = () => new Promise(resolve => answers.push(resolve));
+
+    const listed = emptied.refresh();
+
+    answers[0](histories(5, ['work']));
+    await listed;
+    assert.equal(emptied._rows.find(r => r.history === 'work').size, 5);
+    emptied._onHistoryEmptied(emptied._client, 'work');
+    assert.equal(answers.length, 1);
+    assert.equal(emptied._rows.find(r => r.history === 'work').size, 0);
+
+    let sizeAnswer;
+
+    emptied._current = 'work';
+    emptied._client.get_history_size = () => new Promise(resolve => { sizeAnswer = resolve; });
+
+    const sizedBefore = emptied._sizeCurrent();
+
+    emptied._onHistoryEmptied(emptied._client, 'work');
+    sizeAnswer(5);
+    await sizedBefore;
+    assert.equal(emptied._rows.find(r => r.history === 'work').size, 0);
+
+    emptied._rows.find(r => r.history === 'work').setSize(3);
+
+    const askedBefore = emptied.refresh();
+
+    emptied._onHistoryEmptied(emptied._client, 'work');
+    assert.equal(answers.length, 3);
+    answers[1](histories(3, ['work']));
+    await askedBefore;
+    emptied._onHistoryEmptied(emptied._client, 'work');
+    assert.equal(answers.length, 4);
+    answers[3](histories(0, ['work']));
+    answers[2](histories(2, ['work']));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(emptied._rows.find(r => r.history === 'work').size, 0);
+
     assert.deepEqual(errors, []);
-    console.log('History switcher: draft refresh, source deletion, daemon loss, current count, row focus and call reporting passed');
+    console.log('History switcher: draft refresh, source deletion, daemon loss, current count, empties, row focus and call reporting passed');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { finished = true; });

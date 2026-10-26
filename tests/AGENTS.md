@@ -70,15 +70,18 @@ daemon that is running and starts none.
 `history-switcher` runs the shipped Shell controller under Node.js with actor
 and bus doubles. It checks backup drafts and focus across refresh, source
 removal, dialog closure after daemon loss, the current history's count (a
-listing that omits it, which updates ask, overtaken replies), that only the
-key focus sets the switcher row's `active`, and that a call nothing waits on
-reports its refusal to the log. It checks that hiding the switcher -- which
-the daemon going does, a handoff to another included -- gives up both its
-listing and its size read, and that nothing is sized while the presence is not
-`READY`, the name still having an owner; and that a history in use no listing
-names gets a row, its count and its open actions all the same, a switch to one
-with no row listing again. It is omitted when Node.js is unavailable and
-exercises no real Shell rendering or session.
+listing that omits it, which updates ask, overtaken replies), an emptied
+history's set from the signal, a size of the one in use asked before it given
+up on, unless a listing is out, which is then asked again, and again by a
+second empty once the listing superseded has settled, that only the key focus
+sets the switcher row's `active`, and that a call
+nothing waits on reports its refusal to the log. It checks that hiding the
+switcher -- which the daemon going does, a handoff to another included -- gives
+up both its listing and its size read, and that nothing is sized while the
+presence is not `READY`, the name still having an owner; and that a history in
+use no listing names gets a row, its count and its open actions all the same, a
+switch to one with no row listing again. It is omitted when Node.js is
+unavailable and exercises no real Shell rendering or session.
 
 `indicator` runs the shipped indicator the same way: its teardown, run once and
 chained up to `PanelMenu.Button`'s even before `_setup()` has built anything --

@@ -471,12 +471,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             // A backup or a delete changes the set of histories without changing
             // which one is current, which no notify::history can express. The
             // daemon follows every HistoryDeleted with it, so that one needs no
-            // listing of its own. An empty changes no set but does change a
-            // count, and says so only through history-emptied; emptying a history
-            // that did not exist yet sends both, the first listing then given up
-            // on for the second.
+            // listing of its own. An empty changes no set but one count, which
+            // history-emptied names (_onHistoryEmptied ()).
             'histories-changed', () => this._refreshIfOpen(),
-            'history-emptied', () => this._refreshIfOpen(),
+            'history-emptied', this._onHistoryEmptied.bind(this),
             'notify::history', this._onHistoryChanged.bind(this),
             'update', this._onUpdate.bind(this),
             this);
@@ -538,6 +536,31 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this.refresh().catch(console.error);
     }
 
+    // An empty changes the one count the signal names: that row is set to
+    // nothing, rather than every history listed again, which would count each
+    // inactive history's store on the daemon's main thread for that number. A
+    // listing still out was asked before the empty and would paint the old
+    // count back on landing, so it is superseded instead, and a size of the
+    // history in use given up on for the same reason. A history with no row
+    // is a new one, which histories-changed announces too, its listing drawing
+    // it (test-history-switcher.cjs).
+    _onHistoryEmptied(client, history) {
+        if (!this.menu.isOpen || !this._daemonReady())
+            return;
+
+        if (history === this._current) {
+            this._sizing?.cancel();
+            this._sizing = null;
+        }
+
+        if (this._listing) {
+            this.refresh().catch(console.error);
+            return;
+        }
+
+        this._rows.find(row => row.history === history)?.setSize(0);
+    }
+
     // The count of the history in use changes with every copy, which no listing
     // is asked for: re-enumerating every inactive history on each would cost
     // what GetHistorySize, the length of the history already loaded, does not.
@@ -595,6 +618,11 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             if (!daemonGone(e))
                 console.error(e);
             return;
+        } finally {
+            // Nothing out any more, but what replaced it if anything did: what
+            // _onHistoryEmptied () asks.
+            if (this._listing === cancellable)
+                this._listing = null;
         }
 
         if (!wanted)
