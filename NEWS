@@ -20,6 +20,8 @@ NEW in 50.11 (UNRELEASED)
 - Fix gpaste-client add-password and replace failing without a word when given no text
 - Fix gpaste-client passing escape sequences copied from a web page on to the terminal
 - Fix the graphical tool stuttering over very long items
+- Fix searches for text with characters like ( * + . finding nothing or the wrong items
+- Fix GNOME Shell's menu not finding a password by a name with capital letters
 
 NEW in 50.10 (08/09/2026)
 =============

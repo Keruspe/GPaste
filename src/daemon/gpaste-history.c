@@ -1393,36 +1393,43 @@ g_paste_history_get_current (const GPasteHistory *self)
  * g_paste_history_search:
  * @self: a #GPasteHistory instance
  * @pattern: the pattern to match
+ * @error: return location for a #GError, or %NULL
  *
  * Get the elements matching @pattern in the history
  *
- * Returns: (transfer full): The uuids of the matching elements
+ * A query too long, or no regular expression at all, is the caller's to hear
+ * of rather than the daemon's journal, once per keystroke: the first fails in
+ * %G_IO_ERROR, the second in %G_REGEX_ERROR.
+ *
+ * Returns: (transfer full) (nullable): The uuids of the matching elements, or
+ *          %NULL for a refused query
  */
 G_PASTE_VISIBLE GStrv
 g_paste_history_search (GPasteHistory *self,
-                        const gchar   *pattern)
+                        const gchar   *pattern,
+                        GError       **error)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
-    g_return_val_if_fail (strlen (pattern) <= 256, NULL);
+
+    if (strlen (pattern) > G_PASTE_HISTORY_MAX_SEARCH_LENGTH)
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT, "the query is too long");
+        return NULL;
+    }
 
     g_debug ("history: search '%s'", pattern);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    G_PASTE_LOCK_HISTORY;
-    g_autoptr (GError) error = NULL;
     g_autoptr (GRegex) regex = g_regex_new (pattern,
                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
                                             G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
-                                            &error);
+                                            error);
 
-    if (error)
-    {
-        g_warning ("error while creating regex: %s", error->message);
-        return NULL;
-    }
     if (!regex)
         return NULL;
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     g_autoptr (GArray) results = g_array_new (TRUE, /* zero-terminated */
                                               TRUE, /* clear */
@@ -1435,8 +1442,11 @@ g_paste_history_search (GPasteHistory *self,
 
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
-        else if (_G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal (pattern, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item))))
-            match = TRUE;
+        /* A password's value is not what it is known by, its name is: matched
+         * as the value would be, whatever its case, and the placeholder its
+         * value is not at all -- an asterisk typed would list every one. */
+        else if (_G_PASTE_IS_PASSWORD_ITEM (item))
+            match = g_regex_match (regex, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item)), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
         else if (g_regex_match (regex, g_paste_item_get_value (item), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             match = TRUE;
 

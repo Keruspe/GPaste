@@ -299,9 +299,15 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     }
     else
     {
+        /* What is typed is text, and Search takes a regular expression:
+         * escaped, or '(' would not compile, and '.' would match what was not
+         * typed. No test shows it, since that takes a display; the shell menu
+         * and the overview's provider do the same. */
+        g_autofree gchar *pattern = g_regex_escape_string (search, -1);
+
         g_set_str (&priv->search, search);
         /* The callback owns this ref (see on_search_ready). */
-        g_paste_client_search (priv->client, search, on_search_ready, g_object_ref (self));
+        g_paste_client_search (priv->client, pattern, on_search_ready, g_object_ref (self));
     }
 }
 

@@ -85,8 +85,11 @@ _do_search (const GPasteSearchProviderPrivate *priv,
         data[0] = priv->client;
         data[1] = invocation;
 
+        /* As text, as in g_paste_ui_history_search (). */
+        g_autofree gchar *pattern = g_regex_escape_string (search, -1);
+
         g_paste_client_search (priv->client,
-                               search,
+                               pattern,
                                on_search_ready,
                                data);
     }

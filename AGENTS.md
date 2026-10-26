@@ -52,9 +52,14 @@ that is not UTF-8); that a line growing over the head drops an older copy of
 what it grew into, a line deeper it merely ends with kept, and one it grows over
 replaced when there is no exact copy; that a damaged file's text stays out of
 the warnings about it; that a FIFO named like a history is neither listed nor
-read (in a child with a timeout, since reading one hangs); and that AddFile's
+read (in a child with a timeout, since reading one hangs); that AddFile's
 `g_paste_daemon_read_file ()` refuses a FIFO or a device (in a child with a
-timeout too) and a file past its cap, and reads a procfs one to its end.
+timeout too) and a file past its cap, and reads a procfs one to its end; and
+that a search finds a password by its name whatever the case, never by its
+placeholder value, while the search refuses with an error a query past
+`G_PASTE_HISTORY_MAX_SEARCH_LENGTH` or no regular expression. What is typed in
+the graphical tool, the GNOME Shell menu and the overview's provider goes out
+escaped as text, never lowercased.
 
 `test-clipboard` links the same daemon code and checks, with no display, how an
 update reads a selection: `g_paste_clipboard_content_for_formats ()` takes the

@@ -97,9 +97,11 @@ enum
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
+/* A D-Bus error to answer with: its message copied, so that one built at the
+ * point of failure -- GLib's own, say -- outlives what it came from. */
 typedef struct {
     const gchar *name;
-    const gchar *msg;
+    gchar       *msg;
 } GPasteDBusError;
 
 static inline GPasteDBusError *
@@ -108,9 +110,18 @@ _err (const gchar *name,
 {
     GPasteDBusError *err = g_new (GPasteDBusError, 1);
     err->name = name;
-    err->msg = msg;
+    err->msg = g_strdup (msg);
     return err;
 }
+
+static void
+g_paste_dbus_error_free (GPasteDBusError *err)
+{
+    g_free (err->msg);
+    g_free (err);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteDBusError, g_paste_dbus_error_free)
 
 static gchar *
 g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
@@ -793,9 +804,16 @@ g_paste_daemon_private_search (const GPasteDaemonPrivate *priv,
                                GPasteDBusError          **err)
 {
     g_autofree gchar *search = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-    g_auto (GStrv) results = g_paste_history_search (priv->history, search);
 
-    G_PASTE_DBUS_ASSERT_FULL (results, "Error while performing search", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (search, "no query", NULL);
+
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) results = g_paste_history_search (priv->history, search, &error);
+
+    /* The search's own words, GLib's for a query that is no regular
+     * expression: what was wrong with it, rather than that something was. No
+     * test reaches this handler, the daemon taking a display. */
+    G_PASTE_DBUS_ASSERT_FULL (results, (error) ? error->message : "Error while performing search", NULL);
 
     GVariant *variant = g_variant_new_strv ((const gchar * const *) results, -1);
     return g_variant_new_tuple (&variant, 1);
@@ -885,7 +903,7 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
 {
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     g_autofree gchar *url = NULL;
-    g_autofree GPasteDBusError *err = NULL;
+    g_autoptr (GPasteDBusError) err = NULL;
     GPasteDaemonPrivate *priv = user_data;
 
     g_autoptr (GError) error = NULL;
@@ -983,7 +1001,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GVariant *answer = NULL;
     GError *error = NULL;
-    g_autofree GPasteDBusError *err = NULL;
+    g_autoptr (GPasteDBusError) err = NULL;
 
     if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ABOUT))
         g_paste_util_activate_ui ("about", NULL);

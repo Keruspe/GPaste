@@ -173,7 +173,10 @@ class GPasteIndicator extends Button {
 
     async _onSearch(page) {
         if (this._hasSearch()) {
-            const search = this._searchItem.text.toLowerCase();
+            // As text, as in g_paste_ui_history_search (), and as typed: the
+            // daemon matches whatever the case already, and lowercasing would
+            // turn \S into \s.
+            const search = GLib.Regex.escape_string(this._searchItem.text, -1);
             this._searchResults = await this._client.search(search);
             if (!this._client)
                 return;

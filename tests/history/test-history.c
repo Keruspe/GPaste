@@ -8,6 +8,7 @@
 #include <gpaste-daemon.h>
 #include <gpaste-history.h>
 #include <gpaste-image-item.h>
+#include <gpaste-password-item.h>
 #include <gpaste-text-item.h>
 
 #include <glib/gstdio.h>
@@ -561,6 +562,68 @@ test_add_file_procfs (void)
     g_assert_true (g_str_has_prefix (status, "Name:"));
 }
 
+/* A password is found by its name as a text is by its value, whatever the
+ * case, and never by the placeholder its value is. */
+static void
+test_search_password_name (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "passwords");
+    g_paste_history_add (history, g_paste_password_item_new ("Bank Account", "secret"));
+    g_paste_history_add (history, g_paste_text_item_new ("plain (text)"));
+
+    g_auto (GStrv) by_name = g_paste_history_search (history, "bank", NULL);
+    g_autofree gchar *escaped = g_regex_escape_string ("*", -1);
+    g_auto (GStrv) by_placeholder = g_paste_history_search (history, escaped, NULL);
+    g_autofree gchar *parenthesis = g_regex_escape_string ("(t", -1);
+    g_auto (GStrv) by_text = g_paste_history_search (history, parenthesis, NULL);
+
+    g_assert_cmpuint (g_strv_length (by_name), ==, 1);
+    g_assert_cmpuint (g_strv_length (by_placeholder), ==, 0);
+    g_assert_cmpuint (g_strv_length (by_text), ==, 1);
+    settle_writes ("passwords");
+}
+
+/* What a search refuses, with an error rather than a word in the journal: a
+ * query past the length it takes, and one that is no regular expression. */
+static void
+test_search_query_valid (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autofree gchar *longest = g_strnfill (G_PASTE_HISTORY_MAX_SEARCH_LENGTH, 'a');
+    g_autofree gchar *too_long = g_strnfill (G_PASTE_HISTORY_MAX_SEARCH_LENGTH + 1, 'a');
+    g_autofree gchar *escaped = g_regex_escape_string ("(", -1);
+    const gchar *valid[] = { "abc", escaped, longest };
+
+    g_paste_history_load (history, "queries");
+
+    for (guint i = 0; i < G_N_ELEMENTS (valid); ++i)
+    {
+        g_autoptr (GError) error = NULL;
+        g_auto (GStrv) results = g_paste_history_search (history, valid[i], &error);
+
+        g_assert_no_error (error);
+        g_assert_nonnull (results);
+    }
+
+    g_autoptr (GError) invalid = NULL;
+    g_auto (GStrv) none = g_paste_history_search (history, "(", &invalid);
+
+    g_assert_null (none);
+    g_assert_nonnull (invalid);
+    g_assert_cmpuint (invalid->domain, ==, G_REGEX_ERROR);
+
+    g_autoptr (GError) long_error = NULL;
+    g_auto (GStrv) none_either = g_paste_history_search (history, too_long, &long_error);
+
+    g_assert_null (none_either);
+    g_assert_error (long_error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT);
+    settle_writes ("queries");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -576,6 +639,8 @@ main (int argc, char **argv)
     g_test_add_func ("/history/add-file-not-regular", test_add_file_not_regular);
     g_test_add_func ("/history/add-file-cap", test_add_file_cap);
     g_test_add_func ("/history/add-file-procfs", test_add_file_procfs);
+    g_test_add_func ("/history/search-password-name", test_search_password_name);
+    g_test_add_func ("/history/search-query-valid", test_search_query_valid);
 
     return g_test_run ();
 }

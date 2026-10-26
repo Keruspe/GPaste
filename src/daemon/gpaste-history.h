@@ -56,8 +56,13 @@ const GList *g_paste_history_get_history (const GPasteHistory *self);
 guint64      g_paste_history_get_length  (GPasteHistory *self);
 const gchar *g_paste_history_get_current (const GPasteHistory *self);
 
+/* The longest query a search takes, in bytes: room for whatever a user types,
+ * escaped by a front end (a character becoming at most two). */
+#define G_PASTE_HISTORY_MAX_SEARCH_LENGTH 4096
+
 GStrv g_paste_history_search (GPasteHistory *self,
-                              const gchar   *pattern);
+                              const gchar   *pattern,
+                              GError       **error);
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
