@@ -65,20 +65,22 @@ refuses one that is not UTF-8.
 
 `test-client` runs the built `gpaste-client` (its path in `G_PASTE_CLIENT`)
 against a fake daemon on a private bus that logs every call it is sent, with a
-runtime directory of its own and its stdin piped: piped input is read whole, a
-non-blocking stdin waited on to its end, and refused when it carries a NUL or is
-not UTF-8, before any bus is reached, as is any word of a command line not in
-UTF-8; only a command line taking it reads stdin, `--help` and `--version`
-never, so that no other waits on a stdin left open (`hold_stdin ()` holding one,
-every run bounded), and a line with no verb whose stdin fails before anything is
-read lists the history, one failing after being refused; add-password and
-replace given no text show the help; a malformed index under `--use-index` is
-refused before any call, a valid one is looked up and its uuid used, and a verb
-naming no item reads no index out of its argument; a daemon refusing Reexecute
-is sent SIGUSR1 only when the pid file holds a positive decimal pid naming the
-process that owns the bus name -- the test process itself, a stray `sleep` being
-left alone. `/client/locale` checks that `G_PASTE_INIT_GETTEXT ()` sets the
-locale the environment names, which the client has nothing else to set.
+runtime directory of its own and its stdin piped: an item printed on a terminal
+(a pty of the test's) shows its control characters but line breaks and tabs as
+U+FFFD, and goes as it is to a pipe; piped input is read whole, a non-blocking
+stdin waited on to its end, and refused when it carries a NUL or is not UTF-8,
+before any bus is reached, as is any word of a command line not in UTF-8; only a
+command line taking it reads stdin, `--help` and `--version` never, so that no
+other waits on a stdin left open (`hold_stdin ()` holding one, every run
+bounded), and a line with no verb whose stdin fails before anything is read
+lists the history, one failing after being refused; add-password and replace
+given no text show the help; a malformed index under `--use-index` is refused
+before any call, a valid one is looked up and its uuid used, and a verb naming
+no item reads no index out of its argument; a daemon refusing Reexecute is sent
+SIGUSR1 only when the pid file holds a positive decimal pid naming the process
+that owns the bus name -- the test process itself, a stray `sleep` being left
+alone. `/client/locale` checks that `G_PASTE_INIT_GETTEXT ()` sets the locale
+the environment names, which the client has nothing else to set.
 
 `tests/tools/test-client-strings.py` reads `src/client/gpaste-client.c`: every
 error the client builds is marked for translation, and no translation is handed

@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+/* posix_openpt () and its kin, for a terminal of the client's own. */
+#define _GNU_SOURCE
+
 #include <gpaste-test-bus.h>
 #include <gpaste/gpaste-gdbus-defines.h>
 #include <gpaste/gpaste-util.h>
@@ -8,7 +11,15 @@
 #include <glib-unix.h>
 #include <glib/gstdio.h>
 
+#include <fcntl.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <termios.h>
+#include <unistd.h>
+
+/* What the fake daemon's one item holds: an escape sequence retitling the
+ * terminal, one clearing it, a tab, a CRLF line ending and a lone CR. */
+#define ESCAPED_TEXT "a\033]0;title\007b\033[2J\tc\r\nd\re"
 
 /* gpaste-client run against a fake daemon on a private bus, which logs every
  * call it is sent: what a command line makes of its arguments shows in what
@@ -62,7 +73,13 @@ on_method_call (GDBusConnection       *connection G_GNUC_UNUSED,
     if (g_str_equal (method, G_PASTE_DAEMON_REEXECUTE) && f->refuse_reexecute)
         g_dbus_method_invocation_return_dbus_error (invocation, "org.freedesktop.DBus.Error.Failed", "refused");
     else if (g_str_equal (method, G_PASTE_DAEMON_GET_HISTORY))
-        g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("(@a(ss) [],)"));
+    {
+        g_autofree gchar *uuid = uuid_at (0);
+
+        g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("([(%s, %s)],)", uuid, ESCAPED_TEXT));
+    }
+    else if (g_str_equal (method, G_PASTE_DAEMON_GET_ELEMENT))
+        g_dbus_method_invocation_return_value (invocation, g_variant_new ("(s)", ESCAPED_TEXT));
     else if (g_str_equal (method, G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX))
     {
         guint64 index;
@@ -560,6 +577,100 @@ test_locale_set (void)
     g_assert_cmpstr (setlocale (LC_ALL, NULL), ==, "C.UTF-8");
 }
 
+/* What gpaste-client run with @args writes to its stdout, a terminal of its
+ * own when @terminal, a pipe otherwise. */
+static GBytes *
+client_output (const gchar * const *args,
+               gboolean             terminal)
+{
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GAsyncResult) exited = NULL;
+    gint master = -1;
+
+    g_strv_builder_add (builder, g_getenv ("G_PASTE_CLIENT"));
+    g_strv_builder_addv (builder, (const gchar **) args);
+
+    g_auto (GStrv) argv = g_strv_builder_end (builder);
+    g_autoptr (GSubprocessLauncher) launcher = g_subprocess_launcher_new ((terminal) ? G_SUBPROCESS_FLAGS_NONE : G_SUBPROCESS_FLAGS_STDOUT_PIPE);
+
+    if (terminal)
+    {
+        struct termios raw;
+
+        master = posix_openpt (O_RDWR | O_NOCTTY);
+        g_assert_cmpint (master, >=, 0);
+        g_assert_cmpint (grantpt (master), ==, 0);
+        g_assert_cmpint (unlockpt (master), ==, 0);
+
+        gint slave = open (ptsname (master), O_RDWR | O_NOCTTY);
+
+        g_assert_cmpint (slave, >=, 0);
+        /* Raw, so the bytes read back are the ones written. */
+        g_assert_cmpint (tcgetattr (slave, &raw), ==, 0);
+        cfmakeraw (&raw);
+        g_assert_cmpint (tcsetattr (slave, TCSANOW, &raw), ==, 0);
+        g_subprocess_launcher_take_stdout_fd (launcher, slave);
+    }
+
+    g_autoptr (GSubprocess) client = g_subprocess_launcher_spawnv (launcher, (const gchar * const *) argv, &error);
+
+    g_assert_no_error (error);
+    g_clear_object (&launcher);
+    g_subprocess_communicate_async (client, NULL, NULL, on_exited, &exited);
+    while (!exited)
+        g_main_context_iteration (NULL, TRUE);
+
+    g_autoptr (GBytes) out = NULL;
+
+    g_assert_true (g_subprocess_communicate_finish (client, exited, &out, NULL, &error));
+    g_assert_no_error (error);
+    g_assert_true (g_subprocess_get_successful (client));
+
+    if (!terminal)
+        return g_steal_pointer (&out);
+
+    g_autoptr (GByteArray) read_back = g_byte_array_new ();
+    gchar buffer[4096];
+    gssize got;
+
+    g_assert_cmpint (fcntl (master, F_SETFL, O_NONBLOCK), ==, 0);
+    while ((got = read (master, buffer, sizeof (buffer))) > 0)
+        g_byte_array_append (read_back, (const guint8 *) buffer, (guint) got);
+    close (master);
+
+    return g_byte_array_free_to_bytes (g_steal_pointer (&read_back));
+}
+
+static void
+assert_output (const gchar * const *args,
+               gboolean             terminal,
+               const gchar         *expected)
+{
+    g_autoptr (GBytes) out = client_output (args, terminal);
+    g_autofree gchar *text = g_strndup (g_bytes_get_data (out, NULL), g_bytes_get_size (out));
+
+    g_assert_cmpstr (text, ==, expected);
+}
+
+/* On a terminal, an item's control characters but line breaks and tabs show
+ * as U+FFFD rather than reach it, which would act on an escape sequence; to a
+ * pipe, the item goes as it is, for the script reading it. */
+static void
+test_terminal_controls (Fixture      *f G_GNUC_UNUSED,
+                        gconstpointer data G_GNUC_UNUSED)
+{
+    const gchar *shown = "a\xef\xbf\xbd]0;title\xef\xbf\xbd" "b\xef\xbf\xbd[2J\tc\r\nd\xef\xbf\xbd" "e";
+    g_autofree gchar *uuid = uuid_at (0);
+    g_autofree gchar *listed = g_strdup_printf ("%s: %s\n", uuid, shown);
+    g_autofree gchar *piped = g_strdup_printf ("%s: %s\n", uuid, ESCAPED_TEXT);
+
+    assert_output ((const gchar * const []) { "history", NULL }, TRUE, listed);
+    assert_output ((const gchar * const []) { "history", NULL }, FALSE, piped);
+    assert_output ((const gchar * const []) { "get", uuid, NULL }, TRUE, shown);
+    assert_output ((const gchar * const []) { "get", uuid, NULL }, FALSE, ESCAPED_TEXT);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -569,6 +680,7 @@ main (int argc, char **argv)
     g_test_add ("/client/use-index/index", Fixture, NULL, fixture_set_up, test_index, fixture_tear_down);
     g_test_add ("/client/use-index/not-an-item", Fixture, NULL, fixture_set_up, test_not_an_item, fixture_tear_down);
     g_test_add_func ("/client/locale", test_locale_set);
+    g_test_add ("/client/terminal-controls", Fixture, NULL, fixture_set_up, test_terminal_controls, fixture_tear_down);
     g_test_add ("/client/pipe", Fixture, NULL, fixture_set_up, test_pipe, fixture_tear_down);
     g_test_add ("/client/stdin-closed", Fixture, NULL, fixture_set_up, test_stdin_closed, fixture_tear_down);
     g_test_add ("/client/pipe-refused-unconnected", Fixture, NULL, fixture_set_up, test_pipe_refused_unconnected, fixture_tear_down);

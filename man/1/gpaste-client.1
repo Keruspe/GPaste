@@ -12,6 +12,10 @@ GPaste \- A lightweight clipboard manager for the Gnome desktop
 GPaste is a modular clipboard management system with a fully
 DBus-based daemon, a \s-1CLI\s0 client and a gtk+ tray icon.
 
+Printed on a terminal, an item's control characters show as U+FFFD rather than
+reach the terminal, which an escape sequence would have act on it; line breaks
+and tabs stay. Written to a file or a pipe, items are as they are.
+
 .SH "COMMANDS"
 
 .TP
