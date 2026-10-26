@@ -1423,6 +1423,10 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
 
     for (GStrv name = names; name && *name; ++name)
     {
+        /* Asked above, and answered neither: a document of ours damaged past
+         * its header pays a key derivation for each ask. */
+        if (g_paste_str_equal (*name, active))
+            continue;
         if (klass->history_refutes_passphrase (backend, *name))
             refuted = TRUE;
         else if (klass->history_confirms_passphrase (backend, *name))

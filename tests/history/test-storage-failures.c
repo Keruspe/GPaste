@@ -3962,6 +3962,40 @@ test_passphrase_survives_damage (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An active history damaged past its first chunk, which neither refutes nor
+ * confirms a passphrase, is asked each once: a key derived for each ask, where
+ * asking it again among the others would derive one more. */
+static void
+test_passphrase_damaged_active_asked_once (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase");
+    g_autofree gchar *long_text = g_strnfill (3 * 4096, 'x');
+    g_autolist (GPasteItem) damaged = g_list_append (NULL, g_paste_text_item_new (long_text));
+
+    g_paste_storage_backend_write_history (backend, "damaged-active", damaged);
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("damaged-active", "xmls");
+    g_autofree gchar *contents = NULL;
+    gsize length = 0;
+    /* As in test_passphrase_survives_damage (). */
+    const gsize second_chunk = 64 + 4 + 4096 + 17 + 4;
+
+    g_assert_true (g_file_get_contents (path, &contents, &length, NULL));
+    contents[second_chunk + 16] ^= 1;
+    g_assert_true (g_file_set_contents (path, contents, (gssize) length, NULL));
+    g_paste_settings_set_history_name (settings, "damaged-active");
+
+    g_atomic_int_set (&derivations, 0);
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase"));
+    g_assert_cmpint (g_atomic_int_get (&derivations), <=, 2);
+
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    g_assert_cmpint (g_unlink (path), ==, 0);
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
 /* A history the user may not read refutes nothing either: its open fails with
  * the error the converter answers a wrong key with. */
 static void
@@ -7352,6 +7386,9 @@ main (int    argc,
     g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
     g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/delete-unsupported-refused", test_delete_unsupported_refused);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/storage/passphrase/damaged-active-asked-once", test_passphrase_damaged_active_asked_once);
+#endif
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
