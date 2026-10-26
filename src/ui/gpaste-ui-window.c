@@ -1356,9 +1356,10 @@ on_history_chosen (GPasteUiPanel *panel G_GNUC_UNUSED,
 /* The focus taken off @widget while that still reaches whatever holds it, ahead
  * of @widget going insensitive: GTK drops the focus of an insensitive widget
  * without telling it, and an entry in there -- the sidebar's "Switch or
- * Create", the Merge popover's separator -- would go on believing it has it,
- * its input method never released and a later click never focusing it again.
- * GTK warns about it the next time the entry is shown. */
+ * Create" -- would go on believing it has it, its input method never released
+ * and a later click never focusing it again. GTK warns about it the next time
+ * the entry is shown. The Merge popover's separator needs none of this, the
+ * popover's closing being what releases it (on_selection_changed ()). */
 static void
 g_paste_ui_window_release_focus (GPasteUiWindow *self,
                                  GtkWidget      *widget)
@@ -1436,15 +1437,13 @@ on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
     g_paste_ui_header_set_selection_count (self->header, count);
 
     /* Merging is only meaningful with at least two items. Fewer, and the
-     * popover has nothing left to merge either: closed, and the focus off its
-     * entry before the button goes insensitive (see
-     * g_paste_ui_window_release_focus ()). The picks drop to none with the
-     * daemon going too, the list emptying. */
+     * popover has nothing left to merge either: closed, which takes the focus
+     * off its entry with the focus-out the entry needs, before the button goes
+     * insensitive (g_paste_ui_window_release_focus () says why that matters;
+     * /ui/daemon-presence/merge-entry-focus-released). The picks drop to none
+     * with the daemon going too, the list emptying. */
     if (count < 2)
-    {
         gtk_menu_button_popdown (GTK_MENU_BUTTON (self->merge_button));
-        g_paste_ui_window_release_focus (self, self->merge_button);
-    }
 
     gtk_widget_set_sensitive (self->merge_button, count >= 2);
 }
