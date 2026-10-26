@@ -10,7 +10,31 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include "../../src/daemon/gpaste-clipboard-x11-hints.h"
+
+#include <string.h>
+
+/* The texts wiped as they were freed which held @wiped_secret: a published
+ * password's copies are. Counted by the text provider compiled in below, which
+ * frees through this in g_paste_util_free_cleartext ()'s place: a stand-in of
+ * the suite's own rather than the library's function defined again, which a
+ * static libgpaste-daemon would define a second time. */
+static const gchar *wiped_secret;
+static guint wipes_of_secret;
+
+static void
+counted_free_cleartext (GPasteCleartext *cleartext)
+{
+    if (wiped_secret && cleartext && g_str_equal (cleartext, wiped_secret))
+        ++wipes_of_secret;
+
+    g_paste_util_free_cleartext (cleartext);
+}
+
+#define g_paste_util_free_cleartext counted_free_cleartext
+#include "../../src/daemon/gpaste-text-content-provider.c"
+#undef g_paste_util_free_cleartext
 
 /* Drive the backend's actual ownership and read callbacks without a display or
  * a live clipboard. GTK transport is the only part replaced by this fixture. */
@@ -1049,6 +1073,22 @@ publish_kinds (Fixture      *f,
     }
 }
 
+/* A password published is wiped from the provider serving it once that goes,
+ * as the content cache wipes its own copy, rather than left in freed memory. */
+static void
+publish_wipes_password (Fixture      *f,
+                        gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_assert_cmpint (g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), f->password, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+    g_assert_nonnull (published);
+
+    wiped_secret = "secret";
+    wipes_of_secret = 0;
+    g_clear_object (&published);
+    wiped_secret = NULL;
+    g_assert_cmpuint (wipes_of_secret, ==, 1);
+}
+
 /* An owner whose targets GDK names nothing of -- only names with no mimetype,
  * or TARGETS refused -- has them come back as the same empty formats as the
  * change before them: answered at once as an owner offering nothing handled,
@@ -1183,6 +1223,7 @@ main (int argc, char **argv)
     g_test_add ("/gdk/read/color", Fixture, GSIZE_TO_POINTER (GDK_TYPE_RGBA), fixture_setup, read_value_kinds, fixture_teardown);
     g_test_add ("/gdk/read/file-list", Fixture, GSIZE_TO_POINTER (GDK_TYPE_FILE_LIST), fixture_setup, read_value_kinds, fixture_teardown);
     g_test_add ("/gdk/publish/kinds", Fixture, NULL, fixture_setup, publish_kinds, fixture_teardown);
+    g_test_add ("/gdk/publish/wipes-password", Fixture, NULL, fixture_setup, publish_wipes_password, fixture_teardown);
     g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);

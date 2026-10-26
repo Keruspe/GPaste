@@ -12,7 +12,7 @@ test('clipboard', test_clipboard, depends: [gpaste_schemas, test_bus_supervisor]
 
 clipboard_gdk_test = executable(
   'test-clipboard-gdk',
-  sources: [ 'test-clipboard-gdk.c', '../../src/daemon/gpaste-text-content-provider.c' ],
+  sources: [ 'test-clipboard-gdk.c' ],
   dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
 )
 
@@ -58,11 +58,13 @@ test_clipboard_x11_hints = executable(
 test('clipboard-x11-hints', test_clipboard_x11_hints, depends: [gpaste_schemas, test_bus_supervisor])
 
 # The mutter backend, against a MetaSelection of its own and with GTK never
-# initialised, as in gnome-shell.
+# initialised, as in gnome-shell. Told whether the library's own calls reach the
+# binary, which the wipes it counts need (test-clipboard-meta.c).
 if get_option('gnome-shell')
   test_clipboard_meta = executable(
     'test-clipboard-meta',
     sources: [ 'test-clipboard-meta.c' ],
+    c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
     dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
   )
 

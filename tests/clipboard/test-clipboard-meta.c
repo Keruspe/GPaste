@@ -9,6 +9,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-history-private.h>
@@ -23,6 +24,28 @@
 #include <dlfcn.h>
 #include <glib/gstdio.h>
 #include <string.h>
+
+/* The texts wiped as they were freed which held @wiped_secret: a published
+ * password's copies are. Counted by defining libgpaste-daemon's own function
+ * again, which only works where the library's calls reach the binary:
+ * library_interposable in tests/meson.build says where they do not, and the
+ * definition reading @wiped_secret is left out there. */
+static const gchar *wiped_secret G_GNUC_UNUSED;
+static guint wipes_of_secret;
+
+#ifndef G_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE
+void
+g_paste_util_free_cleartext (GPasteCleartext *cleartext)
+{
+    typedef void (*Free) (GPasteCleartext *);
+    Free original = (Free) dlsym (RTLD_NEXT, "g_paste_util_free_cleartext");
+
+    if (wiped_secret && cleartext && g_str_equal (cleartext, wiped_secret))
+        ++wipes_of_secret;
+
+    original (cleartext);
+}
+#endif
 
 /* The PNG encodes GTK makes, as the serializer an image's own bytes spare
  * makes them: GTK's, reached from the library through the PLT. */
@@ -712,6 +735,28 @@ publish_offers (Fixture      *f,
     }
 }
 
+/* A password published is wiped from the source serving it once another owner
+ * takes the selection over, as the cache wipes its own copy then: the two of
+ * them, rather than one left in freed memory. */
+static void
+publish_wipes_password (Fixture      *f,
+                        gconstpointer user_data G_GNUC_UNUSED)
+{
+    if (!g_paste_test_env_library_interposable ("The library's own calls do not reach the binary"))
+        return;
+
+    g_autoptr (GPasteItem) password = g_paste_password_item_new ("name", "secret", 0);
+    g_autoptr (GBytes) text = g_bytes_new_static ("other", 5);
+
+    g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, password, TRUE), !=, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
+    wiped_secret = "secret";
+    wipes_of_secret = 0;
+    offer (f, "text/plain;charset=utf-8", text);
+    pump_until_read (f);
+    wiped_secret = NULL;
+    g_assert_cmpuint (wipes_of_secret, ==, 2);
+}
+
 /* What the selection's owner offers: kept for the case to release. */
 static MetaSelectionSource *
 own (Fixture     *f,
@@ -952,6 +997,7 @@ main (int argc, char *argv[])
     g_test_add ("/meta/publish/image-holds-no-texture", Fixture, NULL, fixture_setup, publish_image_holds_no_texture, fixture_teardown);
     g_test_add ("/meta/serialize/empty-file-list", Fixture, NULL, fixture_setup, serialize_empty_file_list, fixture_teardown);
     g_test_add ("/meta/publish/offers", Fixture, NULL, fixture_setup, publish_offers, fixture_teardown);
+    g_test_add ("/meta/publish/wipes-password", Fixture, NULL, fixture_setup, publish_wipes_password, fixture_teardown);
     g_test_add ("/meta/release/head-back", Fixture, NULL, fixture_setup, release_puts_head_back, fixture_teardown);
     g_test_add ("/meta/read/empty-text", Fixture, NULL, fixture_setup, read_empty_text, fixture_teardown);
     g_test_add ("/meta/read/unhandled-kept", Fixture, NULL, fixture_setup, read_unhandled_kept, fixture_teardown);

@@ -6,6 +6,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -23,7 +24,14 @@ g_paste_clipboard_content_clear (GPasteClipboardContent *content)
 {
     switch (content->kind)
     {
+    /* Wiped: the text a selection carries is a password's cleartext as
+     * readily as anything -- a hinted copy, the password a selection was
+     * given -- whose item keeps its own copy in secure memory. Counted among
+     * a published password's wipes (/meta/publish/wipes-password,
+     * /gdk/publish/wipes-password). */
     case CLIPBOARD_CONTENT_TEXT:
+        g_clear_pointer (&content->str, g_paste_util_free_cleartext);
+        break;
     case CLIPBOARD_CONTENT_IMAGE:
         g_clear_pointer (&content->str, g_free);
         break;
@@ -1032,8 +1040,9 @@ g_paste_clipboard_update_release_content (GPasteClipboardUpdate *update)
      * read that writes here is that kind's. */
     switch (update->content_kind)
     {
+    /* As g_paste_clipboard_content_clear () frees a text. */
     case CLIPBOARD_CONTENT_TEXT:
-        g_clear_pointer (&update->text, g_free);
+        g_clear_pointer (&update->text, g_paste_util_free_cleartext);
         break;
     case CLIPBOARD_CONTENT_IMAGE:
         g_clear_object (&update->texture);

@@ -3,6 +3,8 @@
 
 #include "gpaste-text-content-provider.h"
 
+#include <gpaste-daemon/gpaste-daemon-util.h>
+
 #include <string.h>
 
 /* A content provider for text, equivalent to what
@@ -141,7 +143,10 @@ g_paste_text_content_provider_finalize (GObject *object)
 {
     GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (object);
 
-    g_free (self->text);
+    /* Wiped, as the content cache wipes its copy: a password published lives
+     * here for as long as the selection carries it, and would stay in freed
+     * memory after. */
+    g_paste_util_free_cleartext (self->text);
 
     G_OBJECT_CLASS (g_paste_text_content_provider_parent_class)->finalize (object);
 }

@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -812,7 +813,7 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
 
     /* An empty transfer is an empty text, as update_on_text () takes it: the
      * other selection gets the empty string rather than keeping what it had. */
-    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, NULL);
+    g_autoptr (GPasteCleartext) text = g_paste_clipboard_text_from_bytes (bytes, NULL);
 
     if (text)
         g_paste_clipboard_sync_data_deliver (data, text);
@@ -967,7 +968,10 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     const gchar *real_value = g_paste_item_get_real_value (item);
     g_paste_clipboard_meta_private_set_text (self, real_value);
 
-    g_autoptr (GBytes) bytes = g_bytes_new (real_value, strlen (real_value));
+    /* A copy wiped as it goes, as the content cache's is: a password published
+     * lives in the source for as long as the selection carries it. */
+    gchar *copy = g_strdup (real_value);
+    g_autoptr (GBytes) bytes = g_bytes_new_with_free_func (copy, strlen (copy), (GDestroyNotify) g_paste_util_free_cleartext, copy);
     GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
 
     g_paste_clipboard_meta_source_add_text (source, bytes);
@@ -1020,7 +1024,7 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
      * countdown, fails every re-exec and storage migration waiting on expiry.
      *
      * A text that is not UTF-8 is no text this backend can read. */
-    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, NULL);
+    g_autoptr (GPasteCleartext) text = g_paste_clipboard_text_from_bytes (bytes, NULL);
 
     if (!text)
     {

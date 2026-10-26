@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -380,7 +381,7 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
     g_autofree GPasteClipboardGdkTextCallbackData *data = user_data;
     g_autoptr (GPasteClipboardGdk) self = data->self; /* ref taken in set_text */
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
+    g_autoptr (GPasteCleartext) text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
     /* Superseded and timed-out updates only count the reply out: see
      * g_paste_clipboard_update_is_expired (). */
@@ -474,7 +475,7 @@ g_paste_clipboard_gdk_sync_ready (GObject      *source_object,
 {
     g_autoptr (GPasteClipboardSyncData) data = user_data; /* built in sync_text */
     g_autoptr (GError) error = NULL;
-    g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
+    g_autoptr (GPasteCleartext) text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
     if (error)
         g_debug ("Failed to sync clipboard text: %s", error->message);
@@ -889,7 +890,7 @@ g_paste_clipboard_gdk_on_bare_text_read (GPasteClipboardGdk *self,
 {
     GPasteClipboardGdkTextCallbackData *data = user_data;
     gboolean convert = FALSE;
-    g_autofree gchar *text = (g_paste_clipboard_update_is_expired (data->update)) ? NULL : g_paste_clipboard_text_from_bytes (bytes, &convert);
+    g_autoptr (GPasteCleartext) text = (g_paste_clipboard_update_is_expired (data->update)) ? NULL : g_paste_clipboard_text_from_bytes (bytes, &convert);
 
     if (convert)
     {
@@ -937,7 +938,7 @@ g_paste_clipboard_gdk_on_sync_bare_text_read (GPasteClipboardGdk *self,
 {
     GPasteClipboardSyncData *data = user_data;
     gboolean convert = FALSE;
-    g_autofree gchar *text = (g_paste_clipboard_sync_data_wants_text (data)) ? g_paste_clipboard_text_from_bytes (bytes, &convert) : NULL;
+    g_autoptr (GPasteCleartext) text = (g_paste_clipboard_sync_data_wants_text (data)) ? g_paste_clipboard_text_from_bytes (bytes, &convert) : NULL;
 
     if (convert)
     {
