@@ -720,13 +720,62 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
         g_paste_ui_history_activate_position (self, 0);
 }
 
+/* The sidebar's count of the current history, which a filtered view sizes
+ * nothing for: the copies and deletions that list it again would otherwise
+ * leave the count where it was until the filter went
+ * (/ui/daemon-presence/filtered-count). */
+static void
+on_filtered_size_ready (GObject      *source_object G_GNUC_UNUSED,
+                        GAsyncResult *res,
+                        gpointer      user_data)
+{
+    g_autoptr (DisplayCallbackData) cdata = user_data;
+    GPasteUiHistory *self = cdata->self;
+
+    if (!self->client || g_cancellable_is_cancelled (cdata->cancellable))
+        return;
+
+    g_autoptr (GError) error = NULL;
+    guint64 size = g_paste_client_get_history_size_finish (self->client, res, &error);
+
+    if (error)
+    {
+        if (!g_paste_client_is_daemon_gone_error (error))
+            g_warning ("Could not get the size of history \"%s\": %s", cdata->name, error->message);
+        return;
+    }
+
+    /* Another history's size, a switch having landed meanwhile, as in
+     * g_paste_ui_history_refresh_history (). */
+    g_autofree gchar *current = g_paste_client_get_history_name (self->client);
+
+    if (self->panel && g_paste_str_equal (current, cdata->name))
+        g_paste_ui_panel_update_history_length (self->panel, cdata->name, size);
+}
+
 /* List by uuid rather than by position: a search asks the daemon to match, the
  * favourites filter asks it for the pinned items, and with both on the matches
- * are sifted for the flag they carry. */
+ * are sifted for the flag they carry. The history is sized alongside, for the
+ * sidebar alone, on the same cancellable: superseded together. Sized on every
+ * refresh, a pause in the typing included, though few of them can move the
+ * count: telling which can would take a flag every path moving it has to set,
+ * one it missed leaving the count stale, to save a call the typing's pause
+ * already spaces out. */
 static void
 g_paste_ui_history_filter (GPasteUiHistory *self)
 {
     DisplayCallbackData *cdata = display_callback_data_new (self, 0);
+    g_autofree gchar *name = g_paste_client_get_history_name (self->client);
+
+    if (name)
+    {
+        DisplayCallbackData *sized = g_new0 (DisplayCallbackData, 1);
+
+        sized->self = g_object_ref (self);
+        sized->cancellable = g_object_ref (cdata->cancellable);
+        sized->name = g_steal_pointer (&name);
+        g_paste_client_get_history_size (self->client, sized->cancellable, on_filtered_size_ready, sized);
+    }
 
     /* This supersedes any positional refresh in flight, and that one now bails
      * before clearing the flag it set. Nothing here grows lazily, so taking the

@@ -1417,6 +1417,45 @@ test_filter_fails (gconstpointer data)
     close_activation_window (window, &daemon);
 }
 
+/* The sidebar's count of the current history follows a copy or a deletion
+ * made with a search up, which lists the history again by its matches. */
+static void
+test_filtered_count (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 5, .match = "00000000-0000-4000-8000-0000000000ff" };
+
+    g_assert_no_error (error);
+
+    g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
+
+    g_paste_test_bus_wait_until (sidebar_has_history, window, G_PASTE_DEFAULT_HISTORY);
+    daemon.hold_filters = TRUE;
+    g_paste_ui_history_search (window->history, "match");
+    g_paste_test_bus_wait_for_count (&daemon.filters, 1);
+    answer_filter (&daemon);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_cmpstr (adw_sidebar_item_get_subtitle (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)), ==, "5");
+
+    daemon.size = 3;
+    g_paste_daemon3_emit_raw_update (daemon.skeleton, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, "", 0);
+    g_paste_test_bus_wait_for_count (&daemon.filters, 2);
+    answer_filter (&daemon);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+    g_assert_cmpstr (adw_sidebar_item_get_subtitle (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)), ==, "3");
+    daemon.hold_filters = FALSE;
+    close_activation_window (window, &daemon);
+}
+
 /* A row bound before its item has been read activates all the same, read by its
  * index, as is one past the rows loaded so far, as far as the history goes. */
 static void
@@ -3759,6 +3798,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/size-fails-leaving-search", test_size_fails_leaving_search);
     g_test_add_data_func ("/ui/daemon-presence/filter-fails/search", GINT_TO_POINTER (TRUE), test_filter_fails);
     g_test_add_data_func ("/ui/daemon-presence/filter-fails/pinned", GINT_TO_POINTER (FALSE), test_filter_fails);
+    g_test_add_func ("/ui/daemon-presence/filtered-count", test_filtered_count);
     g_test_add_func ("/ui/daemon-presence/upload", test_upload);
     g_test_add_func ("/ui/daemon-presence/upload-after-row-removed", test_upload_after_row_removed);
     g_test_add_func ("/ui/daemon-presence/focus-restored", test_focus_restored);
