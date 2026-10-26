@@ -35,8 +35,21 @@ show_about_dialog (gpointer user_data)
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
     };
+    /* The dialog up, weakly: asking for About again raises it rather than
+     * stacking a second over it. No test shows it, since that takes a
+     * display. */
+    static AdwDialog *about = NULL;
 
-    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
+    if (about)
+    {
+        adw_dialog_present (about, widget);
+        return G_SOURCE_REMOVE;
+    }
+
+    /* Held until presented, as the shortcuts dialog is (see
+     * on_show_help_overlay () in gpaste-ui-window.c). */
+    g_autoptr (AdwDialog) held = ADW_DIALOG (g_object_ref_sink (adw_about_dialog_new ()));
+    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (held);
 
     adw_about_dialog_set_application_name (dialog, PACKAGE_NAME);
     adw_about_dialog_set_version (dialog, PACKAGE_VERSION);
@@ -47,7 +60,8 @@ show_about_dialog (gpointer user_data)
     adw_about_dialog_set_comments (dialog, _("Clipboard management system"));
     adw_about_dialog_set_website (dialog, "http://www.imagination-land.org/tags/GPaste.html");
 
-    adw_dialog_present (ADW_DIALOG (dialog), widget);
+    g_set_weak_pointer (&about, held);
+    adw_dialog_present (about, widget);
 
     return G_SOURCE_REMOVE;
 }
