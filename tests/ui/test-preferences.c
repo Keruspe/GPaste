@@ -587,6 +587,45 @@ test_storage_refused_without_window (void)
     g_test_trap_assert_stderr ("*Could not change the storage backend: Password selection could not be identified*");
 }
 
+/* A migration that fails once its preferences dialog is closed, with the
+ * application's window still up -- the graphical tool's, which the dialog was
+ * over -- says why on that window. */
+static void
+test_storage_refused_after_dialog (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GError) error = NULL;
+
+    application = G_APPLICATION (adw_application_new ("org.gnome.GPaste.Preferences.Storage", G_APPLICATION_NON_UNIQUE));
+    g_application_register (application, NULL, &error);
+    g_assert_no_error (error);
+
+    GtkWindow *window = GTK_WINDOW (adw_application_window_new (GTK_APPLICATION (application)));
+    StorageRows rows = present_storage_rows (settings, NULL);
+
+    gtk_window_present (window);
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    activate (rows.migration);
+    answer (g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "Password selection could not be identified"));
+
+    AdwDialog *dialog = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
+
+    g_assert_true (ADW_IS_ALERT_DIALOG (dialog));
+    g_assert_cmpstr (adw_alert_dialog_get_body (ADW_ALERT_DIALOG (dialog)), ==, "Password selection could not be identified");
+
+    g_object_unref (rows.page);
+    gtk_window_destroy (window);
+    g_clear_object (&application);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+}
+
 /* Nothing goes to a daemon that is not serving yet: the request waits for it,
  * the migration's gate unopened meanwhile, and gives up -- the button back,
  * the gate never opened -- when none comes. The application is held while the
@@ -854,6 +893,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/preferences/shortcut/disarmed-on-leave", test_shortcut_disarmed_on_leave);
     g_test_add_func ("/preferences/shortcut/disposed", test_shortcut_disposed);
     g_test_add_func ("/preferences/storage/refused", test_storage_refused);
+    g_test_add_func ("/preferences/storage/refused-after-dialog", test_storage_refused_after_dialog);
     g_test_add_func ("/preferences/storage/refused-without-window", test_storage_refused_without_window);
     g_test_add_func ("/preferences/storage/refused-without-window/subprocess", test_storage_refused_without_window_subprocess);
     g_test_add_func ("/preferences/storage/waits-for-daemon", test_storage_waits_for_daemon);
