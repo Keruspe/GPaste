@@ -45,7 +45,9 @@ GSettings backend and directories of the test's own, to drive the history and
 its storage directly: selecting an idle image counts its texture once, a value
 of whitespace alone reads back, an attribute an item's kind has no use for -- a
 checksum on a text -- is skipped, its uuid kept, and an image checksum that is
-no SHA-256 is dropped rather than written back unescaped.
+no SHA-256 is dropped rather than written back unescaped, and an image whose
+path is not UTF-8 is left out of the file the rest of the history is saved in
+(its child's directories made under a TMPDIR that is not UTF-8).
 
 `test-keybinding-provider` runs the GNOME Shell provider against a fake Shell on
 a private `GTestDBus` bus. It covers complete and partial grabs, duplicate requests

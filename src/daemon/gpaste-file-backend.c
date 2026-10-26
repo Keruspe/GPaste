@@ -156,7 +156,26 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
             continue;
 
         const GSList *special_values = g_paste_item_get_special_values (item);
-        g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
+        const gchar *value = g_paste_item_get_value (item);
+
+        /* The document only holds UTF-8, and an image's value is its path: one
+         * under a home directory whose name is not UTF-8 has no place in it.
+         * The item is left out of the file rather than the save crashing on
+         * it, the image staying in the history for as long as the daemon
+         * runs, and its file, which no history then names, behind it after a
+         * restart: nothing on this branch sweeps the images directory. Said
+         * once a run: every save, which every copy makes, would otherwise say
+         * it again, and what makes one path so makes them all. */
+        if (!g_utf8_validate (value, -1, NULL))
+        {
+            static gint warned = 0;
+
+            if (g_atomic_int_compare_and_exchange (&warned, 0, 1))
+                g_warning ("Leaving out of the history file the items whose value is not UTF-8");
+            continue;
+        }
+
+        g_autofree gchar *text = g_paste_util_xml_encode (value);
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, &error) ||

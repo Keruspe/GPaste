@@ -9,6 +9,8 @@
 #include <gpaste-image-item.h>
 #include <gpaste-text-item.h>
 
+#include <glib/gstdio.h>
+
 #include <string.h>
 
 /* Iterate the main context until @path exists: what an image item writes at
@@ -72,6 +74,25 @@ wait_for_saved (const gchar *name,
     }
 
     settle_writes (name);
+}
+
+/* Remove @path and all it holds, whatever its name is in. */
+static void
+remove_tree (const gchar *path)
+{
+    g_autoptr (GDir) dir = g_dir_open (path, 0, NULL);
+
+    for (const gchar *entry; dir && (entry = g_dir_read_name (dir));)
+    {
+        g_autofree gchar *child = g_build_filename (path, entry, NULL);
+
+        if (g_file_test (child, G_FILE_TEST_IS_DIR) && !g_file_test (child, G_FILE_TEST_IS_SYMLINK))
+            remove_tree (child);
+        else
+            g_assert_cmpint (g_remove (child), ==, 0);
+    }
+
+    g_assert_cmpint (g_rmdir (path), ==, 0);
 }
 
 static gchar *
@@ -267,6 +288,53 @@ test_invalid_checksum_dropped (void)
     settle_writes ("quoted-checksum");
 }
 
+/* An image's path is under the history directory, and one under a home
+ * directory whose name is not UTF-8 has no place in the document, which only
+ * holds UTF-8: the image is left out of the file, the rest of the history saved
+ * around it, rather than the save crashing on it. The child's directories are
+ * made under a TMPDIR that is not UTF-8 (G_TEST_OPTION_ISOLATE_DIRS). */
+static void
+test_unnamable_image_left_out (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_autofree gchar *template = g_build_filename (g_get_tmp_dir (), "gpaste-caf\xe9-XXXXXX", NULL);
+        g_autofree gchar *tmp = g_mkdtemp (g_steal_pointer (&template));
+        g_auto (GStrv) envp = g_environ_setenv (g_environ_setenv (g_get_environ (), "TMPDIR", tmp, TRUE), "G_TEST_TMPDIR", tmp, TRUE);
+
+        g_assert_nonnull (tmp);
+        g_test_trap_subprocess_with_envp (NULL, (const gchar * const *) envp, 0, G_TEST_SUBPROCESS_DEFAULT);
+        remove_tree (tmp);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*not UTF-8*");
+        /* Said at the first save leaving it out, not at every one. */
+        g_test_trap_assert_stderr_unmatched ("*not UTF-8*not UTF-8*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    g_assert_false (g_utf8_validate (g_get_user_data_dir (), -1, NULL));
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    GPasteItem *image = uniform_image (4);
+    g_autofree gchar *png = g_strconcat (g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image)), ".png", NULL);
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *path = g_build_filename (dir, "images", png, NULL);
+
+    g_paste_history_load (history, "unnamable-image");
+    g_paste_history_add (history, image);
+    wait_for_file (path);
+    g_paste_history_add (history, g_paste_text_item_new ("saved around it"));
+    wait_for_saved ("unnamable-image", "saved around it");
+
+    g_autoptr (GPasteHistory) read = g_paste_history_new (settings);
+
+    g_paste_history_load (read, "unnamable-image");
+    g_assert_cmpuint (g_paste_history_get_length (read), ==, 1);
+    settle_writes ("unnamable-image");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -275,6 +343,7 @@ main (int argc, char **argv)
     g_test_add_func ("/history/blank-value-kept", test_blank_value_kept);
     g_test_add_func ("/history/stray-checksum-skipped", test_stray_checksum_skipped);
     g_test_add_func ("/history/invalid-checksum-dropped", test_invalid_checksum_dropped);
+    g_test_add_func ("/history/unnamable-image-left-out", test_unnamable_image_left_out);
 
     return g_test_run ();
 }
