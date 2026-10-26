@@ -1231,15 +1231,45 @@ g_paste_storage_get_extension (GPasteStorage storage_kind)
     return storage_flavours[storage_kind].extension;
 }
 
+/* The longest file name the history directory takes, as pathconf () says --
+ * of the nearest folder above it while it is not made yet: 143 bytes on
+ * eCryptfs with encrypted names, where most filesystems take 255. 255 when
+ * nothing says, which g_paste_util_history_name_is_valid () bounds every name
+ * by anyway. */
+static gsize
+g_paste_storage_name_max (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+
+    for (;;)
+    {
+        errno = 0;
+
+        glong max = pathconf (dir, _PC_NAME_MAX);
+
+        if (max > 0)
+            return MIN ((gsize) max, 255);
+        if (errno != ENOENT)
+            return 255;
+
+        g_autofree gchar *parent = g_path_get_dirname (dir);
+
+        if (g_paste_str_equal (parent, dir))
+            return 255;
+        g_set_str_take (&dir, g_steal_pointer (&parent));
+    }
+}
+
 /**
  * g_paste_storage_name_fits:
  * @storage_kind: a #GPasteStorage kind
  * @name: a name g_paste_util_history_name_is_valid() accepts
  *
  * Whether a history created under @name could have every file the
- * @storage_kind flavour keeps for it named after it. Asked before creating
- * one: a history already there is one a save landed for, and stays readable
- * whatever this says.
+ * @storage_kind flavour keeps for it named after it, in the history directory
+ * as its filesystem bounds a file name. Asked before creating one: a history
+ * already there is one a save landed for, and stays readable whatever this
+ * says.
  *
  * A question about the flavour, not about a backend: answered the same while
  * an encrypted store is locked, and the daemon runs on the "no storage"
@@ -1256,7 +1286,7 @@ g_paste_storage_name_fits (GPasteStorage storage_kind,
     if (storage_kind >= G_PASTE_N_STORAGE)
         storage_kind = G_PASTE_STORAGE_NOOP;
 
-    return strlen (name) + strlen (storage_flavours[storage_kind].longest_suffix) <= 255;
+    return strlen (name) + strlen (storage_flavours[storage_kind].longest_suffix) <= g_paste_storage_name_max ();
 }
 
 /**

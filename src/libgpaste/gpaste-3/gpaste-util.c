@@ -298,9 +298,9 @@ g_paste_util_activate_ui_sync (const gchar *action,
  * ".xml.tmp" after it. A name past that has a placeholder written and listed,
  * while no save of it could ever land. The other flavours need more room after
  * the name still -- the SQLite ones a "-journal" beside their database, the
- * encrypted file one the original a re-key keeps aside -- which only the
- * creation of a history asks of them (g_paste_storage_name_fits ()): a name a
- * history was saved under stays one.
+ * encrypted file one the original a re-key keeps aside -- and a filesystem may
+ * take shorter file names, which only the creation of a history asks of them
+ * (g_paste_storage_name_fits ()): a name a history was saved under stays one.
  *
  * Installed and introspected, where the paths it guards are the daemon's alone:
  * a client with nowhere to report a refusal -- the GNOME Shell extension's

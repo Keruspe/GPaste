@@ -866,6 +866,25 @@ g_paste_storage_is_supported (GPasteStorage storage_kind)
     return (gint) storage_kind != hidden_kind && original (storage_kind);
 }
 
+/* The folder whose filesystem takes file names of @limited_max bytes at most,
+ * as eCryptfs's encrypted names are: %NULL for none. */
+static const gchar *limited_dir;
+static glong        limited_max;
+
+long
+pathconf (const char *path,
+          int         name)
+{
+    typedef long (*Pathconf) (const char *, int);
+    Pathconf original = (Pathconf) dlsym (RTLD_NEXT, "pathconf");
+
+    g_assert_nonnull (original);
+    if (limited_dir && name == _PC_NAME_MAX && g_paste_str_equal (path, limited_dir))
+        return limited_max;
+
+    return original (path, name);
+}
+
 #if defined(G_PASTE_ENABLE_ENCRYPTION) || defined(G_PASTE_ENABLE_SQLITE)
 /* Whether the library's own calls reach this binary's definitions -- the
  * interposer above, the storage-migration functions its copy built in here
@@ -1630,6 +1649,34 @@ test_unopenable_store_out_of_reach (void)
  * ticking them anyway is clamped: reading the source through the backend that
  * stands in for it would import nothing, and deleting through it would delete
  * another flavour's histories. */
+/* A new history's name is bounded by what the history directory's filesystem
+ * takes -- asked of the folder above it while it is not made yet -- where a
+ * name past it would be switched to and filled with nothing of it ever saved. */
+static void
+test_name_fits_directory (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *parent = g_path_get_dirname (dir);
+    /* With ".xml.tmp" after it, 138 and 148 bytes. */
+    g_autofree gchar *fitting = g_strnfill (130, 'a');
+    g_autofree gchar *too_long = g_strnfill (140, 'a');
+
+    limited_max = 143;
+    g_rmdir (dir);
+    g_assert_false (g_file_test (dir, G_FILE_TEST_EXISTS));
+    limited_dir = parent;
+    g_assert_true (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, fitting));
+    g_assert_false (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, too_long));
+
+    g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
+    limited_dir = dir;
+    g_assert_true (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, fitting));
+    g_assert_false (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, too_long));
+
+    limited_dir = NULL;
+    g_assert_true (g_paste_storage_name_fits (G_PASTE_STORAGE_FILE, too_long));
+}
+
 static void
 test_migration_clamps_unopenable_source (void)
 {
@@ -7279,6 +7326,7 @@ main (int    argc,
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/storage/migration/unopenable-source", test_migration_clamps_unopenable_source);
     g_test_add_func ("/storage/unopenable-out-of-reach", test_unopenable_store_out_of_reach);
+    g_test_add_func ("/storage/name-fits-directory", test_name_fits_directory);
     g_test_add_func ("/storage/migration/unoffered-choice", test_migration_refuses_unoffered_choice);
     g_test_add_func ("/storage/migration/import-failure", test_import_failure_leaves_no_copy);
     g_test_add_func ("/storage/migration/import-readability", test_import_needs_readable_copy);
