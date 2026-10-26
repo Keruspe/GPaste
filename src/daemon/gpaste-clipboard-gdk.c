@@ -158,6 +158,10 @@ struct _GPasteClipboardGdkFormatsWait
      * its bootstrap read, or a re-read asked to identify a selection. Only the
      * former has a change of its own to follow: see on_real_changed (). */
     gboolean                              after_change;
+    /* Whether X said nobody owns the selection as the wait began: the grace a
+     * release waits (%G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE), with no owner left
+     * whose targets could answer it. */
+    gboolean                              released;
 };
 
 /* The wait itself, and nothing it owes: its callback is its caller's to answer
@@ -292,6 +296,18 @@ g_paste_clipboard_gdk_supersede_formats_wait (GPasteClipboardGdk *self)
     g_source_set_name_by_id (wait->source_id, "[GPaste] superseded clipboard formats wait");
 }
 
+/* The wait out, ended before its deadline for a caller answering its callback
+ * itself. */
+static GPasteClipboardGdkFormatsWait *
+g_paste_clipboard_gdk_take_formats_wait (GPasteClipboardGdk *self)
+{
+    GPasteClipboardGdkFormatsWait *wait = g_steal_pointer (&self->formats_wait);
+
+    g_clear_handle_id (&wait->source_id, g_source_remove);
+
+    return wait;
+}
+
 static void
 g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *self,
                                         gboolean                              released,
@@ -307,6 +323,7 @@ g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *se
     wait->callback = callback;
     wait->user_data = user_data;
     wait->after_change = self->emitting_change;
+    wait->released = released;
     wait->source_id = g_timeout_add_once (timeout, g_paste_clipboard_gdk_formats_wait_timed_out, wait);
     g_source_set_name_by_id (wait->source_id, "[GPaste] clipboard formats wait");
     self->formats_wait = wait;
@@ -1409,16 +1426,37 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
 
     if (wait && !wait->after_change && !self->copy_owed && !gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)))
     {
-        gboolean record = wait->record;
-        GPasteClipboardProviderUpdateCallback callback = wait->callback;
-        gpointer user_data = wait->user_data;
+        g_autoptr (GPasteClipboardGdkFormatsWait) taken = g_paste_clipboard_gdk_take_formats_wait (self);
 
         g_debug ("%s: targets for the read that was waiting on them", g_paste_clipboard_provider_target_name (self->is_clipboard));
         self->identify_owed = FALSE;
-        self->formats_wait = NULL;
-        g_source_remove (wait->source_id);
-        g_paste_clipboard_gdk_formats_wait_free (wait);
-        g_paste_clipboard_gdk_update (self, record, callback, user_data);
+        g_paste_clipboard_gdk_update (self, taken->record, taken->callback, taken->user_data);
+        return;
+    }
+
+    /* The targets of the owner a change's wait is out for, come back as nothing
+     * GDK can name -- an owner listing only targets with no mimetype, or
+     * refusing TARGETS -- which GTK announces with the same empty formats as the
+     * change before them. That is the answer the wait was for, and nothing this
+     * provider reads however long it went on: answered at once, as update ()
+     * answers an owner offering nothing it handles, rather than taken for a new
+     * owner whose own wait would run to its deadline and leave the selection
+     * unidentified (/gdk/formats/unmapped-targets). A release has X say nobody
+     * owns the selection, and goes the ordinary route; a second owner claiming
+     * it meanwhile announces its targets, when they name something, with a
+     * change of their own. So does an owner claiming a selection X said nobody
+     * owned as the wait began (@released): no owner was left to answer that
+     * wait, so these empty formats announce the new one, which is read like
+     * any other rather than answered for (/gdk/formats/claimed-during-grace). */
+    if (wait && wait->after_change && !wait->released && gdk_content_formats_is_empty (gdk_clipboard_get_formats (self->real)) &&
+        g_paste_clipboard_x11_hints_get_owner (self->hints) != G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE)
+    {
+        g_autoptr (GPasteClipboardGdkFormatsWait) taken = g_paste_clipboard_gdk_take_formats_wait (self);
+
+        g_debug ("%s: targets naming nothing", g_paste_clipboard_provider_target_name (self->is_clipboard));
+        g_paste_clipboard_content_set_ignored (&self->content);
+        if (taken->callback)
+            taken->callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, taken->user_data);
         return;
     }
 

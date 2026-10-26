@@ -736,6 +736,36 @@ formats_deadline (Fixture      *f,
     g_assert_cmpuint (publications, ==, before + 1);
 }
 
+/* An owner claiming the selection inside a release's grace is an owner like any
+ * other: its empty formats announce it, and the selection is read for it --
+ * waited on until its targets come, past the grace -- rather than answered as
+ * though they were the targets of the owner that left. */
+static void
+formats_claimed_during_grace (Fixture      *f,
+                              gconstpointer user_data G_GNUC_UNUSED)
+{
+    guint before = publications;
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+
+    g_assert_true (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpuint (publications, ==, before);
+
+    set_formats (TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_nonnull (pending_text);
+    g_task_return_pointer (pending_text, g_strdup ("claimed"), g_free);
+    g_clear_object (&pending_text);
+    pump (10);
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "claimed");
+}
+
 /* A selection nobody owns is not the ambiguity the long deadline is for: X has
  * already said so when the empty formats arrive, so the only thing left to cover
  * is the gap a release and the claim after it pass through, and the head is back
@@ -861,6 +891,28 @@ formats_deadline_slow_owner (Fixture      *f,
     g_assert_cmpuint (publications, ==, before);
 }
 
+/* An owner whose targets GDK names nothing of -- only names with no mimetype,
+ * or TARGETS refused -- has them come back as the same empty formats as the
+ * change before them: answered at once as an owner offering nothing handled,
+ * the cache ignored so nothing is published over it, rather than waited on
+ * for the whole deadline and left unidentified. */
+static void
+formats_unmapped_targets (Fixture      *f,
+                          gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_paste_clipboards_manager_select (f->manager, f->password);
+    guint before = publications;
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_true (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpuint (publications, ==, before);
+    g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
+}
+
 /* Where the workaround cannot convert the selection, the hints are read off the
  * formats GDK does answer: a hint named there is recognised, and one it drops --
  * every hint a foreign owner offers, as GTK stands -- reads as a selection saying
@@ -968,6 +1020,8 @@ main (int argc, char **argv)
     g_test_add ("/gdk/formats/deadline-slow-owner", Fixture, GINT_TO_POINTER (G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME), fixture_setup, formats_deadline_slow_owner, fixture_teardown);
     g_test_add ("/gdk/formats/deadline-unknown-owner", Fixture, GINT_TO_POINTER (G_PASTE_CLIPBOARD_X11_HINTS_OWNER_UNKNOWN), fixture_setup, formats_deadline_slow_owner, fixture_teardown);
     g_test_add ("/gdk/formats/release", Fixture, NULL, fixture_setup, formats_release, fixture_teardown);
+    g_test_add ("/gdk/formats/claimed-during-grace", Fixture, NULL, fixture_setup, formats_claimed_during_grace, fixture_teardown);
+    g_test_add ("/gdk/formats/unmapped-targets", Fixture, NULL, fixture_setup, formats_unmapped_targets, fixture_teardown);
     g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);
