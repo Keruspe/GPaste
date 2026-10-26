@@ -624,6 +624,100 @@ test_search_query_valid (void)
     settle_writes ("queries");
 }
 
+static void
+on_switch (GPasteHistory *history G_GNUC_UNUSED,
+           const gchar   *name G_GNUC_UNUSED,
+           gpointer       user_data)
+{
+    ++*((guint *) user_data);
+}
+
+/* A history-name setting that is no history name, set before the history is
+ * loaded or once it is, loads the default history, rather than one whose file
+ * is wherever the name leads, and says so. */
+static void
+test_configured_name_valid (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*“../escaped” is not a history name*“other/x” is not a history name*“third/\\033]0;title\\007” is not*");
+        /* Escaped, its control characters left out of the journal. */
+        g_test_trap_assert_stderr_unmatched ("*\033*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_history_name (settings, "../escaped");
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, NULL);
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+
+    g_paste_settings_set_history_name (settings, "work");
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, "work");
+    g_paste_settings_set_history_name (settings, "other/x");
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+
+    /* Another one, while on the default history already: nothing to switch. */
+    guint switches = 0;
+
+    g_signal_connect (history, "switch", G_CALLBACK (on_switch), &switches);
+    g_paste_settings_set_history_name (settings, "third/\033]0;title\007");
+    g_assert_cmpuint (switches, ==, 0);
+    settle_writes (G_PASTE_DEFAULT_HISTORY);
+}
+
+/* A history name holding a "/" is refused wherever it would become a path,
+ * not only by the methods taking one off the bus. */
+static void
+test_path_refuses_slash (void)
+{
+    g_test_trap_subprocess ("/history/path-refuses-slash/subprocess/util", 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*g_paste_util_get_history_file_path*assertion*failed*");
+    g_test_trap_subprocess ("/history/path-refuses-slash/subprocess/backend", 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*g_paste_storage_backend_read_history*assertion*failed*");
+}
+
+static void
+test_path_refuses_slash_util (void)
+{
+    g_free (g_paste_util_get_history_file_path ("../x", "xml"));
+}
+
+static void
+test_path_refuses_slash_backend (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "../x");
+}
+
+/* A name holding a "/" names something else than a history: another file, or
+ * another history under another spelling, which BackupHistory's guard over the
+ * current one would not see. Any other names a file in the history directory,
+ * the extension after it, whatever it is. */
+static void
+test_history_name_valid (void)
+{
+    g_autofree gchar *long_name = g_strnfill (300, 'a');
+    const gchar *valid[] = { "history", "work", ".hidden", "a.b", "", ".", "..", long_name };
+    const gchar *invalid[] = { NULL, "/", "./history", "x/../history", "../x", "a/b" };
+
+    for (guint i = 0; i < G_N_ELEMENTS (valid); ++i)
+        g_assert_true (g_paste_history_name_is_valid (valid[i]));
+    for (guint i = 0; i < G_N_ELEMENTS (invalid); ++i)
+        g_assert_false (g_paste_history_name_is_valid (invalid[i]));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -641,6 +735,11 @@ main (int argc, char **argv)
     g_test_add_func ("/history/add-file-procfs", test_add_file_procfs);
     g_test_add_func ("/history/search-password-name", test_search_password_name);
     g_test_add_func ("/history/search-query-valid", test_search_query_valid);
+    g_test_add_func ("/history/name-valid", test_history_name_valid);
+    g_test_add_func ("/history/configured-name-valid", test_configured_name_valid);
+    g_test_add_func ("/history/path-refuses-slash", test_path_refuses_slash);
+    g_test_add_func ("/history/path-refuses-slash/subprocess/util", test_path_refuses_slash_util);
+    g_test_add_func ("/history/path-refuses-slash/subprocess/backend", test_path_refuses_slash_backend);
 
     return g_test_run ();
 }

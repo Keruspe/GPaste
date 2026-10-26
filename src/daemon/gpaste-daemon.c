@@ -61,6 +61,14 @@
 
 #define G_PASTE_DBUS_ASSERT(cond, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, _msg, ;)
 
+/* A name that is a path is refused at the bus: see
+ * g_paste_history_name_is_valid (), which test-history checks. No test reaches
+ * the handlers using it, the daemon taking a display. */
+#define G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL(name, ret) \
+    G_PASTE_DBUS_ASSERT_FULL (g_paste_history_name_is_valid (name), "not a history name: it holds a /", ret)
+
+#define G_PASTE_DBUS_ASSERT_HISTORY_NAME(name) G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL (name, ;)
+
 struct _GPasteDaemon
 {
     GPasteBusObject parent_instance;
@@ -453,6 +461,13 @@ g_paste_daemon_private_backup_history (const GPasteDaemonPrivate *priv,
     g_paste_daemon_get_dbus_strings_parameter (parameters, &history, &backup);
 
     G_PASTE_DBUS_ASSERT (history && backup, "no history to backup");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (history);
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (backup);
+    /* The current history's file is the model's to write: a backup over it
+     * would be lost to the model's next write, the history meanwhile showing
+     * what its file no longer holds. A name holding no path names one file,
+     * so the names are compared. */
+    G_PASTE_DBUS_ASSERT (!g_paste_str_equal (backup, g_paste_history_get_current (priv->history)), "cannot back up over the current history");
 
     GPasteSettings *settings = priv->settings;
 
@@ -486,6 +501,7 @@ g_paste_daemon_private_delete_history (const GPasteDaemonPrivate *priv,
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
     G_PASTE_DBUS_ASSERT (name, "no history to delete");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
 
     GPasteHistory *history = priv->history;
 
@@ -510,9 +526,12 @@ g_paste_daemon_private_delete_password (const GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_empty_history (const GPasteDaemonPrivate *priv,
-                                      GVariant                  *parameters)
+                                      GVariant                  *parameters,
+                                      GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
 
     if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
         g_paste_history_empty (priv->history);
@@ -636,10 +655,13 @@ g_paste_daemon_private_get_history_name (const GPasteDaemonPrivate *priv)
 
 static GVariant *
 g_paste_daemon_private_get_history_size (const GPasteDaemonPrivate *priv,
-                                         GVariant                  *parameters)
+                                         GVariant                  *parameters,
+                                         GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     guint64 size;
+
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME_FULL (name, NULL);
 
     if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
         size = g_paste_history_get_length (priv->history);
@@ -892,6 +914,7 @@ g_paste_daemon_private_switch_history (const GPasteDaemonPrivate *priv,
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
     G_PASTE_DBUS_ASSERT (name, "no history to switch to");
+    G_PASTE_DBUS_ASSERT_HISTORY_NAME (name);
 
     g_paste_history_switch (priv->history, name);
 }
@@ -1020,7 +1043,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
         g_paste_daemon_private_delete_password (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_EMPTY_HISTORY))
-        g_paste_daemon_private_empty_history (priv, parameters);
+        g_paste_daemon_private_empty_history (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT))
         answer = g_paste_daemon_private_get_element (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX))
@@ -1034,7 +1057,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_NAME))
         answer = g_paste_daemon_private_get_history_name (priv);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
-        answer = g_paste_daemon_private_get_history_size (priv, parameters);
+        answer = g_paste_daemon_private_get_history_size (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
         answer = g_paste_daemon_private_get_raw_element (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))

@@ -844,7 +844,8 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
         const gchar *raw_name = g_file_info_get_display_name (h);
 
         /* Only a regular file is a history: see
-         * g_paste_file_backend_read_history_file (). */
+         * g_paste_file_backend_read_history_file (). Its name, holding no "/",
+         * is one g_paste_history_name_is_valid () takes. */
         if (g_file_info_get_file_type (h) == G_FILE_TYPE_REGULAR && g_str_has_suffix (raw_name, ".xml"))
         {
             g_autofree gchar *name = g_strdup (raw_name);

@@ -583,10 +583,12 @@ g_paste_util_get_history_dir (void)
 
 /**
  * g_paste_util_get_history_file_path:
- * @name: the name of the history
+ * @name: the name of the history, holding no "/"
  * @extension: the file extension
  *
- * Get the path to the file in which we store the history
+ * Get the path to the file in which we store the history. A name holding a
+ * "/" is refused: it would make a path of its own rather than name a file in
+ * the history directory.
  *
  * Returns: the file path
  */
@@ -594,7 +596,7 @@ G_PASTE_VISIBLE gchar *
 g_paste_util_get_history_file_path (const gchar *name,
                                     const gchar *extension)
 {
-    g_return_val_if_fail (name, NULL);
+    g_return_val_if_fail (name && !strchr (name, '/'), NULL);
     g_return_val_if_fail (extension, NULL);
 
     g_autofree gchar *history_dir_path = g_paste_util_get_history_dir_path ();

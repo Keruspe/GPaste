@@ -4,6 +4,7 @@
 #include <gpaste/gpaste-util.h>
 
 #include <gpaste-file-backend.h>
+#include <gpaste-history.h>
 
 typedef struct
 {
@@ -35,7 +36,7 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
                                       gsize                      *size)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
-    g_return_if_fail (name);
+    g_return_if_fail (g_paste_history_name_is_valid (name));
     g_return_if_fail (history && !*history);
     g_return_if_fail (size);
 
@@ -58,6 +59,7 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
                                        const GList                *history)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (g_paste_history_name_is_valid (name));
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
@@ -78,7 +80,7 @@ g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
                                          GError                   **error)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
-    g_return_if_fail (name);
+    g_return_if_fail (g_paste_history_name_is_valid (name));
 
     if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
         _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);

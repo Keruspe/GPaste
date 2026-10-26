@@ -967,6 +967,26 @@ g_paste_history_save (GPasteHistory *self,
     g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history);
 }
 
+/* The history the settings name, or the default one when that is no history
+ * name -- set by hand, or by an older GPaste taking any: its file would be
+ * wherever the name leads, and every method naming it refused. */
+static const gchar *
+g_paste_history_private_get_configured_name (GPasteHistoryPrivate *priv)
+{
+    const gchar *name = g_paste_settings_get_history_name (priv->settings);
+
+    if (g_paste_history_name_is_valid (name))
+        return name;
+
+    /* Escaped: an older GPaste took any name over the bus, control characters
+     * included, and the journal is read on a terminal. */
+    g_autofree gchar *escaped = g_strescape (name, NULL);
+
+    g_warning ("The history name setting “%s” is not a history name, using “%s”", escaped, G_PASTE_DEFAULT_HISTORY);
+
+    return G_PASTE_DEFAULT_HISTORY;
+}
+
 static void
 g_paste_history_load_locked (GPasteHistory        *self,
                              GPasteHistoryPrivate *priv,
@@ -975,7 +995,7 @@ g_paste_history_load_locked (GPasteHistory        *self,
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
 
-    g_set_str (&priv->name, (name) ? name : g_paste_settings_get_history_name (priv->settings));
+    g_set_str (&priv->name, (name) ? name : g_paste_history_private_get_configured_name (priv));
 
     g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
 
@@ -1136,7 +1156,7 @@ g_paste_history_load_async (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    const gchar *resolved = (name) ? name : g_paste_settings_get_history_name (priv->settings);
+    const gchar *resolved = (name) ? name : g_paste_history_private_get_configured_name (priv);
 
     if (priv->name && g_paste_str_equal (resolved, priv->name) && !priv->load_in_progress)
         return;
@@ -1197,7 +1217,14 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    g_set_str (&priv->name, g_paste_settings_get_history_name (priv->settings));
+    const gchar *name = g_paste_history_private_get_configured_name (priv);
+
+    /* A setting that is no history name while the default history is the
+     * current one already: the fallback leaves the history where it is. */
+    if (!g_paste_history_name_is_valid (g_paste_settings_get_history_name (priv->settings)) && g_paste_str_equal (name, priv->name))
+        return;
+
+    g_set_str (&priv->name, name);
 
     g_debug ("history: name changed to '%s'", priv->name);
 
@@ -1387,6 +1414,26 @@ g_paste_history_get_current (const GPasteHistory *self)
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     return priv->name;
+}
+
+/**
+ * g_paste_history_name_is_valid:
+ * @name: (nullable): the name of a history, as a caller sent it
+ *
+ * Whether @name names a history and nothing else. It goes straight into the
+ * file the history is stored in, so one holding a "/" names something else:
+ * "../x" a file wherever the traversal lands, "./history" or "x/../history"
+ * the history called "history" under another name, which no comparison of
+ * names would then tell apart. Without one, the file is in the history
+ * directory whatever the name, "." and ".." included, the extension coming
+ * after them.
+ *
+ * Returns: whether @name may be turned into a path
+ */
+gboolean
+g_paste_history_name_is_valid (const gchar *name)
+{
+    return name && !strchr (name, '/');
 }
 
 /**
