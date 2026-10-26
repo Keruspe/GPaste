@@ -13,7 +13,13 @@
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-upload-keybinding.h>
 
+#include <glib/gstdio.h>
+
+#include <errno.h>
+#include <fcntl.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define G_PASTE_SEND_DBUS_SIGNAL_FULLER(interface, sig, data, error) \
     g_dbus_connection_emit_signal (priv->connection,                 \
@@ -258,6 +264,94 @@ g_paste_daemon_private_add (const GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_set_errno (GError     **error,
+                          const gchar *path,
+                          const gchar *what)
+{
+    gint saved_errno = errno;
+
+    g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (saved_errno), "Failed to %s “%s”: %s", what, path, g_strerror (saved_errno));
+}
+
+/**
+ * g_paste_daemon_read_file:
+ * @path: the file AddFile was handed
+ * @cap: the most bytes it may hold
+ * @length: (out): how many it holds
+ * @error: return location for a #GError, or %NULL
+ *
+ * Read whole and on the main loop, so only what is sure to end, at a size the
+ * history can keep: a FIFO or a terminal would hold the daemon until something
+ * wrote to it, /dev/zero would never stop, and a file over the memory cap
+ * would only be refused once read. The file is opened once, without waiting
+ * on a FIFO, and what is checked is the descriptor read, so a path swapped in
+ * between gets nothing past it. Read to its end rather than to the size it
+ * reports, which procfs files give as 0.
+ *
+ * Fails in %G_IO_ERROR for what is no regular file or holds more than @cap
+ * bytes, and in %G_FILE_ERROR for one that cannot be opened or read.
+ *
+ * Returns: (transfer full) (nullable): what @path holds, NUL-terminated
+ */
+gchar *
+g_paste_daemon_read_file (const gchar *path,
+                          guint64      cap,
+                          gsize       *length,
+                          GError     **error)
+{
+    g_autofd gint fd = g_open (path, O_RDONLY | O_NONBLOCK | O_NOCTTY | O_CLOEXEC, 0);
+    struct stat st;
+
+    if (fd < 0)
+    {
+        g_paste_daemon_set_errno (error, path, "open");
+        return NULL;
+    }
+    if (fstat (fd, &st) < 0)
+    {
+        g_paste_daemon_set_errno (error, path, "read");
+        return NULL;
+    }
+    if (!S_ISREG (st.st_mode))
+    {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_REGULAR_FILE, "“%s” is not a regular file", path);
+        return NULL;
+    }
+
+    /* A #GByteArray counts in a guint, the NUL after the content included. */
+    cap = MIN (cap, (guint64) G_MAXUINT - 1);
+
+    g_autoptr (GByteArray) content = g_byte_array_sized_new ((guint) MIN ((guint64) st.st_size, cap) + 1);
+    gchar chunk[65536];
+
+    for (;;)
+    {
+        gssize got = read (fd, chunk, sizeof (chunk));
+
+        if (got < 0 && errno == EINTR)
+            continue;
+        if (got < 0)
+        {
+            g_paste_daemon_set_errno (error, path, "read");
+            return NULL;
+        }
+        if (got == 0)
+            break;
+        if ((guint64) content->len + (guint64) got > cap)
+        {
+            g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT, "“%s” is larger than max-memory-usage", path);
+            return NULL;
+        }
+        g_byte_array_append (content, (const guint8 *) chunk, (guint) got);
+    }
+
+    *length = content->len;
+    g_byte_array_append (content, (const guint8 *) "", 1);
+
+    return (gchar *) g_byte_array_free (g_steal_pointer (&content), FALSE);
+}
+
+static void
 g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
                                  GVariant                  *parameters,
                                  GError                   **error,
@@ -265,21 +359,20 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
 {
     gsize length;
     g_autofree gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
-    g_autofree gchar *content = NULL;
 
     G_PASTE_DBUS_ASSERT (file, "no file to add");
 
-    if (g_file_get_contents (file,
-                             &content,
-                             &length,
-                             error))
+    g_autofree gchar *content = g_paste_daemon_read_file (file, g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024, &length, error);
+
+    if (content)
     {
         if (g_utf8_validate (content, length, NULL))
             g_paste_daemon_private_do_add (priv, content, length, err);
         else
         {
             g_autoptr (GError) img_error = NULL;
-            g_autoptr (GdkTexture) img = gdk_texture_new_from_filename (file, &img_error);
+            g_autoptr (GBytes) bytes = g_bytes_new_take (g_steal_pointer (&content), length);
+            g_autoptr (GdkTexture) img = gdk_texture_new_from_bytes (bytes, &img_error);
 
             /* Neither text nor a loadable image: there is nothing to add, and
              * building an item out of a NULL texture would only yield a NULL

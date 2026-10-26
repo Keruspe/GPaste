@@ -5,6 +5,7 @@
  * memory GSettings and directories of the test's own. */
 
 #include <gpaste/gpaste-util.h>
+#include <gpaste-daemon.h>
 #include <gpaste-history.h>
 #include <gpaste-image-item.h>
 #include <gpaste-text-item.h>
@@ -479,6 +480,87 @@ test_fifo_not_a_history (void)
     settle_writes ("fifo");
 }
 
+/* AddFile reads only a regular file, and only up to the memory cap: a FIFO
+ * would hold the daemon until a writer came, which none ever does, and a
+ * device like /dev/zero would never end. The child gets 10 s, so a hang fails
+ * the test rather than stalling the suite. */
+static void
+test_add_file_not_regular (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 10 * G_USEC_PER_SEC, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autofree gchar *dir = g_dir_make_tmp ("gpaste-add-file-XXXXXX", NULL);
+    g_autofree gchar *fifo = g_build_filename (dir, "fifo", NULL);
+    g_autoptr (GError) error = NULL;
+    gsize length = 0;
+
+    g_assert_cmpint (mkfifo (fifo, 0600), ==, 0);
+
+    g_autofree gchar *from_fifo = g_paste_daemon_read_file (fifo, 1024, &length, &error);
+
+    g_assert_null (from_fifo);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_REGULAR_FILE);
+    g_clear_error (&error);
+
+    g_autofree gchar *from_zero = g_paste_daemon_read_file ("/dev/zero", 1024, &length, &error);
+
+    g_assert_null (from_zero);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_REGULAR_FILE);
+
+    g_unlink (fifo);
+    g_rmdir (dir);
+}
+
+static void
+test_add_file_cap (void)
+{
+    g_autofree gchar *dir = g_dir_make_tmp ("gpaste-add-file-XXXXXX", NULL);
+    g_autofree gchar *path = g_build_filename (dir, "file", NULL);
+    g_autoptr (GError) error = NULL;
+    gsize length = 0;
+
+    g_assert_true (g_file_set_contents (path, "0123456789abcdef", 16, NULL));
+
+    g_autofree gchar *at_cap = g_paste_daemon_read_file (path, 16, &length, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstr (at_cap, ==, "0123456789abcdef");
+    g_assert_cmpuint (length, ==, 16);
+
+    g_autofree gchar *past_cap = g_paste_daemon_read_file (path, 15, &length, &error);
+
+    g_assert_null (past_cap);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT);
+
+    g_unlink (path);
+    g_rmdir (dir);
+}
+
+/* A procfs file reports a size of 0 and is read to its end all the same. */
+static void
+test_add_file_procfs (void)
+{
+    if (!g_file_test ("/proc/self/status", G_FILE_TEST_EXISTS))
+    {
+        g_test_skip ("no procfs");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    gsize length = 0;
+    g_autofree gchar *status = g_paste_daemon_read_file ("/proc/self/status", 1024 * 1024, &length, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (length, >, 0);
+    g_assert_cmpuint (strlen (status), ==, length);
+    g_assert_true (g_str_has_prefix (status, "Name:"));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -491,6 +573,9 @@ main (int argc, char **argv)
     g_test_add_func ("/history/growing-line-drops-older-copy", test_growing_line_drops_older_copy);
     g_test_add_func ("/history/damage-not-logged", test_damage_not_logged);
     g_test_add_func ("/history/fifo-not-a-history", test_fifo_not_a_history);
+    g_test_add_func ("/history/add-file-not-regular", test_add_file_not_regular);
+    g_test_add_func ("/history/add-file-cap", test_add_file_cap);
+    g_test_add_func ("/history/add-file-procfs", test_add_file_procfs);
 
     return g_test_run ();
 }

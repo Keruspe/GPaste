@@ -16,6 +16,11 @@ void g_paste_daemon_show_history (GPasteDaemon *self,
 gboolean g_paste_daemon_upload   (GPasteDaemon *self,
                                   const gchar  *uuid);
 
+gchar *g_paste_daemon_read_file (const gchar *path,
+                                 guint64      cap,
+                                 gsize       *length,
+                                 GError     **error);
+
 GPasteDaemon *g_paste_daemon_new (void);
 
 G_END_DECLS

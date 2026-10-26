@@ -11,6 +11,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix gpaste-client --use-index treating a non-number as the newest item
 - Fix copied spreadsheet cells being kept as a picture, and copied images losing their other formats
 - Fix accented text copied by applications offering only plain text being garbled
+- Fix adding a pipe, a device or a huge file with gpaste-client freezing the daemon
 
 NEW in 50.10 (08/09/2026)
 =============
