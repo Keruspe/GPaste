@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste/gpaste-gdbus-defines.h>
 #include <gpaste/gpaste-util.h>
 
 #include <getopt.h>
@@ -353,6 +354,27 @@ g_paste_about (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+#ifdef G_OS_UNIX
+/* The process owning the daemon's name, as the bus knows it, or -1. */
+static GPid
+name_owner_pid (GPasteClient *client)
+{
+    g_autoptr (GVariant) answer = g_dbus_connection_call_sync (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)),
+                                                               "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                                               "org.freedesktop.DBus", "GetConnectionUnixProcessID",
+                                                               g_variant_new ("(s)", G_PASTE_BUS_NAME), G_VARIANT_TYPE ("(u)"),
+                                                               G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL);
+    guint32 pid = 0;
+
+    if (!answer)
+        return (GPid) -1;
+
+    g_variant_get (answer, "(u)", &pid);
+
+    return (GPid) pid;
+}
+#endif
+
 static gint
 g_paste_daemon_reexec (Context *ctx,
                        GError **error)
@@ -368,7 +390,10 @@ g_paste_daemon_reexec (Context *ctx,
     {
         GPid pid = g_paste_util_read_pid_file ("Daemon");
 
-        if (pid != (GPid) -1)
+        /* The pid file names the daemon that wrote it, and outlives it: only
+         * when it names the process owning the name now does the signal reach
+         * a daemon, rather than whatever process got that pid since. */
+        if (pid > 0 && pid == name_owner_pid (ctx->client))
             success = !kill (pid, SIGUSR1);
     }
 #endif

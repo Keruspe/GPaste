@@ -469,7 +469,7 @@ g_paste_util_write_pid_file (const gchar *component)
  *
  * Read the pid file
  *
- * Returns: the pid
+ * Returns: the pid, or -1 when the file holds none
  */
 G_PASTE_VISIBLE GPid
 g_paste_util_read_pid_file (const gchar *component)
@@ -488,7 +488,15 @@ g_paste_util_read_pid_file (const gchar *component)
         return (GPid) -1;
     }
 
-    return (GPid) g_ascii_strtoll (contents, NULL, 0);
+    guint64 pid = 0;
+
+    /* A positive decimal pid and nothing else: a 0 read off a damaged file
+     * would have kill () signal the caller's own process group, and a
+     * negative one a whole group. */
+    if (!g_ascii_isdigit (*contents) || !g_ascii_string_to_unsigned (g_strchomp (contents), 10, 1, G_MAXINT, &pid, NULL))
+        return (GPid) -1;
+
+    return (GPid) pid;
 #else
     return (GPid) -1;
 #endif
