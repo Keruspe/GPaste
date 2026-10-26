@@ -19,6 +19,7 @@ NEW in 50.11 (UNRELEASED)
 - Fix gpaste-client printing internal errors on text not in UTF-8
 - Fix gpaste-client add-password and replace failing without a word when given no text
 - Fix gpaste-client passing escape sequences copied from a web page on to the terminal
+- Fix the graphical tool stuttering over very long items
 
 NEW in 50.10 (08/09/2026)
 =============

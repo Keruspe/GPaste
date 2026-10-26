@@ -99,6 +99,13 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
         g_paste_ui_item_skeleton_set_thumbnail (sk, NULL);
 }
 
+/* How many characters of an item's text a row lays out: its label lays out
+ * all it is handed to ellipsize it, which on one long line costs tens of
+ * milliseconds a binding or a resize past a hundred kilobytes, and past three
+ * hundred no longer fits the row; no window is wide enough to show more than
+ * this. No test shows it, since that takes a display. */
+#define G_PASTE_UI_ITEM_MAX_SHOWN_CHARS 1000
+
 static void
 _g_paste_ui_item_ready (GPasteUiItem *self,
                         const gchar  *txt)
@@ -107,15 +114,25 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
         return;
 
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
-    g_autofree gchar *oneline = g_strdelimit (g_strdup (txt), "\n\t", ' ');
+    const gchar *end = txt;
+
+    /* The cut found before anything is copied, so that a long item costs a
+     * row what it shows rather than all it holds. */
+    for (guint i = 0; *end && i < G_PASTE_UI_ITEM_MAX_SHOWN_CHARS; ++i)
+        end = g_utf8_next_char (end);
+
+    g_autofree gchar *head = g_strndup (txt, (gsize) (end - txt));
+    g_autofree gchar *shown = (*end) ? g_strconcat (head, "…", NULL) : g_steal_pointer (&head);
+
+    g_strdelimit (shown, "\n\t", ' ');
 
     g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), priv->index, priv->uuid);
     g_paste_client_get_element_kind (priv->client, priv->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));
 
     if (!priv->index)
-        g_paste_ui_item_skeleton_set_text_bold (G_PASTE_UI_ITEM_SKELETON (self), oneline);
+        g_paste_ui_item_skeleton_set_text_bold (G_PASTE_UI_ITEM_SKELETON (self), shown);
     else
-        g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), oneline);
+        g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), shown);
 }
 
 static void
