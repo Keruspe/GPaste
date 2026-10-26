@@ -179,6 +179,25 @@ g_paste_gtk_util_toast (GtkWidget   *origin,
     adw_toast_overlay_add_toast (ADW_TOAST_OVERLAY (content), toast);
 }
 
+/**
+ * g_paste_gtk_util_set_row_title:
+ * @row: an #AdwPreferencesRow
+ * @title: the title, as written
+ *
+ * Title @row with @title as written, and take its subtitle as written too:
+ * libadwaita reads both as markup by default, and one & or < a translator
+ * wrote would have Pango refuse the label and leave it blank.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_set_row_title (AdwPreferencesRow *row,
+                                const gchar       *title)
+{
+    g_return_if_fail (ADW_IS_PREFERENCES_ROW (row));
+
+    adw_preferences_row_set_use_markup (row, FALSE);
+    adw_preferences_row_set_title (row, title);
+}
+
 typedef struct
 {
     GPasteClient *client;
@@ -817,10 +836,8 @@ g_paste_gtk_util_password_strength_row_new (const gchar *title,
 
     GtkWidget *row = adw_action_row_new ();
 
-    /* Plain text, both of it: a translation and libpwquality's advice, neither
-     * of them markup, where one "&" would blank the label. */
-    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (row), FALSE);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
+    /* Plain, libpwquality's advice in its subtitle included. */
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), title);
 
     if (!g_paste_util_pwquality_available ())
     {

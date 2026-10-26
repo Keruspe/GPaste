@@ -66,6 +66,9 @@ GtkWidget *g_paste_gtk_util_password_strength_row_new  (const gchar *title,
 void       g_paste_gtk_util_password_strength_row_rate (GtkWidget   *row,
                                                         GtkEditable *source);
 
+void g_paste_gtk_util_set_row_title (AdwPreferencesRow *row,
+                                     const gchar       *title);
+
 GtkWidget *g_paste_gtk_util_spin_row_new (gdouble min,
                                           gdouble max,
                                           gdouble step);

@@ -203,11 +203,8 @@ password_dialog (GPasteClient *client,
      * takes the password off the clipboard. */
     GtkWidget *timeout_row = g_paste_gtk_util_spin_row_new (0, (gdouble) G_PASTE_PASSWORD_TIMEOUT_MAX, 5);
 
-    /* Titles as written, being translations. */
-    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (name_row), FALSE);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (name_row), _("Name"));
-    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (timeout_row), FALSE);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (timeout_row), _("Clear After (seconds)"));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (name_row), _("Name"));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (timeout_row), _("Clear After (seconds)"));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (timeout_row),
                                  _("0 lets the password stay on the clipboard for as long as anything else would"));
 
@@ -229,8 +226,7 @@ password_dialog (GPasteClient *client,
     {
         GtkWidget *password_row = adw_password_entry_row_new ();
 
-        adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (password_row), FALSE);
-        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (password_row), _("Password"));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (password_row), _("Password"));
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), password_row);
 
         data->password = GTK_EDITABLE (password_row);

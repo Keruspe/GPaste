@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 #include <gpaste-3/gpaste-keyval.h>
 
 enum
@@ -350,7 +351,10 @@ g_paste_gtk_shortcut_row_new (const gchar *title)
 {
     g_return_val_if_fail (title, NULL);
 
-    GtkWidget *self = g_object_new (G_PASTE_TYPE_GTK_SHORTCUT_ROW, "title", title, NULL);
+    GtkWidget *self = g_object_new (G_PASTE_TYPE_GTK_SHORTCUT_ROW, NULL);
+
+    /* Plain, the capture prompt in its subtitle included. */
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (self), title);
 
     return self;
 }

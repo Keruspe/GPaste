@@ -150,7 +150,7 @@ g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *se
 
     AdwSwitchRow *row = ADW_SWITCH_ROW (adw_switch_row_new ());
 
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), label);
     g_object_bind_property (settings, key, row, "active", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
     add_reset_menu (GTK_WIDGET (row), settings, key);
 
@@ -211,7 +211,7 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
      * g_paste_gtk_util_spin_row_new ()). */
     AdwSpinRow *row = ADW_SPIN_ROW (g_paste_gtk_util_spin_row_new (min, max, step));
 
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), label);
     /* The setting is a guint64, the row value a gdouble. */
     g_object_bind_property_full (settings, key, row, "value",
                                  G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL,
@@ -275,7 +275,7 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
 
     AdwEntryRow *row = ADW_ENTRY_ROW (adw_entry_row_new ());
 
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), label);
     /* Applied rather than bound both ways: every keystroke would be a write,
      * and each half-typed value the setting -- for the upload command, the
      * command an upload asked for meanwhile runs, an emptied field included. */
@@ -350,7 +350,7 @@ g_paste_gtk_preferences_group_add_button (GPasteGtkPreferencesGroup *self,
 
     AdwButtonRow *row = ADW_BUTTON_ROW (adw_button_row_new ());
 
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), label);
     if (activated)
         g_signal_connect (row, "activated", activated, user_data);
 
@@ -371,7 +371,7 @@ g_paste_gtk_preferences_group_init (GPasteGtkPreferencesGroup *self G_GNUC_UNUSE
 
 /**
  * g_paste_gtk_preferences_group_new:
- * @title: The title of the preferences group
+ * @title: The title of the preferences group, as plain text
  *
  * Create a new instance of #GPasteGtkPreferencesGroup
  *
@@ -383,5 +383,9 @@ g_paste_gtk_preferences_group_new (const gchar *title)
 {
     g_return_val_if_fail (title, NULL);
 
-    return G_PASTE_GTK_PREFERENCES_GROUP (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_GROUP, "title", title, NULL));
+    /* A group's title is markup to libadwaita, with no way to turn that off,
+     * so it is escaped (see g_paste_gtk_util_set_row_title ()). */
+    g_autofree gchar *escaped = g_markup_escape_text (title, -1);
+
+    return G_PASTE_GTK_PREFERENCES_GROUP (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_GROUP, "title", escaped, NULL));
 }

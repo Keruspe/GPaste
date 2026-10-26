@@ -50,14 +50,6 @@ set_group_text (GtkWidget   *group,
     }
 }
 
-static void
-set_row_title (GtkWidget   *row,
-               const gchar *title)
-{
-    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (row), FALSE);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
-}
-
 /* Every prompt is a modal window of its own, @header over @content, rather than
  * an AdwDialog: the daemon has no window to put a dialog inside. Escape is
  * GtkWindow's own window.close, as its close button is, which the prompts that
@@ -309,7 +301,7 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
         GtkWidget *check = gtk_check_button_new ();
 
         self->backend_checks[i] = GTK_CHECK_BUTTON (check);
-        set_row_title (row, g_paste_prompt_storage_label (self->backends[i]));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), g_paste_prompt_storage_label (self->backends[i]));
         gtk_check_button_set_group (self->backend_checks[i], (i) ? self->backend_checks[0] : NULL);
         gtk_check_button_set_active (self->backend_checks[i], self->backends[i] == self->current);
         adw_action_row_add_prefix (ADW_ACTION_ROW (row), check);
@@ -321,13 +313,13 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     GtkWidget *import_row = adw_switch_row_new ();
 
     self->import_row = ADW_SWITCH_ROW (import_row);
-    set_row_title (import_row, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE));
 
     GtkWidget *cleanup_row = adw_switch_row_new ();
 
     self->cleanup_row = ADW_SWITCH_ROW (cleanup_row);
-    set_row_title (cleanup_row, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE));
 
     GtkWidget *group = adw_preferences_group_new ();
@@ -486,7 +478,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     GtkWidget *entry = adw_password_entry_row_new ();
 
     self->entry = GTK_EDITABLE (entry);
-    set_row_title (entry, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
     g_signal_connect (entry, "changed", G_CALLBACK (on_passphrase_changed), self);
     /* Enter submits, as it does in the shell prompt: an unlock that only takes
      * the mouse is an unlock the daemon waits on for no reason. */
@@ -507,7 +499,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         GtkWidget *confirm_entry = adw_password_entry_row_new ();
 
         self->confirm_entry = GTK_EDITABLE (confirm_entry);
-        set_row_title (confirm_entry, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (confirm_entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
         g_signal_connect (confirm_entry, "changed", G_CALLBACK (on_passphrase_changed), self);
         /* Enter submits from here too: this is the field the user finishes
          * typing in, and the shell prompt takes it in both of its entries. */
@@ -546,7 +538,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         gboolean starts_on;
 
         self->remember = remember;
-        set_row_title (remember, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
         adw_action_row_set_subtitle (ADW_ACTION_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE));
 
         g_paste_prompt_remember_state (g_paste_prompt_request_get_remember (request),

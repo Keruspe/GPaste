@@ -21,6 +21,34 @@
 #include "../../src/preferences/gpaste-preferences.c"
 #undef main
 
+/* The translations the suite has, each holding an &, which a label read as
+ * markup would leave blank: the Storage group's description and a row the
+ * behaviour page builds by hand. */
+static const struct
+{
+    const gchar *msgid;
+    const gchar *translation;
+} translations[] = {
+    { "Choose how the history is stored on disk (plain or encrypted).", "Plain & encrypted storage" },
+    { "Enable the GNOME Shell Extension",                               "Shell & extension"         },
+};
+
+const gchar *
+g_dgettext (const gchar *domain,
+            const gchar *msgid)
+{
+    typedef const gchar *(*Dgettext) (const gchar *, const gchar *);
+    Dgettext original = (Dgettext) dlsym (RTLD_NEXT, "g_dgettext");
+
+    for (gsize i = 0; i < G_N_ELEMENTS (translations); ++i)
+    {
+        if (g_paste_str_equal (msgid, translations[i].msgid))
+            return translations[i].translation;
+    }
+
+    return original (domain, msgid);
+}
+
 /* The settings the last g_paste_settings_new () built: the preferences widget
  * and dialog keep theirs to themselves. */
 static GPasteSettings *last_settings;
@@ -202,6 +230,63 @@ present_group (GPasteGtkPreferencesGroup *group)
     gtk_window_present (window);
 
     return window;
+}
+
+static gboolean
+shows_label (GtkWidget   *widget,
+             const gchar *text)
+{
+    if (GTK_IS_LABEL (widget) && g_paste_str_equal (gtk_label_get_text (GTK_LABEL (widget)), text))
+        return TRUE;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
+    {
+        if (shows_label (child, text))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* What the rows and the groups show is plain text: an & a translation holds is
+ * shown as written, rather than a label Pango refuses, blank, with a warning. */
+static void
+test_plain_text (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    static const gchar *const shown[] = {
+        "Fish & chips", "Salt & vinegar", "Malt & cider", "Cod & haddock", "Tartare & lemon", "Pop & push", "Mushy & peas",
+    };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new ("Fish & chips");
+    AdwSwitchRow *row = g_paste_gtk_preferences_group_add_boolean_setting (group, "Salt & vinegar", G_PASTE_TRACK_CHANGES_SETTING, settings);
+
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (row), "Malt & cider");
+    g_paste_gtk_preferences_group_add_range_setting (group, "Cod & haddock", G_PASTE_MAX_HISTORY_SIZE_SETTING, 0, 1000, 1, settings);
+    g_paste_gtk_preferences_group_add_text_setting (group, "Tartare & lemon", G_PASTE_UPLOAD_COMMAND_SETTING, settings);
+    g_paste_gtk_preferences_group_add_shortcut_setting (group, "Pop & push", G_PASTE_POP_SETTING, settings);
+    g_paste_gtk_preferences_group_add_button (group, "Mushy & peas", NULL, NULL);
+
+    GtkWindow *window = present_group (group);
+
+    for (gsize i = 0; i < G_N_ELEMENTS (shown); ++i)
+        g_assert_true (shows_label (GTK_WIDGET (window), shown[i]));
+    gtk_window_destroy (window);
+
+    if (library_widgets_clash ())
+        return;
+
+    window = GTK_WINDOW (gtk_window_new ());
+    gtk_window_set_child (window, g_paste_gtk_preferences_widget_new ());
+    gtk_window_present (window);
+    for (gsize i = 0; i < G_N_ELEMENTS (translations); ++i)
+        g_assert_true (shows_label (GTK_WIDGET (window), translations[i].translation));
+    gtk_window_destroy (window);
 }
 
 /* A range row commits only a value its range takes: a field emptied, or
@@ -889,6 +974,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/preferences/text/applied", test_text_applied);
     g_test_add_func ("/preferences/text/written-elsewhere", test_text_written_elsewhere);
     g_test_add_func ("/preferences/reset-menu/goes-with-row", test_reset_menu_goes_with_row);
+    g_test_add_func ("/preferences/plain-text", test_plain_text);
     g_test_add_func ("/preferences/shortcut/shift-alone", test_shortcut_shift_alone);
     g_test_add_func ("/preferences/shortcut/disarmed-on-leave", test_shortcut_disarmed_on_leave);
     g_test_add_func ("/preferences/shortcut/disposed", test_shortcut_disposed);

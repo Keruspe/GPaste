@@ -281,9 +281,11 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                      settings);
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
+    /* Markup to libadwaita, as a group's title is (g_paste_gtk_preferences_group_new ()). */
+    g_autofree gchar *storage_description = g_markup_escape_text (_("Choose how the history is stored on disk (plain or encrypted)."), -1);
+
     group = g_paste_gtk_preferences_group_new (_("Storage"));
-    adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
-                                           _("Choose how the history is stored on disk (plain or encrypted)."));
+    adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group), storage_description);
     g_paste_gtk_preferences_group_add_button (group,
                                               _("Change Storage Backend…"),
                                               G_CALLBACK (on_storage_migration_activated),
