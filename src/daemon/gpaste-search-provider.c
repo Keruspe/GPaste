@@ -168,8 +168,11 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 
         append_dict_entry (&dict, "id", uuids[n]);
         append_dict_entry (&dict, "name", result);
+        /* No clipboardText: GNOME Shell puts that on the clipboard as a result
+         * is picked, ahead of ActivateResult, and the daemon would then record
+         * it -- a password's or an image's description added as text.
+         * ActivateResult selects the item itself. */
         append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
-        append_dict_entry (&dict, "clipboardText", value);
 
         g_variant_builder_add_value (&builder, g_variant_builder_end (&dict));
     }

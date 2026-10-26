@@ -15,5 +15,6 @@ subdir('gnome-shell-client')
 subdir('global-shortcut-client')
 
 subdir('history')
+subdir('search-provider')
 subdir('settings')
 subdir('tools')

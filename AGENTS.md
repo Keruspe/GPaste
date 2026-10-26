@@ -70,6 +70,12 @@ placeholder value, while the search refuses with an error a query past
 the graphical tool, the GNOME Shell menu and the overview's provider goes out
 escaped as text, never lowercased.
 
+`test-search-provider` links the same daemon code and runs the overview's search
+provider against a fake daemon on a private `GTestDBus` bus: a result's metas
+carry no `clipboardText`, which GNOME Shell would put on the clipboard ahead of
+`ActivateResult`. The provider is disposed by hand before the bus goes down, its
+registration holding it.
+
 `test-clipboard` links the same daemon code and checks, with no display, how an
 update reads a selection: `g_paste_clipboard_content_for_formats ()` takes the
 text over an image offered beside it, a bare text/plain offered alone is read as
