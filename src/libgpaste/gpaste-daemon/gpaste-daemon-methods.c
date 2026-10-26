@@ -451,9 +451,12 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
     /* A history with images-support off keeps no image: both storage flavours
      * drop one on their next read, the file backend's next write sweeping its
      * file, so one added would be answered and listed only to be gone at the
-     * next start. */
+     * next start. Refused before the file is decoded, whether it is an image
+     * or nothing a loader reads: telling the two apart is a whole decode, on
+     * the main loop, for a refusal either way -- which is why the words say
+     * so, and the XML too. */
     G_PASTE_DBUS_ASSERT_FULL (g_paste_settings_get_images_support (self->settings),
-                              G_PASTE_ERROR_REJECTED, "images-support is off, so the history keeps no image", NULL);
+                              G_PASTE_ERROR_REJECTED, "the file is no text, and with images-support off no image is kept", NULL);
 
     g_autoptr (GBytes) bytes = g_bytes_new_take (g_steal_pointer (&content), length);
 

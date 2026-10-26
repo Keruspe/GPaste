@@ -100,7 +100,10 @@
 
       @path is read by the daemon, so it must be one the daemon can reach; a
       client resolves a relative one against its own directory first. A file that
-      is not valid UTF-8 is tried as an image. A path naming no regular file (a
+      is not valid UTF-8 is tried as an image, one no loader reads failing with
+      org.gnome.GPaste.Error.WrongItemKind; with "images-support" off, such a
+      file is refused with org.gnome.GPaste.Error.Rejected without being
+      decoded, whether it is an image or not. A path naming no regular file (a
       FIFO, a device) fails with org.gnome.GPaste.Error.InvalidArgument, and a
       file larger than "max-memory-usage" with org.gnome.GPaste.Error.Rejected,
       neither being read. A file reporting a smaller size than it holds, as
