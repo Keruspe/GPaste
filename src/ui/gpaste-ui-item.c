@@ -685,18 +685,21 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
         return;
 
     GPasteItemKind kind = g_paste_client_item_get_kind (item);
-    g_autofree gchar *oneline = g_paste_util_one_line (txt);
-    const gchar *end = oneline;
+    const gchar *end = txt;
 
+    /* The cut found before anything is copied, so that a long item costs a
+     * row what it shows rather than all it holds. It lands where it would on
+     * the folded line, g_paste_util_one_line () putting one space for each
+     * character it folds; no test tells the two apart, the row reading the
+     * same either way. */
     for (guint i = 0; *end && i < G_PASTE_UI_ITEM_MAX_SHOWN_CHARS; ++i)
         end = g_utf8_next_char (end);
 
-    if (*end)
-    {
-        g_autofree gchar *shown = g_strndup (oneline, (gsize) (end - oneline));
+    g_autofree gchar *head = g_strndup (txt, (gsize) (end - txt));
+    g_autofree gchar *oneline = g_paste_util_one_line (head);
 
-        g_set_str_take (&oneline, g_strconcat (shown, "…", NULL));
-    }
+    if (*end)
+        g_set_str_take (&oneline, g_strconcat (oneline, "…", NULL));
 
     g_paste_ui_item_apply_index (self, self->index);
 
