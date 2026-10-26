@@ -807,25 +807,79 @@ g_paste_settings_get_extension_enabled (const GPasteSettings *self)
     return priv->extension_enabled;
 }
 
-static inline gchar **
-g_paste_settings_private_get_enabled_extensions (GPasteSettingsPrivate *priv)
+/* Whether the shell's schema has @key: older ones lack some, and reading a key
+ * a schema lacks is a critical. */
+static gboolean
+g_paste_settings_private_shell_has (GPasteSettingsPrivate *priv,
+                                    const gchar           *key)
 {
-    return (priv->shell_settings) ? g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
+    g_autoptr (GSettingsSchema) schema = NULL;
+
+    g_object_get (priv->shell_settings, "settings-schema", &schema, NULL);
+
+    return g_settings_schema_has_key (schema, key);
 }
 
+/* Whether GNOME Shell runs GPaste's extension, decided the way the shell does
+ * (_getEnabledExtensions () in extensionSystem.js): listed as enabled, user
+ * extensions not all turned off, and not listed as disabled, which wins. */
 static void
 g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate *priv)
 {
-    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    g_auto (GStrv) enabled = g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING);
+
+    priv->extension_enabled = g_strv_contains ((const gchar * const *) enabled, G_PASTE_EXTENSION_NAME);
+
+    if (priv->extension_enabled &&
+        g_paste_settings_private_shell_has (priv, G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING) &&
+        g_settings_get_boolean (priv->shell_settings, G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING))
+        priv->extension_enabled = FALSE;
+
+    if (priv->extension_enabled && g_paste_settings_private_shell_has (priv, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING))
+    {
+        g_auto (GStrv) disabled = g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING);
+
+        priv->extension_enabled = !g_strv_contains ((const gchar * const *) disabled, G_PASTE_EXTENSION_NAME);
+    }
+}
+
+/* @list with GPaste's extension in or out, as @in says, the rest kept; left
+ * alone when it already is.
+ *
+ * Returns: whether @list was written, which one the user cannot write is not */
+static gboolean
+g_paste_settings_private_set_listed (GPasteSettingsPrivate *priv,
+                                     const gchar           *list,
+                                     gboolean               in)
+{
+    g_auto (GStrv) extensions = g_settings_get_strv (priv->shell_settings, list);
+
+    if (g_strv_contains ((const gchar * const *) extensions, G_PASTE_EXTENSION_NAME) == in)
+        return FALSE;
+
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
     for (GStrv e = extensions; *e; ++e)
     {
-        if (g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
-        {
-            priv->extension_enabled = TRUE;
-            return;
-        }
+        if (!g_paste_str_equal (*e, G_PASTE_EXTENSION_NAME))
+            g_strv_builder_add (builder, *e);
     }
-    priv->extension_enabled = FALSE;
+    if (in)
+        g_strv_builder_add (builder, G_PASTE_EXTENSION_NAME);
+
+    g_auto (GStrv) updated = g_strv_builder_end (builder);
+
+    return g_settings_set_strv (priv->shell_settings, list, (const gchar * const *) updated);
+}
+
+static void
+g_paste_settings_private_emit_extension_enabled (GPasteSettings *self)
+{
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   g_quark_from_string (G_PASTE_EXTENSION_ENABLED_SETTING),
+                   G_PASTE_EXTENSION_ENABLED_SETTING,
+                   NULL);
 }
 
 /**
@@ -842,54 +896,43 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
     g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
 
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
-    g_auto (GStrv) extensions = NULL;
 
     if (!priv->shell_settings || (value == priv->extension_enabled))
         return;
 
-    extensions = g_paste_settings_private_get_enabled_extensions (priv);
-    guint64 nb = g_strv_length (extensions);
-    if (value)
-    {
-        extensions = g_realloc (extensions, (nb + 2) * sizeof (gchar *));
-        extensions[nb] = g_strdup (G_PASTE_EXTENSION_NAME);
-        extensions[nb+1] = NULL;
-    }
-    else
-    {
-        gboolean found = FALSE;
-        for (guint64 i = 0; i < nb; ++i)
-        {
-            if (!found && g_paste_str_equal (extensions[i], G_PASTE_EXTENSION_NAME))
-            {
-                found = TRUE;
-                g_free (extensions[i]);
-            }
-            if (found)
-                extensions[i] = extensions[i+1];
-        } 
-    }
+    /* As GNOME Shell's own enableExtension () and disableExtension () do: in one
+     * list and out of the other. User extensions all turned off stays the
+     * user's to undo, and the setting then reads what the shell does; the
+     * "changed" handler is what moves it. */
+    gboolean written = g_paste_settings_private_set_listed (priv, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, value);
 
-    priv->extension_enabled = value;
-    g_settings_set_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) extensions);
+    if (g_paste_settings_private_shell_has (priv, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING))
+        written |= g_paste_settings_private_set_listed (priv, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING, !value);
+
+    /* Nothing written -- the lists already as asked while user extensions are
+     * all turned off, or a list the user cannot write -- so nothing announced,
+     * and a switch set to @value would go on saying so while the shell does
+     * otherwise. Announced all the same, for it to read back what the shell
+     * does; a write is announced by the "changed" handler already. */
+    if (!written)
+        g_paste_settings_private_emit_extension_enabled (self);
 }
 
 static void
 g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
-                                         const gchar *key      G_GNUC_UNUSED,
+                                         const gchar *key,
                                          gpointer     user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+    if (!g_paste_str_equal (key, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) &&
+        !g_paste_str_equal (key, G_PASTE_SHELL_DISABLED_EXTENSIONS_SETTING) &&
+        !g_paste_str_equal (key, G_PASTE_SHELL_DISABLE_USER_EXTENSIONS_SETTING))
+        return;
 
-    /* Forward the signal */
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   g_quark_from_string (G_PASTE_EXTENSION_ENABLED_SETTING),
-                   G_PASTE_EXTENSION_ENABLED_SETTING,
-                   NULL);
+    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+    g_paste_settings_private_emit_extension_enabled (self);
 }
 
 static void
@@ -1155,7 +1198,7 @@ g_paste_settings_init (GPasteSettings *self)
 
     GSignalGroup *shell_settings_signals = priv->shell_settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
     g_signal_group_connect (shell_settings_signals,
-                            "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                            "changed",
                             G_CALLBACK (g_paste_settings_shell_settings_changed),
                             self);
 

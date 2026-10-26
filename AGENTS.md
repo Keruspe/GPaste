@@ -37,7 +37,16 @@ ninja test
 
 `test-settings` uses the memory GSettings backend and isolated configuration
 directories to check ordinary and detailed `rebind` signal key arguments and
-detail filtering, without reading or writing user preferences.
+detail filtering, without reading or writing user preferences. It also checks
+that `extension-enabled` is what GNOME Shell decides from three of its keys --
+listed in `enabled-extensions`, `disable-user-extensions` off, and not in
+`disabled-extensions`, which wins -- is written into one list and out of the
+other, and is announced once for each list written, and once all the same, for a
+switch to read back, when there is nothing to write or the list cannot be
+written (a keyfile backend over a read-only directory, in a subprocess, skipped
+in the parent where a read-only directory is written all the same). It runs
+against a schema holding those keys alone (`tests/settings/shell-schema/`), so
+whether or not a shell is installed.
 
 `test-history` links the daemon's own code but for its `main ()` (the
 `gpaste-daemon-core` library of `src/daemon/meson.build`), against the memory

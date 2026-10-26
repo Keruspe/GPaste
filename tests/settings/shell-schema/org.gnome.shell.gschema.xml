@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The keys of GNOME Shell's schema GPaste reads, without the shell. -->
+<schemalist>
+  <schema id="org.gnome.shell" path="/org/gnome/shell/">
+    <key name="enabled-extensions" type="as">
+      <default>[]</default>
+    </key>
+    <key name="disabled-extensions" type="as">
+      <default>[]</default>
+    </key>
+    <key name="disable-user-extensions" type="b">
+      <default>false</default>
+    </key>
+  </schema>
+</schemalist>
