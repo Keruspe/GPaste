@@ -9,7 +9,11 @@ srcdir=$(dirname -- "$0")
 # relative directory such as `tools` is looked up where this was started, never
 # under a CDPATH entry.
 CDPATH= cd -- "$srcdir"
-[ ! -d node_modules ] && npm clean-install
+# A lock newer than the install made from it -- a dependency bump pulled since
+# -- is installed again, as a missing tree is.
+if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+    npm clean-install
+fi
 # Link in project root to make imports work properly. The target is relative
 # to the root, so the link survives the checkout moving, and a link that does
 # not resolve -- absolute into a checkout since moved, or pointing at itself --
