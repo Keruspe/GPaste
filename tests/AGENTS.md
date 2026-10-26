@@ -194,7 +194,10 @@ an item's control characters shown on a terminal rather than acted on
 `UploadAndCopy` and not `Upload`, and which command lines
 `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
 verb and so have the verb-less add's shape, and the listing's own flags
-included. The client's constructor is `#define`d too, counting the clients
+included -- and how it is read: a non-blocking stdin waited on to its end, a
+thread writing the rest once the client is waiting (`/client/pipe/nonblocking`),
+and a stdin nothing can be read from taken for nothing piped by a line with no
+verb, refused by a verb (`/client/pipe/unreadable`). The client's constructor is `#define`d too, counting the clients
 built: none for help, version or a verb nobody knows. So are the daemon's
 lookups, answering from a history the case sets, for what `--use-index`
 resolves: a malformed index -- a sign, a space or a vertical tab in front,

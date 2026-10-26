@@ -11,6 +11,7 @@
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-util.h>
 #include <gpaste-test-env.h>
+#include <glib-unix.h>
 #include <glib/gstdio.h>
 #include <fcntl.h>
 #include <dlfcn.h>
@@ -895,9 +896,12 @@ test_pipe_refusals (void)
     g_autoptr (GError) error = NULL;
     g_autofree gchar *data = NULL;
 
+    gboolean unreadable = FALSE;
+
     stdin_from ("a\0b", 3);
-    g_assert_false (extract_pipe_data (&data, &error));
+    g_assert_false (extract_pipe_data (&data, &unreadable, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_false (unreadable);
     g_assert_null (data);
     g_clear_error (&error);
 
@@ -907,15 +911,94 @@ test_pipe_refusals (void)
     g_assert_cmpint (dup2 (directory, STDIN_FILENO), ==, STDIN_FILENO);
     g_assert_true (g_close (directory, NULL));
     clearerr (stdin);
-    g_assert_false (extract_pipe_data (&data, &error));
+    g_assert_false (extract_pipe_data (&data, &unreadable, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY);
+    g_assert_true (unreadable);
     g_assert_null (data);
     g_clear_error (&error);
 
     stdin_from ("piped", 5);
-    g_assert_true (extract_pipe_data (&data, &error));
+    g_assert_true (extract_pipe_data (&data, &unreadable, &error));
     g_assert_no_error (error);
     g_assert_cmpstr (data, ==, "piped");
+}
+
+/* The rest of the input, written and its pipe closed once the client is
+ * waiting on it. */
+static gpointer
+write_rest (gpointer user_data)
+{
+    gint writer = GPOINTER_TO_INT (user_data);
+
+    g_usleep (200 * G_TIME_SPAN_MILLISECOND);
+    g_assert_cmpint (write (writer, "c", 1), ==, 1);
+    g_assert_true (g_close (writer, NULL));
+
+    return NULL;
+}
+
+/* A stdin its parent left non-blocking is read on as the input comes in, to
+ * its end, where EAGAIN would cut it short: "ab" there before the read, the "c"
+ * only once it is waiting. */
+static void
+test_pipe_nonblocking (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *data = NULL;
+    gboolean unreadable = FALSE;
+    gint fds[2];
+
+    g_assert_true (g_unix_open_pipe (fds, O_CLOEXEC, &error));
+    g_assert_true (g_unix_set_fd_nonblocking (fds[0], TRUE, &error));
+    g_assert_no_error (error);
+    g_assert_cmpint (write (fds[1], "ab", 2), ==, 2);
+    g_assert_cmpint (dup2 (fds[0], STDIN_FILENO), ==, STDIN_FILENO);
+    g_assert_true (g_close (fds[0], NULL));
+
+    g_autoptr (GThread) rest = g_thread_new ("rest of the input", write_rest, GINT_TO_POINTER (fds[1]));
+
+    g_assert_true (extract_pipe_data (&data, &unreadable, &error));
+    g_assert_no_error (error);
+    g_assert_cmpstr (data, ==, "abc");
+    g_thread_join (g_steal_pointer (&rest));
+}
+
+/* A stdin nothing can be read from is nothing piped to a line with no verb,
+ * which goes on to the listing, where a verb taking its text from there is
+ * refused for it. */
+static void
+test_pipe_unreadable (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_assert_true (g_close (STDIN_FILENO, NULL) || errno == EBADF);
+
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *data = NULL;
+
+    g_assert_true (read_pipe_for (0, NULL, &ctx, &data, &error));
+    g_assert_no_error (error);
+    g_assert_null (data);
+
+    const gchar *args[] = { NULL };
+
+    ctx.args = args;
+    g_assert_false (read_pipe_for (1, "add", &ctx, &data, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_FAILED);
+    g_assert_null (data);
 }
 
 /* A command that fails tells the user why on stderr and exits 1 -- with no
@@ -1473,6 +1556,8 @@ main (int argc, char **argv)
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/pipe/refusals", test_pipe_refusals);
+    g_test_add_func ("/client/pipe/nonblocking", test_pipe_nonblocking);
+    g_test_add_func ("/client/pipe/unreadable", test_pipe_unreadable);
     g_test_add_func ("/client/pipe/password", test_piped_password);
     g_test_add_func ("/client/password-timeout", test_password_timeout);
     g_test_add_func ("/client/pipe/nothing-piped", test_nothing_piped);

@@ -9,8 +9,10 @@
 
 #include <errno.h>
 #include <getopt.h>
+#include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 typedef struct
 {
@@ -145,33 +147,58 @@ parse_cmdline (int     *argc,
     return TRUE;
 }
 
-/* What is piped in, whole, in @data -- %NULL for nothing piped. A read that
- * fails, or input carrying a NUL byte, which no D-Bus string can carry, is
- * refused rather than cut short: a prefix of the input would otherwise go for
- * all of it, and an empty one for nothing piped -- the listing, then, on a
- * line with no verb. */
+/* The read of the input failing, @input what came in before it did. */
 static gboolean
-extract_pipe_data (gchar  **data,
-                   GError **error)
+pipe_read_failed (const GString *input,
+                  gboolean      *unreadable,
+                  GError       **error)
+{
+    gint saved_errno = errno;
+
+    *unreadable = !input->len;
+
+    g_set_error (error, G_IO_ERROR, g_io_error_from_errno (saved_errno), _("Could not read the input: %s"), g_strerror (saved_errno));
+    return FALSE;
+}
+
+/* What is piped in, whole, in @data -- %NULL for nothing piped. A read that
+ * fails, setting @unreadable when it does before anything came in, or input
+ * carrying a NUL byte, which no D-Bus string can carry, is refused rather than
+ * cut short: a prefix of the input would otherwise go for all of it, and an
+ * empty one for nothing piped -- the listing, then, on a line with no verb. A
+ * stdin its parent left non-blocking is waited on: EAGAIN there only says that
+ * nothing more has come in yet. */
+static gboolean
+extract_pipe_data (gchar   **data,
+                   gboolean *unreadable,
+                   GError  **error)
 {
     *data = NULL;
+    *unreadable = FALSE;
 
     if (isatty (STDIN_FILENO))
         return TRUE;
 
     g_autoptr (GString) input = g_string_new (NULL);
     gchar buffer[8192];
-    gsize length;
 
-    while ((length = fread (buffer, 1, sizeof (buffer), stdin)) > 0)
-        g_string_append_len (input, buffer, (gssize) length);
-
-    if (ferror (stdin))
+    for (;;)
     {
-        gint saved_errno = errno;
+        gssize length = read (STDIN_FILENO, buffer, sizeof (buffer));
 
-        g_set_error (error, G_IO_ERROR, g_io_error_from_errno (saved_errno), _("Could not read the input: %s"), g_strerror (saved_errno));
-        return FALSE;
+        if (length > 0)
+            g_string_append_len (input, buffer, length);
+        else if (!length)
+            break;
+        else if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            struct pollfd readable = { .fd = STDIN_FILENO, .events = POLLIN };
+
+            if (poll (&readable, 1, -1) < 0 && errno != EINTR)
+                return pipe_read_failed (input, unreadable, error);
+        }
+        else if (errno != EINTR)
+            return pipe_read_failed (input, unreadable, error);
     }
 
     if (memchr (input->str, '\0', input->len))
@@ -1223,6 +1250,29 @@ dispatch_reads_stdin (gint           argc,
     return FALSE;
 }
 
+/* @ctx's pipe, read into @pipe_data when the command line @argc and @verb make
+ * takes one. Returns whether the line goes on: a stdin nothing can be read from
+ * is nothing piped to a line with no verb, which then lists the history, but a
+ * read failing once some of the input came in, or for a verb, refuses it with
+ * @error. */
+static gboolean
+read_pipe_for (gint         argc,
+               const gchar *verb,
+               Context     *ctx,
+               gchar      **pipe_data,
+               GError     **error)
+{
+    gboolean unreadable = FALSE;
+
+    if (!dispatch_reads_stdin (argc, verb, ctx) || extract_pipe_data (pipe_data, &unreadable, error))
+        return TRUE;
+    if (argc || !unreadable)
+        return FALSE;
+
+    g_clear_error (error);
+    return TRUE;
+}
+
 /* Whether every string a command line carries -- its arguments, what is
  * piped in for one, merge's decoration and separator -- is UTF-8, as a D-Bus
  * string has to be. GLib would otherwise send "[Invalid UTF-8]" in its place,
@@ -1464,7 +1514,7 @@ main (gint argc, gchar *argv[])
         /* Only where a pipe is what the command line is for: extract_pipe_data ()
          * reads stdin to its end, and an end is not something every caller is
          * going to provide (see command_reads_stdin ()). */
-        if (dispatch_reads_stdin (argc, (argc > 0) ? argv[0] : NULL, &ctx) && !extract_pipe_data (&pipe_data, &error))
+        if (!read_pipe_for (argc, (argc > 0) ? argv[0] : NULL, &ctx, &pipe_data, &error))
             status = EXIT_FAILURE;
         else
         {
