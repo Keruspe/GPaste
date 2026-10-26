@@ -288,8 +288,8 @@ or through [PayPal](https://paypal.me/keruspe/) if you are not on GitHub.
 ## Releases
 
 The latest release for GNOME 51 is
-[GPaste 51.1](https://www.imagination-land.org/posts/2026-10-20-gpaste-51.1-released.html)
-([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.1.tar.xz)).
+[GPaste 51.2](https://www.imagination-land.org/posts/2026-10-26-gpaste-51.2-released.html)
+([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.2.tar.xz)).
 
 Release announcements and everything else about GPaste are
 [on my blog](https://www.imagination-land.org/tags/GPaste.html). See

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-25 22:40+0100\n"
+"POT-Creation-Date: 2026-10-26 18:26+0100\n"
 "PO-Revision-Date: 2023-05-23 22:50+0000\n"
 "Last-Translator: 이야기 <iyagicom@gmail.com>\n"
 "Language-Team: Korean <https://hosted.weblate.org/projects/gpaste/gpaste/ko/"
@@ -366,360 +366,360 @@ msgstr "메인 UI"
 msgid "The settings UI"
 msgstr "셋팅 UI"
 
-#: src/client/gpaste-client.c:112
+#: src/client/gpaste-client.c:114
 #, c-format
 msgid "Invalid timeout: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:160
 #, c-format
 msgid "Could not read the input: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:206
 msgid "Cannot use input carrying a NUL byte."
 msgstr ""
 
 #. Translators: %s is the program GPaste tried to start, then the reason it could not.
-#: src/client/gpaste-client.c:257
+#: src/client/gpaste-client.c:284
 #, c-format
 msgid "Couldn’t spawn %s: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:415
+#: src/client/gpaste-client.c:442
 msgid ""
 "The daemon is still starting, settling its storage: try again once it serves"
 msgstr ""
 
-#: src/client/gpaste-client.c:459
+#: src/client/gpaste-client.c:486
 msgid "Successfully re-executed the daemon"
 msgstr ""
 
-#: src/client/gpaste-client.c:498
+#: src/client/gpaste-client.c:525
 msgid "Successfully triggered the storage migration"
 msgstr ""
 
-#: src/client/gpaste-client.c:515
+#: src/client/gpaste-client.c:542
 msgid "Successfully triggered the passphrase change"
 msgstr ""
 
-#: src/client/gpaste-client.c:537
+#: src/client/gpaste-client.c:564
 msgid ""
 "The running daemon cannot check the store: restart it with “gpaste-client "
 "daemon-reexec” first, or, if GNOME Shell runs it, log out and back in"
 msgstr ""
 
-#: src/client/gpaste-client.c:552
+#: src/client/gpaste-client.c:579
 msgid "Nothing to put right"
 msgstr ""
 
-#: src/client/gpaste-client.c:567
+#: src/client/gpaste-client.c:594
 msgid "Couldn’t get the version of the daemon."
 msgstr ""
 
-#: src/client/gpaste-client.c:588
+#: src/client/gpaste-client.c:615
 msgid "Couldn’t get the name of the current history."
 msgstr ""
 
-#: src/client/gpaste-client.c:1013
+#: src/client/gpaste-client.c:1040
 msgid "print the history with UUIDs"
 msgstr ""
 
-#: src/client/gpaste-client.c:1014
+#: src/client/gpaste-client.c:1041
 msgid "print the size of the current history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1015
+#: src/client/gpaste-client.c:1042
 msgid "<pattern>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1015
+#: src/client/gpaste-client.c:1042
 msgid "print the items of the history matching <pattern>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1016
+#: src/client/gpaste-client.c:1043
 msgid "get the name of the current history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1017
+#: src/client/gpaste-client.c:1044
 msgid "[<history>] <backup>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1017
+#: src/client/gpaste-client.c:1044
 msgid "back up <history>, the current one if not given, as <backup>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1018 src/client/gpaste-client.c:1032
+#: src/client/gpaste-client.c:1045 src/client/gpaste-client.c:1059
 msgid "<name>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1018
+#: src/client/gpaste-client.c:1045
 msgid "switch to another history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1019 src/client/gpaste-client.c:1034
+#: src/client/gpaste-client.c:1046 src/client/gpaste-client.c:1061
 msgid "[<name>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1019
+#: src/client/gpaste-client.c:1046
 msgid "delete the history <name>, the current one if not given"
 msgstr ""
 
-#: src/client/gpaste-client.c:1020
+#: src/client/gpaste-client.c:1047
 msgid "list available histories"
 msgstr ""
 
-#: src/client/gpaste-client.c:1021
+#: src/client/gpaste-client.c:1048
 msgid "[<text>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1021
+#: src/client/gpaste-client.c:1048
 msgid "set text to clipboard, <text> read from stdin if absent"
 msgstr ""
 
-#: src/client/gpaste-client.c:1022
+#: src/client/gpaste-client.c:1049
 msgid "<name> [<password>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1022
+#: src/client/gpaste-client.c:1049
 msgid ""
 "add the <name> / <password> pair to the clipboard, <password> read from "
 "stdin if absent"
 msgstr ""
 
-#: src/client/gpaste-client.c:1023 src/client/gpaste-client.c:1024
-#: src/client/gpaste-client.c:1026 src/client/gpaste-client.c:1029
-#: src/client/gpaste-client.c:1030 src/client/gpaste-client.c:1031
-#: src/client/gpaste-client.c:1044 src/client/gpaste-client.c:1045
+#: src/client/gpaste-client.c:1050 src/client/gpaste-client.c:1051
+#: src/client/gpaste-client.c:1053 src/client/gpaste-client.c:1056
+#: src/client/gpaste-client.c:1057 src/client/gpaste-client.c:1058
+#: src/client/gpaste-client.c:1071 src/client/gpaste-client.c:1072
 msgid "<uuid>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1023
+#: src/client/gpaste-client.c:1050
 msgid "get the item <uuid> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1024
+#: src/client/gpaste-client.c:1051
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:1025
+#: src/client/gpaste-client.c:1052
 msgid "<uuid> [<contents>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1025
+#: src/client/gpaste-client.c:1052
 msgid ""
 "replace the contents of the item <uuid> with <contents>, read from stdin if "
 "absent"
 msgstr ""
 
-#: src/client/gpaste-client.c:1026
+#: src/client/gpaste-client.c:1053
 msgid ""
 "drop the rich text flavours of the item <uuid>, keeping the plain text it "
 "shows"
 msgstr ""
 
-#: src/client/gpaste-client.c:1027
+#: src/client/gpaste-client.c:1054
 msgid "<uuid> … <uuid>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1027
+#: src/client/gpaste-client.c:1054
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:1028
+#: src/client/gpaste-client.c:1055
 msgid "<uuid> <name>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1028
+#: src/client/gpaste-client.c:1055
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
 "that is"
 msgstr ""
 
-#: src/client/gpaste-client.c:1029
+#: src/client/gpaste-client.c:1056
 msgid "delete item <uuid> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1030
+#: src/client/gpaste-client.c:1057
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:1031
+#: src/client/gpaste-client.c:1058
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:1032
+#: src/client/gpaste-client.c:1059
 msgid "delete the password <name> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1033
+#: src/client/gpaste-client.c:1060
 msgid "<path>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1033
+#: src/client/gpaste-client.c:1060
 msgid "put the content of the file at <path> into the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:1034
+#: src/client/gpaste-client.c:1061
 msgid "empty the history <name>, the current one if not given"
 msgstr ""
 
-#: src/client/gpaste-client.c:1035
+#: src/client/gpaste-client.c:1062
 msgid "start tracking clipboard changes"
 msgstr ""
 
-#: src/client/gpaste-client.c:1036
+#: src/client/gpaste-client.c:1063
 msgid "stop tracking clipboard changes"
 msgstr ""
 
-#: src/client/gpaste-client.c:1037
+#: src/client/gpaste-client.c:1064
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr ""
 
-#: src/client/gpaste-client.c:1038
+#: src/client/gpaste-client.c:1065
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:1039
+#: src/client/gpaste-client.c:1066
 msgid "change the passphrase of the encrypted history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1040
+#: src/client/gpaste-client.c:1067
 msgid "check the history folder and every history, putting right what can be"
 msgstr ""
 
-#: src/client/gpaste-client.c:1041
+#: src/client/gpaste-client.c:1068
 msgid "launch the configuration tool"
 msgstr ""
 
-#: src/client/gpaste-client.c:1042
+#: src/client/gpaste-client.c:1069
 msgid "launch the graphical tool"
 msgstr ""
 
-#: src/client/gpaste-client.c:1043
+#: src/client/gpaste-client.c:1070
 msgid "make the GNOME Shell extension display the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:1044
+#: src/client/gpaste-client.c:1071
 msgid "upload the item <uuid> to a pastebin service"
 msgstr ""
 
-#: src/client/gpaste-client.c:1045
+#: src/client/gpaste-client.c:1072
 msgid "upload the item <uuid> to a pastebin service, and copy its address"
 msgstr ""
 
-#: src/client/gpaste-client.c:1046 src/client/gpaste-client.c:1152
+#: src/client/gpaste-client.c:1073 src/client/gpaste-client.c:1179
 msgid "display the version"
 msgstr ""
 
-#: src/client/gpaste-client.c:1047
+#: src/client/gpaste-client.c:1074
 msgid "display the daemon version"
 msgstr ""
 
 #. The verbs' own words: each option does what its verb does.
-#: src/client/gpaste-client.c:1048 src/client/gpaste-client.c:1151
+#: src/client/gpaste-client.c:1075 src/client/gpaste-client.c:1178
 msgid "display this help"
 msgstr ""
 
-#: src/client/gpaste-client.c:1049
+#: src/client/gpaste-client.c:1076
 msgid "display the about dialog"
 msgstr ""
 
-#: src/client/gpaste-client.c:1125
+#: src/client/gpaste-client.c:1152
 msgid "Usage:"
 msgstr ""
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:1146
+#: src/client/gpaste-client.c:1173
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1146
+#: src/client/gpaste-client.c:1173
 msgid "copy the output of <command> to the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:1149
+#: src/client/gpaste-client.c:1176
 msgid "General options:"
 msgstr ""
 
-#: src/client/gpaste-client.c:1155
+#: src/client/gpaste-client.c:1182
 msgid "Convenience options:"
 msgstr ""
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:1157
+#: src/client/gpaste-client.c:1184
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout
-#: src/client/gpaste-client.c:1159
+#: src/client/gpaste-client.c:1186
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:1161
+#: src/client/gpaste-client.c:1188
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
-#: src/client/gpaste-client.c:1164
+#: src/client/gpaste-client.c:1191
 msgid "Display options:"
 msgstr ""
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:1166
+#: src/client/gpaste-client.c:1193
 msgid "display each item on only one line"
 msgstr ""
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:1168
+#: src/client/gpaste-client.c:1195
 msgid "display each item raw (without line numbers)"
 msgstr ""
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:1170
+#: src/client/gpaste-client.c:1197
 msgid "display the items in reverse order"
 msgstr ""
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:1172
+#: src/client/gpaste-client.c:1199
 msgid "use a NUL character instead of a new line between each item"
 msgstr ""
 
-#: src/client/gpaste-client.c:1175
+#: src/client/gpaste-client.c:1202
 msgid "Merge options:"
 msgstr ""
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:1177 src/client/gpaste-client.c:1179
+#: src/client/gpaste-client.c:1204 src/client/gpaste-client.c:1206
 msgid "string"
 msgstr ""
 
-#: src/client/gpaste-client.c:1177
+#: src/client/gpaste-client.c:1204
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 
-#: src/client/gpaste-client.c:1179
+#: src/client/gpaste-client.c:1206
 msgid "add the given separator between each item when merging"
 msgstr ""
 
-#: src/client/gpaste-client.c:1246
+#: src/client/gpaste-client.c:1296
 msgid "Cannot use arguments or input that are not valid UTF-8."
 msgstr ""
 
-#: src/client/gpaste-client.c:1272
+#: src/client/gpaste-client.c:1322
 #, c-format
 msgid "Invalid item index: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:1517
+#: src/client/gpaste-client.c:1567
 msgid "Could not write the output"
 msgstr ""
 
@@ -762,14 +762,14 @@ msgstr ""
 
 #. An icon names the button for the eye and for nothing else.
 #: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:243
-#: src/gnome-shell/historySwitcher.js:769 src/ui/gpaste-ui-item.c:1083
-#: src/ui/gpaste-ui-item.c:1153 src/ui/gpaste-ui-panel-history.c:220
+#: src/gnome-shell/historySwitcher.js:769 src/ui/gpaste-ui-item.c:1087
+#: src/ui/gpaste-ui-item.c:1157 src/ui/gpaste-ui-panel-history.c:220
 #: src/ui/gpaste-ui-panel.c:785 src/ui/gpaste-ui-panel.c:997
 msgid "Delete"
 msgstr ""
 
 #: src/gnome-shell/dummyHistoryItem.js:31 src/ui/gpaste-ui-history.c:1594
-#: src/ui/gpaste-ui-window.c:899
+#: src/ui/gpaste-ui-window.c:902
 msgid "Retry"
 msgstr ""
 
@@ -806,12 +806,12 @@ msgid "Unpin"
 msgstr ""
 
 #: src/gnome-shell/favouriteButton.js:42 src/ui/gpaste-ui-item.c:217
-#: src/ui/gpaste-ui-item.c:1082
+#: src/ui/gpaste-ui-item.c:1086
 msgid "Pin"
 msgstr ""
 
 #: src/gnome-shell/historySwitcher.js:72
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1034
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1035
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:95
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:337
 #: src/ui/gpaste-ui-header.c:308 src/ui/gpaste-ui-panel.c:717
@@ -864,11 +864,11 @@ msgstr ""
 msgid "The item was uploaded, and its address copied"
 msgstr ""
 
-#: src/gnome-shell/itemActions.js:48 src/ui/gpaste-ui-item.c:1147
+#: src/gnome-shell/itemActions.js:48 src/ui/gpaste-ui-item.c:1151
 msgid "Remove Rich Text"
 msgstr ""
 
-#: src/gnome-shell/itemActions.js:49 src/ui/gpaste-ui-item.c:1148
+#: src/gnome-shell/itemActions.js:49 src/ui/gpaste-ui-item.c:1152
 msgid "Upload"
 msgstr ""
 
@@ -1016,8 +1016,8 @@ msgstr ""
 msgid "Strong"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:262
-#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:277
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:266
+#: src/libgpaste/gpaste-daemon/gpaste-daemon-util.c:281
 msgid "Could not create history dir"
 msgstr ""
 
@@ -1034,78 +1034,78 @@ msgstr ""
 msgid "%1$d × %2$d (%3$s)"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:721
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:722
 msgid "Store the history in a file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:723
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:724
 msgid "Store the history in an encrypted file"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:725
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:726
 msgid "Store the history in a database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:727
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:728
 msgid "Store the history in an encrypted database"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:729
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:730
 msgid "Don’t store anything"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:972
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:973
 msgid "Encrypted history"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:974
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:975
 #, fuzzy
 msgid "Enter the passphrase to unlock your clipboard history."
 msgstr "지난글 돌보기"
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:976
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:977
 msgid "If you forget this passphrase, your stored history cannot be recovered."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:978
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:979
 msgid "Unlock"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:980
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:981
 msgid "Set passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:982
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:983
 msgid "Passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:984
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:985
 msgid "Confirm passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:986
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:987
 msgid "Passphrase strength"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:988
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:989
 msgid "Passphrase strength rating is not available in this build"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:990
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:991
 msgid "Remember this passphrase"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:992
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:993
 msgid "Store it in the keyring so you are not asked again"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:994
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:995
 msgid "Storage migration"
 msgstr ""
 
 #. Translators: the quoted words are the label of the button below, so
 #. * the two have to say the same thing.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:998
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:999
 msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
 "disk unless you pick a storing backend here. “Keep as is” changes nothing "
@@ -1113,49 +1113,49 @@ msgid ""
 "time."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1000
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1001
 msgid "Apply"
 msgstr ""
 
 #. Translators: this label is quoted in the description above.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1003
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1004
 msgid "Keep as is"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1005
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1006
 msgid "Storage backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1007
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1008
 msgid "Import existing data"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1009
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1010
 msgid "Copy the current history into the new backend"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1011
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1012
 msgid "Delete old data afterwards"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1013
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1014
 msgid "Remove the previous on-disk history once done"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1015
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1016
 msgid "The old data will be deleted without being imported first"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1017
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1018
 msgid "The passphrase was not changed"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1019
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1020
 msgid "Your history is still encrypted with the passphrase it had before."
 msgstr ""
 
 #. Translators: the quoted words are a command to type, not to translate.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1022
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1023
 msgid ""
 "Some of your histories are now encrypted with the new passphrase while the "
 "others keep the previous one, and GPaste could not put them back. Run "
@@ -1163,32 +1163,32 @@ msgid ""
 "in use takes."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1024
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1025
 msgid "The old data was not deleted"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1026
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1027
 msgid ""
 "The clipboard history GPaste was told to delete after the migration is still "
 "on disk."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1028
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1029
 msgid "The history was not migrated"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1030
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1031
 msgid ""
 "GPaste could not copy your clipboard history into the new storage backend, "
 "so it keeps the one it had and will ask again next time."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1032
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1033
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Close"
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1036
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1037
 msgid ""
 "Choose where GPaste should store your clipboard history. Nothing is kept on "
 "disk unless you pick a storing backend here. Closing this window asks it "
@@ -1196,14 +1196,14 @@ msgid ""
 msgstr ""
 
 #. Translators: %s is the names of the histories, separated by commas.
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1039
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1040
 #, c-format
 msgid ""
 "These histories are encrypted with another passphrase than the history in "
 "use: %s. Enter it to encrypt them with the passphrase in use."
 msgstr ""
 
-#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1041
+#: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1042
 msgid "This passphrase opens none of them, please try again"
 msgstr ""
 
@@ -1597,15 +1597,15 @@ msgstr ""
 msgid "Could not pin the item"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1145
+#: src/ui/gpaste-ui-item.c:1149
 msgid "Edit…"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1146
+#: src/ui/gpaste-ui-item.c:1150
 msgid "Make Password…"
 msgstr ""
 
-#: src/ui/gpaste-ui-item.c:1152
+#: src/ui/gpaste-ui-item.c:1156
 msgid "Pinned"
 msgstr ""
 
@@ -1776,8 +1776,8 @@ msgstr ""
 msgid "The clipboard is not recorded while it restarts."
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:593 src/ui/gpaste-ui-window.c:893
-#: src/ui/gpaste-ui-window.c:1085
+#: src/ui/gpaste-ui-window.c:593 src/ui/gpaste-ui-window.c:896
+#: src/ui/gpaste-ui-window.c:1088
 msgid "Restart"
 msgstr ""
 
@@ -1803,85 +1803,85 @@ msgstr ""
 msgid "Stop"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:695
+#: src/ui/gpaste-ui-window.c:699
 msgid "Clipboard management system"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:699
+#: src/ui/gpaste-ui-window.c:703
 msgid "Sponsor on GitHub"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:700
+#: src/ui/gpaste-ui-window.c:704
 msgid "Donate with PayPal"
 msgstr ""
 
 #. Translators: put your names here, one per line, and they show up in the
 #. * about dialog's credits.
-#: src/ui/gpaste-ui-window.c:703
+#: src/ui/gpaste-ui-window.c:707
 msgid "translator-credits"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:892
+#: src/ui/gpaste-ui-window.c:895
 msgid "An older GPaste daemon is still running"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:898
+#: src/ui/gpaste-ui-window.c:901
 msgid "Connecting to GPaste…"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:898
+#: src/ui/gpaste-ui-window.c:901
 msgid "Couldn’t connect to GPaste"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1081
+#: src/ui/gpaste-ui-window.c:1084
 msgid "The GPaste daemon is out of date"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1266
+#: src/ui/gpaste-ui-window.c:1269
 msgid "Could not restart the older daemon"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1474
+#: src/ui/gpaste-ui-window.c:1477
 msgid "Could not read the history"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1485
+#: src/ui/gpaste-ui-window.c:1488
 msgid "Could not merge the selected items"
 msgstr ""
 
 #. translators: separators inserted between the merged items
-#: src/ui/gpaste-ui-window.c:1546
+#: src/ui/gpaste-ui-window.c:1549
 msgid "New Line"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1547
+#: src/ui/gpaste-ui-window.c:1550
 msgid "Space"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1548
+#: src/ui/gpaste-ui-window.c:1551
 msgid "Comma"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1549
+#: src/ui/gpaste-ui-window.c:1552
 msgid "Tab"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1557
+#: src/ui/gpaste-ui-window.c:1560
 msgid "Custom separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1562
+#: src/ui/gpaste-ui-window.c:1565
 msgid "Merge With This Separator"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1573
+#: src/ui/gpaste-ui-window.c:1576
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1783
+#: src/ui/gpaste-ui-window.c:1786
 msgid "Histories"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1784
+#: src/ui/gpaste-ui-window.c:1787
 msgid "History"
 msgstr ""

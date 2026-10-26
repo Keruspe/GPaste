@@ -2,6 +2,27 @@
 <!-- SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause -->
 <releases>
+  <release type="stable" date="2026-10-26" version="51.2">
+    <description>
+      <p>Changes since 51.1:</p>
+      <ul>
+        <li>Check the stored histories from the command line, and put right what can be</li>
+        <li>Back up a history with Enter, and see as you type when a name cannot be used</li>
+        <li>Translate gpaste-client, its help included</li>
+        <li>Find copied files by the names and paths their rows show</li>
+        <li>Fix searches with special characters or capitals finding the wrong items</li>
+        <li>Fix the graphical tool acting on the wrong items, showing outdated ones or stuttering</li>
+        <li>Fix several issues in the graphical tool's editing, accessibility, layout and windows</li>
+        <li>Fix GNOME Shell's menu and search showing, pasting or recording the wrong items</li>
+        <li>Fix GNOME Shell's menu misbehaving with the keyboard or scaling, or stalling</li>
+        <li>Fix copies, passwords, histories and GPaste 50's images lost, duplicated or kept too long</li>
+        <li>Fix the preferences freezing on a passphrase change, and settings lost or misreported</li>
+        <li>Fix loading a history with long items taking seconds, or minutes, per item</li>
+        <li>Fix rare crashes around passphrase changes, damaged stores and planted files</li>
+        <li>Fix gpaste-client's piped input, options, completions and error messages</li>
+      </ul>
+    </description>
+  </release>
   <release type="stable" date="2026-10-20" version="51.1">
     <description>
       <p>Changes since 51.0:</p>
@@ -9,69 +30,26 @@
         <li>Strip or upload an item from the GNOME Shell menu’s right-click actions</li>
         <li>Upload an item and copy its address from the command line</li>
         <li>Delete a history from the graphical tool’s sidebar</li>
-        <li>Offer to restart an outdated daemon, as an update may leave one running</li>
-        <li>Recognise passwords other clipboard managers mark as secret, and mark GPaste’s own</li>
-        <li>Take another application’s password off the clipboard once its timeout runs out</li>
-        <li>Keep a password with no timeout on the clipboard when the daemon restarts</li>
-        <li>Keep the last copy on the clipboard when the application it came from closes</li>
-        <li>Fix the graphical tool staying empty after the daemon comes back</li>
-        <li>Fix the graphical tool’s header and layout in narrow windows</li>
-        <li>Fix the graphical tool freezing on an item made of one very long line</li>
-        <li>Fix a failed image preview repeating its toast as you scroll</li>
-        <li>Fix how file items and texts with Unicode line breaks are shown</li>
-        <li>Fix GPaste’s windows showing no icon in GNOME Shell</li>
-        <li>Fix the passphrase and migration windows going blank on a &amp; or a &lt;</li>
-        <li>Fix pausing the tracking being undone at unlock or when GPaste restarts</li>
-        <li>Fix turning the GNOME Shell extension off starting a GPaste daemon</li>
-        <li>Fix GPaste inside GNOME Shell carrying on, or keeping its passphrase, once replaced or off</li>
-        <li>Fix GPaste’s questions inside GNOME Shell showing on the lock screen, or missing their meter</li>
-        <li>Fix the storage migration window picking a storage for you</li>
-        <li>Fix the preferences’ number, upload command and shortcut rows saving what was not meant</li>
-        <li>Fix names and folders in another encoding than UTF-8 breaking the menu, search or adds</li>
-        <li>Fix builds without the systemd units or the extension, or with translations elsewhere</li>
+        <li>Offer to restart an outdated daemon an update left running</li>
+        <li>Recognise passwords other clipboard managers mark as secret, and take them off on time</li>
+        <li>Keep the last copy when its application closes, and passwords across a restart</li>
+        <li>Fix the graphical tool’s narrow layout, freezes on long items, and emptiness after a restart</li>
+        <li>Fix how files, Unicode line breaks and GPaste’s window icon are shown</li>
+        <li>Fix GPaste inside GNOME Shell once replaced or turned off, and its questions on the lock screen</li>
+        <li>Fix the migration and passphrase windows going blank, picking a storage or asking twice</li>
+        <li>Fix the preferences saving what was not meant, and unsaveable settings looking applied</li>
+        <li>Fix pausing the tracking being undone, and searching the overview starting GPaste</li>
         <li>Fix keyboard shortcuts on keypad keys, after a late portal, and their scrambled list</li>
-        <li>Fix passwords staying on the clipboard, or coming back in clear, when their entry goes</li>
-        <li>Fix GNOME Shell taking a password off the clipboard early when GPaste restarts</li>
-        <li>Fix images, files and colours marked as secret being kept in the history</li>
-        <li>Fix synchronizing secrets without their password protection</li>
-        <li>Fix rich-text removal leaving formatting on the clipboard</li>
-        <li>Fix copied blank lines vanishing after a restart</li>
-        <li>Fix damaged or foreign history files losing items or crashing GPaste</li>
-        <li>Fix the text of an old-format history being copied into the system log</li>
-        <li>Fix a failed save losing changes or images, or reporting a backup as done</li>
-        <li>Fix a crash right after a save emptying the history on some filesystems</li>
-        <li>Fix histories with a very long name being created but never saved</li>
-        <li>Fix a SQLite history no longer saved once it holds an item too large</li>
-        <li>Fix encrypted histories accepting a swapped image or appended data</li>
-        <li>Fix the right passphrase refused, or a wrong one accepted, after damage or rare failures</li>
-        <li>Fix decrypted passwords and encryption keys lingering in memory</li>
-        <li>Fix histories split across two passphrases by a failed, interrupted or migrating change</li>
-        <li>Fix the passphrase being asked for again when the storage choice cannot be saved</li>
-        <li>Fix storage migrations losing items past the size limit, images, or the history itself</li>
-        <li>Fix storage migrations mistaking an earlier one’s leftover copy for the history in use</li>
-        <li>Fix a migration cut short at logout leaving the history half written or unencrypted</li>
-        <li>Fix a failed storage change being reported nowhere and retried on the next start</li>
-        <li>Fix deleted items and passwords staying readable on disk in the SQLite storage</li>
-        <li>Fix damaged SQLite histories refusing to open or never storing anything again</li>
-        <li>Fix copies and changes made during a load, a passphrase change or a migration being lost</li>
-        <li>Fix emptied, deleted or backed-up histories missing copies, coming back or leaving files</li>
-        <li>Fix switching, deleting or backing up a history appearing to work when it did not</li>
-        <li>Fix GNOME Shell freezing for a moment while another history is emptied</li>
-        <li>Fix the daemon rarely hanging when it restarts</li>
-        <li>Fix changes to a locked or unsaveable setting looking applied</li>
-        <li>Fix the memory limit removing items it should keep, or mishandling selected pinned ones</li>
-        <li>Fix gpaste-client crashing, waiting on its input, or misreading --use-index and its input</li>
-        <li>Fix gpaste-client passing escape sequences copied from a web page on to the terminal</li>
-        <li>Fix gpaste-client daemon-reexec and migrate sometimes stopping another program</li>
-        <li>Fix adding a pipe, a device or a huge file freezing or exhausting the daemon</li>
-        <li>Fix uploads failing, mangling or losing the address, or landing after GPaste was turned off</li>
-        <li>Fix the upload shortcut on an image or a password: only text uploads</li>
-        <li>Fix copied spreadsheet cells kept as a picture, and images losing their other formats</li>
-        <li>Fix accented text from applications offering only plain text being garbled</li>
-        <li>Fix GPaste inside GNOME Shell ignoring copied images, colours and files, or huge copies</li>
-        <li>Fix an image added from a file while images are off vanishing at the next start</li>
-        <li>Fix a rare crash when renaming a password</li>
-        <li>Fix searching in the overview starting GPaste when it was not running</li>
+        <li>Fix passwords and secrets lingering on the clipboard, in memory, in the history or in the log</li>
+        <li>Fix encrypted and SQLite histories, migrations and passphrase changes losing data on failures or damage</li>
+        <li>Fix histories switched, emptied, deleted or backed up wrongly, and copies made meanwhile lost</li>
+        <li>Fix copied images, files, colours, spreadsheet cells, rich text and blank lines being lost or garbled</li>
+        <li>Fix the memory limit removing items it should keep</li>
+        <li>Fix adding a pipe, a device, a huge file or a name in another encoding breaking GPaste</li>
+        <li>Fix uploads failing or losing the address, and uploading anything but text</li>
+        <li>Fix gpaste-client crashing, hanging on its input or passing escape sequences to the terminal</li>
+        <li>Fix rare hangs and crashes, and GNOME Shell freezing while a history is emptied</li>
+        <li>Fix building without the systemd units or the extension, or with translations elsewhere</li>
       </ul>
     </description>
   </release>
