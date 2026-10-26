@@ -106,6 +106,19 @@ fake_connection_call_sync (GDBusConnection    *connection G_GNUC_UNUSED,
     return g_variant_ref_sink (g_variant_new ("()"));
 }
 
+/* How many uris a display string decoded. */
+static guint uris_decoded;
+
+static gchar *
+counted_filename_from_uri (const gchar *uri,
+                           gchar      **hostname,
+                           GError     **error)
+{
+    ++uris_decoded;
+
+    return g_filename_from_uri (uri, hostname, error);
+}
+
 /* A reset GSettings refuses, as it does a key an administrator locked. */
 static gboolean refuse_reset;
 
@@ -118,6 +131,7 @@ fake_settings_reset (GPasteSettings *settings,
 }
 
 #define g_paste_settings_reset fake_settings_reset
+#define g_filename_from_uri counted_filename_from_uri
 #define g_bus_get fake_bus_get
 #define g_bus_get_finish fake_bus_get_finish
 #define g_bus_get_sync fake_bus_get_sync
@@ -129,6 +143,7 @@ fake_settings_reset (GPasteSettings *settings,
 #undef g_bus_get_sync
 #undef g_bus_get_finish
 #undef g_bus_get
+#undef g_filename_from_uri
 #undef g_paste_settings_reset
 
 typedef struct
@@ -289,6 +304,55 @@ test_shown_line (void)
     g_assert_cmpstr (walked, ==, "ab\xE2");
 }
 
+/* An item's line is its display string as the cut shows it, whatever its kind,
+ * and a files item has only as many of its uris decoded as the line shows: a
+ * directory's worth of them, each decoded and converted, would be the most of
+ * what drawing its row costs. */
+static void
+test_display_line (void)
+{
+    static const struct
+    {
+        const gchar   *value;
+        GPasteItemKind kind;
+    } cases[] = {
+        { "a\nlong text that goes on", G_PASTE_ITEM_KIND_TEXT     },
+        { "1x1",                       G_PASTE_ITEM_KIND_IMAGE    },
+        { "#ffffff",                   G_PASTE_ITEM_KIND_COLOR    },
+        { "a name",                    G_PASTE_ITEM_KIND_PASSWORD },
+        { "file:///a\nfile:///b c",    G_PASTE_ITEM_KIND_URIS     },
+    };
+    static const guint sizes[] = { 0, 1, 5, 12, G_PASTE_UTIL_SHOWN_CHARS };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_autofree gchar *whole = g_paste_util_display_string (cases[i].value, cases[i].kind);
+
+        for (gsize s = 0; s < G_N_ELEMENTS (sizes); ++s)
+        {
+            g_autofree gchar *expected = g_paste_util_shown_line (whole, sizes[s]);
+            g_autofree gchar *line = g_paste_util_display_line (cases[i].value, cases[i].kind, sizes[s]);
+
+            g_assert_cmpstr (line, ==, expected);
+        }
+    }
+
+    g_autoptr (GString) many = g_string_new (NULL);
+
+    for (guint i = 0; i < 10000; ++i)
+        g_string_append_printf (many, "file:///tmp/file-%u\n", i);
+
+    g_autofree gchar *whole = g_paste_util_display_string (many->str, G_PASTE_ITEM_KIND_URIS);
+    g_autofree gchar *expected = g_paste_util_shown_line (whole, 80);
+
+    uris_decoded = 0;
+
+    g_autofree gchar *line = g_paste_util_display_line (many->str, G_PASTE_ITEM_KIND_URIS, 80);
+
+    g_assert_cmpstr (line, ==, expected);
+    g_assert_cmpuint (uris_decoded, <, 10);
+}
+
 static void
 assert_files_shown (const gchar *uris,
                     const gchar *expected)
@@ -412,6 +476,7 @@ main (int argc, char **argv)
     g_test_add_func ("/util/pid-file", test_pid_file);
     g_test_add_func ("/util/one-line", test_one_line);
     g_test_add_func ("/util/shown-line", test_shown_line);
+    g_test_add_func ("/util/display-line", test_display_line);
     g_test_add_func ("/util/activation-token", test_activation_token);
     g_test_add_func ("/util/migration-gate/refused", test_migration_gate_refused);
     g_test_add_func ("/util/display-string/files", test_files_shown);

@@ -68,13 +68,6 @@ const context = vm.createContext({
     GPaste: {
         ItemKind: {TEXT: 0, IMAGE: 1, COLOR: 2},
         UTIL_SHOWN_CHARS: 1000,
-        util_display_string: value => value,
-        // libgpaste's cut, by characters (/util/shown-line): what the row
-        // hands it is what is checked here.
-        util_shown_line: (text, size) => {
-            const chars = [...text];
-            return size > 0 && chars.length > size ? `${chars.slice(0, size).join('')}…` : text;
-        },
     },
     global: {stage: {connect: () => 1, disconnect() {}, get_key_focus: () => null}},
     GPasteDeleteButton: Button,
@@ -96,8 +89,23 @@ const source = fs.readFileSync(process.argv[2], 'utf8')
     .replace(/^import [^;]*;\n/gm, '').replace('export class ', 'class ');
 vm.runInContext(`${source}\nthis.Item = GPasteItem;`, context);
 
+// How many times a row read an item's whole value, which a text's row has no
+// need of: it is drawn from the line libgpaste cuts.
+let valuesRead = 0;
+
 function item(uuid, value, favourite = false) {
-    return {get_uuid: () => uuid, get_value: () => value, is_favourite: () => favourite, get_kind: () => 0};
+    return {
+        get_uuid: () => uuid,
+        get_value: () => { ++valuesRead; return value; },
+        // libgpaste's cut, by characters (/util/display-line): what the row
+        // asks of it is what is checked here.
+        get_display_line: size => {
+            const chars = [...value];
+            return size > 0 && chars.length > size ? `${chars.slice(0, size).join('')}…` : value;
+        },
+        is_favourite: () => favourite,
+        get_kind: () => 0,
+    };
 }
 
 // A client whose items the test hands out, and which records what is sent.
@@ -132,6 +140,7 @@ runSuite('Item', async () => {
 
         await filled(row, bus, 'a', 'abcdefghij');
         assert.equal(row.label.clutter_text.text, 'abcde…');
+        assert.equal(valuesRead, 0);
         row.setTextSize(8);
         assert.equal(row.label.clutter_text.text, 'abcdefgh…');
         row.setTextSize(0);

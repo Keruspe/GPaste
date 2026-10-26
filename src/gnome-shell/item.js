@@ -151,6 +151,7 @@ export class GPasteItem extends PopupMenuItem {
 
         // What the row last displayed, so a settings change knows whether it has
         // anything to redo.
+        this._item = null;
         this._kind = null;
         this._imagesPreview = false;
         this._imagesPreviewSize = 0;
@@ -276,7 +277,7 @@ export class GPasteItem extends PopupMenuItem {
         this._index = index;
 
         if (index === -1) {
-            this._setValue(null);
+            this._setItem(null);
         } else {
             // A recycled row goes on showing the item it held until the fetch
             // lands, but it is no longer that item, so it stops answering for
@@ -294,7 +295,7 @@ export class GPasteItem extends PopupMenuItem {
                 return;
 
             this._uuid = item.get_uuid();
-            this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
+            this._setItem(item);
         }
     }
 
@@ -307,14 +308,14 @@ export class GPasteItem extends PopupMenuItem {
         this._disarmActions();
 
         if (uuid == null) {
-            this._setValue(null);
+            this._setItem(null);
         } else {
             const [wanted, item] = await awaitReply(cancellable, this._client.get_item(uuid, cancellable));
 
             if (!wanted)
                 return;
 
-            this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
+            this._setItem(item);
         }
     }
 
@@ -329,17 +330,18 @@ export class GPasteItem extends PopupMenuItem {
         this._setFavourited(false);
     }
 
-    _setValue(value, favourite = false, kind = null) {
+    _setItem(item) {
+        const favourite = item?.is_favourite() ?? false;
+
         this.label.set_style(this._index === 0 ? 'font-weight: bold;' : null);
 
-        // The undecorated value: what the swatch needs, and what the label is
-        // drawn *from* rather than what it shows.
-        this._value = value;
-        this._kind = kind;
+        // The item, which the label is drawn from (_renderText ()).
+        this._item = item;
+        this._kind = item?.get_kind() ?? null;
 
         if (this._index === -1) {
             this._uuid = null;
-            this._displayedText = value || '';
+            this._displayedText = '';
             this.label.clutter_text.set_text(this._displayedText);
             this.hide();
         } else {
@@ -373,18 +375,16 @@ export class GPasteItem extends PopupMenuItem {
     // domain -- the very domain this extension declares -- and it runs in this
     // process, so they come out in the shell's own locale rather than the
     // daemon's. Cut to element-size there too, as the graphical tool's rows
-    // are cut, by characters and without walking the rest of an item running
-    // to a megabyte -- and with element-size 0, "no limit", to as much as those
-    // rows show (G_PASTE_UTIL_SHOWN_CHARS): the label lays out the whole of
-    // what it is handed on GNOME Shell's main thread, and no menu is wide
-    // enough to show more. A row still waiting for its item has neither a value
-    // nor a kind to hand it, and ItemKind has no introspected member for "none"
-    // to pass in place of the one it lacks.
+    // are cut, by characters, and composed in C only as far as that shows, so
+    // that nothing more of an item running to a megabyte crosses into
+    // JavaScript (GPaste.ClientItem.get_display_line ()) -- and with
+    // element-size 0, "no limit", to as much as those rows show
+    // (G_PASTE_UTIL_SHOWN_CHARS): the label lays out the whole of what it is
+    // handed on GNOME Shell's main thread, and no menu is wide enough to show
+    // more.
     _renderText() {
         const size = this._size > 0 ? this._size : GPaste.UTIL_SHOWN_CHARS;
-        const text = this._value == null
-            ? ''
-            : GPaste.util_shown_line(GPaste.util_display_string(this._value, this._kind), size);
+        const text = this._item == null ? '' : this._item.get_display_line(size);
 
         if (text !== this._displayedText) {
             this._displayedText = text;
@@ -490,13 +490,15 @@ export class GPasteItem extends PopupMenuItem {
     }
 
     _showColor() {
-        const color = this._value;
+        const color = this._item.get_value();
 
-        // The item's value is its colour: no round trip to make. It reached a
-        // colour item only because gdk_rgba_parse() accepted it, so it is a
-        // colour and not arbitrary text; this checks the shape all the same,
-        // because what it goes into is a stylesheet and a value off the
-        // clipboard has no business ending a declaration early.
+        // The item's value is its colour: no round trip to make. Read here
+        // alone, a text's whole value having no business on the JavaScript
+        // heap for a line of it to show. It reached a colour item only because
+        // gdk_rgba_parse() accepted it, so it is a colour and not arbitrary
+        // text; this checks the shape all the same, because what it goes into
+        // is a stylesheet and a value off the clipboard has no business ending
+        // a declaration early.
         if (!color || !/^[a-zA-Z0-9#(),.%\s]+$/.test(color))
             return;
 

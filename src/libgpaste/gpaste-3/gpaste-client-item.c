@@ -3,6 +3,7 @@
 
 #include <gpaste-3/gpaste-client-item.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 
 struct _GPasteClientItem
 {
@@ -71,6 +72,28 @@ g_paste_client_item_get_display_string (GPasteClientItem *self)
         self->display_string = g_paste_util_display_string (self->value, self->kind);
 
     return self->display_string;
+}
+
+/**
+ * g_paste_client_item_get_display_line:
+ * @self: a #GPasteClientItem instance
+ * @max_chars: the most characters to keep, or 0 for all of them
+ *
+ * What a one-line view shows of this item: its display string folded onto a
+ * line, as g_paste_util_one_line () does, and cut to its first @max_chars
+ * characters, an ellipsis after them. Composed only as far as that shows -- a
+ * file list of thousands of paths has its first few decoded -- and with
+ * nothing of a long value crossing into a binding but what is shown.
+ *
+ * Returns: (transfer full): the newly allocated line
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_item_get_display_line (GPasteClientItem *self,
+                                      guint             max_chars)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT_ITEM (self), NULL);
+
+    return g_paste_util_display_line (self->value, self->kind, max_chars);
 }
 
 /**

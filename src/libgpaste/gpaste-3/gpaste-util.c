@@ -375,23 +375,8 @@ g_paste_util_one_line (const gchar *text)
     return g_string_free_and_steal (g_steal_pointer (&line));
 }
 
-/**
- * g_paste_util_shown_line:
- * @text: the initial text
- * @max_chars: the most characters to keep, or 0 for all of them
- *
- * @text as a one-line view shows it: folded onto a line, as
- * g_paste_util_one_line () does, and cut to its first @max_chars characters,
- * an ellipsis after them. A label lays the whole of its text out to ellipsize
- * it, which on one long line costs tens of milliseconds a binding past a
- * hundred kilobytes: the graphical tool's rows and the overview's results cut
- * at %G_PASTE_UTIL_SHOWN_CHARS, more than any window is wide enough to show,
- * and GNOME Shell's menu at element-size. Cut before it is folded, which
- * changes no character's count, so the rest of a long text is never walked.
- *
- * Returns: the newly allocated string
- */
-G_PASTE_VISIBLE gchar *
+/* See gpaste-util-private.h. */
+gchar *
 g_paste_util_shown_line (const gchar *text,
                          guint        max_chars)
 {
@@ -425,11 +410,12 @@ g_paste_util_shown_line (const gchar *text,
  * Done here rather than in the daemon because it is presentation, and because
  * the daemon got it wrong when it did it: a blind substitution over the uri
  * spelled a home file "file://~/a". */
-G_PASTE_VISIBLE gchar *
-g_paste_util_uris_display_string (const gchar *value)
+static gchar *
+g_paste_util_compose_uris (const gchar *value,
+                           guint        max_chars)
 {
-    g_auto (GStrv) uris = g_strsplit (value, "\n", -1);
     g_autoptr (GString) shown = g_string_new (NULL);
+    glong chars = 0;
     const gchar *home = g_get_home_dir ();
     gsize home_len = (home) ? strlen (home) : 0;
 
@@ -438,48 +424,81 @@ g_paste_util_uris_display_string (const gchar *value)
     while (home_len > 1 && home[home_len - 1] == '/')
         --home_len;
 
-    for (GStrv u = uris; *u; ++u)
-    {
-        const gchar *uri = *u;
+    /* Composed until past @max_chars, all a line cut there shows: the cut
+     * needs one character more than it keeps to know to put its ellipsis. A
+     * uri is read out of the list only once the walk reaches it, each but the
+     * last copied into one buffer to end it where its line does -- the
+     * daemon's search composes every path of every files item it holds. */
+    g_autoptr (GString) piece = g_string_new (NULL);
 
-        /* A value ending in a newline splits into a trailing empty piece, which
-         * is no uri and would only hang a separator off the end of the line. */
+    for (const gchar *start = value; start && (!max_chars || chars <= max_chars);)
+    {
+        const gchar *end = strchr (start, '\n');
+        const gchar *uri = start;
+
+        if (end)
+        {
+            g_string_truncate (piece, 0);
+            g_string_append_len (piece, start, (gssize) (end - start));
+            uri = piece->str;
+        }
+
+        start = (end) ? end + 1 : NULL;
+
+        /* A value ending in a newline has an empty piece after it, which is no
+         * uri and would only hang a separator off the end of the line. */
         if (!*uri)
             continue;
 
         if (shown->len)
             g_string_append_c (shown, ' ');
 
+        gsize before = shown->len;
         g_autofree gchar *path = g_filename_from_uri (uri, NULL, NULL);
 
         /* Anything but a local file -- another scheme, a uri that does not
          * decode -- is shown as the uri it is. */
         if (!path)
-        {
             g_string_append (shown, uri);
-            continue;
-        }
-
-        const gchar *p = path;
-
-        /* Only a whole leading component, so /home/joe never shortens /home/joey. */
-        if (home_len && !strncmp (p, home, home_len) && (!p[home_len] || p[home_len] == '/'))
+        else
         {
-            g_string_append_c (shown, '~');
-            p += home_len;
+            const gchar *p = path;
+
+            /* Only a whole leading component, so /home/joe never shortens
+             * /home/joey. */
+            if (home_len && !strncmp (p, home, home_len) && (!p[home_len] || p[home_len] == '/'))
+            {
+                g_string_append_c (shown, '~');
+                p += home_len;
+            }
+
+            /* A name in another encoding than UTF-8 -- an old archive's
+             * Latin-1 -- decodes to bytes no label can draw and no D-Bus string
+             * can carry: it is read in the filename encoding the user set
+             * (G_FILENAME_ENCODING), and failing that, what reads as text is
+             * kept, the rest shown as U+FFFD. */
+            g_autofree gchar *display = g_filename_display_name (p);
+
+            g_string_append (shown, display);
         }
 
-        /* A name in another encoding than UTF-8 -- an old archive's Latin-1 --
-         * decodes to bytes no label can draw and no D-Bus string can carry: it
-         * is read in the filename encoding the user set (G_FILENAME_ENCODING),
-         * and failing that, what reads as text is kept, the rest shown as
-         * U+FFFD. */
-        g_autofree gchar *display = g_filename_display_name (p);
-
-        g_string_append (shown, display);
+        chars += g_utf8_strlen (shown->str + before, -1) + 1;
     }
 
     return g_string_free_and_steal (g_steal_pointer (&shown));
+}
+
+/* See gpaste-util-private.h. */
+G_PASTE_VISIBLE gchar *
+g_paste_util_uris_display_string (const gchar *value)
+{
+    return g_paste_util_compose_uris (value, 0);
+}
+
+static gchar *
+g_paste_util_decorate_uris (const gchar *shown)
+{
+    return g_strdup_printf ("[%s] %s", _("Files"), shown);
 }
 
 /**
@@ -523,7 +542,7 @@ g_paste_util_display_string (const gchar   *value,
     {
         g_autofree gchar *uris = g_paste_util_uris_display_string (value);
 
-        return g_strdup_printf ("[%s] %s", _("Files"), uris);
+        return g_paste_util_decorate_uris (uris);
     }
     /* The value here is the password's *name*: the daemon masks the password
      * itself and never sends it. */
@@ -533,6 +552,35 @@ g_paste_util_display_string (const gchar   *value,
      * rather than mislabelled. */
     default:
         return g_strdup (value);
+    }
+}
+
+/* See gpaste-util-private.h. */
+gchar *
+g_paste_util_display_line (const gchar   *value,
+                           GPasteItemKind kind,
+                           guint          max_chars)
+{
+    g_return_val_if_fail (value, NULL);
+
+    switch (kind)
+    {
+    case G_PASTE_ITEM_KIND_URIS:
+    {
+        g_autofree gchar *uris = g_paste_util_compose_uris (value, max_chars);
+        g_autofree gchar *shown = g_paste_util_decorate_uris (uris);
+
+        return g_paste_util_shown_line (shown, max_chars);
+    }
+    /* Text wears nothing: no copy of it to make before the cut. */
+    case G_PASTE_ITEM_KIND_TEXT:
+        return g_paste_util_shown_line (value, max_chars);
+    default:
+    {
+        g_autofree gchar *shown = g_paste_util_display_string (value, kind);
+
+        return g_paste_util_shown_line (shown, max_chars);
+    }
     }
 }
 

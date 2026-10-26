@@ -44,6 +44,8 @@ G_PASTE_FINAL_TYPE (ClientItem, client_item, CLIENT_ITEM, GObject)
 const gchar   *g_paste_client_item_get_uuid           (GPasteClientItem *self);
 const gchar   *g_paste_client_item_get_value          (GPasteClientItem *self);
 const gchar   *g_paste_client_item_get_display_string (GPasteClientItem *self);
+gchar         *g_paste_client_item_get_display_line   (GPasteClientItem *self,
+                                                       guint             max_chars);
 GPasteItemKind g_paste_client_item_get_kind           (GPasteClientItem *self);
 gboolean       g_paste_client_item_is_favourite       (GPasteClientItem *self);
 

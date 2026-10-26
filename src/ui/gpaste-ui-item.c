@@ -644,16 +644,15 @@ static void
 _g_paste_ui_item_ready (GPasteUiItem     *self,
                         GPasteClientItem *item)
 {
-    const gchar *txt = g_paste_client_item_get_display_string (item);
-
-    if (!txt)
-        return;
-
-    GPasteItemKind kind = g_paste_client_item_get_kind (item);
     /* A #GtkInscription lays the whole of its text out to ellipsize it, and
      * past a few hundred kilobytes on one line no longer fits its allocation:
      * see g_paste_util_shown_line (). */
-    g_autofree gchar *oneline = g_paste_util_shown_line (txt, G_PASTE_UTIL_SHOWN_CHARS);
+    g_autofree gchar *oneline = g_paste_client_item_get_display_line (item, G_PASTE_UTIL_SHOWN_CHARS);
+
+    if (!oneline)
+        return;
+
+    GPasteItemKind kind = g_paste_client_item_get_kind (item);
 
     g_paste_ui_item_apply_index (self, self->index);
 

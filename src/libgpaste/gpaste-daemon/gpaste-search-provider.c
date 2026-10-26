@@ -222,7 +222,7 @@ append_meta (GVariantBuilder  *builder,
     g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     /* Cut as the graphical tool's row is: gnome-shell lays the name out whole
      * in an ellipsizing label, on its main thread, for every result. */
-    g_autofree gchar *result = g_paste_util_shown_line (g_paste_client_item_get_display_string (item), G_PASTE_UTIL_SHOWN_CHARS);
+    g_autofree gchar *result = g_paste_client_item_get_display_line (item, G_PASTE_UTIL_SHOWN_CHARS);
 
     append_dict_entry (&dict, "id", g_paste_client_item_get_uuid (item));
     append_dict_entry (&dict, "name", result);

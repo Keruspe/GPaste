@@ -24,7 +24,7 @@ G_BEGIN_DECLS
 gboolean g_paste_util_history_name_is_valid (const gchar *name);
 
 /* The most of a text the graphical tool's rows and the overview's results
- * show, in characters (g_paste_util_shown_line ()). */
+ * show, in characters (g_paste_client_item_get_display_line ()). */
 #define G_PASTE_UTIL_SHOWN_CHARS 1000
 
 void     g_paste_util_spawn            (const gchar *app);
@@ -36,8 +36,6 @@ gboolean g_paste_util_activate_ui_sync (const gchar *action,
                                         GVariant    *arg,
                                         GError     **error);
 gchar   *g_paste_util_one_line         (const gchar *text);
-gchar   *g_paste_util_shown_line       (const gchar *text,
-                                        guint        max_chars);
 gchar   *g_paste_util_display_string   (const gchar   *value,
                                         GPasteItemKind kind);
 
