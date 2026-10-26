@@ -40,6 +40,9 @@ static gint derivations;
 /* Every derivation failing while set, as one Argon2id's memory is refused
  * for -- a memory limit, strict overcommit -- fails. */
 static gboolean refuse_derivations;
+/* Run once, from inside the next derivation: what another connection does
+ * while this one derives. */
+static void (*during_derivation) (void);
 
 int
 crypto_pwhash (unsigned char * const       out,
@@ -59,6 +62,13 @@ crypto_pwhash (unsigned char * const       out,
     g_atomic_int_inc (&derivations);
     if (refuse_derivations)
         return -1;
+    if (during_derivation)
+    {
+        void (*run) (void) = during_derivation;
+
+        during_derivation = NULL;
+        run ();
+    }
 
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
 }
@@ -1879,10 +1889,41 @@ empty_history (const GPasteDaemonMethods *methods,
 }
 
 #ifdef G_PASTE_ENABLE_SQLITE
-/* An add evicting the oldest item, which every copy does once the history is
- * full, leaves the write-ahead log to SQLite's own checkpoints: what a delete
- * takes is checkpointed out of it at once, but an item aged out is nothing the
- * user deleted, and a checkpoint on every copy syncs the disk on every copy. */
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+static void
+key_and_write_meanwhile (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) other = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("written meanwhile"));
+
+    g_assert_true (g_paste_storage_backend_write_history (other, "keyed-meanwhile", items));
+}
+
+/* A database another connection keys, and writes to, while this one derives
+ * a key for it is read again: its parameters are the ones to take, where
+ * replacing them would leave what it wrote under a key nothing derives. */
+static void
+test_sqlite_keyed_meanwhile (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) none = NULL;
+    gsize size = 0;
+
+    during_derivation = key_and_write_meanwhile;
+    g_assert_true (g_paste_storage_backend_read_history (backend, "keyed-meanwhile", NULL, &none, &size));
+    g_assert_null (during_derivation);
+
+    g_autoptr (GPasteStorageBackend) reader = g_paste_sqlite_backend_new_encrypted (settings, "passphrase");
+    g_autolist (GPasteItem) read = NULL;
+
+    g_assert_true (g_paste_storage_backend_read_history (reader, "keyed-meanwhile", NULL, &read, &size));
+    g_assert_cmpuint (g_list_length (read), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "written meanwhile");
+}
+#endif
+
 /* A delete's checkpoint is put off by a reader holding the log rather than
  * waited for: the backend's lock is held all along, and every write of the
  * store would sit out the busy timeout behind it. */
@@ -1939,6 +1980,10 @@ test_sqlite_rekey_checkpoints (void)
 }
 #endif
 
+/* An add evicting the oldest item, which every copy does once the history is
+ * full, leaves the write-ahead log to SQLite's own checkpoints: what a delete
+ * takes is checkpointed out of it at once, but an item aged out is nothing the
+ * user deleted, and a checkpoint on every copy syncs the disk on every copy. */
 static void
 test_sqlite_eviction_checkpoints_nothing (void)
 {
@@ -6813,6 +6858,7 @@ main (int    argc,
     g_test_add_func ("/storage/sqlite/left-out-accounted", test_sqlite_left_out_accounted);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/sqlite/rekey-checkpoints", test_sqlite_rekey_checkpoints);
+    g_test_add_func ("/storage/sqlite/keyed-meanwhile", test_sqlite_keyed_meanwhile);
 #endif
 #endif
 #if defined(G_PASTE_ENABLE_ENCRYPTION) && defined(G_PASTE_ENABLE_SQLITE)

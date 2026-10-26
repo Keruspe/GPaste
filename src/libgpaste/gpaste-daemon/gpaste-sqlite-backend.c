@@ -406,21 +406,49 @@ g_paste_sqlite_backend_write_crypto_params (sqlite3      *db,
     return success;
 }
 
-/* Generate a fresh salt and key check for @key and store them in their own
- * transaction: what preparing a database for a passphrase needs. */
-static gboolean
+typedef enum
+{
+    G_PASTE_SQLITE_KEYING_FAILED,
+    G_PASTE_SQLITE_KEYING_KEYED,
+    /* Another connection keyed the database, or wrote to it, first. */
+    G_PASTE_SQLITE_KEYING_OVERTAKEN,
+} GPasteSqliteKeying;
+
+/* Store @salt and a key check for @key in their own transaction: what
+ * preparing a database for a passphrase needs. Under that transaction's lock,
+ * the database has to be as setup_crypto () found it before deriving @key --
+ * parameters salted @seen_salt, or none if %NULL, and no item -- or another
+ * connection keyed it, or wrote under its key, in between: replacing its
+ * parameters then would leave what it writes under a key nothing derives. */
+static GPasteSqliteKeying
 g_paste_sqlite_backend_store_crypto_params (sqlite3      *db,
                                             const guchar *salt,
                                             guint64       opslimit,
                                             guint64       memlimit,
-                                            const guchar *key)
+                                            const guchar *key,
+                                            const guchar *seen_salt)
 {
     if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
-        return FALSE;
+        return G_PASTE_SQLITE_KEYING_FAILED;
 
-    return g_paste_sqlite_backend_finish_transaction (db,
-                                                      g_paste_sqlite_backend_write_crypto_params (db, salt, opslimit,
-                                                                                                  memlimit, key));
+    guchar stored_salt[crypto_pwhash_SALTBYTES];
+    guint64 stored_opslimit = 0;
+    guint64 stored_memlimit = 0;
+    g_autofree guchar *stored_check = NULL;
+    gsize stored_check_length = 0;
+    gboolean stored = g_paste_sqlite_backend_load_crypto_params (db, stored_salt, &stored_opslimit, &stored_memlimit,
+                                                                 &stored_check, &stored_check_length);
+
+    if (stored != (seen_salt != NULL) || (stored && memcmp (stored_salt, seen_salt, sizeof (stored_salt))) ||
+        g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    {
+        g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        return G_PASTE_SQLITE_KEYING_OVERTAKEN;
+    }
+
+    gboolean written = g_paste_sqlite_backend_write_crypto_params (db, salt, opslimit, memlimit, key);
+
+    return (g_paste_sqlite_backend_finish_transaction (db, written)) ? G_PASTE_SQLITE_KEYING_KEYED : G_PASTE_SQLITE_KEYING_FAILED;
 }
 
 /* Re-encrypt one content column, row by row: @ids_sql lists the rowids holding
@@ -560,6 +588,60 @@ static const struct
       "UPDATE special_values SET data = ? WHERE rowid = ?;" },
 };
 
+/* One pass of setup_crypto (): the database's own parameters taken when they
+ * check out, and %G_PASTE_SQLITE_KEYING_KEYED once @key is the one the database
+ * is keyed for. */
+static GPasteSqliteKeying
+g_paste_sqlite_backend_key_database (sqlite3     *db,
+                                     const gchar *passphrase,
+                                     guchar      *key,
+                                     gboolean    *wrong_passphrase)
+{
+    guchar salt[crypto_pwhash_SALTBYTES];
+    guint64 opslimit = 0;
+    guint64 memlimit = 0;
+    g_autofree guchar *check = NULL;
+    gsize check_length = 0;
+
+    gboolean loaded = g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length);
+    /* derive_key () says why when it refuses the parameters. */
+    gboolean derived = loaded && g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
+
+    if (derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length))
+        return G_PASTE_SQLITE_KEYING_KEYED;
+
+    /* The wrong passphrase for a history that still holds data must be
+     * refused: accepting it would load empty and the next save would destroy
+     * the real content. So must parameters that are incomplete or that no key
+     * can be derived with, which are no new store, replacing them being what
+     * would make the content unreadable for good. An empty history has nothing
+     * to lose, so it is (re-)keyed for this passphrase instead of locking the
+     * user out, whichever of those it was -- and a count that cannot be read is
+     * no proof of empty. */
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    {
+        if (derived)
+            *wrong_passphrase = TRUE;
+        else if (!loaded)
+            g_warning ("sqlite: incomplete encryption parameters in a history holding data; not touching it");
+
+        return G_PASTE_SQLITE_KEYING_FAILED;
+    }
+
+    guchar fresh_salt[crypto_pwhash_SALTBYTES];
+
+    randombytes_buf (fresh_salt, sizeof (fresh_salt));
+
+    if (!g_paste_sqlite_backend_derive_key (passphrase, fresh_salt, crypto_pwhash_OPSLIMIT_MODERATE, crypto_pwhash_MEMLIMIT_MODERATE, key))
+    {
+        g_warning ("sqlite: could not derive the encryption key (out of memory?)");
+        return G_PASTE_SQLITE_KEYING_FAILED;
+    }
+
+    return g_paste_sqlite_backend_store_crypto_params (db, fresh_salt, crypto_pwhash_OPSLIMIT_MODERATE, crypto_pwhash_MEMLIMIT_MODERATE,
+                                                       key, (loaded) ? salt : NULL);
+}
+
 /* Prepare the encrypted flavor on an open database: derive the key from the
  * per-database salt and verify it against the stored key check. A fresh
  * database (or one that is still empty — nothing to lose) gets a new salt and
@@ -579,48 +661,19 @@ g_paste_sqlite_backend_setup_crypto (sqlite3     *db,
     if (!g_paste_sqlite_backend_exec (db, "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value NOT NULL);"))
         return FALSE;
 
-    guchar salt[crypto_pwhash_SALTBYTES];
-    guint64 opslimit = 0;
-    guint64 memlimit = 0;
-    g_autofree guchar *check = NULL;
-    gsize check_length = 0;
-
-    gboolean loaded = g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length);
-    /* derive_key () says why when it refuses the parameters. */
-    gboolean derived = loaded && g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
-
-    if (derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length))
-        return TRUE;
-
-    /* The wrong passphrase for a history that still holds data must be
-     * refused: accepting it would load empty and the next save would destroy
-     * the real content. So must parameters that are incomplete or that no key
-     * can be derived with, which are no new store, replacing them being what
-     * would make the content unreadable for good. An empty history has nothing
-     * to lose, so it is (re-)keyed for this passphrase instead of locking the
-     * user out, whichever of those it was -- and a count that cannot be read is
-     * no proof of empty. */
-    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    /* Twice at most: a database another connection keys while this one derives
+     * a key of its own is then read again, its parameters the ones to take. */
+    for (guint attempt = 0; attempt < 2; ++attempt)
     {
-        if (derived)
-            *wrong_passphrase = TRUE;
-        else if (!loaded)
-            g_warning ("sqlite: incomplete encryption parameters in a history holding data; not touching it");
+        GPasteSqliteKeying keying = g_paste_sqlite_backend_key_database (db, passphrase, key, wrong_passphrase);
 
-        return FALSE;
+        if (keying != G_PASTE_SQLITE_KEYING_OVERTAKEN)
+            return keying == G_PASTE_SQLITE_KEYING_KEYED;
     }
 
-    randombytes_buf (salt, sizeof (salt));
-    opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
-    memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+    g_warning ("sqlite: the encryption parameters kept changing while being set up; not touching them");
 
-    if (!g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key))
-    {
-        g_warning ("sqlite: could not derive the encryption key (out of memory?)");
-        return FALSE;
-    }
-
-    return g_paste_sqlite_backend_store_crypto_params (db, salt, opslimit, memlimit, key);
+    return FALSE;
 }
 #else
 static const gchar *
