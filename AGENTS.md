@@ -54,10 +54,12 @@ replaced when there is no exact copy; that a damaged file's text stays out of
 the warnings about it; and that a FIFO named like a history is neither listed
 nor read (in a child with a timeout, since reading one hangs).
 
-`test-clipboard` links the same daemon code and checks what an update reads out
-of a selection offering several formats, with no display:
-`g_paste_clipboard_content_for_formats ()` takes the text over an image offered
-beside it.
+`test-clipboard` links the same daemon code and checks, with no display, how an
+update reads a selection: `g_paste_clipboard_content_for_formats ()` takes the
+text over an image offered beside it, a bare text/plain offered alone is read as
+UTF-8 rather than through GDK's text read (`g_paste_clipboard_offers_bare_text
+()`), and `g_paste_clipboard_text_from_bytes ()` takes the text up to a NUL and
+refuses one that is not UTF-8.
 
 `test-use-index` runs the built `gpaste-client` (its path in `G_PASTE_CLIENT`)
 against a fake daemon on a private bus that logs every call it is sent: a

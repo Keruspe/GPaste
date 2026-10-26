@@ -138,20 +138,18 @@ typedef struct {
     gpointer                    user_data;
 } GPasteClipboardTextCallbackData;
 
+/* What a set_text () read brought, @text %NULL for one that failed; frees
+ * @user_data, its #GPasteClipboardTextCallbackData, and drops the ref it
+ * holds. */
 static void
-g_paste_clipboard_on_text_ready (GObject      *source_object,
-                                 GAsyncResult *res,
-                                 gpointer      user_data)
+g_paste_clipboard_text_read (gpointer     user_data,
+                             const gchar *text)
 {
     g_autofree GPasteClipboardTextCallbackData *data = user_data;
     g_autoptr (GPasteClipboard) self = data->self; /* ref taken in set_text */
-    g_autoptr (GError) error = NULL;
-    g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
 
     if (!text)
     {
-        if (error)
-            g_debug ("Failed to read text from clipboard: %s", error->message);
         if (data->callback)
             data->callback (self, NULL, data->user_data);
         return;
@@ -190,6 +188,185 @@ g_paste_clipboard_on_text_ready (GObject      *source_object,
 }
 
 static void
+g_paste_clipboard_on_text_ready (GObject      *source_object,
+                                 GAsyncResult *res,
+                                 gpointer      user_data)
+{
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *text = gdk_clipboard_read_text_finish (GDK_CLIPBOARD (source_object), res, &error);
+
+    if (error)
+        g_debug ("Failed to read text from clipboard: %s", error->message);
+
+    g_paste_clipboard_text_read (user_data, text);
+}
+
+/**
+ * g_paste_clipboard_offers_bare_text:
+ * @formats: what a selection offers
+ *
+ * Returns: whether the selection offers its text as a bare text/plain alone,
+ *          which g_paste_clipboard_read_bare_text () says how to read
+ */
+gboolean
+g_paste_clipboard_offers_bare_text (GdkContentFormats *formats)
+{
+    return !gdk_content_formats_contain_mime_type (formats, "text/plain;charset=utf-8") &&
+           gdk_content_formats_contain_mime_type (formats, "text/plain");
+}
+
+/**
+ * g_paste_clipboard_text_from_bytes:
+ * @bytes: (nullable): what a text transfer brought, %NULL for one that failed
+ * @not_utf8: (out): set when @bytes holds no UTF-8 text
+ *
+ * A text as it comes off a selection: up to its first NUL, which some owners
+ * end it with, and the empty text for a transfer whose bytes hold no data at
+ * all.
+ *
+ * Returns: (transfer full) (nullable): the text, %NULL for a failed transfer or
+ *          one that is not UTF-8
+ */
+gchar *
+g_paste_clipboard_text_from_bytes (GBytes   *bytes,
+                                   gboolean *not_utf8)
+{
+    *not_utf8 = FALSE;
+    if (!bytes)
+        return NULL;
+
+    gsize size = 0;
+    const gchar *text = g_bytes_get_data (bytes, &size);
+
+    if (!text)
+        return g_strdup ("");
+
+    const gchar *nul = memchr (text, '\0', size);
+
+    if (nul)
+        size = (gsize) (nul - text);
+    if (!g_utf8_validate_len (text, size, NULL))
+    {
+        *not_utf8 = TRUE;
+        return NULL;
+    }
+
+    return g_strndup (text, size);
+}
+
+/* What a bare text read brought, @text %NULL for one that failed. */
+typedef void (*GPasteClipboardBareTextCallback) (gpointer     user_data,
+                                                 const gchar *text);
+
+typedef struct {
+    GdkClipboard                   *real;
+    GOutputStream                  *sink;
+    GAsyncReadyCallback             fallback;
+    GPasteClipboardBareTextCallback callback;
+    gpointer                        user_data;
+} GPasteClipboardBareTextData;
+
+static void
+g_paste_clipboard_bare_text_data_free (GPasteClipboardBareTextData *data)
+{
+    g_clear_object (&data->real);
+    g_clear_object (&data->sink);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardBareTextData, g_paste_clipboard_bare_text_data_free)
+
+/* Hands @data's callback the text @bytes holds, or has GDK's own read take
+ * over, @data's fallback answering it, when they are not UTF-8 after all. */
+static void
+g_paste_clipboard_bare_text_done (GPasteClipboardBareTextData *data,
+                                  GBytes                      *bytes)
+{
+    gboolean not_utf8 = FALSE;
+    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, &not_utf8);
+
+    if (not_utf8)
+        gdk_clipboard_read_text_async (data->real, NULL, data->fallback, data->user_data);
+    else
+        data->callback (data->user_data, text);
+}
+
+static void
+g_paste_clipboard_on_bare_text_spliced (GObject      *source_object G_GNUC_UNUSED,
+                                        GAsyncResult *res,
+                                        gpointer      user_data)
+{
+    g_autoptr (GPasteClipboardBareTextData) data = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GBytes) bytes = NULL;
+
+    if (g_output_stream_splice_finish (data->sink, res, &error) < 0)
+        g_debug ("Failed to read text from clipboard: %s", error->message);
+    else
+        bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (data->sink));
+
+    g_paste_clipboard_bare_text_done (data, bytes);
+}
+
+static void
+g_paste_clipboard_on_bare_text_stream (GObject      *source_object,
+                                       GAsyncResult *res,
+                                       gpointer      user_data)
+{
+    g_autoptr (GPasteClipboardBareTextData) data = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GInputStream) stream = gdk_clipboard_read_finish (GDK_CLIPBOARD (source_object), res, NULL, &error);
+
+    if (!stream)
+    {
+        g_debug ("Failed to read text from clipboard: %s", error->message);
+        g_paste_clipboard_bare_text_done (data, NULL);
+        return;
+    }
+
+    /* Spliced whole: a single read of the stream brings only what has come so
+     * far. */
+    data->sink = g_memory_output_stream_new_resizable ();
+    g_output_stream_splice_async (data->sink,
+                                  stream,
+                                  G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                  G_PRIORITY_DEFAULT,
+                                  NULL, /* cancellable */
+                                  g_paste_clipboard_on_bare_text_spliced,
+                                  g_steal_pointer (&data));
+}
+
+/* What a selection offering nothing but a bare text/plain answers: GDK's text
+ * read decodes that as ASCII, escaping every other byte as \XX, where the
+ * convention X11 clients follow -- and g_paste_text_content_provider_new ()
+ * serving one -- is UTF-8 under that name. Read as such, and through GDK's own
+ * conversion only when it is not valid UTF-8 after all. Choosing this read is
+ * g_paste_clipboard_offers_bare_text ()'s, and decoding what it brings
+ * g_paste_clipboard_text_from_bytes ()'s, both tested; the read between them
+ * takes a display and a selection owner of their own, which no test here has. */
+static void
+g_paste_clipboard_read_bare_text (GdkClipboard                   *real,
+                                  GAsyncReadyCallback             fallback,
+                                  GPasteClipboardBareTextCallback callback,
+                                  gpointer                        user_data)
+{
+    GPasteClipboardBareTextData *data = g_new0 (GPasteClipboardBareTextData, 1);
+    const gchar *mime_types[] = { "text/plain", NULL };
+
+    data->real = g_object_ref (real);
+    data->fallback = fallback;
+    data->callback = callback;
+    data->user_data = user_data;
+
+    gdk_clipboard_read_async (real,
+                              mime_types,
+                              G_PRIORITY_DEFAULT,
+                              NULL, /* cancellable */
+                              g_paste_clipboard_on_bare_text_stream,
+                              data);
+}
+
+static void
 g_paste_clipboard_set_text (GPasteClipboard            *self,
                             GPasteClipboardTextCallback callback,
                             gpointer                    user_data)
@@ -205,6 +382,12 @@ g_paste_clipboard_set_text (GPasteClipboard            *self,
     data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
+
+    if (g_paste_clipboard_offers_bare_text (gdk_clipboard_get_formats (priv->real)))
+    {
+        g_paste_clipboard_read_bare_text (priv->real, g_paste_clipboard_on_text_ready, g_paste_clipboard_text_read, data);
+        return;
+    }
 
     gdk_clipboard_read_text_async (priv->real,
                                    NULL, /* cancellable */
@@ -253,6 +436,16 @@ g_paste_clipboard_sync_ready (GObject      *source_object,
         g_paste_clipboard_select_text (user_data, text);
 }
 
+/* What a sync's bare text read brought (see
+ * g_paste_clipboard_read_bare_text ()). */
+static void
+g_paste_clipboard_sync_text_read (gpointer     user_data,
+                                  const gchar *text)
+{
+    if (text)
+        g_paste_clipboard_select_text (user_data, text);
+}
+
 /**
  * g_paste_clipboard_sync_text:
  * @self: the source #GPasteClipboard instance
@@ -269,7 +462,10 @@ g_paste_clipboard_sync_text (const GPasteClipboard *self,
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    gdk_clipboard_read_text_async (priv->real, NULL, g_paste_clipboard_sync_ready, other);
+    if (g_paste_clipboard_offers_bare_text (gdk_clipboard_get_formats (priv->real)))
+        g_paste_clipboard_read_bare_text (priv->real, g_paste_clipboard_sync_ready, g_paste_clipboard_sync_text_read, other);
+    else
+        gdk_clipboard_read_text_async (priv->real, NULL, g_paste_clipboard_sync_ready, other);
 }
 
 /**

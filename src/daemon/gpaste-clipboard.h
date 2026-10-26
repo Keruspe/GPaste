@@ -42,6 +42,9 @@ typedef void (*GPasteClipboardUpdateCallback) (GPasteClipboard *self,
 
 GPasteClipboardContent g_paste_clipboard_content_for_formats (GdkContentFormats *formats,
                                                               gboolean           images_support);
+gboolean               g_paste_clipboard_offers_bare_text    (GdkContentFormats *formats);
+gchar                 *g_paste_clipboard_text_from_bytes     (GBytes            *bytes,
+                                                              gboolean          *not_utf8);
 
 void          g_paste_clipboard_update             (GPasteClipboard              *self,
                                                     GPasteClipboardUpdateCallback callback,
