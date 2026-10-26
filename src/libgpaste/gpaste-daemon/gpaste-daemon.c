@@ -498,6 +498,11 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
     G_PASTE_DBUS_ASSERT (g_paste_storage_is_supported (storage),
                          G_PASTE_ERROR_FAILED,
                          "This build cannot open the history to change its passphrase.");
+    /* As Doctor is (g_paste_daemon_handle_doctor ()): a caller told the change
+     * began would wait for a prompt nothing is there to raise. */
+    G_PASTE_DBUS_ASSERT (g_signal_has_handler_pending (self, signals[CHANGE_PASSPHRASE], 0, FALSE),
+                         G_PASTE_ERROR_FAILED,
+                         "Nothing hosting this daemon can change its passphrase.");
 
     if (!g_paste_storage_backend_try_lock ())
     {

@@ -592,6 +592,28 @@ test_change_passphrase_unopenable (Fixture      *fixture,
     g_assert_cmpuint (asked, ==, 0);
 }
 
+/* With nothing hosting the daemon to prompt for it, a change of passphrase is
+ * refused, as a check of the store is: a caller told it began would wait for a
+ * prompt that never comes. */
+static void
+test_change_passphrase_unhosted (Fixture      *fixture,
+                                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteStorage storage = encrypted_flavour (TRUE);
+
+    if (storage == G_PASTE_STORAGE_NOOP)
+    {
+        g_test_skip ("This build opens no encrypted storage");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend (fixture->settings, storage);
+    g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+}
+
 /* A command that does not stop writing is cut off once it has written more
  * than a url, rather than read until the deadline. */
 static void
@@ -1335,6 +1357,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/methods/extension-state", Fixture, NULL, fixture_set_up, test_extension_state, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
+    g_test_add ("/daemon/change-passphrase/unhosted", Fixture, NULL, fixture_set_up, test_change_passphrase_unhosted, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
     g_test_add_func ("/daemon/bus/export-failed-told-once", test_bus_export_failed_told_once);
     g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);

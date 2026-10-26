@@ -175,7 +175,8 @@
       Re-encrypt the history with a new passphrase, prompted for by the daemon.
 
       A history that is not encrypted is .Error.NotEncrypted, and one in an
-      encrypted storage this build cannot open .Error.Failed. Every store of
+      encrypted storage this build cannot open .Error.Failed, as is a change
+      nothing hosting the daemon can prompt for. Every store of
       the history is rewritten, so this is refused with the same
       G_IO_ERROR_BUSY as BackupHistory while a daemon this one took over from
       may still be writing them (see above).
