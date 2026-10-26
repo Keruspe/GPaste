@@ -124,6 +124,25 @@
       </ul>
     </description>
   </release>
+  <release type="stable" date="2026-10-26" version="50.11">
+    <description>
+      <p>This is a maintenance release. Changes:</p>
+      <ul>
+        <li>Translate gpaste-client</li>
+        <li>Fix several crashes and freezes of the daemon</li>
+        <li>Fix items vanishing from the history, or being listed twice</li>
+        <li>Fix copied spreadsheet cells, images and accented text being recorded wrong</li>
+        <li>Fix history names and backups reaching or overwriting the wrong files</li>
+        <li>Fix a damaged history's text being logged to the system journal</li>
+        <li>Fix searches missing items with special characters or capital letters</li>
+        <li>Fix keyboard shortcuts not working when the portal starts after GPaste</li>
+        <li>Fix several issues in the graphical tool, the preferences and the overview's search</li>
+        <li>Fix gpaste-client mishandling piped input, unusual text and terminal output</li>
+        <li>Fix gpaste-client acting on the wrong item, process or file</li>
+        <li>Fix the bash completion and the help for backup-history</li>
+      </ul>
+    </description>
+  </release>
   <release type="stable" date="2026-09-08" version="50.10">
     <description>
       <p>This release adds a setting to disable the global keyboard shortcuts. Changes:</p>

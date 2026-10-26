@@ -196,6 +196,22 @@ NEW in 51.beta (25/08/2026)
 - Move to the org.gnome.GPaste3 D-Bus interface: third-party clients need updating
 - Build: require GLib 2.90, GTK 4.24 and libadwaita 1.10
 
+NEW in 50.11 (26/10/2026)
+=============
+
+- Translate gpaste-client
+- Fix several crashes and freezes of the daemon
+- Fix items vanishing from the history, or being listed twice
+- Fix copied spreadsheet cells, images and accented text being recorded wrong
+- Fix history names and backups reaching or overwriting the wrong files
+- Fix a damaged history's text being logged to the system journal
+- Fix searches missing items with special characters or capital letters
+- Fix keyboard shortcuts not working when the portal starts after GPaste
+- Fix several issues in the graphical tool, the preferences and the overview's search
+- Fix gpaste-client mishandling piped input, unusual text and terminal output
+- Fix gpaste-client acting on the wrong item, process or file
+- Fix the bash completion and the help for backup-history
+
 NEW in 50.10 (08/09/2026)
 =============
 
