@@ -123,8 +123,13 @@ gchar       *g_paste_clipboard_text_from_bytes      (GBytes              *bytes,
  * Wide enough that one read which cannot report progress -- a single big
  * transfer, the only thing this batch is waiting on, so nothing lands to say it
  * is moving -- is not cut off either. The cost of waiting is a late item; the
- * cost of giving up early is no item at all. */
+ * cost of giving up early is no item at all.
+ *
+ * Overridable for test-read-guard, which compiles the guard in on a shorter
+ * allowance. */
+#ifndef G_PASTE_CLIPBOARD_READ_TIMEOUT
 #define G_PASTE_CLIPBOARD_READ_TIMEOUT 30
+#endif
 
 /* The deadline a batch of clipboard reads runs under, and the #GCancellable
  * every one of them goes out on. Both backends embed one, so what running out

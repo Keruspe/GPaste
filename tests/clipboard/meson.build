@@ -20,6 +20,20 @@ test('clipboard-gdk', clipboard_gdk_test, depends: [gpaste_schemas, test_bus_sup
 # with no backend under them, and for tests/daemon, whose daemon selects nothing.
 test_clipboard_provider_sources = files('gpaste-test-clipboard-provider.c')
 
+# The read guard's deadline. It compiles gpaste-clipboard-content.c in, the one
+# way to run the guard on an allowance of seconds rather than thirty, and stands
+# in for g_paste_clipboard_provider_select_item_full (), which a static
+# library's object defines again (library_static).
+if not library_static
+  test_read_guard = executable(
+    'test-read-guard',
+    sources: [ 'test-read-guard.c' ],
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  )
+
+  test('read-guard', test_read_guard, depends: [gpaste_schemas, test_bus_supervisor])
+endif
+
 # The update API the X11 hints workaround reads through; goes with
 # src/daemon/gpaste-clipboard-x11-hints.c.
 test_clipboard_hints = executable(

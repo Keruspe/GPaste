@@ -7,6 +7,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const {runSuite} = require('./suite.cjs');
 
 let focus = null;
 const notified = [];
@@ -181,7 +182,7 @@ function withActions(uuids) {
     return item;
 }
 
-(async () => {
+runSuite('Indicator', async () => {
     // Teardown chains up to the panel button's, once, and before _setup () has
     // built the rows and the item actions it reaches for.
     const early = indicator();
@@ -777,4 +778,4 @@ function withActions(uuids) {
 
     assert.deepEqual(errors, []);
     console.log('Indicator: teardown, daemon presence and item actions passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+});

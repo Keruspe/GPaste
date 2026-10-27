@@ -9,6 +9,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const {runSuite} = require('./suite.cjs');
 
 const errors = [];
 // Every main loop source, by id: what runs it is the test.
@@ -189,18 +190,7 @@ async function acquired() {
     return [runner, bus];
 }
 
-// Node exits 0 once nothing is left to run, so an await that never settles
-// would end the suite there, every assertion after it skipped: only reaching
-// the end counts as passing.
-let finished = false;
-process.on('exit', () => {
-    if (!finished) {
-        console.error('Daemon runner: the suite stopped on a promise that never settled');
-        process.exitCode = 1;
-    }
-});
-
-(async () => {
+runSuite('Daemon runner', async () => {
     // Another daemon taking the name over: the one built here is flushed and
     // disposed rather than left to the collector, the bus let go of, the
     // prompt shut down, and the passphrase wiped with the lock.
@@ -421,6 +411,5 @@ process.on('exit', () => {
     runner.shutdown();
 
     assert.deepEqual(errors, []);
-    finished = true;
     console.log('Daemon runner: stand-down, reconnect, shutdown and storage hand-over passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+});

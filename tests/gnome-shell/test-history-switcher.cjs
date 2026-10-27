@@ -107,6 +107,15 @@ function switcher() {
     return item;
 }
 
+// As runSuite () in suite.cjs does.
+let finished = false;
+process.on('exit', () => {
+    if (!finished) {
+        console.error('History switcher: the suite stopped on a promise that never settled');
+        process.exitCode = 1;
+    }
+});
+
 (async () => {
     const item = switcher();
     item._client.list_histories = async () => [{get_name: () => 'work', get_size: () => 0}];
@@ -263,4 +272,4 @@ function switcher() {
 
     assert.deepEqual(errors, []);
     console.log('History switcher: draft refresh, source deletion, daemon loss, current count, row focus and call reporting passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+})().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { finished = true; });
