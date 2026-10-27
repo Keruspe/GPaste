@@ -7267,9 +7267,7 @@ test_sqlite_image_blob (void)
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_IDLE);
 }
 
-/* Switching histories loads with save_after=TRUE so a snapshot-rewriting
- * backend persists its read-time normalization — for an incremental backend
- * that full rewrite is skipped: the database must keep rows beyond
+/* Switching histories writes nothing back: the database must keep rows beyond
  * max-history-size (only memory is capped) instead of being truncated by a
  * write-back of the capped read. */
 static void
@@ -7303,8 +7301,7 @@ test_sqlite_no_rewrite_on_switch (void)
     g_paste_history_load (history, "sqlite-switch-start");
     g_paste_settings_set_max_history_size (settings, 5);
 
-    /* Switch through the settings key: this is the path that loads with
-     * save_after=TRUE (g_paste_history_load itself never writes back). */
+    /* Switch through the settings key, the path a daemon's switch takes. */
     g_paste_settings_set_history_name (settings, big_name);
     g_assert_true (pump_until_length (history, 5, 5000));
 

@@ -221,7 +221,6 @@ static void
 on_loaded (gpointer owner G_GNUC_UNUSED,
            GList   *history,
            gsize    size G_GNUC_UNUSED,
-           gboolean save_after G_GNUC_UNUSED,
            gboolean readable G_GNUC_UNUSED)
 {
     g_autolist (GPasteItem) items = history;
@@ -308,7 +307,7 @@ test_incremental_load_waits (void)
         g_assert_true (g_cond_wait_until (&backend->cond, &backend->mutex, deadline));
     g_mutex_unlock (&backend->mutex);
 
-    g_paste_history_saver_load (saver, "B", FALSE);
+    g_paste_history_saver_load (saver, "B");
     /* Long enough for a read started at once to have been counted. */
     g_usleep (100 * 1000);
     g_assert_cmpuint (backend->reads, ==, 0);

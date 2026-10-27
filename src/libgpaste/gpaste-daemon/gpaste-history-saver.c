@@ -776,7 +776,6 @@ struct _GPasteHistorySaverLoadData
     GPasteStorageBackend *backend;
     gchar                *name;
     guint64               generation;
-    gboolean              save_after;
 };
 
 static void
@@ -876,8 +875,7 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    self->loaded (self->owner, g_steal_pointer (&load_result->history), load_result->size,
-                  data->save_after, load_result->readable);
+    self->loaded (self->owner, g_steal_pointer (&load_result->history), load_result->size, load_result->readable);
 }
 
 /**
@@ -997,21 +995,11 @@ g_paste_history_saver_start_load (GPasteHistorySaver *self)
     g_task_run_in_thread (task, g_paste_history_saver_load_task);
 }
 
-/**
- * g_paste_history_saver_load:
- * @self: a #GPasteHistorySaver
- * @name: the history name to read
- * @save_after: whether the loaded history should be persisted back once installed
- *
- * Read @name in the background. When it completes (and has not been superseded
- * by a later load) the result is handed to the #GPasteHistorySaverLoadedFunc.
- */
 /* Make @name's read the load wanted, superseding the one out: see
  * g_paste_history_saver_load (). */
 static void
 g_paste_history_saver_set_load (GPasteHistorySaver *self,
-                                const gchar        *name,
-                                gboolean            save_after)
+                                const gchar        *name)
 {
     self->load_in_progress = TRUE;
     self->load_generation++;
@@ -1020,11 +1008,6 @@ g_paste_history_saver_set_load (GPasteHistorySaver *self,
     data->backend = g_object_ref (self->backend);
     data->name = g_strdup (name);
     data->generation = self->load_generation;
-    /* save_after exists so a snapshot-rewriting backend persists its read-time
-     * normalization (format upgrade, uuid dedup, truncation). An incremental
-     * backend normalizes its storage on open instead, so writing the whole
-     * history back after a load would be pure churn: drop the request. */
-    data->save_after = save_after && !g_paste_storage_backend_is_incremental (self->backend);
 
     /* Whatever the load before it was reading, nobody is waiting for it: the
      * generation check below drops its result, and this is what stops the read
@@ -1036,14 +1019,21 @@ g_paste_history_saver_set_load (GPasteHistorySaver *self,
     self->pending_load = g_steal_pointer (&data);
 }
 
+/**
+ * g_paste_history_saver_load:
+ * @self: a #GPasteHistorySaver
+ * @name: the history name to read
+ *
+ * Read @name in the background. When it completes (and has not been superseded
+ * by a later load) the result is handed to the #GPasteHistorySaverLoadedFunc.
+ */
 G_PASTE_VISIBLE void
 g_paste_history_saver_load (GPasteHistorySaver *self,
-                            const gchar        *name,
-                            gboolean            save_after)
+                            const gchar        *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
-    g_paste_history_saver_set_load (self, name, save_after);
+    g_paste_history_saver_set_load (self, name);
     self->loads_held = FALSE;
     g_paste_history_saver_start_load (self);
 }
@@ -1052,7 +1042,6 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
  * g_paste_history_saver_load_when_released:
  * @self: a #GPasteHistorySaver
  * @name: the history name to read
- * @save_after: whether the loaded history should be persisted back once installed
  *
  * As g_paste_history_saver_load (), superseding the load out, but leaving loads
  * held as they are: while they are (g_paste_history_saver_hold_loads ()), the
@@ -1060,12 +1049,11 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_saver_load_when_released (GPasteHistorySaver *self,
-                                          const gchar        *name,
-                                          gboolean            save_after)
+                                          const gchar        *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
-    g_paste_history_saver_set_load (self, name, save_after);
+    g_paste_history_saver_set_load (self, name);
     g_paste_history_saver_start_load (self);
 }
 

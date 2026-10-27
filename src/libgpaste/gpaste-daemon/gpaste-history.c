@@ -2179,10 +2179,12 @@ static void
 g_paste_history_on_loaded (gpointer user_data,
                            GList   *history,
                            gsize    size,
-                           gboolean save_after,
                            gboolean readable)
 {
     GPasteHistory *self = user_data;
+    /* What a load reads is installed as it is, nothing written back -- but for
+     * a trim, below. */
+    gboolean save_after = FALSE;
     G_PASTE_LOCK_HISTORY;
 
     /* What was added while the load was out -- a copy, an AddText -- is in the
@@ -2223,10 +2225,7 @@ g_paste_history_on_loaded (gpointer user_data,
     self->unreadable = !readable;
 
     if (self->unreadable)
-    {
         g_warning ("Could not read the history back; it will not be overwritten");
-        save_after = FALSE;
-    }
     /* Both caps, applied to what was just read. A backend reads a favourite back
      * whatever it costs -- it counts only the items its cap could evict, or one
      * that had sunk past the cap would be dropped on load and destroyed by the
@@ -2389,7 +2388,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
      * compositor in the gnome-shell host, and stop the standalone daemon, which
      * reloads after a passphrase change, from answering the bus meanwhile. The
      * store was just rewritten, so there is nothing to normalize back. */
-    g_paste_history_saver_load (self->saver, self->name, FALSE);
+    g_paste_history_saver_load (self->saver, self->name);
 
     /* Every view is told the history it shows is gone, as a switch tells it,
      * and redraws again once the load has filled it. A switch is announced by
@@ -2427,7 +2426,7 @@ g_paste_history_load_async (GPasteHistory *self,
     if (!same)
         g_paste_history_swap_to (self, resolved);
 
-    g_paste_history_saver_load (self->saver, self->name, FALSE);
+    g_paste_history_saver_load (self->saver, self->name);
 }
 
 static void g_paste_history_history_name_changed (GPasteHistory *self);
@@ -2676,7 +2675,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
      * be the whole history rewritten for every switch, re-encrypted and
      * synced. */
     g_paste_history_emit_switch (self, self->name);
-    g_paste_history_saver_load_when_released (self->saver, self->name, FALSE);
+    g_paste_history_saver_load_when_released (self->saver, self->name);
 }
 
 /* One detailed "notify::<key>" handler per setting the history reacts to, rather
