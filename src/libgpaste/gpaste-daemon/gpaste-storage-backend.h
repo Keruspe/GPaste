@@ -152,10 +152,10 @@ gsize g_paste_storage_backend_count_history    (GPasteStorageBackend *self,
                                                 const gchar          *name);
 gboolean g_paste_storage_backend_delete_history_images (const gchar *name,
                                                         GError     **error);
-gboolean g_paste_storage_backend_rekey        (GPasteStorageBackend *self,
-                                               const gchar          *name,
-                                               const gchar          *new_passphrase,
-                                               gboolean             *split);
+gboolean g_paste_storage_backend_rekey         (GPasteStorageBackend *self,
+                                                const gchar          *name,
+                                                const gchar          *new_passphrase,
+                                                gboolean             *split);
 
 void     g_paste_storage_backend_add_item             (GPasteStorageBackend *self,
                                                        const gchar          *name,

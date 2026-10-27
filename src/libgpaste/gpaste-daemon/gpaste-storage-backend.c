@@ -676,8 +676,9 @@ static const struct
 };
 
 /* What follows a delete of the history called @name, whatever deleted it: its
- * images directory, once no flavour stores the name. @error keeps the store's
- * own failure over this one. */
+ * images directory, once no file flavour stores the name, the database ones
+ * keeping their images in the store. @error keeps the store's own failure over
+ * this one. */
 static void
 _g_paste_storage_delete_history_images (const gchar *name,
                                         GError     **error)
@@ -740,7 +741,9 @@ g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
  * that follows propagates its own, so errors land in %G_IO_ERROR or
  * %G_FILE_ERROR. The sweep is reported because those files are the clipboard's
  * screenshots in the plain flavours: "the history is gone" must not be answered
- * while they are still there.
+ * while they are still there. A history kept by a storage @self cannot reach --
+ * a flavour this build cannot open, or any while @self stores nothing -- is
+ * refused with %G_PASTE_ERROR_FAILED, nothing deleted.
  */
 G_PASTE_VISIBLE void
 g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
@@ -1233,20 +1236,8 @@ g_paste_storage_backend_get_settings (GPasteStorageBackend *self)
 static void
 g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
 {
-    klass->read_history_file = NULL;
-    klass->write_history_file = NULL;
-    klass->get_kind = NULL;
-    klass->delete_history = NULL;
-    klass->list_histories = NULL;
-    klass->count_history = NULL;
-    klass->rekey = NULL;
-    klass->history_refutes_passphrase = NULL;
-
-    klass->add_item = NULL;
-    klass->remove_item = NULL;
-    klass->replace_item = NULL;
-    klass->clear_history = NULL;
-
+    /* Every vfunc starts NULL, GType zeroing the class: the header says which
+     * a subclass has to fill and what one left NULL means. */
     G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_storage_backend_finalize;
 }
