@@ -75,7 +75,7 @@ fake_daemon_flush (GPasteDaemon *self G_GNUC_UNUSED)
     if (exit_calls)
     {
         g_string_append_c (exit_calls, 'f');
-        g_idle_add_once (fake_answer, NULL);
+        g_source_set_name_by_id (g_idle_add_once (fake_answer, NULL), "[GPaste] test flushed answer");
     }
 }
 

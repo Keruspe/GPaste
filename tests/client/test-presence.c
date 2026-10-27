@@ -257,15 +257,18 @@ test_handoff (void)
 
 /* The same for a client built while a daemon already serves -- a window
  * opened, the Shell menu enabled, the usual case -- whose init found the
- * owner rather than being told of it; and for a successor that, as both real
- * daemons do, owns the name before it serves anything, the presence staying
- * starting until it does. */
+ * owner rather than being told of it: its watch of the name is what sees a
+ * successor that serves at once, nothing else moving. And for a successor
+ * that, as both real daemons do, owns the name before it serves anything, the
+ * presence staying starting until it does. */
 static void
 test_handoff_after_init (void)
 {
     StandIn first = { 0 };
     StandIn second = { 0 };
+    StandIn third = { 0 };
     g_autoptr (GObject) client = NULL;
+    PresenceLog log = { 0 };
 
     stand_in_serve (&first, REPLACEABLE);
     /* Asynchronously, for the reason test_initables () gives. */
@@ -273,6 +276,16 @@ test_handoff_after_init (void)
     g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &client, NULL);
     g_assert_nonnull (client);
     wait_for_presence (G_PASTE_CLIENT (client), G_PASTE_DAEMON_PRESENCE_READY);
+
+    presence_log_start (&log, G_PASTE_CLIENT (client));
+    stand_in_serve (&second, G_BUS_NAME_OWNER_FLAGS_REPLACE | REPLACEABLE);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), second.server);
+    wait_for_presence (G_PASTE_CLIENT (client), G_PASTE_DAEMON_PRESENCE_READY);
+    g_assert_cmpuint (log.presences->len, ==, 2);
+    g_assert_cmpint (presence_log_at (&log, 0), ==, G_PASTE_DAEMON_PRESENCE_STARTING);
+    g_assert_cmpint (presence_log_at (&log, 1), ==, G_PASTE_DAEMON_PRESENCE_READY);
+    g_assert_cmpstr (g_ptr_array_index (log.owners, 1), ==, g_dbus_connection_get_unique_name (second.server));
+    presence_log_stop (&log);
 
     guint silent_owner;
     g_autoptr (GDBusConnection) silent = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_REPLACE | REPLACEABLE, &silent_owner);
@@ -282,19 +295,18 @@ test_handoff_after_init (void)
     g_assert_cmpint (g_paste_client_get_daemon_presence (G_PASTE_CLIENT (client)), ==, G_PASTE_DAEMON_PRESENCE_STARTING);
 
     /* That one replaced in turn by one that serves: ready, once. */
-    PresenceLog log = { 0 };
-
     presence_log_start (&log, G_PASTE_CLIENT (client));
-    stand_in_serve (&second, G_BUS_NAME_OWNER_FLAGS_REPLACE);
-    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), second.server);
+    stand_in_serve (&third, G_BUS_NAME_OWNER_FLAGS_REPLACE);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), third.server);
     wait_for_presence (G_PASTE_CLIENT (client), G_PASTE_DAEMON_PRESENCE_READY);
     g_assert_cmpuint (log.presences->len, ==, 1);
-    g_assert_cmpstr (g_ptr_array_index (log.owners, 0), ==, g_dbus_connection_get_unique_name (second.server));
+    g_assert_cmpstr (g_ptr_array_index (log.owners, 0), ==, g_dbus_connection_get_unique_name (third.server));
     presence_log_stop (&log);
 
-    stand_in_stop (&second);
+    stand_in_stop (&third);
     g_dbus_connection_close_sync (silent, NULL, NULL);
     g_bus_unown_name (silent_owner);
+    stand_in_stop (&second);
     stand_in_stop (&first);
 }
 
@@ -696,13 +708,32 @@ signalled (gconstpointer count,
     return *(const guint *) count > 0;
 }
 
-/* Whom the re-execution asks what it is, and whose pid it asks the bus for. */
+/* Whom the re-execution asks what it is, and whose pid it asks the bus for.
+ * Shared with the filter noting it, which GIO may still be running on its
+ * worker once removed, so the filter holds a reference of its own, dropped by
+ * its destroy notify. */
 typedef struct
 {
     GMutex mutex;
     gchar *introspected;
     gchar *pid_of;
 } Asked;
+
+static void
+asked_clear (gpointer data)
+{
+    Asked *asked = data;
+
+    g_mutex_clear (&asked->mutex);
+    g_free (asked->introspected);
+    g_free (asked->pid_of);
+}
+
+static void
+asked_release (gpointer data)
+{
+    g_atomic_rc_box_release_full (data, asked_clear);
+}
 
 static GDBusMessage *
 note_asked (GDBusConnection *connection G_GNUC_UNUSED,
@@ -762,24 +793,24 @@ test_legacy (void)
      * questions go to that one owner by its unique name, as
      * g_paste_util_reexecute_legacy_daemon () says why, and that is what is
      * checked: two owners racing for the name here would share this pid. */
-    Asked asked = { 0 };
+    Asked *asked = g_atomic_rc_box_new0 (Asked);
     GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
-    guint filter = g_dbus_connection_add_filter (connection, note_asked, &asked, NULL);
 
-    g_mutex_init (&asked.mutex);
+    g_mutex_init (&asked->mutex);
+
+    guint filter = g_dbus_connection_add_filter (connection, note_asked, g_atomic_rc_box_acquire (asked), asked_release);
+
     g_paste_util_write_pid_file ("Daemon");
     g_assert_true (g_paste_util_reexecute_legacy_daemon (client, &error));
     g_assert_no_error (error);
     g_paste_test_bus_wait_until (signalled, &signals, NULL);
     g_assert_cmpuint (signals, ==, 1);
     g_dbus_connection_remove_filter (connection, filter);
-    g_mutex_lock (&asked.mutex);
-    g_assert_cmpstr (asked.introspected, ==, g_dbus_connection_get_unique_name (server));
-    g_assert_cmpstr (asked.pid_of, ==, g_dbus_connection_get_unique_name (server));
-    g_mutex_unlock (&asked.mutex);
-    g_mutex_clear (&asked.mutex);
-    g_free (asked.introspected);
-    g_free (asked.pid_of);
+    g_mutex_lock (&asked->mutex);
+    g_assert_cmpstr (asked->introspected, ==, g_dbus_connection_get_unique_name (server));
+    g_assert_cmpstr (asked->pid_of, ==, g_dbus_connection_get_unique_name (server));
+    g_mutex_unlock (&asked->mutex);
+    asked_release (asked);
 
     /* Where g_paste_util_write_pid_file () put it, as
      * g_paste_util_get_runtime_dir () spells the directory. */

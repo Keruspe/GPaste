@@ -888,14 +888,20 @@ count_creates_sent (GDBusConnection *connection G_GNUC_UNUSED,
 {
     if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
         g_paste_str_equal (g_dbus_message_get_member (message), "CreateSession"))
+    {
         g_atomic_int_inc (&creates_sent);
+        /* As g_paste_test_bus_wait_for_count () asks of a count bumped off the
+         * main context. The bus's error answering each send wakes it too, which
+         * is why no wait stalls without this. */
+        g_main_context_wakeup (NULL);
+    }
 
     return message;
 }
 
 /* Retries spent against a name nobody owned say nothing of the portal that then
- * comes up: it gets the whole budget, a failure of its first ask retried rather
- * than given up on. */
+ * comes up: it gets the whole budget, its first ask and nine retries failing
+ * with a tenth retry still sent. */
 static void
 retries_reset_on_appearance (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
 {
@@ -918,11 +924,15 @@ retries_reset_on_appearance (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
                                                   g_variant_new ("(su)", PORTAL_NAME, 1u)), ==, 1);
     while (f->creates->len < 1)
         g_main_context_iteration (NULL, TRUE);
-    complete (f, g_ptr_array_index (f->creates, 0), FALSE, 2);
-    while (f->creates->len < 2)
-        g_main_context_iteration (NULL, TRUE);
+    /* Bounded by the fixture's watchdog, as retry_exhaustion ()'s are. */
+    for (guint i = 0; i < 10; ++i)
+    {
+        complete (f, g_ptr_array_index (f->creates, i), FALSE, 2);
+        while (f->creates->len < i + 2)
+            g_main_context_iteration (NULL, TRUE);
+    }
 
-    Request *current = g_ptr_array_index (f->creates, 1);
+    Request *current = g_ptr_array_index (f->creates, 10);
 
     complete (f, bind_session (f, current, FALSE), FALSE, 0);
     activate (f, current);
@@ -1464,6 +1474,33 @@ keybinder_activation_token (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
     g_assert_cmpstr (tokens->pdata[1], ==, "(none)");
 }
 
+/* A shortcut cleared -- Backspace in the preferences writes "" -- is dropped
+ * from the grab: an accelerator is parsed when its binding is activated, so
+ * every binding is deactivated before the rebind activates the ones that still
+ * parse, where one that parsed once would otherwise stay grabbed. */
+static void
+keybinder_cleared (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    guint activations = 0;
+    Request *session;
+    g_autoptr (GPasteKeybinder) keybinder = one_binding_keybinder (f, settings, keybinder_activated, &activations, &session);
+
+    activate (f, session);
+    g_assert_cmpuint (activations, ==, 1);
+
+    /* Nothing left to grab: the session goes, and no other is asked for --
+     * one binding the cleared shortcut with no trigger would have the portal
+     * ask the user for one. */
+    g_paste_settings_set_launch_ui (settings, "");
+    wait_for_timers (f, 350);
+    g_assert_cmpuint (session->closes, ==, 1);
+    g_assert_cmpuint (f->creates->len, ==, 1);
+    activate (f, session);
+    g_assert_cmpuint (activations, ==, 1);
+    g_paste_settings_reset (settings, G_PASTE_LAUNCH_UI_SETTING);
+}
+
 static void
 keybinder_switch (Fixture *f, gconstpointer user_data)
 {
@@ -1528,6 +1565,7 @@ main (int argc, char **argv)
     g_test_add ("/keybinder/switch-enabled", Fixture, GINT_TO_POINTER (TRUE), setup, keybinder_switch, teardown);
     g_test_add ("/keybinder/order", Fixture, NULL, setup, keybinder_order, teardown);
     g_test_add ("/keybinder/activation-token", Fixture, NULL, setup, keybinder_activation_token, teardown);
+    g_test_add ("/keybinder/cleared", Fixture, NULL, setup, keybinder_cleared, teardown);
     g_test_add ("/keybinder/switch-disabled", Fixture, GINT_TO_POINTER (FALSE), setup, keybinder_switch, teardown);
     /* Unexpected warnings are failures; exhaustion tests expect theirs
      * explicitly. */

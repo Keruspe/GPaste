@@ -23,10 +23,10 @@ static guint   signals_sent;
 static GError *reexec_error;
 static guint   reexecs;
 
-/* How often isatty () was asked, and fwrite () called while @writes_counted is
- * set: what printing to a terminal costs. */
+/* How often isatty () was asked, and how many writes reached a stream holding
+ * no buffer of its own -- one per stdio call, whichever it is: what printing
+ * to a terminal costs. */
 static guint terminal_asks;
-static gboolean writes_counted;
 static guint writes;
 
 int
@@ -40,19 +40,14 @@ isatty (int fd)
     return original (fd);
 }
 
-size_t
-fwrite (const void *data,
-        size_t      size,
-        size_t      count,
-        FILE       *stream)
+static ssize_t
+count_write (void       *cookie G_GNUC_UNUSED,
+             const char *data   G_GNUC_UNUSED,
+             size_t      size)
 {
-    typedef size_t (*Write) (const void *, size_t, size_t, FILE *);
-    Write original = (Write) dlsym (RTLD_NEXT, "fwrite");
+    ++writes;
 
-    if (writes_counted)
-        ++writes;
-
-    return original (data, size, count, stream);
+    return (ssize_t) size;
 }
 
 /* The re-exec the CLI asks for, refused with whatever @reexec_error says: the
@@ -1580,13 +1575,24 @@ test_terminal_controls (void)
     g_autofree gchar *echoed = g_malloc (2048);
     guint asked = terminal_asks;
 
-    writes_counted = TRUE;
     print_text (clean);
     print_text (clean);
-    writes_counted = FALSE;
     fflush (stdout);
     g_assert_cmpuint (terminal_asks, ==, asked);
-    g_assert_cmpuint (writes, ==, 0);
+
+    /* What lies between two control characters goes out in one write, a
+     * character at a time costing one each. */
+    FILE *counted = fopencookie (NULL, "w", (cookie_io_functions_t) { .write = count_write });
+
+    g_assert_nonnull (counted);
+    g_assert_cmpint (setvbuf (counted, NULL, _IONBF, 0), ==, 0);
+    writes = 0;
+    print_text_to (counted, clean);
+    g_assert_cmpuint (writes, ==, 1);
+    writes = 0;
+    print_text_to (counted, "ab\x1b" "cd");
+    g_assert_cmpuint (writes, ==, 3);
+    g_assert_cmpint (fclose (counted), ==, 0);
     for (gssize got = 0; got < 2048;)
     {
         gssize read_now = read (terminal, echoed, 2048);

@@ -164,7 +164,6 @@ test_mime_read_policy (gconstpointer user_data)
                                                                      (text) ? CLIPBOARD_CONTENT_TEXT : CLIPBOARD_CONTENT_FILE_LIST,
                                                                      &clipboard->pending, &clipboard->content, drop_read, NULL);
 
-
     if (split)
     {
         g_paste_clipboard_update_read_special_mimes (pending, NULL, offers_everything, &reads, count_mime_read);

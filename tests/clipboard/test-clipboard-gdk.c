@@ -1173,6 +1173,12 @@ on_disposed_wait (GPasteClipboardProvider *provider,
 }
 
 static void
+never_notified (void)
+{
+    g_assert_not_reached ();
+}
+
+static void
 formats_wait_dispose (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
@@ -1186,10 +1192,14 @@ formats_wait_dispose (void)
     g_paste_clipboard_gdk_update (clipboard, TRUE, on_disposed_wait, &answered);
     g_assert_nonnull (clipboard->formats_wait);
 
-    /* No real GdkClipboard to disconnect from: dispose () the way it runs, minus
-     * the part that needs one. */
-    g_paste_clipboard_gdk_supersede_formats_wait (clipboard);
-    clipboard->settings = NULL;
+    /* The provider's own dispose (), at its last reference, with a stand-in for
+     * the GdkClipboard it disconnects from: any instance holding the handler
+     * does. */
+    GObject *real = g_object_new (G_TYPE_OBJECT, NULL);
+
+    clipboard->real = (GdkClipboard *) real;
+    clipboard->c_signals[C_CHANGED] = g_signal_connect (real, "notify", G_CALLBACK (never_notified), NULL);
+    clipboard->settings = g_object_ref (settings);
     g_object_unref (clipboard);
     g_assert_null (g_weak_ref_get (&weak));
 
