@@ -6,8 +6,30 @@
 
 #include <gpaste-3/gpaste-util.h>
 
+#include <dlfcn.h>
 #include <glib-unix.h>
 #include <signal.h>
+
+/* The translations the suite has, each holding an &, which a label read as
+ * markup would leave blank: the empty history's description and the
+ * sidebar's entry. */
+#define EMPTY_DESCRIPTION_TRANSLATED "Copy & paste to start your history"
+#define SWITCH_ENTRY_TRANSLATED      "Switch & create"
+
+const gchar *
+g_dgettext (const gchar *domain,
+            const gchar *msgid)
+{
+    typedef const gchar *(*Dgettext) (const gchar *, const gchar *);
+    Dgettext original = (Dgettext) dlsym (RTLD_NEXT, "g_dgettext");
+
+    if (!g_strcmp0 (msgid, "Copy something to start building your history."))
+        return EMPTY_DESCRIPTION_TRANSLATED;
+    if (!g_strcmp0 (msgid, "Switch or Create"))
+        return SWITCH_ENTRY_TRANSLATED;
+
+    return original (domain, msgid);
+}
 
 /* Every restart the window asks of a GPaste 45 or 50, before handing it on:
  * two signals sent together are as good as one. */
@@ -1246,6 +1268,57 @@ test_search_enter_survives_update (void)
     answer_filter (&daemon);
     g_paste_test_bus_wait_until (selected, &daemon, NULL);
     g_assert_cmpstr (daemon.selected, ==, daemon.match);
+    close_activation_window (window, &daemon);
+}
+
+static gboolean
+shows_label (GtkWidget   *widget,
+             const gchar *text)
+{
+    if (GTK_IS_LABEL (widget) && g_paste_str_equal (gtk_label_get_text (GTK_LABEL (widget)), text))
+        return TRUE;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
+    {
+        if (shows_label (child, text))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* A status page's description is a translation shown as written, an & in it
+ * included, rather than nothing below the title; so is the sidebar's entry's
+ * title. */
+static void
+test_status_plain (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    FakeDaemon daemon = { .size = 0 };
+
+    g_assert_no_error (error);
+
+    GPasteUiWindow *window = test_window ();
+
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_paste_ui_window_setup (window, client);
+    g_paste_test_bus_wait_for_count (&daemon.sizings, 1);
+    g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    drain ();
+
+    AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
+
+    g_assert_cmpstr (adw_status_page_get_title (status), ==, _("No Items"));
+    g_assert_true (shows_label (GTK_WIDGET (status), EMPTY_DESCRIPTION_TRANSLATED));
+    g_assert_true (shows_label (window->panel, SWITCH_ENTRY_TRANSLATED));
     close_activation_window (window, &daemon);
 }
 
@@ -3587,6 +3660,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/listing-owner-size-error", test_listing_owner_size_error);
     g_test_add_func ("/ui/daemon-presence/owner-learned", test_owner_learned);
     g_test_add_func ("/ui/daemon-presence/listing-daemon-gone", test_listing_daemon_gone);
+    g_test_add_func ("/ui/daemon-presence/status-plain", test_status_plain);
     g_test_add_func ("/ui/daemon-presence/upload", test_upload);
     g_test_add_func ("/ui/daemon-presence/upload-after-row-removed", test_upload_after_row_removed);
     g_test_add_func ("/ui/daemon-presence/focus-restored", test_focus_restored);

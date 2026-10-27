@@ -903,7 +903,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 
     GtkWidget *switch_entry = adw_entry_row_new ();
     self->switch_entry = ADW_ENTRY_ROW (switch_entry);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch or Create"));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch or Create"));
     /* An AdwEntryRow has no subtitle to say it, and that a name nobody has used
      * before makes a history rather than failing to find one is not something a
      * user can be expected to guess. */

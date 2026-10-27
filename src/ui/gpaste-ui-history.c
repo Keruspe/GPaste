@@ -99,8 +99,14 @@ g_paste_ui_history_show_status (GPasteUiHistory *self,
     adw_status_page_set_paintable (self->status_page, NULL);
     gtk_widget_set_visible (self->retry_button, FALSE);
     adw_status_page_set_icon_name (self->status_page, icon);
+    /* A description is markup to AdwStatusPage, with no way to turn that off,
+     * and each one shown here is a translation, which an & or a < would have
+     * Pango refuse, the page saying nothing below its title
+     * (/ui/daemon-presence/status-plain). The title is plain already. */
+    g_autofree gchar *escaped = (description) ? g_markup_escape_text (description, -1) : NULL;
+
     adw_status_page_set_title (self->status_page, title);
-    adw_status_page_set_description (self->status_page, description);
+    adw_status_page_set_description (self->status_page, escaped);
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), TRUE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
 }
@@ -651,6 +657,7 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
      * match: the daemon answered, and what it said was not a list. */
     if (g_paste_client_is_daemon_gone_error (error))
         return;
+
 
     g_autoptr (GStrvBuilder) uuids = g_strv_builder_new ();
 
