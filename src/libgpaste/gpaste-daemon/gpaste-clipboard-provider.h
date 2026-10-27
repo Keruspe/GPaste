@@ -48,7 +48,8 @@ typedef enum
  * @self: (nullable): the #GPasteClipboardProvider whose content was read, which
  *        can only be %NULL for a @superseded read whose provider is gone
  * @item: (transfer full) (nullable): the newly created #GPasteItem, or %NULL
- *        when the content is unchanged, unrecognised or the selection is empty
+ *        when the content is unchanged, unrecognised, a secret that is not a
+ *        text -- identified, but no item -- or the selection is empty
  * @superseded: whether another selection change overtook this read; @item is
  *              %NULL and the callback must only release its state in that case
  * @secret: what the read found out about the owner marking its content a secret
@@ -62,8 +63,12 @@ typedef enum
  * apart from "@item is a password": an update that produced nothing still read
  * the selection, and a text deduped against the one already there is the only
  * word anything gets on whether what is sitting on it is still a secret.
- * %G_PASTE_CLIPBOARD_SECRET_NO for a selection with no text (see
- * #GPasteClipboardMimeResults).
+ * The hints are read whatever the content, so an image, a colour or a file
+ * list marked secret is %G_PASTE_CLIPBOARD_SECRET_YES too, and one whose hint
+ * never came back %G_PASTE_CLIPBOARD_SECRET_UNKNOWN (see
+ * #GPasteClipboardMimeResults); a release, and an owner offering nothing the
+ * provider handles, are %G_PASTE_CLIPBOARD_SECRET_NO, nothing a password can
+ * be sitting on.
  */
 typedef void (*GPasteClipboardProviderUpdateCallback) (GPasteClipboardProvider *self,
                                                        GPasteItem              *item,

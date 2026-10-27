@@ -93,7 +93,11 @@ shown_window (void)
 }
 
 /* Escape, as the window answers it: the shortcut bound to it, run on the
- * window. */
+ * window. That pins the binding and what it does, not the key's delivery --
+ * GTK has no public way to synthesise a key event, and a real one needs XTest
+ * on the suite's Xvfb. A bubble-phase controller on the window sees the key
+ * whichever child has the focus, the password entry's text included, which is
+ * what a delivery test would show. */
 static void
 press_escape (GtkWindow *window)
 {

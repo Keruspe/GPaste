@@ -189,10 +189,12 @@ gtk_accel_to_portal_trigger (const gchar *accel)
     if (!gtk_accelerator_parse (accel, &keyval, &mods) || !keyval)
         return NULL;
 
-    /* Settings written by an older GPaste (or by hand) can name the keypad
-     * variant of a key; the portal takes one name, so give it the primary
-     * spelling of the alias group rather than whichever one was stored. The
-     * capture side has to agree, which is why the rule is shared. */
+    /* Settings written by an older GPaste (or by hand) can name an alias of a
+     * key -- ISO_Left_Tab for Tab, ISO_Enter for Return; the portal takes one
+     * name, so give it the primary spelling of the alias group rather than
+     * whichever one was stored. A keypad key is a key of its own, and keeps
+     * its name (g_paste_keyval_canonicalize ()). The capture side has to agree,
+     * which is why the rule is shared. */
     keyval = g_paste_keyval_canonicalize (keyval);
 
     const gchar *key_name = gdk_keyval_name (keyval);

@@ -274,7 +274,8 @@ g_paste_prompt_request_get_offered (GPastePromptRequest *self,
  * g_paste_prompt_request_get_current:
  * @self: a #GPastePromptRequest
  *
- * The backend the history currently lives in, which the prompt starts on.
+ * The backend the history currently lives in, which the prompt starts on
+ * when it is on offer (g_paste_prompt_request_can_keep ()).
  *
  * Returns: the current backend
  */
@@ -625,7 +626,8 @@ g_paste_prompt_other_passphrase_async (GPastePrompt       *self,
  * @self: a #GPastePrompt instance
  * @offered: (array length=n_offered): the backends to offer, in display order
  * @n_offered: the number of backends in @offered
- * @current: the backend the history currently lives in, which the prompt starts on
+ * @current: the backend the history currently lives in, which the prompt starts
+ *     on when it is on offer (g_paste_prompt_request_can_keep ())
  * @callback: (scope async): called once the prompt is answered or dismissed
  * @user_data: data passed to @callback
  *

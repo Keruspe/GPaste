@@ -28,7 +28,7 @@ G_PASTE_DEFINE_TYPE (Keybinding, keybinding, G_TYPE_OBJECT)
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_dconf_key (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     return self->dconf_key;
 }
@@ -44,7 +44,7 @@ g_paste_keybinding_get_dconf_key (GPasteKeybinding *self)
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_description (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     return self->description;
 }
@@ -63,8 +63,8 @@ G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_accelerator (GPasteKeybinding *self,
                                     GPasteSettings   *settings)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     return self->getter (settings);
 }

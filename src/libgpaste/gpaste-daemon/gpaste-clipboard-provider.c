@@ -84,7 +84,7 @@ g_paste_clipboard_provider_is_clipboard (GPasteClipboardProvider *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
 
-    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->is_clipboard (self);
+    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->is_clipboard (self);
 }
 
 /**
@@ -247,7 +247,7 @@ g_paste_clipboard_provider_sync_text (GPasteClipboardProvider    *self,
         return;
     }
 
-    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->sync_text (self, other, callback, user_data, destroy);
+    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->sync_text (self, other, callback, user_data, destroy);
 }
 
 G_PASTE_VISIBLE GPasteClipboardPublication
@@ -279,7 +279,11 @@ g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
  * otherwise only the ordinary selection path does.
  *
  * Returns: (transfer none) (nullable): the #GPasteItem this put on the selection,
- *          or %NULL when it left the selection as it found it
+ *          or %NULL when it put nothing there itself: the selection carried
+ *          something, the history had nothing to give, its head was a
+ *          password, or the head was one no selection can carry -- removed
+ *          from the history then, whose next head the removal publishes on
+ *          every selection, this one included, before this returns
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,

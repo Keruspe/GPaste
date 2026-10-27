@@ -214,9 +214,10 @@ typedef enum
     G_PASTE_PROMPT_TEXT_CLOSE,
     G_PASTE_PROMPT_TEXT_CANCEL,
     /* G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION for a dialog offering no "Keep
-     * as is": the backend in use is one this build cannot open. After CANCEL
-     * rather than beside MIGRATION_DESCRIPTION, so that the values before it
-     * keep their numbers. */
+     * as is": the backend in use is one this build cannot open. After CANCEL,
+     * out of its group: beside MIGRATION_DESCRIPTION it would renumber every
+     * value after it, which waits for a release bumping libgpaste-daemon's
+     * soversion (see its ABI policy in src/libgpaste/meson.build). */
     G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,
     /* What g_paste_prompt_other_passphrase_async() is asked with: a format
      * string, its %s the names of the histories the passphrase is wanted for,
