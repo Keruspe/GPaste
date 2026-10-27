@@ -15,9 +15,14 @@
  * second before a name nobody owns reads as missing -- what an upgrade takes to
  * put one back -- and two minutes before an owner that never serves stops
  * reading as starting -- long enough for a re-exec, an upgrade or a manual
- * restart. Past that, trying again is the user's call. A test can wait the
- * second out; the two minutes are cut short by the one compiling this file in
- * (tests/client/test-give-up.c). */
+ * restart. Past that, trying again is the user's call. A daemon of this version
+ * held at its start-up migration or passphrase prompt owns the name and serves
+ * nothing either, for as long as the user takes to answer, and is given up on
+ * all the same: nothing on the bus tells it from one that will never serve,
+ * and it heals once answered, the presence following the export. Telling them
+ * apart takes the daemon saying it is prompting, which is a change to the
+ * interface. A test can wait the second out; the two minutes are cut short by
+ * the one compiling this file in (tests/client/test-give-up.c). */
 #define G_PASTE_CLIENT_GRACE_SECONDS 1
 #ifndef G_PASTE_CLIENT_GIVE_UP_SECONDS
 #define G_PASTE_CLIENT_GIVE_UP_SECONDS 120
@@ -668,23 +673,23 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
 /**
  * g_paste_client_backup_history_sync:
  * @self: a #GPasteClient instance
- * @history: the name of the history
- * @backup: the name of the backup
+ * @history: the name of the history to back up, the current one or any other
+ * @backup: the name to give the backup
  * @error: return location for a #GError, or %NULL
  *
- * Backup the current history
+ * Back up @history under the name @backup
  */
 /**
  * g_paste_client_backup_history:
  * @self: a #GPasteClient instance
- * @history: the name of the history
- * @backup: the name of the backup
+ * @history: the name of the history to back up, the current one or any other
+ * @backup: the name to give the backup
  * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
  *
- * Backup the current history
+ * Back up @history under the name @backup
  */
 /**
  * g_paste_client_backup_history_finish:
@@ -692,7 +697,7 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
  * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
- * Backup the current history
+ * Back up @history under the name @backup
  */
 G_PASTE_CLIENT_METHOD_FULL (backup_history, G_PASTE_CLIENT_TIMEOUT_STORE,
                             (const gchar *history, const gchar *backup), (history, backup), (history, backup))

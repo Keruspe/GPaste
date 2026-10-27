@@ -803,7 +803,8 @@ g_paste_daemon_cancel_uploads (GPasteDaemon *self)
 /**
  * g_paste_daemon_upload:
  * @self: (transfer none): the #GPasteDaemon
- * @uuid: the uuid of the item to upload, or "" (or %NULL) for the current one
+ * @uuid: (nullable): the uuid of the item to upload, or "" (or %NULL) for the
+ *     current one
  * @callback: (nullable): a #GAsyncReadyCallback to call once the upload is done
  * @user_data: (nullable): the data to pass to @callback
  *
