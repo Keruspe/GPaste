@@ -687,10 +687,15 @@ test_add_file_tiff (void)
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
-/* The file whose bytes read () counts, in @watched_bytes, while set: through
- * any descriptor, which is what AddFile reads its file from. */
-static const gchar *watched_path = NULL;
-static gsize        watched_bytes;
+/* The file whose bytes read () counts, in @watched_bytes, while @watching:
+ * through any descriptor open on it, which is what AddFile reads its file
+ * from. Told by its inode, taken once watch_file () names it, not by the path
+ * the descriptor resolves to, which a link on the way to the file -- a
+ * temporary directory under one -- spells otherwise. */
+static gboolean watching;
+static dev_t    watched_dev;
+static ino_t    watched_ino;
+static gsize    watched_bytes;
 
 ssize_t
 read (int    fd,
@@ -704,16 +709,28 @@ read (int    fd,
 
     ssize_t got = original (fd, buf, count);
 
-    if (watched_path && got > 0)
+    if (watching && got > 0)
     {
-        g_autofree gchar *link = g_strdup_printf ("/proc/self/fd/%d", fd);
-        g_autofree gchar *target = g_file_read_link (link, NULL);
+        struct stat read_from;
 
-        if (g_paste_str_equal (target, watched_path))
+        if (fstat (fd, &read_from) == 0 && read_from.st_dev == watched_dev && read_from.st_ino == watched_ino)
             watched_bytes += (gsize) got;
     }
 
     return got;
+}
+
+/* Has read () count what is read of @path from now on. */
+static void
+watch_file (const gchar *path)
+{
+    GStatBuf watched;
+
+    g_assert_cmpint (g_stat (path, &watched), ==, 0);
+    watched_dev = watched.st_dev;
+    watched_ino = watched.st_ino;
+    watched_bytes = 0;
+    watching = TRUE;
 }
 
 /* The placeholder is no name to add a password under: told apart from the
@@ -744,7 +761,7 @@ test_add_password_placeholder_refused (void)
 
 /* AddFile reads only a regular file the history could keep: a FIFO would hold
  * the daemon until something wrote to it, and a file over the memory cap is
- * refused unread, as watched_path holds it to, root or not. Past the
+ * refused unread, as watch_file () holds it to, root or not. Past the
  * text cap with trim-items off, one beginning as a text is refused on its first
  * bytes, the NULs past them, which a whole read would find, never looked at;
  * with trimming on it is read, since what trimming leaves may fit. */
@@ -780,10 +797,9 @@ test_add_file_refusals (void)
     g_assert_cmpint (ftruncate (fd, 6 * 1024 * 1024), ==, 0);
     g_assert_true (g_close (fd, NULL));
     g_paste_settings_set_max_memory_usage (settings, 5);
-    watched_path = big;
-    watched_bytes = 0;
+    watch_file (big);
     g_assert_null (g_paste_daemon_methods_add_file (&methods, big, &error));
-    watched_path = NULL;
+    watching = FALSE;
     g_assert_cmpuint (watched_bytes, ==, 0);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
     g_clear_error (&error);
@@ -793,10 +809,10 @@ test_add_file_refusals (void)
     g_assert_true (g_file_set_contents (long_text, head, -1, NULL));
     g_assert_cmpint (truncate (long_text, 2 * 1024 * 1024), ==, 0);
     g_paste_settings_set_max_text_item_size (settings, 1024 * 1024);
-    watched_path = long_text;
-    watched_bytes = 0;
+    watch_file (long_text);
     g_assert_null (g_paste_daemon_methods_add_file (&methods, long_text, &error));
-    watched_path = NULL;
+    watching = FALSE;
+    g_assert_cmpuint (watched_bytes, >, 0);
     g_assert_cmpuint (watched_bytes, <=, 4096);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
     g_clear_error (&error);
@@ -807,9 +823,14 @@ test_add_file_refusals (void)
 
     g_assert_true (g_file_set_contents (padded, padded_text, -1, NULL));
     g_paste_settings_set_trim_items (settings, TRUE);
+    watch_file (padded);
 
     g_autofree gchar *uuid = g_paste_daemon_methods_add_file (&methods, padded, &error);
 
+    watching = FALSE;
+    /* Read whole, and counted whole: what tells the counts above from those
+     * of a read () that sees nothing of the file. */
+    g_assert_cmpuint (watched_bytes, ==, strlen (padded_text));
     g_assert_no_error (error);
     g_assert_nonnull (uuid);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
@@ -1488,18 +1509,38 @@ test_migration_none_is_current (void)
 
 /* A configured history name that names no history is the default one to the
  * detection, as it is to the history the daemon then loads, rather than a path
- * handed on regardless. */
+ * handed on regardless: the plain file the default history is in is what it
+ * finds, not the encrypted one beside the history directory that
+ * "../elsewhere" would name, nor the database flavour most files are in, which
+ * a name with no history of its own falls back on. */
 static void
 test_migration_invalid_history_name (void)
 {
     if (g_test_subprocess ())
     {
         g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_prepend (NULL, g_paste_text_item_new ("default"));
+
+        g_assert_true (g_paste_storage_backend_write_history (file, G_PASTE_DEFAULT_HISTORY, items));
+
+        g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+        g_autofree gchar *outside = g_build_filename (dir, "..", "elsewhere.xmls", NULL);
+        g_autofree gchar *first_database = g_paste_util_get_history_file_path ("invalid-name-first", "db");
+        g_autofree gchar *second_database = g_paste_util_get_history_file_path ("invalid-name-second", "db");
+
+        g_assert_true (g_file_set_contents (outside, "", 0, NULL));
+        g_assert_true (g_file_set_contents (first_database, "", 0, NULL));
+        g_assert_true (g_file_set_contents (second_database, "", 0, NULL));
+
         g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
 
         g_paste_settings_set_history_name (settings, "../elsewhere");
         prompt->chosen = G_PASTE_STORAGE_FILE;
         run_migration (settings, prompt);
+        g_assert_cmpint (prompt->current, ==, G_PASTE_STORAGE_FILE);
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+
         g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
         return;
     }
@@ -1797,6 +1838,9 @@ test_empty_other_keeps_stored_images (void)
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
         G_PASTE_STORAGE_SQLITE,
+#endif
+#if defined (G_PASTE_ENABLE_SQLITE) && defined (G_PASTE_ENABLE_ENCRYPTION)
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
 #endif
         G_PASTE_N_STORAGE,
     };
@@ -4054,10 +4098,6 @@ test_favourite_survives_replace (void)
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 
-/* MakePassword handed a password's own uuid keeps the entry where it stands,
- * under that uuid, rather than minting a new one: the uuid that went in comes
- * back, the name and the timeout are written and the value is not. That is
- * what Edit Password drives on every save. */
 /* A name heavy enough to put a password past the memory cap is refused, nothing
  * changed, as Replace refuses contents that heavy: spared by the cap, it would
  * evict every other entry to make room for itself. */
@@ -4084,6 +4124,10 @@ test_make_password_heavy_name (void)
     g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
 }
 
+/* MakePassword handed a password's own uuid keeps the entry where it stands,
+ * under that uuid, rather than minting a new one: the uuid that went in comes
+ * back, the name and the timeout are written and the value is not. That is
+ * what Edit Password drives on every save. */
 static void
 test_make_password_keeps_uuid (void)
 {
@@ -5659,6 +5703,20 @@ test_reload_then_delete_drops_password (gconstpointer data)
     g_signal_handlers_disconnect_by_data (history, dropped);
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
     g_paste_history_flush (history);
+}
+
+/* Registered through add_test (), as every case is, so that both start from the
+ * schema's defaults (run_from_defaults ()). */
+static void
+test_reload_then_delete_drops_password_once (void)
+{
+    test_reload_then_delete_drops_password (GINT_TO_POINTER (FALSE));
+}
+
+static void
+test_reload_twice_drops_password (void)
+{
+    test_reload_then_delete_drops_password (GINT_TO_POINTER (TRUE));
 }
 
 static void
@@ -8533,8 +8591,8 @@ main (int argc, char *argv[])
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
-    g_test_add_data_func ("/history/reload_then_delete_drops_password", GINT_TO_POINTER (FALSE), test_reload_then_delete_drops_password);
-    g_test_add_data_func ("/history/reload_twice_drops_password", GINT_TO_POINTER (TRUE), test_reload_then_delete_drops_password);
+    add_test ("/history/reload_then_delete_drops_password", test_reload_then_delete_drops_password_once);
+    add_test ("/history/reload_twice_drops_password", test_reload_twice_drops_password);
     add_test ("/history/load_selects_last_add", test_load_selects_last_add);
     add_test ("/history/load_keeps_add_uuid", test_load_keeps_add_uuid);
     add_test ("/history/load_keeps_password_selected", test_load_keeps_password_selected);

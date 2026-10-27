@@ -182,13 +182,38 @@ free (void *memory)
         original_free (memory);
 }
 
+/* What GLib frees knowing its size -- g_free_sized (), g_slice_free (), the
+ * data a GBytes holds inline -- goes to these where the C library has them,
+ * searched as free () searches and then freed by it, which takes whatever
+ * either takes. glibc's own call free () through its PLT, where the search
+ * would see the block anyway; a C library implementing them otherwise would
+ * not, and none this suite runs on does, which is why no case tells these
+ * apart from free () alone. They are kept for such a library all the same:
+ * without them its sized frees would go unsearched, the no-copy cases passing
+ * over them, and /storage/secret-search-counts would fail there until they
+ * were added back. */
+void
+free_sized (void  *memory,
+            size_t size G_GNUC_UNUSED)
+{
+    free (memory);
+}
+
+void
+free_aligned_sized (void  *memory,
+                    size_t alignment G_GNUC_UNUSED,
+                    size_t size      G_GNUC_UNUSED)
+{
+    free (memory);
+}
+
 /* A block realloc () moves is released holding what it held, which free ()
  * never sees. Whether it moves is the heap's call, so while @freed_secret is
  * set every one does, and one holding half the secret or more -- what a growing
  * buffer had decoded of it so far -- is counted as a copy left behind too. */
 void *
-realloc (void   *memory,
-         size_t  size)
+realloc (void  *memory,
+         size_t size)
 {
     const gchar *secret = freed_secret;
 
@@ -331,8 +356,12 @@ g_file_enumerate_children (GFile              *file,
 }
 
 /* The history loads handed to a thread, counted as they go: a load that has to
- * wait is told apart from one that has not run yet, however slow the worker. */
-static guint loads_started;
+ * wait is told apart from one that has not run yet, however slow the worker.
+ * While @keep_loads is set, the last of them is kept in @kept_load, which says
+ * when it is done. */
+static guint           loads_started;
+static gboolean        keep_loads;
+static GTask          *kept_load;
 /* With @defer_lock_waits, a startup gate's wait for the storage lock is kept
  * here rather than handed to a thread, as a pool with every thread busy keeps
  * it, until run_deferred_lock_wait (). With @release_after_lock_wait, it is run
@@ -352,7 +381,11 @@ g_task_run_in_thread (GTask          *task,
 
     g_assert_nonnull (original);
     if (g_paste_str_equal (g_task_get_name (task), "gpaste-history-load"))
+    {
         g_atomic_int_inc (&loads_started);
+        if (keep_loads)
+            g_set_object (&kept_load, task);
+    }
     if (defer_lock_waits && g_paste_str_equal (g_task_get_name (task), "gpaste-storage-lock-wait"))
     {
         g_assert_null (deferred_lock_wait);
@@ -368,6 +401,13 @@ g_task_run_in_thread (GTask          *task,
         return;
     }
     original (task, task_func);
+}
+
+static gboolean
+task_completed (gconstpointer task,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return g_task_get_completed ((GTask *) task);
 }
 
 static void
@@ -410,10 +450,17 @@ g_file_delete (GFile        *file,
 }
 /* The files fsync () fails for, by suffix, and every path it synced with its
  * size then (a gint64), which g_file_move () below checks what it installs
- * against: one that has grown since was synced before its last write. */
+ * against: one that has grown since was synced before its last write. And,
+ * while a case keeps the two tables, counted on one sequence, when each path
+ * was last synced (@synced_at) and when a move last went into each directory
+ * (@moved_into): a rename is on the disk once its directory is synced after
+ * it. */
 static const gchar * const *failed_syncs;
-static GHashTable *synced;
-static gboolean moved_unsynced;
+static GHashTable          *synced;
+static gboolean             moved_unsynced;
+static GHashTable          *synced_at;
+static GHashTable          *moved_into;
+static guint                io_sequence;
 
 /* The path @fd was opened on, through /proc. */
 static gchar *
@@ -450,6 +497,8 @@ fsync (int fd)
     {
         gint64 size = st.st_size;
 
+        if (synced_at)
+            g_hash_table_insert (synced_at, g_strdup (path), GUINT_TO_POINTER (++io_sequence));
         g_hash_table_insert (synced, g_steal_pointer (&path), g_memdup2 (&size, sizeof (size)));
     }
 
@@ -458,16 +507,26 @@ fsync (int fd)
 
 /* What flock () fails with, as a home on NFS without lockd has it fail: 0 for
  * nothing. And, while @pause_taken_lock is set, the next flock () taking a
- * lock says so through @lock_taken and then holds on to the thread for a
- * moment, as one preempted between taking the lock and recording it would.
- * @busy_flocks counts the exclusive locks refused for being held, a wait for
- * the lock having started once there is one. */
-static gint refused_flock;
-static guint busy_flocks;
-static gint pause_taken_lock;
-static GMutex lock_taken_mutex;
-static GCond lock_taken_cond;
+ * lock says so through @lock_taken and then holds on to the thread, as one
+ * preempted between taking the lock and recording it would: until
+ * @lock_taken_asking says the case is asking about that moment -- ten seconds
+ * at most, @lock_taken_missed saying the pause gave up first -- and then until
+ * @lock_taken_seen says it has its answer, or a second has passed, the case
+ * being unable to say so while it waits behind the thread. @busy_flocks counts
+ * the exclusive locks refused for being held, a wait for the lock having
+ * started once there is one, and @busy_threads the threads they were refused
+ * to. */
+static gint        refused_flock;
+static guint       busy_flocks;
+static GHashTable *busy_threads;
+G_LOCK_DEFINE_STATIC (busy_threads);
+static gint     pause_taken_lock;
+static GMutex   lock_taken_mutex;
+static GCond    lock_taken_cond;
 static gboolean lock_taken;
+static gboolean lock_taken_asking;
+static gboolean lock_taken_missed;
+static gboolean lock_taken_seen;
 
 int
 flock (int fd,
@@ -491,19 +550,29 @@ flock (int fd,
         gint busy = errno;
 
         g_atomic_int_inc (&busy_flocks);
-        /* Bumped on the load's worker, which posts nothing: a wait for the
-         * count, iterating the main context, would sleep to its deadline. */
+        G_LOCK (busy_threads);
+        if (busy_threads)
+            g_hash_table_add (busy_threads, g_thread_self ());
+        G_UNLOCK (busy_threads);
+        /* Counted off the main thread: see g_paste_test_bus_wait_for_count (). */
         g_main_context_wakeup (NULL);
         errno = busy;
     }
 
     if (!taken && (operation & LOCK_EX) && g_atomic_int_compare_and_exchange (&pause_taken_lock, TRUE, FALSE))
     {
+        gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
         g_mutex_lock (&lock_taken_mutex);
         lock_taken = TRUE;
         g_cond_broadcast (&lock_taken_cond);
+        while (!lock_taken_asking && g_cond_wait_until (&lock_taken_cond, &lock_taken_mutex, deadline))
+            ;
+        lock_taken_missed = !lock_taken_asking;
+        deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
+        while (!lock_taken_missed && !lock_taken_seen && g_cond_wait_until (&lock_taken_cond, &lock_taken_mutex, deadline))
+            ;
         g_mutex_unlock (&lock_taken_mutex);
-        g_usleep (300 * 1000);
     }
 
     return taken;
@@ -621,7 +690,19 @@ g_file_move (GFile                *source,
         !(synced_size && g_stat (real, &st) == 0 && st.st_size == *synced_size))
         moved_unsynced = TRUE;
 
-    return original (source, destination, flags, cancellable, progress, data, error);
+    gboolean moved = original (source, destination, flags, cancellable, progress, data, error);
+
+    if (moved && moved_into)
+    {
+        g_autofree gchar *destination_path = g_file_get_path (destination);
+        g_autofree gchar *destination_dir = (destination_path) ? g_path_get_dirname (destination_path) : NULL;
+        g_autofree gchar *real_dir = (destination_dir) ? realpath (destination_dir, NULL) : NULL;
+
+        if (real_dir)
+            g_hash_table_insert (moved_into, g_steal_pointer (&real_dir), GUINT_TO_POINTER (++io_sequence));
+    }
+
+    return moved;
 }
 
 /* As in test-history.c. */
@@ -857,7 +938,8 @@ sqlite_query_int (const gchar *path,
 
 /* What the journal held each time a history's re-key began, while this is
  * set: what a process dying between two would leave. From the re-key counted
- * @failed_rekey on, the history's install fails. */
+ * @failed_rekey, the history's install fails, and that one alone: a put-back
+ * after it goes through. */
 static GPtrArray *rekey_journals;
 static guint failed_rekey;
 
@@ -882,8 +964,8 @@ g_paste_storage_backend_rekey (GPasteStorageBackend *self,
 
         static const gchar * const history_install[] = { ".xmls.rekey", NULL };
 
-        if (failed_rekey && rekey_journals->len >= failed_rekey)
-            failed_moves = history_install;
+        if (failed_rekey)
+            failed_moves = (rekey_journals->len == failed_rekey) ? history_install : NULL;
     }
 
     return original (self, name, new_passphrase, split);
@@ -1348,6 +1430,69 @@ test_sqlite_delete_during_read (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
+static gpointer
+read_history_forgotten (gpointer data)
+{
+    g_autolist (GPasteItem) items = NULL;
+    gsize size;
+
+    g_paste_storage_backend_read_history (data, "forgotten-log", NULL, &items, &size);
+    return NULL;
+}
+
+/* Dropping a connection to a history deleted under a read of it checkpoints
+ * nothing and unlinks no log, SQLite skipping that for a database unlinked
+ * under its connection: a new database of that name written meanwhile -- a
+ * backup through a backend of its own -- keeps the commits still in its log,
+ * which the last connection closing would otherwise unlink by name. */
+static void
+test_sqlite_forgotten_spares_new_log (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("stored"));
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "forgotten-log");
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, "forgotten-log", items));
+
+    step_thread = g_thread_self ();
+    hold_steps = TRUE;
+    step_held = FALSE;
+
+    g_autoptr (GThread) reader = g_thread_new ("read-forgotten", read_history_forgotten, backend);
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    g_mutex_lock (&step_mutex);
+    while (!step_held)
+        g_assert_true (g_cond_wait_until (&step_cond, &step_mutex, deadline));
+    g_mutex_unlock (&step_mutex);
+
+    g_autoptr (GError) error = NULL;
+
+    g_paste_storage_backend_delete_history (backend, "forgotten-log", &error);
+    g_assert_no_error (error);
+
+    g_mutex_lock (&step_mutex);
+    hold_steps = FALSE;
+    g_cond_broadcast (&step_cond);
+    g_mutex_unlock (&step_mutex);
+    g_thread_join (g_steal_pointer (&reader));
+
+    /* A full write checkpoints what it deleted; an add after it leaves its
+     * commit in the log. */
+    g_autoptr (GPasteStorageBackend) other = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autoptr (GPasteItem) added = g_paste_text_item_new ("backed up");
+
+    g_assert_true (g_paste_storage_backend_write_history (other, "forgotten-log", items));
+    g_paste_storage_backend_add_item (other, "forgotten-log", added, NULL);
+
+    /* The next open drops the connection the delete left forgotten. */
+    g_assert_true (g_paste_storage_backend_write_history (backend, "forgotten-log-next", items));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items WHERE value = 'backed up';"), ==, 1);
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_SQLITE
 /* A migration's import rewrites the store on a thread of its own, which a host
  * waits out before it ends or lets go of the storage lock. */
 static void
@@ -1544,8 +1689,30 @@ test_migration_destination_passphrase (void)
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
-/* A read of an encrypted history leaves no copy of a password it holds in freed
- * memory: the decrypted document, the text the parser hands over and the value
+/* The search of freed memory finds a secret left behind, whichever way GLib
+ * frees the block holding it: through free (), and through free_sized () for
+ * what it knows the size of, where the C library has one. What the cases
+ * below count as no copy left is one the search would have found. */
+static void
+test_secret_search_counts (void)
+{
+    const gchar *secret = "a password left behind";
+    gsize size = strlen (secret) + 1;
+    gchar *unsized = g_strdup (secret);
+    gchar *sized = g_malloc (size);
+
+    memcpy (sized, secret, size);
+    freed_holding_secret = 0;
+    freed_secret = secret;
+    g_free (unsized);
+    g_free_sized (sized, size);
+    freed_secret = NULL;
+    g_assert_cmpuint (freed_holding_secret, ==, 2);
+}
+
+/* Neither a write nor a read of an encrypted history leaves a copy of a
+ * password it holds in freed memory: the value encoded for the document, the
+ * document and, read back, the text the parser hands over and the value
  * decoded from it are all wiped before they go. */
 static void
 test_encrypted_read_leaves_no_copy (void)
@@ -1557,7 +1724,11 @@ test_encrypted_read_leaves_no_copy (void)
     g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_password_item_new ("name", secret, 0));
 
     items = g_list_append (items, g_paste_text_item_new ("a text"));
+    freed_holding_secret = 0;
+    freed_secret = secret;
     g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+    freed_secret = NULL;
+    g_assert_cmpuint (freed_holding_secret, ==, 0);
 
     g_autolist (GPasteItem) loaded = NULL;
     gsize size;
@@ -3026,10 +3197,25 @@ test_sqlite_diverged_history (void)
     failed_sql_once = FALSE;
     g_paste_history_add (history, g_paste_text_item_new ("d"));
     /* The add, and the full write after it: waited for, however slow the
-     * worker, and then a moment for a third that must not come. */
+     * worker. Then two backups, each landing behind whatever was recorded
+     * before it and failing as one write does: a third write the full one
+     * asked for, recorded once its answer is in, would land before the
+     * first if that answer was in by then, and before the second
+     * otherwise. */
     g_paste_test_bus_wait_for_count (&injected_failures, 2);
-    g_paste_test_bus_pump (100);
-    g_assert_cmpuint (injected_failures, ==, 2);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_autofree gchar *backup = g_strdup_printf ("diverged-history-%u", i);
+        g_autoptr (GError) error = NULL;
+
+        backup_history (&methods, name, backup, &error);
+        g_assert_nonnull (error);
+    }
+    g_assert_cmpuint (injected_failures, ==, 4);
 
     /* Room again, and nothing copied since: the flush an exit makes writes
      * the store level, it being what the successor loads. */
@@ -4672,6 +4858,21 @@ wait_for_lock (gpointer data)
     return NULL;
 }
 
+/* Whether two waits have been refused the lock: see
+ * test_storage_lock_two_waits (). */
+static gboolean
+both_waits_refused (gconstpointer data G_GNUC_UNUSED,
+                    gconstpointer arg  G_GNUC_UNUSED)
+{
+    guint refused;
+
+    G_LOCK (busy_threads);
+    refused = g_hash_table_size (busy_threads);
+    G_UNLOCK (busy_threads);
+
+    return refused == 2;
+}
+
 /* A startup gate touches the store only once this process holds the storage
  * lock: a daemon taken over from goes on rewriting it -- a re-key, an import --
  * until its workers are done, and a passphrase verified or a backend migrated
@@ -4883,10 +5084,19 @@ test_storage_lock_two_waits (void)
     LockWait waits[2] = { { g_cancellable_new (), FALSE, FALSE }, { g_cancellable_new (), FALSE, FALSE } };
     GThread *threads[2];
 
+    G_LOCK (busy_threads);
+    busy_threads = g_hash_table_new (NULL, NULL);
+    G_UNLOCK (busy_threads);
+
     for (guint i = 0; i < 2; ++i)
         threads[i] = g_thread_new ("lock-wait", wait_for_lock, &waits[i]);
 
-    g_usleep (G_USEC_PER_SEC / 4);
+    /* Both waits under way, each refused by the holder, before it lets go: a
+     * wait coming after the other has installed the lock finds it held at the
+     * top of g_paste_storage_backend_lock (), and says nothing of the race
+     * this case is about. */
+    g_paste_test_bus_wait_until (both_waits_refused, NULL, NULL);
+    g_assert_true (both_waits_refused (NULL, NULL));
     g_close (held, NULL);
 
     gint64 deadline = g_get_monotonic_time () + 3 * G_USEC_PER_SEC;
@@ -4901,6 +5111,10 @@ test_storage_lock_two_waits (void)
         g_object_unref (waits[i].cancellable);
         g_assert_true (waits[i].locked);
     }
+
+    G_LOCK (busy_threads);
+    g_clear_pointer (&busy_threads, g_hash_table_unref);
+    G_UNLOCK (busy_threads);
 }
 
 static gboolean
@@ -4919,13 +5133,17 @@ wait_load (GPasteHistory *history)
 
 /* The lock a wait of this process has just taken is the process's: asked
  * then -- a Backup, an Empty or a Delete -- try_lock () is not refused by the
- * process's own lock, as if another daemon held it. */
+ * process's own lock, as if another daemon held it. Asked while the wait is
+ * held between the two, which goes on once try_lock () has answered or a
+ * second after it was asked: try_lock () waits that second out where the wait
+ * is made under the lock's mutex, as it is to be. A pause that gave up before
+ * try_lock () was asked fails the case, which then asked about nothing. */
 static void
 test_taken_lock_is_ours (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_subprocess (NULL, 30 * G_USEC_PER_SEC, G_TEST_SUBPROCESS_DEFAULT);
         g_test_trap_assert_passed ();
         return;
     }
@@ -4933,17 +5151,34 @@ test_taken_lock_is_ours (void)
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
     gint held = hold_storage_lock ();
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+    gboolean taken;
 
     g_paste_history_load_async (history, "taken");
     g_atomic_int_set (&pause_taken_lock, TRUE);
     g_close (held, NULL);
 
     g_mutex_lock (&lock_taken_mutex);
-    while (!lock_taken)
-        g_cond_wait (&lock_taken_cond, &lock_taken_mutex);
+    while (!lock_taken && g_cond_wait_until (&lock_taken_cond, &lock_taken_mutex, deadline))
+        ;
+    taken = lock_taken;
     g_mutex_unlock (&lock_taken_mutex);
+    g_assert_true (taken);
 
+    g_mutex_lock (&lock_taken_mutex);
+    lock_taken_asking = TRUE;
+    g_cond_broadcast (&lock_taken_cond);
+    g_mutex_unlock (&lock_taken_mutex);
     g_assert_true (g_paste_storage_backend_try_lock ());
+
+    gboolean missed;
+
+    g_mutex_lock (&lock_taken_mutex);
+    missed = lock_taken_missed;
+    lock_taken_seen = TRUE;
+    g_cond_broadcast (&lock_taken_cond);
+    g_mutex_unlock (&lock_taken_mutex);
+    g_assert_false (missed);
     wait_load (history);
 }
 
@@ -5006,13 +5241,22 @@ test_dropped_history_ends_its_load (void)
     GPasteHistory *history = g_paste_history_new (settings);
 
     g_object_add_weak_pointer (G_OBJECT (history), (gpointer *) &history);
+    busy_flocks = 0;
+    keep_loads = TRUE;
     g_paste_history_load_async (history, "dropped-loading");
-    g_usleep (G_USEC_PER_SEC / 4);
+    /* Dropped once the load is waiting, which is what this is about: a
+     * history dropped before its load got to the lock says nothing of it. */
+    g_paste_test_bus_wait_for_count (&busy_flocks, 1);
+    keep_loads = FALSE;
+    g_assert_nonnull (kept_load);
     g_object_unref (history);
     g_assert_null (history);
-    g_paste_test_bus_pump (500);
+    /* The load given up while the lock is still held: nothing is left to
+     * take it once its holder lets go. */
+    g_paste_test_bus_wait_until (task_completed, kept_load, NULL);
+    g_assert_true (g_task_get_completed (kept_load));
+    g_clear_object (&kept_load);
     g_close (held, NULL);
-    g_paste_test_bus_pump (500);
     g_close (hold_storage_lock (), NULL);
 }
 
@@ -5691,18 +5935,51 @@ test_rekey_success (gconstpointer data)
         g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "old passphrase");
         g_autofree gchar *history_dir = g_path_get_dirname (history);
         g_autofree gchar *real_dir = realpath (history_dir, NULL);
+        g_autofree gchar *images_dir = g_path_get_dirname (image);
+        g_autofree gchar *real_images_dir = realpath (images_dir, NULL);
+        const gchar *originals[] = { history, image };
+        GStatBuf before[G_N_ELEMENTS (originals)];
         gboolean split = TRUE;
+
+        for (gsize i = 0; i < G_N_ELEMENTS (originals); ++i)
+            g_assert_cmpint (g_stat (originals[i], &before[i]), ==, 0);
 
         moved_unsynced = FALSE;
         refused_links = without_links;
         g_clear_pointer (&synced, g_hash_table_unref);
+        synced_at = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+        moved_into = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
         g_assert_true (g_paste_storage_backend_rekey (backend, name, "new passphrase", &split));
         refused_links = FALSE;
         g_assert_false (split);
         g_assert_false (moved_unsynced);
-        /* The renames are on the disk once their directory is. */
+        /* The renames are on the disk once their directory is synced after
+         * them, the image's in the images directory. */
         g_assert_nonnull (real_dir);
-        g_assert_true (synced && g_hash_table_contains (synced, real_dir));
+        g_assert_nonnull (real_images_dir);
+        g_assert_cmpuint (GPOINTER_TO_UINT (g_hash_table_lookup (moved_into, real_dir)), >, 0);
+        g_assert_cmpuint (GPOINTER_TO_UINT (g_hash_table_lookup (synced_at, real_dir)), >,
+                          GPOINTER_TO_UINT (g_hash_table_lookup (moved_into, real_dir)));
+        g_assert_cmpuint (GPOINTER_TO_UINT (g_hash_table_lookup (moved_into, real_images_dir)), >, 0);
+        g_assert_cmpuint (GPOINTER_TO_UINT (g_hash_table_lookup (synced_at, real_images_dir)), >,
+                          GPOINTER_TO_UINT (g_hash_table_lookup (moved_into, real_images_dir)));
+        g_clear_pointer (&synced_at, g_hash_table_unref);
+        g_clear_pointer (&moved_into, g_hash_table_unref);
+
+        /* And an original copied aside is on the disk, whole, before the
+         * replacement goes over it. */
+        for (gsize i = 0; without_links && i < G_N_ELEMENTS (originals); ++i)
+        {
+            g_autofree gchar *dir = g_path_get_dirname (originals[i]);
+            g_autofree gchar *real = realpath (dir, NULL);
+            g_autofree gchar *base = g_path_get_basename (originals[i]);
+            g_autofree gchar *aside_name = g_strconcat (base, G_PASTE_FILE_BACKEND_REKEY_OLD, NULL);
+            g_autofree gchar *aside = g_build_filename (real, aside_name, NULL);
+            const gint64 *size = g_hash_table_lookup (synced, aside);
+
+            g_assert_nonnull (size);
+            g_assert_cmpint (*size, ==, before[i].st_size);
+        }
     }
 
     g_assert_false (has_rekey_leftovers (name));
@@ -6921,9 +7198,8 @@ test_rekey_failed_leaves_no_journal (void)
 {
     if (!g_test_subprocess ())
     {
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
-        g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*injected failure moving*");
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*injected failure moving*");
+        g_test_trap_assert_stderr_unmatched ("*left on the new passphrase*");
         return;
     }
 
@@ -6957,9 +7233,24 @@ test_rekey_failed_leaves_no_journal (void)
     failed_moves = NULL;
 
     g_assert_false (g_paste_storage_rekey_finish (result, &error));
+    /* The two re-keys, then the first put back. */
+    g_assert_cmpuint (rekey_journals->len, ==, 3);
     g_assert_true (g_str_has_prefix (g_ptr_array_index (rekey_journals, 1), "rekey "));
     g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
     g_clear_pointer (&rekey_journals, g_ptr_array_unref);
+
+    /* Both on the passphrase the change was refused away from. */
+    g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
+    const gchar *names[] = { name, "other" };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (names); ++i)
+    {
+        g_autolist (GPasteItem) read = NULL;
+        gsize size = 0;
+
+        g_assert_true (g_paste_storage_backend_read_history (one, names[i], NULL, &read, &size));
+        g_assert_cmpuint (g_list_length (read), ==, 1);
+    }
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
     g_paste_storage_backend_set_passphrase (NULL);
 }
@@ -7890,6 +8181,7 @@ main (int    argc,
     g_test_add_func ("/storage/rekey/foreign-side-file", test_rekey_foreign_side_file);
     g_test_add_func ("/storage/migration/import-failure-cleartext", test_import_failure_leaves_no_cleartext);
     g_test_add_func ("/storage/migration/destination-passphrase", test_migration_destination_passphrase);
+    g_test_add_func ("/storage/secret-search-counts", test_secret_search_counts);
     g_test_add_func ("/storage/encrypted-read-leaves-no-copy", test_encrypted_read_leaves_no_copy);
     g_test_add_func ("/storage/encrypted-failed-read-leaves-no-copy", test_encrypted_failed_read_leaves_no_copy);
 #endif
@@ -7938,6 +8230,7 @@ main (int    argc,
     g_test_add_func ("/storage/migration/import-cut-short-then-migrate", test_import_cut_short_then_migrate);
     g_test_add_func ("/storage/migration/import-busy", test_import_busy);
     g_test_add_func ("/storage/sqlite/delete-during-read", test_sqlite_delete_during_read);
+    g_test_add_func ("/storage/sqlite/forgotten-spares-new-log", test_sqlite_forgotten_spares_new_log);
     g_test_add_func ("/storage/migration/import-spares-unreadable-destination", test_import_spares_unreadable_destination);
     g_test_add_func ("/storage/migration/import-spares-unwritten-destination", test_import_spares_unwritten_destination);
     g_test_add_func ("/storage/migration/import-takes-back-partial-destination", test_import_takes_back_partial_destination);

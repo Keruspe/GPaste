@@ -2420,7 +2420,11 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend *self,
      * that would hold the main loop, gnome-shell's compositor for the in-shell
      * daemon. The database goes without it, and should the connection cached
      * still be this one's, the next open drops it rather than write to a file
-     * no longer listed. */
+     * no longer listed. Dropping it checkpoints nothing and unlinks no log:
+     * SQLite skips that for a database unlinked under its connection
+     * (SQLITE_FCNTL_HAS_MOVED), so a database written under the name meanwhile
+     * keeps the commits its own log holds
+     * (/storage/sqlite/forgotten-spares-new-log). */
     if (!g_mutex_trylock (&backend->lock))
     {
         g_mutex_lock (&backend->forgotten_lock);

@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 #include <gpaste-daemon/gpaste-screensaver-client.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -136,11 +137,24 @@ test_storage_is_busy (void)
     return storage_busy;
 }
 
+/* A storage this build opens, hidden from the daemon as one it lacks, so that
+ * the refusal of a store it cannot open is checked in a build opening every
+ * one; -1 hides none. */
+static gint hidden_storage = -1;
+
+static gboolean
+test_storage_is_supported (GPasteStorage storage)
+{
+    return (gint) storage != hidden_storage && g_paste_storage_is_supported (storage);
+}
+
 #define g_paste_global_shortcut_client_new no_portal
 #define g_paste_screensaver_client_new counted_screensaver_client
 #define g_paste_clipboards_manager_expire_password_async counting_expiry
 #define g_paste_storage_is_busy test_storage_is_busy
+#define g_paste_storage_is_supported test_storage_is_supported
 #include <gpaste-daemon/gpaste-daemon.c>
+#undef g_paste_storage_is_supported
 #undef g_paste_storage_is_busy
 #undef g_paste_clipboards_manager_expire_password_async
 #undef g_paste_screensaver_client_new
@@ -578,18 +592,19 @@ test_change_passphrase_holds_store (Fixture      *fixture,
 }
 
 /* A store this build cannot open has no passphrase it could change: refused,
- * the host never asked to flush and reload around a re-key it would refuse. */
+ * the host never asked to flush and reload around a re-key it would refuse.
+ * One it opens is hidden from the daemon as one it lacks; a build opening
+ * neither encrypted flavour lacks one for real. */
 static void
 test_change_passphrase_unopenable (Fixture      *fixture,
                                    gconstpointer user_data G_GNUC_UNUSED)
 {
-    GPasteStorage storage = encrypted_flavour (FALSE);
+    GPasteStorage storage = encrypted_flavour (TRUE);
 
-    if (storage == G_PASTE_STORAGE_NOOP)
-    {
-        g_test_skip ("This build opens every encrypted storage");
-        return;
-    }
+    if (storage != G_PASTE_STORAGE_NOOP)
+        hidden_storage = storage;
+    else
+        storage = encrypted_flavour (FALSE);
 
     g_autoptr (GError) error = NULL;
     guint asked = 0;
@@ -597,6 +612,7 @@ test_change_passphrase_unopenable (Fixture      *fixture,
     g_paste_settings_set_storage_backend (fixture->settings, storage);
     g_signal_connect_swapped (fixture->daemon, "change-passphrase", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
     g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    hidden_storage = -1;
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_cmpuint (asked, ==, 0);
 }
@@ -974,6 +990,7 @@ test_extension_pause_carried_over (void)
         /* Its screensaver client built before it goes, as fixture_set_up ()
          * has its own. */
         g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &first->screensaver, NULL);
+        g_assert_nonnull (first->screensaver);
 
         if (left_on)
         {
@@ -984,6 +1001,7 @@ test_extension_pause_carried_over (void)
             g_autoptr (GPasteDaemon) second = g_paste_daemon_new (settings, G_PASTE_CLIPBOARD_PROVIDER (clipboard), G_PASTE_CLIPBOARD_PROVIDER (primary));
 
             g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &second->screensaver, NULL);
+            g_assert_nonnull (second->screensaver);
             g_paste_daemon_extension_state_changed (second, TRUE);
             g_assert_false (g_paste_settings_get_track_changes (settings));
             g_object_run_dispose (G_OBJECT (second));
