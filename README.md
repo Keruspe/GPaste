@@ -130,11 +130,15 @@ Then, wherever you are:
 ```bash
 git clone https://github.com/Keruspe/GPaste.git
 cd GPaste
-meson setup build
+meson setup build --prefix=/usr
 ninja -C build
 sudo ninja -C build install
 sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
+
+`--prefix=/usr` puts GPaste where the system looks for it: under meson's default
+`/usr/local`, distributions like Fedora find neither its libraries nor its
+typelibs, and the schemas compiled above would be another directory's.
 
 GPaste currently needs GLib 2.90, GTK 4.24, libadwaita 1.10, gcr 4 and Meson
 1.9. That libadwaita is newer than anything Debian ships outside experimental,
@@ -193,6 +197,7 @@ Inside the graphical tool, which has a few of its own:
 | <kbd>Ctrl</kbd>+<kbd>N</kbd> | Add a new item |
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> | Add a new password |
 | <kbd>Ctrl</kbd>+<kbd>0</kbd>…<kbd>9</kbd> | Paste the item at that index |
+| <kbd>Delete</kbd> | Delete the history focused in the sidebar |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | Show the preferences |
 | <kbd>Ctrl</kbd>+<kbd>?</kbd> | Show the keyboard shortcuts |
 | <kbd>Ctrl</kbd>+<kbd>W</kbd> or <kbd>Esc</kbd> | Close the window |
@@ -236,8 +241,8 @@ gpaste-client daemon-version   # confirm which one is running
 
 ## Development
 
-Three libraries are installed, each with its own pkg-config file, headers,
-GIR and VAPI:
+Three libraries are installed, each with its own pkg-config file, headers
+and GIR, and a VAPI for `gpaste-3` and `gpaste-gtk4`:
 
 | Library | pkg-config | GIR | Contents |
 |---|---|---|---|
@@ -257,11 +262,11 @@ ninja -C build test
 Each C test binary runs on its own in-memory settings and private D-Bus, so it
 needs `dbus-daemon`; a supervisor reaps that bus even if a test crashes. The UI
 tests open their windows on a private `Xvfb` and are skipped without it. The
-`history-switcher` and `indicator` JavaScript tests use Node.js with actor and
-bus doubles. They check history switcher drafts, dialogs, counts and focus,
-plus the indicator's daemon status, item actions, upload callbacks and teardown.
-They are omitted when Node.js is unavailable and touch no settings, bus or
-display. None of the tests touches the desktop session.
+GNOME Shell extension's JavaScript tests (`tests/gnome-shell/`) run its modules
+under Node.js with actor and bus doubles: the menu, its rows and their actions,
+the history switcher, the tracking switch, the storage prompt, the in-shell
+daemon's runner and the extension's own enable and disable. They are omitted
+when Node.js is unavailable and touch no settings, bus or display. None of the tests touches the desktop session.
 
 [`AGENTS.md`](AGENTS.md) documents the coding style and repository
 conventions in more detail, and each part of the tree has an `AGENTS.md` of its

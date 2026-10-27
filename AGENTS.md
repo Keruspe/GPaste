@@ -80,7 +80,7 @@ The test infrastructure and what each suite covers are documented in [`tests/AGE
 | `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` | **Derivable** type with a `Private` struct |
 | `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE` | Abstract base class with private data |
 
-**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types (`GPasteItem`, `GPasteStorageBackend`, `GPasteBusObject`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` and the `_g_paste_x_get_instance_private()` const shim it emits.
+**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types with state (`GPasteItem`, `GPasteStorageBackend`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` (or `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE`) and reach it through the `g_paste_x_get_instance_private()` that emits; an abstract type with none, as `GPasteBusObject`, is `G_PASTE_DEFINE_ABSTRACT_TYPE`.
 
 ### Documenting errors
 
@@ -120,7 +120,7 @@ Key rules:
 - Do **not** use `g_autolist`/`g_autoslist` on lists that do not own their elements. `gdk_file_list_get_files` is **`(transfer container)`** — it returns a fresh `g_slist_copy()` whose `GFile`s stay owned by the `GdkFileList`, so its result must be freed with `g_autoptr(GSList)` (never leaked, never `g_autoslist`'d). `g_hash_table_get_values` is the same shape — use `g_autoptr(GList)`.
 - Do **not** use auto-cleanup on a variable whose ownership is intentionally transferred — use `g_steal_pointer` to make the handoff explicit.
 - Do **not** use `if (ptr) g_slist_free_full (g_steal_pointer (&ptr), fn)` in dispose — use `g_clear_slist (&ptr, fn)` instead (handles NULL safely).
-- When storing a `g_settings_get_string` value (owned, `(transfer full)`) into a `gchar *` field, free the old value and take ownership directly: `g_free(field); field = g_settings_get_string(...)`. Do **not** assign without freeing first (leak on re-assignment), and do **not** route it through `g_set_str` (that would re-`g_strdup` an already-owned string — a wasted allocation).
+- A `g_settings_get_string` value is owned (`(transfer full)`), so it goes into a `gchar *` field through `g_set_str_take(&field, g_settings_get_string(...))`, as `gpaste-settings.c` does (`ASSIGN_TAKE`): not `g_set_str`, which would `g_strdup` a string already owned, and not the `g_free(field); field = …` pair the rule above rules out.
 - For a stored `GSource`/timeout/idle/signal handler id, prefer `g_clear_handle_id (&id, remove_func)` over the hand-rolled `if (id) { remove_func (id); id = 0; }` — it is NULL-safe and nulls the field in one call (e.g. `g_clear_handle_id (&priv->retry_source, g_source_remove)`). Use this in new code and when touching such cleanup.
 - A `GCancellable` field standing for an operation that may be superseded is given up on with `g_paste_clear_cancellable (&field)` (`gpaste-macros.h`), not a hand-rolled `g_cancellable_cancel` + `g_clear_object` pair: GLib has `g_set_object` and friends but nothing cancellable-aware, and a plain set would drop the reference without cancelling, leaving the operation it named running — which is the whole of what the field is for. It only clears; the successor, where there is one, is allocated by the caller at the point the new operation goes out, so a caller with none to issue (a `dispose ()`, a request answered without a round trip) is not left holding a cancellable that stands for a reply which is never coming. Both halves are NULL-safe, so a slot that may or may not have something out needs no guard.
 - A stack `GVariantBuilder` is declared and initialised in one statement: `g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (<type>)`. The type is not copied there, so it has to be one that outlives the builder — every builder in this tree names a literal (`G_VARIANT_TYPE_VARDICT`, `G_VARIANT_TYPE ("aa{sv}")`, `G_PASTE_ITEMS_VARIANT_TYPE`), which is. A `g_auto` declaration left bare until a later `g_variant_builder_init` is a builder whose cleanup would run over whatever the stack held, should anything return in between; for the case where the type really is not known until later, that is what `G_VARIANT_BUILDER_INIT_UNSET ()` and `g_variant_builder_init_static ()` are for.
@@ -223,7 +223,8 @@ CLI tool for scripting and shell integration. Talks to the daemon via `GPasteCli
 - GLib/GObject/Gio ≥ 2.90, and GLib ≥ 2.44 for the machine running the build too, which builds the helper writing the control center's keybindings file
 - GTK4 ≥ 4.24 + libadwaita ≥ 1.10 (UI and preferences)
 - GCR (`gcr-4`) ≥ 4.0 (password item storage; also the secure-memory allocator for encryption secrets)
-- gjs ≥ 1.78 (GNOME Shell extension runtime)
+- libmutter (`libmutter-51`, with `gnome-shell`: the extension's in-shell daemon reads and writes MetaSelection) -- GNOME Shell's own gjs runs the extension, meson asking for none
+- dbus-1, gnome-keybindings and systemd for their pkg-config files alone, unless the install directories they give are passed (see the options above); gobject-introspection with `introspection`, vala with `vapi`
 - gtk4-x11 (the daemon forces the GDK x11 backend at startup)
 - libXfixes (the GDK backend converts the selections it cannot read through GTK itself, and ICCCM has those conversions carry the ownership timestamp `XFixesSelectionNotify` brings; it goes with `src/daemon/gpaste-clipboard-x11-hints.c`)
 - libsodium (optional; gated by the `encryption` meson feature, `auto` by default — history-encryption converter)
@@ -235,4 +236,4 @@ CLI tool for scripting and shell integration. Talks to the daemon via `GPasteCli
 
 Image items use `GdkTexture` from GTK4 directly — there is no longer a GdkPixbuf dependency.
 
-On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel gjs-devel libXfixes-devel`
+On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel libXfixes-devel mutter-devel dbus-devel gnome-control-center gobject-introspection-devel vala`
