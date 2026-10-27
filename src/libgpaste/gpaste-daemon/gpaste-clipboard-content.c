@@ -996,9 +996,10 @@ g_paste_clipboard_content_to_item (GPasteSettings            *settings,
  * update outliving its own conclusion may be left holding: cancelling cannot
  * fail the reads still out (see the backends), so nothing bounds how long they
  * keep the struct alive, and what waits on them is a counter where this is a
- * whole texture, a settings ref and the provider's only one -- and that ref is
- * what keeps a backend's requestor window and its interned properties on the X
- * server for the rest of the session.
+ * whole texture, a settings ref and a provider ref. Each read holds the
+ * provider itself for as long as it is out, so this ref adds nothing while they
+ * are; it is a read that never lands that would otherwise keep all of it for
+ * the rest of the session.
  *
  * Called again from the teardown, for whatever a read landing afterwards stored
  * on its way in: every release here clears what it released, so the second pass
@@ -1446,12 +1447,13 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
  * holds, and dedup that very content out of every later update.
  *
  * Asked of the update and not of the guard's cancellable, which answers a moment
- * too late for one half of this and never for the other: a conclusion disarms
- * the guard and takes the provider over, and only then cancels -- the
- * cancellation being what runs the handlers that could free the very update
- * being concluded (see g_paste_clipboard_read_guard_timed_out ()) -- while an
- * update overtaken by the next one is not cancelled at all, its reads being what
- * still has to count it out.
+ * too late for both: a conclusion disarms the guard and takes the provider
+ * over, and only then cancels -- the cancellation being what runs the handlers
+ * that could free the very update being concluded (see
+ * g_paste_clipboard_read_guard_timed_out ()) -- and an update overtaken by the
+ * next one has its guard brought forward to an idle
+ * (g_paste_clipboard_update_supersede ()), which concludes and cancels it a
+ * main-loop turn later, its reads landing in between.
  */
 G_PASTE_VISIBLE gboolean
 g_paste_clipboard_update_is_expired (const GPasteClipboardUpdate *update)

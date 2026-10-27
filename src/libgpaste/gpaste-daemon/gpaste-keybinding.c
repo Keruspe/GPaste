@@ -52,10 +52,12 @@ g_paste_keybinding_get_description (GPasteKeybinding *self)
 /**
  * g_paste_keybinding_get_accelerator:
  * @self: a #GPasteKeybinding instance
+ * @settings: the #GPasteSettings to read it from
  *
- * Get the accelerator for this keybinding
+ * Get the accelerator for this keybinding, read from @settings when asked:
+ * whatever its setting holds then, so it moves between calls.
  *
- * Returns: the accelerator
+ * Returns: (nullable): the accelerator, borrowed from @settings
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_accelerator (GPasteKeybinding *self,
@@ -186,8 +188,8 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  * g_paste_keybinding_new:
  * @dconf_key: the dconf key to watch
  * @description: a human-readable, translated description of the action
- * @getter: (scope notified): the getter to use to get the binding
- * @callback: (closure user_data) (scope notified): the callback to call when activated
+ * @getter: (scope forever): the getter to use to get the binding
+ * @callback: (closure user_data) (scope forever): the callback to call when activated
  * @user_data: the data to pass to @callback
  *
  * Create a new instance of #GPasteKeybinding

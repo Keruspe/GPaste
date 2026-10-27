@@ -404,7 +404,7 @@ g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
 
 /**
  * g_paste_storage_backend_read_history:
- * @self: a #GPasteItem instance
+ * @self: a #GPasteStorageBackend instance
  * @name: the name of the history to load
  * @cancellable: (nullable): a #GCancellable to give the read up on
  * @history: (out) (element-type GPasteItem): the history we just read
@@ -441,7 +441,7 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *self,
 
 /**
  * g_paste_storage_backend_write_history:
- * @self: a #GPasteItem instance
+ * @self: a #GPasteStorageBackend instance
  * @name: the name of the history to save
  * @history: (element-type GPasteItem): the history to write
  *
@@ -495,6 +495,9 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
  * Keyed by name alone, no backend instance being needed to find them, so a
  * caller holding only the name of a history that is not the current one can
  * sweep it too.
+ *
+ * Fails with a %G_IO_ERROR when the images cannot be listed or one of them,
+ * or their directory, cannot be deleted.
  *
  * Returns: %FALSE, with @error set to the first thing that went wrong, when
  *          anything the sweep should have removed is still on disk. The rest is

@@ -3077,8 +3077,8 @@ test_uuid_lookup_survives_reshuffling (void)
     const guint n_uuids = 6;
     g_autoptr (GPasteSettings) settings = NULL;
     g_autoptr (GPasteHistory) history = make_history (&settings, 100);
-    /* NULL-terminated and freed as a strv: g_autofree on an array would free
-     * only its first element, since the cleanup is handed the array's address. */
+    /* NULL-terminated and freed as a strv: g_autofree would free the array
+     * alone, leaking every string in it. */
     g_auto (GStrv) uuids = g_new0 (gchar *, n_uuids + 1);
 
     for (guint i = 0; i < n_uuids; ++i)

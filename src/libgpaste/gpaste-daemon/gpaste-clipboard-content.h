@@ -280,7 +280,8 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * the guard concludes it without a backend hook. Only to the conclusion, and not
  * to the teardown, because a conclusion the reads outlive would otherwise hold
  * both of them for as long as those reads do, which for ones that never land is
- * the rest of the session.
+ * the rest of the session -- the reads holding the provider themselves
+ * meanwhile, but not the settings.
  *
  * @pending counts the reads still out and @sensitive_pending how many of those
  * are hint or sensitive-offer reads, which is what tells a hint that answered

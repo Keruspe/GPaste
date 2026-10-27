@@ -106,8 +106,10 @@ libgpaste_gtk4_internal_sources = [
 
 libgpaste_gtk4_sources = libgpaste_gtk4_public_sources + libgpaste_gtk4_internal_sources
 
-# Installed and introspected: the whole story a consumer gets is "open the
-# preferences" -- as a dialog, or as the widget the extension's prefs.js embeds.
+# Installed and introspected: the preferences -- as a dialog, a widget, or the
+# pages the extension's prefs.js adds to its own window -- and the helpers
+# gpaste-gtk-util.h declares, every one marked G_PASTE_VISIBLE there a published
+# interface too.
 libgpaste_gtk4_headers = [
   'gpaste-gtk4/gpaste-gtk-macros.h',
   'gpaste-gtk4/gpaste-gtk-preferences-dialog.h',

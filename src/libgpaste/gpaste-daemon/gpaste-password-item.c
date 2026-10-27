@@ -200,7 +200,9 @@ g_paste_password_item_new (const gchar *name,
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
 
-    /* A password weighs nothing against the caps: its length is the secret. */
+    /* The secret counts for nothing against the caps, its length being part
+     * of it: what a password weighs is its name, set below, and the display
+     * string showing that name. */
     g_paste_item_set_size (self, 0);
     g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
     g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (self), timeout);

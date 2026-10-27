@@ -362,8 +362,9 @@ g_paste_prompt_request_reply_passphrase (GPastePromptRequest  *self,
     g_autoptr (PassphraseReply) reply = g_new0 (PassphraseReply, 1);
 
     /* Into secure memory the moment it crosses out of the backend: the entry
-     * widget's own buffer is ordinary heap and beyond our reach, but everything
-     * downstream of here is ours. */
+     * widget's own buffer is the backend's -- secure memory in the libadwaita
+     * prompt's GtkPasswordEntryBuffer, ordinary heap in GNOME Shell's St entry --
+     * and beyond our reach, but everything downstream of here is ours. */
     reply->passphrase = g_paste_passphrase_new (passphrase);
     reply->remember = remember;
 
