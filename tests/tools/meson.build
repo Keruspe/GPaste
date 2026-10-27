@@ -24,12 +24,18 @@ test(
   suite: 'gpaste',
 )
 
-# The extension's GPaste names are checked against the build's typelibs.
+# The extension's GPaste names are checked against the build's typelibs, and its
+# Clutter and St ones against mutter's and the shell's where the extension is
+# built, which needs libmutter anyway.
 if get_option('introspection')
+  gi_constants_args = [meson.project_build_root() / 'src/libgpaste']
+  if get_option('gnome-shell')
+    gi_constants_args += [dependency('libmutter-51').get_variable(pkgconfig: 'typelibdir')]
+  endif
   test(
     'gi-constants',
     find_program('test-gi-constants.py'),
-    args: [meson.project_build_root() / 'src/libgpaste'],
+    args: gi_constants_args,
     depends: [libgpaste_gir, libgpaste_daemon_gir, libgpaste_gtk4_gir],
     suite: 'gpaste',
   )

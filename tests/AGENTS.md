@@ -51,12 +51,16 @@ callable's finish function is one its class has, under its GI name, and every
 async method has one -- a finish the scanner cannot pair, taking no instance,
 leaving bindings with no async pairing.
 
-`tests/tools/test-gi-constants.py` asks gjs whether every `Gio`, `GLib` and
-`GObject` constant the extension names is defined: GJS reads a misspelt one as
-`undefined` and passes it on as 0, which the suites' doubles of Gio cannot
-tell, defining whatever the code spells. With the build's own typelibs -- every
-build with introspection -- it asks the same of every `GPaste`,
-`GPasteDaemon` and `GPasteGtk` name the extension reaches. It is skipped
+`tests/tools/test-gi-constants.py` asks gjs whether every `Gio`, `GLib`,
+`GObject` and `Pango` constant the extension's code names, its comments aside,
+is defined: GJS reads a misspelt one as `undefined` and passes it on as 0, which
+the suites' doubles cannot tell, defining whatever the code spells. With the
+build's own typelibs -- every build with introspection -- it asks the same of
+every `GPaste`, `GPasteDaemon` and `GPasteGtk` name the extension reaches, a
+class's function included -- one it calls as `name?.()`, which a build without
+the feature compiling it in has no binding for, looked for by its C name in the
+libraries' headers instead -- and where the extension is built, of every
+`Clutter` and `St` one, against mutter's and the shell's typelibs. It is skipped
 without gjs.
 
 `tests/tools/test-search-provider.py` reads the overview search provider's
