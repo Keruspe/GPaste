@@ -13,6 +13,13 @@ G_BEGIN_DECLS
  * passphrase copies the files whole. */
 void g_paste_storage_backend_read_whole (GPasteStorageBackend *self);
 
+/* That a passphrase check of @self could not be made at all: the key could not
+ * be derived, or the history not read once open. Neither refutes nor confirms
+ * the passphrase, and g_paste_storage_passphrase_can_decrypt () refuses one
+ * it could not check rather than take it for right. */
+void     g_paste_storage_backend_set_unverifiable (GPasteStorageBackend *self);
+gboolean g_paste_storage_backend_is_unverifiable  (GPasteStorageBackend *self);
+
 /* What a read of @self keeps: the non-favourite items up to this many, and
  * images or not. A count asks the same, to answer what a read would return. */
 guint64  g_paste_storage_backend_get_read_cap (GPasteStorageBackend *self);

@@ -3092,7 +3092,10 @@ g_paste_file_backend_finalize (GObject *object)
  * that proves the passphrase wrong, the converter answering it with
  * %G_IO_ERROR_PERMISSION_DENIED. Anything else -- a file that will not open, a
  * foreign file, damage past the first chunk, an empty placeholder -- leaves the
- * passphrase as likely right as before. */
+ * passphrase as likely right as before. A failure that is the file's says
+ * nothing of the passphrase; one that is not -- a key derivation refused its
+ * memory, a read failing once open -- is a check not made
+ * (g_paste_storage_backend_set_unverifiable ()). */
 static gboolean
 g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
                                                  const gchar          *name)
@@ -3106,8 +3109,18 @@ g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
 
     if (g_paste_file_backend_load_contents (self, path, file, FALSE, &text, &text_length, &opened, &error))
         return FALSE;
+    if (!opened)
+        return FALSE;
+    if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED))
+        return TRUE;
 
-    return opened && g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED);
+    if (!_g_paste_file_backend_is_damage (error))
+    {
+        g_warning ("Could not check the passphrase against %s: %s", path, error->message);
+        g_paste_storage_backend_set_unverifiable (self);
+    }
+
+    return FALSE;
 }
 
 /* A history whose document the key decrypts whole holds what it encrypted,

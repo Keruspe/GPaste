@@ -2340,7 +2340,18 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
     /* Where every other derived key lives: the stack is pageable, so a key on it
      * can reach the swap between here and the memzero below. */
     guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
-    gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
+    g_autoptr (GError) derive_error = NULL;
+    gboolean derived = g_paste_crypto_derive_key (passphrase, strlen (passphrase), salt, opslimit, memlimit,
+                                                  key, crypto_secretbox_KEYBYTES, &derive_error);
+
+    /* Parameters out of range are the file's, a derivation that did not
+     * complete is a check not made, as in the file flavour's refutation. */
+    if (!derived)
+    {
+        g_warning ("sqlite: %s", derive_error->message);
+        if (g_error_matches (derive_error, G_IO_ERROR, G_IO_ERROR_FAILED))
+            g_paste_storage_backend_set_unverifiable (self);
+    }
 
     *checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
     g_paste_sqlite_backend_free_key (key);
@@ -2361,8 +2372,10 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
  *
  * Whether the database at @path holds an item, which is what its key check
  * refutes a passphrase over: an empty one is keyed afresh by whatever opens it.
- * Read-only, as verifying has to be, and with no key: nothing but the count is
- * asked. A database that cannot be read holds nothing to go by.
+ * Read-only, as verifying has to be, and with no key: nothing but the count and
+ * the parameters the check needs are asked. A database that cannot be read, or
+ * whose parameters are missing or ask for what no key is derived for, holds
+ * nothing to go by.
  *
  * Returns: whether a wrong passphrase would be refused over the database
  */
@@ -2377,6 +2390,16 @@ g_paste_sqlite_backend_database_has_items (const gchar *path)
     /* As check_passphrase () does, another connection busy with it is waited
      * out rather than read as an empty database. */
     sqlite3_busy_timeout (db, 5000);
+
+    guchar salt[crypto_pwhash_SALTBYTES];
+    guint64 opslimit = 0;
+    guint64 memlimit = 0;
+    g_autofree guchar *check = NULL;
+    gsize check_length = 0;
+
+    if (!g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length) ||
+        !g_paste_crypto_parameters_derivable (opslimit, memlimit))
+        return FALSE;
 
     return g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
 }

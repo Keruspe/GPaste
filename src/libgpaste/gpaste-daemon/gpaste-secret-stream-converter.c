@@ -203,6 +203,25 @@ push_chunk (GPasteSecretStreamConverter *self,
 }
 
 /**
+ * g_paste_crypto_parameters_derivable:
+ * @opslimit: a stored Argon2id operations limit
+ * @memlimit: a stored Argon2id memory limit
+ *
+ * Whether g_paste_crypto_derive_key() takes these parameters rather than
+ * refuse them as the file's: what a store has to ask for to be one a wrong
+ * passphrase is refused over.
+ *
+ * Returns: whether the parameters are within the bounds a key is derived for
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_crypto_parameters_derivable (guint64 opslimit,
+                                     guint64 memlimit)
+{
+    return opslimit >= crypto_pwhash_OPSLIMIT_MIN && opslimit <= crypto_pwhash_OPSLIMIT_SENSITIVE &&
+           memlimit >= crypto_pwhash_MEMLIMIT_MIN && memlimit <= crypto_pwhash_MEMLIMIT_SENSITIVE;
+}
+
+/**
  * g_paste_crypto_derive_key:
  * @passphrase: the passphrase to derive from
  * @passphrase_len: its length
@@ -224,7 +243,12 @@ push_chunk (GPasteSecretStreamConverter *self,
  * here is what keeps that bound from being forgotten at a new call site.
  *
  * Fails with %G_IO_ERROR_INVALID_DATA for out-of-range parameters and
- * %G_IO_ERROR_FAILED when the derivation itself does not complete.
+ * %G_IO_ERROR_FAILED when the derivation itself does not complete. The first
+ * is the file's doing and says nothing of the passphrase, the second a check
+ * that could not be made (g_paste_storage_backend_set_unverifiable ()).
+ * Parameters below libsodium's own minimum, which crypto_pwhash () refuses as
+ * it refuses memory it cannot have, are the file's, and refused here first --
+ * no test shows it, the tests deriving at that minimum whatever is stored.
  *
  * Returns: whether @key was derived
  */
@@ -242,7 +266,7 @@ g_paste_crypto_derive_key (const gchar  *passphrase,
     g_return_val_if_fail (salt, FALSE);
     g_return_val_if_fail (key, FALSE);
 
-    if (opslimit > crypto_pwhash_OPSLIMIT_SENSITIVE || memlimit > crypto_pwhash_MEMLIMIT_SENSITIVE)
+    if (!g_paste_crypto_parameters_derivable (opslimit, memlimit))
     {
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
                              "Unreasonable key-derivation parameters");
@@ -569,8 +593,9 @@ g_paste_secret_stream_converter_end_at_final (GPasteSecretStreamConverter *self)
  *
  * Whether the file at @path holds a stream's header and the whole first frame
  * past it: what a key is told wrong by, only the stream's own key
- * authenticating that frame. An empty placeholder, a foreign file and one cut
- * short in its first frame hold none, and refute no passphrase.
+ * authenticating that frame. An empty placeholder, a foreign file, one cut
+ * short in its first frame and one whose header asks for parameters no key is
+ * derived for hold none, and refute no passphrase.
  *
  * Returns: whether a wrong passphrase would be refused over the file
  */
@@ -591,9 +616,11 @@ g_paste_secret_stream_file_has_frame (const gchar *path)
         g_stat (path, &stat_buf))
         return FALSE;
 
+    const guchar *limits = head + G_PASTE_SECRET_STREAM_MAGIC_LEN + SALTBYTES;
     guint32 clen = read_u32_le (head + STREAM_HEADER_LEN);
 
-    return clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) stat_buf.st_size >= sizeof (head) + clen;
+    return g_paste_crypto_parameters_derivable (read_u64_le (limits), read_u64_le (limits + 8)) &&
+           clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) stat_buf.st_size >= sizeof (head) + clen;
 }
 
 static void

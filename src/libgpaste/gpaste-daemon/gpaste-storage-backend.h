@@ -67,7 +67,9 @@ struct _GPasteStorageBackendClass
      * it holds encrypted data the backend cannot open. Everything else -- an
      * empty placeholder, a truncated or foreign file, an I/O error -- is
      * inconclusive and must answer %FALSE: condemning a passphrase over a
-     * corrupt file tells the user their correct one is wrong.
+     * corrupt file tells the user their correct one is wrong. A check that
+     * could not be made at all -- the key not derived -- answers %FALSE too,
+     * and says so (g_paste_storage_backend_set_unverifiable ()).
      *
      * Only ever asked of a backend built with the passphrase under test. */
     gboolean (*history_refutes_passphrase)  (GPasteStorageBackend *self,

@@ -25,13 +25,15 @@ GConverter *g_paste_secret_stream_converter_new (GPasteSecretStreamDirection dir
 void     g_paste_secret_stream_converter_end_at_final (GPasteSecretStreamConverter *self);
 gboolean g_paste_secret_stream_file_has_frame         (const gchar                 *path);
 
-gboolean g_paste_crypto_derive_key (const gchar   *passphrase,
-                                    gsize          passphrase_len,
-                                    const guchar  *salt,
-                                    guint64        opslimit,
-                                    guint64        memlimit,
-                                    guchar        *key,
-                                    gsize          key_len,
-                                    GError       **error);
+gboolean g_paste_crypto_derive_key           (const gchar   *passphrase,
+                                              gsize          passphrase_len,
+                                              const guchar  *salt,
+                                              guint64        opslimit,
+                                              guint64        memlimit,
+                                              guchar        *key,
+                                              gsize          key_len,
+                                              GError       **error);
+gboolean g_paste_crypto_parameters_derivable (guint64        opslimit,
+                                              guint64        memlimit);
 
 G_END_DECLS

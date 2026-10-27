@@ -37,6 +37,9 @@
  * this one, a read's as much as a write's, so the two still agree. */
 /* How many keys were derived, which is what a passphrase check costs. */
 static gint derivations;
+/* Every derivation failing while set, as one Argon2id's memory is refused
+ * for -- a memory limit, strict overcommit -- fails. */
+static gboolean refuse_derivations;
 
 int
 crypto_pwhash (unsigned char * const       out,
@@ -54,6 +57,8 @@ crypto_pwhash (unsigned char * const       out,
 
     g_assert_nonnull (original);
     g_atomic_int_inc (&derivations);
+    if (refuse_derivations)
+        return -1;
 
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
 }
@@ -3380,6 +3385,60 @@ test_passphrase_verify_cost (void)
     g_assert_cmpint (g_atomic_int_get (&derivations), ==, 2);
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
+
+/* A passphrase whose key cannot be derived -- its memory refused -- is not
+ * checked, and is refused rather than taken for right: whichever history
+ * holds the data, and whichever flavour. */
+static void
+test_passphrase_verify_underived (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Could not check the passphrase*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GPasteStorage flavours[] = {
+        G_PASTE_STORAGE_ENCRYPTED_FILE,
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+#endif
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (flavours); ++i)
+    {
+        /* The active history holding the data, then another one alone. */
+        for (guint other = 0; other < 2; ++other)
+        {
+            g_autofree gchar *name = g_strdup_printf ("underived-%" G_GSIZE_FORMAT "-%u", i, other);
+
+            g_paste_settings_set_history_name (settings, (other) ? "underived-none" : name);
+
+            {
+                g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavours[i], settings, "right");
+                g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+                g_assert_true (g_paste_storage_backend_write_history (backend, name, items));
+            }
+
+            refuse_derivations = TRUE;
+            g_assert_false (g_paste_storage_passphrase_can_decrypt (flavours[i], settings, "wrong"));
+            refuse_derivations = FALSE;
+            g_assert_false (g_paste_storage_passphrase_can_decrypt (flavours[i], settings, "wrong"));
+            g_assert_true (g_paste_storage_passphrase_can_decrypt (flavours[i], settings, "right"));
+
+            g_autoptr (GError) error = NULL;
+
+            g_paste_storage_delete_history (flavours[i], name, &error);
+            g_assert_no_error (error);
+        }
+    }
+
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+}
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -5500,6 +5559,14 @@ test_verifiable_needs_refutable (void)
     memcpy (impostor, "NOTGPST1", 8);
     g_assert_true (g_file_set_contents (foreign, impostor, stream_length, NULL));
     g_assert_true (g_file_set_contents (truncated, stream, stream_length - 1, NULL));
+
+    /* A whole frame under a header asking for more work than any key is
+     * derived for: the operations limit, past the magic and the salt. */
+    g_autofree gchar *unreasonable = g_paste_util_get_history_file_path ("unreasonable", "xmls");
+    g_autofree gchar *demanding = g_memdup2 (stream, stream_length);
+
+    memset (demanding + 8 + crypto_pwhash_SALTBYTES, 0xff, 8);
+    g_assert_true (g_file_set_contents (unreasonable, demanding, stream_length, NULL));
     g_assert_false (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_FILE, settings));
 
     g_paste_storage_backend_write_history (file_backend, "emptied", none);
@@ -5513,6 +5580,14 @@ test_verifiable_needs_refutable (void)
         g_paste_storage_backend_write_history (backend, "emptied", items);
         g_assert_true (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings));
         g_paste_storage_backend_clear_history (backend, "emptied", NULL);
+
+        /* Items, and no parameters to check a key against. */
+        g_autofree gchar *unkeyed = g_paste_util_get_history_file_path ("unkeyed", "dbs");
+        g_autoptr (sqlite3) db = NULL;
+
+        g_paste_storage_backend_write_history (backend, "unkeyed", items);
+        g_assert_cmpint (sqlite3_open (unkeyed, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, "DELETE FROM meta;", NULL, NULL, NULL), ==, SQLITE_OK);
     }
     g_assert_false (g_paste_storage_passphrase_verifiable (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings));
 #endif
@@ -6562,6 +6637,7 @@ main (int    argc,
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
     g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
+    g_test_add_func ("/storage/passphrase/verify-underived", test_passphrase_verify_underived);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
     g_test_add_func ("/storage/new-history-name-fits", test_new_history_name_fits);
     g_test_add_data_func ("/storage/secure-memory-wiped/file", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_secure_memory_wiped);

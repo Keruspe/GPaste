@@ -299,6 +299,7 @@ typedef struct
 {
     GPasteSettings *settings;
     gboolean        read_whole;
+    gboolean        unverifiable;
 } GPasteStorageBackendPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
@@ -985,6 +986,22 @@ g_paste_storage_backend_read_whole (GPasteStorageBackend *self)
     priv->read_whole = TRUE;
 }
 
+void
+g_paste_storage_backend_set_unverifiable (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    priv->unverifiable = TRUE;
+}
+
+gboolean
+g_paste_storage_backend_is_unverifiable (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    return priv->unverifiable;
+}
+
 guint64
 g_paste_storage_backend_get_read_cap (GPasteStorageBackend *self)
 {
@@ -1204,8 +1221,10 @@ g_paste_storage_is_supported (GPasteStorage storage_kind)
  *
  * Returns: %FALSE when the active history holds data @passphrase does not
  *          unlock, or holds none and another history refutes it while none
- *          opens with it; and when the histories could not be listed at all --
- *          an unverifiable passphrase is refused rather than assumed good
+ *          opens with it; and when the histories could not be listed at all,
+ *          or one could not be checked -- its key not derived, as a memory
+ *          limit refuses it -- while none opens with @passphrase: an
+ *          unverifiable passphrase is refused rather than assumed good
  */
 G_PASTE_VISIBLE gboolean
 g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
@@ -1252,6 +1271,11 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
         return FALSE;
     if (klass->history_confirms_passphrase (backend, active))
         return TRUE;
+    /* A check that could not be made says no more than the store that could
+     * not be listed above: none of the others could be checked either, their
+     * keys derived as this one's is. */
+    if (g_paste_storage_backend_is_unverifiable (backend))
+        return FALSE;
 
     /* Otherwise the others: with nothing to go by in the active one -- absent,
      * never written -- a passphrase none of them opens and some refute is a
@@ -1271,7 +1295,7 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
             return TRUE;
     }
 
-    return !refuted;
+    return !refuted && !g_paste_storage_backend_is_unverifiable (backend);
 }
 
 /**
