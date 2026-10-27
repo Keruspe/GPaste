@@ -63,9 +63,9 @@ if library_lto and library_no_interposition
 endif
 library_own_calls_args = (library_no_interposition) ? ['-DG_PASTE_TEST_LIBRARY_INLINES_OWN_CALLS'] : []
 if library_static
-  message('Static libraries: skipping the test suites that interpose our libraries')
+  message('Static libraries: skipping the test suites that interpose a library\'s own calls')
 elif not library_interposable
-  message('Linking with -Bsymbolic, or optimising across files with no semantic interposition: skipping the test suites that interpose our libraries')
+  message('Linking with -Bsymbolic, or optimising across files with no semantic interposition: skipping the test suites that interpose a library\'s own calls')
 endif
 
 subdir('client')

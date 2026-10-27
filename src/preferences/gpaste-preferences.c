@@ -12,6 +12,22 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
     g_application_quit (G_APPLICATION (user_data));
 }
 
+/* Presented with no parent, the dialog makes a window of its own, and realizes
+ * it before anyone can make it the application's: what the shell matches to
+ * the desktop entry, its Wayland app_id and X11 WM_CLASS, is then the program's
+ * name, which is set to the application's id first. Made the application's
+ * once presented, it is the window a second launch raises
+ * (g_paste_gtk_util_show_window ()). */
+static void
+present_preferences (GtkApplication *app)
+{
+    AdwDialog *dialog = g_paste_gtk_preferences_dialog_new (G_APPLICATION (app));
+
+    g_set_prgname (g_application_get_application_id (G_APPLICATION (app)));
+    adw_dialog_present (dialog, NULL);
+    gtk_window_set_application (GTK_WINDOW (gtk_widget_get_root (GTK_WIDGET (dialog))), app);
+}
+
 /* A request a storage button sent holds the application past its dialog's
  * closing, until the daemon answers: a launch meanwhile reaches this process,
  * which has no dialog left to present, and is given one again. What runs
@@ -21,7 +37,7 @@ on_activate (GApplication *gapp,
              gpointer      user_data G_GNUC_UNUSED)
 {
     if (!gtk_application_get_windows (GTK_APPLICATION (gapp)))
-        adw_dialog_present (g_paste_gtk_preferences_dialog_new (gapp), NULL);
+        present_preferences (GTK_APPLICATION (gapp));
 }
 
 gint
@@ -35,9 +51,7 @@ main (gint argc, gchar *argv[])
 
     g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
 
-    AdwDialog *dialog = g_paste_gtk_preferences_dialog_new (gapp);
-
-    adw_dialog_present (dialog, NULL);
+    present_preferences (app);
     g_signal_connect (gapp, "activate", G_CALLBACK (on_activate), NULL);
 
     return g_application_run (gapp, argc, argv);

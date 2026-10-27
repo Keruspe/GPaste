@@ -93,10 +93,16 @@ ui_daemon_presence_test = executable(
 # the default thirty would leave a loaded builder little room.
 test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
 
+# The suite compiles libgpaste-gtk4's own sources in beside the library, whose
+# dialog it also builds: the executable's copies have to stand in for the
+# library's, which -Bsymbolic keeps the library from letting them do -- a type
+# then registered twice. Its cases building the library's dialog or widget skip
+# themselves then, the rest running all the same.
 ui_preferences_test = executable(
   'gpaste-ui-preferences-test',
   sources: ['test-preferences.c'],
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
+  dependencies: [gtk4_dep, gtk4x11_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
 )
 
 test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])

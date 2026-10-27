@@ -8,8 +8,14 @@
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-client.h>
 
+#include <gdk/x11/gdkx.h>
+
 #include "../../src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c"
 #include "../../src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c"
+
+#define main preferences_main
+#include "../../src/preferences/gpaste-preferences.c"
+#undef main
 
 /* The client the storage buttons ask, faked: what the daemon's presence reads,
  * which calls went out, and the answer they wait for. */
@@ -155,6 +161,17 @@ counted_release (GApplication *app G_GNUC_UNUSED)
 #undef g_paste_client_new
 
 static gboolean have_display;
+
+/* Whether libgpaste-gtk4's own dialog and widget cannot be built here, skipping
+ * the case if so: they register the library's GPasteGtkPreferencesGroup, which
+ * the copy compiled in above registers too wherever the library's calls do not
+ * reach the executable's -- under -Bsymbolic, or a link assuming no semantic
+ * interposition (tests/ui/meson.build). */
+static gboolean
+library_widgets_clash (void)
+{
+    return !g_paste_test_env_library_interposable ("The library's calls bind inside it, the group type registered twice");
+}
 
 /* @group in a window of its own, presented. */
 static GtkWindow *
@@ -665,6 +682,48 @@ test_passphrase_sensitivity (void)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 
+/* The standalone preferences' window is the application's: what a second
+ * launch raises, and what the shell matches to the desktop entry. */
+static void
+test_standalone_window (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+    if (library_widgets_clash ())
+        return;
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GtkApplication) app = GTK_APPLICATION (adw_application_new ("org.gnome.GPaste.Preferences.Test", G_APPLICATION_NON_UNIQUE));
+
+    g_autofree gchar *prgname = g_strdup (g_get_prgname ());
+
+    g_application_register (G_APPLICATION (app), NULL, &error);
+    g_assert_no_error (error);
+    present_preferences (app);
+
+    GList *windows = gtk_application_get_windows (app);
+
+    g_assert_cmpuint (g_list_length (windows), ==, 1);
+
+    /* The window is realized by then: its WM_CLASS is the one the shell
+     * reads. */
+    GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (windows->data));
+    XClassHint hint = { 0 };
+
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    g_assert_true (XGetClassHint (gdk_x11_display_get_xdisplay (gdk_surface_get_display (surface)), gdk_x11_surface_get_xid (surface), &hint));
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    g_assert_cmpstr (hint.res_name, ==, "org.gnome.GPaste.Preferences.Test");
+    XFree (hint.res_name);
+    XFree (hint.res_class);
+
+    gtk_window_destroy (windows->data);
+    g_set_prgname (prgname);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -687,6 +746,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/preferences/storage/waits-for-daemon", test_storage_waits_for_daemon);
     g_test_add_func ("/preferences/passphrase/refused", test_passphrase_refused);
     g_test_add_func ("/preferences/passphrase/sensitivity", test_passphrase_sensitivity);
+    g_test_add_func ("/preferences/standalone/application-window", test_standalone_window);
 
     return g_paste_test_env_run ();
 }
