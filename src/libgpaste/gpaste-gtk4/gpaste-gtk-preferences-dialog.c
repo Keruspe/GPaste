@@ -7,43 +7,38 @@
 struct _GPasteGtkPreferencesDialog
 {
     AdwPreferencesDialog parent_instance;
+
+    GApplication   *gapp;     /* held for as long as the dialog is up */
+    GPasteSettings *settings; /* kept alive for the bound rows' lifetime */
 };
 
-typedef struct
-{
-    GApplication   *gapp;
-    GPasteSettings *settings; /* kept alive for the bound rows' lifetime */
-} GPasteGtkPreferencesDialogPrivate;
-
-G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesDialog, preferences_dialog, ADW_TYPE_PREFERENCES_DIALOG)
+G_PASTE_GTK_DEFINE_TYPE (PreferencesDialog, preferences_dialog, ADW_TYPE_PREFERENCES_DIALOG)
 
 static void
-g_paste_gtk_preferences_dialog_finalize (GObject *object)
+g_paste_gtk_preferences_dialog_dispose (GObject *object)
 {
-    GPasteGtkPreferencesDialogPrivate *priv = g_paste_gtk_preferences_dialog_get_instance_private (G_PASTE_GTK_PREFERENCES_DIALOG (object));
+    GPasteGtkPreferencesDialog *self = G_PASTE_GTK_PREFERENCES_DIALOG (object);
 
-    if (priv->gapp)
-        g_application_release (priv->gapp);
+    /* Chained up first: the rows the parent's dispose tears down bind to (and
+     * reset through) the settings without holding a reference, so the settings
+     * go after them. */
+    G_OBJECT_CLASS (g_paste_gtk_preferences_dialog_parent_class)->dispose (object);
 
-    g_clear_object (&priv->settings);
-
-    G_OBJECT_CLASS (g_paste_gtk_preferences_dialog_parent_class)->finalize (object);
+    g_clear_object (&self->settings);
+    g_clear_pointer (&self->gapp, g_application_release);
 }
 
 static void
 g_paste_gtk_preferences_dialog_class_init (GPasteGtkPreferencesDialogClass *klass)
 {
-    G_OBJECT_CLASS (klass)->finalize = g_paste_gtk_preferences_dialog_finalize;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_preferences_dialog_dispose;
 }
 
 static void
 g_paste_gtk_preferences_dialog_init (GPasteGtkPreferencesDialog *self)
 {
     AdwPreferencesDialog *win = ADW_PREFERENCES_DIALOG (self);
-    GPasteGtkPreferencesDialogPrivate *priv = g_paste_gtk_preferences_dialog_get_instance_private (self);
-    /* The rows bind to (and reset through) this settings object without holding
-     * a reference, so it has to outlive them. */
-    GPasteSettings *settings = priv->settings = g_paste_settings_new ();
+    GPasteSettings *settings = self->settings = g_paste_settings_new ();
 
     g_autofree AdwPreferencesPage **pages = g_paste_gtk_preferences_pages_new (settings);
 
@@ -64,11 +59,10 @@ G_PASTE_VISIBLE AdwDialog *
 g_paste_gtk_preferences_dialog_new (GApplication *gapp)
 {
     GPasteGtkPreferencesDialog *self = g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_DIALOG, NULL);
-    GPasteGtkPreferencesDialogPrivate *priv = g_paste_gtk_preferences_dialog_get_instance_private (self);
 
     if (gapp)
         g_application_hold (gapp);
-    priv->gapp = gapp;
+    self->gapp = gapp;
 
     return ADW_DIALOG (self);
 }

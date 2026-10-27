@@ -8,6 +8,8 @@
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-client.h>
 
+#include <dlfcn.h>
+
 #include <gdk/x11/gdkx.h>
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
@@ -18,6 +20,21 @@
 #define main preferences_main
 #include "../../src/preferences/gpaste-preferences.c"
 #undef main
+
+/* The settings the last g_paste_settings_new () built: the preferences widget
+ * and dialog keep theirs to themselves. */
+static GPasteSettings *last_settings;
+
+GPasteSettings *
+g_paste_settings_new (void)
+{
+    typedef GPasteSettings *(*New) (void);
+    New original = (New) dlsym (RTLD_NEXT, "g_paste_settings_new");
+
+    g_assert_nonnull (original);
+
+    return last_settings = original ();
+}
 
 /* The client the storage buttons ask, faked: what the daemon's presence reads,
  * which calls went out, and the answer they wait for. */
@@ -751,6 +768,66 @@ test_widget_presented (void)
     gtk_window_destroy (window);
 }
 
+static void
+record_order (gpointer data,
+              GObject *where_the_object_was)
+{
+    GPtrArray *order = data;
+
+    g_ptr_array_add (order, where_the_object_was);
+}
+
+static void
+collect_rows (GtkWidget *root,
+              GPtrArray *rows)
+{
+    if (ADW_IS_PREFERENCES_ROW (root))
+        g_ptr_array_add (rows, root);
+
+    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
+        collect_rows (child, rows);
+}
+
+/* The rows of the widget or the dialog bind to their settings without holding
+ * a reference: letting go of either lets go of every row before the settings,
+ * the last page's included -- a row holding a reference of its own on them, as
+ * the passphrase row does, keeps them past the first row whatever the order.
+ * The dialog is presented first, which is when it puts its pages up. */
+static void
+test_settings_go_last (gconstpointer user_data)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+    if (library_widgets_clash ())
+        return;
+
+    gboolean dialog = GPOINTER_TO_INT (user_data);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    GtkWidget *preferences = (dialog) ? GTK_WIDGET (g_paste_gtk_preferences_dialog_new (NULL)) : g_paste_gtk_preferences_widget_new ();
+    GPasteSettings *settings = last_settings;
+    g_autoptr (GPtrArray) order = g_ptr_array_new ();
+
+    if (dialog)
+        adw_dialog_present (ADW_DIALOG (preferences), GTK_WIDGET (window));
+    else
+        adw_window_set_content (ADW_WINDOW (window), preferences);
+    gtk_window_present (window);
+
+    g_autoptr (GPtrArray) rows = g_ptr_array_new ();
+
+    collect_rows (preferences, rows);
+    g_assert_cmpuint (rows->len, >, 1);
+    for (guint i = 0; i < rows->len; ++i)
+        g_object_weak_ref (rows->pdata[i], record_order, order);
+    g_object_weak_ref (G_OBJECT (settings), record_order, order);
+    gtk_window_destroy (window);
+    g_assert_cmpuint (order->len, ==, rows->len + 1);
+    g_assert_true (order->pdata[rows->len] == (gpointer) settings);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -775,6 +852,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/preferences/passphrase/sensitivity", test_passphrase_sensitivity);
     g_test_add_func ("/preferences/standalone/application-window", test_standalone_window);
     g_test_add_func ("/preferences/widget/presented", test_widget_presented);
+    g_test_add_data_func ("/preferences/widget/settings-go-last", GINT_TO_POINTER (FALSE), test_settings_go_last);
+    g_test_add_data_func ("/preferences/dialog/settings-go-last", GINT_TO_POINTER (TRUE), test_settings_go_last);
 
     return g_paste_test_env_run ();
 }

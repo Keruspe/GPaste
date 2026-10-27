@@ -97,12 +97,15 @@ test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schema
 # dialog it also builds: the executable's copies have to stand in for the
 # library's, which -Bsymbolic keeps the library from letting them do -- a type
 # then registered twice. Its cases building the library's dialog or widget skip
-# themselves then, the rest running all the same.
-ui_preferences_test = executable(
-  'gpaste-ui-preferences-test',
-  sources: ['test-preferences.c'],
-  c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
-  dependencies: [gtk4_dep, gtk4x11_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
-)
+# themselves then, the rest running all the same; against a static library it
+# does not link, defining what the archive's objects define too.
+if not library_static
+  ui_preferences_test = executable(
+    'gpaste-ui-preferences-test',
+    sources: ['test-preferences.c'],
+    c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
+    dependencies: [gtk4_dep, gtk4x11_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  )
 
-test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])
+  test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])
+endif
