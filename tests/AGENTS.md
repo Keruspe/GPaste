@@ -417,7 +417,8 @@ daemon not yet serving, the request waiting for one and giving up, the gate
 never opened, when none comes; the application is held while a request is
 out; and a change of passphrase goes out asynchronously, a refusal shown as a
 migration's is. And it compiles the standalone application in, `main` renamed:
-its window is the application's, its WM_CLASS the application's id.
+its window is the application's, its WM_CLASS the application's id; and the embeddable widget comes up without a
+warning.
 
 `test-ui-history-model` checks that `GPasteUiHistoryModel` ignores an
 invalidated range past its rows, however far past, a position near the top of

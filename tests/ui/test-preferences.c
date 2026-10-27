@@ -10,6 +10,8 @@
 
 #include <gdk/x11/gdkx.h>
 
+#include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
+
 #include "../../src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c"
 #include "../../src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c"
 
@@ -724,6 +726,31 @@ test_standalone_window (void)
     g_set_prgname (prgname);
 }
 
+/* The embeddable widget comes up without libadwaita warning that its
+ * breakpoint bin was given no least size. */
+static void
+test_widget_presented (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+    if (library_widgets_clash ())
+        return;
+
+    GtkWindow *window = GTK_WINDOW (gtk_window_new ());
+    GtkWidget *widget = g_paste_gtk_preferences_widget_new ();
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    gtk_window_set_child (window, widget);
+    gtk_window_present (window);
+    while (gtk_widget_get_width (widget) == 0 && g_get_monotonic_time () < deadline)
+        g_main_context_iteration (NULL, FALSE);
+    g_assert_cmpint (gtk_widget_get_width (widget), >, 0);
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -747,6 +774,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/preferences/passphrase/refused", test_passphrase_refused);
     g_test_add_func ("/preferences/passphrase/sensitivity", test_passphrase_sensitivity);
     g_test_add_func ("/preferences/standalone/application-window", test_standalone_window);
+    g_test_add_func ("/preferences/widget/presented", test_widget_presented);
 
     return g_paste_test_env_run ();
 }

@@ -77,6 +77,10 @@ g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 
     GtkWidget *bin = adw_breakpoint_bin_new ();
     adw_breakpoint_bin_set_child (ADW_BREAKPOINT_BIN (bin), box);
+    /* A breakpoint bin has to be told the least it is given, which it reads its
+     * breakpoints against and libadwaita warns about the lack of: the size
+     * the HIG has a window go down to. */
+    gtk_widget_set_size_request (bin, 360, 294);
 
     AdwBreakpoint *breakpoint = adw_breakpoint_new (adw_breakpoint_condition_parse ("max-width: 500px"));
     adw_breakpoint_add_setters (breakpoint,
