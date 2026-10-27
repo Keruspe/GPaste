@@ -165,8 +165,8 @@ typedef struct
      * the read's own (see g_paste_clipboard_update_conclude ()).
      *
      * Never cleared on the strength of what a selection is believed to carry: the
-     * only such belief available is the text cache, which holds the last read
-     * that landed, and a record standing is precisely a read that did not.
+     * only such belief available is the text cache, and a text landing beside a
+     * hint the read could not check says nothing of the secret being gone.
      *
      * Retired only by a read that came back with an answer: unlike @password
      * there is no item here to ask selection_holds () about -- this is the case
@@ -594,6 +594,10 @@ g_paste_clipboards_manager_entry_of (_Clipboard *clip,
 
     GPasteItem *listed = g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (entry));
 
+    /* The value checked too, though no GPaste operation lists a uuid under
+     * another value -- an edit or a strip puts a new item, of a uuid of its own,
+     * in its place -- so no test reaches it: a history that ever did would
+     * otherwise have the read take the secret it carries for that entry. */
     if (listed)
         return (g_paste_str_equal (g_paste_item_get_real_value (listed), g_paste_item_get_real_value (entry))) ? listed : NULL;
 
@@ -787,9 +791,12 @@ g_paste_clipboards_manager_preserve_password (_Clipboard           *clip,
  * asks for (reread_unconfirmed ()).
  *
  * It goes nowhere near notify_finish (), which is the whole point: nothing here
- * enters the history and nothing is synchronized onto the other selection. A
- * sync follows the copy the user made, and neither of these is one -- the
- * selection is carrying what it was carrying before the question was asked. */
+ * enters the history, and nothing it reads is synchronized onto the other
+ * selection. A sync follows the copy the user made, and neither of these is one
+ * -- the selection is carrying what it was carrying before the question was
+ * asked. What it does to the other selection is what the read out held back: a
+ * sync asked for meanwhile, which it resumes, and the synchronized copy of a
+ * password it is the first to see gone, which it takes off. */
 static void
 g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_GNUC_UNUSED,
                                            GPasteItem              *item,
@@ -1107,7 +1114,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
         else
         {
             g_debug ("clipboards-manager: the password was refused, not syncing it");
-            /* That selection kept whatever it had, which is not this password. */
+            /* As in notify_finish (). */
             g_paste_clipboards_manager_forget_stale_password (_to);
         }
 
@@ -1251,7 +1258,7 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
 
     g_debug ("clipboards-manager: notify finish");
 
-    /* The record this read may retire, for ensure_not_empty (). */
+    /* As in identify_ready (). */
     g_autoptr (GPasteItem) record = (clip->password) ? g_object_ref (clip->password) : NULL;
 
     /* A password read off a selection is on that selection already, and no other
@@ -1392,17 +1399,13 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
                 const gchar *text = g_paste_clipboard_provider_get_text (other->clipboard);
 
                 /* A selection carrying an unrecorded secret is written to rather
-                 * than compared. What get_text () answers is the last text read
-                 * that landed, which on a sensitive selection is exactly what
-                 * did not: a hint that came back and matched beside a text read
-                 * that failed leaves the cache naming an older string while the
-                 * secret sits there. Comparing against that cache would find the
-                 * strings equal, write nothing, and clear a record over the
-                 * cleartext it was kept for -- after which a sync out of that
-                 * selection publishes the secret as bare text. So the one case
-                 * where the daemon writes nothing and knows what sits there all
-                 * the same is the case where the record already says it does not.
-                 * See @sensitive on _Clipboard. */
+                 * than compared. The read that found it so landed no text, the
+                 * cache answering none, which is written over anyway; but a
+                 * later read that could not tell -- its hint offered and never
+                 * served -- lands a text beside @sensitive, and equal to the one
+                 * synchronized it would have nothing written over a secret the
+                 * daemon has no record of. See @sensitive on _Clipboard, and
+                 * /clipboard/sync/over_sensitive_unknown_read. */
                 if (other->sensitive || !text || !g_paste_str_equal (text, synchronized_text))
                 {
                     other->change_serial = change_serial;
@@ -1709,9 +1712,12 @@ g_paste_clipboards_manager_retire_password (GPasteClipboardsManager *self,
  * whatever it was carrying, so the record and its countdown go rather than being
  * replaced.
  *
- * The one write that skips it is the one taking a password back off:
- * publish_over_password () putting the replacement or the empty string there,
- * which picks no password and so has no countdown to arm. */
+ * The writes that skip it put no password on a selection, so have no countdown
+ * to arm: publish_over_password () putting the replacement or the empty string
+ * in a password's place, a strip publishing plain text over a selection
+ * carrying no secret (finish_refresh (), refresh_clip ()), and a sync's plain
+ * text, after which forget_stale_password () drops a record left stale
+ * (sync_ready (), notify_finish ()). */
 static void
 g_paste_clipboards_manager_arm_password_at (_Clipboard *clip,
                                             GPasteItem *item,

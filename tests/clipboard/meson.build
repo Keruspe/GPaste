@@ -5,8 +5,10 @@ test_clipboard = executable(
 )
 
 # The password countdowns under test are real GLib timeouts, 1 to 2 s each, and
-# they add up to over 20 s: too close to meson's 30 s default on a loaded machine.
-test('clipboard', test_clipboard, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
+# they add up to well over a minute of wall clock whatever the machine: more
+# than twice meson's 30 s default, and the timeout leaves a loaded machine room
+# on top of that.
+test('clipboard', test_clipboard, depends: [gpaste_schemas, test_bus_supervisor], timeout: 240)
 
 clipboard_gdk_test = executable(
   'test-clipboard-gdk',
