@@ -22,8 +22,10 @@ configure_file(
 )
 
 # The executable's copy of the client stands in for the library's, whose own
-# calls must reach it: a second copy registers the type twice.
-if library_interposable
+# calls must reach it: a second copy registers the type twice. A static library
+# leaves the executable's copy the only one, every symbol its file defines being
+# defined there already (tests/meson.build).
+if library_static or library_interposable
   test('test-portal-provider', portal_provider_test_exe,
     timeout: 120,
     depends: [gpaste_schemas, test_bus_supervisor],

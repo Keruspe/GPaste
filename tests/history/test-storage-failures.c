@@ -1146,6 +1146,22 @@ library_calls_interposed (void)
 
     return FALSE;
 }
+
+/* Whether a call libgpaste-daemon makes within one of its files reaches this
+ * binary too, which the probe above, a call from another file, cannot tell: a
+ * compiler assuming no semantic interposition keeps such a call within the
+ * library (see tests/meson.build). */
+static gboolean
+library_file_calls_interposed (void)
+{
+#ifdef G_PASTE_TEST_LIBRARY_INLINES_OWN_CALLS
+    g_test_skip ("libgpaste-daemon binds the calls it makes within one file");
+
+    return FALSE;
+#else
+    return library_calls_interposed ();
+#endif
+}
 #endif
 
 /* A folder of the history directory swapped for a link to @swap_target right
@@ -1640,14 +1656,8 @@ test_unlock_skips_unopenable_flavour (void)
 {
     if (!g_test_subprocess ())
     {
-#ifdef G_PASTE_TEST_LIBRARY_INLINES_OWN_CALLS
-        /* The kind hidden is asked within gpaste-storage-backend.c, a call
-         * this build inlines there, where the probe asks one from another
-         * file: see tests/meson.build. */
-        g_test_skip ("libgpaste-daemon's compiler inlines its own calls");
-        return;
-#endif
-        if (!library_calls_interposed ())
+        /* The kind hidden is asked within gpaste-storage-backend.c. */
+        if (!library_file_calls_interposed ())
             return;
 
         G_PASTE_TEST_TRAP_SUBPROCESS ("*This build cannot open the encrypted storage backend*");
@@ -1955,11 +1965,10 @@ test_migration_refuses_unoffered_choice (void)
 static void
 test_unopenable_store_out_of_reach (void)
 {
-    if (!library_calls_interposed ())
-    {
-        g_test_skip ("the library binds its own calls");
+    /* The kind hidden is asked within gpaste-storage-backend.c, by
+     * g_paste_storage_backend_reaches_history (). */
+    if (!library_file_calls_interposed ())
         return;
-    }
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) database = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -4501,7 +4510,9 @@ test_fifo_history (void)
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
     g_assert_true (g_paste_util_ensure_history_dir_exists ());
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     g_paste_storage_backend_set_passphrase ("passphrase");
+#endif
     g_paste_settings_set_history_name (settings, "fifo");
     for (guint i = 0; i < G_N_ELEMENTS (kinds); ++i)
     {
@@ -4519,9 +4530,11 @@ test_fifo_history (void)
         g_assert_true (g_strv_contains ((const gchar * const *) listed, "kept"));
         g_assert_false (g_strv_contains ((const gchar * const *) listed, "fifo"));
         g_assert_cmpuint (g_paste_storage_backend_count_history (backend, "fifo"), ==, 0);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
         g_paste_settings_set_storage_backend (settings, kinds[i]);
         g_paste_storage_passphrase_verifiable (kinds[i], settings);
         g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+#endif
 
         if (!g_paste_storage_backend_is_incremental (backend))
         {
@@ -4535,7 +4548,9 @@ test_fifo_history (void)
         g_paste_storage_backend_delete_history (backend, "kept", NULL);
     }
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     g_paste_storage_backend_set_passphrase (NULL);
+#endif
 }
 
 /* A full write that does not land sweeps nothing: what is on disk is still the
@@ -8204,7 +8219,6 @@ test_doctor_split_dismissed (void)
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
 /* A history whose document opens with the passphrase in use, its image left
  * on another one, as a change of passphrase cut short leaves it: the image's
  * side file. */
@@ -8532,7 +8546,6 @@ test_decryption_gate_asks_keyring (void)
     g_assert_cmpuint (prompt->passphrase_asks, ==, 1);
     g_paste_storage_backend_set_passphrase (NULL);
 }
-#endif
 #endif
 
 /* A locked history is unlocked first; left locked, what it holds is not

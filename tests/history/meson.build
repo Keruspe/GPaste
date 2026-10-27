@@ -1,14 +1,17 @@
-test_history = executable(
-  'test-history',
-  sources: [ 'test-history.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
-)
+# It defines g_paste_settings_reload () beside libgpaste's, which a static
+# library's object defines again (library_static).
+if not library_static
+  test_history = executable(
+    'test-history',
+    sources: [ 'test-history.c' ],
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
+  )
 
-# The encrypted cases derive an Argon2id key (at libsodium's MODERATE limits)
-# several times each, which alone accounts for most of the runtime and brushes
-# meson's 30s default on a slow or loaded machine. Give it real room rather than
-# letting the suite fail intermittently for a reason that is not a bug.
-test('history', test_history, depends: [gpaste_schemas, test_bus_supervisor], timeout: 180)
+  # Its longest waits give a call a minute before failing the case waiting on
+  # it: room past that, rather than meson's 30s default killing the binary with
+  # no case named.
+  test('history', test_history, depends: [gpaste_schemas, test_bus_supervisor], timeout: 180)
+endif
 
 test_enums = executable(
   'test-enums',
@@ -45,7 +48,8 @@ if not library_static
     c_args: library_own_calls_args,
     dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
   )
-  # Its pumps and fixed waits add up to several seconds, and the encrypted
-  # cases derive keys: room as for 'history' above.
+  # Its pumps and fixed waits add up to several seconds, on top of the thirty
+  # /storage/lock/taken-is-ours gives its child: room past both, rather than
+  # meson's 30s default killing the binary with no case named.
   test('storage-failures', test_storage_failures, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
 endif
