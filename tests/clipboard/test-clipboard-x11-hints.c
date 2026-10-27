@@ -526,6 +526,25 @@ timestamped_conversion (gconstpointer user_data)
     gdk_display_close (display);
 }
 
+static gboolean
+window_exists (Display *dpy,
+               Window   window)
+{
+    Window root;
+    Window parent;
+    Window *children = NULL;
+    guint n_children = 0;
+    gboolean found = FALSE;
+
+    XQueryTree (dpy, DefaultRootWindow (dpy), &root, &parent, &children, &n_children);
+    for (guint i = 0; i < n_children && !found; ++i)
+        found = (children[i] == window);
+    if (children)
+        XFree (children);
+
+    return found;
+}
+
 /* A conversion given up on leaves its requestor window standing: the owner it
  * was asked of may still answer, and an answer to a window that is gone is a
  * BadWindow the owner dies of, this process being where both of them live.
@@ -563,7 +582,9 @@ late_reply (void)
     test_clipboard_text_ready (pending, HINT_VALUE);
     g_paste_clipboard_update_maybe_done (pending);
 
-    wait_for_workaround_request (owner, gdk_window);
+    guint ours = wait_for_workaround_request (owner, gdk_window);
+    Window requestor = g_array_index (owner->deferred, XSelectionRequestEvent, ours).requestor;
+
     g_assert_false (result.answered);
 
     /* What the update's own deadline would do to it, without waiting the
@@ -575,12 +596,18 @@ late_reply (void)
 
     g_assert_true (result.answered);
     g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
+    g_assert_true (window_exists (owner->dpy, requestor));
 
     /* And now the owner answers the conversion nobody is waiting for: the window
-     * it names has to be standing for that answer to reach anything at all. */
+     * it names has to be standing for that answer to reach anything at all, and
+     * goes with it. */
     owner->behaviour = OWNER_SERVES_HINT;
     owner_answer_deferred (owner);
     pump (owner, 100);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    XSync (gdk_x11_display_get_xdisplay (test_display ()), False);
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    g_assert_false (window_exists (owner->dpy, requestor));
 }
 
 /* How many of the polls the workaround makes are interrupted, as a signal
@@ -661,25 +688,6 @@ server_time_interrupted (void)
 
     g_clear_object (&hints);
     gdk_display_close (display);
-}
-
-static gboolean
-window_exists (Display *dpy,
-               Window   window)
-{
-    Window root;
-    Window parent;
-    Window *children = NULL;
-    guint n_children = 0;
-    gboolean found = FALSE;
-
-    XQueryTree (dpy, DefaultRootWindow (dpy), &root, &parent, &children, &n_children);
-    for (guint i = 0; i < n_children && !found; ++i)
-        found = (children[i] == window);
-    if (children)
-        XFree (children);
-
-    return found;
 }
 
 /* A requestor window retired from a conversion given up on is still destroyed

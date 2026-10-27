@@ -1588,7 +1588,13 @@ test_image_capture_does_not_write (void)
 
     g_assert_nonnull (item);
     g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item)));
-    g_assert_false (g_file_test (g_paste_item_get_value (item), G_FILE_TEST_EXISTS));
+    g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (item)));
+
+    /* The value is the checksum, which names a file only under a history's
+     * images directory, the default one's included. */
+    g_autofree gchar *path = g_paste_file_backend_image_path (G_PASTE_DEFAULT_HISTORY, g_paste_item_get_value (item));
+
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
 }
 
 /* The plain file backend materializes an image's cache file from the item
@@ -2858,9 +2864,13 @@ test_sqlite_eviction_deletes_no_image (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
     g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (g_paste_history_get (history, 0))));
 
-    g_paste_history_remove (history, 0);
+    /* Nor does its eviction, written before anything is looked at: no images
+     * directory for the history, let alone a file in it. */
+    g_autofree gchar *images = g_path_get_dirname (image_path);
 
-    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+    g_paste_history_remove (history, 0);
+    g_paste_history_flush (history);
+    g_assert_false (g_file_test (images, G_FILE_TEST_EXISTS));
 }
 #endif
 
@@ -4585,10 +4595,11 @@ test_flush_stops_recording (void)
         g_paste_history_flush (writer);
 
         /* This change happens after the flush: it stays in memory but must never
-         * reach the disk. Pump the loop so an (erroneous) async write would run. */
+         * reach the disk. Flushed again, so that an (erroneous) write recorded
+         * for it has landed before the reader looks. */
         g_paste_history_add (writer, g_paste_text_item_new ("dropped"));
 
-        pump_for_ms (100);
+        g_paste_history_flush (writer);
     }
 
     {
@@ -4673,11 +4684,11 @@ test_file_v1_refused_and_preserved (void)
         g_paste_history_load (history, name);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 
-        /* Recording is off for it, so a subsequent
-         * add must not reach the file. */
+        /* Recording is off for it, so a subsequent add must not reach the file:
+         * flushed, so that an (erroneous) write recorded for it has landed. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
-        pump_for_ms (100);
+        g_paste_history_flush (history);
 
         g_autofree gchar *raw = NULL;
 
@@ -4945,11 +4956,14 @@ test_file_version_guard (void)
         g_paste_history_load (history, name);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 
-        /* Recording is off for it: pump the loop so an (erroneous) async write
-         * would run, then check the file is byte-for-byte what we wrote. */
+        /* Recording is off for it: flushed, so that an (erroneous) write recorded
+         * for the add has landed, then the file checked byte-for-byte against
+         * what we wrote. Resumed, the flush having stopped the recording the
+         * rest of the case needs. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
-        pump_for_ms (100);
+        g_paste_history_flush (history);
+        g_paste_history_resume (history);
 
         g_autofree gchar *raw = NULL;
 
@@ -7070,10 +7084,22 @@ test_sqlite_empty_unopenable (void)
  * name -- with the active one holding nothing to go by. A passphrase that opens
  * either is taken: the one it does not open reads as unreadable and is never
  * written over, and refusing both would leave nothing to repair the split
- * with. One that opens neither is refused, a typo as likely as not. */
+ * with. One that opens neither is refused, a typo as likely as not.
+ *
+ * In a process of its own, whose data directory holds nothing another case
+ * left under another passphrase: every such history refutes both passphrases
+ * by itself, the check answering for every history of the flavour, whether or
+ * not the pair is split. */
 static void
 test_encrypted_split_keys_take_either (void)
 {
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
     const struct {
         GPasteStorage kind;
         const gchar  *first;
@@ -7112,14 +7138,20 @@ test_encrypted_split_keys_take_either (void)
         g_assert_true (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
         g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, "passphrase three"));
 
-        /* Both must go: every test in this binary shares one XDG_DATA_HOME, and
-         * a pair no single passphrase opens would have every later can_decrypt
-         * of a third one refuse it. */
-        g_autoptr (GPasteStorageBackend) cleanup_one = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
-        g_autoptr (GPasteStorageBackend) cleanup_two = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
+        /* Keyed alike, the pair is split no more: the other passphrase opens
+         * nothing. */
+        g_autoptr (GPasteStorageBackend) keyed_one = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
+        g_autoptr (GPasteStorageBackend) keyed_two = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("second"));
 
-        g_paste_storage_backend_delete_history (cleanup_one, flavors[i].first, NULL);
-        g_paste_storage_backend_delete_history (cleanup_two, flavors[i].second, NULL);
+        g_paste_storage_backend_delete_history (keyed_two, flavors[i].second, NULL);
+        g_paste_storage_backend_write_history (keyed_one, flavors[i].second, items);
+        g_assert_true (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, one));
+        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
+
+        /* The next flavour checked alone. */
+        g_paste_storage_backend_delete_history (keyed_one, flavors[i].first, NULL);
+        g_paste_storage_backend_delete_history (keyed_one, flavors[i].second, NULL);
     }
 }
 #endif

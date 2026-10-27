@@ -2572,6 +2572,13 @@ test_listing_handoff (void)
     g_assert_false (sidebar_enabled (window, "work"));
     g_assert_true (history_rows_are (window, GUINT_TO_POINTER (0)));
 
+    /* The size answered for the history it was asked of: the switch below would
+     * make it another history's, and one the refresh a real switch announces
+     * would ask again. */
+    g_paste_daemon3_complete_get_history_size (successor.skeleton, g_steal_pointer (&successor.held_size), successor.size);
+    g_paste_test_bus_wait_until (history_rows_are, window, GUINT_TO_POINTER (1));
+    g_assert_true (history_rows_are (window, GUINT_TO_POINTER (1)));
+
     /* The successor's current history is named by the daemon there now, listed
      * or not (on_history_changed ()): its row can be clicked before the
      * listing says so. */
@@ -2580,9 +2587,7 @@ test_listing_handoff (void)
     g_assert_true (sidebar_enabled (window, "work"));
 
     g_paste_daemon3_complete_list_histories (successor.skeleton, g_steal_pointer (&successor.held_listing), g_variant_new_parsed (LISTING_THREE));
-    g_paste_daemon3_complete_get_history_size (successor.skeleton, g_steal_pointer (&successor.held_size), successor.size);
     g_paste_test_bus_wait_until (sidebar_has_history, window, "other");
-    g_paste_test_bus_wait_until (history_rows_are, window, GUINT_TO_POINTER (1));
     g_paste_test_bus_round_trip (bus, successor.connection);
     g_assert_true (sidebar_item (window, "work") == work);
     g_assert_true (sidebar_enabled (window, "work"));
@@ -3476,6 +3481,10 @@ test_version_toast_in_shell (void)
     g_assert_false (restart_enabled (window));
     g_assert_null (window->version_toast);
     g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    /* Owned by the shell itself, which is what the window has to learn first:
+     * restart_can_help () answers no for an owner not known yet whatever else
+     * it reads. */
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
     g_paste_test_bus_wait_until (restart_withheld, window, NULL);
     g_assert_false (restart_enabled (window));
     g_assert_null (window->version_toast);
@@ -3485,6 +3494,7 @@ test_version_toast_in_shell (void)
     restart_daemon_as (&daemon, client, "0.0");
     g_assert_false (restart_enabled (window));
     g_assert_null (window->version_toast);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
     g_paste_test_bus_wait_until (restart_withheld, window, NULL);
     g_assert_false (restart_enabled (window));
     g_assert_null (window->version_toast);
