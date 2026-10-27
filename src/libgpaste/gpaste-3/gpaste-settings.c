@@ -1206,9 +1206,15 @@ g_paste_settings_reload (GPasteSettings *self)
  * -- dconf does, with a database it cannot write -- and the "changed" saying so
  * comes later, from the main loop: until then the getter answers what was
  * asked for. The keyfile backend never gives one back, and the file is read
- * again instead. A caller that has to know whether a write took calls this before
- * reading the setting back. It blocks until the backend answers, as
- * g_paste_settings_sync() does.
+ * again instead. A caller that has to know whether a write took calls this
+ * before reading the setting back.
+ *
+ * It blocks until the backend answers, as g_paste_settings_sync() does: for
+ * dconf, until dconf-service has written its database, which in a daemon
+ * gnome-shell hosts is a round trip on the compositor's thread -- under a
+ * millisecond on a local disk, more under load. Kept: it is once per switch
+ * or toggle a user asked for, and what tells a write that took from one that
+ * did not.
  */
 G_PASTE_VISIBLE void
 g_paste_settings_sync_key (GPasteSettings *self,

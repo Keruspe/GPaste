@@ -422,6 +422,12 @@ g_paste_clipboard_gdk_set_text (GPasteClipboardGdk            *self,
     data->update = update;
     data->callback = callback;
 
+    /* Through GDK, as every content read in this file is, and so open to what
+     * g_paste_clipboard_x11_hints_convert () describes for TARGETS: an owner
+     * that never answers this conversion has every later text read answered
+     * with the reply meant for the one before it, and no text copy recorded
+     * until the daemon restarts. The hints' own conversions cannot take this
+     * over, having no INCR, which a large text or image arrives in. */
     gdk_clipboard_read_text_async (self->real,
                                    update->guard.cancellable,
                                    g_paste_clipboard_gdk_on_text_ready,

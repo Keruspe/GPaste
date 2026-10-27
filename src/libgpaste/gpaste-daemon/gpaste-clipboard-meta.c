@@ -189,9 +189,13 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
     data->ostream = g_memory_output_stream_new_resizable ();
     /* Bounded, as nothing else bounds what an owner serves, inside the
      * compositor: an endless offer would have it buffer until the read guard's
-     * deadline. Nothing larger than the history's memory limit could be kept
-     * anyway, a secret included, so one byte past it is all a read takes, to
-     * tell such a content from one that just fits. */
+     * deadline. Nothing larger than the history's memory limit could be kept as
+     * a text anyway, so one byte past it is all a read takes, to tell such a
+     * content from one that just fits. A secret weighs nothing against that
+     * limit, the history keeping a password of any size, and one past it is
+     * left out, no item recording it: the price of the bound, which the GDK
+     * backend, reading out of the compositor, need not pay -- no real secret
+     * runs to megabytes. */
     data->limit = g_paste_clipboard_meta_transfer_limit (g_paste_settings_get_max_memory_usage (self->settings));
     data->callback = callback;
     data->user_data = user_data;
