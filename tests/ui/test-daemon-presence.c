@@ -103,6 +103,8 @@ typedef struct
 #define LISTING_ONE "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0)]"
 #define LISTING_THREE "[('" G_PASTE_DEFAULT_HISTORY "', uint64 0), ('work', 2), ('other', 1)]"
 
+static const gchar * const no_notes[] = { NULL };
+
 static gboolean
 on_list_histories (GPasteDaemon3         *skeleton,
                    GDBusMethodInvocation *invocation,
@@ -171,7 +173,7 @@ on_get_favourites (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
         daemon->held_filter = invocation;
     }
     else
-        g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("(@a(ssubas) [],)"));
+        g_dbus_method_invocation_return_value (invocation, g_variant_new_parsed ("(@" G_PASTE_ITEMS_VARIANT_STRING " [],)"));
 
     return TRUE;
 }
@@ -180,10 +182,11 @@ on_get_favourites (GPasteDaemon3         *skeleton G_GNUC_UNUSED,
 static void
 answer_filter (FakeDaemon *daemon)
 {
-    g_auto (GVariantBuilder) items = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("a(ssubas)"));
+    g_auto (GVariantBuilder) items = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
 
-    g_variant_builder_add (&items, "(ssub@as)", daemon->match, "match", G_PASTE_ITEM_KIND_TEXT, FALSE, g_variant_new_strv (NULL, 0));
-    g_dbus_method_invocation_return_value (g_steal_pointer (&daemon->held_filter), g_variant_new ("(@a(ssubas))", g_variant_builder_end (&items)));
+    g_variant_builder_add (&items, G_PASTE_ITEM_VARIANT_FORMAT, daemon->match, "match", G_PASTE_ITEM_KIND_TEXT, FALSE, no_notes);
+    g_dbus_method_invocation_return_value (g_steal_pointer (&daemon->held_filter),
+                                           g_variant_new ("(@" G_PASTE_ITEMS_VARIANT_STRING ")", g_variant_builder_end (&items)));
 }
 
 static gboolean
@@ -277,8 +280,7 @@ complete_item (FakeDaemon            *daemon,
     GPasteItemKind kind = (daemon->images) ? G_PASTE_ITEM_KIND_IMAGE : G_PASTE_ITEM_KIND_TEXT;
 
     g_paste_daemon3_complete_get_item_at_index (daemon->skeleton, invocation,
-                                                g_variant_new ("(ssub@as)", uuid, value, kind, FALSE,
-                                                               g_variant_new_strv (NULL, 0)));
+                                                g_variant_new (G_PASTE_ITEM_VARIANT_FORMAT, uuid, value, kind, FALSE, no_notes));
 }
 
 static gboolean
@@ -1499,7 +1501,6 @@ static void
 answer_five_matches (FakeDaemon   *daemon,
                      GPasteClient *client)
 {
-    static const gchar * const no_notes[] = { NULL };
     g_auto (GVariantBuilder) items = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
 
     for (guint i = 0; i < 5; ++i)

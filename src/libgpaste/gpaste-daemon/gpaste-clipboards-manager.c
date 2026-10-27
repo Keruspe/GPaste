@@ -88,8 +88,11 @@ typedef struct
      * password on the clipboard are two exposures with two deadlines, and a
      * route that reaches one of them has nothing to say about the other's.
      *
-     * @password_timeout is how long that countdown was armed for, which the item
-     * alone no longer says once MakePassword has written a new one over it. */
+     * @password_timeout is how long that countdown was armed for, which is what
+     * arm_password_at () compares an arriving twin's duration against. The item
+     * cannot say it: g_paste_history_private_merge_into_head () writes a newer
+     * duration onto the very object recorded here, which would then read as
+     * already armed for it. */
     gboolean                 password_expired;
     guint                    password_timeout_id;
     guint                    password_timeout;
@@ -273,9 +276,9 @@ return_expiry_on_idle (gpointer user_data)
 }
 
 static void
-return_expiry_task (GTask    *task,
-                    gboolean  timed_out,
-                    gboolean  unresolved)
+return_expiry_task (GTask   *task,
+                    gboolean timed_out,
+                    gboolean unresolved)
 {
     ExpiryWait *wait = g_task_get_task_data (task);
 
@@ -2775,6 +2778,8 @@ _clipboard_free (gpointer data)
     g_object_unref (clip->clipboard);
     g_free (clip);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_Clipboard, _clipboard_free)
 
 static void
 g_paste_clipboards_manager_dispose (GObject *object)

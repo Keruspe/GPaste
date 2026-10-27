@@ -13,7 +13,7 @@
 typedef struct
 {
     const gchar *key;
-    guint emissions;
+    guint        emissions;
 } Rebind;
 
 static void

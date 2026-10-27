@@ -112,6 +112,8 @@ migration_dialog_free (gpointer data)
     g_free (self);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (MigrationDialog, migration_dialog_free)
+
 /* Which backend is picked, into @chosen. None is only until the user picks one,
  * when the backend in use is not on the list: nothing is picked for them. */
 static gboolean
@@ -402,6 +404,8 @@ passphrase_dialog_free (gpointer data)
     g_clear_object (&self->request);
     g_free (self);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PassphraseDialog, passphrase_dialog_free)
 
 static void
 passphrase_update_ok (PassphraseDialog *self)

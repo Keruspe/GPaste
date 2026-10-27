@@ -81,7 +81,7 @@ make_history (GPasteSettings **out_settings,
     static guint counter = 0;
     g_autofree gchar *name = g_strdup_printf ("test-%u", counter++);
 
-    GPasteSettings *settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
     g_paste_settings_set_growing_lines (settings, FALSE);
     g_paste_settings_set_max_history_size (settings, max_history_size);
@@ -95,9 +95,7 @@ make_history (GPasteSettings **out_settings,
     g_paste_history_load (history, name);
 
     if (out_settings)
-        *out_settings = settings;
-    else
-        g_object_unref (settings);
+        *out_settings = g_steal_pointer (&settings);
 
     return history;
 }
@@ -1019,17 +1017,13 @@ test_copy_refusals (void)
 static GPasteHistory *
 make_plain_history_capped (guint64 max_history_size)
 {
-    GPasteSettings *settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
     g_paste_settings_set_growing_lines (settings, FALSE);
     g_paste_settings_set_max_history_size (settings, max_history_size);
     g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
 
-    GPasteHistory *history = g_paste_history_new (settings);
-
-    g_object_unref (settings);
-
-    return history;
+    return g_paste_history_new (settings);
 }
 
 static GPasteHistory *
@@ -1611,7 +1605,7 @@ test_file_image_materialization (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (4, 5, 6);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -1645,8 +1639,6 @@ test_file_image_materialization (void)
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, checksum);
     /* Read back off that file, and it says so. */
     g_assert_cmpstr (g_paste_image_item_get_cache_path (loaded->data), ==, cache_path);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* A captured image names no file: its value is its checksum, and where its
@@ -1913,8 +1905,8 @@ test_file_image_per_history (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (16, 17, 18);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
-    GList *items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items_a->data);
     g_assert_nonnull (items_b->data);
@@ -1947,8 +1939,6 @@ test_file_image_per_history (void)
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
 
-    g_list_free_full (items_a, g_object_unref);
-    g_list_free_full (items_b, g_object_unref);
 }
 
 /* Backing a history up writes the *same* items under another name: the backup
@@ -1963,7 +1953,7 @@ test_file_backup_owns_images (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (19, 20, 21);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -1995,8 +1985,6 @@ test_file_backup_owns_images (void)
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, checksum);
     /* Read out of the backup's own copy, not the source's. */
     g_assert_cmpstr (g_paste_image_item_get_cache_path (loaded->data), ==, dst_path);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Dropping an image from a history takes the file the backend materialized for
@@ -5663,7 +5651,7 @@ test_encrypted_roundtrip (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (7, 8, 9);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
@@ -5731,8 +5719,6 @@ test_encrypted_roundtrip (void)
     g_assert_true (found_text);
     g_assert_true (found_password);
     g_assert_true (found_image);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Reading a history that does not exist yet writes an empty placeholder file so
@@ -5892,10 +5878,9 @@ test_encrypted_explicit_passphrase (void)
         {
             g_autoptr (GPasteStorageBackend) backend =
                 g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, source_passphrase);
-            GList *items = g_list_append (NULL, g_paste_text_item_new (value));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (value));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* The explicit key reads it back... */
@@ -5971,22 +5956,20 @@ test_encrypted_rekey (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
-            GList *items = NULL;
+            g_autolist (GPasteItem) items = NULL;
 
             items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
             items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
             items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
 
             /* A second history, re-keyed through the same backend as the daemon
              * does it: re-keying one must not cost this instance the ability to
              * open the others, which are still on the old passphrase. */
-            GList *other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
+            g_autolist (GPasteItem) other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
 
             g_paste_storage_backend_write_history (backend, other_name, other_items);
-            g_list_free_full (other_items, g_object_unref);
 
             g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
             g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase, NULL));
@@ -6061,7 +6044,7 @@ test_encrypted_rekey (void)
 
             {
                 g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
-                GList *items = NULL;
+                g_autolist (GPasteItem) items = NULL;
 
                 for (guint i = 0; i < 10; ++i)
                 {
@@ -6071,7 +6054,6 @@ test_encrypted_rekey (void)
                 }
 
                 g_paste_storage_backend_write_history (backend, big_name, items);
-                g_list_free_full (items, g_object_unref);
             }
 
             /* The limit drops well below what is stored, as it would after the
@@ -6179,7 +6161,7 @@ test_sqlite_roundtrip (void)
 
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, text);
     items = g_list_append (items, g_paste_uris_item_new_from_str ("file:///tmp/a\nfile:///tmp/b"));
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(255,0,0)"));
@@ -6245,8 +6227,6 @@ test_sqlite_roundtrip (void)
 
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, orig_png));
-
-    g_list_free_full (items, g_object_unref);
 
     /* Deleting the history removes the database. */
     g_paste_storage_backend_delete_history (backend, name, NULL);
@@ -6333,7 +6313,7 @@ test_sqlite_replace (void)
     g_paste_item_add_special_value (middle, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                      g_bytes_new_static ("<i>old</i>", 10)));
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("front"));
     items = g_list_append (items, middle);
     items = g_list_append (items, g_paste_text_item_new ("back"));
@@ -6381,8 +6361,6 @@ test_sqlite_replace (void)
     g_assert_cmpuint (g_list_length (after_password), ==, 2);
     g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (after_password, 0)), ==, "front");
     g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (after_password, 1)), ==, "back");
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Open a second, read-only connection on @path and run a single-integer query;
@@ -6516,7 +6494,7 @@ test_sqlite_schema_migration (void)
     /* Opening it is what migrates it. */
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-        GList *history = NULL;
+        g_autolist (GPasteItem) history = NULL;
         gsize size = 0;
 
         g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL /* cancellable */, &history, &size));
@@ -6529,8 +6507,6 @@ test_sqlite_schema_migration (void)
          * it was: that is what the column default is for. */
         g_assert_false (g_paste_item_is_favourite (item));
         g_assert_cmpstr (g_paste_item_get_uuid (item), ==, "11111111-1111-4111-8111-111111111111");
-
-        g_list_free_full (history, g_object_unref);
     }
 
     g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), ==, 3);
@@ -6561,7 +6537,7 @@ test_sqlite_cascade (void)
     g_paste_item_add_special_value (survivor, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                        g_bytes_new_static ("<u>keep</u>", 11)));
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, rich);
     items = g_list_append (items, survivor);
 
@@ -6577,8 +6553,6 @@ test_sqlite_cascade (void)
     /* Only the survivor and its own special value remain. */
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 1);
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM special_values;"), ==, 1);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* A database keeps its images in the store, so deleting the last file flavour
@@ -6707,7 +6681,7 @@ test_sqlite_migration_keeps_destination_images (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (22, 23, 24);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -6734,8 +6708,6 @@ test_sqlite_migration_keeps_destination_images (void)
     /* ...and go away with the last flavor storing it. */
     g_paste_storage_backend_delete_history (destination, name, NULL);
     g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* An image row whose date GDateTime cannot hold is dropped like one with no
@@ -6790,7 +6762,7 @@ test_sqlite_image_blob (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (10, 11, 12);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -6836,8 +6808,6 @@ test_sqlite_image_blob (void)
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_ACTIVE);
     g_assert_nonnull (g_paste_image_item_get_image (image));
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_IDLE);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Switching histories loads with save_after=TRUE so a snapshot-rewriting
@@ -6860,7 +6830,7 @@ test_sqlite_no_rewrite_on_switch (void)
     /* Seed a history holding more items than the soon-to-be max size. */
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-        GList *items = NULL;
+        g_autolist (GPasteItem) items = NULL;
 
         for (guint i = 0; i < 7; ++i)
         {
@@ -6869,7 +6839,6 @@ test_sqlite_no_rewrite_on_switch (void)
         }
 
         g_paste_storage_backend_write_history (backend, big_name, items);
-        g_list_free_full (items, g_object_unref);
     }
 
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
@@ -6999,10 +6968,9 @@ test_sqlite_version_guard (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
@@ -7025,10 +6993,9 @@ test_sqlite_version_guard (void)
             g_assert_null (loaded);
 
             /* A write against the newer database must not touch it. */
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* Once the version is back within range, the original data is intact. */
@@ -7128,18 +7095,16 @@ test_encrypted_split_keys_take_either (void)
         /* Both hold data, so neither can be silently re-keyed on open. */
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("first"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("first"));
 
             g_paste_storage_backend_write_history (backend, flavors[i].first, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("second"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("second"));
 
             g_paste_storage_backend_write_history (backend, flavors[i].second, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* Each opens its own and not the other, whichever is enumerated first. */
@@ -7179,10 +7144,9 @@ test_encrypted_sqlite_absurd_kdf_params (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         g_autofree gchar *path = g_paste_util_get_history_file_path (name, "dbs");
@@ -7200,10 +7164,9 @@ test_encrypted_sqlite_absurd_kdf_params (void)
             g_assert_null (loaded);
 
             /* And the refusal must not let a write clobber what is still there. */
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* Note what is deliberately *not* asserted here: that the passphrase is
@@ -7260,10 +7223,9 @@ test_encrypted_sqlite_absurd_kdf_params_empty (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
@@ -7296,7 +7258,7 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_autoptr (GBytes) png = test_png_bytes ();
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     GPasteItem *text = g_paste_text_item_new (text_value);
 
     g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
@@ -7362,8 +7324,6 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, png));
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* A wrong passphrase must be refused outright — reads come back empty, writes
@@ -7382,10 +7342,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "right passphrase");
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         {
@@ -7393,10 +7352,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
             g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_null (loaded);
 
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         {
@@ -7421,10 +7379,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
             g_autolist (GPasteItem) loaded = read_history (backend, empty_name);
             g_assert_null (loaded);
 
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("fresh start"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("fresh start"));
 
             g_paste_storage_backend_write_history (backend, empty_name, items);
-            g_list_free_full (items, g_object_unref);
 
             g_autolist (GPasteItem) refilled = read_history (backend, empty_name);
             g_assert_cmpuint (g_list_length (refilled), ==, 1);
@@ -7467,7 +7424,7 @@ test_encrypted_sqlite_rekey (void)
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, old_passphrase);
             GPasteItem *text = g_paste_text_item_new ("plain text entry");
-            GList *items = NULL;
+            g_autolist (GPasteItem) items = NULL;
 
             /* A special value exercises the special_values.data column. */
             g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
@@ -7478,16 +7435,14 @@ test_encrypted_sqlite_rekey (void)
             items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
 
             /* A second history (a backup, say): the daemon re-keys every one of
              * them through this same backend, so re-keying must leave it able to
              * open the ones it has not reached yet — still with the old
              * passphrase. */
-            GList *other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
+            g_autolist (GPasteItem) other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
 
             g_paste_storage_backend_write_history (backend, other_name, other_items);
-            g_list_free_full (other_items, g_object_unref);
 
             g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
             g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase, NULL));
@@ -7712,13 +7667,12 @@ test_encrypted_password_name_is_escaped (void)
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
 
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_text_item_new ("the entry after it"));
 
     g_paste_storage_backend_write_history (backend, name, items);
-    g_list_free_full (items, g_object_unref);
 
     /* Both entries come back -- the document parsed -- and the name is the one
      * that went in, not a truncated or re-escaped version of it. */
@@ -7764,10 +7718,9 @@ test_history_dir_is_private (void)
     g_paste_settings_set_images_support (settings, TRUE);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_paste_storage_backend_write_history (backend, name, items);
-    g_list_free_full (items, g_object_unref);
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
 

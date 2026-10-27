@@ -46,17 +46,17 @@ mock_local (GdkClipboard *clipboard G_GNUC_UNUSED)
 
 static gboolean
 mock_set_content (GdkClipboard       *clipboard G_GNUC_UNUSED,
-                  GdkContentProvider *content G_GNUC_UNUSED)
+                  GdkContentProvider *content   G_GNUC_UNUSED)
 {
     ++publications;
     return !refuse_claims;
 }
 
 static void
-mock_read_text (GdkClipboard        *clipboard G_GNUC_UNUSED,
-                GCancellable        *cancellable,
-                GAsyncReadyCallback  callback,
-                gpointer             user_data)
+mock_read_text (GdkClipboard       *clipboard G_GNUC_UNUSED,
+                GCancellable       *cancellable,
+                GAsyncReadyCallback callback,
+                gpointer            user_data)
 {
     g_assert_null (pending_text);
     pending_text = g_task_new (NULL, cancellable, callback, user_data);
@@ -71,10 +71,10 @@ mock_read_text_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
 }
 
 static void
-mock_read_texture (GdkClipboard        *clipboard G_GNUC_UNUSED,
-                   GCancellable        *cancellable,
-                   GAsyncReadyCallback  callback,
-                   gpointer             user_data)
+mock_read_texture (GdkClipboard       *clipboard G_GNUC_UNUSED,
+                   GCancellable       *cancellable,
+                   GAsyncReadyCallback callback,
+                   gpointer            user_data)
 {
     g_assert_null (pending_texture);
     pending_texture = g_task_new (NULL, cancellable, callback, user_data);
@@ -92,12 +92,12 @@ mock_read_texture_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
  * the hint in its formats serves. The mimetype asked for is kept, that being what
  * says which list the read came from. */
 static void
-mock_read_mime (GdkClipboard        *clipboard G_GNUC_UNUSED,
-                const char         **mime_types,
-                int                  io_priority G_GNUC_UNUSED,
-                GCancellable        *cancellable,
-                GAsyncReadyCallback  callback,
-                gpointer             user_data)
+mock_read_mime (GdkClipboard       *clipboard   G_GNUC_UNUSED,
+                const char        **mime_types,
+                int                 io_priority G_GNUC_UNUSED,
+                GCancellable       *cancellable,
+                GAsyncReadyCallback callback,
+                gpointer            user_data)
 {
     g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
 
@@ -110,10 +110,10 @@ mock_read_mime (GdkClipboard        *clipboard G_GNUC_UNUSED,
 }
 
 static GInputStream *
-mock_read_mime_finish (GdkClipboard  *clipboard G_GNUC_UNUSED,
-                       GAsyncResult  *result,
-                       const char   **out_mime_type,
-                       GError       **error)
+mock_read_mime_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
+                       GAsyncResult *result,
+                       const char  **out_mime_type,
+                       GError      **error)
 {
     *out_mime_type = requested_mime;
 
@@ -125,7 +125,7 @@ mock_read_mime_finish (GdkClipboard  *clipboard G_GNUC_UNUSED,
  * could convert at all, and what it says about the owner, are the fixture's to
  * answer. */
 static GPasteClipboardX11Hints *
-mock_hints_new (GdkClipboard *clipboard G_GNUC_UNUSED,
+mock_hints_new (GdkClipboard *clipboard    G_GNUC_UNUSED,
                 gboolean      is_clipboard G_GNUC_UNUSED)
 {
     return NULL;
@@ -144,7 +144,7 @@ mock_hints_cancelled (GCancellable *cancellable G_GNUC_UNUSED,
 }
 
 static void
-mock_hints_read (GPasteClipboardX11Hints *self G_GNUC_UNUSED,
+mock_hints_read (GPasteClipboardX11Hints *self   G_GNUC_UNUSED,
                  GPasteClipboardUpdate   *update)
 {
     if (!hold_hints)

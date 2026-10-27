@@ -322,12 +322,12 @@ on_form_dialog_cancel (GtkButton *button,
  *          its own data to hang off it
  */
 G_PASTE_VISIBLE AdwDialog *
-g_paste_gtk_util_form_dialog (const gchar  *heading,
-                              const gchar  *confirm_label,
-                              GtkWidget    *content,
-                              gint          width,
-                              gint          height,
-                              GtkWidget   **confirm)
+g_paste_gtk_util_form_dialog (const gchar *heading,
+                              const gchar *confirm_label,
+                              GtkWidget   *content,
+                              gint         width,
+                              gint         height,
+                              GtkWidget  **confirm)
 {
     g_return_val_if_fail (heading, NULL);
     g_return_val_if_fail (confirm_label, NULL);
@@ -752,6 +752,8 @@ g_paste_gtk_strength_rating_free (gpointer user_data)
     g_clear_weak_pointer (&rating->source);
     g_free (rating);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteGtkStrengthRating, g_paste_gtk_strength_rating_free)
 
 static void
 g_paste_gtk_strength_rating_apply (gpointer user_data)

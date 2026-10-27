@@ -490,13 +490,13 @@ struct _GPasteClipboardMetaSource
 {
     MetaSelectionSource parent_instance;
 
-    GList              *mimetypes;           /* owned list of gchar*, in advertised order */
-    GHashTable         *contents;            /* gchar* mimetype -> GBytes */
-    GValue              value;               /* G_VALUE_INIT unless a typed payload is bridged */
-    GHashTable         *serialize_mimetypes; /* gchar* set of mimetypes served from @value */
+    GList      *mimetypes;           /* owned list of gchar*, in advertised order */
+    GHashTable *contents;            /* gchar* mimetype -> GBytes */
+    GValue      value;               /* G_VALUE_INIT unless a typed payload is bridged */
+    GHashTable *serialize_mimetypes; /* gchar* set of mimetypes served from @value */
 };
 
-G_DEFINE_FINAL_TYPE (GPasteClipboardMetaSource, g_paste_clipboard_meta_source, META_TYPE_SELECTION_SOURCE)
+G_PASTE_DEFINE_TYPE (ClipboardMetaSource, clipboard_meta_source, META_TYPE_SELECTION_SOURCE)
 
 /* A #GCopyFunc takes a user_data g_strdup () does not: cast to one, g_strdup ()
  * would be called through a type it does not have. */
@@ -554,7 +554,7 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
                                           gpointer             user_data)
 {
     GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
-    GTask *task = g_task_new (source, cancellable, callback, user_data);
+    g_autoptr (GTask) task = g_task_new (source, cancellable, callback, user_data);
 
     g_task_set_source_tag (task, g_paste_clipboard_meta_source_read_async);
 
@@ -567,7 +567,6 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
     {
         g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CLOSED,
                                  "The selection source is gone");
-        g_object_unref (task);
         return;
     }
 
@@ -576,7 +575,6 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
     if (bytes)
     {
         g_task_return_pointer (task, g_memory_input_stream_new_from_bytes (bytes), g_object_unref);
-        g_object_unref (task);
         return;
     }
 
@@ -584,7 +582,7 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
     {
         GPasteClipboardMetaSourceSerializeData *data = g_new0 (GPasteClipboardMetaSourceSerializeData, 1);
 
-        data->task = task;
+        data->task = g_steal_pointer (&task);
         data->ostream = g_memory_output_stream_new_resizable ();
 
         /* Let GDK render the typed payload into the requested format on demand. */
@@ -600,7 +598,6 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
 
     g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                              "Mimetype '%s' is not available", mimetype);
-    g_object_unref (task);
 }
 
 static GInputStream *
@@ -1235,13 +1232,9 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     const gchar *content_mime = NULL;
 
     if ((content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_FILE_LIST, META_MIME_URIS)))
-    {
         content_kind = CLIPBOARD_CONTENT_FILE_LIST;
-    }
     else if ((content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_RGBA, NULL)))
-    {
         content_kind = CLIPBOARD_CONTENT_COLOR;
-    }
     /* Text before an image, as in the GDK backend's update (). */
     else if (mimetypes_contain (mimetypes, META_MIME_TEXT) ||
              mimetypes_contain (mimetypes, META_MIME_TEXT_PLAIN))
@@ -1251,9 +1244,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     }
     else if (g_paste_settings_get_images_support (self->settings) &&
              (content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_TEXTURE, META_MIME_IMAGE)))
-    {
         content_kind = CLIPBOARD_CONTENT_IMAGE;
-    }
     else if (!mimetypes)
     {
         /* The selection was released: clear our cache so callers see an

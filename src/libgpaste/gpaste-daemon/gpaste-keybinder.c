@@ -72,6 +72,8 @@ _keybinding_free (gpointer data)
     g_free (k);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_Keybinding, _keybinding_free)
+
 /* Rebinding comes in bursts: the master switch flipped back and forth, a reset
  * writing several keys, another process writing dconf -- and every write lands
  * here. Coalesced, so that a burst costs the portal one replacement set, a D-Bus

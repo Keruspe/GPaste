@@ -261,24 +261,24 @@ build_shortcuts_variant (GPasteGlobalShortcutClient *self)
 
 struct _PortalRequestData
 {
-    GWeakRef                       client;            /* weakly: see portal_request_data_new () */
-    GTask                         *task;
-    GDBusConnection               *connection;
-    GCancellable                  *cancellable;
-    gchar                         *request_path;      /* the Request we are subscribed to */
-    gchar                         *owner;             /* the portal this request went to, %NULL while nobody owns the name */
-    guint                          signal_id;
-    guint                          owner_signal_id;  /* unique subscription added when activation supplies an owner */
-    GDBusSignalCallback            response_callback;
-    guint                          activation_watch; /* finds the owner even if the client is disposed during activation */
-    guint                          owner_watch;      /* the unique owner dying ends even retired creates */
-    guint64                        generation;        /* the generation this request was made for */
-    gboolean                       awaiting_response; /* the method replied: only Response is left */
-    gboolean                       responded;         /* Response came first: only the method reply is left */
-    gboolean                       creates_session;   /* its Response is what a session handle arrives on */
-    gboolean                       retired;           /* kept only for the session it may still be answered with */
-    gboolean                       returned;          /* its task has been answered, and may not be answered twice */
-    guint                          retire_source;     /* gives up on a retired request the portal never answers */
+    GWeakRef            client;            /* weakly: see portal_request_data_new () */
+    GTask              *task;
+    GDBusConnection    *connection;
+    GCancellable       *cancellable;
+    gchar              *request_path;      /* the Request we are subscribed to */
+    gchar              *owner;             /* the portal this request went to, %NULL while nobody owns the name */
+    guint               signal_id;
+    guint               owner_signal_id;   /* unique subscription added when activation supplies an owner */
+    GDBusSignalCallback response_callback;
+    guint               activation_watch;  /* finds the owner even if the client is disposed during activation */
+    guint               owner_watch;       /* the unique owner dying ends even retired creates */
+    guint64             generation;        /* the generation this request was made for */
+    gboolean            awaiting_response; /* the method replied: only Response is left */
+    gboolean            responded;         /* Response came first: only the method reply is left */
+    gboolean            creates_session;   /* its Response is what a session handle arrives on */
+    gboolean            retired;           /* kept only for the session it may still be answered with */
+    gboolean            returned;          /* its task has been answered, and may not be answered twice */
+    guint               retire_source;     /* gives up on a retired request the portal never answers */
 };
 
 static _PortalRequestData *
@@ -353,9 +353,7 @@ portal_request_data_free (_PortalRequestData *data)
      * dispose () drops the list itself, and a request that outlives it frees
      * itself here without ever reading it. */
     if (client)
-    {
         client->requests = g_slist_remove (client->requests, data);
-    }
 
     g_clear_handle_id (&data->retire_source, g_source_remove);
     g_clear_handle_id (&data->owner_watch, g_bus_unwatch_name);
@@ -371,6 +369,8 @@ portal_request_data_free (_PortalRequestData *data)
     g_clear_pointer (&data->owner, g_free);
     g_free (data);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_PortalRequestData, portal_request_data_free)
 
 /* The portal builds the Request object path from our unique name and the
  * handle_token we hand it, and it is free to emit Response before the method
@@ -518,9 +518,9 @@ portal_request_return_boolean (_PortalRequestData *data,
 typedef struct
 {
     GDBusConnection *connection;
-    gchar *handle;
-    gchar *owner;
-    guint retries;
+    gchar           *handle;
+    gchar           *owner;
+    guint            retries;
 } PortalCloseData;
 
 static void
@@ -855,7 +855,6 @@ on_session_closed_signal (GDBusConnection *connection G_GNUC_UNUSED,
     if (!self)
         return;
 
-
     if (!g_paste_str_equal (path, self->session_handle) ||
         !g_paste_str_equal (sender, self->session_owner))
         return;
@@ -1056,9 +1055,7 @@ on_session_created (GDBusConnection *conn G_GNUC_UNUSED,
          * (2) must not disable recovery when the portal restarts. A superseded
          * request says nothing about the set we hold now. */
         if (!data->retired && portal_request_is_current (data, self))
-        {
             self->session_revoked = response == 1;
-        }
 
         portal_request_take_error (data, g_error_new (G_IO_ERROR,
             data->retired || !portal_request_is_current (data, self) ? G_IO_ERROR_CANCELLED : G_IO_ERROR_FAILED,
@@ -1100,7 +1097,6 @@ on_session_created (GDBusConnection *conn G_GNUC_UNUSED,
         portal_request_done (data);
         return;
     }
-
 
     g_set_str (&self->session_handle, handle);
 
@@ -1239,7 +1235,7 @@ start_create_session_async (GPasteGlobalShortcutClient *self,
 typedef struct
 {
     GWeakRef client;
-    guint64 generation;
+    guint64  generation;
 } PortalBindData;
 
 static void
@@ -1250,12 +1246,14 @@ portal_bind_data_free (gpointer user_data)
     g_weak_ref_clear (&data->client);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PortalBindData, portal_bind_data_free)
+
 static gboolean retry_grab_all (gpointer user_data);
 
 static void
-on_bind_done (GObject      *source   G_GNUC_UNUSED,
-                       GAsyncResult *result,
-                       gpointer      user_data G_GNUC_UNUSED)
+on_bind_done (GObject      *source    G_GNUC_UNUSED,
+              GAsyncResult *result,
+              gpointer      user_data G_GNUC_UNUSED)
 {
     GTask *task = G_TASK (result);
     /* Weakly, and through the task's own data rather than its source object: a
@@ -1269,7 +1267,6 @@ on_bind_done (GObject      *source   G_GNUC_UNUSED,
 
     if (!self)
         return;
-
 
     if (!self->shortcuts || data->generation != self->generation)
         return;
@@ -1352,7 +1349,6 @@ retry_grab_all (gpointer user_data)
 
     if (!self)
         return G_SOURCE_REMOVE;
-
 
     self->retry_source = 0;
 

@@ -101,8 +101,8 @@ g_paste_daemon_update (GPasteDaemon      *self,
  * Emit the signal to show history
  *
  * This never fails: handing the signal to the exported interface is all it does,
- * and that reports nothing back. @error is left untouched, and is only still
- * here because callers pass one.
+ * and that reports nothing back. @error is never set, and is only still here as
+ * part of the library's interface.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self,
@@ -994,11 +994,7 @@ static void
 keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
                          gpointer          data)
 {
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_show_history (data, &error);
-    if (error)
-        g_warning ("Failed to show history: %s", error->message);
+    g_paste_daemon_show_history (data, NULL);
 }
 
 static void
@@ -1424,11 +1420,10 @@ static gboolean
 g_paste_daemon_handle_show_history (GPasteDaemon          *self,
                                     GDBusMethodInvocation *invocation)
 {
-    g_autoptr (GError) error = NULL;
+    g_paste_daemon_show_history (self, NULL);
+    g_paste_daemon3_complete_show_history (self->skeleton, invocation);
 
-    g_paste_daemon_show_history (self, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_show_history (self->skeleton, invocation));
+    return TRUE;
 }
 
 G_PASTE_DAEMON_HANDLER_ERR (strip_rich_text, (const gchar *uuid), (uuid))
@@ -1722,9 +1717,7 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
                                            connection,
                                            G_PASTE_DAEMON_OBJECT_PATH,
                                            error))
-    {
         return FALSE;
-    }
 
     g_signal_group_set_target (daemon->settings_signals, daemon->settings);
     g_signal_group_set_target (daemon->history_signals, daemon->history);

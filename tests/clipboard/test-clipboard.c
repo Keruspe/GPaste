@@ -2630,7 +2630,7 @@ check_restart_order (GObject      *source G_GNUC_UNUSED,
     order->completed = TRUE;
 }
 
-static gboolean
+static void
 finish_restart_read (gpointer user_data)
 {
     RestartOrder *order = user_data;
@@ -2639,7 +2639,6 @@ finish_restart_read (gpointer user_data)
     password_read_ready (order->fixture, "new tracked copy");
     g_assert_false (order->completed);
     order->inside_mutation = FALSE;
-    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -2653,7 +2652,7 @@ test_restart_waits_for_history (void)
     RestartOrder order = { .fixture = fixture };
 
     g_paste_clipboards_manager_expire_password_async (fixture->manager, check_restart_order, &order);
-    g_idle_add (finish_restart_read, &order);
+    g_source_set_name_by_id (g_idle_add_once (finish_restart_read, &order), "[GPaste] test restart read");
     pump_for (20);
     g_assert_true (order.completed);
 }

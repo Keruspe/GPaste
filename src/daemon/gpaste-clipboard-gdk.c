@@ -169,6 +169,8 @@ g_paste_clipboard_gdk_formats_wait_free (GPasteClipboardGdkFormatsWait *wait)
     g_free (wait);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardGdkFormatsWait, g_paste_clipboard_gdk_formats_wait_free)
+
 static void
 g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
                                            gboolean                       superseded)
@@ -643,8 +645,8 @@ g_paste_clipboard_gdk_set_texture (GPasteClipboardGdk               *self,
 }
 
 typedef void (*GPasteClipboardGdkRGBACallback) (GPasteClipboardGdk *self,
-                                               const GdkRGBA       *rgba,
-                                               gpointer             user_data);
+                                                const GdkRGBA      *rgba,
+                                                gpointer            user_data);
 
 typedef struct
 {

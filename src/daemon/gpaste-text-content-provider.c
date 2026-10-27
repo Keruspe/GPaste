@@ -98,7 +98,7 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider *provide
                                                      gpointer            user_data)
 {
     GPasteTextContentProvider *self = G_PASTE_TEXT_CONTENT_PROVIDER (provider);
-    GTask *task = g_task_new (provider, cancellable, callback, user_data);
+    g_autoptr (GTask) task = g_task_new (provider, cancellable, callback, user_data);
 
     g_task_set_priority (task, io_priority);
     g_task_set_source_tag (task, g_paste_text_content_provider_write_mime_type_async);
@@ -110,7 +110,6 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider *provide
     {
         g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
                                  "Cannot provide contents as \"%s\"", mime_type);
-        g_object_unref (task);
         return;
     }
 
@@ -123,7 +122,7 @@ g_paste_text_content_provider_write_mime_type_async (GdkContentProvider *provide
                                      io_priority,
                                      cancellable,
                                      g_paste_text_content_provider_write_done,
-                                     task);
+                                     g_steal_pointer (&task));
 }
 
 static gboolean

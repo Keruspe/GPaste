@@ -10,7 +10,7 @@ struct _GPasteBus
     GObject parent_instance;
 
     GDBusConnection *connection;
-    guint64          id_on_bus;
+    guint            id_on_bus;
     gboolean         acquired; /* whether the name was ever actually acquired */
 
     GPtrArray       *objects; /* GPasteBusObject*, owned, registered on the connection */
@@ -204,11 +204,7 @@ g_paste_bus_unown_name (GPasteBus *self)
 {
     g_return_if_fail (G_PASTE_IS_BUS (self));
 
-    if (self->id_on_bus)
-    {
-        g_bus_unown_name (self->id_on_bus);
-        self->id_on_bus = 0;
-    }
+    g_clear_handle_id (&self->id_on_bus, g_bus_unown_name);
 
     for (guint i = 0; self->objects && i < self->objects->len; ++i)
         g_paste_bus_object_unregister_on_connection (g_ptr_array_index (self->objects, i));

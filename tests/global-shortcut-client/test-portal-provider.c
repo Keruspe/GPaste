@@ -13,34 +13,34 @@
 
 typedef struct
 {
-    GDBusConnection *connection;
+    GDBusConnection       *connection;
     GDBusMethodInvocation *invocation;
-    gchar *sender;
-    gchar *path;
-    gchar *session;
-    GVariant *shortcuts;
-    guint registration;
-    guint closes;
-    guint close_failures;
-    gboolean responded;
+    gchar                 *sender;
+    gchar                 *path;
+    gchar                 *session;
+    GVariant              *shortcuts;
+    guint                  registration;
+    guint                  closes;
+    guint                  close_failures;
+    gboolean               responded;
 } Request;
 
 typedef struct
 {
-    GTestDBus *bus;
-    GDBusConnection *server;
-    GDBusConnection *replacement;
-    GDBusConnection *connection;
+    GTestDBus                  *bus;
+    GDBusConnection            *server;
+    GDBusConnection            *replacement;
+    GDBusConnection            *connection;
     GPasteGlobalShortcutClient *client;
-    GDBusNodeInfo *info;
-    GPtrArray *creates;
-    GPtrArray *binds;
-    guint registration;
-    guint replacement_registration;
-    guint activations;
-    guint watchdog;
-    gboolean ready;
-    gboolean automatic;
+    GDBusNodeInfo              *info;
+    GPtrArray                  *creates;
+    GPtrArray                  *binds;
+    guint                       registration;
+    guint                       replacement_registration;
+    guint                       activations;
+    guint                       watchdog;
+    gboolean                    ready;
+    gboolean                    automatic;
 } Fixture;
 
 static const gchar portal_xml[] =
@@ -79,15 +79,17 @@ request_free (gpointer data)
     g_free (request->session);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (Request, request_free)
+
 static void
-on_close (GDBusConnection *connection G_GNUC_UNUSED,
-          const gchar *sender G_GNUC_UNUSED,
-          const gchar *path G_GNUC_UNUSED,
-          const gchar *interface G_GNUC_UNUSED,
-          const gchar *method,
-          GVariant *parameters G_GNUC_UNUSED,
+on_close (GDBusConnection       *connection G_GNUC_UNUSED,
+          const gchar           *sender     G_GNUC_UNUSED,
+          const gchar           *path       G_GNUC_UNUSED,
+          const gchar           *interface  G_GNUC_UNUSED,
+          const gchar           *method,
+          GVariant              *parameters G_GNUC_UNUSED,
           GDBusMethodInvocation *invocation,
-          gpointer user_data)
+          gpointer               user_data)
 {
     Request *request = user_data;
     g_assert_cmpstr (method, ==, "Close");
@@ -103,14 +105,14 @@ on_close (GDBusConnection *connection G_GNUC_UNUSED,
 }
 
 static void
-on_method (GDBusConnection *connection,
-           const gchar *sender,
-           const gchar *path G_GNUC_UNUSED,
-           const gchar *interface G_GNUC_UNUSED,
-           const gchar *method,
-           GVariant *parameters,
+on_method (GDBusConnection       *connection,
+           const gchar           *sender,
+           const gchar           *path      G_GNUC_UNUSED,
+           const gchar           *interface G_GNUC_UNUSED,
+           const gchar           *method,
+           GVariant              *parameters,
            GDBusMethodInvocation *invocation,
-           gpointer user_data)
+           gpointer               user_data)
 {
     Fixture *f = user_data;
     if (g_str_equal (method, "Barrier"))
@@ -263,6 +265,7 @@ setup (Fixture *f, gconstpointer user_data)
 {
     g_autoptr (GError) error = NULL;
     f->watchdog = g_timeout_add_seconds (10, test_timed_out, NULL);
+    g_source_set_name_by_id (f->watchdog, "[GPaste] portal test watchdog");
     f->bus = g_test_dbus_new (G_TEST_DBUS_NONE);
     gboolean activate = GPOINTER_TO_UINT (user_data) == 100;
     /* Nobody owns the name at first, nor can the bus start anyone for it. */
@@ -1017,8 +1020,7 @@ changed_request_path (Fixture *f, gconstpointer user_data)
     Request *session = grab (f, shortcuts);
     Request *request = GPOINTER_TO_UINT (user_data) ? bind_session (f, session, FALSE) : session;
     g_autofree gchar *path = g_strconcat (request->path, "_actual", NULL);
-    g_free (request->path);
-    request->path = g_steal_pointer (&path);
+    g_set_str_take (&request->path, g_steal_pointer (&path));
     if (request == session)
         request = bind_session (f, session, FALSE);
     complete (f, request, FALSE, 0);
